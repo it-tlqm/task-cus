@@ -1,0 +1,502 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ----------------------------------------------------
+// 1. CƠ CẤU TỔ CHỨC & NHÂN SỰ
+// ----------------------------------------------------
+
+model Organization {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  units OrgUnit[]
+
+  @@map("organizations")
+}
+
+model OrgUnit {
+  id        String   @id @default(uuid())
+  orgId     String   @map("org_id")
+  parentId  String?  @map("parent_id")
+  code      String   @unique
+  name      String
+  level     Int      @default(1)
+  sortOrder Int      @default(0) @map("sort_order")
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  parent       OrgUnit?           @relation("OrgUnitHierarchy", fields: [parentId], references: [id])
+  children     OrgUnit[]          @relation("OrgUnitHierarchy")
+  assignments  PersonAssignment[]
+  roleGrants   RoleGrant[]
+  tasks        Task[]
+  plans        Plan[]
+  routines     RoutineEntry[]
+
+  @@map("org_units")
+}
+
+model Position {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  title       String
+  description String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  assignments PersonAssignment[]
+
+  @@map("positions")
+}
+
+model Person {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  fullName  String   @map("full_name")
+  email     String?  @unique
+  phone     String?
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  account          Account?
+  assignments      PersonAssignment[]
+  ownedTasks       Task[]             @relation("TaskOwner")
+  taskAssignees    TaskAssignee[]
+  taskUpdates      TaskUpdate[]
+  workItems        PersonalWorkItem[]
+  routines         RoutineEntry[]
+  deadlineRequests DeadlineRequest[]  @relation("RequestedBy")
+
+  @@map("people")
+}
+
+model PersonAssignment {
+  id            String    @id @default(uuid())
+  personId      String    @map("person_id")
+  unitId        String    @map("unit_id")
+  positionId    String?   @map("position_id")
+  isPrimary     Boolean   @default(true) @map("is_primary")
+  effectiveFrom DateTime  @default(now()) @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  person   Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  unit     OrgUnit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  position Position? @relation(fields: [positionId], references: [id])
+
+  @@map("person_assignments")
+}
+
+// ----------------------------------------------------
+// 2. TÀI KHOẢN, VAI TRÒ & PHÂN QUYỀN
+// ----------------------------------------------------
+
+model Account {
+  id           String    @id @default(uuid())
+  personId     String    @unique @map("person_id")
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  status       String    @default("ACTIVE") // ACTIVE, LOCKED, DISABLED
+  mfaEnabled   Boolean   @default(false) @map("mfa_enabled")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  person     Person      @relation(fields: [personId], references: [id], onDelete: Cascade)
+  roleGrants RoleGrant[]
+  auditLogs  AuditEvent[]
+
+  @@map("accounts")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+  roleGrants      RoleGrant[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  module      String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RoleGrant {
+  id          String    @id @default(uuid())
+  accountId   String    @map("account_id")
+  roleId      String    @map("role_id")
+  scopeType   String    @default("OWN") @map("scope_type") // OWN, ASSIGNED, DEPARTMENT, SUBTREE, ORGANIZATION
+  scopeUnitId String?   @map("scope_unit_id")
+  validFrom   DateTime  @default(now()) @map("valid_from")
+  validTo     DateTime? @map("valid_to")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  scopeUnit OrgUnit? @relation(fields: [scopeUnitId], references: [id])
+
+  @@map("role_grants")
+}
+
+// ----------------------------------------------------
+// 3. DANH MỤC NGHIỆP VỤ & HOẠT ĐỘNG MẪU (EXCEL SEED)
+// ----------------------------------------------------
+
+model ActivityGroup {
+  id          String   @id @default(uuid())
+  code        String   @unique // TTHQ, GSHQ, TON_DONG, DANH_GIA_HQ, DANH_GIA_NGAY_TUAN
+  name        String
+  sourceRow   Int      @map("source_row")
+  sortOrder   Int      @default(0) @map("sort_order")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  templates ActivityTemplate[]
+  planItems PlanItem[]
+
+  @@map("activity_groups")
+}
+
+model ActivityTemplate {
+  id              String   @id @default(uuid())
+  groupId         String   @map("group_id")
+  code            String   @unique // TTHQ-01..22, GSHQ-01..20, etc.
+  title           String
+  description     String?
+  sourceRawText   String   @map("source_raw_text")
+  sourceRow       Int      @map("source_row")
+  defaultPriority String   @default("Cao") @map("default_priority")
+  reportingMode   String   @default("UNCONFIGURED") @map("reporting_mode") // UNCONFIGURED, EVERY_PERIOD, ON_OCCURRENCE, ON_ASSIGNMENT, NO_REPORT
+  reviewStatus    String   @default("NEEDS_REVIEW") @map("review_status") // NEEDS_REVIEW, VERIFIED, RETIRED
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  group       ActivityGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  workItems   PersonalWorkItem[]
+  routines    RoutineEntry[]
+
+  @@map("activity_templates")
+}
+
+// ----------------------------------------------------
+// 4. BIỂU MẪU ĐỘNG & QUẢN LÝ PHIÊN BẢN (FORM ENGINE)
+// ----------------------------------------------------
+
+model FormTemplate {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  versions FormTemplateVersion[]
+
+  @@map("form_templates")
+}
+
+model FormTemplateVersion {
+  id             String    @id @default(uuid())
+  formTemplateId String    @map("form_template_id")
+  version        Int       @default(1)
+  schemaJson     Json      @map("schema_json") // Schema fields definition
+  status         String    @default("PUBLISHED") // DRAFT, PUBLISHED, RETIRED
+  publishedAt    DateTime? @default(now()) @map("published_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  formTemplate FormTemplate       @relation(fields: [formTemplateId], references: [id], onDelete: Cascade)
+  submissions  ResultSubmission[]
+
+  @@unique([formTemplateId, version])
+  @@map("form_template_versions")
+}
+
+// ----------------------------------------------------
+// 5. KỲ BÁO CÁO, KẾ HOẠCH & ĐẦU VIỆC CÁ NHÂN
+// ----------------------------------------------------
+
+model ReportingPeriod {
+  id        String   @id @default(uuid())
+  type      String   @default("WEEK") // DAY, WEEK, MONTH
+  title     String
+  startAt   DateTime @map("start_at")
+  endAt     DateTime @map("end_at")
+  dueAt     DateTime? @map("due_at")
+  isLocked  Boolean  @default(false) @map("is_locked")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plans     Plan[]
+  workItems PersonalWorkItem[]
+  routines  RoutineEntry[]
+
+  @@map("reporting_periods")
+}
+
+model Plan {
+  id         String    @id @default(uuid())
+  periodId   String    @map("period_id")
+  unitId     String    @map("unit_id")
+  creatorId  String    @map("creator_id")
+  title      String
+  status     String    @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, RETURNED, IN_EFFECT
+  approvedBy String?   @map("approved_by")
+  approvedAt DateTime? @map("approved_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  period    ReportingPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  unit      OrgUnit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  items     PlanItem[]
+
+  @@map("plans")
+}
+
+model PlanItem {
+  id        String   @id @default(uuid())
+  planId    String   @map("plan_id")
+  groupId   String?  @map("group_id")
+  title     String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plan      Plan               @relation(fields: [planId], references: [id], onDelete: Cascade)
+  group     ActivityGroup?     @relation(fields: [groupId], references: [id])
+  workItems PersonalWorkItem[]
+  taskLinks PlanTaskLink[]
+
+  @@map("plan_items")
+}
+
+// Danh mục đầu việc thực tế của từng cá nhân theo kỳ (Biến động linh hoạt)
+model PersonalWorkItem {
+  id         String   @id @default(uuid())
+  personId   String   @map("person_id")
+  periodId   String   @map("period_id")
+  planItemId String?  @map("plan_item_id")
+  templateId String?  @map("template_id") // Nullable: có thể chọn từ mẫu hoặc tự thêm mới
+  title      String
+  sortOrder  Int      @default(0) @map("sort_order")
+  status     String   @default("ACTIVE") // ACTIVE, COMPLETED, DISCONTINUED
+  version    Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  person   Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
+  period   ReportingPeriod   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  planItem PlanItem?         @relation(fields: [planItemId], references: [id])
+  template ActivityTemplate? @relation(fields: [templateId], references: [id])
+  routines RoutineEntry[]
+
+  @@map("personal_work_items")
+}
+
+// ----------------------------------------------------
+// 6. NHIỆM VỤ, ĐIỀU HÀNH & TIẾN ĐỘ
+// ----------------------------------------------------
+
+model Task {
+  id                 String   @id @default(uuid()) // Single Distinct Task ID
+  code               String   @unique
+  title              String
+  description        String?
+  ownerId            String   @map("owner_id")
+  unitId             String   @map("unit_id")
+  priority           String   @default("Cao") // Cao, Trung bình, Thấp
+  status             String   @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, WAITING_REVIEW, DONE, CANCELED
+  originalDeadline   DateTime @map("original_deadline")
+  currentDeadline    DateTime @map("current_deadline")
+  hasIssue           Boolean  @default(false) @map("has_issue")
+  issueNotes         String?  @map("issue_notes")
+  expectedResultText String?  @map("expected_result_text")
+  actualResultText   String?  @map("actual_result_text")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  owner            Person            @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  unit             OrgUnit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  planLinks        PlanTaskLink[]
+  assignees        TaskAssignee[]
+  updates          TaskUpdate[]
+  deadlineRequests DeadlineRequest[]
+  submissions      ResultSubmission[]
+
+  @@map("tasks")
+}
+
+model PlanTaskLink {
+  id         String   @id @default(uuid())
+  planItemId String   @map("plan_item_id")
+  taskId     String   @map("task_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  planItem PlanItem @relation(fields: [planItemId], references: [id], onDelete: Cascade)
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([planItemId, taskId])
+  @@map("plan_task_links")
+}
+
+model TaskAssignee {
+  taskId   String @map("task_id")
+  personId String @map("person_id")
+  role     String @default("COLLABORATOR") // COLLABORATOR, VIEWER
+
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, personId])
+  @@map("task_assignees")
+}
+
+model TaskUpdate {
+  id              String   @id @default(uuid())
+  taskId          String   @map("task_id")
+  authorId        String   @map("author_id")
+  progressPercent Int      @default(0) @map("progress_percent")
+  statusBefore    String?  @map("status_before")
+  statusAfter     String?  @map("status_after")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author Person @relation(fields: [authorId], references: [id])
+
+  @@map("task_updates")
+}
+
+model DeadlineRequest {
+  id                String    @id @default(uuid())
+  taskId            String    @map("task_id")
+  requestedById     String    @map("requested_by_id")
+  requestedDeadline DateTime  @map("requested_deadline")
+  reason            String
+  status            String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedById      String?   @map("reviewed_by_id")
+  reviewedAt        DateTime? @map("reviewed_at")
+  reviewNotes       String?   @map("review_notes")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  task        Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  requestedBy Person @relation("RequestedBy", fields: [requestedById], references: [id])
+
+  @@map("deadline_requests")
+}
+
+// ----------------------------------------------------
+// 7. NHẬT KÝ THƯỜNG XUYÊN & KẾT QUẢ BÁO CÁO
+// ----------------------------------------------------
+
+model RoutineEntry {
+  id               String   @id @default(uuid())
+  periodId         String   @map("period_id")
+  personId         String   @map("person_id")
+  unitId           String   @map("unit_id")
+  templateId       String?  @map("template_id")
+  workItemId       String?  @map("work_item_id")
+  occurrenceStatus String   @default("OCCURRED") @map("occurrence_status") // OCCURRED, NOT_OCCURRED
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  period      ReportingPeriod   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  person      Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
+  unit        OrgUnit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  template    ActivityTemplate? @relation(fields: [templateId], references: [id])
+  workItem    PersonalWorkItem? @relation(fields: [workItemId], references: [id])
+  submissions ResultSubmission[]
+
+  @@map("routine_entries")
+}
+
+model ResultSubmission {
+  id             String   @id @default(uuid())
+  routineEntryId String?  @map("routine_entry_id")
+  taskId         String?  @map("task_id")
+  formVersionId  String   @map("form_version_id")
+  submittedBy    String   @map("submitted_by")
+  status         String   @default("SUBMITTED") // SUBMITTED, VERIFIED
+  submittedAt    DateTime @default(now()) @map("submitted_at")
+
+  routineEntry RoutineEntry?       @relation(fields: [routineEntryId], references: [id], onDelete: Cascade)
+  task         Task?               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  formVersion  FormTemplateVersion @relation(fields: [formVersionId], references: [id])
+  values       SubmissionValue[]
+
+  @@map("result_submissions")
+}
+
+model SubmissionValue {
+  id           String  @id @default(uuid())
+  submissionId String  @map("submission_id")
+  fieldKey     String  @map("field_key")
+  valueText    String? @map("value_text")
+  valueNumber  Float?  @map("value_number")
+  valueJson    Json?   @map("value_json")
+
+  submission ResultSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("submission_values")
+}
+
+// ----------------------------------------------------
+// 8. KIỂM TOÁN HỆ THỐNG (AUDIT LOG BẤT BIẾN)
+// ----------------------------------------------------
+
+model AuditEvent {
+  id           String   @id @default(uuid())
+  actorId      String?  @map("actor_id")
+  action       String   // CREATE, UPDATE, DELETE, LOGIN, EXPORT_XLSX, APPROVE_PLAN
+  resourceType String   @map("resource_type") // Task, Plan, OrgUnit, etc.
+  resourceId   String?  @map("resource_id")
+  oldData      Json?    @map("old_data")
+  newData      Json?    @map("new_data")
+  ipAddress    String?  @map("ip_address")
+  timestamp    DateTime @default(now())
+
+  actor Account? @relation(fields: [actorId], references: [id])
+
+  @@map("audit_events")
+}

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><title>TALUNG-CUS-WORK</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "secondary": "#006a62", "on-tertiary-container": "#909a98", "on-error": "#ffffff", "surface": "#faf8ff", "surface-container-low": "#f2f3ff", "surface-container-highest": "#dae2fd", "on-error-container": "#93000a", "status-inactive": "#64748B", "on-secondary-fixed-variant": "#00504a", "app-bg": "#F8FAFC", "status-warning-bg": "#FFFBEB", "on-surface": "#131b2e", "on-primary-fixed": "#001d36", "on-primary-fixed-variant": "#2f4865", "status-unassigned": "#0284C7", "error-container": "#ffdad6", "inverse-primary": "#afc9ea", "surface-tint": "#47607e", "status-danger-bg": "#FFF1F2", "surface-container": "#eaedff", "outline": "#74777e", "on-tertiary": "#ffffff", "inverse-on-surface": "#eef0ff", "on-tertiary-fixed": "#141d1c", "primary": "#001d36", "on-tertiary-fixed-variant": "#3f4947", "border-default": "#E2E8F0", "outline-variant": "#c3c6ce", "status-danger": "#E11D48", "secondary-container": "#98efe4", "status-warning": "#D97706", "background": "#faf8ff", "tertiary-fixed-dim": "#bfc9c7", "on-primary-container": "#819aba", "on-secondary-fixed": "#00201d", "primary-container": "#17324d", "status-inactive-bg": "#F8FAFC", "surface-bright": "#faf8ff", "on-secondary-container": "#006f66", "border-subtle": "#CBD5E1", "surface-subtle": "#F1F5F9", "tertiary-container": "#293231", "inverse-surface": "#283044", "on-surface-variant": "#43474d", "status-success": "#059669", "surface-variant": "#dae2fd", "on-background": "#131b2e", "on-secondary": "#ffffff", "tertiary-fixed": "#dbe5e3", "primary-fixed-dim": "#afc9ea", "surface-container-lowest": "#ffffff", "tertiary": "#141d1c", "status-success-bg": "#ECFDF5", "secondary-fixed": "#9bf2e7", "status-unassigned-bg": "#F0F9FF", "error": "#ba1a1a", "surface-container-high": "#e2e7ff", "primary-fixed": "#d1e4ff", "surface-dim": "#d2d9f4", "secondary-fixed-dim": "#7fd6cb", "on-primary": "#ffffff" }, borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, spacing: { "space-xl": "32px", "margin": "16px", "space-lg": "24px", "gutter": "16px", "margin-desktop": "24px", "space-xs": "4px", "gutter-desktop": "24px", "space-md": "16px", "space-sm": "8px" }, fontFamily: { "body-semibold": ["Inter"], "headline-sm": ["Inter"], "headline-lg": ["Inter"], "headline-xl": ["Inter"], "body-md": ["Inter"], "label-sm": ["Inter"], "body-lg": ["Inter"], "table-header": ["Inter"], "label-md": ["Inter"], "headline-md": ["Inter"], "table-data": ["Inter"] }, fontSize: { "body-semibold": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "headline-lg": ["22px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "table-header": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "headline-md": ["18px", { "lineHeight": "26px", "fontWeight": "600" }], "table-data": ["14px", { "lineHeight": "20px", "fontWeight": "400" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-xs"><button aria-label="Quay lại" class="w-11 h-11 flex items-center justify-center text-primary-container rounded-lg hover:bg-surface-subtle transition-colors" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[22px]">arrow_back</span></button><div class="flex flex-col"><h1 class="font-headline-sm text-headline-sm text-primary-container line-clamp-1">Chi Tiet Cong Viec</h1><span class="font-label-sm text-[11px] text-on-surface-variant">Hải quan Tà Lùng</span></div></div><div class="flex items-center gap-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-14 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-32">
+<!-- Demo Notification Banner -->
+<aside aria-label="Thông báo dữ liệu giả lập" class="w-full bg-status-warning-bg px-margin py-space-xs flex items-center justify-center gap-space-xs text-status-warning shadow-sm">
+<span aria-hidden="true" class="material-symbols-outlined text-[16px] shrink-0">science</span>
+<span class="font-label-sm text-label-sm tracking-wide text-center">DỮ LIỆU GIẢ LẬP MINH HỌA — KHÔNG PHẢI HỒ SƠ THẬT</span>
+</aside>
+<!-- Navigation & Status Card -->
+<div class="px-margin pt-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="px-space-xs py-[2px] bg-surface-container rounded font-label-sm text-label-sm text-on-surface-variant font-mono">TSK-1042</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">• Luồng Vàng Ca Sáng</span>
+</div>
+<div class="inline-flex items-center gap-1 px-space-sm py-1 rounded bg-secondary-container text-on-secondary-container">
+<span aria-hidden="true" class="material-symbols-outlined text-[14px]">pending</span>
+<span class="font-label-sm text-label-sm">Đang thực hiện (65%)</span>
+</div>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-primary-container leading-tight">
+      Tiếp nhận kiểm tra hồ sơ Luồng Vàng (Ca sáng tại Chi cục)
+    </h2>
+</div>
+<!-- Priority & Role Quick Stats -->
+<div class="px-margin pt-space-md grid grid-cols-2 gap-space-sm">
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col justify-between">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span aria-hidden="true" class="material-symbols-outlined text-[18px]">flag</span>
+<span class="font-label-sm text-label-sm">Mức độ ưu tiên</span>
+</div>
+<div class="mt-space-xs inline-flex items-center gap-1 self-start px-space-sm py-[2px] rounded bg-status-danger-bg text-status-danger">
+<span aria-hidden="true" class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">priority_high</span>
+<span class="font-body-semibold text-body-semibold">Ưu tiên Cao</span>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low flex flex-col justify-between">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span aria-hidden="true" class="material-symbols-outlined text-[18px]">alarm</span>
+<span class="font-label-sm text-label-sm">Hạn chót nội bộ</span>
+</div>
+<div class="mt-space-xs">
+<div class="font-body-semibold text-body-semibold text-status-danger">16:30 • Hôm nay</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant line-through">Gốc: 17:00 14/10</div>
+</div>
+</div>
+</div>
+<!-- Core Task Metadata -->
+<div class="px-margin pt-space-md">
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">assignment</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Căn cứ giao việc</span>
+<span class="font-body-semibold text-body-semibold text-on-surface">Kế hoạch công tác Tuần 41 (Mục TTHQ-01)</span>
+<span class="font-body-md text-[13px] text-on-surface-variant">Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng</span>
+</div>
+</div>
+<div class="h-[1px] bg-surface-container-low w-full"></div>
+<!-- Personnel Delegation -->
+<div class="grid grid-cols-1 gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-body-semibold text-label-sm shrink-0">
+            NA
+          </div>
+<div class="flex flex-col min-w-0 flex-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Cán bộ chủ trì</span>
+<span class="font-body-semibold text-body-semibold text-on-surface truncate">Đ/c Nguyễn Văn An</span>
+<span class="font-label-sm text-[12px] text-secondary">Bộ phận Nghiệp vụ A</span>
+</div>
+<span class="px-space-xs py-1 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[11px]">Chính</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center font-body-semibold text-label-sm shrink-0">
+            LQ
+          </div>
+<div class="flex flex-col min-w-0 flex-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Phối hợp liên ngành</span>
+<span class="font-body-md text-body-md text-on-surface truncate">Đ/c Lê Hoàng Quân (BP Giám sát B)</span>
+<span class="font-label-sm text-[12px] text-on-surface-variant">Trạm Kiểm dịch Thực vật Tà Lùng</span>
+</div>
+<span class="px-space-xs py-1 rounded bg-surface-container text-on-surface-variant font-label-sm text-[11px]">Hỗ trợ</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Expected vs Actual Result -->
+<div class="px-margin pt-space-md">
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div>
+<div class="flex items-center gap-1 text-primary-container mb-space-xs">
+<span aria-hidden="true" class="material-symbols-outlined text-[18px]">target</span>
+<h3 class="font-body-semibold text-body-semibold uppercase tracking-wider">Mục tiêu giao (Kế hoạch)</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-surface-subtle p-space-sm rounded-lg">
+          Kiểm tra 12/12 bộ hồ sơ luồng Vàng, đối chiếu C/O Form E và trị giá tính thuế, tuyệt đối không để tồn đọng ca trực.
+        </p>
+</div>
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between text-secondary">
+<div class="flex items-center gap-1">
+<span aria-hidden="true" class="material-symbols-outlined text-[18px]">fact_check</span>
+<h3 class="font-body-semibold text-body-semibold uppercase tracking-wider">Tiến độ thực tế</h3>
+</div>
+<span class="font-headline-sm text-headline-sm font-mono">08/12 bộ (65%)</span>
+</div>
+<!-- Native Progress Bar -->
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-secondary rounded-full transition-all duration-300" style="width: 65%;"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-secondary-fixed/30 p-space-sm rounded-lg mt-1">
+          Đã hoàn thành kiểm tra 08/12 bộ hồ sơ, thông quan hợp lệ 08 bộ. Hiện 04 bộ đang chờ doanh nghiệp tải bổ sung chứng từ số trên Cổng một cửa quốc gia.
+        </p>
+</div>
+</div>
+</div>
+<!-- Quick Action Form (1-Tap Operation) -->
+<div class="px-margin pt-space-md">
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1 text-primary">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">edit_calendar</span>
+<h3 class="font-headline-sm text-headline-sm">Cập nhật nhanh tiến độ</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1 chạm tác nghiệp</span>
+</div>
+<!-- Percentage Selector -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Tỷ lệ hoàn thành công việc</label>
+<div aria-label="Tỷ lệ hoàn thành" class="grid grid-cols-4 gap-2" role="radiogroup">
+<button class="py-2 px-1 rounded bg-surface-container text-on-surface font-body-semibold text-body-semibold hover:bg-surface-subtle transition-colors focus:outline-none" id="btn-pct-25" onclick="selectPercent(25)" type="button">25%</button>
+<button class="py-2 px-1 rounded bg-surface-container text-on-surface font-body-semibold text-body-semibold hover:bg-surface-subtle transition-colors focus:outline-none" id="btn-pct-50" onclick="selectPercent(50)" type="button">50%</button>
+<button class="py-2 px-1 rounded bg-secondary text-on-secondary font-body-semibold text-body-semibold shadow-sm focus:outline-none" id="btn-pct-75" onclick="selectPercent(75)" type="button">75%</button>
+<button class="py-2 px-1 rounded bg-surface-container text-on-surface font-body-semibold text-body-semibold hover:bg-surface-subtle transition-colors focus:outline-none" id="btn-pct-100" onclick="selectPercent(100)" type="button">100%</button>
+</div>
+</div>
+<!-- Result Note Input -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-space-xs" for="task-note">Ghi chú diễn biến kiểm tra</label>
+<textarea class="w-full p-space-sm rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md border-0 bg-surface-subtle placeholder:text-on-surface-variant/60 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-secondary" id="task-note" placeholder="Nhập tóm tắt số tờ khai đã giải phóng, vướng mắc chứng nhận xuất xứ hàng hóa..." rows="3"></textarea>
+</div>
+<!-- Mobile Attachment Action -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Biên bản tác nghiệp / Chứng từ điện tử</label>
+<div class="grid grid-cols-2 gap-2 mb-space-xs">
+<button class="h-11 rounded-lg bg-surface-container-low hover:bg-surface-container flex items-center justify-center gap-1.5 text-primary text-body-semibold font-body-semibold active:scale-[0.98] transition-transform" onclick="triggerCamera()" type="button">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+<span>Chụp ảnh BB</span>
+</button>
+<button class="h-11 rounded-lg bg-surface-container-low hover:bg-surface-container flex items-center justify-center gap-1.5 text-primary text-body-semibold font-body-semibold active:scale-[0.98] transition-transform" onclick="triggerUpload()" type="button">
+<span class="material-symbols-outlined text-[18px]">attach_file</span>
+<span>Tải PDF/XLSX</span>
+</button>
+</div>
+<!-- Attached File Tag -->
+<div class="flex items-center justify-between p-space-xs px-space-sm bg-surface-subtle rounded-lg">
+<div class="flex items-center gap-space-xs min-w-0">
+<span aria-hidden="true" class="material-symbols-outlined text-secondary text-[20px]">picture_as_pdf</span>
+<div class="flex flex-col min-w-0">
+<span class="font-body-semibold text-[13px] text-on-surface truncate">BBBG-1042-signed.pdf</span>
+<span class="font-label-sm text-[11px] text-on-surface-variant">1.4 MB • Đã quét mã số kiểm tra</span>
+</div>
+</div>
+<button aria-label="Xóa tài liệu" class="p-1 text-on-surface-variant hover:text-status-danger rounded" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Role Toggle Preview for Supervisors -->
+<div class="px-margin pt-space-md">
+<section class="bg-primary-container text-on-primary rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span aria-hidden="true" class="material-symbols-outlined text-secondary-fixed text-[20px]">verified_user</span>
+<span class="font-headline-sm text-headline-sm text-secondary-fixed">Góc nhìn Lãnh đạo Đội / Chi cục</span>
+</div>
+<span class="text-on-primary-container font-label-sm text-label-sm font-mono">AUDIT-VALID</span>
+</div>
+<p class="font-body-md text-body-md text-on-primary/80">
+        Phê duyệt nội bộ ghi nhận định danh số &amp; dấu thời gian tác nghiệp. Biên bản lưu tự động vào sổ theo dõi công tác Chi cục Hải quan Tà Lùng.
+      </p>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="h-11 rounded bg-on-primary/10 hover:bg-on-primary/20 text-on-primary font-body-semibold text-body-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform" onclick="openIssueModal()" type="button">
+<span class="material-symbols-outlined text-[18px]">rule</span>
+<span>Yêu cầu bổ sung</span>
+</button>
+<button class="h-11 rounded bg-secondary text-on-secondary font-body-semibold text-body-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform shadow" onclick="confirmApproval()" type="button">
+<span class="material-symbols-outlined text-[18px]">approval_delegation</span>
+<span>Xác nhận kết quả</span>
+</button>
+</div>
+</section>
+</div>
+<!-- Audit Log & Task Timeline -->
+<div class="px-margin pt-space-md">
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-primary flex items-center gap-1">
+<span aria-hidden="true" class="material-symbols-outlined text-[20px]">history</span>
+          Nhật ký xử lý &amp; Giám sát
+        </h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">2 mốc sự kiện</span>
+</div>
+<div class="relative pl-6 flex flex-col gap-space-md">
+<!-- Connecting Line -->
+<div class="absolute left-[9px] top-2 bottom-2 w-[2px] bg-surface-container"></div>
+<!-- Log Item 1 -->
+<div class="relative flex flex-col">
+<div class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-secondary border-2 border-surface-container-lowest"></div>
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">Nguyễn Văn An</span>
+<span class="font-mono text-label-sm text-on-surface-variant">14:05 14/10</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+            Cập nhật tiến độ đạt <strong class="text-secondary">65%</strong>: Kiểm tra xong 08/12 bộ tờ khai hải quan.
+          </p>
+</div>
+<!-- Log Item 2 -->
+<div class="relative flex flex-col">
+<div class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-outline-variant border-2 border-surface-container-lowest"></div>
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">Lê Hoàng Quân (Đội phó)</span>
+<span class="font-mono text-label-sm text-on-surface-variant">08:00 14/10</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+            Giao việc theo Kế hoạch công tác tuần 41. Thiết lập chỉ tiêu hoàn thành trước 17:00 cùng ngày.
+          </p>
+</div>
+</div>
+</section>
+</div>
+<!-- Sticky Bottom Action Bar (48px Touch Compliant) -->
+<div class="fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest/95 backdrop-blur-md px-margin py-space-sm shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-safe">
+<div class="max-w-[420px] mx-auto grid grid-cols-5 gap-space-sm">
+<button class="col-span-2 h-12 rounded-lg bg-surface-container text-primary font-body-semibold text-body-semibold flex items-center justify-center gap-1 active:scale-[0.98] transition-transform" onclick="openExtensionModal()" type="button">
+<span class="material-symbols-outlined text-[18px]">update</span>
+<span class="text-[13px] leading-none text-left">Báo vướng /<br/>Xin lùi hạn</span>
+</button>
+<button class="col-span-3 h-12 rounded-lg bg-secondary text-on-secondary font-headline-sm text-headline-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform shadow-md" onclick="openSubmitModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">send</span>
+<span>Báo hoàn thành</span>
+</button>
+</div>
+</div>
+<!-- Extension & Obstacle Modal (Hidden by Default) -->
+<div class="hidden fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-end justify-center p-0 transition-opacity" id="extensionModal">
+<div class="w-full max-w-[420px] bg-surface-container-lowest rounded-t-2xl p-space-md shadow-2xl flex flex-col gap-space-md max-h-[751px] overflow-y-auto">
+<div class="flex items-center justify-between pb-space-xs border-b border-surface-container">
+<div class="flex items-center gap-space-xs text-status-warning">
+<span class="material-symbols-outlined text-[22px]">warning</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Giải trình vướng mắc &amp; Xin gia hạn</h3>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant" onclick="closeExtensionModal()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="flex flex-col gap-space-sm">
+<div class="p-space-sm rounded-lg bg-surface-subtle flex flex-col gap-1">
+<div class="flex justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Thời hạn gốc giao việc:</span>
+<span class="font-mono text-on-surface font-semibold">17:00 14/10/2026</span>
+</div>
+<div class="flex justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Thời hạn hiện tại:</span>
+<span class="font-mono text-status-danger font-semibold">16:30 14/10/2026</span>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="extend-time">Đề xuất giờ hoàn thành mới</label>
+<input class="w-full h-11 px-space-sm rounded bg-surface-subtle text-on-surface font-headline-sm text-headline-sm focus:outline-none focus:ring-2 focus:ring-secondary" id="extend-time" type="time" value="18:30"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="extend-reason">Lý do phát sinh vướng mắc</label>
+<select class="w-full h-11 px-space-sm rounded bg-surface-subtle text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-secondary mb-2" id="extend-reason">
+<option>Doanh nghiệp chậm phản hồi bổ sung chứng từ số</option>
+<option>Sự cố nghẽn mạng Cổng thông tin một cửa quốc gia</option>
+<option>Cần phối hợp lấy mẫu đột xuất với Trạm Kiểm dịch</option>
+<option>Lý do nghiệp vụ đột xuất khác</option>
+</select>
+<textarea class="w-full p-space-sm rounded bg-surface-subtle text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-secondary placeholder:text-on-surface-variant/60" placeholder="Diễn giải cụ thể phương án khắc phục tồn đọng..." rows="3"></textarea>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="h-12 rounded-lg bg-surface-container text-on-surface font-body-semibold text-body-semibold" onclick="closeExtensionModal()" type="button">Hủy bỏ</button>
+<button class="h-12 rounded-lg bg-status-warning text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-1 shadow" onclick="submitExtension()" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+<span>Gửi báo cáo</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Completion & Approval Confirmation Modal -->
+<div class="hidden fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-end justify-center p-0 transition-opacity" id="submitModal">
+<div class="w-full max-w-[420px] bg-surface-container-lowest rounded-t-2xl p-space-md shadow-2xl flex flex-col gap-space-md">
+<div class="w-12 h-1 rounded-full bg-surface-container-highest mx-auto"></div>
+<div class="flex items-start gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-status-success-bg text-status-success flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">task_alt</span>
+</div>
+<div class="flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-primary">Xác nhận báo hoàn thành hồ sơ</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+            Hệ thống sẽ ghi nhận kết quả hoàn tất kiểm tra và gửi báo cáo tự động đến Đ/c Chỉ huy phụ trách ca trực.
+          </p>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-subtle flex flex-col gap-1 text-label-sm font-label-sm">
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Nhiệm vụ:</span>
+<span class="font-mono text-on-surface font-semibold truncate max-w-[200px]">TSK-1042 Luồng Vàng</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Tỷ lệ cam kết:</span>
+<span class="font-mono text-secondary font-semibold" id="confirm-pct-label">75%</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Đính kèm:</span>
+<span class="font-mono text-on-surface">BBBG-1042-signed.pdf</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<button class="h-12 rounded-lg bg-surface-container text-on-surface font-body-semibold text-body-semibold" onclick="closeSubmitModal()" type="button">Kiểm tra lại</button>
+<button class="h-12 rounded-lg bg-secondary text-on-secondary font-headline-sm text-headline-sm flex items-center justify-center gap-1 shadow" onclick="executeFinalSubmit()" type="button">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span>Trình duyệt ngay</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Toast Feedback Alert -->
+<div class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-inverse-surface text-inverse-on-surface px-space-md py-space-sm rounded-full shadow-lg flex items-center gap-space-xs text-body-semibold font-body-semibold transition-all" id="toastAlert">
+<span class="material-symbols-outlined text-secondary-fixed text-[20px]" id="toast-icon">check_circle</span>
+<span id="toast-msg">Đã cập nhật tiến độ công việc!</span>
+</div>
+</div>
+<script>
+  let currentPercentage = 75;
+
+  function selectPercent(pct) {
+    currentPercentage = pct;
+    [25, 50, 75, 100].forEach(val => {
+      const btn = document.getElementById('btn-pct-' + val);
+      if (val === pct) {
+        btn.className = "py-2 px-1 rounded bg-secondary text-on-secondary font-body-semibold text-body-semibold shadow-sm focus:outline-none";
+      } else {
+        btn.className = "py-2 px-1 rounded bg-surface-container text-on-surface font-body-semibold text-body-semibold hover:bg-surface-subtle transition-colors focus:outline-none";
+      }
+    });
+    showToast(`Đã chọn tiến độ ${pct}%`);
+  }
+
+  function triggerCamera() {
+    showToast("Đã kích hoạt camera chụp biên bản nghiệp vụ", "photo_camera");
+  }
+
+  function triggerUpload() {
+    showToast("Mở bộ chọn tệp tài liệu PDF/XLSX", "upload_file");
+  }
+
+  function openExtensionModal() {
+    document.getElementById('extensionModal').classList.remove('hidden');
+  }
+
+  function closeExtensionModal() {
+    document.getElementById('extensionModal').classList.add('hidden');
+  }
+
+  function submitExtension() {
+    closeExtensionModal();
+    showToast("Đã gửi văn bản giải trình và đề xuất gia hạn!", "schedule_send");
+  }
+
+  function openSubmitModal() {
+    document.getElementById('confirm-pct-label').innerText = currentPercentage + '%';
+    document.getElementById('submitModal').classList.remove('hidden');
+  }
+
+  function closeSubmitModal() {
+    document.getElementById('submitModal').classList.add('hidden');
+  }
+
+  function executeFinalSubmit() {
+    closeSubmitModal();
+    showToast("Nhiệm vụ đã báo hoàn thành và chuyển phê duyệt!", "verified");
+  }
+
+  function confirmApproval() {
+    showToast("Đã xác nhận hoàn thành công việc theo định danh ca trực", "verified_user");
+  }
+
+  function openIssueModal() {
+    showToast("Đã chuyển phiếu yêu cầu kiểm tra bổ sung", "assignment_late");
+  }
+
+  function showToast(message, icon = "check_circle") {
+    const toast = document.getElementById('toastAlert');
+    const msg = document.getElementById('toast-msg');
+    const ico = document.getElementById('toast-icon');
+    if (!toast) return;
+    msg.innerText = message;
+    ico.innerText = icon;
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 2800);
+  }
+</script></main></body></html>

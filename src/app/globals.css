@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #F8FAFC;
+    color: #131b2e;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* Custom styles for administrative data tables */
+.table-dense th {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.table-dense td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}

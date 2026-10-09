@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-background": "#131b2e", "on-primary": "#ffffff", "primary-fixed": "#d1e4ff", "on-primary-fixed-variant": "#2f4865", "surface-container": "#eaedff", "status-warning-bg": "#FFFBEB", "inverse-on-surface": "#eef0ff", "primary-fixed-dim": "#afc9ea", "surface-container-highest": "#dae2fd", "on-primary-fixed": "#001d36", "error-container": "#ffdad6", "on-surface-variant": "#43474d", "secondary-fixed-dim": "#7fd6cb", "on-secondary-fixed": "#00201d", "status-success": "#059669", "on-secondary-fixed-variant": "#00504a", "outline": "#74777e", "status-danger-bg": "#FFF1F2", "outline-variant": "#c3c6ce", "tertiary-fixed": "#dbe5e3", "surface-subtle": "#F1F5F9", "primary-container": "#17324d", "border-subtle": "#CBD5E1", "surface-bright": "#faf8ff", "tertiary": "#141d1c", "status-inactive": "#64748B", "surface": "#faf8ff", "on-error": "#ffffff", "on-secondary-container": "#006f66", "background": "#faf8ff", "status-unassigned-bg": "#F0F9FF", "on-secondary": "#ffffff", "on-primary-container": "#819aba", "status-success-bg": "#ECFDF5", "on-tertiary-fixed-variant": "#3f4947", "surface-container-lowest": "#ffffff", "secondary-fixed": "#9bf2e7", "inverse-surface": "#283044", "error": "#ba1a1a", "status-unassigned": "#0284C7", "app-bg": "#F8FAFC", "on-tertiary-container": "#909a98", "secondary": "#006a62", "tertiary-fixed-dim": "#bfc9c7", "surface-tint": "#47607e", "primary": "#001d36", "surface-variant": "#dae2fd", "status-danger": "#E11D48", "inverse-primary": "#afc9ea", "on-tertiary": "#ffffff", "on-error-container": "#93000a", "status-inactive-bg": "#F8FAFC", "tertiary-container": "#293231", "on-surface": "#131b2e", "secondary-container": "#98efe4", "on-tertiary-fixed": "#141d1c", "border-default": "#E2E8F0", "surface-container-high": "#e2e7ff", "surface-container-low": "#f2f3ff", "surface-dim": "#d2d9f4", "status-warning": "#D97706" }, borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, spacing: { "space-xl": "32px", "space-xs": "4px", "gutter-desktop": "24px", "space-lg": "24px", "space-sm": "8px", "margin": "16px", "gutter": "16px", "margin-desktop": "24px", "space-md": "16px" }, fontFamily: { "body-lg": ["Inter"], "body-semibold": ["Inter"], "table-header": ["Inter"], "headline-xl": ["Inter"], "headline-md": ["Inter"], "label-sm": ["Inter"], "headline-lg": ["Inter"], "headline-sm": ["Inter"], "table-data": ["Inter"], "body-md": ["Inter"], "label-md": ["Inter"] }, fontSize: { "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "body-semibold": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "table-header": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-md": ["18px", { "lineHeight": "26px", "fontWeight": "600" }], "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-lg": ["22px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "table-data": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-app-bg text-on-surface font-body-md text-body-md flex flex-col min-h-screen pt-safe pb-safe"><main class="flex flex-col relative w-full bg-app-bg min-h-screen"><div class="flex flex-col w-full px-margin pb-space-xl">
+<!-- Subtle decorative ambient header aura -->
+<div class="w-full pt-space-md pb-space-sm flex flex-col items-center text-center">
+<!-- Test Environment Status Pill -->
+<div class="inline-flex items-center gap-space-xs px-2.5 py-1 rounded-full bg-status-warning-bg shadow-sm mb-space-sm">
+<span class="material-symbols-outlined text-status-warning text-[14px]">science</span>
+<span class="font-label-sm text-label-sm text-status-warning uppercase tracking-wider">MÔI TRƯỜNG THIẾT KẾ — DỮ LIỆU GIẢ LẬP DEMO</span>
+</div>
+<!-- Official Administrative Monogram / Insignia Box -->
+<div class="mt-space-xs mb-space-sm flex items-center justify-center">
+<div class="w-14 h-14 rounded-xl bg-primary-container text-on-primary flex flex-col items-center justify-center shadow-md relative overflow-hidden">
+<div class="absolute -right-2 -bottom-2 w-8 h-8 rounded-full bg-surface-container/10 pointer-events-none"></div>
+<span class="material-symbols-outlined text-[26px] text-secondary-fixed">shield_lock</span>
+<span class="font-label-sm text-[10px] font-bold tracking-widest text-primary-fixed mt-[-2px]">HQTL</span>
+</div>
+</div>
+<!-- Official Authority Typography -->
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest font-semibold">
+      HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
+    </p>
+<h1 class="font-headline-md text-headline-md text-primary mt-1 leading-snug">
+      HỆ THỐNG QUẢN LÝ KẾ HOẠCH &amp; CÔNG VIỆC
+    </h1>
+<div class="mt-1 flex items-center gap-2">
+<span class="font-label-sm text-[11px] text-outline font-mono bg-surface-subtle px-2 py-0.5 rounded">MÃ: TALUNG-CUS-WORK</span>
+<span class="w-1 h-1 rounded-full bg-status-success"></span>
+<span class="font-label-sm text-[11px] text-status-success font-medium">Hệ thống Trực tuyến</span>
+</div>
+</div>
+<!-- Security Context Pill Banner -->
+<div class="mt-space-sm w-full bg-status-unassigned-bg rounded-lg p-space-sm flex items-start gap-2 shadow-sm">
+<span class="material-symbols-outlined text-status-unassigned text-[18px] shrink-0 mt-0.5">verified_user</span>
+<p class="font-label-sm text-[12px] text-on-surface leading-tight">
+      Hệ thống yêu cầu xác thực 2 bước (MFA/TOTP) theo quy chế an toàn thông tin nội bộ đối với thiết bị công vụ lưu động.
+    </p>
+</div>
+<!-- Authentication Simulation Alert Box (Dismissable toggle) -->
+<div class="mt-space-sm w-full bg-status-danger-bg rounded-lg p-space-sm flex items-start gap-2 shadow-sm transition-all duration-200" id="authAlert">
+<span class="material-symbols-outlined text-status-danger text-[18px] shrink-0 mt-0.5">error</span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-[13px] text-status-danger">Cảnh báo đăng nhập thất bại</span>
+<button class="text-status-danger/70 hover:text-status-danger p-0.5" onclick="document.getElementById('authAlert').classList.add('hidden')" type="button">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+<p class="font-body-md text-[12px] text-on-surface-variant mt-0.5 leading-normal">
+        Thông tin tài khoản hoặc mật khẩu không chính xác. Tài khoản sẽ tạm khóa sau <span class="font-semibold text-status-danger">5 lần</span> nhập sai liên tiếp.
+      </p>
+</div>
+</div>
+<!-- Main Login Card Container -->
+<div class="mt-space-md w-full bg-surface-container-lowest rounded-xl p-space-md shadow-md">
+<form class="flex flex-col gap-space-md" id="loginForm" onsubmit="event.preventDefault(); submitLogin();">
+<!-- Username / Officer ID Field -->
+<div class="flex flex-col gap-1">
+<label class="font-body-semibold text-[13px] text-on-surface flex items-center justify-between" for="usernameInput">
+<span>Mã cán bộ / Tên đăng nhập</span>
+<span class="font-label-sm text-[11px] text-outline font-normal">Ví dụ: HQTL-015</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">badge</span>
+<input class="w-full h-11 pl-10 pr-3 rounded-lg bg-surface-subtle font-body-md text-body-md text-on-surface placeholder:text-outline/70 outline-none focus:bg-surface-container-lowest focus:shadow-[0_0_0_2px_#001d36] transition-all" id="usernameInput" placeholder="Nhập mã định danh công vụ..." required="" type="text" value="HQTL-015"/>
+</div>
+</div>
+<!-- Password Field with Visibility Toggle -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<label class="font-body-semibold text-[13px] text-on-surface" for="passwordInput">Mật khẩu bảo mật</label>
+<a class="font-label-sm text-[12px] text-secondary hover:underline" href="javascript:void(0)" onclick="alert('Vui lòng liên hệ Đội Công nghệ thông tin Cửa khẩu Quốc tế Tà Lùng (Ext: 104) để nhận mã đặt lại mật khẩu.')">
+            Quên mật khẩu?
+          </a>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">key</span>
+<input class="w-full h-11 pl-10 pr-11 rounded-lg bg-surface-subtle font-body-md text-body-md text-on-surface placeholder:text-outline/70 outline-none focus:bg-surface-container-lowest focus:shadow-[0_0_0_2px_#001d36] transition-all" id="passwordInput" placeholder="Nhập mật khẩu công vụ..." required="" type="password" value="••••••••••••"/>
+<button aria-label="Hiển thị mật khẩu" class="absolute right-2 p-2 text-outline hover:text-on-surface flex items-center justify-center rounded" id="togglePasswordBtn" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="passwordEyeIcon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Checkbox: Remember Session on Official Device -->
+<label class="flex items-start gap-2.5 cursor-pointer select-none">
+<input checked="" class="mt-1 w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer accent-[#17324d]" id="rememberSession" type="checkbox"/>
+<span class="font-body-md text-[13px] text-on-surface-variant leading-snug">
+          Ghi nhớ phiên làm việc trên thiết bị công vụ đã đăng ký kiểm định
+        </span>
+</label>
+<!-- Primary Action CTA -->
+<button class="w-full h-12 bg-primary text-on-primary rounded-lg font-body-semibold text-[15px] flex items-center justify-center gap-2 shadow-md active:scale-[0.99] transition-transform" id="submitBtn" type="submit">
+<span class="material-symbols-outlined text-[20px]">login</span>
+<span>Đăng nhập hệ thống</span>
+</button>
+</form>
+</div>
+<!-- Demo Quick Role Selector Box (For Evaluation & Inspection) -->
+<div class="mt-space-md w-full bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[18px]">group</span>
+<span class="font-body-semibold text-[13px] text-on-surface">Tài khoản Demo kiểm thử</span>
+</div>
+<span class="font-label-sm text-[11px] text-secondary font-semibold bg-surface-container px-2 py-0.5 rounded">1-Chạm</span>
+</div>
+<p class="font-body-md text-[12px] text-on-surface-variant mb-space-sm leading-tight">
+      Chuyển đổi nhanh vai trò để kiểm tra phân quyền &amp; duyệt quy trình nghiệp vụ:
+    </p>
+<!-- Quick Role Grid -->
+<div class="flex flex-col gap-2">
+<!-- Role 1: Cán bộ nghiệp vụ -->
+<button class="w-full text-left p-2.5 rounded-lg bg-surface-subtle hover:bg-surface-container transition-colors flex items-center justify-between group" onclick="fillDemoAccount('HQTL-015', 'Cán bộ Nguyễn Hải Nam', 'Đội Nghiệp vụ Hải quan')" type="button">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+<div class="min-w-0 flex flex-col">
+<span class="font-body-semibold text-[13px] text-on-surface truncate">Cán bộ Nghiệp vụ</span>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Mã: HQTL-015 • Đội Giám sát</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary transition-colors">arrow_forward</span>
+</button>
+<!-- Role 2: Trưởng bộ phận -->
+<button class="w-full text-left p-2.5 rounded-lg bg-surface-subtle hover:bg-surface-container transition-colors flex items-center justify-between group" onclick="fillDemoAccount('HQTL-LEADER-02', 'Đội trưởng Trần Đức Minh', 'Đội Kiểm soát Biên mậu')" type="button">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-status-unassigned-bg text-status-unassigned flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">supervisor_account</span>
+</div>
+<div class="min-w-0 flex flex-col">
+<span class="font-body-semibold text-[13px] text-on-surface truncate">Trưởng bộ phận</span>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Mã: HQTL-LEADER-02 • Duyệt kế hoạch</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary transition-colors">arrow_forward</span>
+</button>
+<!-- Role 3: Lãnh đạo Chi cục -->
+<button class="w-full text-left p-2.5 rounded-lg bg-surface-subtle hover:bg-surface-container transition-colors flex items-center justify-between group" onclick="fillDemoAccount('HQTL-DIR-01', 'Phó Chi cục trưởng Lê Văn Thái', 'Ban Chỉ huy Chi cục')" type="button">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-status-success-bg text-status-success flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">account_balance</span>
+</div>
+<div class="min-w-0 flex flex-col">
+<span class="font-body-semibold text-[13px] text-on-surface truncate">Lãnh đạo Chi cục</span>
+<span class="font-label-sm text-[11px] text-on-surface-variant">Mã: HQTL-DIR-01 • Điều hành chung</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary transition-colors">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Security Compliance Notification Pill -->
+<div class="mt-space-md p-space-sm bg-surface-container-highest/40 rounded-lg flex items-start gap-2">
+<span class="material-symbols-outlined text-outline text-[16px] shrink-0 mt-0.5">lock_clock</span>
+<p class="font-label-sm text-[11px] text-on-surface-variant leading-normal">
+<strong class="text-on-surface font-semibold">Quy định bảo mật:</strong> Không lưu trữ mật khẩu, mã OTP hoặc dữ liệu giám sát nghiệp vụ nhạy cảm trên bộ nhớ tạm của thiết bị cá nhân không thuộc danh bạ trang cấp.
+    </p>
+</div>
+<!-- Version & Technical Credit Footer -->
+<footer class="mt-space-lg text-center flex flex-col items-center gap-1">
+<div class="inline-flex items-center gap-1.5 text-outline">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+<span class="font-label-sm text-[11px] font-mono">Phiên bản v1.2.4-TL (Demo Build)</span>
+</div>
+<p class="font-label-sm text-[11px] text-on-surface-variant">
+      Bộ phận CNTT Cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng
+    </p>
+</footer>
+</div>
+<script>
+  function togglePassword() {
+    const passwordInput = document.getElementById('passwordInput');
+    const eyeIcon = document.getElementById('passwordEyeIcon');
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      passwordInput.value = 'CustomsPass@2025';
+      eyeIcon.textContent = 'visibility_off';
+    } else {
+      passwordInput.type = 'password';
+      eyeIcon.textContent = 'visibility';
+    }
+  }
+
+  function fillDemoAccount(code, name, dept) {
+    const usernameInput = document.getElementById('usernameInput');
+    const passwordInput = document.getElementById('passwordInput');
+    usernameInput.value = code;
+    passwordInput.value = '••••••••••••';
+    
+    // Provide lightweight feedback to evaluator
+    const submitBtn = document.getElementById('submitBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Đã chọn: ' + code;
+    setTimeout(() => {
+      submitBtn.innerHTML = originalText;
+    }, 900);
+  }
+
+  function submitLogin() {
+    const submitBtn = document.getElementById('submitBtn');
+    const originalContent = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">verified</span> Đang xác thực chứng thư...';
+    
+    setTimeout(() => {
+      alert('Xác thực thành công cho phiên làm việc Demo! Hệ thống đang chuyển hướng tới Bảng điều hành Kế hoạch tác chiến Hải quan.');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalContent;
+    }, 800);
+  }
+</script></main></body></html>
