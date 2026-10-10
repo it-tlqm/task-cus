@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db";
 import { getAuthorizedUnitIds } from "@/server/guard";
 import { SessionUser } from "@/server/auth";
+import { getSystemConfigNumber } from "@/server/system-config";
 
 export interface CreateNotificationInput {
   recipientId: string;
@@ -71,7 +72,9 @@ export async function syncOperationalAlerts(user: SessionUser) {
 
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
-    const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const dueSoonHours = await getSystemConfigNumber("taskDueSoonHours", 24);
+    const maxWarningItems = await getSystemConfigNumber("taskMaxWarningItems", 10);
+    const inDueSoonWindow = new Date(now.getTime() + dueSoonHours * 60 * 60 * 1000);
 
     // 1. CẢNH BÁO NHIỆM VỤ QUÁ HẠN (Của chính cán bộ phụ trách hoặc phối hợp)
     const overdueTasks = await prisma.task.findMany({
@@ -89,7 +92,7 @@ export async function syncOperationalAlerts(user: SessionUser) {
         title: true,
         currentDeadline: true,
       },
-      take: 10,
+      take: maxWarningItems,
     });
 
     for (const t of overdueTasks) {
@@ -111,7 +114,7 @@ export async function syncOperationalAlerts(user: SessionUser) {
       });
     }
 
-    // 2. CẢNH BÁO SẮP ĐẾN HẠN (Trong 24 giờ tới)
+    // 2. CẢNH BÁO SẮP ĐẾN HẠN (Theo khoảng thời gian cấu hình động: ${dueSoonHours} giờ)
     const dueSoonTasks = await prisma.task.findMany({
       where: {
         OR: [
@@ -119,7 +122,7 @@ export async function syncOperationalAlerts(user: SessionUser) {
           { assignees: { some: { personId } } },
         ],
         status: { notIn: ["COMPLETED", "DONE", "CANCELED"] },
-        currentDeadline: { gte: now, lte: in24Hours },
+        currentDeadline: { gte: now, lte: inDueSoonWindow },
       },
       select: {
         id: true,
@@ -127,7 +130,7 @@ export async function syncOperationalAlerts(user: SessionUser) {
         title: true,
         currentDeadline: true,
       },
-      take: 5,
+      take: maxWarningItems,
     });
 
     for (const t of dueSoonTasks) {

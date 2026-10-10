@@ -49,8 +49,14 @@ export async function POST(
     const body = await req.json();
     const { requestedDeadline, reason } = body;
 
-    if (!requestedDeadline || !reason?.trim()) {
-      return jsonError("Thời hạn đề xuất mới và Lý do lùi hạn là bắt buộc", 400);
+    if (!requestedDeadline) {
+      return jsonError("Thời hạn đề xuất mới là bắt buộc", 400);
+    }
+
+    const { getSystemConfigBoolean } = await import("@/server/system-config");
+    const requireReason = await getSystemConfigBoolean("deadlineRequireReason", true);
+    if (requireReason && !reason?.trim()) {
+      return jsonError("Theo quy định vận hành của hệ thống, bắt buộc phải giải trình lý do khi đề xuất lùi hạn", 400);
     }
 
     const parsedDate = new Date(requestedDeadline);

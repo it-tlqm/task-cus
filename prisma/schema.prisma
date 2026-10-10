@@ -568,3 +568,21 @@ model ReportSnapshot {
   @@map("report_snapshots")
 }
 
+// ----------------------------------------------------
+// 11. THAM SỐ CẤU HÌNH HỆ THỐNG VẬN HÀNH
+// ----------------------------------------------------
+
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique // taskDueSoonHours, taskMaxWarningItems, deadlineRequireReason, notifyOnTaskAssign, unitDisplayName
+  value       String
+  dataType    String   @default("STRING") @map("data_type") // NUMBER, BOOLEAN, STRING
+  category    String   @default("TASK_MANAGEMENT") // TASK_MANAGEMENT, NOTIFICATION, DISPLAY, SECURITY
+  description String?
+  updatedBy   String?  @map("updated_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("system_configs")
+}
+
