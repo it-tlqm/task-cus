@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
+import { getAuthorizedUnitIds, jsonError, checkPermission } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -36,9 +36,14 @@ export async function POST(
 
     // 1. ACTION: SUBMIT (Trình duyệt kế hoạch)
     if (action === "SUBMIT") {
-      // Người tạo hoặc thành viên thuộc đơn vị có quyền trình duyệt
-      if (!isUnitAuthorized && plan.creatorId !== user.personId) {
-        return jsonError("Bạn không có quyền trình duyệt kế hoạch của bộ phận khác", 403);
+      // Chỉ Lãnh đạo đơn vị, Trưởng bộ phận hoặc tài khoản có quyền plans.create trong phạm vi đơn vị mới được trình duyệt kế hoạch cấp Đội
+      const canSubmit =
+        user.role === "UNIT_LEADER" ||
+        (user.role === "DEPARTMENT_LEADER" && isUnitAuthorized) ||
+        (checkPermission(user, "plans.create") && isUnitAuthorized);
+
+      if (!canSubmit) {
+        return jsonError("Bạn không có thẩm quyền trình duyệt kế hoạch cấp bộ phận (Yêu cầu vai trò Trưởng bộ phận)", 403);
       }
 
       if (plan.status !== "DRAFT" && plan.status !== "RETURNED") {

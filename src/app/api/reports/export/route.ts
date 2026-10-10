@@ -26,11 +26,19 @@ export async function GET(req: NextRequest) {
     const exportScope = searchParams.get("scope");
     const requestedPersonId = searchParams.get("personId");
 
-    // Cho phép cán bộ xuất báo cáo cá nhân của chính mình; xuất báo cáo cấp đơn vị yêu cầu quyền reports.export
-    const isOwnPersonalExport = (exportScope === "personal" || user.role === "STAFF") && (!requestedPersonId || requestedPersonId === user.personId);
+    const hasExportAllPermission = checkPermission(user, "reports.export") || user.role === "UNIT_LEADER" || user.role === "DEPARTMENT_LEADER";
+    const isPersonalScope = exportScope === "personal" || user.role === "STAFF";
+
+    // Chống IDOR: Cán bộ thường chỉ được xuất báo cáo cá nhân của chính mình.
+    // Lãnh đạo hoặc tài khoản có quyền reports.export mới được xuất thay cho người khác.
+    const targetPersonId = isPersonalScope
+      ? (hasExportAllPermission && requestedPersonId ? requestedPersonId : user.personId)
+      : requestedPersonId;
+
+    const isOwnPersonalExport = isPersonalScope && targetPersonId === user.personId;
 
     // 2. Kiểm tra thẩm quyền xuất báo cáo: reports.export (Tiêu chí AT-17)
-    if (!isOwnPersonalExport && !checkPermission(user, "reports.export")) {
+    if (!isOwnPersonalExport && !hasExportAllPermission) {
       await recordAuditEvent({
         actorId: user.id,
         action: "REPORT_EXPORT_BLOCKED",
@@ -43,7 +51,7 @@ export async function GET(req: NextRequest) {
       });
 
       return NextResponse.json(
-        { error: "Bạn không có quyền xuất báo cáo Excel (Yêu cầu thẩm quyền reports.export)" },
+        { error: "Bạn không có quyền xuất báo cáo Excel của người khác (Yêu cầu thẩm quyền reports.export)" },
         { status: 403 }
       );
     }
@@ -209,9 +217,49 @@ export async function GET(req: NextRequest) {
       ? {}
       : { unitId: { in: authorizedUnits } };
 
-    // Lấy các nhiệm vụ và lọc trùng theo Task ID (DISTINCT Task - Chống đếm trùng AT-08)
+    // Điều kiện lọc kỳ cho Task:
+    // Task thuộc kỳ nếu nó liên kết đến Plan thuộc kỳ đó HOẶC deadline nằm trong khoảng thời gian của kỳ [startAt, endAt]
+    const taskPeriodWhere = period
+      ? {
+          OR: [
+            {
+              planLinks: {
+                some: {
+                  planItem: {
+                    plan: {
+                      periodId: period.id,
+                    },
+                  },
+                },
+              },
+            },
+            {
+              currentDeadline: {
+                gte: period.startAt,
+                lte: period.endAt,
+              },
+            },
+          ],
+        }
+      : {};
+
+    // Điều kiện lọc cá nhân cho Task nếu là phạm vi cá nhân:
+    const taskPersonalWhere = isPersonalScope && targetPersonId
+      ? {
+          OR: [
+            { ownerId: targetPersonId },
+            { assignees: { some: { personId: targetPersonId } } },
+          ],
+        }
+      : {};
+
+    // Lấy các nhiệm vụ đúng kỳ và đúng phạm vi cá nhân/đơn vị (DISTINCT Task - Chống đếm trùng AT-08)
     const tasks = await prisma.task.findMany({
-      where: unitFilter,
+      where: {
+        ...unitFilter,
+        ...taskPeriodWhere,
+        ...taskPersonalWhere,
+      },
       include: {
         owner: true,
         unit: true,
@@ -225,6 +273,7 @@ export async function GET(req: NextRequest) {
             planItem: {
               include: {
                 group: true,
+                plan: true,
               },
             },
           },
@@ -239,8 +288,6 @@ export async function GET(req: NextRequest) {
       }
     }
     const distinctTasks = Array.from(distinctTaskMap.values());
-
-    const targetPersonId = exportScope === "personal" ? (requestedPersonId || user.personId) : requestedPersonId;
 
     // Lấy thêm đầu việc cá nhân trong kỳ
     let workItems = await prisma.personalWorkItem.findMany({
@@ -341,18 +388,14 @@ export async function GET(req: NextRequest) {
       // MẪU A: BÁO CÁO TRUYỀN THỐNG (Biểu Kế Hoạch Tuần 8 Cột Gốc)
       // -------------------------------------------------------------
       const groupsData: LegacyReportGroupData[] = activityGroups.map((group) => {
-        // Tìm các tasks hoặc workItems thuộc nhóm này
         const matchedTasks = distinctTasks.filter((t) => {
           const belongsToGroup = t.planLinks.some((l) => l.planItem.groupId === group.id);
-          if (!belongsToGroup) return false;
-          if (targetPersonId) {
-            return t.ownerId === targetPersonId || t.assignees.some((a) => a.personId === targetPersonId);
-          }
-          return true;
+          if (belongsToGroup) return true;
+          return group.code === "TTHQ" && t.planLinks.length === 0;
         });
 
         const matchedWorkItems = workItems.filter(
-          (w) => w.groupId === group.id || w.template?.groupId === group.id
+          (w) => w.groupId === group.id || w.template?.groupId === group.id || (!w.groupId && !w.template?.groupId && group.code === "TTHQ")
         );
 
         const items: Array<{
@@ -367,15 +410,36 @@ export async function GET(req: NextRequest) {
         }> = [];
 
         matchedTasks.forEach((t) => {
+          const isOwner = t.ownerId === targetPersonId;
+          const isPersonalReport = isPersonalScope && targetOfficer;
+
+          let itemTitle = t.title;
+          let ownerDisplay = t.owner.fullName;
+          let collabDisplay = t.assignees.map((a) => a.person.fullName).join(", ") || t.unit.name;
+
+          if (isPersonalScope && targetOfficer) {
+            if (isOwner) {
+              ownerDisplay = targetOfficer.fullName;
+              const otherAssignees = t.assignees
+                .filter((a) => a.personId !== targetPersonId)
+                .map((a) => a.person.fullName);
+              collabDisplay = otherAssignees.length > 0 ? otherAssignees.join(", ") : t.unit.name;
+            } else {
+              itemTitle = `[Phối hợp] ${t.title}`;
+              ownerDisplay = `${t.owner.fullName} (Chủ trì)`;
+              collabDisplay = `Phối hợp: ${targetOfficer.fullName}`;
+            }
+          }
+
           items.push({
-            title: t.title,
-            ownerName: t.owner.fullName,
-            collaboratorName: t.assignees.map((a) => a.person.fullName).join(", "),
+            title: itemTitle,
+            ownerName: ownerDisplay,
+            collaboratorName: collabDisplay,
             priority: t.priority === "HIGH" ? "Cao" : t.priority === "LOW" ? "Thấp" : "Trung bình",
             expectedResult: t.expectedResultText || "Theo quy chế",
-            actualResult: t.actualResultText || "Đang thực hiện",
+            actualResult: t.actualResultText || (t.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện"),
             status: t.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện",
-            dateText: "Thứ 2 - Thứ 6",
+            dateText: t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "Thứ 2 - Thứ 6",
           });
         });
 

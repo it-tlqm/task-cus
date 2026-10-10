@@ -436,13 +436,23 @@ export default function PlansPage() {
               </button>
 
               {activePlan?.status === "DRAFT" || activePlan?.status === "RETURNED" ? (
-                <button
-                  onClick={() => handleWorkflowAction("SUBMIT")}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-fast active-press shadow-sm"
-                >
-                  <span className="material-symbols-outlined text-[18px]">send</span>
-                  <span>Trình duyệt kế hoạch</span>
-                </button>
+                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" || currentUser?.role === "SYSTEM_ADMIN" ? (
+                  <button
+                    onClick={() => handleWorkflowAction("SUBMIT")}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-fast active-press shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">send</span>
+                    <span>Trình duyệt kế hoạch</span>
+                  </button>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
+                    title="Kế hoạch cấp Đội đang dự thảo. Chờ Trưởng bộ phận tổng hợp và trình duyệt."
+                  >
+                    <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
+                    <span>Chờ Trưởng Đội trình duyệt</span>
+                  </span>
+                )
               ) : activePlan?.status === "SUBMITTED" ? (
                 <>
                   <button
