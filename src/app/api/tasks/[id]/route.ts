@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, getAuthorizedUnitIds, checkPermission, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { createNotification } from "@/server/notifications";
 
 export async function GET(
   req: NextRequest,
@@ -177,6 +178,40 @@ export async function PATCH(
       oldData: { status: currentTask.status },
       newData: { status: updatedTask.status, actualResultText, progressPercent: effectiveProgress },
     });
+
+    if (status === "COMPLETED" || status === "DONE") {
+      await createNotification({
+        recipientId: updatedTask.ownerId,
+        category: "task",
+        type: "TASK_COMPLETED",
+        title: `Nhiệm vụ đã được nghiệm thu: [${updatedTask.code}]`,
+        content: `Lãnh đạo đã nghiệm thu và xác nhận hoàn thành nhiệm vụ '${updatedTask.title}'. Kết quả đạt chuẩn nghiệp vụ.`,
+        tag: "ĐÃ NGHIỆM THU",
+        tagType: "success",
+        entityType: "TASK",
+        entityId: updatedTask.id,
+        actionUrl: `/tasks/${updatedTask.id}`,
+        actionLabel: "Xem kết quả nghiệm thu",
+        taskCode: updatedTask.code,
+        idempotencyKey: `EVENT_TASK_CMP_${updatedTask.id}_${Date.now()}`,
+      });
+    } else if (currentTask.status === "WAITING_REVIEW" && status === "IN_PROGRESS") {
+      await createNotification({
+        recipientId: updatedTask.ownerId,
+        category: "task",
+        type: "TASK_REJECTED",
+        title: `Yêu cầu hoàn thiện nhiệm vụ: [${updatedTask.code}]`,
+        content: `Lãnh đạo yêu cầu bổ sung/giải trình kết quả nhiệm vụ '${updatedTask.title}'. Lý do: ${actualResultText || issueNotes || "Chưa đạt yêu cầu"}.`,
+        tag: "YÊU CẦU BỔ SUNG",
+        tagType: "warning",
+        entityType: "TASK",
+        entityId: updatedTask.id,
+        actionUrl: `/tasks/${updatedTask.id}`,
+        actionLabel: "Hoàn thiện nhiệm vụ",
+        taskCode: updatedTask.code,
+        idempotencyKey: `EVENT_TASK_RET_${updatedTask.id}_${Date.now()}`,
+      });
+    }
 
     return NextResponse.json({
       success: true,

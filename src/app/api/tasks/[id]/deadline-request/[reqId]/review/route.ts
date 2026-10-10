@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { createNotification } from "@/server/notifications";
 
 export async function POST(
   req: NextRequest,
@@ -90,6 +91,25 @@ export async function POST(
       resourceId: reqId,
       oldData: { deadline: task.currentDeadline },
       newData: { newDeadline: isApproved ? deadlineReq.requestedDeadline : task.currentDeadline, reviewNotes },
+    });
+
+    // Thông báo cho cán bộ đã đề xuất gia hạn
+    await createNotification({
+      recipientId: deadlineReq.requestedById,
+      category: "deadline",
+      type: isApproved ? "DEADLINE_REQUEST_APPROVED" : "DEADLINE_REQUEST_REJECTED",
+      title: isApproved ? `Gia hạn đã được phê duyệt: [${task.code}]` : `Đề nghị gia hạn bị từ chối: [${task.code}]`,
+      content: isApproved
+        ? `Lãnh đạo đã phê duyệt gia hạn nhiệm vụ '${task.title}' đến ngày ${deadlineReq.requestedDeadline.toLocaleDateString("vi-VN")}.`
+        : `Lãnh đạo không chấp thuận đề xuất gia hạn nhiệm vụ '${task.title}'. Lý do: ${reviewNotes || "Không phê duyệt"}.`,
+      tag: isApproved ? "ĐÃ GIA HẠN" : "TỪ CHỐI GIA HẠN",
+      tagType: isApproved ? "success" : "danger",
+      entityType: "TASK",
+      entityId: taskId,
+      actionUrl: `/tasks/${taskId}`,
+      actionLabel: "Xem chi tiết nhiệm vụ",
+      taskCode: task.code,
+      idempotencyKey: `EVENT_DR_REV_${reqId}_${Date.now()}`,
     });
 
     return NextResponse.json({

@@ -81,6 +81,7 @@ model Person {
   workItems        PersonalWorkItem[]
   routines         RoutineEntry[]
   deadlineRequests DeadlineRequest[]  @relation("RequestedBy")
+  notifications    Notification[]
 
   @@map("people")
 }
@@ -500,3 +501,37 @@ model AuditEvent {
 
   @@map("audit_events")
 }
+
+// ----------------------------------------------------
+// 9. THÔNG BÁO ĐIỀU HÀNH & CẢNH BÁO TÁC NGHIỆP
+// ----------------------------------------------------
+
+model Notification {
+  id             String    @id @default(uuid())
+  recipientId    String    @map("recipient_id")
+  category       String    @default("task") // "task", "approval", "deadline", "system"
+  type           String    // TASK_ASSIGNED, TASK_WAITING_REVIEW, TASK_COMPLETED, TASK_REJECTED, TASK_OVERDUE, TASK_DUE_SOON, PLAN_SUBMITTED, PLAN_APPROVED, PLAN_RETURNED, DEADLINE_REQUEST_PENDING, DEADLINE_REQUEST_APPROVED, DEADLINE_REQUEST_REJECTED, ROUTINE_REMINDER
+  title          String
+  content        String
+  tag            String    @default("THÔNG BÁO")
+  tagType        String    @default("primary") @map("tag_type") // "danger", "primary", "success", "warning"
+  entityType     String?   @map("entity_type") // "TASK", "PLAN", "DEADLINE_REQUEST", "ROUTINE"
+  entityId       String?   @map("entity_id")
+  actionUrl      String    @map("action_url")
+  actionLabel    String    @default("Xem chi tiết") @map("action_label")
+  taskCode       String?   @map("task_code")
+  isRead         Boolean   @default(false) @map("is_read")
+  readAt         DateTime? @map("read_at")
+  isDismissed    Boolean   @default(false) @map("is_dismissed")
+  dismissedAt    DateTime? @map("dismissed_at")
+  idempotencyKey String?   @unique @map("idempotency_key")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  recipient Person @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isDismissed, isRead])
+  @@index([recipientId, createdAt])
+  @@map("notifications")
+}
+

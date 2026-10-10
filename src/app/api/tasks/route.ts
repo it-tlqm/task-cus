@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { buildScopedWhereClause, verifyTaskAccess, getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { createNotification } from "@/server/notifications";
 
 export async function GET(req: NextRequest) {
   try {
@@ -108,29 +109,38 @@ export async function POST(req: NextRequest) {
       assigneeIds, // Danh sách ID cán bộ phối hợp
     } = body;
 
-    if (!title || !ownerId || !deadline) {
+    const effectiveOwnerId = ownerId || user.personId;
+    const effectiveDeadline = deadline || body.currentDeadline;
+
+    if (!title || !effectiveOwnerId || !effectiveDeadline) {
       return jsonError("Tiêu đề, Người chủ trì và Hạn hoàn thành là bắt buộc", 400);
     }
 
-    const targetUnitId = unitId || user.unitId;
+    let targetUnitId = unitId || user.unitId;
+    if (!targetUnitId) {
+      const defaultUnit = await prisma.orgUnit.findFirst({
+        where: { level: 2 },
+      });
+      targetUnitId = defaultUnit?.id;
+    }
     if (!targetUnitId) {
       return jsonError("Đơn vị thực hiện là bắt buộc", 400);
     }
 
     // Cán bộ công chức thường chỉ được tạo nhiệm vụ trong bộ phận của mình
-    if (user.role === "STAFF" && targetUnitId !== user.unitId) {
+    if (user.role === "STAFF" && user.unitId && targetUnitId !== user.unitId) {
       return jsonError("Bạn chỉ được tạo nhiệm vụ trong bộ phận của mình", 403);
     }
 
     const taskCode = `NV-${Date.now().toString().slice(-6)}`;
-    const parsedDeadline = new Date(deadline);
+    const parsedDeadline = new Date(effectiveDeadline);
 
     const newTask = await prisma.task.create({
       data: {
         code: taskCode,
         title,
         description,
-        ownerId,
+        ownerId: effectiveOwnerId,
         unitId: targetUnitId,
         priority: priority || "Cao",
         status: "NOT_STARTED",
@@ -158,6 +168,46 @@ export async function POST(req: NextRequest) {
       resourceId: newTask.id,
       newData: { code: newTask.code, title: newTask.title, unitId: newTask.unitId, ownerId },
     });
+
+    // 1. Tạo thông báo giao việc đến người chủ trì thực hiện
+    await createNotification({
+      recipientId: newTask.ownerId,
+      category: "task",
+      type: "TASK_ASSIGNED",
+      title: `Nhiệm vụ mới: [${newTask.code}] ${newTask.title}`,
+      content: `Đồng chí được phân công chủ trì thực hiện nhiệm vụ '${newTask.title}'. Hạn hoàn thành: ${newTask.currentDeadline.toLocaleDateString("vi-VN")}.`,
+      tag: "GIAO VIỆC MỚI",
+      tagType: "primary",
+      entityType: "TASK",
+      entityId: newTask.id,
+      actionUrl: `/tasks/${newTask.id}`,
+      actionLabel: "Xem chi tiết nhiệm vụ",
+      taskCode: newTask.code,
+      idempotencyKey: `EVENT_TASK_ASSIGNED_${newTask.id}_${newTask.ownerId}`,
+    });
+
+    // 2. Tạo thông báo cho các cán bộ phối hợp (nếu có)
+    if (assigneeIds && Array.isArray(assigneeIds)) {
+      for (const pId of assigneeIds) {
+        if (pId !== newTask.ownerId) {
+          await createNotification({
+            recipientId: pId,
+            category: "task",
+            type: "TASK_ASSIGNED",
+            title: `Nhiệm vụ phối hợp: [${newTask.code}] ${newTask.title}`,
+            content: `Đồng chí được phân công phối hợp thực hiện nhiệm vụ '${newTask.title}'. Hạn hoàn thành: ${newTask.currentDeadline.toLocaleDateString("vi-VN")}.`,
+            tag: "PHỐI HỢP",
+            tagType: "primary",
+            entityType: "TASK",
+            entityId: newTask.id,
+            actionUrl: `/tasks/${newTask.id}`,
+            actionLabel: "Xem chi tiết nhiệm vụ",
+            taskCode: newTask.code,
+            idempotencyKey: `EVENT_TASK_ASSIGNED_${newTask.id}_${pId}`,
+          });
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, data: newTask }, { status: 201 });
   } catch (error: any) {

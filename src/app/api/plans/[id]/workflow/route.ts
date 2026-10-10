@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { createNotification } from "@/server/notifications";
 
 export async function POST(
   req: NextRequest,
@@ -98,6 +99,23 @@ export async function POST(
         newData: { status: "APPROVED", approvedBy: user.personId },
       });
 
+      if (plan.creatorId) {
+        await createNotification({
+          recipientId: plan.creatorId,
+          category: "approval",
+          type: "PLAN_APPROVED",
+          title: `Kế hoạch công tác đã được phê duyệt: ${plan.title}`,
+          content: `Lãnh đạo đã phê duyệt kế hoạch công tác '${plan.title}'. Kế hoạch chính thức có hiệu lực thi hành.`,
+          tag: "ĐÃ PHÊ DUYỆT",
+          tagType: "success",
+          entityType: "PLAN",
+          entityId: plan.id,
+          actionUrl: "/plans",
+          actionLabel: "Xem kế hoạch",
+          idempotencyKey: `EVENT_PLAN_APP_${plan.id}_${Date.now()}`,
+        });
+      }
+
       return NextResponse.json({
         success: true,
         message: "Đã phê duyệt kế hoạch thành công",
@@ -138,6 +156,23 @@ export async function POST(
         oldData: { status: plan.status },
         newData: { status: "RETURNED", reviewNotes: reviewNotes.trim() },
       });
+
+      if (plan.creatorId) {
+        await createNotification({
+          recipientId: plan.creatorId,
+          category: "approval",
+          type: "PLAN_RETURNED",
+          title: `Kế hoạch công tác bị trả lại: ${plan.title}`,
+          content: `Lãnh đạo yêu cầu chỉnh sửa/hoàn thiện kế hoạch '${plan.title}'. Ý kiến chỉ đạo: ${reviewNotes.trim()}`,
+          tag: "TRẢ LẠI KẾ HOẠCH",
+          tagType: "danger",
+          entityType: "PLAN",
+          entityId: plan.id,
+          actionUrl: "/plans",
+          actionLabel: "Chỉnh sửa kế hoạch",
+          idempotencyKey: `EVENT_PLAN_RET_${plan.id}_${Date.now()}`,
+        });
+      }
 
       return NextResponse.json({
         success: true,
