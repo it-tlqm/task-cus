@@ -26,8 +26,8 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const { newPassword } = body;
 
-    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
-      return jsonError("Mật khẩu mới phải có ít nhất 6 ký tự", 400);
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8 || !/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) {
+      return jsonError("Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm cả chữ cái và chữ số để bảo đảm an toàn", 400);
     }
 
     const person = await prisma.person.findUnique({

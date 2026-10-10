@@ -90,10 +90,19 @@ export async function POST(
       );
     }
 
-    // 5. Chuẩn hóa ngày có hiệu lực
+    // 5. Chuẩn hóa và kiểm tra ngày có hiệu lực
     const effDate = effectiveDate ? new Date(effectiveDate) : new Date();
     if (isNaN(effDate.getTime())) {
       return jsonError("Ngày có hiệu lực điều chuyển không hợp lệ", 400);
+    }
+
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    if (effDate.getTime() > todayEnd.getTime()) {
+      return jsonError(
+        "Hệ thống hiện tại chưa hỗ trợ lập lịch điều chuyển có hiệu lực trong tương lai. Ngày hiệu lực điều chuyển phải là ngày hiện tại hoặc trong quá khứ để bảo đảm không thay đổi phân công và quyền hạn trước thời hạn.",
+        400
+      );
     }
 
     // 6. Thực hiện Transaction điều chuyển bảo đảm tính nhất quán và bảo toàn lịch sử

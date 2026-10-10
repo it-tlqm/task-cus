@@ -163,8 +163,8 @@ export default function RoutinePage() {
   useEffect(() => {
     fetchRoutineData();
 
-    // Fetch Catalog Templates
-    fetch("/api/catalog/templates")
+    // Fetch Catalog Templates (chỉ lấy các mẫu đang áp dụng)
+    fetch("/api/catalog/templates?activeOnly=true")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const list = Array.isArray(data) ? data : data?.data || [];

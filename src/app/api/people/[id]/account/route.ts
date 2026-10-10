@@ -62,9 +62,10 @@ export async function POST(
       );
     }
 
-    // 3. Kiểm tra tính an toàn của Mật khẩu (Password Validation)
-    if (!password || typeof password !== "string" || password.length < 6) {
-      return jsonError("Mật khẩu khởi tạo phải có ít nhất 6 ký tự", 400);
+    // 3. Kiểm tra tính an toàn của Mật khẩu (Password Policy)
+    // Tối thiểu 8 ký tự, bao gồm cả chữ cái và chữ số
+    if (!password || typeof password !== "string" || password.length < 8 || !/^(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
+      return jsonError("Mật khẩu khởi tạo phải có ít nhất 8 ký tự, bao gồm cả chữ cái và chữ số để bảo đảm an toàn", 400);
     }
 
     // 4. Kiểm tra và ngăn chặn hành vi tự nâng quyền (Privilege Escalation Guard)

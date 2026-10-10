@@ -128,9 +128,17 @@ export async function POST(req: NextRequest) {
 
     // Tự động phân giải title nếu truyền customTitle hoặc templateId
     let resolvedTitle = title || customTitle;
-    if (!resolvedTitle?.trim() && templateId) {
+    if (templateId) {
       const template = await prisma.activityTemplate.findUnique({ where: { id: templateId } });
-      if (template) resolvedTitle = template.title;
+      if (!template) {
+        return jsonError("Hoạt động mẫu không tồn tại trong danh mục", 400);
+      }
+      if (template.reviewStatus === "RETIRED") {
+        return jsonError("Hoạt động mẫu này đã ngừng áp dụng, không thể chọn để tạo mới đầu việc", 400);
+      }
+      if (!resolvedTitle?.trim()) {
+        resolvedTitle = template.title;
+      }
     }
 
     // Tự động phân giải hoặc tạo ReportingPeriod nếu truyền periodType, periodYear, periodNumber

@@ -1274,10 +1274,12 @@ export default function OrganizationAdminPage() {
                   <input
                     type="date"
                     required
+                    max={new Date().toISOString().slice(0, 10)}
                     value={transferData.effectiveDate}
                     onChange={(e) => setTransferData({ ...transferData, effectiveDate: e.target.value })}
                     className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                  <p className="text-[10px] text-slate-500 mt-0.5">Chỉ chấp nhận ngày hiện tại hoặc quá khứ</p>
                 </div>
 
                 <div>
@@ -1386,11 +1388,12 @@ export default function OrganizationAdminPage() {
 
                   <div>
                     <label className="text-xs font-semibold text-slate-700 block mb-1">
-                      Mật khẩu khởi tạo * (ít nhất 6 ký tự)
+                      Mật khẩu khởi tạo * (tối thiểu 8 ký tự, gồm cả chữ và số)
                     </label>
                     <input
                       type="password"
                       required
+                      minLength={8}
                       placeholder="Nhập mật khẩu an toàn..."
                       value={accountFormData.password}
                       onChange={(e) => setAccountFormData({ ...accountFormData, password: e.target.value })}
@@ -1439,11 +1442,12 @@ export default function OrganizationAdminPage() {
 
                   <div>
                     <label className="text-xs font-semibold text-slate-700 block mb-1">
-                      Mật khẩu mới * (ít nhất 6 ký tự)
+                      Mật khẩu mới * (tối thiểu 8 ký tự, gồm cả chữ và số)
                     </label>
                     <input
                       type="password"
                       required
+                      minLength={8}
                       placeholder="Nhập mật khẩu mới..."
                       value={accountFormData.newPassword}
                       onChange={(e) => setAccountFormData({ ...accountFormData, newPassword: e.target.value })}

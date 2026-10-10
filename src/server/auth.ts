@@ -57,14 +57,39 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
   const decoded = verifyToken(token);
   if (!decoded) return null;
 
-  // Kiểm tra thời gian thực trong PostgreSQL: Tài khoản và Cán bộ phải ở trạng thái ACTIVE
-  // Khi tài khoản bị vô hiệu hóa (DISABLED/LOCKED) hoặc hồ sơ cán bộ INACTIVE, token bị thu hồi hiệu lực ngay lập tức
+  // Kiểm tra thời gian thực trong PostgreSQL:
+  // 1. Tài khoản và Cán bộ phải ở trạng thái ACTIVE (thu hồi token ngay nếu bị vô hiệu hóa)
+  // 2. Đồng bộ phân công đơn vị và phạm vi quyền hiện hành để triệt tiêu lỗ hổng dùng token cũ truy cập đơn vị cũ sau khi điều chuyển
+  const now = new Date();
   const account = await prisma.account.findUnique({
     where: { id: decoded.id },
-    select: {
-      status: true,
+    include: {
       person: {
-        select: { status: true },
+        include: {
+          assignments: {
+            where: {
+              isPrimary: true,
+              effectiveFrom: { lte: now },
+              OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }],
+            },
+            include: { unit: true, position: true },
+            take: 1,
+          },
+        },
+      },
+      roleGrants: {
+        where: {
+          validFrom: { lte: now },
+          OR: [{ validTo: null }, { validTo: { gte: now } }],
+        },
+        include: {
+          role: {
+            include: {
+              rolePermissions: { include: { permission: true } },
+            },
+          },
+          scopeUnit: true,
+        },
       },
     },
   });
@@ -73,7 +98,28 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
     return null;
   }
 
-  return decoded;
+  const primaryAssignment = account.person.assignments[0];
+  const primaryGrant = account.roleGrants[0];
+
+  const permissions = new Set<string>();
+  for (const grant of account.roleGrants) {
+    for (const rp of grant.role.rolePermissions) {
+      permissions.add(rp.permission.code);
+    }
+  }
+
+  // Luôn trả về SessionUser được cập nhật theo cơ sở dữ liệu thực tế tại thời điểm gọi API:
+  // Ngay sau khi điều chuyển, unitId và scopeUnitId lập tức trỏ về đơn vị mới!
+  return {
+    ...decoded,
+    unitId: primaryAssignment?.unitId || decoded.unitId,
+    unitName: primaryAssignment?.unit?.name || decoded.unitName,
+    positionTitle: primaryAssignment?.position?.title || decoded.positionTitle,
+    role: primaryGrant?.role.code || decoded.role,
+    scopeType: (primaryGrant?.scopeType as SessionUser["scopeType"]) || decoded.scopeType,
+    scopeUnitId: primaryGrant?.scopeUnitId !== undefined ? primaryGrant.scopeUnitId : decoded.scopeUnitId,
+    permissions: permissions.size > 0 ? Array.from(permissions) : decoded.permissions,
+  };
 }
 
 export async function getAccountWithPermissions(username: string) {

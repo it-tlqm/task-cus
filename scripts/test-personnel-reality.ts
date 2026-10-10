@@ -199,6 +199,24 @@ async function runPersonnelTests() {
     console.log("KỊCH BẢN 3: Điều chuyển đơn vị -> Phân công mới đúng, bảo toàn lịch sử");
     console.log("--------------------------------------------------------------------------------");
 
+    // a. Kiểm tra chặn ngày hiệu lực trong tương lai (Future effective date guard)
+    const futureDateRes = await fetch(`${BASE_URL}/api/people/${createdPersonId}/transfer`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminSession.token}`,
+      },
+      body: JSON.stringify({
+        newUnitId: unitB.id,
+        newPositionId: positionB?.id,
+        effectiveDate: "2029-12-31",
+      }),
+    });
+    if (futureDateRes.status !== 400) {
+      throw new Error(`Điều chuyển với ngày hiệu lực tương lai phải bị chặn với 400, nhận được: ${futureDateRes.status}`);
+    }
+
+    // b. Thực hiện điều chuyển hợp lệ
     const effDate = new Date().toISOString().slice(0, 10);
     const res = await fetch(`${BASE_URL}/api/people/${createdPersonId}/transfer`, {
       method: "POST",
@@ -261,6 +279,24 @@ async function runPersonnelTests() {
     console.log("KỊCH BẢN 4: Cấp Account liên kết Person -> Đăng nhập thành công với mật khẩu thật");
     console.log("--------------------------------------------------------------------------------");
 
+    // a. Kiểm tra chính sách mật khẩu: Từ chối mật khẩu yếu < 8 ký tự hoặc thiếu chữ/số
+    const weakPassRes = await fetch(`${BASE_URL}/api/people/${createdPersonId}/account`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminSession.token}`,
+      },
+      body: JSON.stringify({
+        username: testUsername,
+        password: "12345", // yếu
+        roleCode: "STAFF",
+      }),
+    });
+    if (weakPassRes.status !== 400) {
+      throw new Error(`Mật khẩu yếu phải bị từ chối với HTTP 400, nhận được: ${weakPassRes.status}`);
+    }
+
+    // b. Cấp tài khoản với mật khẩu mạnh hợp lệ
     const testPassword = `Pass@Secure${uniqueSuffix}`;
     const res = await fetch(`${BASE_URL}/api/people/${createdPersonId}/account`, {
       method: "POST",
