@@ -30,11 +30,14 @@ export function checkPermission(user: SessionUser, permission: string): boolean 
 
   // 2. SYSTEM_ADMIN: Chỉ có các quyền quản trị kỹ thuật, KHÔNG mặc nhiên có quyền đọc/sửa nội dung nghiệp vụ nhạy cảm
   if (user.role === "SYSTEM_ADMIN") {
-    return SYSTEM_ADMIN_PERMISSIONS.includes(permission) || user.permissions.includes(permission);
+    return (
+      SYSTEM_ADMIN_PERMISSIONS.includes(permission) ||
+      (Array.isArray(user.permissions) && user.permissions.includes(permission))
+    );
   }
 
   // 3. Các vai trò khác: Kiểm tra theo danh sách quyền cụ thể được cấp
-  return user.permissions.includes(permission);
+  return Array.isArray(user.permissions) ? user.permissions.includes(permission) : false;
 }
 
 export async function getAuthorizedUnitIds(

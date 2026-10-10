@@ -44,6 +44,7 @@ model OrgUnit {
   tasks        Task[]
   plans        Plan[]
   routines     RoutineEntry[]
+  reportSnapshots ReportSnapshot[]
 
   @@map("org_units")
 }
@@ -82,6 +83,7 @@ model Person {
   routines         RoutineEntry[]
   deadlineRequests DeadlineRequest[]  @relation("RequestedBy")
   notifications    Notification[]
+  snapshotsLocked  ReportSnapshot[]   @relation("SnapshotLocker")
 
   @@map("people")
 }
@@ -273,6 +275,7 @@ model ReportingPeriod {
   plans     Plan[]
   workItems PersonalWorkItem[]
   routines  RoutineEntry[]
+  snapshots ReportSnapshot[]
 
   @@map("reporting_periods")
 }
@@ -533,5 +536,35 @@ model Notification {
   @@index([recipientId, isDismissed, isRead])
   @@index([recipientId, createdAt])
   @@map("notifications")
+}
+
+// ----------------------------------------------------
+// 10. CHỐT KỲ SỐ LIỆU & LỊCH SỬ SNAPSHOT BẤT BIẾN
+// ----------------------------------------------------
+
+model ReportSnapshot {
+  id           String    @id @default(uuid())
+  code         String    @unique // Mã hiển thị: SNP-YYYYMMDD-XXXX
+  periodId     String    @map("period_id")
+  version      Int       @default(1)
+  title        String
+  snapshotData Json      @map("snapshot_data") // Dữ liệu báo cáo tại thời điểm chốt
+  checksum     String    // Chuỗi mã băm SHA-256 (64 hex lowercase) tính từ snapshot_data chuẩn hóa
+  lockedById   String    @map("locked_by_id")
+  lockedByName String    @map("locked_by_name")
+  lockedAt     DateTime  @default(now()) @map("locked_at")
+  status       String    @default("LOCKED") // LOCKED, SUPERSEDED
+  scopeUnitId  String?   @map("scope_unit_id")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  period    ReportingPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  lockedBy  Person          @relation("SnapshotLocker", fields: [lockedById], references: [id])
+  scopeUnit OrgUnit?        @relation(fields: [scopeUnitId], references: [id])
+
+  @@unique([periodId, version])
+  @@index([checksum])
+  @@index([periodId, status])
+  @@map("report_snapshots")
 }
 
