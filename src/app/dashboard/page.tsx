@@ -62,6 +62,22 @@ interface HotAlert {
   message: string;
 }
 
+interface ReportingPeriodItem {
+  id: string;
+  title: string;
+  type: string;
+  startAt: string;
+  endAt: string;
+  isLocked: boolean;
+}
+
+interface SelectedPeriodInfo {
+  key: string;
+  title: string;
+  startAt: string | null;
+  endAt: string | null;
+}
+
 export default function DashboardPage() {
   const [kpis, setKpis] = useState<KPIData>({
     totalTasks: 0,
@@ -82,7 +98,9 @@ export default function DashboardPage() {
   const [departments, setDepartments] = useState<DepartmentBreakdown[]>([]);
   const [attentionTasks, setAttentionTasks] = useState<AttentionTask[]>([]);
   const [hotAlerts, setHotAlerts] = useState<HotAlert[]>([]);
-  const [period, setPeriod] = useState<"today" | "w41" | "month10" | "custom">("w41");
+  const [availablePeriods, setAvailablePeriods] = useState<ReportingPeriodItem[]>([]);
+  const [selectedPeriodInfo, setSelectedPeriodInfo] = useState<SelectedPeriodInfo | null>(null);
+  const [period, setPeriod] = useState<string>("w41");
   const [unitFilter, setUnitFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -108,6 +126,14 @@ export default function DashboardPage() {
 
       if (data.kpis) {
         setKpis(data.kpis);
+      }
+
+      if (Array.isArray(data.availablePeriods)) {
+        setAvailablePeriods(data.availablePeriods);
+      }
+
+      if (data.selectedPeriod) {
+        setSelectedPeriodInfo(data.selectedPeriod);
       }
 
       if (Array.isArray(data.departmentBreakdown)) {
@@ -199,13 +225,7 @@ export default function DashboardPage() {
                   <span>Chi cục Hải quan Cửa khẩu quốc tế Tà Lùng</span>
                   <span className="text-outline-variant">•</span>
                   <span className="font-mono text-label-sm text-outline">
-                    {period === "w41"
-                      ? "Kỳ giám sát tuần 41 (05/10 - 12/10/2026)"
-                      : period === "today"
-                      ? "Kỳ giám sát hôm nay"
-                      : period === "month10"
-                      ? "Kỳ giám sát Tháng 10/2026"
-                      : "Kỳ tùy chọn"}
+                    {selectedPeriodInfo ? selectedPeriodInfo.title : "Kỳ giám sát hiện tại"}
                   </span>
                 </p>
               </div>
@@ -242,49 +262,69 @@ export default function DashboardPage() {
 
           {/* Filter Strip */}
           <div className="flex flex-wrap items-center justify-between gap-space-md pt-space-sm bg-surface-container-low/60 p-space-md rounded-lg">
-            {/* Period Selector Segmented */}
-            <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm">
-              <button
-                onClick={() => setPeriod("today")}
-                className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
-                  period === "today"
-                    ? "bg-primary text-on-primary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary"
-                }`}
-              >
-                Hôm nay
-              </button>
-              <button
-                onClick={() => setPeriod("w41")}
-                className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
-                  period === "w41"
-                    ? "bg-primary text-on-primary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary"
-                }`}
-              >
-                Tuần này (Tuần 41)
-              </button>
-              <button
-                onClick={() => setPeriod("month10")}
-                className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
-                  period === "month10"
-                    ? "bg-primary text-on-primary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary"
-                }`}
-              >
-                Tháng 10/2026
-              </button>
-              <button
-                onClick={() => setPeriod("custom")}
-                className={`px-3 py-1.5 rounded-lg text-label-md font-label-md flex items-center gap-1 transition-fast ${
-                  period === "custom"
-                    ? "bg-primary text-on-primary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary"
-                }`}
-              >
-                <span>Khoảng ngày</span>
-                <span className="material-symbols-outlined text-[16px]">calendar_month</span>
-              </button>
+            {/* Period Selector Segmented & Dynamic Dropdown */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm border border-border-default/40">
+                <button
+                  onClick={() => setPeriod("today")}
+                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                    period === "today"
+                      ? "bg-primary text-on-primary shadow-sm font-semibold"
+                      : "text-on-surface-variant hover:text-primary"
+                  }`}
+                >
+                  Hôm nay
+                </button>
+                <button
+                  onClick={() => setPeriod("w41")}
+                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                    period === "w41"
+                      ? "bg-primary text-on-primary shadow-sm font-semibold"
+                      : "text-on-surface-variant hover:text-primary"
+                  }`}
+                >
+                  Tuần 41
+                </button>
+                <button
+                  onClick={() => setPeriod("month10")}
+                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                    period === "month10"
+                      ? "bg-primary text-on-primary shadow-sm font-semibold"
+                      : "text-on-surface-variant hover:text-primary"
+                  }`}
+                >
+                  Tháng 10
+                </button>
+                <button
+                  onClick={() => setPeriod("all")}
+                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                    period === "all"
+                      ? "bg-primary text-on-primary shadow-sm font-semibold"
+                      : "text-on-surface-variant hover:text-primary"
+                  }`}
+                >
+                  Toàn bộ kỳ
+                </button>
+              </div>
+
+              {availablePeriods.length > 0 && (
+                <div className="relative">
+                  <select
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value)}
+                    className="h-9 px-3 pr-8 rounded-lg bg-surface-container-lowest font-body-semibold text-body-semibold text-primary border border-border-default focus:outline-none cursor-pointer shadow-sm text-xs"
+                    title="Chọn kỳ báo cáo từ CSDL PostgreSQL"
+                  >
+                    <option value="all">-- Chọn kỳ CSDL (Toàn bộ) --</option>
+                    <option value="today">Hôm nay</option>
+                    {availablePeriods.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Scope Selector */}
@@ -292,11 +332,9 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 bg-surface-container-lowest px-3 py-1.5 rounded-lg shadow-sm border border-border-default">
                 <span className="material-symbols-outlined text-outline text-[18px]">date_range</span>
                 <span className="font-body-semibold text-body-semibold text-on-surface text-[13px]">
-                  {period === "w41"
-                    ? "05/10/2026 — 12/10/2026"
-                    : period === "month10"
-                    ? "01/10/2026 — 31/10/2026"
-                    : new Date().toLocaleDateString("vi-VN")}
+                  {selectedPeriodInfo?.startAt && selectedPeriodInfo?.endAt
+                    ? `${new Date(selectedPeriodInfo.startAt).toLocaleDateString("vi-VN")} — ${new Date(selectedPeriodInfo.endAt).toLocaleDateString("vi-VN")}`
+                    : selectedPeriodInfo?.title || "Toàn bộ thời gian"}
                 </span>
                 <span className="text-[11px] font-label-sm text-status-success bg-status-success-bg px-1.5 py-0.5 rounded font-bold">
                   Dữ liệu thực tế
@@ -409,7 +447,7 @@ export default function DashboardPage() {
                 {kpis.completionRate !== null ? `${kpis.completionRate}% hoàn thành` : "Chưa có dữ liệu"}
               </span>
               <span className="text-[11px] font-label-sm text-on-surface-variant">
-                {kpis.onTimeRate !== null ? `${kpis.onTimeRate}% đúng hạn` : "Chưa có dữ liệu"}
+                {kpis.onTimeRate !== null ? `${kpis.onTimeRate}% đúng hạn` : "Chưa đủ dữ liệu"}
               </span>
             </div>
           </div>
@@ -700,38 +738,65 @@ export default function DashboardPage() {
             </select>
           </div>
 
-          {/* Quick Period Pill Switcher */}
-          <div className="flex p-1 bg-surface-container-highest rounded-lg gap-1">
-            <button
-              onClick={() => setPeriod("today")}
-              className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
-                period === "today"
-                  ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-primary"
-              }`}
-            >
-              Hôm nay
-            </button>
-            <button
-              onClick={() => setPeriod("w41")}
-              className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
-                period === "w41"
-                  ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-primary"
-              }`}
-            >
-              Tuần 41
-            </button>
-            <button
-              onClick={() => setPeriod("month10")}
-              className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
-                period === "month10"
-                  ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-primary"
-              }`}
-            >
-              Tháng 10
-            </button>
+          {/* Quick Period Pill Switcher & Dynamic Dropdown */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex p-1 bg-surface-container-highest rounded-lg gap-1">
+              <button
+                onClick={() => setPeriod("today")}
+                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                  period === "today"
+                    ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                Hôm nay
+              </button>
+              <button
+                onClick={() => setPeriod("w41")}
+                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                  period === "w41"
+                    ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                Tuần 41
+              </button>
+              <button
+                onClick={() => setPeriod("month10")}
+                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                  period === "month10"
+                    ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                Tháng 10
+              </button>
+              <button
+                onClick={() => setPeriod("all")}
+                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                  period === "all"
+                    ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                Tất cả
+              </button>
+            </div>
+            {availablePeriods.length > 0 && (
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                className="w-full bg-surface-container-highest px-2 py-1.5 rounded text-primary text-xs font-semibold focus:outline-none"
+              >
+                <option value="all">Toàn bộ nhiệm vụ</option>
+                <option value="today">Hôm nay</option>
+                {availablePeriods.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </section>
 

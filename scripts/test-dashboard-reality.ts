@@ -645,6 +645,338 @@ async function runDashboardRealityTests() {
   }
 
   // -----------------------------------------------------------------------------------------
+  // TEST 11 — onTimeRate: Xác định từ lịch sử nghiệm thu thực tế, không dùng Task.updatedAt
+  // -----------------------------------------------------------------------------------------
+  try {
+    const org = await prisma.organization.findFirst();
+    if (!org) throw new Error("No organization found");
+
+    const kpiTestUnit = await prisma.orgUnit.create({
+      data: {
+        orgId: org.id,
+        code: `UNIT_TEST_ONTIME_${Date.now().toString().slice(-4)}`,
+        name: "Bộ phận Thử nghiệm Đo lường Đúng hạn Chuẩn",
+        level: 2,
+        sortOrder: 101,
+        status: "ACTIVE",
+      },
+    });
+
+    const deadlineOnTime = new Date("2026-10-10T17:00:00.000Z");
+    const actualCompleteTime = new Date("2026-10-10T14:30:00.000Z"); // Hoàn thành trước hạn 2.5 giờ
+
+    // Task 1: Hoàn thành đúng hạn thực tế
+    const taskOnTime = await prisma.task.create({
+      data: {
+        code: `TASK-ONTIME-${Date.now()}`,
+        title: "Nhiệm vụ nghiệm thu đúng hạn và sau đó được ghi chú bổ sung",
+        ownerId: leaderA.account.personId,
+        unitId: kpiTestUnit.id,
+        status: "COMPLETED",
+        priority: "Cao",
+        originalDeadline: deadlineOnTime,
+        currentDeadline: deadlineOnTime,
+      },
+    });
+
+    // Bản ghi lịch sử hoàn tất tại 14:30
+    await prisma.taskUpdate.create({
+      data: {
+        taskId: taskOnTime.id,
+        authorId: leaderA.account.personId,
+        statusBefore: "WAITING_REVIEW",
+        statusAfter: "COMPLETED",
+        progressPercent: 100,
+        notes: "Lãnh đạo nghiệm thu đạt chuẩn lúc 14:30",
+        createdAt: actualCompleteTime,
+      },
+    });
+
+    // Mô phỏng lãnh đạo bổ sung ghi chú vào 3 ngày sau hạn (2026-10-13) làm thay đổi Task.updatedAt
+    const laterEditTime = new Date("2026-10-13T09:00:00.000Z");
+    await prisma.$executeRawUnsafe(
+      `UPDATE "tasks" SET "updated_at" = $1 WHERE id = $2`,
+      laterEditTime,
+      taskOnTime.id
+    );
+
+    // Task 2: Hoàn thành trễ hạn thực tế
+    const deadlineLate = new Date("2026-10-08T17:00:00.000Z");
+    const actualLateTime = new Date("2026-10-09T10:00:00.000Z"); // Trễ 17 giờ
+
+    const taskLate = await prisma.task.create({
+      data: {
+        code: `TASK-LATE-${Date.now()}`,
+        title: "Nhiệm vụ nghiệm thu trễ hạn thực tế",
+        ownerId: leaderA.account.personId,
+        unitId: kpiTestUnit.id,
+        status: "COMPLETED",
+        priority: "Trung bình",
+        originalDeadline: deadlineLate,
+        currentDeadline: deadlineLate,
+      },
+    });
+
+    await prisma.taskUpdate.create({
+      data: {
+        taskId: taskLate.id,
+        authorId: leaderA.account.personId,
+        statusBefore: "WAITING_REVIEW",
+        statusAfter: "COMPLETED",
+        progressPercent: 100,
+        notes: "Nghiệm thu trễ hạn",
+        createdAt: actualLateTime,
+      },
+    });
+
+    // Gọi API kiểm tra tỷ lệ đúng hạn của đơn vị kpiTestUnit
+    const res = await fetch(`${BASE_URL}/api/dashboard/kpi?unitId=${kpiTestUnit.id}`, {
+      headers: { Authorization: `Bearer ${leaderUser.token}` },
+    });
+    if (!res.ok) throw new Error(`GET /api/dashboard/kpi failed with status ${res.status}`);
+    const data = await res.json();
+
+    if (data.kpis?.completed !== 2) {
+      throw new Error(`Expected 2 completed tasks, got ${data.kpis?.completed}`);
+    }
+    if (data.kpis?.evaluableCompletedCount !== 2) {
+      throw new Error(`Expected 2 evaluable completed tasks, got ${data.kpis?.evaluableCompletedCount}`);
+    }
+    if (data.kpis?.onTimeCompletedCount !== 1) {
+      throw new Error(`Expected exactly 1 on-time completed task, got ${data.kpis?.onTimeCompletedCount}`);
+    }
+    if (data.kpis?.onTimeRate !== 50) {
+      throw new Error(`Expected onTimeRate = 50%, got ${data.kpis?.onTimeRate}%`);
+    }
+
+    results.push({
+      name: "TEST 11: onTimeRate tính chuẩn từ lịch sử nghiệm thu thực tế (Task.updatedAt bị sửa đổi sau không làm sai lệch)",
+      passed: true,
+      details: `Nhiệm vụ hoàn thành trước hạn lúc 14:30 có updatedAt bị sửa đổi sau hạn (13/10) vẫn được xác nhận đúng hạn 100%. Đơn vị có 1/2 việc đúng hạn = 50% đúng hạn.`,
+      evidence: {
+        completed: data.kpis?.completed,
+        evaluableCompletedCount: data.kpis?.evaluableCompletedCount,
+        onTimeCompletedCount: data.kpis?.onTimeCompletedCount,
+        onTimeRate: data.kpis?.onTimeRate,
+      },
+    });
+
+    // Dọn dẹp
+    await prisma.taskUpdate.deleteMany({ where: { taskId: { in: [taskOnTime.id, taskLate.id] } } });
+    await prisma.task.deleteMany({ where: { id: { in: [taskOnTime.id, taskLate.id] } } });
+    await prisma.orgUnit.delete({ where: { id: kpiTestUnit.id } });
+  } catch (err: any) {
+    results.push({
+      name: "TEST 11: onTimeRate tính chuẩn từ lịch sử nghiệm thu thực tế (Task.updatedAt bị sửa đổi sau không làm sai lệch)",
+      passed: false,
+      details: err.message,
+    });
+  }
+
+  // -----------------------------------------------------------------------------------------
+  // TEST 12 — averageProgress: Mỗi nhiệm vụ đang làm đóng góp đúng 1 giá trị mới nhất
+  // -----------------------------------------------------------------------------------------
+  try {
+    const org = await prisma.organization.findFirst();
+    if (!org) throw new Error("No organization found");
+
+    const progTestUnit = await prisma.orgUnit.create({
+      data: {
+        orgId: org.id,
+        code: `UNIT_TEST_PROG_${Date.now().toString().slice(-4)}`,
+        name: "Bộ phận Thử nghiệm Tiến độ Trung bình Chuẩn",
+        level: 2,
+        sortOrder: 102,
+        status: "ACTIVE",
+      },
+    });
+
+    const now = new Date();
+
+    // Task 1: Có 3 lần cập nhật lịch sử: 10%, 20%, 80% (mới nhất là 80%)
+    const taskProg1 = await prisma.task.create({
+      data: {
+        code: `TASK-PROG1-${Date.now()}`,
+        title: "Nhiệm vụ tiến độ nhiều lần cập nhật",
+        ownerId: leaderA.account.personId,
+        unitId: progTestUnit.id,
+        status: "IN_PROGRESS",
+        priority: "Cao",
+        originalDeadline: new Date(now.getTime() + 86400000),
+        currentDeadline: new Date(now.getTime() + 86400000),
+      },
+    });
+
+    await prisma.taskUpdate.create({
+      data: {
+        taskId: taskProg1.id,
+        authorId: leaderA.account.personId,
+        statusBefore: "NOT_STARTED",
+        statusAfter: "IN_PROGRESS",
+        progressPercent: 10,
+        notes: "Khởi động nhiệm vụ 10%",
+        createdAt: new Date(now.getTime() - 7200000), // 2 giờ trước
+      },
+    });
+
+    await prisma.taskUpdate.create({
+      data: {
+        taskId: taskProg1.id,
+        authorId: leaderA.account.personId,
+        statusBefore: "IN_PROGRESS",
+        statusAfter: "IN_PROGRESS",
+        progressPercent: 20,
+        notes: "Tiếp tục thực hiện 20%",
+        createdAt: new Date(now.getTime() - 3600000), // 1 giờ trước
+      },
+    });
+
+    await prisma.taskUpdate.create({
+      data: {
+        taskId: taskProg1.id,
+        authorId: leaderA.account.personId,
+        statusBefore: "IN_PROGRESS",
+        statusAfter: "IN_PROGRESS",
+        progressPercent: 80,
+        notes: "Gần hoàn tất 80%",
+        createdAt: new Date(now.getTime() - 600000), // 10 phút trước
+      },
+    });
+
+    // Task 2: Có 1 lần cập nhật: 40% (mới nhất là 40%)
+    const taskProg2 = await prisma.task.create({
+      data: {
+        code: `TASK-PROG2-${Date.now()}`,
+        title: "Nhiệm vụ tiến độ một lần cập nhật",
+        ownerId: leaderA.account.personId,
+        unitId: progTestUnit.id,
+        status: "IN_PROGRESS",
+        priority: "Trung bình",
+        originalDeadline: new Date(now.getTime() + 86400000),
+        currentDeadline: new Date(now.getTime() + 86400000),
+      },
+    });
+
+    await prisma.taskUpdate.create({
+      data: {
+        taskId: taskProg2.id,
+        authorId: leaderA.account.personId,
+        statusBefore: "NOT_STARTED",
+        statusAfter: "IN_PROGRESS",
+        progressPercent: 40,
+        notes: "Đang xử lý 40%",
+        createdAt: new Date(now.getTime() - 1800000), // 30 phút trước
+      },
+    });
+
+    // Kỳ vọng nghiệp vụ:
+    // Task 1 đóng góp 80%, Task 2 đóng góp 40%.
+    // Tiến độ trung bình = (80 + 40) / 2 = 60%.
+    // NẾU tính sai theo toàn bộ 4 bản ghi lịch sử: (10 + 20 + 80 + 40) / 4 = 37.5% -> SAI.
+    const res = await fetch(`${BASE_URL}/api/dashboard/kpi?unitId=${progTestUnit.id}`, {
+      headers: { Authorization: `Bearer ${leaderUser.token}` },
+    });
+    if (!res.ok) throw new Error(`GET /api/dashboard/kpi failed with status ${res.status}`);
+    const data = await res.json();
+
+    if (data.kpis?.inProgress !== 2) {
+      throw new Error(`Expected 2 in-progress tasks, got ${data.kpis?.inProgress}`);
+    }
+    if (data.kpis?.averageProgress !== 60) {
+      throw new Error(`Expected averageProgress = 60%, got ${data.kpis?.averageProgress}% (kiểm tra xem có bị cộng dồn toàn bộ lịch sử không)`);
+    }
+
+    results.push({
+      name: "TEST 12: averageProgress chuẩn hóa theo nhiệm vụ (Mỗi việc lấy đúng 1 tiến độ mới nhất, không chia đều lịch sử)",
+      passed: true,
+      details: `Việc 1 (lịch sử 10%->20%->80%) lấy 80%. Việc 2 (40%) lấy 40%. Tiến độ TB chính xác tuyệt đối là (80+40)/2 = 60% (không phải 37.5%).`,
+      evidence: {
+        inProgress: data.kpis?.inProgress,
+        averageProgress: data.kpis?.averageProgress,
+        expectedProgress: 60,
+      },
+    });
+
+    // Dọn dẹp
+    await prisma.taskUpdate.deleteMany({ where: { taskId: { in: [taskProg1.id, taskProg2.id] } } });
+    await prisma.task.deleteMany({ where: { id: { in: [taskProg1.id, taskProg2.id] } } });
+    await prisma.orgUnit.delete({ where: { id: progTestUnit.id } });
+  } catch (err: any) {
+    results.push({
+      name: "TEST 12: averageProgress chuẩn hóa theo nhiệm vụ (Mỗi việc lấy đúng 1 tiến độ mới nhất, không chia đều lịch sử)",
+      passed: false,
+      details: err.message,
+    });
+  }
+
+  // -----------------------------------------------------------------------------------------
+  // TEST 13 — Động hóa kỳ báo cáo: Truy vấn theo kỳ CSDL độc lập (kỳ 2027) không bị gán chết 2026
+  // -----------------------------------------------------------------------------------------
+  try {
+    const period2027 = await prisma.reportingPeriod.create({
+      data: {
+        title: "Kỳ Kế hoạch Quý 1/2027 (Kỳ kiểm thử động)",
+        type: "QUARTER",
+        startAt: new Date("2027-01-01T00:00:00.000Z"),
+        endAt: new Date("2027-03-31T23:59:59.999Z"),
+        isLocked: false,
+      },
+    });
+
+    const task2027 = await prisma.task.create({
+      data: {
+        code: `TASK-2027-${Date.now()}`,
+        title: "Nhiệm vụ trọng tâm Kế hoạch Công tác Quý 1/2027",
+        ownerId: leaderA.account.personId,
+        unitId: unitAId,
+        status: "IN_PROGRESS",
+        priority: "Khẩn",
+        originalDeadline: new Date("2027-02-15T17:00:00.000Z"),
+        currentDeadline: new Date("2027-02-15T17:00:00.000Z"),
+        createdAt: new Date("2027-01-10T08:00:00.000Z"),
+      },
+    });
+
+    // Gọi API với param periodId của kỳ 2027
+    const res = await fetch(`${BASE_URL}/api/dashboard/kpi?period=${period2027.id}`, {
+      headers: { Authorization: `Bearer ${leaderUser.token}` },
+    });
+    if (!res.ok) throw new Error(`GET /api/dashboard/kpi for 2027 period failed with status ${res.status}`);
+    const data = await res.json();
+
+    if (data.selectedPeriod?.title !== period2027.title) {
+      throw new Error(`Expected selectedPeriod.title = '${period2027.title}', got '${data.selectedPeriod?.title}'`);
+    }
+
+    // Kiểm tra task 2027 nằm trong danh sách
+    const foundTask2027 = data.attentionTasks?.some((t: any) => t.id === task2027.id);
+    if (!foundTask2027 && data.kpis?.totalTasks === 0) {
+      throw new Error("Task 2027 was not included in 2027 period query!");
+    }
+
+    results.push({
+      name: "TEST 13: Động hóa kỳ báo cáo (Truy vấn theo kỳ CSDL độc lập 2027 hoạt động chuẩn, không gán chết 2026)",
+      passed: true,
+      details: `Tạo kỳ Quý 1/2027 trong CSDL và truy vấn qua API. Hệ thống nhận diện chuẩn xác '${data.selectedPeriod?.title}', phạm vi ${data.selectedPeriod?.startAt} - ${data.selectedPeriod?.endAt}.`,
+      evidence: {
+        periodId: period2027.id,
+        selectedTitle: data.selectedPeriod?.title,
+        totalTasksInPeriod: data.kpis?.totalTasks,
+      },
+    });
+
+    // Dọn dẹp
+    await prisma.task.delete({ where: { id: task2027.id } });
+    await prisma.reportingPeriod.delete({ where: { id: period2027.id } });
+  } catch (err: any) {
+    results.push({
+      name: "TEST 13: Động hóa kỳ báo cáo (Truy vấn theo kỳ CSDL độc lập 2027 hoạt động chuẩn, không gán chết 2026)",
+      passed: false,
+      details: err.message,
+    });
+  }
+
+  // -----------------------------------------------------------------------------------------
   // TỔNG KẾT BÁO CÁO
   // -----------------------------------------------------------------------------------------
   console.log("\n================================================================================");

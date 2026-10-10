@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const requestedUnitId = searchParams.get("unitId");
-    const periodParam = searchParams.get("period"); // today, w41, month10, custom, all
+    const periodParam = searchParams.get("period"); // today, w41, month10, custom, all, or a period ID
     const periodIdParam = searchParams.get("periodId");
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
@@ -52,53 +52,82 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // 2. Xác định phạm vi thời gian / Kỳ báo cáo (Period Filter)
+    // 2. Tải danh sách các kỳ báo cáo có sẵn từ CSDL để không bị cố định vào tuần/tháng cụ thể
+    const availablePeriods = await prisma.reportingPeriod.findMany({
+      orderBy: { startAt: "desc" },
+      take: 12,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        startAt: true,
+        endAt: true,
+        isLocked: true,
+      },
+    });
+
+    // Xác định phạm vi thời gian / Kỳ báo cáo (Period Filter)
     let periodStart: Date | null = null;
     let periodEnd: Date | null = null;
+    let selectedPeriodTitle = "Toàn bộ nhiệm vụ";
+    let matchedPeriodId: string | null = null;
 
-    if (periodIdParam) {
-      const p = await prisma.reportingPeriod.findUnique({
-        where: { id: periodIdParam },
-      });
-      if (p) {
-        periodStart = p.startAt;
-        periodEnd = p.endAt;
+    const targetPeriodKey = periodIdParam || periodParam;
+
+    if (targetPeriodKey && targetPeriodKey !== "all") {
+      // Kiểm tra nếu là UUID của ReportingPeriod
+      const matchedPeriod = availablePeriods.find(
+        (p) => p.id === targetPeriodKey || p.title.toLowerCase().includes(targetPeriodKey.toLowerCase())
+      );
+
+      if (matchedPeriod) {
+        periodStart = matchedPeriod.startAt;
+        periodEnd = matchedPeriod.endAt;
+        selectedPeriodTitle = matchedPeriod.title;
+        matchedPeriodId = matchedPeriod.id;
+      } else if (targetPeriodKey === "today") {
+        const now = new Date();
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        selectedPeriodTitle = `Hôm nay (${now.toLocaleDateString("vi-VN")})`;
+      } else if (targetPeriodKey === "w41") {
+        const pW41 = availablePeriods.find((p) => p.title.includes("Tuần 41"));
+        if (pW41) {
+          periodStart = pW41.startAt;
+          periodEnd = pW41.endAt;
+          selectedPeriodTitle = pW41.title;
+          matchedPeriodId = pW41.id;
+        } else {
+          periodStart = new Date("2026-10-05T00:00:00Z");
+          periodEnd = new Date("2026-10-12T23:59:59Z");
+          selectedPeriodTitle = "Tuần 41/2026";
+        }
+      } else if (targetPeriodKey === "month10") {
+        const pMonth = availablePeriods.find((p) => p.type === "MONTH" && p.title.includes("Tháng 10"));
+        if (pMonth) {
+          periodStart = pMonth.startAt;
+          periodEnd = pMonth.endAt;
+          selectedPeriodTitle = pMonth.title;
+          matchedPeriodId = pMonth.id;
+        } else {
+          periodStart = new Date("2026-10-01T00:00:00Z");
+          periodEnd = new Date("2026-10-31T23:59:59Z");
+          selectedPeriodTitle = "Tháng 10/2026";
+        }
+      } else if (targetPeriodKey === "custom" && startDateParam && endDateParam) {
+        periodStart = new Date(startDateParam);
+        periodEnd = new Date(endDateParam);
+        selectedPeriodTitle = `Từ ${new Date(startDateParam).toLocaleDateString("vi-VN")} đến ${new Date(endDateParam).toLocaleDateString("vi-VN")}`;
       }
-    } else if (periodParam === "today") {
-      const now = new Date();
-      periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    } else if (periodParam === "w41") {
-      // Tìm kỳ Tuần 41 trong DB nếu có, hoặc dùng khoảng ngày tuần 41 (05/10 - 12/10/2026)
-      const pW41 = await prisma.reportingPeriod.findFirst({
-        where: { title: { contains: "Tuần 41" } },
-      });
-      if (pW41) {
-        periodStart = pW41.startAt;
-        periodEnd = pW41.endAt;
-      } else {
-        periodStart = new Date("2026-10-05T00:00:00Z");
-        periodEnd = new Date("2026-10-12T23:59:59Z");
-      }
-    } else if (periodParam === "month10") {
-      const pMonth = await prisma.reportingPeriod.findFirst({
-        where: { type: "MONTH", title: { contains: "Tháng 10" } },
-      });
-      if (pMonth) {
-        periodStart = pMonth.startAt;
-        periodEnd = pMonth.endAt;
-      } else {
-        periodStart = new Date("2026-10-01T00:00:00Z");
-        periodEnd = new Date("2026-10-31T23:59:59Z");
-      }
-    } else if (periodParam === "custom" && startDateParam && endDateParam) {
-      periodStart = new Date(startDateParam);
-      periodEnd = new Date(endDateParam);
     }
 
-    // Áp dụng điều kiện lọc thời gian nếu có
+    // Áp dụng điều kiện lọc thời gian theo quy tắc nhất quán:
+    // Nhiệm vụ thuộc kỳ nếu:
+    // (a) Có liên kết với Kế hoạch của kỳ đó, HOẶC
+    // (b) Hạn hiện hành nằm trong khoảng ngày của kỳ, HOẶC
+    // (c) Được tạo trong khoảng ngày của kỳ
     if (periodStart && periodEnd) {
-      const periodCondition = [
+      const periodCondition: any[] = [
         {
           currentDeadline: {
             gte: periodStart,
@@ -111,21 +140,21 @@ export async function GET(req: NextRequest) {
             lte: periodEnd,
           },
         },
-        {
+      ];
+
+      if (matchedPeriodId) {
+        periodCondition.push({
           planLinks: {
             some: {
               planItem: {
                 plan: {
-                  period: {
-                    startAt: { lte: periodEnd },
-                    endAt: { gte: periodStart },
-                  },
+                  periodId: matchedPeriodId,
                 },
               },
             },
           },
-        },
-      ];
+        });
+      }
 
       if (where.OR) {
         where.AND = [{ OR: where.OR }, { OR: periodCondition }];
@@ -135,7 +164,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 3. Truy vấn danh sách nhiệm vụ thực tế từ PostgreSQL
+    // 3. Truy vấn danh sách nhiệm vụ từ PostgreSQL kèm lịch sử cập nhật
     const now = new Date();
 
     const tasks = await prisma.task.findMany({
@@ -145,8 +174,12 @@ export async function GET(req: NextRequest) {
         unit: { select: { id: true, name: true, code: true } },
         updates: {
           orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { progressPercent: true, createdAt: true },
+          select: {
+            progressPercent: true,
+            createdAt: true,
+            statusBefore: true,
+            statusAfter: true,
+          },
         },
         deadlineRequests: {
           where: { status: "PENDING" },
@@ -156,8 +189,8 @@ export async function GET(req: NextRequest) {
       orderBy: [{ currentDeadline: "asc" }, { createdAt: "desc" }],
     });
 
-    // 4. Tính toán chính xác toàn bộ các chỉ số KPI theo quy tắc nghiệp vụ
-    // Không đếm các nhiệm vụ CANCELED vào tổng số đang hoạt động
+    // 4. Bóc tách danh sách và tính toán KPI theo chuẩn nghiệp vụ
+    // Loại bỏ các nhiệm vụ CANCELED
     const activeTasks = tasks.filter((t) => t.status !== "CANCELED");
     const totalTasks = activeTasks.length;
 
@@ -170,14 +203,17 @@ export async function GET(req: NextRequest) {
     let ownedTasksCount = 0;
     let urgentTasksCount = 0;
     let urgentReviewCount = 0;
-    let sumProgress = 0;
-    let inProgressCount = 0;
-    let onTimeCompletedCount = 0;
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     let newTasksCount = 0;
 
+    // Danh sách nhiệm vụ hoàn thành và đang thực hiện
+    const completedTasksList: typeof activeTasks = [];
+    const inProgressTasksList: typeof activeTasks = [];
+
     for (const t of activeTasks) {
+      // Trạng thái hoàn thành chính thức: chỉ tính COMPLETED hoặc DONE
+      // WAITING_REVIEW TUYỆT ĐỐI KHÔNG ĐƯỢC tính vào COMPLETED
       const isDone = t.status === "COMPLETED" || t.status === "DONE";
       const isWaiting = t.status === "WAITING_REVIEW";
       const isInProg = t.status === "IN_PROGRESS";
@@ -185,10 +221,17 @@ export async function GET(req: NextRequest) {
       const isOver = !isDone && new Date(t.currentDeadline) < now;
       const isUrgent = t.priority === "Cao" || t.priority === "Khẩn";
 
-      if (isDone) completed++;
-      else if (isWaiting) waitingReview++;
-      else if (isInProg) inProgress++;
-      else if (isNotStart) notStarted++;
+      if (isDone) {
+        completed++;
+        completedTasksList.push(t);
+      } else if (isWaiting) {
+        waitingReview++;
+      } else if (isInProg) {
+        inProgress++;
+        inProgressTasksList.push(t);
+      } else if (isNotStart) {
+        notStarted++;
+      }
 
       if (isOver) overdue++;
       if (t.hasIssue && !isDone) hasIssue++;
@@ -196,47 +239,89 @@ export async function GET(req: NextRequest) {
       if (isUrgent && !isDone) urgentTasksCount++;
       if (isWaiting && isUrgent) urgentReviewCount++;
 
-      // Tiến độ trung bình
-      if (isInProg) {
-        inProgressCount++;
-        const prog = t.updates[0]?.progressPercent ?? 0;
-        sumProgress += prog;
-      }
-
-      // Hoàn thành đúng hạn
-      if (isDone) {
-        if (new Date(t.updatedAt) <= new Date(t.currentDeadline)) {
-          onTimeCompletedCount++;
-        }
-      }
-
       // Nhiệm vụ mới trong 7 ngày
       if (new Date(t.createdAt) >= sevenDaysAgo) {
         newTasksCount++;
       }
     }
 
+    // 4.1 TÍNH TIẾN ĐỘ TRUNG BÌNH (averageProgress):
+    // Yêu cầu: Không tính trung bình tất cả bản ghi TaskUpdate trong lịch sử.
+    // Mỗi Task chỉ được đóng góp duy nhất MỘT giá trị tiến độ hiện hành (t.updates[0]).
+    let sumCurrentProgress = 0;
+    for (const t of inProgressTasksList) {
+      // Lấy bản cập nhật gần nhất của Task này
+      const latestProgress = t.updates[0]?.progressPercent ?? 0;
+      sumCurrentProgress += latestProgress;
+    }
+    const averageProgress =
+      inProgressTasksList.length > 0
+        ? Math.round(sumCurrentProgress / inProgressTasksList.length)
+        : null;
+
+    // 4.2 TÍNH TỶ LỆ HOÀN THÀNH ĐÚNG HẠN (onTimeRate):
+    // Yêu cầu: Không sử dụng Task.updatedAt.
+    // Tìm thời điểm thực tế nhiệm vụ chuyển sang COMPLETED/DONE trong TaskUpdate hoặc AuditEvent.
+    // Nếu dữ liệu lịch sử chưa đủ để xác định thời điểm hoàn thành, trả về null ("Chưa đủ dữ liệu").
+    const tasksMissingUpdateCompletion = completedTasksList.filter(
+      (t) => !t.updates.some((u) => u.statusAfter === "COMPLETED" || u.statusAfter === "DONE")
+    );
+
+    const auditCompletionMap = new Map<string, Date>();
+    if (tasksMissingUpdateCompletion.length > 0) {
+      const taskIdsToCheck = tasksMissingUpdateCompletion.map((t) => t.id);
+      const auditLogs = await prisma.auditEvent.findMany({
+        where: {
+          resourceType: "Task",
+          resourceId: { in: taskIdsToCheck },
+          action: "TASK_APPROVE_COMPLETED",
+        },
+        select: { resourceId: true, timestamp: true },
+        orderBy: { timestamp: "desc" },
+      });
+      for (const log of auditLogs) {
+        if (log.resourceId && !auditCompletionMap.has(log.resourceId)) {
+          auditCompletionMap.set(log.resourceId, log.timestamp);
+        }
+      }
+    }
+
+    let evaluableCompletedCount = 0;
+    let onTimeCompletedCount = 0;
+
+    for (const t of completedTasksList) {
+      // Tìm bản cập nhật khi nhiệm vụ được chuyển sang COMPLETED/DONE
+      const completionUpdate = t.updates.find(
+        (u) => u.statusAfter === "COMPLETED" || u.statusAfter === "DONE"
+      );
+
+      let actualCompletedAt: Date | null = null;
+      if (completionUpdate) {
+        actualCompletedAt = completionUpdate.createdAt;
+      } else if (auditCompletionMap.has(t.id)) {
+        actualCompletedAt = auditCompletionMap.get(t.id)!;
+      }
+
+      // Chỉ đánh giá nếu có bằng chứng lịch sử rõ ràng về thời điểm nghiệm thu hoàn thành
+      if (actualCompletedAt) {
+        evaluableCompletedCount++;
+        // Đối chiếu với thời hạn có hiệu lực tại thời điểm đó (currentDeadline)
+        if (new Date(actualCompletedAt) <= new Date(t.currentDeadline)) {
+          onTimeCompletedCount++;
+        }
+      }
+    }
+
+    const onTimeRate =
+      evaluableCompletedCount > 0
+        ? Math.round((onTimeCompletedCount / evaluableCompletedCount) * 100)
+        : null;
+
     // Tỷ lệ hoàn thành: completed / totalTasks * 100 (Nếu total = 0 -> null)
     const completionRate = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : null;
 
     // Tỷ lệ có cán bộ chủ trì: owned / totalTasks * 100
     const assignedRate = totalTasks > 0 ? Math.round((ownedTasksCount / totalTasks) * 100) : null;
-
-    // Tiến độ trung bình của các nhiệm vụ đang làm: sumProgress / inProgressCount
-    const averageProgress =
-      inProgressCount > 0
-        ? Math.round(sumProgress / inProgressCount)
-        : completed > 0
-        ? 100
-        : null;
-
-    // Tỷ lệ đúng hạn: onTimeCompletedCount / completed (hoặc tỷ lệ nhiệm vụ hiện chưa quá hạn)
-    const onTimeRate =
-      completed > 0
-        ? Math.round((onTimeCompletedCount / completed) * 100)
-        : totalTasks > 0
-        ? Math.round(((totalTasks - overdue) / totalTasks) * 100)
-        : null;
 
     // 5. Thống kê theo bộ phận (Department Breakdown)
     const deptWhere: any = { level: 2 };
@@ -265,19 +350,12 @@ export async function GET(req: NextRequest) {
       ).length;
 
       // Tỷ lệ hoàn thành bộ phận thật: completed / total * 100
-      // Nếu tổng số việc = 0, trả về null để Frontend hiển thị "Chưa có dữ liệu" / N/A
+      // Nếu tổng số việc = 0, trả về null để hiển thị "Chưa có dữ liệu"
       const dCompletionRate = dTotal > 0 ? Math.round((dCompleted / dTotal) * 100) : null;
 
       const dInProgTasks = deptTasks.filter((t) => t.status === "IN_PROGRESS");
-      const dAvgProg =
-        dInProgTasks.length > 0
-          ? Math.round(
-              dInProgTasks.reduce((acc, t) => acc + (t.updates[0]?.progressPercent ?? 0), 0) /
-                dInProgTasks.length
-            )
-          : dCompleted > 0
-          ? 100
-          : null;
+      const dSumProg = dInProgTasks.reduce((acc, t) => acc + (t.updates[0]?.progressPercent ?? 0), 0);
+      const dAvgProg = dInProgTasks.length > 0 ? Math.round(dSumProg / dInProgTasks.length) : null;
 
       return {
         id: u.id,
@@ -305,7 +383,6 @@ export async function GET(req: NextRequest) {
           t.priority === "Cao"
       )
       .sort((a, b) => {
-        // Ưu tiên: Quá hạn > Có vướng mắc > Chờ duyệt > Hạn gần nhất
         const aOverdue = new Date(a.currentDeadline) < now ? 1 : 0;
         const bOverdue = new Date(b.currentDeadline) < now ? 1 : 0;
         if (bOverdue !== aOverdue) return bOverdue - aOverdue;
@@ -367,6 +444,13 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      selectedPeriod: {
+        key: targetPeriodKey || "all",
+        title: selectedPeriodTitle,
+        startAt: periodStart?.toISOString() || null,
+        endAt: periodEnd?.toISOString() || null,
+      },
+      availablePeriods,
       kpis: {
         totalTasks,
         inProgress,
@@ -375,11 +459,12 @@ export async function GET(req: NextRequest) {
         overdue,
         hasIssue,
         notStarted,
-        // Chỉ số phụ tính toán thực tế
         completionRate,
         assignedRate,
         averageProgress,
         onTimeRate,
+        evaluableCompletedCount,
+        onTimeCompletedCount,
         newTasksCount,
         urgentTasksCount,
         urgentReviewCount,
