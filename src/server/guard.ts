@@ -23,8 +23,12 @@ const SYSTEM_ADMIN_PERMISSIONS = [
 ];
 
 export function checkPermission(user: SessionUser, permission: string): boolean {
-  // 1. UNIT_LEADER là Lãnh đạo đơn vị: Toàn quyền điều hành và xem xét
+  // 1. UNIT_LEADER là Lãnh đạo đơn vị: Toàn quyền điều hành và xem xét nghiệp vụ
+  // Tuyệt đối không tự động cấp quyền quản trị kỹ thuật hệ thống (system.config)
   if (user.role === "UNIT_LEADER") {
+    if (permission === "system.config") {
+      return Array.isArray(user.permissions) ? user.permissions.includes("system.config") : false;
+    }
     return true;
   }
 

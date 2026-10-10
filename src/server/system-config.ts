@@ -162,6 +162,13 @@ export async function updateSystemConfig(
     if (validatedValue !== "true" && validatedValue !== "false") {
       return { success: false, error: `Giá trị của "${def.description}" phải là "true" hoặc "false"` };
     }
+    // Bảo vệ kỷ luật điều hành: Bắt buộc nêu lý do khi xin lùi hạn
+    if (key === "deadlineRequireReason" && validatedValue === "false") {
+      return {
+        success: false,
+        error: "Theo nguyên tắc kỷ luật theo dõi tiến độ, không được phép tắt yêu cầu giải trình lý do lùi hạn trừ khi có quyết định nghiệp vụ được phê duyệt bằng văn bản",
+      };
+    }
   } else if (def.dataType === "STRING") {
     if (!validatedValue) {
       return { success: false, error: `Giá trị của "${def.description}" không được để trống` };

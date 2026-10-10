@@ -45,7 +45,8 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { progressPercent, notes, newStatus, hasIssue, issueNotes } = body;
+    const { progressPercent, notes, newStatus, statusAfter, status, hasIssue, issueNotes } = body;
+    const resolvedStatus = newStatus || statusAfter || status;
 
     const currentTask = access.task;
 
@@ -55,7 +56,7 @@ export async function POST(
         authorId: user.personId,
         progressPercent: progressPercent !== undefined ? Number(progressPercent) : 0,
         statusBefore: currentTask.status,
-        statusAfter: newStatus || currentTask.status,
+        statusAfter: resolvedStatus || currentTask.status,
         notes: notes || null,
       },
       include: { author: true },
@@ -63,7 +64,7 @@ export async function POST(
 
     // Cập nhật lại Task
     const taskUpdateData: any = {};
-    if (newStatus) taskUpdateData.status = newStatus;
+    if (resolvedStatus) taskUpdateData.status = resolvedStatus;
     if (hasIssue !== undefined) {
       taskUpdateData.hasIssue = Boolean(hasIssue);
       taskUpdateData.issueNotes = issueNotes || null;

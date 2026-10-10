@@ -38,12 +38,11 @@ export async function PUT(req: NextRequest) {
     }
 
     const canEdit =
-      checkPermission(user, "system.config") ||
       user.role === "SYSTEM_ADMIN" ||
-      user.role === "UNIT_LEADER";
+      (Array.isArray(user.permissions) && user.permissions.includes("system.config"));
 
     if (!canEdit) {
-      return jsonError("Bạn không có quyền chỉnh sửa tham số cấu hình hệ thống", 403);
+      return jsonError("Chỉ tài khoản Quản trị kỹ thuật (SYSTEM_ADMIN) hoặc có quyền system.config được cấp rõ ràng mới được phép chỉnh sửa cấu hình hệ thống", 403);
     }
 
     const body = await req.json().catch(() => ({}));
