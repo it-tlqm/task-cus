@@ -73,6 +73,14 @@ export async function POST(
           notes: `Lãnh đạo phê duyệt gia hạn nhiệm vụ đến ngày ${deadlineReq.requestedDeadline.toLocaleDateString("vi-VN")}. Lý do: ${deadlineReq.reason}`,
         },
       });
+    } else {
+      await prisma.taskUpdate.create({
+        data: {
+          taskId,
+          authorId: user.personId,
+          notes: `Lãnh đạo từ chối đề nghị gia hạn nhiệm vụ. Lý do: ${reviewNotes || "Không chấp thuận"}`,
+        },
+      });
     }
 
     await recordAuditEvent({

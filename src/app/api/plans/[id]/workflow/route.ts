@@ -115,6 +115,10 @@ export async function POST(
         return jsonError("Bạn không có thẩm quyền trả lại kế hoạch này", 403);
       }
 
+      if (plan.status !== "SUBMITTED") {
+        return jsonError(`Chỉ kế hoạch ở trạng thái "SUBMITTED" mới có thể trả lại yêu cầu hoàn thiện`, 400);
+      }
+
       if (!reviewNotes?.trim()) {
         return jsonError("Vui lòng ghi rõ lý do hoặc nội dung chỉ đạo chỉnh sửa", 400);
       }
