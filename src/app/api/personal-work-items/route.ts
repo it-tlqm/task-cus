@@ -78,6 +78,7 @@ export async function GET(req: NextRequest) {
       include: {
         person: true,
         period: true,
+        group: true,
         template: {
           include: { group: true },
         },
@@ -117,8 +118,15 @@ export async function POST(req: NextRequest) {
       periodId,
       planItemId,
       templateId,
+      groupId,
       title,
       customTitle,
+      workDate,
+      dateText,
+      coordinationUnit,
+      priority,
+      expectedResult,
+      status,
       periodType,
       periodYear,
       periodNumber,
@@ -126,10 +134,16 @@ export async function POST(req: NextRequest) {
 
     const targetPersonId = personId || user.personId;
 
-    // Tự động phân giải title nếu truyền customTitle hoặc templateId
+    // Tự động phân giải title, groupId, priority nếu truyền templateId
     let resolvedTitle = title || customTitle;
+    let resolvedGroupId = groupId || null;
+    let resolvedPriority = priority || "Trung bình";
+
     if (templateId) {
-      const template = await prisma.activityTemplate.findUnique({ where: { id: templateId } });
+      const template = await prisma.activityTemplate.findUnique({
+        where: { id: templateId },
+        include: { group: true },
+      });
       if (!template) {
         return jsonError("Hoạt động mẫu không tồn tại trong danh mục", 400);
       }
@@ -138,6 +152,12 @@ export async function POST(req: NextRequest) {
       }
       if (!resolvedTitle?.trim()) {
         resolvedTitle = template.title;
+      }
+      if (!resolvedGroupId) {
+        resolvedGroupId = template.groupId;
+      }
+      if (!priority) {
+        resolvedPriority = template.defaultPriority || "Cao";
       }
     }
 
@@ -202,13 +222,20 @@ export async function POST(req: NextRequest) {
         periodId,
         planItemId: planItemId || null,
         templateId: templateId || null, // null nếu là đầu việc tự thêm ngoài danh mục 48 mẫu
+        groupId: resolvedGroupId,
         title: resolvedTitle.trim(),
+        workDate: workDate ? new Date(workDate) : null,
+        dateText: dateText?.trim() || null,
+        coordinationUnit: coordinationUnit?.trim() || null,
+        priority: resolvedPriority,
+        expectedResult: expectedResult?.trim() || null,
         sortOrder: (maxSort._max.sortOrder || 0) + 1,
-        status: "ACTIVE",
+        status: status || "ACTIVE",
       },
       include: {
         person: true,
-        template: true,
+        template: { include: { group: true } },
+        group: true,
         period: true,
       },
     });
@@ -222,6 +249,10 @@ export async function POST(req: NextRequest) {
         personId: newItem.personId,
         periodId: newItem.periodId,
         title: newItem.title,
+        groupId: newItem.groupId,
+        priority: newItem.priority,
+        coordinationUnit: newItem.coordinationUnit,
+        expectedResult: newItem.expectedResult,
         isCustom: !newItem.templateId,
       },
     });
@@ -240,7 +271,19 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, title, sortOrder, status, planItemId } = body;
+    const {
+      id,
+      title,
+      groupId,
+      workDate,
+      dateText,
+      coordinationUnit,
+      priority,
+      expectedResult,
+      sortOrder,
+      status,
+      planItemId,
+    } = body;
 
     if (!id) {
       return jsonError("Thiếu ID đầu việc cần cập nhật", 400);
@@ -273,8 +316,14 @@ export async function PATCH(req: NextRequest) {
 
     const updateData: any = {};
     if (title && title.trim()) updateData.title = title.trim();
+    if (groupId !== undefined) updateData.groupId = groupId || null;
+    if (workDate !== undefined) updateData.workDate = workDate ? new Date(workDate) : null;
+    if (dateText !== undefined) updateData.dateText = dateText?.trim() || null;
+    if (coordinationUnit !== undefined) updateData.coordinationUnit = coordinationUnit?.trim() || null;
+    if (priority !== undefined) updateData.priority = priority;
+    if (expectedResult !== undefined) updateData.expectedResult = expectedResult?.trim() || null;
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
-    if (status) updateData.status = status; // ACTIVE, COMPLETED, DISCONTINUED
+    if (status) updateData.status = status; // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
     if (planItemId !== undefined) updateData.planItemId = planItemId;
 
     const updated = await prisma.personalWorkItem.update({
@@ -282,7 +331,8 @@ export async function PATCH(req: NextRequest) {
       data: updateData,
       include: {
         person: true,
-        template: true,
+        template: { include: { group: true } },
+        group: true,
       },
     });
 

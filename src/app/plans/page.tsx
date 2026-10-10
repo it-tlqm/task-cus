@@ -4,26 +4,54 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 
+interface ActivityGroup {
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+  description?: string;
+}
+
+interface ActivityTemplate {
+  id: string;
+  code: string;
+  title: string;
+  groupId: string;
+  group?: { id: string; name: string; code: string };
+  defaultPriority?: string;
+  reviewStatus?: string;
+}
+
+interface PersonalWorkItemData {
+  id: string;
+  title: string;
+  status: string;
+  person?: { id: string; fullName: string };
+  workDate?: string | null;
+  dateText?: string | null;
+  groupId?: string | null;
+  group?: { id: string; name: string; code: string } | null;
+  coordinationUnit?: string | null;
+  priority?: string | null;
+  expectedResult?: string | null;
+  templateId?: string | null;
+  template?: { id: string; code: string; title: string; groupId?: string; group?: { id: string; name: string; code: string } } | null;
+}
+
 interface PlanItem {
   id: string;
   title: string;
   status: "DRAFT" | "SUBMITTED" | "APPROVED" | "RETURNED" | "IN_EFFECT";
   approvedBy?: string;
   approvedAt?: string;
-  period: { id: string; name: string; code: string; year: number; weekNumber?: number; periodType: string };
+  period: { id: string; name: string; code: string; year: number; weekNumber?: number; periodType: string; startAt?: string; endAt?: string };
   unit: { id: string; name: string; code: string };
   items: Array<{
     id: string;
     title: string;
     sortOrder: number;
     group?: { name: string; code: string };
-    workItems: Array<{
-      id: string;
-      title: string;
-      status: string;
-      person: { fullName: string };
-      template?: { code: string; title: string };
-    }>;
+    workItems: Array<PersonalWorkItemData>;
     taskLinks: Array<{
       task: {
         id: string;
@@ -37,14 +65,6 @@ interface PlanItem {
       };
     }>;
   }>;
-}
-
-interface ActivityTemplate {
-  id: string;
-  code: string;
-  title: string;
-  activityGroup?: { name: string };
-  reviewStatus?: string;
 }
 
 export default function PlansPage() {
@@ -70,15 +90,27 @@ export default function PlansPage() {
     return Array.from(map.values());
   }, [plans, selectedPlanIndex]);
 
+  const [groups, setGroups] = useState<ActivityGroup[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ id: string; personId: string; fullName: string; role: string } | null>(null);
+  const [selectedScope, setSelectedScope] = useState<"all" | "personal">("all");
+
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnNotes, setReturnNotes] = useState("");
   const [workflowMessage, setWorkflowMessage] = useState<string | null>(null);
 
-  // Form states
-  const [newWorkItemTitle, setNewWorkItemTitle] = useState("");
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  // Form states for Add / Edit Modal
+  const [editingItem, setEditingItem] = useState<PersonalWorkItemData | null>(null);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalTemplateId, setModalTemplateId] = useState("");
+  const [modalGroupId, setModalGroupId] = useState("");
+  const [modalWorkDate, setModalWorkDate] = useState("");
+  const [modalDateText, setModalDateText] = useState("");
+  const [modalCoordination, setModalCoordination] = useState("");
+  const [modalPriority, setModalPriority] = useState("Trung bình");
+  const [modalExpectedResult, setModalExpectedResult] = useState("");
+  const [modalStatus, setModalStatus] = useState("NOT_STARTED");
 
   // Mobile View Filters
   const [mobilePeriod, setMobilePeriod] = useState<"day" | "week" | "month">("week");
@@ -91,9 +123,11 @@ export default function PlansPage() {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const [resPlans, resTemplates] = await Promise.all([
+      const [resPlans, resTemplates, resGroups, resUser] = await Promise.all([
         fetch("/api/plans"),
         fetch("/api/catalog/templates"),
+        fetch("/api/catalog/groups"),
+        fetch("/api/auth/me"),
       ]);
 
       if (resPlans.ok) {
@@ -105,6 +139,18 @@ export default function PlansPage() {
       if (resTemplates.ok) {
         const jsonTpl = await resTemplates.json();
         setTemplates(Array.isArray(jsonTpl) ? jsonTpl : jsonTpl.data || []);
+      }
+
+      if (resGroups.ok) {
+        const jsonGrp = await resGroups.json();
+        setGroups(Array.isArray(jsonGrp) ? jsonGrp : jsonGrp.data || []);
+      }
+
+      if (resUser.ok) {
+        const jsonUser = await resUser.json();
+        if (jsonUser.user) {
+          setCurrentUser(jsonUser.user);
+        }
       }
     } catch {
       // fallback
@@ -119,48 +165,152 @@ export default function PlansPage() {
 
   const activePlan = plans[selectedPlanIndex] || null;
 
-  // Add work item to plan
-  const handleAddWorkItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newWorkItemTitle.trim() && !selectedTemplateId) return;
+  // Options for days of the week based on activePlan
+  const weekDaysOptions = React.useMemo(() => {
+    const list: Array<{ value: string; label: string; dayLabel: string; dateStr: string }> = [];
+    if (!activePlan?.period?.startAt) {
+      const base = new Date("2026-10-05T00:00:00Z");
+      const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(base.getTime() + i * 86400000);
+        const yyyy = d.getUTCFullYear();
+        const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(d.getUTCDate()).padStart(2, "0");
+        list.push({
+          value: `${yyyy}-${mm}-${dd}`,
+          label: `${dayNames[i]} (${dd}/${mm}/${yyyy})`,
+          dayLabel: dayNames[i],
+          dateStr: `${dd}/${mm}/${yyyy}`,
+        });
+      }
+      return list;
+    }
 
+    const start = new Date(activePlan.period.startAt);
+    const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start.getTime() + i * 86400000);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const dayName = dayNames[d.getDay()];
+      list.push({
+        value: `${yyyy}-${mm}-${dd}`,
+        label: `${dayName} (${dd}/${mm}/${yyyy})`,
+        dayLabel: dayName,
+        dateStr: `${dd}/${mm}/${yyyy}`,
+      });
+    }
+    return list;
+  }, [activePlan]);
+
+  // Modal Handlers
+  const openAddModal = (initialTemplateId = "") => {
+    setEditingItem(null);
+    setModalTemplateId(initialTemplateId);
+    if (initialTemplateId) {
+      const tpl = templates.find((t) => t.id === initialTemplateId);
+      if (tpl) {
+        setModalTitle(tpl.title);
+        setModalGroupId(tpl.groupId || groups[0]?.id || "");
+        setModalPriority(tpl.defaultPriority || "Cao");
+      }
+    } else {
+      setModalTitle("");
+      setModalGroupId(groups[0]?.id || "");
+      setModalPriority("Trung bình");
+    }
+    setModalWorkDate("");
+    setModalDateText("");
+    setModalCoordination("");
+    setModalExpectedResult("");
+    setModalStatus("NOT_STARTED");
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (wi: PersonalWorkItemData) => {
+    setEditingItem(wi);
+    setModalTemplateId(wi.templateId || "");
+    setModalTitle(wi.title);
+    setModalGroupId(wi.groupId || wi.template?.groupId || wi.template?.group?.id || groups[0]?.id || "");
+    setModalWorkDate(wi.workDate ? new Date(wi.workDate).toISOString().slice(0, 10) : "");
+    setModalDateText(wi.dateText || "");
+    setModalCoordination(wi.coordinationUnit || "");
+    setModalPriority(wi.priority || "Trung bình");
+    setModalExpectedResult(wi.expectedResult || "");
+    setModalStatus(wi.status || "NOT_STARTED");
+    setShowAddModal(true);
+  };
+
+  const handleSaveWorkItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modalTitle.trim()) {
+      toast.warning("Vui lòng nhập tên đầu việc");
+      return;
+    }
     if (!activePlan) {
       toast.warning("Vui lòng chọn kế hoạch công tác");
       return;
     }
 
-    let finalTitle = newWorkItemTitle.trim();
-    if (!finalTitle && selectedTemplateId) {
-      const tpl = templates.find((t) => t.id === selectedTemplateId);
-      if (tpl) finalTitle = tpl.title;
-    }
-
     try {
-      const res = await fetch("/api/personal-work-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          periodId: activePlan.period?.id,
-          planItemId: activePlan.items?.[0]?.id || undefined,
-          templateId: selectedTemplateId || undefined,
-          title: finalTitle,
-        }),
-      });
-
-      const json = await res.json();
-      if (res.ok) {
-        setNewWorkItemTitle("");
-        setSelectedTemplateId("");
-        setShowAddModal(false);
-        setWorkflowMessage("Đã thêm thành công đầu việc vào kế hoạch!");
-        toast.success("Đã thêm thành công đầu việc vào kế hoạch!");
-        fetchPlans();
-        setTimeout(() => setWorkflowMessage(null), 3000);
+      if (editingItem) {
+        const res = await fetch("/api/personal-work-items", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: editingItem.id,
+            title: modalTitle.trim(),
+            groupId: modalGroupId || null,
+            workDate: modalWorkDate || null,
+            dateText: modalDateText.trim() || null,
+            coordinationUnit: modalCoordination.trim() || null,
+            priority: modalPriority,
+            expectedResult: modalExpectedResult.trim() || null,
+            status: modalStatus,
+          }),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setShowAddModal(false);
+          setWorkflowMessage("Đã cập nhật đầu việc thành công!");
+          toast.success("Đã cập nhật đầu việc thành công!");
+          fetchPlans();
+          setTimeout(() => setWorkflowMessage(null), 3000);
+        } else {
+          toast.error(json.error || "Không thể cập nhật đầu việc");
+        }
       } else {
-        toast.error(json.error || "Không thể thêm đầu việc vào kế hoạch");
+        const res = await fetch("/api/personal-work-items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            periodId: activePlan.period?.id,
+            planItemId: activePlan.items?.[0]?.id || undefined,
+            templateId: modalTemplateId || undefined,
+            groupId: modalGroupId || undefined,
+            title: modalTitle.trim(),
+            workDate: modalWorkDate || undefined,
+            dateText: modalDateText.trim() || undefined,
+            coordinationUnit: modalCoordination.trim() || undefined,
+            priority: modalPriority,
+            expectedResult: modalExpectedResult.trim() || undefined,
+            status: modalStatus,
+          }),
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setShowAddModal(false);
+          setWorkflowMessage("Đã thêm thành công đầu việc vào kế hoạch!");
+          toast.success("Đã thêm thành công đầu việc vào kế hoạch!");
+          fetchPlans();
+          setTimeout(() => setWorkflowMessage(null), 3000);
+        } else {
+          toast.error(json.error || "Không thể thêm đầu việc vào kế hoạch");
+        }
       }
     } catch (err: any) {
-      toast.error("Lỗi: " + err.message);
+      toast.error("Lỗi kết nối: " + err.message);
     }
   };
 
@@ -270,14 +420,15 @@ export default function PlansPage() {
             {/* Action Group */}
             <div className="flex flex-wrap items-center gap-space-sm shrink-0">
               <button
-                onClick={() => setShowAddModal(true)}
+                data-testid="add-work-item-btn"
+                onClick={() => openAddModal()}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md font-semibold transition-fast shadow-sm active-press"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 <span>+ Thêm đầu việc mới</span>
               </button>
               <button
-                onClick={() => setShowAddModal(true)}
+                onClick={() => openAddModal()}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
               >
                 <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
@@ -319,14 +470,16 @@ export default function PlansPage() {
                 </button>
               )}
 
-              <Link
-                href="/reports/excel"
+              <a
+                data-testid="export-xlsx-btn"
+                href={`/api/reports/export?template=legacy&periodId=${activePlan?.period?.id || ""}${selectedScope === "personal" ? "&scope=personal" : ""}`}
+                download
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
-                title="Xuất dữ liệu Excel chuẩn mẫu báo cáo"
+                title="Xuất dữ liệu Excel chuẩn mẫu báo cáo Hải quan (8 cột A-H)"
               >
                 <span className="material-symbols-outlined text-[18px] text-status-success">download</span>
                 <span>Xuất .XLSX</span>
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -351,10 +504,36 @@ export default function PlansPage() {
 
             {/* Filter Controls Bar */}
             <div className="flex flex-wrap items-center gap-space-sm">
+              {/* Scope Switcher: All vs Personal Plan */}
+              <div className="inline-flex p-1 rounded-lg bg-surface-container-low border border-border-subtle gap-1">
+                <button
+                  onClick={() => setSelectedScope("all")}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-fast ${
+                    selectedScope === "all"
+                      ? "bg-primary text-on-primary shadow-sm"
+                      : "text-on-surface-variant hover:text-primary"
+                  }`}
+                >
+                  Toàn đơn vị
+                </button>
+                <button
+                  onClick={() => setSelectedScope("personal")}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-fast flex items-center gap-1 ${
+                    selectedScope === "personal"
+                      ? "bg-primary text-on-primary shadow-sm"
+                      : "text-on-surface-variant hover:text-primary"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">person</span>
+                  Kế hoạch cá nhân
+                </button>
+              </div>
+
               {plans.length > 0 && (
                 <div className="flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle">
                   <span className="font-label-sm text-label-sm text-outline">Kế hoạch:</span>
                   <select
+                    data-testid="plan-select"
                     value={selectedPlanIndex}
                     onChange={(e) => setSelectedPlanIndex(Number(e.target.value))}
                     className="bg-transparent font-label-md text-label-md font-semibold text-primary focus:outline-none cursor-pointer max-w-[280px] truncate"
@@ -455,6 +634,7 @@ export default function PlansPage() {
 
                   const allRows: Array<{
                     id: string;
+                    rawWorkItem?: PersonalWorkItemData;
                     dayLabel: string;
                     dateStr: string;
                     groupTitle: string;
@@ -469,45 +649,48 @@ export default function PlansPage() {
                     hasIssue?: boolean;
                   }> = [];
 
-                  const weekdays = [
-                    { day: "Thứ 2", date: "06/10/2026" },
-                    { day: "Thứ 3", date: "07/10/2026" },
-                    { day: "Thứ 4", date: "08/10/2026" },
-                    { day: "Thứ 5", date: "09/10/2026" },
-                    { day: "Thứ 6", date: "10/10/2026" },
-                    { day: "Thứ 7", date: "11/10/2026" },
-                    { day: "Chủ nhật", date: "12/10/2026" },
-                  ];
-
-                  let idx = 0;
                   activePlan.items.forEach((item) => {
-                    const groupName = item.group?.name || item.title || "Nhiệm vụ thường xuyên";
-
                     item.workItems?.forEach((wi) => {
-                      const dayInfo = weekdays[idx % weekdays.length];
+                      let dayLabel = "Cả tuần";
+                      let dateStr = "Thường xuyên";
+
+                      if (wi.workDate) {
+                        const d = new Date(wi.workDate);
+                        const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+                        dayLabel = dayNames[d.getDay()];
+                        dateStr = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+                      } else if (wi.dateText) {
+                        dayLabel = wi.dateText;
+                        dateStr = "";
+                      }
+
+                      const groupName = wi.group?.name || wi.template?.group?.name || item.group?.name || "Thực hiện thủ tục hải quan";
+
                       allRows.push({
                         id: `wi-${wi.id}`,
-                        dayLabel: dayInfo.day,
-                        dateStr: dayInfo.date,
+                        rawWorkItem: wi,
+                        dayLabel,
+                        dateStr,
                         groupTitle: groupName,
                         title: wi.title,
                         templateCode: wi.template?.code,
                         ownerName: wi.person?.fullName || "Chưa phân công",
-                        coordinationUnit: activePlan.unit?.name ? `${activePlan.unit.name}, Trạm CK` : "Bộ phận phối hợp",
-                        priority: "Trung bình",
-                        expectedResult: "Đạt 100% chỉ tiêu theo ca trực",
-                        status: wi.status,
+                        coordinationUnit: wi.coordinationUnit || "Nội bộ Chi cục",
+                        priority: wi.priority || "Trung bình",
+                        expectedResult: wi.expectedResult || "Hoàn thành theo ca trực",
+                        status: wi.status || "NOT_STARTED",
                       });
-                      idx++;
                     });
 
                     item.taskLinks?.forEach((tl) => {
                       const task = tl.task;
-                      const dayInfo = weekdays[idx % weekdays.length];
+                      const dateStr = task.currentDeadline ? new Date(task.currentDeadline).toLocaleDateString("vi-VN") : "Đúng hạn";
+                      const groupName = item.group?.name || item.title || "Nhiệm vụ trọng tâm";
+
                       allRows.push({
                         id: `tl-${tl.task.id}`,
-                        dayLabel: dayInfo.day,
-                        dateStr: task.currentDeadline ? new Date(task.currentDeadline).toLocaleDateString("vi-VN") : dayInfo.date,
+                        dayLabel: "Theo hạn",
+                        dateStr,
                         groupTitle: groupName,
                         title: task.title,
                         code: task.code,
@@ -518,11 +701,18 @@ export default function PlansPage() {
                         status: task.status,
                         hasIssue: task.hasIssue,
                       });
-                      idx++;
                     });
                   });
 
                   const filteredRows = allRows.filter((r) => {
+                    if (selectedScope === "personal" && currentUser) {
+                      if (r.rawWorkItem && r.rawWorkItem.person?.id !== currentUser.personId && r.ownerName !== currentUser.fullName) {
+                        return false;
+                      }
+                      if (!r.rawWorkItem && r.ownerName !== currentUser.fullName) {
+                        return false;
+                      }
+                    }
                     if (selectedOfficerFilter !== "all" && r.ownerName !== selectedOfficerFilter) return false;
                     if (selectedPriorityFilter !== "all") {
                       if (selectedPriorityFilter === "HIGH" && r.priority !== "Cao") return false;
@@ -551,7 +741,7 @@ export default function PlansPage() {
                     <tr key={row.id} className="hover:bg-surface-container-low/40 transition-colors">
                       <td className="py-4 px-space-md text-center align-top bg-surface-subtle/30">
                         <div className="font-body-semibold text-primary">{row.dayLabel}</div>
-                        <div className="font-label-sm text-label-sm text-outline">{row.dateStr}</div>
+                        {row.dateStr && <div className="font-label-sm text-label-sm text-outline">{row.dateStr}</div>}
                       </td>
                       <td className="py-4 px-space-md align-top">
                         <span className="font-body-semibold text-primary block">{row.groupTitle}</span>
@@ -610,19 +800,44 @@ export default function PlansPage() {
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold ${
                             row.status === "COMPLETED"
                               ? "bg-status-success-bg text-status-success"
+                              : row.status === "NOT_STARTED"
+                              ? "bg-surface-container text-outline"
                               : row.hasIssue
                               ? "bg-status-danger-bg text-status-danger"
                               : "bg-status-warning-bg text-status-warning"
                           }`}
                         >
                           <span className="material-symbols-outlined text-[14px]">
-                            {row.status === "COMPLETED" ? "check_circle" : row.hasIssue ? "warning" : "hourglass_top"}
+                            {row.status === "COMPLETED"
+                              ? "check_circle"
+                              : row.status === "NOT_STARTED"
+                              ? "schedule"
+                              : row.hasIssue
+                              ? "warning"
+                              : "hourglass_top"}
                           </span>
-                          <span>{row.status === "COMPLETED" ? "Đạt chỉ tiêu" : row.hasIssue ? "Vướng mắc" : "Đang thực hiện"}</span>
+                          <span>
+                            {row.status === "COMPLETED"
+                              ? "Đã hoàn thành"
+                              : row.status === "NOT_STARTED"
+                              ? "Chưa thực hiện"
+                              : row.hasIssue
+                              ? "Vướng mắc"
+                              : "Đang thực hiện"}
+                          </span>
                         </span>
                       </td>
                       <td className="py-4 px-space-md align-top text-center">
                         <div className="flex items-center justify-center gap-1">
+                          {row.rawWorkItem && (
+                            <button
+                              onClick={() => openEditModal(row.rawWorkItem!)}
+                              className="p-1 rounded hover:bg-surface-container text-outline hover:text-primary transition-colors inline-block"
+                              title="Chỉnh sửa đầu việc"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">edit</span>
+                            </button>
+                          )}
                           {row.id.startsWith("wi-") ? (
                             <button
                               onClick={() => handleDeleteWorkItem(row.id.replace("wi-", ""))}
@@ -909,19 +1124,24 @@ export default function PlansPage() {
       </div>
 
       {/* =========================================================================
-          MODAL: THÊM ĐẦU VIỆC MỚI VÀO KẾ HOẠCH
+          MODAL: THÊM / CHỈNH SỬA ĐẦU VIỆC KẾ HOẠCH (Chuẩn hóa 8 Cột Excel A-H)
           ========================================================================= */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary-fixed text-[22px]">
-                  post_add
+                  {editingItem ? "edit_note" : "post_add"}
                 </span>
-                <h3 className="font-headline-sm text-headline-sm text-white">
-                  Thêm Đầu Việc Vào Kế Hoạch
-                </h3>
+                <div>
+                  <h3 className="font-headline-sm text-headline-sm text-white">
+                    {editingItem ? "Chỉnh Sửa Đầu Việc Kế Hoạch" : "Thêm Đầu Việc Vào Kế Hoạch"}
+                  </h3>
+                  <p className="text-xs text-on-primary-container">
+                    {activePlan?.title || "Kế hoạch công tác"}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -931,22 +1151,32 @@ export default function PlansPage() {
               </button>
             </div>
 
-            <form onSubmit={handleAddWorkItem}>
-              <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
+            <form onSubmit={handleSaveWorkItem}>
+              <div className="p-space-md flex flex-col gap-space-md max-h-[75vh] overflow-y-auto">
+                {/* 1. Chọn từ 48 mẫu nghiệp vụ */}
                 <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Chọn từ danh mục mẫu nghiệp vụ
+                  <label className="font-label-md text-label-md text-primary font-semibold flex items-center justify-between">
+                    <span>Chọn từ danh mục 48 mẫu nghiệp vụ Hải quan</span>
+                    <span className="text-[11px] text-outline font-normal">Tự động điền nhóm &amp; ưu tiên gợi ý</span>
                   </label>
                   <select
-                    value={selectedTemplateId}
+                    data-testid="modal-template-select"
+                    value={modalTemplateId}
                     onChange={(e) => {
-                      setSelectedTemplateId(e.target.value);
-                      const tpl = templates.find((t) => t.id === e.target.value);
-                      if (tpl) setNewWorkItemTitle(tpl.title);
+                      const tplId = e.target.value;
+                      setModalTemplateId(tplId);
+                      if (tplId) {
+                        const tpl = templates.find((t) => t.id === tplId);
+                        if (tpl) {
+                          setModalTitle(tpl.title);
+                          if (tpl.groupId) setModalGroupId(tpl.groupId);
+                          if (tpl.defaultPriority) setModalPriority(tpl.defaultPriority);
+                        }
+                      }
                     }}
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   >
-                    <option value="">-- Tùy chọn đầu việc tự nhập --</option>
+                    <option value="">-- Tự nhập đầu việc ngoài danh mục mẫu --</option>
                     {templates
                       .filter((tpl) => tpl.reviewStatus !== "RETIRED")
                       .map((tpl) => (
@@ -957,16 +1187,124 @@ export default function PlansPage() {
                   </select>
                 </div>
 
+                {/* 2. Tên đầu việc cụ thể (Cột C) */}
                 <div className="flex flex-col gap-1">
                   <label className="font-label-md text-label-md text-primary font-semibold">
-                    Tên đầu việc cụ thể *
+                    Cột C: Tên đầu việc cụ thể *
+                  </label>
+                  <textarea
+                    data-testid="modal-title-input"
+                    rows={2}
+                    required
+                    value={modalTitle}
+                    onChange={(e) => setModalTitle(e.target.value)}
+                    placeholder="Nhập tên nhiệm vụ trong kỳ kế hoạch..."
+                    className="p-2.5 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                  />
+                </div>
+
+                {/* 3. Nhóm nhiệm vụ thường xuyên (Cột B) */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Cột B: Nhóm nhiệm vụ thường xuyên (1 trong 5 nhóm Excel gốc) *
+                  </label>
+                  <select
+                    data-testid="modal-group-select"
+                    required
+                    value={modalGroupId}
+                    onChange={(e) => setModalGroupId(e.target.value)}
+                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  >
+                    {groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        [{g.code}] {g.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 4. Thứ / Ngày (Cột A) & Mức ưu tiên (Cột F) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Cột A: Thứ / Ngày thực hiện
+                    </label>
+                    <select
+                      data-testid="modal-workdate-select"
+                      value={modalWorkDate}
+                      onChange={(e) => setModalWorkDate(e.target.value)}
+                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      <option value="">Cả tuần / Thực hiện thường xuyên</option>
+                      {weekDaysOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Cột F: Mức độ ưu tiên
+                    </label>
+                    <select
+                      data-testid="modal-priority-select"
+                      value={modalPriority}
+                      onChange={(e) => setModalPriority(e.target.value)}
+                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      <option value="Cao">Cao (Khẩn cấp / Trọng điểm)</option>
+                      <option value="Trung bình">Trung bình (Thường quy)</option>
+                      <option value="Thấp">Thấp</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 5. Đơn vị phối hợp (Cột E) & Tiến độ / Trạng thái (Cột H) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Cột E: Đơn vị phối hợp
+                    </label>
+                    <input
+                      data-testid="modal-coordination-input"
+                      type="text"
+                      value={modalCoordination}
+                      onChange={(e) => setModalCoordination(e.target.value)}
+                      placeholder="VD: Doanh nghiệp XNK, Trạm BP..."
+                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Cột H: Tiến độ / Trạng thái
+                    </label>
+                    <select
+                      data-testid="modal-status-select"
+                      value={modalStatus}
+                      onChange={(e) => setModalStatus(e.target.value)}
+                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      <option value="NOT_STARTED">Chưa thực hiện</option>
+                      <option value="IN_PROGRESS">Đang thực hiện</option>
+                      <option value="COMPLETED">Đã hoàn thành</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 6. Kết quả dự kiến (Cột G) */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Cột G: Kết quả dự kiến (Chỉ tiêu định tính / định lượng)
                   </label>
                   <input
+                    data-testid="modal-expected-result-input"
                     type="text"
-                    required
-                    value={newWorkItemTitle}
-                    onChange={(e) => setNewWorkItemTitle(e.target.value)}
-                    placeholder="Nhập tên nhiệm vụ trong kỳ kế hoạch..."
+                    value={modalExpectedResult}
+                    onChange={(e) => setModalExpectedResult(e.target.value)}
+                    placeholder="VD: 100% hồ sơ thông quan đúng quy trình, theo dõi 100% seal GPS..."
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
@@ -981,10 +1319,12 @@ export default function PlansPage() {
                   Hủy
                 </button>
                 <button
+                  data-testid="modal-submit-btn"
                   type="submit"
-                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press"
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5"
                 >
-                  Lưu vào kế hoạch
+                  <span className="material-symbols-outlined text-[18px]">save</span>
+                  <span>{editingItem ? "Lưu thay đổi" : "Lưu vào kế hoạch"}</span>
                 </button>
               </div>
             </form>

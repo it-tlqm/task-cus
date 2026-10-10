@@ -52,7 +52,10 @@ export async function GET(req: NextRequest) {
             workItems: {
               include: {
                 person: true,
-                template: true,
+                group: true,
+                template: {
+                  include: { group: true },
+                },
               },
               orderBy: { sortOrder: "asc" },
             },

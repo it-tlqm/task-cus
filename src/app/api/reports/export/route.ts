@@ -19,8 +19,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const templateType = searchParams.get("template") || "legacy"; // "legacy" (Mẫu A) hoặc "detailed" (Mẫu B)
+    const periodId = searchParams.get("periodId");
+    const requestedUnitId = searchParams.get("unitId");
+    const exportScope = searchParams.get("scope");
+    const requestedPersonId = searchParams.get("personId");
+
+    // Cho phép cán bộ xuất báo cáo cá nhân của chính mình; xuất báo cáo cấp đơn vị yêu cầu quyền reports.export
+    const isOwnPersonalExport = (exportScope === "personal" || user.role === "STAFF") && (!requestedPersonId || requestedPersonId === user.personId);
+
     // 2. Kiểm tra thẩm quyền xuất báo cáo: reports.export (Tiêu chí AT-17)
-    if (!checkPermission(user, "reports.export")) {
+    if (!isOwnPersonalExport && !checkPermission(user, "reports.export")) {
       await recordAuditEvent({
         actorId: user.id,
         action: "REPORT_EXPORT_BLOCKED",
@@ -37,11 +47,6 @@ export async function GET(req: NextRequest) {
         { status: 403 }
       );
     }
-
-    const { searchParams } = new URL(req.url);
-    const templateType = searchParams.get("template") || "legacy"; // "legacy" (Mẫu A) hoặc "detailed" (Mẫu B)
-    const periodId = searchParams.get("periodId");
-    const requestedUnitId = searchParams.get("unitId");
 
     // 3. Kiểm tra Scope Guard (Chống IDOR xuất trộm dữ liệu bộ phận khác)
     const authorizedUnits = await getAuthorizedUnitIds(user);
@@ -235,20 +240,30 @@ export async function GET(req: NextRequest) {
     }
     const distinctTasks = Array.from(distinctTaskMap.values());
 
+    const targetPersonId = exportScope === "personal" ? (requestedPersonId || user.personId) : requestedPersonId;
+
     // Lấy thêm đầu việc cá nhân trong kỳ
-    const workItems = await prisma.personalWorkItem.findMany({
+    let workItems = await prisma.personalWorkItem.findMany({
       where: {
         ...(period ? { periodId: period.id } : {}),
+        ...(targetPersonId ? { personId: targetPersonId } : {}),
       },
       include: {
         person: true,
+        group: true,
         template: {
           include: {
             group: true,
           },
         },
       },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
+
+    let targetOfficer = null;
+    if (targetPersonId) {
+      targetOfficer = await prisma.person.findUnique({ where: { id: targetPersonId } });
+    }
 
     let workbook;
     let fileName = "";
@@ -327,12 +342,17 @@ export async function GET(req: NextRequest) {
       // -------------------------------------------------------------
       const groupsData: LegacyReportGroupData[] = activityGroups.map((group) => {
         // Tìm các tasks hoặc workItems thuộc nhóm này
-        const matchedTasks = distinctTasks.filter((t) =>
-          t.planLinks.some((l) => l.planItem.groupId === group.id)
-        );
+        const matchedTasks = distinctTasks.filter((t) => {
+          const belongsToGroup = t.planLinks.some((l) => l.planItem.groupId === group.id);
+          if (!belongsToGroup) return false;
+          if (targetPersonId) {
+            return t.ownerId === targetPersonId || t.assignees.some((a) => a.personId === targetPersonId);
+          }
+          return true;
+        });
 
         const matchedWorkItems = workItems.filter(
-          (w) => w.template?.groupId === group.id
+          (w) => w.groupId === group.id || w.template?.groupId === group.id
         );
 
         const items: Array<{
@@ -351,23 +371,37 @@ export async function GET(req: NextRequest) {
             title: t.title,
             ownerName: t.owner.fullName,
             collaboratorName: t.assignees.map((a) => a.person.fullName).join(", "),
-            priority: t.priority === "HIGH" ? "Cao" : "Trung bình",
+            priority: t.priority === "HIGH" ? "Cao" : t.priority === "LOW" ? "Thấp" : "Trung bình",
             expectedResult: t.expectedResultText || "Theo quy chế",
             actualResult: t.actualResultText || "Đang thực hiện",
-            status: t.status === "COMPLETED" ? "Hoàn thành" : "Đang thực hiện",
+            status: t.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện",
             dateText: "Thứ 2 - Thứ 6",
           });
         });
 
         matchedWorkItems.forEach((w) => {
+          let dateStr = w.dateText;
+          if (!dateStr && w.workDate) {
+            const d = new Date(w.workDate);
+            const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+            dateStr = `${dayNames[d.getDay()]} (${d.toLocaleDateString("vi-VN")})`;
+          }
+          if (!dateStr) dateStr = "Cả tuần";
+
           items.push({
             title: w.title,
             ownerName: w.person.fullName,
-            priority: "Bình thường",
-            expectedResult: "Thực hiện đầy đủ theo ca trực",
-            actualResult: "Đã hoàn thành trong ngày",
-            status: "Hoàn thành",
-            dateText: "Hàng ngày",
+            collaboratorName: w.coordinationUnit || undefined,
+            priority: w.priority || "Trung bình",
+            expectedResult: w.expectedResult || "Hoàn thành đúng tiến độ nghiệp vụ",
+            actualResult: w.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện",
+            status:
+              w.status === "COMPLETED"
+                ? "Đã hoàn thành"
+                : w.status === "NOT_STARTED"
+                ? "Chưa thực hiện"
+                : "Đang thực hiện",
+            dateText: dateStr,
           });
         });
 
@@ -383,6 +417,7 @@ export async function GET(req: NextRequest) {
         periodTitle,
         unitName,
         departmentName,
+        officerName: targetOfficer ? targetOfficer.fullName : undefined,
         groups: groupsData,
       });
 

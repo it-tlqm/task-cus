@@ -199,6 +199,7 @@ model ActivityGroup {
 
   templates ActivityTemplate[]
   planItems PlanItem[]
+  workItems PersonalWorkItem[]
 
   @@map("activity_groups")
 }
@@ -317,22 +318,29 @@ model PlanItem {
 
 // Danh mục đầu việc thực tế của từng cá nhân theo kỳ (Biến động linh hoạt)
 model PersonalWorkItem {
-  id         String   @id @default(uuid())
-  personId   String   @map("person_id")
-  periodId   String   @map("period_id")
-  planItemId String?  @map("plan_item_id")
-  templateId String?  @map("template_id") // Nullable: có thể chọn từ mẫu hoặc tự thêm mới
-  title      String
-  sortOrder  Int      @default(0) @map("sort_order")
-  status     String   @default("ACTIVE") // ACTIVE, COMPLETED, DISCONTINUED
-  version    Int      @default(1)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id               String            @id @default(uuid())
+  personId         String            @map("person_id")
+  periodId         String            @map("period_id")
+  planItemId       String?           @map("plan_item_id")
+  templateId       String?           @map("template_id") // Nullable: có thể chọn từ mẫu hoặc tự thêm mới
+  groupId          String?           @map("group_id") // Nullable: liên kết trực tiếp nhóm nghiệp vụ cho đầu việc tự tạo
+  title            String
+  workDate         DateTime?         @map("work_date") // Thứ / Ngày thực hiện
+  dateText         String?           @map("date_text") // Nhãn ngày hiển thị tùy biến
+  coordinationUnit String?           @map("coordination_unit") // Đơn vị phối hợp
+  priority         String            @default("Trung bình") // Mức độ ưu tiên: Cao, Trung bình, Thấp
+  expectedResult   String?           @map("expected_result") // Kết quả dự kiến
+  sortOrder        Int               @default(0) @map("sort_order")
+  status           String            @default("ACTIVE") // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
+  version          Int               @default(1)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
 
   person   Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
   period   ReportingPeriod   @relation(fields: [periodId], references: [id], onDelete: Cascade)
   planItem PlanItem?         @relation(fields: [planItemId], references: [id])
   template ActivityTemplate? @relation(fields: [templateId], references: [id])
+  group    ActivityGroup?    @relation(fields: [groupId], references: [id])
   routines RoutineEntry[]
 
   @@map("personal_work_items")
