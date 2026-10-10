@@ -81,8 +81,13 @@ export interface CreateSnapshotOptions {
  * Quy trình chốt kỳ số liệu và tạo bản chụp bất biến (Immutable Report Snapshot).
  */
 export async function createReportSnapshot(user: SessionUser, options: CreateSnapshotOptions = {}) {
-  // 1. Kiểm tra quyền hạn: Chỉ Lãnh đạo đơn vị (UNIT_LEADER), Admin, hoặc người có quyền plans.approve / reports.export
-  const hasLeaderRole = user.role === "UNIT_LEADER" || user.role === "SYSTEM_ADMIN";
+  // 1. Kiểm tra quyền hạn: Chỉ Lãnh đạo đơn vị (UNIT_LEADER) hoặc người có quyền plans.approve / reports.export
+  // Quản trị kỹ thuật (SYSTEM_ADMIN) tuyệt đối không có thẩm quyền chốt kỳ số liệu nghiệp vụ
+  if (user.role === "SYSTEM_ADMIN") {
+    throw new Error("FORBIDDEN: Quản trị kỹ thuật (SYSTEM_ADMIN) không có thẩm quyền chốt khóa số liệu nghiệp vụ");
+  }
+
+  const hasLeaderRole = user.role === "UNIT_LEADER";
   const hasApprovePerm = checkPermission(user, "plans.approve") || checkPermission(user, "reports.export");
   if (!hasLeaderRole && !hasApprovePerm) {
     throw new Error("FORBIDDEN: Chỉ Lãnh đạo đơn vị mới có thẩm quyền chốt khóa số liệu kỳ báo cáo");
@@ -359,6 +364,10 @@ export async function createReportSnapshot(user: SessionUser, options: CreateSna
  * Lấy danh sách toàn bộ các bản chụp số liệu trong kho lưu trữ
  */
 export async function listReportSnapshots(user: SessionUser) {
+  if (user.role === "SYSTEM_ADMIN") {
+    throw new Error("FORBIDDEN: Quản trị kỹ thuật (SYSTEM_ADMIN) không có quyền xem dữ liệu nghiệp vụ báo cáo");
+  }
+
   const authorizedUnits = await getAuthorizedUnitIds(user);
   const unitFilter =
     authorizedUnits === "ALL"
@@ -407,6 +416,10 @@ export async function listReportSnapshots(user: SessionUser) {
  * Lấy chi tiết bản chụp đầy đủ bao gồm toàn bộ snapshotData để đối soát hoặc xuất file
  */
 export async function getReportSnapshotById(snapshotId: string, user: SessionUser) {
+  if (user.role === "SYSTEM_ADMIN") {
+    throw new Error("FORBIDDEN: Quản trị kỹ thuật (SYSTEM_ADMIN) không có quyền xem chi tiết bản chốt dữ liệu nghiệp vụ");
+  }
+
   const snapshot = await prisma.reportSnapshot.findFirst({
     where: {
       OR: [{ id: snapshotId }, { code: snapshotId }],

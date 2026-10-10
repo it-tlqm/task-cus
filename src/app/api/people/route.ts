@@ -13,50 +13,136 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const unitId = searchParams.get("unitId");
+    const search = searchParams.get("search")?.trim();
+    const status = searchParams.get("status");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "50", 10)));
 
     // Scope check: Lãnh đạo hoặc Admin kỹ thuật được xem danh mục nhân sự toàn cơ quan để quản lý;
     // Cán bộ công chức thường chỉ xem đồng nghiệp trong đơn vị mình nếu lọc
-    const authorizedUnits = await getAuthorizedUnitIds(user, true); // Admin được xem danh sách nhân sự để cấu hình tài khoản
+    const authorizedUnits = await getAuthorizedUnitIds(user, true);
 
     const whereClause: any = {};
+
+    // 1. Lọc theo đơn vị và kiểm tra Scope Guard
     if (unitId) {
       if (authorizedUnits !== "ALL" && !authorizedUnits.includes(unitId)) {
         return jsonError("Bạn không có quyền xem danh sách nhân sự của bộ phận này", 403);
       }
       whereClause.assignments = {
-        some: { unitId },
+        some: { unitId, isPrimary: true },
       };
     } else if (authorizedUnits !== "ALL") {
       whereClause.assignments = {
-        some: { unitId: { in: authorizedUnits } },
+        some: { unitId: { in: authorizedUnits }, isPrimary: true },
       };
     }
 
-    const people = await prisma.person.findMany({
-      where: whereClause,
-      include: {
-        assignments: {
-          include: {
-            unit: true,
-            position: true,
-          },
-        },
-        account: {
-          select: {
-            id: true,
-            username: true,
-            status: true,
-            roleGrants: {
-              include: { role: true },
+    // 2. Lọc theo trạng thái hồ sơ cán bộ (ACTIVE / INACTIVE)
+    if (status && status !== "ALL") {
+      whereClause.status = status;
+    }
+
+    // 3. Tìm kiếm theo từ khóa (Mã CC, Họ tên, Email, SĐT)
+    if (search) {
+      whereClause.OR = [
+        { code: { contains: search, mode: "insensitive" } },
+        { fullName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
+        {
+          assignments: {
+            some: {
+              isPrimary: true,
+              position: { title: { contains: search, mode: "insensitive" } },
             },
           },
         },
-      },
-      orderBy: { code: "asc" },
+      ];
+    }
+
+    const [total, people] = await Promise.all([
+      prisma.person.count({ where: whereClause }),
+      prisma.person.findMany({
+        where: whereClause,
+        include: {
+          assignments: {
+            where: { isPrimary: true },
+            include: {
+              unit: true,
+              position: true,
+            },
+          },
+          account: {
+            select: {
+              id: true,
+              username: true,
+              status: true,
+              lastLoginAt: true,
+              roleGrants: {
+                include: { role: true },
+              },
+            },
+          },
+        },
+        orderBy: { code: "asc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    // Chuẩn hóa DTO trả về cho giao diện
+    const formattedPeople = people.map((p) => {
+      const primaryAssignment = p.assignments[0];
+      const primaryGrant = p.account?.roleGrants[0];
+
+      return {
+        id: p.id,
+        code: p.code,
+        fullName: p.fullName,
+        email: p.email,
+        phone: p.phone,
+        status: p.status,
+        isActive: p.status === "ACTIVE",
+        notes: p.notes,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        unitId: primaryAssignment?.unitId || null,
+        unitName: primaryAssignment?.unit?.name || "Chưa phân công",
+        unitCode: primaryAssignment?.unit?.code || null,
+        positionId: primaryAssignment?.positionId || null,
+        position: primaryAssignment?.position?.title || "Cán bộ công chức",
+        orgUnit: primaryAssignment?.unit
+          ? {
+              id: primaryAssignment.unit.id,
+              code: primaryAssignment.unit.code,
+              name: primaryAssignment.unit.name,
+            }
+          : undefined,
+        account: p.account
+          ? {
+              id: p.account.id,
+              username: p.account.username,
+              status: p.account.status,
+              isActive: p.account.status === "ACTIVE",
+              role: primaryGrant?.role?.code || "STAFF",
+              roleName: primaryGrant?.role?.name || "Cán bộ công chức",
+              lastLoginAt: p.account.lastLoginAt,
+            }
+          : null,
+      };
     });
 
-    return NextResponse.json({ success: true, data: people });
+    return NextResponse.json({
+      success: true,
+      data: formattedPeople,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    });
   } catch (error: any) {
+    console.error("GET /api/people error:", error);
     return jsonError("Lỗi khi tải danh sách nhân sự: " + error.message, 500);
   }
 }
@@ -64,48 +150,150 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await authenticateRequest(req);
-    if (!user || !checkPermission(user, "org.manage")) {
-      return jsonError("Không có quyền quản lý nhân sự", 403);
+    if (!user) {
+      return jsonError("Yêu cầu đăng nhập để thực hiện thao tác", 401);
     }
 
-    const body = await req.json();
-    const { code, fullName, email, phone, unitId, positionId } = body;
+    const canManage =
+      checkPermission(user, "org.manage") ||
+      checkPermission(user, "users.manage") ||
+      user.role === "UNIT_LEADER" ||
+      user.role === "SYSTEM_ADMIN";
 
-    if (!code || !fullName || !unitId) {
-      return jsonError("Mã cán bộ, Họ tên và Đơn vị trực thuộc là bắt buộc", 400);
+    if (!canManage) {
+      return jsonError("Bạn không có quyền thêm mới cán bộ công chức", 403);
     }
 
-    const newPerson = await prisma.person.create({
-      data: {
-        code,
-        fullName,
-        email,
-        phone,
-        assignments: {
-          create: {
+    const body = await req.json().catch(() => ({}));
+    const { code, fullName, email, phone, unitId, positionId, notes } = body;
+
+    // 1. Kiểm tra tính hợp lệ của dữ liệu đầu vào (Input Validation)
+    if (!code || typeof code !== "string" || !code.trim()) {
+      return jsonError("Mã cán bộ công chức là bắt buộc", 400);
+    }
+    if (!fullName || typeof fullName !== "string" || fullName.trim().length < 2) {
+      return jsonError("Họ và tên cán bộ phải có ít nhất 2 ký tự", 400);
+    }
+    if (!unitId || typeof unitId !== "string") {
+      return jsonError("Đơn vị / Bộ phận công tác là bắt buộc", 400);
+    }
+
+    const cleanCode = code.trim().toUpperCase();
+    const cleanFullName = fullName.trim();
+    const cleanEmail = email && typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+    const cleanPhone = phone && typeof phone === "string" && phone.trim() ? phone.trim() : null;
+    const cleanNotes = notes && typeof notes === "string" ? notes.trim() : null;
+
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return jsonError("Định dạng email không hợp lệ", 400);
+    }
+
+    // 2. Kiểm tra đơn vị tồn tại trong CSDL
+    const unit = await prisma.orgUnit.findUnique({
+      where: { id: unitId },
+      select: { id: true, name: true, status: true },
+    });
+    if (!unit) {
+      return jsonError("Đơn vị trực thuộc không tồn tại trong hệ thống", 400);
+    }
+    if (unit.status !== "ACTIVE") {
+      return jsonError("Đơn vị trực thuộc đã ngừng hoạt động, không thể phân công cán bộ", 400);
+    }
+
+    // 3. Kiểm tra chức vụ nếu có
+    if (positionId) {
+      const pos = await prisma.position.findUnique({
+        where: { id: positionId },
+        select: { id: true, status: true },
+      });
+      if (!pos || pos.status !== "ACTIVE") {
+        return jsonError("Chức vụ được lựa chọn không tồn tại hoặc đã ngừng áp dụng", 400);
+      }
+    }
+
+    // 4. Kiểm tra trùng mã cán bộ (Chống Duplicate Code)
+    const existingCode = await prisma.person.findUnique({
+      where: { code: cleanCode },
+    });
+    if (existingCode) {
+      return jsonError(`Mã cán bộ "${cleanCode}" đã tồn tại trong hệ thống`, 409);
+    }
+
+    // 5. Kiểm tra trùng email nếu có
+    if (cleanEmail) {
+      const existingEmail = await prisma.person.findUnique({
+        where: { email: cleanEmail },
+      });
+      if (existingEmail) {
+        return jsonError(`Email "${cleanEmail}" đã được sử dụng bởi cán bộ khác`, 409);
+      }
+    }
+
+    // 6. Thực thi Transaction lưu vào PostgreSQL
+    const now = new Date();
+    const newPerson = await prisma.$transaction(async (tx) => {
+      const person = await tx.person.create({
+        data: {
+          code: cleanCode,
+          fullName: cleanFullName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          status: "ACTIVE",
+          notes: cleanNotes,
+        },
+      });
+
+      const assignment = await tx.personAssignment.create({
+        data: {
+          personId: person.id,
+          unitId,
+          positionId: positionId || null,
+          isPrimary: true,
+          effectiveFrom: now,
+        },
+        include: {
+          unit: true,
+          position: true,
+        },
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          actorId: user.id,
+          action: "PERSON_CREATE",
+          resourceType: "Person",
+          resourceId: person.id,
+          newData: {
+            code: cleanCode,
+            fullName: cleanFullName,
+            email: cleanEmail,
+            phone: cleanPhone,
             unitId,
-            positionId: positionId || undefined,
-            isPrimary: true,
+            unitName: unit.name,
+            positionId: positionId || null,
           },
         },
-      },
-      include: {
-        assignments: {
-          include: { unit: true },
-        },
-      },
+      });
+
+      return {
+        ...person,
+        assignments: [assignment],
+      };
     });
 
-    await recordAuditEvent({
-      actorId: user.id,
-      action: "PERSON_CREATE",
-      resourceType: "Person",
-      resourceId: newPerson.id,
-      newData: { code, fullName, unitId },
-    });
-
-    return NextResponse.json({ success: true, data: newPerson });
+    return NextResponse.json(
+      {
+        success: true,
+        data: newPerson,
+        message: `Đã thêm mới thành công cán bộ ${newPerson.fullName} (${newPerson.code})`,
+      },
+      { status: 201 }
+    );
   } catch (error: any) {
-    return jsonError("Lỗi khi tạo nhân sự: " + error.message, 500);
+    console.error("POST /api/people error:", error);
+    if (error.code === "P2002") {
+      return jsonError("Trùng lặp dữ liệu duy nhất trong hệ thống (Mã cán bộ hoặc Email)", 409);
+    }
+    return jsonError("Lỗi hệ thống khi tạo nhân sự: " + error.message, 500);
   }
 }

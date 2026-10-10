@@ -21,6 +21,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("Error in GET /api/reports/snapshots:", err);
+    if (err.message?.startsWith("FORBIDDEN")) {
+      return NextResponse.json({ error: err.message.replace("FORBIDDEN: ", "") }, { status: 403 });
+    }
     if (err.message?.startsWith("SCOPE_VIOLATION")) {
       return NextResponse.json({ error: err.message }, { status: 403 });
     }

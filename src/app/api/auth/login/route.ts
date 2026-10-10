@@ -24,6 +24,32 @@ export async function POST(req: NextRequest) {
       return jsonError("Tên đăng nhập hoặc mật khẩu không chính xác", 401);
     }
 
+    if (account.status !== "ACTIVE") {
+      await prisma.auditEvent.create({
+        data: {
+          actorId: account.id,
+          action: "LOGIN_REJECTED_INACTIVE",
+          resourceType: "Account",
+          resourceId: account.id,
+          newData: { username: account.username, status: account.status },
+        },
+      });
+      return jsonError("Tài khoản đã bị vô hiệu hóa hoặc khóa truy cập", 403);
+    }
+
+    if (account.personStatus !== "ACTIVE") {
+      await prisma.auditEvent.create({
+        data: {
+          actorId: account.id,
+          action: "LOGIN_REJECTED_PERSON_INACTIVE",
+          resourceType: "Person",
+          resourceId: account.personId,
+          newData: { username: account.username, personStatus: account.personStatus },
+        },
+      });
+      return jsonError("Hồ sơ cán bộ công chức đã ngừng công tác", 403);
+    }
+
     const isValid = await verifyPassword(password, account.passwordHash);
     if (!isValid) {
       await prisma.auditEvent.create({
@@ -71,9 +97,12 @@ export async function POST(req: NextRequest) {
     });
 
     // Set cookie
+    const host = req.headers.get("host") || "";
+    const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
     response.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production" && !isLocal,
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
