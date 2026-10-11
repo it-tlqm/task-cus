@@ -61,7 +61,9 @@ interface PlanItem {
         priority: string;
         currentDeadline: string;
         hasIssue: boolean;
-        owner: { fullName: string };
+        ownerId?: string;
+        owner: { fullName: string; id?: string };
+        assignees?: Array<{ personId?: string; person?: { id?: string; fullName: string } }>;
       };
     }>;
   }>;
@@ -482,7 +484,7 @@ export default function PlansPage() {
 
               <a
                 data-testid="export-xlsx-btn"
-                href={`/api/reports/export?template=legacy&periodId=${activePlan?.period?.id || ""}${selectedScope === "personal" ? "&scope=personal" : ""}`}
+                href={`/api/reports/export?template=legacy&planId=${activePlan?.id || ""}&periodId=${activePlan?.period?.id || ""}${selectedScope === "personal" ? "&scope=personal" : ""}`}
                 download
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
                 title="Xuất dữ liệu Excel chuẩn mẫu báo cáo Hải quan (8 cột A-H)"
@@ -645,6 +647,7 @@ export default function PlansPage() {
                   const allRows: Array<{
                     id: string;
                     rawWorkItem?: PersonalWorkItemData;
+                    rawTask?: any;
                     dayLabel: string;
                     dateStr: string;
                     groupTitle: string;
@@ -697,15 +700,43 @@ export default function PlansPage() {
                       const dateStr = task.currentDeadline ? new Date(task.currentDeadline).toLocaleDateString("vi-VN") : "Đúng hạn";
                       const groupName = item.group?.name || item.title || "Nhiệm vụ trọng tâm";
 
+                      const isPersonal = selectedScope === "personal" && currentUser;
+                      const isOwner = task.ownerId === currentUser?.personId || task.owner?.fullName === currentUser?.fullName;
+                      const isAssignee = task.assignees?.some(
+                        (a: any) => a.personId === currentUser?.personId || a.person?.fullName === currentUser?.fullName
+                      );
+
+                      let displayTitle = task.title;
+                      let displayOwner = task.owner?.fullName || "Chưa phân công";
+                      let displayCoord = activePlan.unit?.name ? `${activePlan.unit.name}, Trạm CK` : "Bộ phận phối hợp";
+
+                      if (isPersonal && currentUser) {
+                        if (isOwner) {
+                          displayOwner = currentUser.fullName;
+                          const others = task.assignees
+                            ?.filter((a: any) => a.personId !== currentUser.personId && a.person?.fullName !== currentUser.fullName)
+                            .map((a: any) => a.person?.fullName)
+                            .filter(Boolean);
+                          if (others && others.length > 0) {
+                            displayCoord = others.join(", ");
+                          }
+                        } else if (isAssignee) {
+                          displayTitle = `[Phối hợp] ${task.title}`;
+                          displayOwner = `${task.owner?.fullName || "Chưa rõ"} (Chủ trì)`;
+                          displayCoord = `Phối hợp: ${currentUser.fullName}`;
+                        }
+                      }
+
                       allRows.push({
                         id: `tl-${tl.task.id}`,
+                        rawTask: task,
                         dayLabel: "Theo hạn",
                         dateStr,
                         groupTitle: groupName,
-                        title: task.title,
+                        title: displayTitle,
                         code: task.code,
-                        ownerName: task.owner?.fullName || "Chưa phân công",
-                        coordinationUnit: activePlan.unit?.name ? `${activePlan.unit.name}, Trạm CK` : "Bộ phận phối hợp",
+                        ownerName: displayOwner,
+                        coordinationUnit: displayCoord,
                         priority: task.priority === "HIGH" ? "Cao" : task.priority === "LOW" ? "Thấp" : "Trung bình",
                         expectedResult: "Đạt yêu cầu quy trình nghiệp vụ",
                         status: task.status,
@@ -716,10 +747,20 @@ export default function PlansPage() {
 
                   const filteredRows = allRows.filter((r) => {
                     if (selectedScope === "personal" && currentUser) {
-                      if (r.rawWorkItem && r.rawWorkItem.person?.id !== currentUser.personId && r.ownerName !== currentUser.fullName) {
-                        return false;
-                      }
-                      if (!r.rawWorkItem && r.ownerName !== currentUser.fullName) {
+                      if (r.rawWorkItem) {
+                        const isPersonalItem =
+                          r.rawWorkItem.person?.id === currentUser.personId ||
+                          r.ownerName === currentUser.fullName;
+                        if (!isPersonalItem) return false;
+                      } else if (r.rawTask) {
+                        const isOwner =
+                          r.rawTask.ownerId === currentUser.personId ||
+                          r.rawTask.owner?.fullName === currentUser.fullName;
+                        const isAssignee = r.rawTask.assignees?.some(
+                          (a: any) => a.personId === currentUser.personId || a.person?.fullName === currentUser.fullName
+                        );
+                        if (!isOwner && !isAssignee) return false;
+                      } else if (r.ownerName !== currentUser.fullName) {
                         return false;
                       }
                     }

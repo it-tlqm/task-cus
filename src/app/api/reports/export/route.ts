@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const templateType = searchParams.get("template") || "legacy"; // "legacy" (Mẫu A) hoặc "detailed" (Mẫu B)
+    const planId = searchParams.get("planId");
     const periodId = searchParams.get("periodId");
     const requestedUnitId = searchParams.get("unitId");
     const exportScope = searchParams.get("scope");
@@ -34,6 +35,11 @@ export async function GET(req: NextRequest) {
     const targetPersonId = isPersonalScope
       ? (hasExportAllPermission && requestedPersonId ? requestedPersonId : user.personId)
       : requestedPersonId;
+
+    let targetOfficer = null;
+    if (targetPersonId) {
+      targetOfficer = await prisma.person.findUnique({ where: { id: targetPersonId } });
+    }
 
     const isOwnPersonalExport = isPersonalScope && targetPersonId === user.personId;
 
@@ -217,100 +223,179 @@ export async function GET(req: NextRequest) {
       ? {}
       : { unitId: { in: authorizedUnits } };
 
-    // Điều kiện lọc kỳ cho Task:
-    // Task thuộc kỳ nếu nó liên kết đến Plan thuộc kỳ đó HOẶC deadline nằm trong khoảng thời gian của kỳ [startAt, endAt]
-    const taskPeriodWhere = period
-      ? {
-          OR: [
-            {
-              planLinks: {
-                some: {
-                  planItem: {
-                    plan: {
-                      periodId: period.id,
+    let distinctTasks: any[] = [];
+    let workItems: any[] = [];
+    let selectedPlan: any = null;
+
+    if (planId) {
+      // TRƯỜNG HỢP 1: Xuất theo Plan cụ thể (Từ màn hình Kế hoạch /plans)
+      // Phạm vi dữ liệu TUÂN THỦ 100% Kế hoạch đang chọn, không kéo Task/WorkItem ngoài kế hoạch
+      selectedPlan = await prisma.plan.findUnique({
+        where: { id: planId },
+        include: {
+          period: true,
+          unit: true,
+          items: {
+            include: {
+              group: true,
+              workItems: {
+                include: {
+                  person: true,
+                  group: true,
+                  template: { include: { group: true } },
+                },
+                orderBy: { sortOrder: "asc" },
+              },
+              taskLinks: {
+                include: {
+                  task: {
+                    include: {
+                      owner: true,
+                      unit: true,
+                      assignees: { include: { person: true } },
+                      planLinks: {
+                        include: {
+                          planItem: {
+                            include: {
+                              group: true,
+                              plan: true,
+                            },
+                          },
+                        },
+                      },
                     },
                   },
                 },
               },
             },
-            {
-              currentDeadline: {
-                gte: period.startAt,
-                lte: period.endAt,
-              },
-            },
-          ],
-        }
-      : {};
-
-    // Điều kiện lọc cá nhân cho Task nếu là phạm vi cá nhân:
-    const taskPersonalWhere = isPersonalScope && targetPersonId
-      ? {
-          OR: [
-            { ownerId: targetPersonId },
-            { assignees: { some: { personId: targetPersonId } } },
-          ],
-        }
-      : {};
-
-    // Lấy các nhiệm vụ đúng kỳ và đúng phạm vi cá nhân/đơn vị (DISTINCT Task - Chống đếm trùng AT-08)
-    const tasks = await prisma.task.findMany({
-      where: {
-        ...unitFilter,
-        ...taskPeriodWhere,
-        ...taskPersonalWhere,
-      },
-      include: {
-        owner: true,
-        unit: true,
-        assignees: {
-          include: {
-            person: true,
+            orderBy: { sortOrder: "asc" },
           },
         },
-        planLinks: {
-          include: {
-            planItem: {
-              include: {
-                group: true,
-                plan: true,
-              },
-            },
-          },
-        },
-      },
-    });
+      });
 
-    const distinctTaskMap = new Map<string, typeof tasks[0]>();
-    for (const t of tasks) {
-      if (!distinctTaskMap.has(t.id)) {
-        distinctTaskMap.set(t.id, t);
+      if (!selectedPlan) {
+        return NextResponse.json({ error: "Không tìm thấy kế hoạch được yêu cầu" }, { status: 404 });
       }
-    }
-    const distinctTasks = Array.from(distinctTaskMap.values());
 
-    // Lấy thêm đầu việc cá nhân trong kỳ
-    let workItems = await prisma.personalWorkItem.findMany({
-      where: {
-        ...(period ? { periodId: period.id } : {}),
-        ...(targetPersonId ? { personId: targetPersonId } : {}),
-      },
-      include: {
-        person: true,
-        group: true,
-        template: {
-          include: {
-            group: true,
+      if (authorizedUnits !== "ALL" && !authorizedUnits.includes(selectedPlan.unitId)) {
+        return NextResponse.json({ error: "Bạn không có quyền truy cập kế hoạch của bộ phận này" }, { status: 403 });
+      }
+
+      if (selectedPlan.period) {
+        period = selectedPlan.period;
+      }
+      if (selectedPlan.unit) {
+        targetUnit = selectedPlan.unit;
+      }
+
+      let planWorkItems = selectedPlan.items.flatMap((pi: any) => pi.workItems);
+      let planTasks: any[] = [];
+      selectedPlan.items.forEach((pi: any) => {
+        pi.taskLinks?.forEach((tl: any) => {
+          if (tl.task) planTasks.push(tl.task);
+        });
+      });
+
+      const distinctPlanTaskMap = new Map<string, any>();
+      for (const t of planTasks) {
+        if (!distinctPlanTaskMap.has(t.id)) {
+          distinctPlanTaskMap.set(t.id, t);
+        }
+      }
+      distinctTasks = Array.from(distinctPlanTaskMap.values());
+
+      if (isPersonalScope && targetPersonId) {
+        planWorkItems = planWorkItems.filter(
+          (w: any) => w.personId === targetPersonId || (targetOfficer && w.person?.fullName === targetOfficer.fullName)
+        );
+        distinctTasks = distinctTasks.filter(
+          (t: any) => t.ownerId === targetPersonId || t.assignees.some((a: any) => a.personId === targetPersonId)
+        );
+      }
+
+      workItems = planWorkItems;
+    } else {
+      // TRƯỜNG HỢP 2: Xuất tổng hợp theo kỳ (Không chỉ định planId)
+      // Task BẮT BUỘC phải liên kết với Kế hoạch thuộc kỳ này (Loại bỏ hoàn toàn lọc lỏng theo deadline)
+      const taskPeriodWhere = period
+        ? {
+            planLinks: {
+              some: {
+                planItem: {
+                  plan: {
+                    periodId: period.id,
+                  },
+                },
+              },
+            },
+          }
+        : {};
+
+      const taskPersonalWhere = isPersonalScope && targetPersonId
+        ? {
+            OR: [
+              { ownerId: targetPersonId },
+              { assignees: { some: { personId: targetPersonId } } },
+            ],
+          }
+        : {};
+
+      const tasks = await prisma.task.findMany({
+        where: {
+          ...unitFilter,
+          ...taskPeriodWhere,
+          ...taskPersonalWhere,
+        },
+        include: {
+          owner: true,
+          unit: true,
+          assignees: {
+            include: {
+              person: true,
+            },
+          },
+          planLinks: {
+            include: {
+              planItem: {
+                include: {
+                  group: true,
+                  plan: true,
+                },
+              },
+            },
           },
         },
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+      });
 
-    let targetOfficer = null;
-    if (targetPersonId) {
-      targetOfficer = await prisma.person.findUnique({ where: { id: targetPersonId } });
+      const distinctTaskMap = new Map<string, typeof tasks[0]>();
+      for (const t of tasks) {
+        if (!distinctTaskMap.has(t.id)) {
+          distinctTaskMap.set(t.id, t);
+        }
+      }
+      distinctTasks = Array.from(distinctTaskMap.values());
+
+      workItems = await prisma.personalWorkItem.findMany({
+        where: {
+          ...(period ? { periodId: period.id } : {}),
+          ...(targetPersonId ? { personId: targetPersonId } : {}),
+        },
+        include: {
+          person: true,
+          group: true,
+          template: {
+            include: {
+              group: true,
+            },
+          },
+        },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      });
     }
+
+    const finalPeriodTitle = selectedPlan
+      ? `${selectedPlan.period?.title || "Kế hoạch tuần"} - ${selectedPlan.title}`
+      : periodTitle;
 
     let workbook;
     let fileName = "";
@@ -328,7 +413,7 @@ export async function GET(req: NextRequest) {
             ? t.planLinks[0].planItem.group.name
             : "Nhiệm vụ công tác trọng tâm";
 
-        const collabs = t.assignees.map((a) => a.person.fullName).join(", ");
+        const collabs = t.assignees.map((a: any) => a.person.fullName).join(", ");
         const deadlineStr = t.currentDeadline
           ? new Date(t.currentDeadline).toLocaleDateString("vi-VN")
           : "Đúng hạn kỳ";
@@ -388,17 +473,18 @@ export async function GET(req: NextRequest) {
       // MẪU A: BÁO CÁO TRUYỀN THỐNG (Biểu Kế Hoạch Tuần 8 Cột Gốc)
       // -------------------------------------------------------------
       const groupsData: LegacyReportGroupData[] = activityGroups.map((group) => {
-        const matchedTasks = distinctTasks.filter((t) => {
-          const belongsToGroup = t.planLinks.some((l) => l.planItem.groupId === group.id);
+        const matchedTasks = distinctTasks.filter((t: any) => {
+          const belongsToGroup = t.planLinks.some((l: any) => l.planItem.groupId === group.id);
           if (belongsToGroup) return true;
-          return group.code === "TTHQ" && t.planLinks.length === 0;
+          return group.code === "TTHQ" && (t.planLinks.length === 0 || !t.planLinks.some((l: any) => l.planItem?.groupId));
         });
 
         const matchedWorkItems = workItems.filter(
-          (w) => w.groupId === group.id || w.template?.groupId === group.id || (!w.groupId && !w.template?.groupId && group.code === "TTHQ")
+          (w: any) => w.groupId === group.id || w.template?.groupId === group.id || (!w.groupId && !w.template?.groupId && group.code === "TTHQ")
         );
 
         const items: Array<{
+          id?: string;
           title: string;
           ownerName: string;
           collaboratorName?: string;
@@ -415,14 +501,14 @@ export async function GET(req: NextRequest) {
 
           let itemTitle = t.title;
           let ownerDisplay = t.owner.fullName;
-          let collabDisplay = t.assignees.map((a) => a.person.fullName).join(", ") || t.unit.name;
+          let collabDisplay = t.assignees.map((a: any) => a.person.fullName).join(", ") || t.unit.name;
 
           if (isPersonalScope && targetOfficer) {
             if (isOwner) {
               ownerDisplay = targetOfficer.fullName;
               const otherAssignees = t.assignees
-                .filter((a) => a.personId !== targetPersonId)
-                .map((a) => a.person.fullName);
+                .filter((a: any) => a.personId !== targetPersonId)
+                .map((a: any) => a.person.fullName);
               collabDisplay = otherAssignees.length > 0 ? otherAssignees.join(", ") : t.unit.name;
             } else {
               itemTitle = `[Phối hợp] ${t.title}`;
@@ -432,6 +518,7 @@ export async function GET(req: NextRequest) {
           }
 
           items.push({
+            id: t.id,
             title: itemTitle,
             ownerName: ownerDisplay,
             collaboratorName: collabDisplay,
@@ -453,6 +540,7 @@ export async function GET(req: NextRequest) {
           if (!dateStr) dateStr = "Cả tuần";
 
           items.push({
+            id: w.id,
             title: w.title,
             ownerName: w.person.fullName,
             collaboratorName: w.coordinationUnit || undefined,
@@ -478,9 +566,9 @@ export async function GET(req: NextRequest) {
       });
 
       workbook = await generateLegacyReportWorkbook({
-        periodTitle,
+        periodTitle: finalPeriodTitle,
         unitName,
-        departmentName,
+        departmentName: targetUnit?.name || selectedPlan?.unit?.name || departmentName,
         officerName: targetOfficer ? targetOfficer.fullName : undefined,
         groups: groupsData,
       });
