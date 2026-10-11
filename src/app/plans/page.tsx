@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import { getDaysOfWeekFromStart, formatPeriodRangeFromDates } from "@/lib/period-helper";
 
 interface ActivityGroup {
   id: string;
@@ -44,12 +45,13 @@ interface PlanItem {
   status: "DRAFT" | "SUBMITTED" | "APPROVED" | "RETURNED" | "IN_EFFECT";
   approvedBy?: string;
   approvedAt?: string;
-  period: { id: string; name: string; code: string; year: number; weekNumber?: number; periodType: string; startAt?: string; endAt?: string };
+  period: { id: string; name: string; title?: string; code: string; year: number; weekNumber?: number; periodType: string; startAt?: string; endAt?: string };
   unit: { id: string; name: string; code: string };
   items: Array<{
     id: string;
     title: string;
     sortOrder: number;
+    groupId?: string;
     group?: { name: string; code: string };
     workItems: Array<PersonalWorkItemData>;
     taskLinks: Array<{
@@ -61,6 +63,7 @@ interface PlanItem {
         priority: string;
         currentDeadline: string;
         hasIssue: boolean;
+        expectedResultText?: string;
         ownerId?: string;
         owner: { fullName: string; id?: string };
         assignees?: Array<{ personId?: string; person?: { id?: string; fullName: string } }>;
@@ -167,43 +170,13 @@ export default function PlansPage() {
 
   const activePlan = plans[selectedPlanIndex] || null;
 
-  // Options for days of the week based on activePlan
+  // Options for days of the week based on activePlan (Chuẩn hóa ISO 8601 GMT+7)
   const weekDaysOptions = React.useMemo(() => {
-    const list: Array<{ value: string; label: string; dayLabel: string; dateStr: string }> = [];
     if (!activePlan?.period?.startAt) {
-      const base = new Date("2026-10-05T00:00:00Z");
-      const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(base.getTime() + i * 86400000);
-        const yyyy = d.getUTCFullYear();
-        const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-        const dd = String(d.getUTCDate()).padStart(2, "0");
-        list.push({
-          value: `${yyyy}-${mm}-${dd}`,
-          label: `${dayNames[i]} (${dd}/${mm}/${yyyy})`,
-          dayLabel: dayNames[i],
-          dateStr: `${dd}/${mm}/${yyyy}`,
-        });
-      }
-      return list;
+      const base = new Date("2026-10-04T17:00:00.000Z"); // Thứ 2 ngày 05/10/2026 00:00 GMT+7
+      return getDaysOfWeekFromStart(base);
     }
-
-    const start = new Date(activePlan.period.startAt);
-    const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(start.getTime() + i * 86400000);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      const dayName = dayNames[d.getDay()];
-      list.push({
-        value: `${yyyy}-${mm}-${dd}`,
-        label: `${dayName} (${dd}/${mm}/${yyyy})`,
-        dayLabel: dayName,
-        dateStr: `${dd}/${mm}/${yyyy}`,
-      });
-    }
-    return list;
+    return getDaysOfWeekFromStart(new Date(activePlan.period.startAt));
   }, [activePlan]);
 
   // Modal Handlers
@@ -602,6 +575,21 @@ export default function PlansPage() {
             <span className="text-on-primary-container hidden md:inline">Phiên bản biểu mẫu công tác chuẩn V1.1</span>
           </div>
 
+          {/* Warning Banner if there are unassigned items */}
+          {activePlan?.items?.some((pi) => !pi.group || !pi.groupId) && (
+            <div className="px-space-lg py-2.5 bg-status-warning-bg/60 border-b border-status-warning/30 text-status-warning flex items-center justify-between text-label-sm font-label-sm">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">warning</span>
+                <span>
+                  <strong>Cảnh báo nghiệp vụ:</strong> Kế hoạch này có nhiệm vụ trọng tâm chưa được phân vào 5 nhóm nghiệp vụ quy chuẩn của Hải quan. Vui lòng xác định nhóm nghiệp vụ trước khi phát hành báo cáo chính thức.
+                </span>
+              </div>
+              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-status-warning-bg text-status-warning border border-status-warning/40">
+                Chưa phân nhóm nghiệp vụ
+              </span>
+            </div>
+          )}
+
           <div className="overflow-x-auto w-full custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[1240px]">
               <thead className="sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
@@ -650,6 +638,8 @@ export default function PlansPage() {
                     rawTask?: any;
                     dayLabel: string;
                     dateStr: string;
+                    deadlineText?: string;
+                    isUnassignedGroup?: boolean;
                     groupTitle: string;
                     title: string;
                     code?: string;
@@ -677,13 +667,15 @@ export default function PlansPage() {
                         dateStr = "";
                       }
 
-                      const groupName = wi.group?.name || wi.template?.group?.name || item.group?.name || "Thực hiện thủ tục hải quan";
+                      const isUnassigned = !wi.groupId && !wi.template?.groupId && !item.groupId;
+                      const groupName = wi.group?.name || wi.template?.group?.name || item.group?.name || (isUnassigned ? "Chưa phân nhóm nghiệp vụ" : "Thực hiện thủ tục hải quan");
 
                       allRows.push({
                         id: `wi-${wi.id}`,
                         rawWorkItem: wi,
                         dayLabel,
                         dateStr,
+                        isUnassignedGroup: isUnassigned,
                         groupTitle: groupName,
                         title: wi.title,
                         templateCode: wi.template?.code,
@@ -697,8 +689,9 @@ export default function PlansPage() {
 
                     item.taskLinks?.forEach((tl) => {
                       const task = tl.task;
-                      const dateStr = task.currentDeadline ? new Date(task.currentDeadline).toLocaleDateString("vi-VN") : "Đúng hạn";
-                      const groupName = item.group?.name || item.title || "Nhiệm vụ trọng tâm";
+                      const isUnassigned = !item.group;
+                      const groupName = item.group?.name || "Chưa phân nhóm nghiệp vụ";
+                      const deadlineStr = task.currentDeadline ? new Date(task.currentDeadline).toLocaleDateString("vi-VN") : "";
 
                       const isPersonal = selectedScope === "personal" && currentUser;
                       const isOwner = task.ownerId === currentUser?.personId || task.owner?.fullName === currentUser?.fullName;
@@ -730,15 +723,17 @@ export default function PlansPage() {
                       allRows.push({
                         id: `tl-${tl.task.id}`,
                         rawTask: task,
-                        dayLabel: "Theo hạn",
-                        dateStr,
+                        dayLabel: "Trong tuần",
+                        dateStr: "",
+                        deadlineText: deadlineStr,
+                        isUnassignedGroup: isUnassigned,
                         groupTitle: groupName,
                         title: displayTitle,
                         code: task.code,
                         ownerName: displayOwner,
                         coordinationUnit: displayCoord,
                         priority: task.priority === "HIGH" ? "Cao" : task.priority === "LOW" ? "Thấp" : "Trung bình",
-                        expectedResult: "Đạt yêu cầu quy trình nghiệp vụ",
+                        expectedResult: task.expectedResultText || "Đạt yêu cầu quy trình nghiệp vụ",
                         status: task.status,
                         hasIssue: task.hasIssue,
                       });
@@ -795,7 +790,14 @@ export default function PlansPage() {
                         {row.dateStr && <div className="font-label-sm text-label-sm text-outline">{row.dateStr}</div>}
                       </td>
                       <td className="py-4 px-space-md align-top">
-                        <span className="font-body-semibold text-primary block">{row.groupTitle}</span>
+                        {row.isUnassignedGroup ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-status-warning-bg text-status-warning border border-status-warning/40">
+                            <span className="material-symbols-outlined text-[13px]">help_outline</span>
+                            Chưa phân nhóm nghiệp vụ
+                          </span>
+                        ) : (
+                          <span className="font-body-semibold text-primary block">{row.groupTitle}</span>
+                        )}
                       </td>
                       <td className="py-4 px-space-lg align-top bg-surface-container-lowest">
                         <div className="flex flex-col gap-1.5">
@@ -811,6 +813,11 @@ export default function PlansPage() {
                             {row.templateCode && (
                               <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-secondary-fixed text-on-secondary-fixed-variant font-semibold">
                                 MÃ MẪU: {row.templateCode}
+                              </span>
+                            )}
+                            {row.deadlineText && (
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-surface-container-high text-primary font-semibold border border-border-subtle">
+                                Hạn hoàn thành: {row.deadlineText}
                               </span>
                             )}
                           </div>
@@ -970,9 +977,17 @@ export default function PlansPage() {
             <div className="flex flex-col items-center">
               <div className="flex items-center gap-1 text-primary">
                 <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-                <span className="font-headline-sm text-headline-sm">Tuần 41 (06/10 - 12/10/2026)</span>
+                <span className="font-headline-sm text-headline-sm">
+                  {activePlan?.period
+                    ? `${activePlan.period.title || activePlan.period.name || "Kế hoạch tuần"}${
+                        activePlan.period.startAt && activePlan.period.endAt
+                          ? ` (${formatPeriodRangeFromDates(new Date(activePlan.period.startAt), new Date(activePlan.period.endAt))})`
+                          : ""
+                      }`
+                    : "Kế hoạch tuần"}
+                </span>
               </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">Kỳ công tác 6 ngày</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">Kỳ công tác theo kế hoạch</span>
             </div>
             <button
               aria-label="Tuần sau"

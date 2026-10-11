@@ -502,7 +502,13 @@ function ReportsContent() {
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-headline-sm text-headline-sm text-on-surface">
-                      Tuần 41 (06/10/2026 – 12/10/2026)
+                      {availablePeriods.length > 0
+                        ? `${(availablePeriods.find((p: any) => p.id === selectedPeriodToLock) || availablePeriods[0])?.title}${
+                            (availablePeriods.find((p: any) => p.id === selectedPeriodToLock) || availablePeriods[0])?.startAt
+                              ? ` (${new Date((availablePeriods.find((p: any) => p.id === selectedPeriodToLock) || availablePeriods[0]).startAt).toLocaleDateString("vi-VN")} – ${new Date((availablePeriods.find((p: any) => p.id === selectedPeriodToLock) || availablePeriods[0]).endAt).toLocaleDateString("vi-VN")})`
+                              : ""
+                          }`
+                        : "Báo cáo công tác tuần"}
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-status-warning-bg text-status-warning">
                       ĐANG MỞ - DỮ LIỆU THỜI GIAN THỰC
@@ -886,7 +892,7 @@ function ReportsContent() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-body-semibold text-body-semibold text-on-surface">
-                      BẢNG XEM TRƯỚC BÁO CÁO CÔNG TÁC TUẦN 41 (06/10/2026 – 12/10/2026)
+                      BẢNG XEM TRƯỚC BÁO CÁO CÔNG TÁC TUẦN
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-primary-fixed text-on-primary-fixed">
                       EXCEL-PREVIEW-MODE
@@ -973,10 +979,10 @@ function ReportsContent() {
                               day: "2-digit",
                               month: "2-digit",
                             })
-                          : "06/10";
+                          : "-";
                         const weekdayStr = task.createdAt
                           ? new Date(task.createdAt).toLocaleDateString("vi-VN", { weekday: "short" })
-                          : "T2";
+                          : "-";
                         return (
                           <tr
                             key={task.id}

@@ -10,6 +10,7 @@ import {
   DetailedReportItem,
 } from "@/lib/excel";
 import { getReportSnapshotById } from "@/server/snapshots";
+import { formatPeriodRangeFromDates } from "@/lib/period-helper";
 
 export async function GET(req: NextRequest) {
   try {
@@ -207,7 +208,10 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const periodTitle = period ? period.title : "Kỳ Tuần 41 (06/10/2026 - 12/10/2026)";
+    const rangeStr = period ? formatPeriodRangeFromDates(period.startAt, period.endAt) : "";
+    const periodTitle = period
+      ? (period.title.includes("(") ? period.title : `${period.title}${rangeStr ? ` (${rangeStr})` : ""}`)
+      : "Kỳ báo cáo tuần";
 
     // 5. Truy vấn dữ liệu thực tế: 5 nhóm nghiệp vụ & Tasks
     const activityGroups = await prisma.activityGroup.findMany({
@@ -393,8 +397,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    const planRangeStr = selectedPlan?.period
+      ? formatPeriodRangeFromDates(selectedPlan.period.startAt, selectedPlan.period.endAt)
+      : "";
     const finalPeriodTitle = selectedPlan
-      ? `${selectedPlan.period?.title || "Kế hoạch tuần"} - ${selectedPlan.title}`
+      ? `${selectedPlan.period?.title || "Kế hoạch tuần"}${planRangeStr ? ` (${planRangeStr})` : ""} - ${selectedPlan.title}`
       : periodTitle;
 
     let workbook;
@@ -473,14 +480,14 @@ export async function GET(req: NextRequest) {
       // MẪU A: BÁO CÁO TRUYỀN THỐNG (Biểu Kế Hoạch Tuần 8 Cột Gốc)
       // -------------------------------------------------------------
       const groupsData: LegacyReportGroupData[] = activityGroups.map((group) => {
-        const matchedTasks = distinctTasks.filter((t: any) => {
-          const belongsToGroup = t.planLinks.some((l: any) => l.planItem.groupId === group.id);
-          if (belongsToGroup) return true;
-          return group.code === "TTHQ" && (t.planLinks.length === 0 || !t.planLinks.some((l: any) => l.planItem?.groupId));
-        });
+        // Chỉ lấy các Task có liên kết rõ ràng với nhóm nghiệp vụ này (không tự ý gán Task chưa phân nhóm vào Nhóm I)
+        const matchedTasks = distinctTasks.filter((t: any) =>
+          t.planLinks.some((l: any) => l.planItem?.groupId === group.id)
+        );
 
+        // Chỉ lấy các đầu việc cá nhân thuộc đúng nhóm này
         const matchedWorkItems = workItems.filter(
-          (w: any) => w.groupId === group.id || w.template?.groupId === group.id || (!w.groupId && !w.template?.groupId && group.code === "TTHQ")
+          (w: any) => w.groupId === group.id || w.template?.groupId === group.id
         );
 
         const items: Array<{
@@ -517,16 +524,24 @@ export async function GET(req: NextRequest) {
             }
           }
 
+          const deadlineStr = t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "";
+          const displayTitleWithDeadline = deadlineStr ? `${itemTitle} (Hạn: ${deadlineStr})` : itemTitle;
+          const displayExpected = t.expectedResultText
+            ? `${t.expectedResultText}${deadlineStr ? ` [Hạn chót: ${deadlineStr}]` : ""}`
+            : deadlineStr
+            ? `Hạn hoàn thành: ${deadlineStr}`
+            : "Theo quy chế";
+
           items.push({
             id: t.id,
-            title: itemTitle,
+            title: displayTitleWithDeadline,
             ownerName: ownerDisplay,
             collaboratorName: collabDisplay,
             priority: t.priority === "HIGH" ? "Cao" : t.priority === "LOW" ? "Thấp" : "Trung bình",
-            expectedResult: t.expectedResultText || "Theo quy chế",
+            expectedResult: displayExpected,
             actualResult: t.actualResultText || (t.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện"),
             status: t.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện",
-            dateText: t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "Thứ 2 - Thứ 6",
+            dateText: "Trong tuần", // Phân biệt rõ ngày thực hiện trong tuần thay vì gán deadline
           });
         });
 
@@ -565,12 +580,101 @@ export async function GET(req: NextRequest) {
         };
       });
 
+      // Thu thập các Task và WorkItem chưa phân nhóm nghiệp vụ (Không tự ý ép vào Nhóm I)
+      const unassignedTasks = distinctTasks.filter(
+        (t: any) => !t.planLinks.some((l: any) => activityGroups.some((g) => g.id === l.planItem?.groupId))
+      );
+      const unassignedWorkItems = workItems.filter(
+        (w: any) => !activityGroups.some((g) => g.id === w.groupId || g.id === w.template?.groupId)
+      );
+
+      const unassignedItems: Array<{
+        id?: string;
+        title: string;
+        ownerName: string;
+        collaboratorName?: string;
+        priority: string;
+        expectedResult?: string;
+        actualResult?: string;
+        status: string;
+        dateText?: string;
+      }> = [];
+
+      unassignedTasks.forEach((t: any) => {
+        const isOwner = t.ownerId === targetPersonId;
+        let itemTitle = t.title;
+        let ownerDisplay = t.owner.fullName;
+        let collabDisplay = t.assignees.map((a: any) => a.person.fullName).join(", ") || t.unit.name;
+
+        if (isPersonalScope && targetOfficer) {
+          if (isOwner) {
+            ownerDisplay = targetOfficer.fullName;
+            const otherAssignees = t.assignees
+              .filter((a: any) => a.personId !== targetPersonId)
+              .map((a: any) => a.person.fullName);
+            collabDisplay = otherAssignees.length > 0 ? otherAssignees.join(", ") : t.unit.name;
+          } else {
+            itemTitle = `[Phối hợp] ${t.title}`;
+            ownerDisplay = `${t.owner.fullName} (Chủ trì)`;
+            collabDisplay = `Phối hợp: ${targetOfficer.fullName}`;
+          }
+        }
+
+        const deadlineStr = t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "";
+        const displayTitleWithDeadline = deadlineStr ? `${itemTitle} (Hạn: ${deadlineStr})` : itemTitle;
+        const displayExpected = t.expectedResultText
+          ? `${t.expectedResultText}${deadlineStr ? ` [Hạn chót: ${deadlineStr}]` : ""}`
+          : deadlineStr
+          ? `Hạn hoàn thành: ${deadlineStr}`
+          : "Theo quy chế";
+
+        unassignedItems.push({
+          id: t.id,
+          title: displayTitleWithDeadline,
+          ownerName: ownerDisplay,
+          collaboratorName: collabDisplay,
+          priority: t.priority === "HIGH" ? "Cao" : t.priority === "LOW" ? "Thấp" : "Trung bình",
+          expectedResult: displayExpected,
+          actualResult: t.actualResultText || (t.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện"),
+          status: t.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện",
+          dateText: "Trong tuần", // Phân biệt rõ ngày thực hiện trong tuần thay vì gán deadline
+        });
+      });
+
+      unassignedWorkItems.forEach((w: any) => {
+        let dateStr = w.dateText;
+        if (!dateStr && w.workDate) {
+          const d = new Date(w.workDate);
+          const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+          dateStr = `${dayNames[d.getDay()]} (${d.toLocaleDateString("vi-VN")})`;
+        }
+        if (!dateStr) dateStr = "Cả tuần";
+
+        unassignedItems.push({
+          id: w.id,
+          title: w.title,
+          ownerName: w.person.fullName,
+          collaboratorName: w.coordinationUnit || undefined,
+          priority: w.priority || "Trung bình",
+          expectedResult: w.expectedResult || "Hoàn thành đúng tiến độ nghiệp vụ",
+          actualResult: w.status === "COMPLETED" ? "Đã hoàn thành" : "Đang thực hiện",
+          status:
+            w.status === "COMPLETED"
+              ? "Đã hoàn thành"
+              : w.status === "NOT_STARTED"
+              ? "Chưa thực hiện"
+              : "Đang thực hiện",
+          dateText: dateStr,
+        });
+      });
+
       workbook = await generateLegacyReportWorkbook({
         periodTitle: finalPeriodTitle,
         unitName,
         departmentName: targetUnit?.name || selectedPlan?.unit?.name || departmentName,
         officerName: targetOfficer ? targetOfficer.fullName : undefined,
         groups: groupsData,
+        unassignedItems: unassignedItems.length > 0 ? unassignedItems : undefined,
       });
 
       fileName = `BaoCao_KeHoachTuan_MauA_HQTL_${new Date().toISOString().slice(0, 10)}.xlsx`;

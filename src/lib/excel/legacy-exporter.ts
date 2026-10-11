@@ -19,11 +19,22 @@ export interface LegacyReportGroupData {
 }
 
 export interface LegacyReportOptions {
-  periodTitle: string; // e.g. "Tuần 41 (06/10/2026 - 12/10/2026)"
+  periodTitle: string; // e.g. "Tuần 41 (05/10/2026 - 11/10/2026)"
   unitName: string;   // e.g. "Chi cục Hải quan CKQT Tà Lùng"
   departmentName?: string;
   officerName?: string;
   groups: LegacyReportGroupData[];
+  unassignedItems?: Array<{
+    id?: string;
+    title: string;
+    ownerName: string;
+    collaboratorName?: string;
+    priority: string;
+    expectedResult?: string;
+    actualResult?: string;
+    status: string;
+    dateText?: string;
+  }>;
   generatedAt?: Date;
 }
 
@@ -232,6 +243,69 @@ export async function generateLegacyReportWorkbook(options: LegacyReportOptions)
         mergedGroupCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
         mergedGroupCell.font = { name: 'Times New Roman', size: 10, bold: true };
       }
+    }
+  }
+
+  // Khối rà soát cho các đầu việc chưa phân nhóm nghiệp vụ (Nếu có)
+  if (options.unassignedItems && options.unassignedItems.length > 0) {
+    const alertHeaderRow = sheet.addRow([
+      'LƯU Ý',
+      'Chưa phân nhóm nghiệp vụ',
+      'DANH MỤC CHỜ RÀ SOÁT: CÁC ĐẦU VIỆC CHƯA PHÂN NHÓM NGHIỆP VỤ (Yêu cầu Lãnh đạo xác định nhóm trước khi ký ban hành)',
+      options.officerName || options.departmentName || '',
+      'Lãnh đạo Chi cục / Đội',
+      'Cần xử lý',
+      'Chờ phân loại nhóm nghiệp vụ',
+      'Chưa phân nhóm',
+    ]);
+    alertHeaderRow.height = 28;
+    alertHeaderRow.font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FF9A3412' } };
+    alertHeaderRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFEDD5' }, // Amber light
+      };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFF97316' } },
+        left: { style: 'thin', color: { argb: 'FFF97316' } },
+        bottom: { style: 'thin', color: { argb: 'FFF97316' } },
+        right: { style: 'thin', color: { argb: 'FFF97316' } },
+      };
+      cell.alignment = { vertical: 'middle', wrapText: true };
+    });
+
+    for (const item of options.unassignedItems) {
+      totalTasksCount++;
+      if (item.status === 'COMPLETED' || item.status === 'Hoàn thành') {
+        completedCount++;
+      }
+      const row = sheet.addRow([
+        item.dateText || 'Trong tuần',
+        'Chưa phân nhóm nghiệp vụ',
+        sanitizeFormula(`• ${item.title}`),
+        sanitizeFormula(item.ownerName),
+        sanitizeFormula(item.collaboratorName || 'Đội Giám sát / BP liên quan'),
+        sanitizeFormula(item.priority || 'Trung bình'),
+        sanitizeFormula(item.expectedResult || item.actualResult || 'Hoàn thành đúng quy trình'),
+        sanitizeFormula(item.status),
+      ]);
+      row.font = { name: 'Times New Roman', size: 10 };
+      row.alignment = { vertical: 'top', wrapText: true };
+      if (item.id) {
+        row.getCell(3).note = item.id;
+      }
+      row.eachCell((cell, colNum) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        };
+        if (colNum === 1 || colNum === 6 || colNum === 8) {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+      });
     }
   }
 

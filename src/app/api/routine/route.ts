@@ -3,6 +3,7 @@ import { authenticateRequest } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { getAuthorizedUnitIds } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { getIsoWeekFromDate } from "@/lib/period-helper";
 
 export async function GET(req: NextRequest) {
   try {
@@ -225,13 +226,14 @@ export async function POST(req: NextRequest) {
       if (activePeriod) {
         periodId = activePeriod.id;
       } else {
+        const currentIsoWeek = getIsoWeekFromDate(new Date());
         const newPeriod = await prisma.reportingPeriod.create({
           data: {
             type: "WEEK",
-            title: "Tuần 41 (06/10/2026 - 12/10/2026)",
-            startAt: new Date("2026-10-06T00:00:00Z"),
-            endAt: new Date("2026-10-12T23:59:59Z"),
-            dueAt: new Date("2026-10-13T12:00:00Z"),
+            title: currentIsoWeek.standardTitle,
+            startAt: currentIsoWeek.startAt,
+            endAt: currentIsoWeek.endInclusive,
+            dueAt: new Date(currentIsoWeek.endInclusive.getTime() - 4 * 3600000),
           },
         });
         periodId = newPeriod.id;

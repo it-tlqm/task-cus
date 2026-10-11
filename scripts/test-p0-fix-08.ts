@@ -176,122 +176,171 @@ async function run() {
   console.log('\n[5] Thêm 3 đầu việc qua giao diện Modal (Add/Edit Modal chuẩn 8 cột)...');
 
   // ITEM 1: TTHQ-01
-  console.log('  -> Thêm đầu việc 1: [TTHQ-01] Tiếp nhận và kiểm tra hồ sơ hải quan điện tử');
-  await page.waitForSelector('[data-testid="add-work-item-btn"]', { timeout: 10000 });
-  await page.click('[data-testid="add-work-item-btn"]');
-  await page.waitForSelector('[data-testid="modal-title-input"]', { timeout: 10000 });
+  const titleItem1 = 'Tiếp nhận và kiểm tra hồ sơ hải quan điện tử luồng vàng, luồng đỏ';
+  const hasItem1 = await page.evaluate((t) => Array.from(document.querySelectorAll('tbody tr')).some((r) => r.textContent?.includes(t)), titleItem1);
 
-  // 1. Chọn template TTHQ-01
-  await page.select('[data-testid="modal-template-select"]', tplTTHQ01.id);
-  await new Promise((r) => setTimeout(r, 400));
+  if (!hasItem1) {
+    console.log('  -> Thêm đầu việc 1: [TTHQ-01] Tiếp nhận và kiểm tra hồ sơ hải quan điện tử');
+    await page.waitForSelector('[data-testid="add-work-item-btn"]', { timeout: 10000 });
+    await page.click('[data-testid="add-work-item-btn"]');
+    await page.waitForSelector('[data-testid="modal-title-input"]', { timeout: 10000 });
 
-  // Tiêu đề
-  await page.click('[data-testid="modal-title-input"]');
-  await page.keyboard.down('Control');
-  await page.keyboard.press('KeyA');
-  await page.keyboard.up('Control');
-  await page.keyboard.press('Backspace');
-  await page.type('[data-testid="modal-title-input"]', 'Tiếp nhận và kiểm tra hồ sơ hải quan điện tử luồng vàng, luồng đỏ');
+    // 1. Chọn template TTHQ-01
+    await page.select('[data-testid="modal-template-select"]', tplTTHQ01.id);
+    await new Promise((r) => setTimeout(r, 400));
 
-  // Thứ / ngày: Chọn ngày thứ 2 trong tuần
-  const workDateOpt1 = await page.evaluate(() => {
-    const sel = document.querySelector('[data-testid="modal-workdate-select"]') as HTMLSelectElement;
-    return sel?.options[1]?.value || '';
-  });
-  if (workDateOpt1) {
-    await page.select('[data-testid="modal-workdate-select"]', workDateOpt1);
+    // Tiêu đề: Xóa sạch triệt để bằng DOM trước khi gõ
+    await page.$eval('[data-testid="modal-title-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-title-input"]', titleItem1);
+
+    // Thứ / ngày: Chọn ngày thứ 2 trong tuần
+    const workDateOpt1 = await page.evaluate(() => {
+      const sel = document.querySelector('[data-testid="modal-workdate-select"]') as HTMLSelectElement;
+      return sel?.options[1]?.value || '';
+    });
+    if (workDateOpt1) {
+      await page.select('[data-testid="modal-workdate-select"]', workDateOpt1);
+    }
+
+    // Mức ưu tiên
+    await page.select('[data-testid="modal-priority-select"]', 'Cao');
+
+    // Đơn vị phối hợp
+    await page.$eval('[data-testid="modal-coordination-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-coordination-input"]', 'Doanh nghiệp XNK, Đội Giám sát');
+
+    // Trạng thái
+    await page.select('[data-testid="modal-status-select"]', 'IN_PROGRESS');
+
+    // Kết quả dự kiến
+    await page.$eval('[data-testid="modal-expected-result-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-expected-result-input"]', '100% hồ sơ tiếp nhận giải quyết đúng thời hạn quy định');
+
+    // Lưu
+    await page.click('[data-testid="modal-submit-btn"]');
+    await new Promise((r) => setTimeout(r, 1500));
+  } else {
+    console.log(`  ℹ Đầu việc 1 ("${titleItem1}") đã tồn tại, bỏ qua tạo mới để chống trùng lặp.`);
   }
-
-  // Mức ưu tiên
-  await page.select('[data-testid="modal-priority-select"]', 'Cao');
-
-  // Đơn vị phối hợp
-  await page.type('[data-testid="modal-coordination-input"]', 'Doanh nghiệp XNK, Đội Giám sát');
-
-  // Trạng thái
-  await page.select('[data-testid="modal-status-select"]', 'IN_PROGRESS');
-
-  // Kết quả dự kiến
-  await page.type('[data-testid="modal-expected-result-input"]', '100% hồ sơ tiếp nhận giải quyết đúng thời hạn quy định');
-
-  // Lưu
-  await page.click('[data-testid="modal-submit-btn"]');
-  await new Promise((r) => setTimeout(r, 1500));
 
   // ITEM 2: GSHQ-03
-  console.log('  -> Thêm đầu việc 2: [GSHQ-03] Theo dõi trạng thái seal GPS');
-  await page.waitForSelector('[data-testid="add-work-item-btn"]', { timeout: 10000 });
-  await page.click('[data-testid="add-work-item-btn"]');
-  await page.waitForSelector('[data-testid="modal-title-input"]', { timeout: 10000 });
+  const titleItem2 = 'Theo dõi trạng thái seal GPS';
+  const hasItem2 = await page.evaluate((t) => Array.from(document.querySelectorAll('tbody tr')).some((r) => r.textContent?.includes(t) && r.textContent?.includes('GSHQ-03')), titleItem2);
 
-  // 1. Chọn template GSHQ-03
-  await page.select('[data-testid="modal-template-select"]', tplGSHQ03.id);
-  await new Promise((r) => setTimeout(r, 400));
+  if (!hasItem2) {
+    console.log('  -> Thêm đầu việc 2: [GSHQ-03] Theo dõi trạng thái seal GPS');
+    await page.waitForSelector('[data-testid="add-work-item-btn"]', { timeout: 10000 });
+    await page.click('[data-testid="add-work-item-btn"]');
+    await page.waitForSelector('[data-testid="modal-title-input"]', { timeout: 10000 });
 
-  // Thứ / ngày: Chọn Thứ 3
-  const workDateOpt2 = await page.evaluate(() => {
-    const sel = document.querySelector('[data-testid="modal-workdate-select"]') as HTMLSelectElement;
-    return sel?.options[2]?.value || '';
-  });
-  if (workDateOpt2) {
-    await page.select('[data-testid="modal-workdate-select"]', workDateOpt2);
+    // 1. Chọn template GSHQ-03
+    await page.select('[data-testid="modal-template-select"]', tplGSHQ03.id);
+    await new Promise((r) => setTimeout(r, 400));
+
+    // Thứ / ngày: Chọn Thứ 3
+    const workDateOpt2 = await page.evaluate(() => {
+      const sel = document.querySelector('[data-testid="modal-workdate-select"]') as HTMLSelectElement;
+      return sel?.options[2]?.value || '';
+    });
+    if (workDateOpt2) {
+      await page.select('[data-testid="modal-workdate-select"]', workDateOpt2);
+    }
+
+    // Mức ưu tiên
+    await page.select('[data-testid="modal-priority-select"]', 'Trung bình');
+
+    // Đơn vị phối hợp
+    await page.$eval('[data-testid="modal-coordination-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-coordination-input"]', 'Trạm Biên phòng Cửa khẩu Tà Lùng');
+
+    // Trạng thái
+    await page.select('[data-testid="modal-status-select"]', 'IN_PROGRESS');
+
+    // Kết quả dự kiến
+    await page.$eval('[data-testid="modal-expected-result-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-expected-result-input"]', 'Theo dõi 100% seal GPS trên phương tiện quá cảnh, không phát sinh vi phạm');
+
+    // Lưu
+    await page.click('[data-testid="modal-submit-btn"]');
+    await new Promise((r) => setTimeout(r, 1500));
+  } else {
+    console.log(`  ℹ Đầu việc 2 ("${titleItem2}") đã tồn tại, bỏ qua tạo mới để chống trùng lặp.`);
   }
-
-  // Mức ưu tiên
-  await page.select('[data-testid="modal-priority-select"]', 'Trung bình');
-
-  // Đơn vị phối hợp
-  await page.type('[data-testid="modal-coordination-input"]', 'Trạm Biên phòng Cửa khẩu Tà Lùng');
-
-  // Trạng thái
-  await page.select('[data-testid="modal-status-select"]', 'IN_PROGRESS');
-
-  // Kết quả dự kiến
-  await page.type('[data-testid="modal-expected-result-input"]', 'Theo dõi 100% seal GPS trên phương tiện quá cảnh, không phát sinh vi phạm');
-
-  // Lưu
-  await page.click('[data-testid="modal-submit-btn"]');
-  await new Promise((r) => setTimeout(r, 1500));
 
   // ITEM 3: Custom Item
-  console.log('  -> Thêm đầu việc 3: [TỰ NHẬP] Kiểm tra thực tế hàng tạm nhập tái xuất đặc thù tại bãi');
-  await page.waitForSelector('[data-testid="add-work-item-btn"]', { timeout: 10000 });
-  await page.click('[data-testid="add-work-item-btn"]');
-  await page.waitForSelector('[data-testid="modal-title-input"]', { timeout: 10000 });
+  const titleItem3 = 'Kiểm tra thực tế hàng hóa tạm nhập tái xuất đặc thù tại bãi tập kết';
+  const hasItem3 = await page.evaluate((t) => Array.from(document.querySelectorAll('tbody tr')).some((r) => r.textContent?.includes(t)), titleItem3);
 
-  // Để trống template
-  await page.select('[data-testid="modal-template-select"]', '');
-  await new Promise((r) => setTimeout(r, 200));
+  if (!hasItem3) {
+    console.log('  -> Thêm đầu việc 3: [TỰ NHẬP] Kiểm tra thực tế hàng tạm nhập tái xuất đặc thù tại bãi');
+    await page.waitForSelector('[data-testid="add-work-item-btn"]', { timeout: 10000 });
+    await page.click('[data-testid="add-work-item-btn"]');
+    await page.waitForSelector('[data-testid="modal-title-input"]', { timeout: 10000 });
 
-  // Tiêu đề tự nhập
-  await page.type('[data-testid="modal-title-input"]', 'Kiểm tra thực tế hàng hóa tạm nhập tái xuất đặc thù tại bãi tập kết');
+    // Để trống template
+    await page.select('[data-testid="modal-template-select"]', '');
+    await new Promise((r) => setTimeout(r, 200));
 
-  // Nhóm nhiệm vụ: GSHQ
-  await page.select('[data-testid="modal-group-select"]', groupGSHQ.id);
+    // Tiêu đề tự nhập: Xóa sạch triệt để bằng DOM trước khi gõ
+    await page.$eval('[data-testid="modal-title-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-title-input"]', titleItem3);
 
-  // Thứ / ngày: Chọn Thứ 4
-  const workDateOpt3 = await page.evaluate(() => {
-    const sel = document.querySelector('[data-testid="modal-workdate-select"]') as HTMLSelectElement;
-    return sel?.options[3]?.value || '';
-  });
-  if (workDateOpt3) {
-    await page.select('[data-testid="modal-workdate-select"]', workDateOpt3);
+    // Nhóm nhiệm vụ: GSHQ
+    await page.select('[data-testid="modal-group-select"]', groupGSHQ.id);
+
+    // Thứ / ngày: Chọn Thứ 4
+    const workDateOpt3 = await page.evaluate(() => {
+      const sel = document.querySelector('[data-testid="modal-workdate-select"]') as HTMLSelectElement;
+      return sel?.options[3]?.value || '';
+    });
+    if (workDateOpt3) {
+      await page.select('[data-testid="modal-workdate-select"]', workDateOpt3);
+    }
+
+    // Mức ưu tiên
+    await page.select('[data-testid="modal-priority-select"]', 'Cao');
+
+    // Đơn vị phối hợp
+    await page.$eval('[data-testid="modal-coordination-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-coordination-input"]', 'Đội Kiểm soát hải quan, Doanh nghiệp');
+
+    // Trạng thái
+    await page.select('[data-testid="modal-status-select"]', 'NOT_STARTED');
+
+    // Kết quả dự kiến
+    await page.$eval('[data-testid="modal-expected-result-input"]', (el: any) => {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.type('[data-testid="modal-expected-result-input"]', 'Giám sát 100% lô hàng theo đúng quy chuẩn kiểm tra thực tế');
+
+    // Lưu
+    await page.click('[data-testid="modal-submit-btn"]');
+    await new Promise((r) => setTimeout(r, 1500));
+  } else {
+    console.log(`  ℹ Đầu việc 3 ("${titleItem3}") đã tồn tại, bỏ qua tạo mới để chống trùng lặp.`);
   }
-
-  // Mức ưu tiên
-  await page.select('[data-testid="modal-priority-select"]', 'Cao');
-
-  // Đơn vị phối hợp
-  await page.type('[data-testid="modal-coordination-input"]', 'Đội Kiểm soát hải quan, Doanh nghiệp');
-
-  // Trạng thái
-  await page.select('[data-testid="modal-status-select"]', 'NOT_STARTED');
-
-  // Kết quả dự kiến
-  await page.type('[data-testid="modal-expected-result-input"]', 'Giám sát 100% lô hàng theo đúng quy chuẩn kiểm tra thực tế');
-
-  // Lưu
-  await page.click('[data-testid="modal-submit-btn"]');
   await new Promise((r) => setTimeout(r, 1500));
 
   // 6. Chụp ảnh màn hình sau khi thêm xong 3 đầu việc
