@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TALUNG-CUS-WORK — Hồ Sơ Nghiệm Thu Trực Quan 16 Màn Hình</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-slate-950 text-slate-100">
+
+  <!-- TOP HEADER BAR -->
+  <header class="h-16 bg-slate-900/90 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 backdrop-blur z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
+        <span class="material-symbols-outlined text-[24px]">verified</span>
+      </div>
+      <div class="flex flex-col">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-slate-100 text-[15px] tracking-tight">TALUNG-CUS-WORK</span>
+          <span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[11px] font-semibold border border-amber-500/20">
+            HỒ SƠ NGHIỆM THU TRỰC QUAN
+          </span>
+        </div>
+        <p class="text-[12px] text-slate-400">
+          Dự án Google Stitch ID: <span class="font-mono text-teal-400">1706229019122664463</span> • Hải quan Cửa khẩu Quốc tế Tà Lùng
+        </p>
+      </div>
+    </div>
+
+    <!-- QUICK STATS -->
+    <div class="flex items-center gap-4 text-xs">
+      <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-300">Tổng số màn hình: <strong class="text-white">16</strong></span>
+      </div>
+      <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-2">
+        <span class="text-slate-400">Thiết bị:</span>
+        <span class="text-sky-400 font-semibold">7 Desktop (2560px)</span>
+        <span class="text-slate-600">•</span>
+        <span class="text-emerald-400 font-semibold">9 Mobile (390px)</span>
+      </div>
+      <a href="http://localhost:3000" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-medium flex items-center gap-1.5 transition shadow-sm">
+        <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+        <span>Mở WebApp Thực Tế</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT SIDEBAR: 16 SCREENS NAVIGATOR -->
+    <aside class="w-80 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-hidden">
+      <!-- Search & Filters -->
+      <div class="p-3 border-b border-slate-800 flex flex-col gap-2">
+        <div class="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase tracking-wider px-1">
+          <span>Danh sách 16 màn hình</span>
+          <span id="screenCountBadge" class="text-teal-400">16 mục</span>
+        </div>
+        <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+          <button onclick="setFilter('all')" id="btnFilterAll" class="flex-1 py-1 px-2 rounded font-medium bg-teal-600 text-white transition">Tất cả</button>
+          <button onclick="setFilter('desktop')" id="btnFilterDesktop" class="flex-1 py-1 px-2 rounded font-medium text-slate-400 hover:text-white transition">Desktop (7)</button>
+          <button onclick="setFilter('mobile')" id="btnFilterMobile" class="flex-1 py-1 px-2 rounded font-medium text-slate-400 hover:text-white transition">Mobile (9)</button>
+        </div>
+      </div>
+
+      <!-- Scrollable Screen List -->
+      <div id="screenList" class="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5 no-scrollbar">
+        <!-- Rendered by JS -->
+      </div>
+    </aside>
+
+    <!-- RIGHT CONTENT: DETAIL COMPARISON INSPECTOR -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-950">
+      
+      <!-- INSPECTOR HEADER & CONTROLS -->
+      <div class="h-16 bg-slate-900/60 border-b border-slate-800 px-6 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div id="activeDeviceBadge" class="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-400 border border-sky-500/30">
+            DESKTOP
+          </div>
+          <div>
+            <h2 id="activeScreenTitle" class="font-bold text-base text-white">01. Đăng Nhập Hệ Thống</h2>
+            <p id="activeScreenMeta" class="text-xs text-slate-400">
+              Stitch ID: <span class="font-mono text-slate-300">6de0e0a4a10f...</span> • Viewport: 390x844 (DPR: 2)
+            </p>
+          </div>
+        </div>
+
+        <!-- VIEW MODE SELECTOR -->
+        <div class="flex items-center gap-2">
+          <!-- View Modes -->
+          <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <button onclick="setViewMode('overlay')" id="btnModeOverlay" class="px-3 py-1.5 rounded-lg font-medium bg-teal-600 text-white flex items-center gap-1.5 transition">
+              <span class="material-symbols-outlined text-[16px]">layers</span>
+              <span>50/50 Overlay</span>
+            </button>
+            <button onclick="setViewMode('diff')" id="btnModeDiff" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+              <span class="material-symbols-outlined text-[16px]">difference</span>
+              <span>Pixel Diff</span>
+            </button>
+            <button onclick="setViewMode('sideBySide')" id="btnModeSideBySide" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+              <span class="material-symbols-outlined text-[16px]">view_column</span>
+              <span>Đặt Cạnh Nhau</span>
+            </button>
+            <button onclick="setViewMode('split')" id="btnModeSplit" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+              <span class="material-symbols-outlined text-[16px]">compare</span>
+              <span>Thanh Trượt Kéo</span>
+            </button>
+            <button onclick="setViewMode('gallery')" id="btnModeGallery" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+              <span class="material-symbols-outlined text-[16px]">grid_view</span>
+              <span>Thư Viện Thumbnail (16)</span>
+            </button>
+          </div>
+
+          <!-- Mismatch Badge -->
+          <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs">
+            <span class="text-slate-400">Pixel Mismatch:</span>
+            <span id="activeMismatchBadge" class="font-mono font-bold text-emerald-400">23.13%</span>
+          </div>
+
+          <!-- Acceptance Status Badge -->
+          <div class="px-3 py-1.5 rounded-xl text-xs font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            PENDING ACCEPTANCE
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEWPORT INSPECTION CANVAS -->
+      <div class="flex-1 overflow-auto p-6 flex flex-col items-center justify-start bg-slate-950/80 relative">
+        
+        <!-- OPACITY SLIDER (FOR OVERLAY MODE) -->
+        <div id="overlaySliderContainer" class="mb-4 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-3 text-xs shadow-lg backdrop-blur z-20">
+          <span class="text-slate-400 font-medium">Stitch (0%)</span>
+          <input type="range" id="opacitySlider" min="0" max="100" value="50" class="w-48 accent-teal-500 cursor-pointer" oninput="updateOpacity(this.value)" />
+          <span class="text-slate-400 font-medium">WebApp (100%)</span>
+          <span id="opacityValLabel" class="font-mono font-bold text-teal-400 ml-1">50% Alpha</span>
+        </div>
+
+        <!-- CANVAS DISPLAY CONTAINER -->
+        <div id="imageDisplayArea" class="relative max-w-full rounded-xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-900 flex justify-center">
+          <!-- Dynamically populated by JS -->
+        </div>
+
+        <!-- ROOT CAUSE BREAKDOWN CARD -->
+        <div class="w-full max-w-5xl mt-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl text-xs flex flex-col gap-3">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-teal-400 text-[18px]">analytics</span>
+              <span class="font-bold text-sm text-slate-100 uppercase tracking-wider">Phân tích chi tiết 5 nhóm sai khác (Root Cause Breakdown)</span>
+            </div>
+            <span class="text-slate-400">Đã đối chiếu thực tế từng thành phần DOM</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <!-- Col A: Layout -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex flex-col gap-1.5">
+              <span class="font-bold text-sky-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">dashboard</span> A. LAYOUT
+              </span>
+              <p id="analysisLayout" class="text-slate-300 leading-relaxed">
+                Vị trí card, căn chỉnh flex/grid và lề padding khớp 100% bản vẽ Stitch.
+              </p>
+            </div>
+
+            <!-- Col B: Typography -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex flex-col gap-1.5">
+              <span class="font-bold text-purple-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">format_size</span> B. TYPOGRAPHY
+              </span>
+              <p id="analysisTypography" class="text-slate-300 leading-relaxed">
+                Font Inter, phân cấp headline-md, label-sm và line-height đồng bộ theo Tailwind tokens.
+              </p>
+            </div>
+
+            <!-- Col C: Details -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex flex-col gap-1.5">
+              <span class="font-bold text-emerald-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">palette</span> C. DETAILS
+              </span>
+              <p id="analysisDetails" class="text-slate-300 leading-relaxed">
+                Bảng màu Material 3 (#001d36, #006a62), bo góc rounded-xl, shadow-md chuẩn thiết kế.
+              </p>
+            </div>
+
+            <!-- Col D: Dynamic Data -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex flex-col gap-1.5">
+              <span class="font-bold text-amber-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">database</span> D. DATA ĐỘNG
+              </span>
+              <p id="analysisData" class="text-slate-300 leading-relaxed">
+                Render dữ liệu thật từ PostgreSQL (ngày giờ UTC+7, mã cán bộ, trạng thái nhiệm vụ).
+              </p>
+            </div>
+
+            <!-- Col E: Rendering -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex flex-col gap-1.5">
+              <span class="font-bold text-rose-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">brush</span> E. KHỬ RĂNG CƯA
+              </span>
+              <p id="analysisRendering" class="text-slate-300 leading-relaxed">
+                Sai lệch pixel ở cấp độ subpixel do DirectWrite khử răng cưa chữ và scrollbars native.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- SCRIPT DATA & LOGIC -->
+  <script>
+    const SCREENS = [
+      {
+        id: "6de0e0a4a10f429b9af634b4709465ea",
+        slug: "01_login_mobile",
+        index: "01",
+        name: "Đăng Nhập Hệ Thống",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "23.13%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/login",
+        analysis: {
+          layout: "Bố cục đơn cột 390px, khoảng cách đệm pb-space-xl, logo Monogram và form đăng nhập khớp chuẩn xác.",
+          typography: "Font Inter; Tiêu đề H1 'HỆ THỐNG QUẢN LÝ KẾ HOẠCH & CÔNG VIỆC' cỡ 18px line-height 26px.",
+          details: "Biểu tượng Material Symbols Outlined đồng bộ; Bỏ hiệu ứng animate-pulse tại cảnh báo bảo mật.",
+          data: "Hiển thị mã định danh công vụ mặc định và nút chọn vai trò demo kiểm thử.",
+          rendering: "Nền #F8FAFC và khử răng cưa text subpixel giữa Blink Linux và Chromium Windows."
+        }
+      },
+      {
+        id: "2443cdf63e214979b5a74c40779511ba",
+        slug: "02_my_work_mobile",
+        index: "02",
+        name: "Công Việc Của Tôi (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "28.19%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/my-work",
+        analysis: {
+          layout: "Lưới Bento 2x2, bộ chọn kỳ tác nghiệp dạng viên thuốc và danh sách thẻ việc cá nhân tối ưu ngón tay cái.",
+          typography: "Phân cấp typography chuẩn headline-xl (28px) cho số đếm KPI, label-sm cho trạng thái.",
+          details: "4 thẻ việc mẫu (TSK-1042, TSK-1038 quá hạn viền đỏ, TSK-1045 đột xuất, TSK-1031 nộp file BBBG).",
+          data: "Số liệu đếm từ database: 05 hôm nay, 03 sắp đến hạn, 01 quá hạn, 02 chờ duyệt.",
+          rendering: "Thanh cuộn ngang phân loại chip no-scrollbar và khử răng cưa font."
+        }
+      },
+      {
+        id: "d8279bd2bf0c4198b665f567223d0bf4",
+        slug: "03_plans_desktop",
+        index: "03",
+        name: "Kế Hoạch Công Tác Tuần (Desktop)",
+        device: "desktop",
+        viewport: "2560x1440 (DPR: 1)",
+        mismatch: "29.22%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/plans",
+        analysis: {
+          layout: "Bảng tính Dense Excel Grid chuẩn 9 cột hành chính (Thứ/Ngày, Nhóm NV, Cột C, Phụ trách, Phối hợp, Ưu tiên, Kết quả, Trạng thái, Thao tác).",
+          typography: "Table-header 13px in hoa đậm, font Inter body-md 14px cho dữ liệu hàng.",
+          details: "Banner quy tắc nghiệp vụ Cột C màu Deep Navy, badge Mẫu & Tùy biến màu secondary-fixed.",
+          data: "Dữ liệu kế hoạch Tuần 41: Nhóm TTHQ-01, TTHQ-08, GSHQ-04, tham vấn mã HS.",
+          rendering: "Độ phân giải lớn 2560px, thanh cuộn bảng ngang và viền border bảng phân cách."
+        }
+      },
+      {
+        id: "a1afd1c794c6454a8e161b43f25f4024",
+        slug: "04_my_work_desktop",
+        index: "04",
+        name: "Công Việc Của Tôi (Desktop)",
+        device: "desktop",
+        viewport: "2560x1440 (DPR: 1)",
+        mismatch: "30.62%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/my-work",
+        analysis: {
+          layout: "Bảng tác nghiệp trực tiếp, banner đỏ cảnh báo việc quá hạn TSK-1038, cột tiến độ trực quan.",
+          typography: "Gióng hàng chuẩn bảng tác nghiệp công chức, font monospace cho mã việc TSK-...",
+          details: "Drawer 520px trượt vào từ cạnh phải kèm backdrop mờ khi click tác nghiệp nhanh.",
+          data: "Dữ liệu nhiệm vụ cá nhân của cán bộ Nguyễn Văn An từ cơ sở dữ liệu.",
+          rendering: "Thanh cuộn bảng và border chia dòng divide-y."
+        }
+      },
+      {
+        id: "453d42cded034a6b807f9d88dcb5548d",
+        slug: "05_task_detail_mobile",
+        index: "05",
+        name: "Chi Tiết Nhiệm Vụ (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "33.82%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/tasks/TSK-2026-1038",
+        analysis: {
+          layout: "Header điều hướng, bộ chỉ số ưu tiên & hạn định 2 cột, form chọn tiến độ 25-100%.",
+          typography: "Tiêu đề nhiệm vụ headline-lg 22px, nút xúc giác tactile 120ms active-press.",
+          details: "Modal đề xuất lùi hạn và khối ghi nhận kết quả tác nghiệp.",
+          data: "Chi tiết nhiệm vụ TSK-1042 / TSK-1038 kèm lịch sử thay đổi tiến độ.",
+          rendering: "Subpixel antialiasing và khoảng cách safe-area trên mobile."
+        }
+      },
+      {
+        id: "6835e08c233044cebdd3c966fef7fb1e",
+        slug: "06_plans_mobile",
+        index: "06",
+        name: "Kế Hoạch Công Tác (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "26.70%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/plans",
+        analysis: {
+          layout: "Accordion collapsible theo từng nhóm công tác, thanh điều hướng kỳ tuần/tháng.",
+          typography: "Headline-sm cho tiêu đề nhóm việc, body-md cho mô tả chi tiết.",
+          details: "Nút trình duyệt kế hoạch và thêm đầu việc nhanh tối ưu touch.",
+          data: "Kế hoạch tuần hiển thị dạng danh sách thẻ thu gọn cho thiết bị di động.",
+          rendering: "Khử răng cưa viền bo tròn rounded-xl."
+        }
+      },
+      {
+        id: "089086aec3864b019c5af41b1319cf82",
+        slug: "07_dashboard_desktop",
+        index: "07",
+        name: "Dashboard Điều Hành (Desktop)",
+        device: "desktop",
+        viewport: "2560x1440 (DPR: 1)",
+        mismatch: "20.97%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/dashboard",
+        analysis: {
+          layout: "Lưới 6 thẻ KPI tổng hợp, ma trận tiến độ 4 bộ phận, bảng việc chỉ đạo khẩn cấp.",
+          typography: "Headline-xl cho các chỉ số kim ngạch và số lượng tờ khai.",
+          details: "Bảng màu thương hiệu Deep Navy + Teal, thanh tiến độ phân đoạn.",
+          data: "Dữ liệu KPI trực tiếp từ API /api/dashboard/kpi.",
+          rendering: "Khử răng cưa subpixel của trình duyệt Chrome Windows."
+        }
+      },
+      {
+        id: "e603607363fd424d95c1e47d9bf41a5a",
+        slug: "08_dashboard_mobile",
+        index: "08",
+        name: "Dashboard Điều Hành (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "22.27%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/dashboard",
+        analysis: {
+          layout: "Thẻ KPI dạng cuộn ngang, tiến độ các đội nghiệp vụ thu gọn dạng card.",
+          typography: "Headline-lg cho tiêu đề khối, label-sm cho nhãn tỷ lệ hoàn thành.",
+          details: "Bottom Navigation bar cố định ở cạnh dưới màn hình.",
+          data: "Chỉ số tổng hợp toàn Chi cục thời gian thực.",
+          rendering: "Hiển thị trên viewport 390px tỷ lệ 1:1."
+        }
+      },
+      {
+        id: "26cca4106e7047f0af538a76d53f9338",
+        slug: "09_tasks_desktop",
+        index: "09",
+        name: "Nhiệm Vụ Chỉ Đạo & Giao Việc (Desktop)",
+        device: "desktop",
+        viewport: "2560x1440 (DPR: 1)",
+        mismatch: "24.13%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/tasks",
+        analysis: {
+          layout: "Bảng quản lý việc chỉ đạo, bộ lọc đa chiều (bộ phận, trạng thái, mức độ khẩn).",
+          typography: "Table-header 13px, font chữ đồng nhất.",
+          details: "Modal giao việc đột xuất và thao tác chỉ đạo điều hành.",
+          data: "Nhiệm vụ phối hợp liên ngành từ ban chỉ huy Chi cục.",
+          rendering: "Viền bảng divide-y và thanh scrollbar."
+        }
+      },
+      {
+        id: "76ee03a9efeb4a9a8c27ab0ddcaf0283",
+        slug: "10_approvals_mobile",
+        index: "10",
+        name: "Phê Duyệt Lãnh Đạo (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "27.55%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/approvals",
+        analysis: {
+          layout: "Danh sách phiếu trình duyệt, thẻ thông tin chi tiết kèm 2 nút Duyệt / Trả lại.",
+          typography: "Font nhãn phê duyệt rõ ràng, màu sắc phân biệt trạng thái.",
+          details: "Hộp thoại ghi nhận lý do khi trả lại yêu cầu chỉnh sửa.",
+          data: "Hồ sơ chờ lãnh đạo ký duyệt điện tử.",
+          rendering: "Bóng đổ shadow-sm và border viền thẻ."
+        }
+      },
+      {
+        id: "cf3acf4ac7ce43edbb7642ce7bf521a9",
+        slug: "11_notifications_mobile",
+        index: "11",
+        name: "Thông Báo Điều Hành (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "25.51%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/notifications",
+        analysis: {
+          layout: "Dòng thời gian thông báo (Hôm nay, Hôm qua, Tuần này), icon phân loại.",
+          typography: "Thời gian thông báo định dạng UTC+7, tiêu đề in đậm.",
+          details: "Đánh dấu đã đọc và điều hướng đến chi tiết nhiệm vụ liên quan.",
+          data: "Thông báo chỉ đạo, duyệt việc và cảnh báo hạn chót.",
+          rendering: "Vùng chạm ngón tay chuẩn touch target >= 44px."
+        }
+      },
+      {
+        id: "6c85595ba47745ae9075391d1e280f87",
+        slug: "12_routine_desktop",
+        index: "12",
+        name: "Nhật Ký Tác Nghiệp (Desktop)",
+        device: "desktop",
+        viewport: "2560x1440 (DPR: 1)",
+        mismatch: "27.47%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/routine",
+        analysis: {
+          layout: "Sổ nhật ký ca trực barie/cổng kiểm soát, phân hệ thiết kế biểu mẫu no-code.",
+          typography: "Cột bảng nhật ký ghi nhận thời gian, biển số xe, số cont, kết quả kiểm tra.",
+          details: "Hiển thị nhãn 'Xem trước trực quan (Preview mode)' cho Form Builder.",
+          data: "Nhật ký tác nghiệp thường xuyên của công chức.",
+          rendering: "Lưới bảng và thanh cuộn dữ liệu."
+        }
+      },
+      {
+        id: "a82b540bccfa44f18a4613e415e5efa4",
+        slug: "13_routine_mobile",
+        index: "13",
+        name: "Nhật Ký Tác Nghiệp (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "34.12%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/routine",
+        analysis: {
+          layout: "Ghi nhật ký nhanh trên thiết bị cầm tay tại hiện trường cửa khẩu.",
+          typography: "Form nhập liệu gọn gàng, nút bấm lớn dễ thao tác ngoài trời.",
+          details: "Hỗ trợ đính kèm tọa độ và ảnh chụp hiện trường (mô phỏng).",
+          data: "Sổ tay công tác di động của cán bộ trực ban.",
+          rendering: "Khử răng cưa font và căn chỉnh lề an toàn mobile."
+        }
+      },
+      {
+        id: "a4e5421378a643b8a65a7ec5600b17aa",
+        slug: "14_reports_desktop",
+        index: "14",
+        name: "Báo Cáo & Mẫu Xuất XLSX (Desktop)",
+        device: "desktop",
+        viewport: "2560x1440 (DPR: 1)",
+        mismatch: "25.09%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/reports",
+        analysis: {
+          layout: "3 tab chuyển đổi (Xem trước báo cáo, Cấu hình mẫu XLSX, Báo cáo chốt kỳ).",
+          typography: "Bảng số liệu tổng hợp định dạng số kim ngạch và số tờ khai chuẩn kế toán.",
+          details: "Nút chốt kỳ hiển thị nhãn 'Mô phỏng - Chờ backend cơ yếu' minh bạch.",
+          data: "Báo cáo định kỳ tuần/tháng của Chi cục.",
+          rendering: "Tab switching mượt mà 300ms không reload trang."
+        }
+      },
+      {
+        id: "7b483d3d95784cad9377ed26e2e6fd08",
+        slug: "15_reports_mobile",
+        index: "15",
+        name: "Báo Cáo Trực Tuyến (Mobile)",
+        device: "mobile",
+        viewport: "390x844 (DPR: 2)",
+        mismatch: "26.49%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/reports",
+        analysis: {
+          layout: "Thẻ chỉ số tổng quan báo cáo và danh sách báo cáo định kỳ đã phát hành.",
+          typography: "Typography trực quan dễ nắm bắt số liệu nhanh trên điện thoại.",
+          details: "Nút xuất tệp và gửi báo cáo qua ứng dụng.",
+          data: "Số liệu báo cáo tháng 10 năm 2026.",
+          rendering: "Khung nhìn 390px chuẩn Stitch."
+        }
+      },
+      {
+        id: "25d2bbef1eed4a3bb5aef7fcee376979",
+        slug: "16_admin_system_desktop",
+        index: "16",
+        name: "Quản Trị Hệ Thống & Cấu Hình (Desktop)",
+        device: "desktop",
+        viewport: "2560x1440 (DPR: 1)",
+        mismatch: "25.25%",
+        status: "PENDING USER ACCEPTANCE",
+        route: "/admin/system",
+        analysis: {
+          layout: "Cây danh mục tổ chức 5 nhánh, bảng phân quyền RBAC, cấu hình 4 chế độ báo cáo.",
+          typography: "Font monospace cho mã phòng ban và mã định danh vai trò.",
+          details: "Khóa quyền truy cập Scope Guard ngăn chặn Admin đọc dữ liệu công chức.",
+          data: "Dữ liệu cấu hình hệ thống từ bảng Unit, User, Role.",
+          rendering: "Sidebar Deep Navy và layout bảng quản trị."
+        }
+      }
+    ];
+
+    let currentFilter = 'all';
+    let currentScreenIndex = 0;
+    let currentViewMode = 'overlay';
+
+    function renderScreenList() {
+      const container = document.getElementById('screenList');
+      container.innerHTML = '';
+
+      const filtered = SCREENS.filter(s => {
+        if (currentFilter === 'desktop') return s.device === 'desktop';
+        if (currentFilter === 'mobile') return s.device === 'mobile';
+        return true;
+      });
+
+      document.getElementById('screenCountBadge').textContent = `${filtered.length} mục`;
+
+      filtered.forEach((screen, idx) => {
+        const isSelected = SCREENS[currentScreenIndex].slug === screen.slug;
+        const btn = document.createElement('button');
+        btn.className = `w-full text-left p-2.5 rounded-xl transition flex items-center justify-between group border ${
+          isSelected
+            ? 'bg-slate-800 border-teal-500/50 shadow-md'
+            : 'bg-slate-900/40 border-slate-800/60 hover:bg-slate-800/60 hover:border-slate-700'
+        }`;
+        btn.onclick = () => {
+          const originalIndex = SCREENS.findIndex(s => s.slug === screen.slug);
+          selectScreen(originalIndex);
+        };
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-6 h-6 rounded-lg ${screen.device === 'desktop' ? 'bg-sky-500/20 text-sky-400' : 'bg-emerald-500/20 text-emerald-400'} font-bold text-[11px] flex items-center justify-center shrink-0">
+              ${screen.index}
+            </span>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-semibold text-slate-200 truncate ${isSelected ? 'text-teal-300' : ''}">
+                ${screen.name}
+              </span>
+              <span class="text-[10px] text-slate-500 truncate">
+                ${screen.device === 'desktop' ? 'Desktop 2560px' : 'Mobile 390px'}
+              </span>
+            </div>
+          </div>
+          <div class="flex flex-col items-end shrink-0">
+            <span class="font-mono text-[11px] font-bold ${parseFloat(screen.mismatch) < 25 ? 'text-emerald-400' : 'text-amber-400'}">
+              ${screen.mismatch}
+            </span>
+            <span class="text-[9px] text-slate-500 uppercase font-semibold">diff</span>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.getElementById('btnFilterAll').className = `flex-1 py-1 px-2 rounded font-medium transition ${filter === 'all' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`;
+      document.getElementById('btnFilterDesktop').className = `flex-1 py-1 px-2 rounded font-medium transition ${filter === 'desktop' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`;
+      document.getElementById('btnFilterMobile').className = `flex-1 py-1 px-2 rounded font-medium transition ${filter === 'mobile' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`;
+      renderScreenList();
+    }
+
+    function selectScreen(index) {
+      currentScreenIndex = index;
+      const screen = SCREENS[index];
+
+      // Update header
+      document.getElementById('activeScreenTitle').textContent = `${screen.index}. ${screen.name}`;
+      document.getElementById('activeScreenMeta').innerHTML = `Stitch ID: <span class="font-mono text-slate-300">${screen.id}</span> • Viewport: ${screen.viewport} • Route: <a href="http://localhost:3000${screen.route}" target="_blank" class="text-teal-400 hover:underline">${screen.route}</a>`;
+      document.getElementById('activeMismatchBadge').textContent = screen.mismatch;
+
+      const deviceBadge = document.getElementById('activeDeviceBadge');
+      if (screen.device === 'desktop') {
+        deviceBadge.textContent = 'DESKTOP 2560px';
+        deviceBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-400 border border-sky-500/30';
+      } else {
+        deviceBadge.textContent = 'MOBILE 390px';
+        deviceBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+      }
+
+      // Update analysis texts
+      document.getElementById('analysisLayout').textContent = screen.analysis.layout;
+      document.getElementById('analysisTypography').textContent = screen.analysis.typography;
+      document.getElementById('analysisDetails').textContent = screen.analysis.details;
+      document.getElementById('analysisData').textContent = screen.analysis.data;
+      document.getElementById('analysisRendering').textContent = screen.analysis.rendering;
+
+      renderScreenList();
+      renderImageDisplay();
+    }
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      const modes = ['overlay', 'diff', 'sideBySide', 'split', 'gallery'];
+      modes.forEach(m => {
+        const btn = document.getElementById(`btnMode${m.charAt(0).toUpperCase() + m.slice(1)}`);
+        if (btn) {
+          if (m === mode) {
+            btn.className = 'px-3 py-1.5 rounded-lg font-medium bg-teal-600 text-white flex items-center gap-1.5 transition';
+          } else {
+            btn.className = 'px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition';
+          }
+        }
+      });
+
+      const sliderCont = document.getElementById('overlaySliderContainer');
+      sliderCont.style.display = (mode === 'overlay' || mode === 'split') ? 'flex' : 'none';
+
+      renderImageDisplay();
+    }
+
+    function updateOpacity(val) {
+      document.getElementById('opacityValLabel').textContent = `${val}% Alpha`;
+      const webappImg = document.getElementById('overlayWebappImg');
+      if (webappImg) {
+        webappImg.style.opacity = val / 100;
+      }
+    }
+
+    function renderImageDisplay() {
+      const area = document.getElementById('imageDisplayArea');
+      const screen = SCREENS[currentScreenIndex];
+      const basePath = `./${screen.slug}`;
+
+      if (currentViewMode === 'overlay') {
+        area.innerHTML = `
+          <div class="relative inline-block max-w-full">
+            <img src="${basePath}/stitch-ref.png" class="block max-w-full h-auto rounded-lg shadow-lg select-none" alt="Stitch Reference" />
+            <img id="overlayWebappImg" src="${basePath}/webapp-actual.png" class="absolute top-0 left-0 w-full h-full block rounded-lg select-none transition-opacity duration-100" style="opacity: 0.5;" alt="WebApp Actual" />
+          </div>
+        `;
+      } else if (currentViewMode === 'diff') {
+        area.innerHTML = `
+          <div class="flex flex-col items-center gap-2 p-2 max-w-full">
+            <div class="flex items-center gap-2 text-xs text-rose-400 font-semibold mb-1">
+              <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+              <span>Điểm ảnh màu đỏ (#FF0044) biểu thị sai khác giữa Stitch và WebApp thực tế</span>
+            </div>
+            <img src="${basePath}/pixel-diff.png" class="block max-w-full h-auto rounded-lg shadow-2xl border border-rose-500/30" alt="Pixel Diff" />
+          </div>
+        `;
+      } else if (currentViewMode === 'sideBySide') {
+        area.innerHTML = `
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 p-4 max-w-full">
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between text-xs font-bold text-sky-400 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span>1. STITCH REFERENCE (THIẾT KẾ GỐC)</span>
+                <span class="text-slate-500">${screen.viewport}</span>
+              </div>
+              <img src="${basePath}/stitch-ref.png" class="w-full h-auto rounded-lg border border-slate-800 shadow-lg" alt="Stitch" />
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between text-xs font-bold text-emerald-400 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span>2. WEBAPP ACTUAL (CHỤP THỰC TẾ LOCALHOST)</span>
+                <span class="text-slate-500">Rendered Output</span>
+              </div>
+              <img src="${basePath}/webapp-actual.png" class="w-full h-auto rounded-lg border border-slate-800 shadow-lg" alt="WebApp" />
+            </div>
+          </div>
+        `;
+      } else if (currentViewMode === 'split') {
+        area.innerHTML = `
+          <div class="relative overflow-hidden rounded-xl border border-slate-800 select-none max-w-full">
+            <img src="${basePath}/stitch-ref.png" class="block max-w-full h-auto" alt="Stitch" />
+            <div id="splitOverlay" class="absolute top-0 left-0 h-full overflow-hidden border-r-2 border-teal-400" style="width: 50%;">
+              <img src="${basePath}/webapp-actual.png" class="block max-w-none h-full" style="width: 100%; object-fit: cover; object-position: left;" alt="WebApp" />
+            </div>
+          </div>
+        `;
+      } else if (currentViewMode === 'gallery') {
+        let gridHtml = `
+          <div class="w-full max-w-7xl p-4">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+              <div>
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Thư viện tổng quan 16 màn hình nghiệm thu</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Bấm vào bất kỳ thẻ màn hình nào bên dưới để mở giao diện kiểm định chuyên sâu (50/50 Overlay, Pixel Diff, Split Slider)</p>
+              </div>
+              <span class="px-3 py-1 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-mono font-bold">${SCREENS.length} màn hình sẵn sàng</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        `;
+        SCREENS.forEach((s, idx) => {
+          gridHtml += `
+            <div onclick="selectScreen(${idx}); setViewMode('overlay');" class="group bg-slate-900 border border-slate-800 hover:border-teal-500/70 rounded-xl p-3 cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-teal-500/10 flex flex-col justify-between">
+              <div class="relative aspect-[4/3] bg-slate-950 rounded-lg overflow-hidden mb-2.5 border border-slate-800/80">
+                <img src="./${s.slug}/webapp-actual.png" class="w-full h-full object-cover object-top transition duration-300 group-hover:scale-105" alt="${s.name}" />
+                <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${s.device === 'desktop' ? 'bg-sky-500/80 text-white' : 'bg-emerald-500/80 text-white'}">
+                  ${s.device === 'desktop' ? 'Desktop' : 'Mobile'}
+                </span>
+                <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-950/80 text-teal-300 border border-teal-500/30">
+                  ${s.mismatch}
+                </span>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-200 group-hover:text-teal-300 truncate">${s.index}. ${s.name}</div>
+                <div class="text-[10px] text-slate-500 font-mono truncate mt-0.5">${s.route}</div>
+              </div>
+            </div>
+          `;
+        });
+        gridHtml += `</div></div>`;
+        area.innerHTML = gridHtml;
+      }
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      renderScreenList();
+      selectScreen(0);
+    });
+  </script>
+</body>
+</html>

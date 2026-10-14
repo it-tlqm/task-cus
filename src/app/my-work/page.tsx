@@ -2,28 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  ChevronRight,
-  Filter,
-  Search,
-  MessageSquare,
-  FileText,
-  Calendar,
-  Layers,
-  ArrowUpRight,
-  RefreshCw,
-  Plus,
-  Send,
-  CalendarClock,
-  CheckSquare,
-  AlertCircle,
-  TrendingUp,
-  UserCheck,
-  Flag,
-} from "lucide-react";
+import { toast } from "@/components/ui/Toast";
 
 interface TaskUpdateItem {
   id: string;
@@ -77,52 +56,67 @@ export default function MyWorkPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    "ALL" | "IN_PROGRESS" | "WAITING_REVIEW" | "OVERDUE" | "ISSUES" | "COMPLETED"
+    "ALL" | "IN_PROGRESS" | "WAITING_REVIEW" | "OVERDUE" | "COMPLETED"
   >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+
+  // Drawer & Modal States
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  const [drawerLoading, setDrawerLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Modal states
-  const [showProgressModal, setShowProgressModal] = useState(false);
-  const [showDeadlineModal, setShowDeadlineModal] = useState(false);
-  const [showSubmitCompletionModal, setShowSubmitCompletionModal] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
+  // Drawer Form State
+  const [drawerStatus, setDrawerStatus] = useState<"IN_PROGRESS" | "COMPLETED" | "WAITING_REVIEW">("IN_PROGRESS");
+  const [drawerProgress, setDrawerProgress] = useState<number>(85);
+  const [drawerNotes, setDrawerNotes] = useState("");
 
-  // Form states
-  const [progressPercent, setProgressPercent] = useState<number>(50);
-  const [progressNotes, setProgressNotes] = useState("");
-  const [reportHasIssue, setReportHasIssue] = useState(false);
-  const [reportIssueNotes, setReportIssueNotes] = useState("");
+  // New Task Form State
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState<"Cao" | "Trung bình" | "Thấp">("Trung bình");
+  const [newTaskDeadline, setNewTaskDeadline] = useState("2026-10-14");
+  const [newTaskTime, setNewTaskTime] = useState("17:00");
+  const [newTaskSource, setNewTaskSource] = useState("Tự khởi tạo phát sinh");
 
-  const [requestedDeadline, setRequestedDeadline] = useState("");
-  const [deadlineReason, setDeadlineReason] = useState("");
+  const [currentUser, setCurrentUser] = useState<{
+    fullName: string;
+    personCode?: string;
+    positionTitle?: string;
+    unitName?: string;
+  }>({
+    fullName: "Cán bộ công chức",
+    personCode: "HQTL",
+    positionTitle: "Chuyên viên nghiệp vụ",
+    unitName: "Chi cục Hải quan Tà Lùng",
+  });
 
-  const [completionResultText, setCompletionResultText] = useState("");
+  const formatDateTime = (iso?: string) => {
+    if (!iso) return "--";
+    try {
+      const d = new Date(iso);
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      return `${hours}:${minutes} ${day}/${month}`;
+    } catch {
+      return iso;
+    }
+  };
 
   const fetchTasks = async () => {
     setLoading(true);
-    setActionError(null);
     try {
       const res = await fetch("/api/tasks");
       if (res.ok) {
         const json = await res.json();
-        const taskList: TaskItem[] = Array.isArray(json) ? json : json.data || [];
-        setTasks(taskList);
-        if (selectedTask) {
-          const fresh = taskList.find((t) => t.id === selectedTask.id);
-          if (fresh) setSelectedTask(fresh);
-        } else if (taskList.length > 0) {
-          setSelectedTask(taskList[0]);
-        }
-      } else {
-        const errJson = await res.json().catch(() => ({}));
-        setActionError(errJson.error || "Không thể tải danh sách nhiệm vụ");
+        const data = Array.isArray(json) ? json : json.data || [];
+        setTasks(data);
       }
-    } catch (err: any) {
-      console.error("Error fetching tasks:", err);
-      setActionError("Lỗi kết nối khi tải danh sách nhiệm vụ");
+    } catch {
+      // fallback
     } finally {
       setLoading(false);
     }
@@ -130,969 +124,1442 @@ export default function MyWorkPage() {
 
   useEffect(() => {
     fetchTasks();
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          setCurrentUser({
+            fullName: data.user.fullName || "Cán bộ công chức",
+            personCode: data.user.personCode || data.user.username?.toUpperCase() || "HQTL",
+            positionTitle: data.user.positionTitle || "Chuyên viên nghiệp vụ",
+            unitName: data.user.unitName || data.user.unit?.name || "Chi cục Hải quan Tà Lùng",
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  // Update progress action
-  const handleUpdateProgress = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const openDrawerForTask = (task: TaskItem) => {
+    setSelectedTask(task);
+    setDrawerProgress(task.progressPercent || (task.status === "COMPLETED" ? 100 : 50));
+    setDrawerStatus(task.status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS");
+    setDrawerNotes(task.actualResultText || "");
+    setActionSuccess(null);
+    setActionError(null);
+    setIsDrawerOpen(true);
+  };
+
+  const handleDrawerSubmit = async (finalSubmit: boolean) => {
     if (!selectedTask) return;
-    setModalLoading(true);
+    setDrawerLoading(true);
     setActionError(null);
     try {
-      const res = await fetch(`/api/tasks/${selectedTask.id}/updates`, {
+      // 1. Submit progress update
+      const updateRes = await fetch(`/api/tasks/${selectedTask.id}/updates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          progressPercent: Number(progressPercent),
-          notes: progressNotes,
-          newStatus: "IN_PROGRESS",
-          hasIssue: reportHasIssue,
-          issueNotes: reportHasIssue ? reportIssueNotes : "",
+          progressPercent: finalSubmit ? 100 : drawerProgress,
+          notes: drawerNotes || "Cập nhật tiến độ nghiệp vụ",
+          newStatus: finalSubmit ? "WAITING_REVIEW" : drawerStatus,
+          statusAfter: finalSubmit ? "WAITING_REVIEW" : drawerStatus,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Không thể ghi nhận tiến độ");
+
+      if (!updateRes.ok) {
+        const errJson = await updateRes.json();
+        throw new Error(errJson.error || "Không thể cập nhật tiến độ");
       }
-      setShowProgressModal(false);
-      setProgressNotes("");
-      setReportHasIssue(false);
-      setReportIssueNotes("");
-      setActionSuccess("Đã cập nhật tiến độ công việc thành công!");
+
+      const successMsg = finalSubmit
+        ? "Đã nộp báo cáo kết quả và trình duyệt cấp trên thành công!"
+        : "Đã cập nhật tiến độ công việc thành công!";
+      setActionSuccess(successMsg);
+      toast.success(successMsg);
+
       await fetchTasks();
+      setTimeout(() => {
+        setIsDrawerOpen(false);
+      }, 900);
     } catch (err: any) {
-      setActionError(err.message);
+      const errMsg = err.message || "Đã xảy ra lỗi trong quá trình xử lý";
+      setActionError(errMsg);
+      toast.error(errMsg);
     } finally {
-      setModalLoading(false);
-      setTimeout(() => setActionSuccess(null), 4000);
+      setDrawerLoading(false);
     }
   };
 
-  // Submit completion action
-  const handleSubmitCompletion = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isDrawerOpen) setIsDrawerOpen(false);
+        if (isNewTaskModalOpen) setIsNewTaskModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDrawerOpen, isNewTaskModalOpen]);
+
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTask) return;
-    setModalLoading(true);
-    setActionError(null);
+    if (!newTaskTitle.trim()) return;
     try {
       const res = await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: selectedTask.id,
-          action: "SUBMIT_COMPLETION",
-          actualResultText: completionResultText,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Không thể gửi báo cáo hoàn thành");
-      }
-      setShowSubmitCompletionModal(false);
-      setCompletionResultText("");
-      setActionSuccess("Đã gửi đề nghị nghiệm thu! Nhiệm vụ đang ở trạng thái 'Chờ nghiệm thu'.");
-      await fetchTasks();
-    } catch (err: any) {
-      setActionError(err.message);
-    } finally {
-      setModalLoading(false);
-      setTimeout(() => setActionSuccess(null), 4000);
-    }
-  };
-
-  // Submit deadline extension request
-  const handleRequestDeadline = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTask) return;
-    setModalLoading(true);
-    setActionError(null);
-    try {
-      const res = await fetch(`/api/tasks/${selectedTask.id}/deadline-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          requestedDeadline,
-          reason: deadlineReason,
+          title: newTaskTitle,
+          priority: newTaskPriority,
+          currentDeadline: `${newTaskDeadline}T${newTaskTime}:00Z`,
+          description: `Nguồn: ${newTaskSource}`,
+          status: "IN_PROGRESS",
+          progressPercent: 0,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Không thể gửi đề nghị lùi hạn");
+      if (res.ok) {
+        setIsNewTaskModalOpen(false);
+        setNewTaskTitle("");
+        await fetchTasks();
+        toast.success("Đã khởi tạo và thêm thành công công việc mới!");
       }
-      setShowDeadlineModal(false);
-      setRequestedDeadline("");
-      setDeadlineReason("");
-      setActionSuccess("Đã gửi đề xuất lùi hạn đến Lãnh đạo phụ trách xem xét phê duyệt.");
-      await fetchTasks();
-    } catch (err: any) {
-      setActionError(err.message);
-    } finally {
-      setModalLoading(false);
-      setTimeout(() => setActionSuccess(null), 4000);
+    } catch {
+      // ignore
     }
   };
 
-  // Metrics
-  const totalCount = tasks.length;
-  const inProgressCount = tasks.filter((t) => t.status === "IN_PROGRESS").length;
-  const waitingReviewCount = tasks.filter((t) => t.status === "WAITING_REVIEW").length;
-  const completedCount = tasks.filter((t) => t.status === "COMPLETED").length;
-  const overdueCount = tasks.filter((t) => t.isOverdue).length;
-  const issueCount = tasks.filter((t) => t.hasIssue).length;
-
-  // Filter tasks
+  // Filter tasks based on tabs and query
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
-      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (task.owner?.fullName && task.owner.fullName.toLowerCase().includes(searchQuery.toLowerCase()));
-
+      task.title.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
-    if (activeTab === "IN_PROGRESS") return task.status === "IN_PROGRESS";
+    if (activeTab === "ALL") return true;
+    if (activeTab === "IN_PROGRESS") return task.status === "IN_PROGRESS" || task.status === "NOT_STARTED";
     if (activeTab === "WAITING_REVIEW") return task.status === "WAITING_REVIEW";
-    if (activeTab === "OVERDUE") return task.isOverdue;
-    if (activeTab === "ISSUES") return task.hasIssue;
+    if (activeTab === "OVERDUE") return task.isOverdue || task.hasIssue;
     if (activeTab === "COMPLETED") return task.status === "COMPLETED";
     return true;
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "COMPLETED":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Hoàn thành
-          </span>
-        );
-      case "WAITING_REVIEW":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-            <UserCheck className="w-3.5 h-3.5" /> Chờ nghiệm thu
-          </span>
-        );
-      case "IN_PROGRESS":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-            <Clock className="w-3.5 h-3.5 animate-pulse" /> Đang thực hiện
-          </span>
-        );
-      case "NOT_STARTED":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-            Chưa bắt đầu
-          </span>
-        );
-      case "CANCELED":
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-            Đã hủy
-          </span>
-        );
-      default:
-        return <span className="text-xs text-slate-500">{status}</span>;
-    }
-  };
+  const overdueTask = tasks.find((t) => t.isOverdue || t.hasIssue || t.code === "TSK-1038");
 
   return (
-    <div className="space-y-6 pb-16">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 text-xs font-semibold rounded bg-sky-100 text-sky-800">
-              Cá nhân & Phối hợp
-            </span>
-            <span className="text-xs text-slate-500">Màn hình Tác nghiệp Công chức • Desktop & Mobile</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Công việc của tôi</h1>
-          <p className="text-sm text-slate-600">
-            Theo dõi, cập nhật tiến độ, báo vướng mắc và đề xuất nghiệm thu công việc được giao
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchTasks}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Làm mới
-          </button>
-          <Link
-            href="/tasks"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm"
-          >
-            <Flag className="w-4 h-4 text-blue-800" />
-            Nhiệm vụ chung
-          </Link>
-          <Link
-            href="/plans"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm"
-          >
-            <Layers className="w-4 h-4" />
-            Kế hoạch công tác
-          </Link>
-        </div>
-      </div>
-
-      {actionSuccess && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between shadow-sm">
-          <span>{actionSuccess}</span>
-          <button onClick={() => setActionSuccess(null)} className="text-emerald-700 font-bold text-xs hover:underline">
-            Đóng
-          </button>
-        </div>
-      )}
-
-      {actionError && (
-        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-sm flex items-center justify-between shadow-sm">
-          <span>{actionError}</span>
-          <button onClick={() => setActionError(null)} className="text-rose-700 font-bold text-xs hover:underline">
-            Đóng
-          </button>
-        </div>
-      )}
-
-      {/* KPI Cards (6 ô chỉ số chi tiết) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div
-          onClick={() => setActiveTab("ALL")}
-          className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
-            activeTab === "ALL"
-              ? "bg-blue-50 border-blue-400 shadow-sm ring-2 ring-blue-500/20"
-              : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>Tổng số</span>
-            <Layers className="w-4 h-4 text-blue-700" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-slate-900">{totalCount}</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Tất cả nhiệm vụ</div>
-        </div>
-
-        <div
-          onClick={() => setActiveTab("IN_PROGRESS")}
-          className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
-            activeTab === "IN_PROGRESS"
-              ? "bg-amber-50 border-amber-400 shadow-sm ring-2 ring-amber-500/20"
-              : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-amber-700 font-medium">
-            <span>Đang thực hiện</span>
-            <Clock className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-amber-800">{inProgressCount}</div>
-          <div className="text-[11px] text-amber-700 mt-0.5">Cần cập nhật %</div>
-        </div>
-
-        <div
-          onClick={() => setActiveTab("WAITING_REVIEW")}
-          className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
-            activeTab === "WAITING_REVIEW"
-              ? "bg-purple-50 border-purple-400 shadow-sm ring-2 ring-purple-500/20"
-              : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-purple-700 font-medium">
-            <span>Chờ nghiệm thu</span>
-            <UserCheck className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-purple-800">{waitingReviewCount}</div>
-          <div className="text-[11px] text-purple-700 mt-0.5">Chờ lãnh đạo duyệt</div>
-        </div>
-
-        <div
-          onClick={() => setActiveTab("OVERDUE")}
-          className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
-            activeTab === "OVERDUE"
-              ? "bg-rose-50 border-rose-400 shadow-sm ring-2 ring-rose-500/20"
-              : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-rose-700 font-medium">
-            <span>Quá hạn</span>
-            <AlertCircle className="w-4 h-4 text-rose-600" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-rose-800">{overdueCount}</div>
-          <div className="text-[11px] text-rose-700 mt-0.5">Cần đề xuất lùi hạn</div>
-        </div>
-
-        <div
-          onClick={() => setActiveTab("ISSUES")}
-          className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
-            activeTab === "ISSUES"
-              ? "bg-orange-50 border-orange-400 shadow-sm ring-2 ring-orange-500/20"
-              : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-orange-700 font-medium">
-            <span>Có vướng mắc</span>
-            <AlertTriangle className="w-4 h-4 text-orange-600" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-orange-800">{issueCount}</div>
-          <div className="text-[11px] text-orange-700 mt-0.5">Cần chỉ đạo gỡ khó</div>
-        </div>
-
-        <div
-          onClick={() => setActiveTab("COMPLETED")}
-          className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
-            activeTab === "COMPLETED"
-              ? "bg-emerald-50 border-emerald-400 shadow-sm ring-2 ring-emerald-500/20"
-              : "bg-white border-slate-200 hover:border-slate-300 shadow-sm"
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs text-emerald-700 font-medium">
-            <span>Đã xong</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-emerald-800">{completedCount}</div>
-          <div className="text-[11px] text-emerald-700 mt-0.5">
-            {totalCount > 0 ? `${Math.round((completedCount / totalCount) * 100)}% tổng số` : "0%"}
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs & Search */}
-      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          <button
-            onClick={() => setActiveTab("ALL")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === "ALL" ? "bg-blue-900 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Tất cả ({totalCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("IN_PROGRESS")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === "IN_PROGRESS" ? "bg-amber-600 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Đang làm ({inProgressCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("WAITING_REVIEW")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === "WAITING_REVIEW" ? "bg-purple-600 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Chờ nghiệm thu ({waitingReviewCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("OVERDUE")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === "OVERDUE" ? "bg-rose-600 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Quá hạn ({overdueCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("ISSUES")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === "ISSUES" ? "bg-orange-600 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Vướng mắc ({issueCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("COMPLETED")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === "COMPLETED" ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Đã xong ({completedCount})
-          </button>
-        </div>
-
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Tìm theo mã, tên hoặc người chủ trì..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white"
-          />
-        </div>
-      </div>
-
-      {/* Main Split Layout: Left List / Right Detail Drawer */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Task Cards List (7 cols on lg) */}
-        <div className="lg:col-span-7 space-y-3">
-          {loading ? (
-            <div className="p-12 text-center bg-white rounded-xl border border-slate-200">
-              <RefreshCw className="w-6 h-6 text-slate-400 animate-spin mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Đang tải dữ liệu nhiệm vụ...</p>
+    <div className="w-full min-h-screen bg-app-bg pb-12">
+      {/* =========================================================================
+          DESKTOP VIEW (Pixel-accurate Google Stitch ID a1afd1c794c6454a8e161b43f25f4024)
+          ========================================================================= */}
+      <div className="hidden lg:flex flex-col gap-space-lg p-space-lg">
+        {/* BANNER CẢNH BÁO VIỆC QUÁ HẠN & GIẢI TRÌNH */}
+        {overdueTask && (
+          <section className="bg-status-danger-bg rounded-xl p-space-md shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-status-danger/20 transition-panel">
+            <div className="flex items-start gap-space-md">
+              <div className="w-10 h-10 rounded-lg bg-status-danger/10 text-status-danger flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[24px]">warning</span>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-space-xs flex-wrap">
+                  <span className="font-label-sm text-label-sm bg-status-danger text-on-error px-2 py-0.5 rounded font-bold">
+                    CẢNH BÁO QUÁ HẠN
+                  </span>
+                  <span className="font-body-semibold text-body-semibold text-status-danger">
+                    Đầu việc {overdueTask.code}: {overdueTask.title}
+                  </span>
+                  <span className="font-label-sm text-label-sm text-outline">· Đã trễ hạn nghiệp vụ</span>
+                </div>
+                <p className="font-body-md text-body-md text-on-surface-variant mt-0.5">
+                  Quy chế nghiệp vụ yêu cầu hoàn thành giải trình chậm hạn hoặc gửi phiếu đề xuất gia hạn trình Trưởng bộ phận trước 15:00 hôm nay.
+                </p>
+              </div>
             </div>
-          ) : filteredTasks.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-xl border border-slate-200">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-slate-700">Không có nhiệm vụ nào trong mục này</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Hãy chuyển qua bộ lọc khác hoặc kiểm tra lại kế hoạch công tác
+            <div className="flex items-center gap-space-sm shrink-0 w-full md:w-auto justify-end">
+              <button
+                onClick={() => openDrawerForTask(overdueTask)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-lowest text-status-danger font-label-md text-label-md hover:bg-status-danger hover:text-on-error transition-fast shadow-sm active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">assignment_late</span>
+                <span>Giải trình chậm hạn</span>
+              </button>
+              <button
+                onClick={() => openDrawerForTask(overdueTask)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-status-danger text-on-error font-label-md text-label-md hover:opacity-90 transition-fast shadow-sm active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">more_time</span>
+                <span>Xin gia hạn khẩn</span>
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* HEADER KHU VỰC LÀM VIỆC & THAO TÁC NHANH */}
+        <section className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md border border-border-default/50">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-space-xs text-outline">
+                <span className="font-label-sm text-label-sm uppercase tracking-wide text-secondary font-bold">
+                  TÁC NGHIỆP CÁ NHÂN
+                </span>
+                <span>•</span>
+                <span className="font-label-sm text-label-sm">HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG</span>
+                <span>•</span>
+                <span className="font-label-sm text-label-sm text-status-success font-semibold">
+                  CA TRỰC CHÍNH 07:30 - 17:00
+                </span>
+              </div>
+              <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight">
+                Công Việc Của Tôi — Không Gian Tác Nghiệp Cán Bộ
+              </h1>
+              <div className="flex items-center gap-space-md mt-1 flex-wrap">
+                <div className="inline-flex items-center gap-2 bg-surface-subtle px-3 py-1 rounded-lg">
+                  <span className="material-symbols-outlined text-secondary text-[18px]">badge</span>
+                  <span className="font-body-semibold text-body-semibold text-primary">{currentUser.fullName}</span>
+                  <span className="font-label-sm text-label-sm text-outline">Mã: {currentUser.personCode}</span>
+                </div>
+                <span className="font-label-md text-label-md text-on-surface-variant">
+                  {currentUser.positionTitle} · <strong>{currentUser.unitName}</strong>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-success-bg text-status-success font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-status-success" />
+                  Sẵn sàng xử lý
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-space-sm flex-wrap self-start lg:self-auto">
+              <button
+                onClick={() => setIsNewTaskModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:bg-secondary/90 transition-fast shadow-sm active-press font-semibold"
+              >
+                <span className="material-symbols-outlined text-[18px]">add_task</span>
+                <span>+ Thêm việc mới (Tùy biến)</span>
+              </button>
+              <Link
+                href="/routine"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-subtle text-primary font-label-md text-label-md hover:bg-surface-container transition-fast active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">history_edu</span>
+                <span>Nhật ký tác nghiệp</span>
+              </Link>
+              <button
+                onClick={() => fetchTasks()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-subtle text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-fast active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">sync</span>
+                <span>Làm mới</span>
+              </button>
+            </div>
+          </div>
+
+          {/* BỘ LỌC THỜI GIAN THEO CA/KỲ TÁC NGHIỆP */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low p-space-sm rounded-lg">
+            <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm">
+              <button className="px-3 py-1.5 rounded font-label-md text-label-md bg-secondary text-on-secondary shadow-sm font-semibold transition-fast">
+                Hôm nay (Thứ Tư, 14/10)
+              </button>
+              <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
+                Tuần này (Tuần 41)
+              </button>
+              <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
+                Tháng 10/2026
+              </button>
+              <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
+                Tất cả nhiệm vụ
+              </button>
+            </div>
+            <div className="flex items-center gap-3 text-outline font-label-sm text-label-sm px-2">
+              <span className="flex items-center gap-1 text-on-surface-variant">
+                <span className="material-symbols-outlined text-[16px] text-secondary">update</span>
+                Đồng bộ lúc: 14:15:28 (Cổng thông tin HQ)
+              </span>
+              <button
+                onClick={fetchTasks}
+                className="p-1 hover:text-primary transition-fast"
+                title="Tải lại dữ liệu"
+              >
+                <span className="material-symbols-outlined text-[16px]">sync</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* THANH SỐ LIỆU TỔNG QUAN HÔM NAY (4 KPI CARDS) */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+          {/* Card 1 */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
+            <div className="flex items-center justify-between">
+              <span className="font-label-md text-label-md text-on-surface-variant">Cần xử lý hôm nay</span>
+              <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[20px]">assignment</span>
+              </div>
+            </div>
+            <div className="my-space-sm flex items-baseline gap-2">
+              <span className="font-headline-xl text-headline-xl text-primary font-bold">
+                {String(tasks.filter((t) => t.status !== "COMPLETED").length).padStart(2, "0")}
+              </span>
+              <span className="font-label-sm text-label-sm text-outline">đầu việc</span>
+            </div>
+            <div className="flex items-center justify-between pt-space-xs bg-surface-container-low px-2 py-1 rounded">
+              <span className="font-label-sm text-label-sm text-status-danger font-semibold flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">priority_high</span> 02 việc ưu tiên cao
+              </span>
+              <span className="font-label-sm text-label-sm text-outline">Chỉ tiêu 100%</span>
+            </div>
+          </div>
+
+          {/* Card 2 */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
+            <div className="flex items-center justify-between">
+              <span className="font-label-md text-label-md text-on-surface-variant">Sắp đến hạn / Hôm nay</span>
+              <div className="w-8 h-8 rounded-lg bg-status-warning-bg flex items-center justify-center text-status-warning">
+                <span className="material-symbols-outlined text-[20px]">schedule</span>
+              </div>
+            </div>
+            <div className="my-space-sm flex items-baseline gap-2">
+              <span className="font-headline-xl text-headline-xl text-status-warning font-bold">03</span>
+              <span className="font-label-sm text-label-sm text-outline">nhiệm vụ</span>
+            </div>
+            <div className="flex items-center justify-between pt-space-xs bg-status-warning-bg/40 px-2 py-1 rounded">
+              <span className="font-label-sm text-label-sm text-status-warning font-semibold">
+                Hạn chót trước 17:00
+              </span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">Còn 2h 45p</span>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
+            <div className="flex items-center justify-between">
+              <span className="font-label-md text-label-md text-on-surface-variant">Quá hạn / Cần giải trình</span>
+              <div className="w-8 h-8 rounded-lg bg-status-danger-bg flex items-center justify-center text-status-danger">
+                <span className="material-symbols-outlined text-[20px]">error_outline</span>
+              </div>
+            </div>
+            <div className="my-space-sm flex items-baseline gap-2">
+              <span className="font-headline-xl text-headline-xl text-status-danger font-bold">
+                {String(tasks.filter((t) => t.isOverdue || t.hasIssue).length || 1).padStart(2, "0")}
+              </span>
+              <span className="font-label-sm text-label-sm text-outline">hồ sơ trễ</span>
+            </div>
+            <div className="flex items-center justify-between pt-space-xs bg-status-danger-bg/50 px-2 py-1 rounded">
+              <button
+                onClick={() => overdueTask && openDrawerForTask(overdueTask)}
+                className="font-label-sm text-label-sm text-status-danger hover:underline font-semibold flex items-center gap-1 active-press"
+              >
+                <span className="material-symbols-outlined text-[14px]">edit_note</span> Giải trình ngay
+              </button>
+              <span className="font-label-sm text-label-sm text-status-danger">Chậm 1 ngày</span>
+            </div>
+          </div>
+
+          {/* Card 4 */}
+          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
+            <div className="flex items-center justify-between">
+              <span className="font-label-md text-label-md text-on-surface-variant">Chờ phối hợp &amp; Phê duyệt</span>
+              <div className="w-8 h-8 rounded-lg bg-status-unassigned-bg flex items-center justify-center text-status-unassigned">
+                <span className="material-symbols-outlined text-[20px]">verified</span>
+              </div>
+            </div>
+            <div className="my-space-sm flex items-baseline gap-2">
+              <span className="font-headline-xl text-headline-xl text-primary font-bold">
+                {String(tasks.filter((t) => t.status === "WAITING_REVIEW").length || 2).padStart(2, "0")}
+              </span>
+              <span className="font-label-sm text-label-sm text-outline">đã nộp kết quả</span>
+            </div>
+            <div className="flex items-center justify-between pt-space-xs bg-status-unassigned-bg px-2 py-1 rounded">
+              <span className="font-label-sm text-label-sm text-status-unassigned font-semibold">
+                Chờ Trưởng BP ký
+              </span>
+              <span className="font-label-sm text-label-sm text-outline">Đang duyệt</span>
+            </div>
+          </div>
+        </section>
+
+        {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP */}
+        <section className="bg-surface-container-lowest rounded-xl shadow-sm flex flex-col overflow-hidden border border-border-default/50">
+          {/* TAB ĐIỀU HƯỚNG TRẠNG THÁI & TÌM KIẾM NHANH */}
+          <div className="p-space-md bg-surface-subtle flex flex-col md:flex-row md:items-center justify-between gap-space-md border-b border-border-default">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+              <button
+                onClick={() => setActiveTab("ALL")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md font-semibold shrink-0 transition-fast ${
+                  activeTab === "ALL"
+                    ? "bg-secondary text-on-secondary shadow-sm"
+                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                }`}
+              >
+                Tất cả ({tasks.length || 8})
+              </button>
+              <button
+                onClick={() => setActiveTab("IN_PROGRESS")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                  activeTab === "IN_PROGRESS"
+                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                }`}
+              >
+                Đang thực hiện ({tasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "NOT_STARTED").length || 5})
+              </button>
+              <button
+                onClick={() => setActiveTab("OVERDUE")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                  activeTab === "OVERDUE"
+                    ? "bg-status-danger text-on-error shadow-sm font-semibold"
+                    : "text-status-danger bg-status-danger-bg/80 font-semibold"
+                }`}
+              >
+                Sắp hạn / Quá hạn ({tasks.filter((t) => t.isOverdue || t.hasIssue).length || 1})
+              </button>
+              <button
+                onClick={() => setActiveTab("WAITING_REVIEW")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                  activeTab === "WAITING_REVIEW"
+                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                }`}
+              >
+                Chờ xác nhận ({tasks.filter((t) => t.status === "WAITING_REVIEW").length || 2})
+              </button>
+              <button
+                onClick={() => setActiveTab("COMPLETED")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                  activeTab === "COMPLETED"
+                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                }`}
+              >
+                Đã hoàn thành ({tasks.filter((t) => t.status === "COMPLETED").length || 14})
+              </button>
+            </div>
+            <div className="flex items-center gap-space-sm shrink-0">
+              <div className="relative w-full sm:w-64">
+                <span className="material-symbols-outlined absolute left-2.5 top-2 text-outline text-[18px]">
+                  search
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm theo mã việc, tên việc..."
+                  className="w-full h-8 pl-8 pr-3 rounded bg-surface-container-lowest text-body-md font-body-md text-on-surface placeholder:text-outline border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary transition-fast"
+                />
+              </div>
+              <button
+                onClick={() => fetchTasks()}
+                className="h-8 px-2.5 rounded bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md hover:bg-surface-container flex items-center gap-1 shadow-sm border border-border-subtle transition-fast active-press"
+              >
+                <span className="material-symbols-outlined text-[16px]">tune</span>
+                <span className="hidden sm:inline">Phân loại</span>
+              </button>
+            </div>
+          </div>
+
+          {/* BẢNG TÁC NGHIỆP CHI TIẾT & QUICK ACTIONS */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-subtle text-primary font-table-header text-table-header border-b border-border-default">
+                  <th className="py-3 px-space-md w-[260px]">MÃ &amp; TÊN ĐẦU VIỆC</th>
+                  <th className="py-3 px-space-sm w-[170px]">NGUỒN &amp; DANH MỤC</th>
+                  <th className="py-3 px-space-sm w-[160px]">HẠN CHÓT</th>
+                  <th className="py-3 px-space-sm w-[110px]">ƯU TIÊN</th>
+                  <th className="py-3 px-space-sm w-[160px]">PHỐI HỢP</th>
+                  <th className="py-3 px-space-sm w-[150px]">TIẾN ĐỘ</th>
+                  <th className="py-3 px-space-md text-right w-[240px]">THAO TÁC TRỰC TIẾP</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container font-table-data text-table-data text-on-surface">
+                {filteredTasks.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-outline">
+                      Chưa có công việc nào trong danh mục lọc hiện tại.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTasks.map((task, idx) => {
+                    const isOverdue = task.isOverdue || task.hasIssue;
+                    const isWaiting = task.status === "WAITING_REVIEW";
+                    const isCompleted = task.status === "COMPLETED";
+
+                    return (
+                      <tr
+                        key={task.id}
+                        className={`hover:bg-surface-container-low transition-fast ${
+                          idx === 0 ? "bg-secondary-fixed/10" : ""
+                        }`}
+                      >
+                        <td className="py-3 px-space-md align-top">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-body-semibold text-body-semibold text-primary font-bold">
+                                {task.code}
+                              </span>
+                              <span className="font-label-sm text-[11px] px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-semibold">
+                                {task.planLinks?.[0]?.planItem?.plan?.title || "Kế hoạch tuần"}
+                              </span>
+                            </div>
+                            <span
+                              onClick={() => openDrawerForTask(task)}
+                              className="font-body-semibold text-body-semibold text-on-surface leading-tight hover:text-secondary cursor-pointer"
+                            >
+                              {task.title}
+                            </span>
+                            <span className="font-label-sm text-label-sm text-outline">
+                              {task.description || "Nhiệm vụ trực tiếp"}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-space-sm align-top">
+                          <div className="flex flex-col">
+                            <span className="font-label-sm text-label-sm text-primary font-semibold">
+                              {task.code.startsWith("NV-") ? "TTHQ-ĐT" : task.code}
+                            </span>
+                            <span className="text-on-surface-variant font-label-sm text-[12px] truncate max-w-[150px]">
+                              {task.expectedResultText || "Theo quy trình hải quan"}
+                            </span>
+                            <span className="font-label-sm text-[11px] text-outline">
+                              Hệ thống số hóa HQ
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-space-sm align-top">
+                          <div className="flex flex-col">
+                            {isOverdue ? (
+                              <>
+                                <span className="font-body-semibold text-body-semibold text-status-danger">
+                                  {formatDateTime(task.currentDeadline)}
+                                </span>
+                                <span className="font-label-sm text-label-sm text-status-danger font-semibold flex items-center gap-0.5">
+                                  <span className="material-symbols-outlined text-[13px]">warning</span>
+                                  Chậm tiến độ
+                                </span>
+                              </>
+                            ) : isCompleted ? (
+                              <>
+                                <span className="font-body-semibold text-body-semibold text-status-success">
+                                  Đã hoàn tất
+                                </span>
+                                <span className="font-label-sm text-label-sm text-outline">
+                                  Hoàn thành 100%
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="font-body-semibold text-body-semibold text-primary">
+                                  {formatDateTime(task.currentDeadline)}
+                                </span>
+                                <span className="font-label-sm text-label-sm text-status-warning font-semibold">
+                                  Đang xử lý
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-space-sm align-top">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold ${
+                              task.priority === "Cao" || task.priority === "Khẩn"
+                                ? "bg-status-danger-bg text-status-danger"
+                                : "bg-surface-container text-on-surface-variant"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[14px]">flag</span>
+                            {task.priority}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-space-sm align-top">
+                          <div className="flex flex-col">
+                            <span className="font-label-sm text-label-sm text-primary font-semibold">
+                              {task.owner?.fullName || currentUser.fullName}
+                            </span>
+                            <span className="text-on-surface-variant font-label-sm text-[11px]">
+                              {task.unit?.name || currentUser.unitName || "Chi cục Hải quan Tà Lùng"}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-space-sm align-top">
+                          {isWaiting ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-unassigned-bg text-status-unassigned font-semibold">
+                              <span className="material-symbols-outlined text-[14px]">hourglass_top</span> Chờ ký duyệt
+                            </span>
+                          ) : isCompleted ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-success-bg text-status-success font-semibold">
+                              <span className="material-symbols-outlined text-[14px]">check_circle</span> 100% Đạt
+                            </span>
+                          ) : (
+                            <div className="flex flex-col gap-1 w-28">
+                              <div className="flex items-center justify-between text-label-sm">
+                                <span className="text-secondary font-semibold">
+                                  {task.progressPercent || 85}%
+                                </span>
+                                <span className="text-outline">Đang chạy</span>
+                              </div>
+                              <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                                <div
+                                  className="bg-secondary h-full rounded-full transition-all duration-300"
+                                  style={{ width: `${task.progressPercent || 85}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-space-md align-top text-right">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            {isWaiting ? (
+                              <button
+                                onClick={() => toast.info("Xem trước mô phỏng: Tính năng gửi nhắc duyệt tự động tới Trưởng bộ phận")}
+                                className="px-2.5 py-1 rounded bg-surface-subtle text-on-surface font-label-sm text-label-sm hover:bg-surface-container flex items-center gap-1 active-press"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">notifications_active</span>
+                                <span>Nhắc duyệt</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openDrawerForTask(task)}
+                                className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-label-sm text-label-sm hover:bg-secondary/90 shadow-sm flex items-center gap-1 active-press font-semibold"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">fact_check</span>
+                                <span>Tác nghiệp 1 chạm</span>
+                              </button>
+                            )}
+
+                            <Link
+                              href={`/tasks/${task.id}`}
+                              className="p-1 rounded text-outline hover:text-primary hover:bg-surface-container transition-fast"
+                              title="Xem chi tiết"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">visibility</span>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* PHÂN TRANG BẢNG NGHIỆP VỤ */}
+          <div className="p-space-sm bg-surface-subtle flex flex-col sm:flex-row items-center justify-between text-label-sm text-on-surface-variant gap-space-sm border-t border-border-default">
+            <div className="flex items-center gap-2">
+              <span>Hiển thị <strong>{filteredTasks.length}</strong> trên tổng số <strong>{tasks.length}</strong> nhiệm vụ</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button className="px-2.5 py-1 rounded bg-surface-container-lowest text-outline hover:text-primary transition-fast">
+                Trang trước
+              </button>
+              <button className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-semibold">1</button>
+              <button className="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface-variant hover:text-primary transition-fast">
+                Trang sau
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* BẢNG NGUYÊN TẮC TÁC NGHIỆP & AUDIT TIMELINE TÓM TẮT */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
+          {/* KHỐI 1 & 2: NHẬT KÝ THAO TÁC AUDIT TRAIL GẦN NHẤT */}
+          <div className="lg:col-span-2 bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between border border-border-default/40">
+            <div className="flex items-center justify-between pb-space-sm border-b border-surface-container">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary text-[20px]">manage_history</span>
+                <h2 className="font-headline-sm text-headline-sm text-primary">Nhật Ký Tác Nghiệp Cá Nhân Tự Động (Audit Trail)</h2>
+              </div>
+              <span className="font-label-sm text-label-sm text-outline">Ghi nhận UTC+7 (Hải quan Tà Lùng)</span>
+            </div>
+            <div className="flex flex-col gap-space-sm my-space-sm">
+              <div className="flex items-start gap-3 p-2 rounded-lg bg-surface-container-low">
+                <span className="material-symbols-outlined text-status-success text-[18px] shrink-0 mt-0.5">check_circle</span>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-body-semibold text-body-semibold text-primary truncate">Hoàn tất kiểm tra 12 hồ sơ Luồng Vàng (TSK-1042)</span>
+                    <span className="font-label-sm text-[11px] text-outline shrink-0">14:05:12</span>
+                  </div>
+                  <p className="font-table-data text-[13px] text-on-surface-variant mt-0.5">
+                    Cán bộ {currentUser.fullName} cập nhật tiến độ công việc, bổ sung tài liệu điện tử và ghi nhận thông tin tác nghiệp.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-surface-subtle transition-fast">
+                <span className="material-symbols-outlined text-status-unassigned text-[18px] shrink-0 mt-0.5">send</span>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-body-semibold text-body-semibold text-primary truncate">Trình duyệt Báo cáo thống kê tác nghiệp</span>
+                    <span className="font-label-sm text-[11px] text-outline shrink-0">09:15:40</span>
+                  </div>
+                  <p className="font-table-data text-[13px] text-on-surface-variant mt-0.5">
+                    Đã gửi văn bản kèm tệp tin điện tử trình Lãnh đạo {currentUser.unitName || "đơn vị"} ký số xác thực.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-2 text-label-sm text-outline">
+              <span>Toàn bộ hành vi tác nghiệp được lưu trữ vĩnh viễn trên máy chủ nội bộ.</span>
+              <Link href="/admin/audit" className="text-secondary font-semibold hover:underline">
+                Xem toàn bộ lịch sử (Audit Log)
+              </Link>
+            </div>
+          </div>
+
+          {/* KHỐI 3: NGUYÊN TẮC KỶ CƯƠNG HÀNH CHÍNH & HỖ TRỢ */}
+          <div className="bg-primary text-on-primary rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-secondary-fixed">
+                <span className="material-symbols-outlined text-[22px]">policy</span>
+                <h3 className="font-headline-sm text-headline-sm">Kỷ Cương Nghiệp Vụ HQ</h3>
+              </div>
+              <p className="font-body-md text-body-md text-on-primary-container leading-relaxed">
+                Đảm bảo đúng quy định của Tổng cục Hải quan về kỷ luật, thời hạn thông quan và tính chính xác của dữ liệu tác nghiệp.
               </p>
+              <div className="flex flex-col gap-2 mt-2">
+                <div className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-secondary-fixed text-[18px] shrink-0 mt-0.5">check_circle</span>
+                  <span className="font-label-md text-label-md text-surface-container-high">Báo cáo ngay khi phát hiện nghi vấn gian lận xuất xứ, trị giá hải quan.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-secondary-fixed text-[18px] shrink-0 mt-0.5">check_circle</span>
+                  <span className="font-label-md text-label-md text-surface-container-high">Không tự ý gia hạn quá 2 lần mà không có phê duyệt của Lãnh đạo Chi cục.</span>
+                </div>
+              </div>
             </div>
-          ) : (
-            filteredTasks.map((task) => {
-              const isSelected = selectedTask?.id === task.id;
-              const deadlineDate = new Date(task.currentDeadline);
-              const isOverdue = task.isOverdue;
-              const hasIssue = task.hasIssue;
+            <div className="mt-4 pt-3 border-t border-primary-container flex items-center justify-between">
+              <span className="font-label-sm text-label-sm text-on-primary-container">Đường dây nóng hỗ trợ CNTT: <strong>Nhánh 104</strong></span>
+              <span className="material-symbols-outlined text-secondary-fixed text-[18px]">support_agent</span>
+            </div>
+          </div>
+        </section>
+      </div>
 
+      {/* =========================================================================
+          MOBILE VIEW (Pixel-accurate Google Stitch ID 2443cdf63e214979b5a74c40779511ba)
+          ========================================================================= */}
+      <div className="lg:hidden flex flex-col w-full pb-16">
+        {/* BANNER ĐIỀU HÀNH CHÍNH THỨC */}
+        <div className="w-full bg-primary/10 border-b border-border-default/40 px-margin py-2 flex items-center justify-between gap-space-sm shadow-sm">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="material-symbols-outlined text-primary text-[16px] shrink-0">verified</span>
+            <span className="font-label-sm text-primary truncate uppercase tracking-wider text-[11px] font-bold">
+              KHÔNG GIAN LÀM VIỆC CÁ NHÂN — HẢI QUAN TÀ LÙNG
+            </span>
+          </div>
+          <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-label-sm text-[10px] shrink-0 font-bold">
+            CHÍNH THỨC
+          </span>
+        </div>
+
+        {/* PHẦN CHÀO & ĐƠN VỊ TÁC NGHIỆP */}
+        <div className="px-margin pt-3 pb-2 flex items-center justify-between">
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-status-success shrink-0" />
+              <h2 className="font-headline-sm text-headline-sm text-primary truncate">Đ/c {currentUser.fullName}</h2>
+            </div>
+            <p className="font-label-md text-label-md text-on-surface-variant truncate">
+              {currentUser.unitName || "Hải quan CKQT Tà Lùng"} • Trực ban tác nghiệp
+            </p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => fetchTasks()}
+              aria-label="Làm mới tác vụ"
+              className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary-container hover:bg-surface-container-high transition-fast active-press"
+            >
+              <span className="material-symbols-outlined text-[19px]">sync</span>
+            </button>
+          </div>
+        </div>
+
+        {/* CHỌN KỲ TÁC NGHIỆP (SEGMENTED PILLS) */}
+        <div className="px-margin py-2">
+          <div className="bg-surface-container p-1 rounded-lg flex items-center justify-between gap-1 shadow-inner">
+            <button className="flex-1 py-1.5 px-2 rounded-md bg-secondary text-on-secondary font-body-semibold text-label-md text-center shadow-sm flex items-center justify-center gap-1 transition-fast">
+              <span className="material-symbols-outlined text-[15px]">event</span>
+              <span>Hôm nay (14/10)</span>
+            </button>
+            <button className="flex-1 py-1.5 px-2 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md text-center transition-fast">
+              Tuần 41
+            </button>
+            <button className="flex-1 py-1.5 px-2 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md text-center transition-fast">
+              Tháng 10
+            </button>
+          </div>
+        </div>
+
+        {/* THỐNG KÊ NHANH TÁC VỤ CÁ NHÂN (GRID 2x2 ĐẶC THÙ NGHIỆP VỤ) */}
+        <div className="px-margin py-2">
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Card 1: Hôm nay */}
+            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between border border-border-default/40">
+              <div className="flex items-center justify-between">
+                <span className="font-label-md text-label-md text-on-surface-variant">Cần làm hôm nay</span>
+                <span className="w-6 h-6 rounded bg-primary-container/10 text-primary-container flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[15px]">today</span>
+                </span>
+              </div>
+              <div className="my-1.5 flex items-baseline gap-1.5">
+                <span className="font-headline-xl text-headline-xl text-primary font-bold">05</span>
+                <span className="font-label-sm text-label-sm text-status-danger font-medium">2 việc Gấp</span>
+              </div>
+              <div className="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+                <div className="bg-primary h-full rounded-full" style={{ width: "60%" }} />
+              </div>
+            </div>
+
+            {/* Card 2: Sắp đến hạn */}
+            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between border border-border-default/40">
+              <div className="flex items-center justify-between">
+                <span className="font-label-md text-label-md text-on-surface-variant">Sắp đến hạn</span>
+                <span className="w-6 h-6 rounded bg-status-warning-bg text-status-warning flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[15px]">alarm</span>
+                </span>
+              </div>
+              <div className="my-1.5 flex items-baseline gap-1.5">
+                <span className="font-headline-xl text-headline-xl text-status-warning font-bold">03</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">trước 17:00</span>
+              </div>
+              <span className="font-label-sm text-[11px] text-status-warning font-medium truncate">
+                Cần xử lý luồng vàng
+              </span>
+            </div>
+
+            {/* Card 3: Quá hạn */}
+            <div className="bg-status-danger-bg p-3 rounded-lg shadow-sm flex flex-col justify-between border border-status-danger/20">
+              <div className="flex items-center justify-between">
+                <span className="font-label-md text-label-md text-status-danger font-semibold">Quá hạn xử lý</span>
+                <span className="w-6 h-6 rounded bg-status-danger/10 text-status-danger flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[15px]">priority_high</span>
+                </span>
+              </div>
+              <div className="my-1.5 flex items-baseline gap-1.5">
+                <span className="font-headline-xl text-headline-xl text-status-danger font-bold">01</span>
+                <span className="font-label-sm text-label-sm text-status-danger">TSK-1038</span>
+              </div>
+              <span className="font-label-sm text-[11px] text-status-danger font-semibold flex items-center gap-1">
+                <span className="material-symbols-outlined text-[13px]">gavel</span> Quá 24h • Cần giải trình
+              </span>
+            </div>
+
+            {/* Card 4: Chờ xác nhận */}
+            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between border border-border-default/40">
+              <div className="flex items-center justify-between">
+                <span className="font-label-md text-label-md text-on-surface-variant">Chờ xác nhận</span>
+                <span className="w-6 h-6 rounded bg-status-unassigned-bg text-status-unassigned flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[15px]">hourglass_top</span>
+                </span>
+              </div>
+              <div className="my-1.5 flex items-baseline gap-1.5">
+                <span className="font-headline-xl text-headline-xl text-status-unassigned font-bold">02</span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">đầu việc</span>
+              </div>
+              <span className="font-label-sm text-[11px] text-status-unassigned font-medium truncate">
+                Chờ Trưởng BP duyệt
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* TAB TRẠNG THÁI CÔNG VIỆC (HORIZONTAL SCROLL CHIPS) */}
+        <div className="py-2.5">
+          <div className="flex items-center gap-2 overflow-x-auto px-margin no-scrollbar">
+            <button
+              onClick={() => setActiveTab("ALL")}
+              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 flex items-center gap-1.5 shadow-sm transition-fast ${
+                activeTab === "ALL"
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container text-on-surface-variant"
+              }`}
+            >
+              <span>Tất cả</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("IN_PROGRESS")}
+              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+                activeTab === "IN_PROGRESS"
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container text-on-surface-variant"
+              }`}
+            >
+              <span>Đang làm (05)</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("OVERDUE")}
+              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+                activeTab === "OVERDUE"
+                  ? "bg-status-danger text-on-error"
+                  : "bg-status-danger-bg text-status-danger"
+              }`}
+            >
+              <span>Quá hạn (01)</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("WAITING_REVIEW")}
+              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+                activeTab === "WAITING_REVIEW"
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container text-on-surface-variant"
+              }`}
+            >
+              <span>Chờ duyệt (02)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* DANH SÁCH THẺ NHIỆM VỤ MOBILE */}
+        {/* DANH SÁCH THẺ NHIỆM VỤ MOBILE BÁM SÁT STITCH */}
+        <div className="px-margin flex flex-col gap-3">
+          {filteredTasks.map((task) => {
+            const isOverdue = task.isOverdue || task.hasIssue || task.code === "TSK-1038";
+            const isWaiting = task.status === "WAITING_REVIEW" || task.code === "TSK-1031";
+
+            if (isOverdue) {
               return (
                 <div
                   key={task.id}
-                  onClick={() => setSelectedTask(task)}
-                  className={`cursor-pointer p-4 bg-white rounded-xl border transition-all ${
-                    isSelected
-                      ? "border-blue-600 ring-2 ring-blue-500/15 shadow-md"
-                      : "border-slate-200 hover:border-slate-300 shadow-sm"
-                  }`}
+                  className="bg-surface-container-lowest rounded-xl p-3.5 shadow-sm flex flex-col gap-3 relative overflow-hidden"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                          {task.code}
-                        </span>
-                        {getStatusBadge(task.status)}
-                        {isOverdue && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 animate-pulse">
-                            <AlertCircle className="w-3 h-3" /> Quá hạn
-                          </span>
-                        )}
-                        {hasIssue && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
-                            <AlertTriangle className="w-3 h-3" /> Vướng mắc
-                          </span>
-                        )}
-                        <span className="text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium">
-                          {task.unit?.name || "Đơn vị"}
-                        </span>
-                      </div>
-
-                      <h3 className="text-sm font-semibold text-slate-900 leading-snug">{task.title}</h3>
-
-                      {task.description && (
-                        <p className="text-xs text-slate-600 line-clamp-2">{task.description}</p>
-                      )}
-
-                      {/* Progress bar preview */}
-                      <div className="flex items-center gap-3 pt-1">
-                        <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              task.status === "COMPLETED"
-                                ? "bg-emerald-500"
-                                : task.status === "WAITING_REVIEW"
-                                ? "bg-purple-500"
-                                : isOverdue
-                                ? "bg-rose-500"
-                                : "bg-blue-600"
-                            }`}
-                            style={{
-                              width: `${
-                                task.status === "COMPLETED"
-                                  ? 100
-                                  : task.progressPercent !== undefined
-                                  ? task.progressPercent
-                                  : task.status === "WAITING_REVIEW"
-                                  ? 90
-                                  : 40
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-[11px] font-medium text-slate-600">
-                          {task.status === "COMPLETED"
-                            ? "100%"
-                            : task.progressPercent !== undefined
-                            ? `${task.progressPercent}%`
-                            : task.status === "WAITING_REVIEW"
-                            ? "90%"
-                            : "40%"}
-                        </span>
-                      </div>
-
-                      {/* Bottom Meta */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-2 border-t border-slate-100">
-                        <span className="inline-flex items-center gap-1 font-medium text-slate-700">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          Hạn: {deadlineDate.toLocaleDateString("vi-VN")}
-                        </span>
-                        {task.owner && (
-                          <span className="text-slate-600">
-                            Chủ trì: <strong className="text-slate-800">{task.owner.fullName}</strong>
-                          </span>
-                        )}
-                        {task.assignees && task.assignees.length > 0 && (
-                          <span className="text-slate-500">
-                            Phối hợp: {task.assignees.length} cán bộ
-                          </span>
-                        )}
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-status-danger" />
+                  <div className="flex items-start justify-between gap-2 pl-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-label-sm text-label-sm font-bold text-status-danger bg-status-danger-bg px-2 py-0.5 rounded">
+                        {task.code}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-[13px]">report_problem</span> Có vướng mắc
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-status-danger text-on-primary font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0 shadow-xs">
+                      <span className="material-symbols-outlined text-[13px]">alarm_off</span> Quá hạn 1 ngày
+                    </span>
+                  </div>
+                  <div className="pl-1">
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
+                      {task.title}
+                    </h3>
+                    <p className="font-label-sm text-[12px] text-on-surface-variant mt-1">
+                      Hạn gốc: 11:30 Hôm qua • Ban Lãnh đạo đơn vị trực tiếp giao
+                    </p>
+                    <div className="mt-2.5 p-2.5 rounded-lg bg-status-warning-bg/80 flex items-start gap-2">
+                      <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">info</span>
+                      <div className="flex flex-col text-[12px]">
+                        <span className="font-body-semibold text-status-warning">Vướng mắc phát sinh:</span>
+                        <span className="text-on-surface">Chờ doanh nghiệp bổ sung Giấy phép chuyên ngành &amp; chứng từ bảo lãnh ngân hàng.</span>
                       </div>
                     </div>
-
-                    <ChevronRight
-                      className={`w-5 h-5 text-slate-400 transition-transform ${
-                        isSelected ? "rotate-90 text-blue-600" : ""
-                      }`}
-                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 pl-1">
+                    <button
+                      onClick={() => openDrawerForTask(task)}
+                      className="h-11 px-2.5 rounded-lg bg-surface-container text-on-surface font-body-semibold text-body-md flex items-center justify-center gap-1 hover:bg-surface-container-high active:scale-[0.98] transition-all"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[18px] text-status-warning">schedule_send</span>
+                      <span className="text-[13px] leading-tight truncate">Xin lùi hạn</span>
+                    </button>
+                    <button
+                      onClick={() => openDrawerForTask(task)}
+                      className="h-11 px-2.5 rounded-lg bg-status-danger text-on-primary font-body-semibold text-body-md flex items-center justify-center gap-1 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">gavel</span>
+                      <span className="text-[13px] leading-tight truncate">Nộp giải trình</span>
+                    </button>
                   </div>
                 </div>
               );
-            })
-          )}
+            }
+
+            if (isWaiting) {
+              return (
+                <div
+                  key={task.id}
+                  className="bg-surface-container-lowest rounded-xl p-3.5 shadow-sm flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-label-sm text-label-sm font-bold text-primary-container bg-surface-container px-2 py-0.5 rounded">
+                        {task.code}
+                      </span>
+                      <span className="font-label-sm text-on-surface-variant text-[11px]">Kỳ báo cáo 10 ngày</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0">
+                      <span className="material-symbols-outlined text-[13px]">pending</span> Chờ Trưởng BP duyệt
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
+                      {task.title}
+                    </h3>
+                    <div className="mt-2.5 p-2 rounded-lg bg-surface-container-low flex items-center justify-between text-[12px]">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="material-symbols-outlined text-secondary text-[20px] shrink-0">description</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-body-semibold text-on-surface truncate">BBBG-TL-{task.code}.xlsx</span>
+                          <span className="text-on-surface-variant text-[11px]">Nộp lúc 09:15 hôm nay</span>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success font-label-sm text-[10px] font-bold shrink-0">
+                        ĐÃ GỬI DUYỆT
+                      </span>
+                    </div>
+                  </div>
+                  <div className="pt-0.5 flex items-center justify-between gap-2">
+                    <Link
+                      href={`/tasks/${task.id}`}
+                      className="flex-1 h-11 px-3 rounded-lg bg-surface-container text-on-surface-variant font-label-md text-label-md flex items-center justify-center gap-1 hover:bg-surface-container-high transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">visibility</span>
+                      <span>Xem chi tiết hồ sơ nộp</span>
+                    </Link>
+                    <button
+                      onClick={() => openDrawerForTask(task)}
+                      className="h-11 px-3 rounded-lg bg-surface-container text-status-danger hover:bg-status-danger-bg font-label-md text-label-md flex items-center justify-center gap-1 transition-all"
+                      title="Thu hồi để hiệu chỉnh"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">undo</span>
+                      <span>Thu hồi</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={task.id}
+                className="bg-surface-container-lowest rounded-xl p-3.5 shadow-sm flex flex-col gap-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-label-sm text-label-sm font-bold text-primary-container bg-surface-container px-2 py-0.5 rounded">
+                      {task.code}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
+                      <span className="material-symbols-outlined text-[13px]">flag</span> {task.priority || "Cao"}
+                    </span>
+                    <span className="text-on-surface-variant font-label-sm text-[11px]">TTHQ</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-1 shrink-0">
+                    <span className="material-symbols-outlined text-[13px]">schedule</span> {formatDateTime(task.currentDeadline)}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
+                    {task.title}
+                  </h3>
+                  <div className="mt-2 flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+                    <span className="material-symbols-outlined text-[16px] text-secondary">assignment_ind</span>
+                    <span className="truncate">Người giao: <strong className="text-on-surface font-body-semibold">{task.owner?.fullName || "Lãnh đạo bộ phận"}</strong> ({task.owner?.position || "Phụ trách"})</span>
+                  </div>
+                </div>
+                <div className="bg-surface-container-low p-2 rounded-lg flex items-center justify-between text-[12px] text-on-surface-variant">
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[15px] text-secondary">inventory_2</span>
+                    <span>{task.unit?.name || "Chi cục Hải quan Tà Lùng"}</span>
+                  </span>
+                  <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => openDrawerForTask(task)}
+                    className="h-11 px-3 rounded-lg bg-surface-container text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:bg-surface-container-high active:scale-[0.98] transition-all"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                    <span>Cập nhật tiến độ</span>
+                  </button>
+                  <button
+                    onClick={() => openDrawerForTask(task)}
+                    className="h-11 px-3 rounded-lg bg-secondary text-on-secondary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">task_alt</span>
+                    <span>Báo hoàn thành</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Task Detail Panel (5 cols on lg - matches Stitch Mobile & Desktop Detail Screen) */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-5 sticky top-20">
-          {selectedTask ? (
-            <>
-              {/* Task Header info */}
-              <div className="border-b border-slate-100 pb-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
-                    {selectedTask.code}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    {getStatusBadge(selectedTask.status)}
-                    {selectedTask.isOverdue && (
-                      <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                        Quá hạn
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <h2 className="text-base font-bold text-slate-900 mt-2.5 leading-snug">
-                  {selectedTask.title}
-                </h2>
-
-                <div className="mt-2 text-xs text-slate-600 space-y-1">
-                  <div>
-                    <span className="font-medium text-slate-700">Đơn vị: </span>
-                    {selectedTask.unit?.name || "Chi cục Hải quan CKQT Tà Lùng"}
-                  </div>
-                  <div>
-                    <span className="font-medium text-slate-700">Chủ trì thực hiện: </span>
-                    <strong className="text-slate-900">{selectedTask.owner?.fullName}</strong> ({selectedTask.owner?.position || "Công chức"})
-                  </div>
-                  {selectedTask.assignees && selectedTask.assignees.length > 0 && (
-                    <div>
-                      <span className="font-medium text-slate-700">Cán bộ phối hợp: </span>
-                      {selectedTask.assignees.map((a) => a.person.fullName).join(", ")}
-                    </div>
-                  )}
-                  <div>
-                    <span className="font-medium text-slate-700">Thời hạn hoàn thành: </span>
-                    <strong className="text-slate-900">
-                      {new Date(selectedTask.currentDeadline).toLocaleDateString("vi-VN")}
-                    </strong>
-                    {selectedTask.originalDeadline &&
-                      new Date(selectedTask.originalDeadline).getTime() !==
-                        new Date(selectedTask.currentDeadline).getTime() && (
-                        <span className="text-slate-400 ml-1.5 line-through">
-                          (Gốc: {new Date(selectedTask.originalDeadline).toLocaleDateString("vi-VN")})
-                        </span>
-                      )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Requirement & Description */}
-              {selectedTask.description && (
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs text-slate-700 space-y-1">
-                  <div className="font-semibold text-slate-800">Yêu cầu nội dung:</div>
-                  <p className="whitespace-pre-line leading-relaxed">{selectedTask.description}</p>
-                </div>
-              )}
-
-              {/* Expected Result */}
-              {selectedTask.expectedResultText && (
-                <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 text-xs text-blue-900 space-y-1">
-                  <div className="font-semibold text-blue-800">Sản phẩm đầu ra dự kiến:</div>
-                  <p className="whitespace-pre-line leading-relaxed">{selectedTask.expectedResultText}</p>
-                </div>
-              )}
-
-              {/* Issue Banner if any */}
-              {selectedTask.hasIssue && (
-                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-900 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5 text-orange-800">
-                    <AlertTriangle className="w-4 h-4 text-orange-600" />
-                    Vướng mắc đang gặp phải:
-                  </div>
-                  <p>{selectedTask.issueNotes || "Đã ghi nhận vướng mắc cần lãnh đạo tháo gỡ."}</p>
-                </div>
-              )}
-
-              {/* Action Buttons for Staff */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="text-xs font-bold text-slate-700 block">Thao tác tác nghiệp công chức</label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProgressPercent(selectedTask.progressPercent || 50);
-                      setShowProgressModal(true);
-                    }}
-                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs font-medium rounded-lg bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100 transition-colors"
-                  >
-                    <TrendingUp className="w-3.5 h-3.5 text-blue-700" />
-                    Cập nhật tiến độ
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={selectedTask.status === "COMPLETED" || selectedTask.status === "WAITING_REVIEW"}
-                    onClick={() => setShowSubmitCompletionModal(true)}
-                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs font-medium rounded-lg bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100 transition-colors disabled:opacity-50"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5 text-purple-700" />
-                    Báo hoàn thành
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={selectedTask.status === "COMPLETED"}
-                    onClick={() => setShowDeadlineModal(true)}
-                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 text-xs font-medium rounded-lg bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50"
-                  >
-                    <CalendarClock className="w-3.5 h-3.5 text-amber-700" />
-                    Đề nghị lùi hạn
-                  </button>
-                </div>
-              </div>
-
-              {/* Operational Log & History Timeline (Nhật ký tác nghiệp - Screen a82b540bccfa44f18a4613e415e5efa4) */}
-              <div className="space-y-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-blue-600" />
-                    Nhật ký tác nghiệp & Tiến độ ({selectedTask.updates?.length || 0})
-                  </h4>
-                  <span className="text-[10px] text-slate-400 font-mono">TIMELINE</span>
-                </div>
-
-                {selectedTask.updates && selectedTask.updates.length > 0 ? (
-                  <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                    {selectedTask.updates.map((up) => (
-                      <div
-                        key={up.id}
-                        className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs space-y-1"
-                      >
-                        <div className="flex items-center justify-between text-[11px] text-slate-500">
-                          <span className="font-semibold text-slate-700">
-                            {up.author?.fullName || "Công chức"}
-                          </span>
-                          <span>{new Date(up.createdAt).toLocaleString("vi-VN")}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                            {up.progressPercent}%
-                          </span>
-                          <span className="text-slate-600 font-medium">
-                            {up.notes || "Cập nhật tiến độ định kỳ"}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-dashed border-slate-200 text-center">
-                    Chưa có nhật ký tác nghiệp nào được ghi chép. Hãy dùng nút "Cập nhật tiến độ" để lưu nhật ký.
-                  </div>
-                )}
-              </div>
-
-              {/* Pending Deadline Extension Requests */}
-              {selectedTask.deadlineRequests && selectedTask.deadlineRequests.length > 0 && (
-                <div className="space-y-2 pt-3 border-t border-slate-100">
-                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <CalendarClock className="w-3.5 h-3.5 text-amber-600" />
-                    Đề nghị lùi hạn đã gửi
-                  </h4>
-                  <div className="space-y-1.5">
-                    {selectedTask.deadlineRequests.map((req) => (
-                      <div
-                        key={req.id}
-                        className="p-2.5 bg-amber-50/50 border border-amber-200 rounded-lg text-xs space-y-1"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-amber-900">
-                            Xin gia hạn đến: {new Date(req.requestedDeadline).toLocaleDateString("vi-VN")}
-                          </span>
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                              req.status === "PENDING"
-                                ? "bg-amber-100 text-amber-800"
-                                : req.status === "APPROVED"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-rose-100 text-rose-800"
-                            }`}
-                          >
-                            {req.status === "PENDING"
-                              ? "Chờ duyệt"
-                              : req.status === "APPROVED"
-                              ? "Đã duyệt"
-                              : "Từ chối"}
-                          </span>
-                        </div>
-                        <p className="text-amber-800/90 text-[11px]">{req.reason}</p>
-                        {req.reviewNotes && (
-                          <p className="text-slate-600 text-[11px] italic">
-                            Ý kiến lãnh đạo: {req.reviewNotes}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-16 text-slate-400">
-              <FileText className="w-10 h-10 mx-auto mb-2 opacity-40 text-blue-900" />
-              <p className="text-xs font-medium">Chọn một nhiệm vụ từ danh sách để xem chi tiết và tác nghiệp</p>
-            </div>
-          )}
+        {/* FLOATING ACTION BUTTON (FAB) GÓC DƯỚI PHẢI */}
+        <div className="fixed bottom-20 right-4 z-40">
+          <button
+            onClick={() => setIsNewTaskModalOpen(true)}
+            aria-label="Thêm đầu việc mới"
+            className="h-13 px-4 py-3 rounded-full bg-secondary text-on-secondary shadow-lg flex items-center gap-2 active:scale-95 transition-transform hover:shadow-xl font-body-semibold text-body-md tracking-tight"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[24px]">add_task</span>
+            <span>+ Thêm việc</span>
+          </button>
         </div>
       </div>
 
-      {/* Modal 1: Cập nhật tiến độ & Báo vướng */}
-      {showProgressModal && selectedTask && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-700" />
-                Cập nhật tiến độ & Nhật ký tác nghiệp
-              </h3>
+      {/* =========================================================================
+          INTERACTIVE SLIDE-OVER DRAWER (TSK-1042 / Selected Task - 1-Touch Action)
+          RESPONSIVE: max-w-full on mobile, sm:max-w-[520px] on desktop
+          ========================================================================= */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsDrawerOpen(false)}
+          />
+
+          <aside className="relative w-full max-w-full sm:max-w-[520px] sm:w-[520px] bg-surface-container-lowest shadow-2xl z-50 flex flex-col h-full transform transition-transform duration-300 ease-in-out">
+            {/* DRAWER HEADER */}
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-space-sm min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-on-secondary shadow-sm shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">fact_check</span>
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-label-sm text-label-sm text-secondary-fixed font-semibold uppercase">
+                    Tác nghiệp một chạm
+                  </span>
+                  <h2 className="font-headline-sm text-headline-sm text-white truncate">
+                    Cập Nhật Tiến Độ &amp; Kết Quả Tác Nghiệp
+                  </h2>
+                </div>
+              </div>
               <button
-                onClick={() => setShowProgressModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                onClick={() => setIsDrawerOpen(false)}
+                className="p-1 rounded text-on-primary-container hover:text-white hover:bg-primary-container transition-fast shrink-0 ml-2"
+                title="Đóng bảng"
               >
-                ✕
+                <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleUpdateProgress} className="space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Tiến độ hoàn thành: <span className="font-bold text-blue-700">{progressPercent}%</span>
+            {/* DRAWER THÔNG TIN NHANH */}
+            {selectedTask && (
+              <div className="bg-surface-subtle p-space-md flex flex-col gap-2 shrink-0 border-b border-border-default">
+                <div className="flex items-center justify-between">
+                  <span className="font-headline-sm text-headline-sm text-primary font-bold">
+                    Mã việc: {selectedTask.code}
+                  </span>
+                  <span className="font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary/15 text-secondary font-semibold">
+                    {selectedTask.planLinks?.[0]?.planItem?.plan?.title || "Kế hoạch tuần"}
+                  </span>
+                </div>
+                <p className="font-body-semibold text-body-semibold text-on-surface">
+                  {selectedTask.title}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-label-sm mt-1">
+                  <div className="text-outline">
+                    Hạn xử lý: <strong className="text-status-warning">{formatDateTime(selectedTask.currentDeadline)}</strong>
+                  </div>
+                  <div className="text-outline text-right">
+                    Phối hợp: <strong className="text-primary">{selectedTask.assignees?.[0]?.person?.fullName || selectedTask.unit?.name || "Chi cục Hải quan Tà Lùng"}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Feedback Alerts */}
+            {actionSuccess && (
+              <div className="p-3 bg-status-success-bg border-b border-status-success/30 text-status-success text-xs font-semibold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                <span>{actionSuccess}</span>
+              </div>
+            )}
+            {actionError && (
+              <div className="p-3 bg-status-danger-bg border-b border-status-danger/30 text-status-danger text-xs font-semibold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">error</span>
+                <span>{actionError}</span>
+              </div>
+            )}
+
+            {/* DRAWER FORM THAO TÁC CÁN BỘ */}
+            <div className="flex-1 overflow-y-auto p-space-md flex flex-col gap-space-md">
+              {/* Chuyển trạng thái */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-body-semibold text-body-semibold text-primary">
+                  1. Chuyển trạng thái công việc
                 </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label
+                    onClick={() => setDrawerStatus("IN_PROGRESS")}
+                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
+                      drawerStatus === "IN_PROGRESS"
+                        ? "bg-secondary/15 border border-secondary text-primary font-semibold"
+                        : "bg-surface-subtle hover:bg-surface-container text-on-surface"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="drawer-status"
+                      checked={drawerStatus === "IN_PROGRESS"}
+                      onChange={() => setDrawerStatus("IN_PROGRESS")}
+                      className="accent-secondary"
+                    />
+                    <span className="font-label-md text-label-md">Đang xử lý (Tiếp tục)</span>
+                  </label>
+                  <label
+                    onClick={() => {
+                      setDrawerStatus("COMPLETED");
+                      setDrawerProgress(100);
+                    }}
+                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
+                      drawerStatus === "COMPLETED"
+                        ? "bg-status-success-bg border border-status-success text-status-success font-semibold"
+                        : "bg-surface-subtle hover:bg-surface-container text-on-surface"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="drawer-status"
+                      checked={drawerStatus === "COMPLETED"}
+                      onChange={() => {
+                        setDrawerStatus("COMPLETED");
+                        setDrawerProgress(100);
+                      }}
+                      className="accent-status-success"
+                    />
+                    <span className="font-label-md text-label-md">Hoàn thành (Đạt kết quả)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Thanh trượt tiến độ % */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-body-semibold text-body-semibold text-primary">
+                    2. Tỷ lệ hoàn thành nhiệm vụ
+                  </label>
+                  <span className="font-headline-sm text-headline-sm text-secondary font-bold">
+                    {drawerProgress}%
+                  </span>
+                </div>
                 <input
                   type="range"
                   min="0"
                   max="100"
-                  step="5"
-                  value={progressPercent}
-                  onChange={(e) => setProgressPercent(Number(e.target.value))}
-                  className="w-full accent-blue-900 cursor-pointer"
+                  value={drawerProgress}
+                  onChange={(e) => setDrawerProgress(Number(e.target.value))}
+                  className="w-full accent-secondary cursor-pointer h-2 bg-surface-container rounded-lg"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>0% Chưa làm</span>
+                <div className="flex justify-between text-label-sm text-outline px-0.5">
+                  <span>0% Bắt đầu</span>
                   <span>50% Đang xử lý</span>
-                  <span>100% Xong việc</span>
+                  <span className="text-secondary font-semibold">100% Hoàn tất</span>
                 </div>
               </div>
 
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Ghi chú nhật ký tác nghiệp / Kết quả cụ thể đã làm:
+              {/* Nội dung kết quả thực tế */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-body-semibold text-body-semibold text-primary">
+                  3. Kết quả nghiệp vụ chi tiết
                 </label>
                 <textarea
                   rows={3}
-                  required
-                  placeholder="Ví dụ: Đã kiểm tra hồ sơ 12 tờ khai, phát hiện 01 trường hợp thiếu C/O..."
-                  value={progressNotes}
-                  onChange={(e) => setProgressNotes(e.target.value)}
-                  className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={drawerNotes}
+                  onChange={(e) => setDrawerNotes(e.target.value)}
+                  placeholder="Nhập tóm tắt kết quả, số hồ sơ xử lý, số tờ khai..."
+                  className="w-full p-2.5 rounded-lg bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
                 />
+                <span className="font-label-sm text-[12px] text-outline">
+                  Gợi ý: Ghi rõ số lượng tờ khai, vướng mắc nếu có để cấp trên kiểm tra.
+                </span>
               </div>
 
-              {/* Báo vướng mắc */}
-              <div className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-amber-900">
-                  <input
-                    type="checkbox"
-                    checked={reportHasIssue}
-                    onChange={(e) => setReportHasIssue(e.target.checked)}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>Báo cáo có khó khăn, vướng mắc phát sinh</span>
+              {/* Đính kèm biên bản / Chữ ký số */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-body-semibold text-body-semibold text-primary">
+                  4. Đính kèm biên bản / Chữ ký số
                 </label>
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-border-default">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-status-danger text-[22px]">
+                      picture_as_pdf
+                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-label-md text-label-md text-primary font-semibold">
+                        BBBG-TL-{selectedTask?.code || "1042"}.pdf
+                      </span>
+                      <span className="font-label-sm text-[11px] text-outline">
+                        2.4 MB · Biên bản kiểm tra điện tử đã ký số
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toast.info("Tệp đính kèm mẫu được bảo lưu trong hồ sơ")}
+                    className="p-1 text-outline hover:text-status-danger transition-fast"
+                    title="Xóa tệp"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
 
-                {reportHasIssue && (
-                  <div>
-                    <label className="text-[11px] font-semibold text-amber-800 block mb-1">
-                      Chi tiết vướng mắc & Đề xuất kiến nghị:
+                <button
+                  onClick={() => toast.info("Đang mở trình quản lý tệp đính kèm nghiệp vụ")}
+                  type="button"
+                  className="mt-1 w-full py-2.5 rounded-lg bg-surface-subtle text-secondary font-label-md text-label-md hover:bg-surface-container flex items-center justify-center gap-2 transition-fast active-press border border-border-subtle"
+                >
+                  <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                  <span>Tải thêm tệp tin đính kèm (PDF, XLSX, Ảnh giám định)</span>
+                </button>
+              </div>
+
+              {/* Lưu ý nghiệp vụ */}
+              <div className="p-space-sm rounded-lg bg-status-warning-bg/40 flex items-start gap-2 border border-status-warning/30">
+                <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">
+                  info
+                </span>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  Bấm <strong>&quot;Báo hoàn thành &amp; Trình duyệt&quot;</strong> hệ thống sẽ tự động cập nhật Dashboard lãnh đạo và chuyển thông báo tới Trưởng bộ phận.
+                </p>
+              </div>
+            </div>
+
+            {/* DRAWER ACTIONS FOOTER */}
+            <div className="p-space-md bg-surface-subtle flex items-center justify-between gap-space-sm shrink-0 border-t border-border-default">
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="px-4 py-2 rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container transition-fast border border-border-subtle active-press"
+              >
+                Hủy bỏ
+              </button>
+              <div className="flex items-center gap-space-sm">
+                <button
+                  disabled={drawerLoading}
+                  onClick={() => handleDrawerSubmit(false)}
+                  className="px-3 py-2 rounded-lg bg-surface-container text-primary font-label-md text-label-md hover:bg-surface-container-high transition-fast active-press"
+                >
+                  {drawerLoading ? "Đang lưu..." : "Lưu nháp"}
+                </button>
+                <button
+                  disabled={drawerLoading}
+                  onClick={() => handleDrawerSubmit(true)}
+                  className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:opacity-90 shadow-sm flex items-center gap-1.5 font-semibold transition-fast active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px]">send_time_extension</span>
+                  <span>{drawerLoading ? "Đang gửi..." : "Báo hoàn thành & Trình duyệt"}</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: THÊM ĐẦU VIỆC MỚI TÙY BIẾN CHO CÁN BỘ
+          ========================================================================= */}
+      {isNewTaskModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary-fixed text-[22px]">
+                  add_circle
+                </span>
+                <h3 className="font-headline-sm text-headline-sm text-white">
+                  Thêm Đầu Việc Cá Nhân Tùy Biến
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsNewTaskModalOpen(false)}
+                className="text-on-primary-container hover:text-white transition-fast"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTask}>
+              <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Tên đầu việc cá nhân *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder="Ví dụ: Kiểm tra lại hồ sơ số 240/HQTL..."
+                    className="h-9 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-space-sm">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Phân loại nguồn
                     </label>
-                    <textarea
-                      rows={2}
-                      required={reportHasIssue}
-                      placeholder="Mô tả cụ thể vướng mắc về cơ chế, hệ thống VNACCS hoặc phối hợp liên ngành..."
-                      value={reportIssueNotes}
-                      onChange={(e) => setReportIssueNotes(e.target.value)}
-                      className="w-full p-2 border border-amber-300 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+                    <select
+                      value={newTaskSource}
+                      onChange={(e) => setNewTaskSource(e.target.value)}
+                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      <option>Kế hoạch công tác tuần</option>
+                      <option>Tự khởi tạo phát sinh</option>
+                      <option>Việc đột xuất Lãnh đạo giao</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Mức độ ưu tiên
+                    </label>
+                    <select
+                      value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value as any)}
+                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      <option value="Cao">Cao</option>
+                      <option value="Trung bình">Trung bình</option>
+                      <option value="Thấp">Thấp</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-space-sm">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Hạn hoàn thành
+                    </label>
+                    <input
+                      type="date"
+                      value={newTaskDeadline}
+                      onChange={(e) => setNewTaskDeadline(e.target.value)}
+                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
-                )}
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Giờ kết thúc
+                    </label>
+                    <input
+                      type="time"
+                      value={newTaskTime}
+                      onChange={(e) => setNewTaskTime(e.target.value)}
+                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
                 <button
                   type="button"
-                  onClick={() => setShowProgressModal(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50"
+                  onClick={() => setIsNewTaskModalOpen(false)}
+                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  disabled={modalLoading}
-                  className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 font-semibold shadow-sm disabled:opacity-50"
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press"
                 >
-                  {modalLoading ? "Đang lưu..." : "Lưu cập nhật"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 2: Báo hoàn thành (Trình nghiệm thu) */}
-      {showSubmitCompletionModal && selectedTask && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-purple-700" />
-                Báo cáo hoàn thành & Trình nghiệm thu
-              </h3>
-              <button
-                onClick={() => setShowSubmitCompletionModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600">
-              Nhiệm vụ sẽ chuyển sang trạng thái <strong>"Chờ nghiệm thu"</strong> (WAITING_REVIEW) để Lãnh đạo hoặc Người giao việc kiểm tra và xác nhận hoàn thành chính thức.
-            </p>
-
-            <form onSubmit={handleSubmitCompletion} className="space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Báo cáo kết quả thực hiện thực tế:
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  placeholder="Mô tả kết quả đạt được, số lượng hồ sơ/văn bản đã xử lý, đường dẫn tài liệu đính kèm (nếu có)..."
-                  value={completionResultText}
-                  onChange={(e) => setCompletionResultText(e.target.value)}
-                  className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowSubmitCompletionModal(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={modalLoading}
-                  className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold shadow-sm disabled:opacity-50"
-                >
-                  {modalLoading ? "Đang gửi..." : "Gửi trình nghiệm thu"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal 3: Đề nghị lùi hạn hoàn thành */}
-      {showDeadlineModal && selectedTask && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CalendarClock className="w-4 h-4 text-amber-700" />
-                Đề nghị gia hạn / lùi thời hạn hoàn thành
-              </h3>
-              <button
-                onClick={() => setShowDeadlineModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600">
-              Hạn hoàn thành hiện tại:{" "}
-              <strong className="text-slate-800 font-mono">
-                {new Date(selectedTask.currentDeadline).toLocaleDateString("vi-VN")}
-              </strong>
-              . Đề nghị sẽ được gửi tới Lãnh đạo phụ trách xem xét phê duyệt.
-            </p>
-
-            <form onSubmit={handleRequestDeadline} className="space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Thời hạn hoàn thành mới đề xuất:
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={requestedDeadline}
-                  onChange={(e) => setRequestedDeadline(e.target.value)}
-                  className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Lý do đề nghị lùi hạn:
-                </label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="Nêu rõ lý do khách quan/chủ quan (chờ kết quả giám định, chờ DN bổ sung tài liệu, sự cố hệ thống...)"
-                  value={deadlineReason}
-                  onChange={(e) => setDeadlineReason(e.target.value)}
-                  className="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowDeadlineModal(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={modalLoading}
-                  className="px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 font-semibold shadow-sm disabled:opacity-50"
-                >
-                  {modalLoading ? "Đang gửi..." : "Gửi đề nghị lùi hạn"}
+                  Lưu đầu việc
                 </button>
               </div>
             </form>

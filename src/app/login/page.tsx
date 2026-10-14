@@ -2,70 +2,27 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Shield,
-  Lock,
-  User,
-  ArrowRight,
-  AlertCircle,
-  Building2,
-  KeyRound,
-  CheckCircle2,
-} from "lucide-react";
-
-const DEMO_ACCOUNTS = [
-  {
-    username: "lanhdao",
-    name: "Đ/c Hoàng Văn Định",
-    role: "UNIT_LEADER",
-    position: "Chi cục trưởng",
-    description: "Toàn quyền điều hành, phê duyệt kế hoạch, xem toàn bộ đơn vị",
-  },
-  {
-    username: "truongnhom_a",
-    name: "Đ/c Nguyễn Văn An",
-    role: "DEPARTMENT_LEADER",
-    position: "Trưởng nhóm BP Nghiệp vụ A",
-    description: "Lập và trình kế hoạch bộ phận A, phân công công việc nội bộ",
-  },
-  {
-    username: "canbo_a",
-    name: "Đ/c Trần Thị Mai",
-    role: "STAFF",
-    position: "Cán bộ BP Nghiệp vụ A",
-    description: "Thực hiện nhiệm vụ được giao, cập nhật tiến độ, báo vướng mắc",
-  },
-  {
-    username: "canbo_b",
-    name: "Đ/c Lê Hoàng Quân",
-    role: "STAFF",
-    position: "Cán bộ BP Giám sát B",
-    description: "Giám sát cổng barie, kiểm tra thực địa phương tiện vận tải",
-  },
-  {
-    username: "admin",
-    name: "Đ/c Đặng Quốc Bảo",
-    role: "SYSTEM_ADMIN",
-    position: "Quản trị viên CNTT",
-    description: "Quản trị cơ cấu tổ chức, nhân sự, danh mục (không đọc task nghiệp vụ)",
-  },
-];
+import { toast } from "@/components/ui/Toast";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("lanhdao");
-  const [password, setPassword] = useState("demo123");
+  const isDemoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN !== "false";
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberSession, setRememberSession] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Môi trường demo chỉ cho phép khi có cờ tường minh VÀ không phải là production
-  const isDemoAllowed =
-    process.env.NODE_ENV !== "production" &&
-    process.env.NEXT_PUBLIC_ENABLE_DEMO_SWITCHER === "true";
+  const [activeSelectFeedback, setActiveSelectFeedback] = useState<string | null>(null);
 
   const handleLogin = async (customUser?: string, customPass?: string) => {
     const userToLogin = customUser || username;
     const passToLogin = customPass || password;
+
+    if (!userToLogin.trim()) {
+      setError("Vui lòng nhập mã cán bộ hoặc tên đăng nhập");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -74,176 +31,446 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: userToLogin, password: passToLogin }),
+        body: JSON.stringify({ username: userToLogin.trim(), password: passToLogin }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Đăng nhập thất bại");
+        throw new Error(data.error || "Thông tin tài khoản hoặc mật khẩu không chính xác");
       }
 
-      router.push("/dashboard");
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("currentUser", JSON.stringify(data.user));
+      }
+
+      toast.success("Đăng nhập thành công! Đang chuyển hướng...");
+      if (data.user?.role === "SYSTEM_ADMIN") {
+        router.push("/admin/system");
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message || "Lỗi kết nối máy chủ");
+      toast.error(err.message || "Đăng nhập thất bại");
     } finally {
       setLoading(false);
     }
   };
 
-  const selectDemoAccount = (u: string) => {
-    setUsername(u);
-    setPassword("demo123");
-    handleLogin(u, "demo123");
+  const fillDemoAccount = (code: string, name: string, pass = "Talung@2026") => {
+    setUsername(code);
+    setPassword(pass);
+    setError(null);
+    setActiveSelectFeedback(`Đã chọn: ${code}`);
+    toast.info(`Đã điền tài khoản: ${name} (${code})`);
+    setTimeout(() => {
+      setActiveSelectFeedback(null);
+    }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8">
-      {/* Mobile-aligned Brand Header (Stitch Mobile 390px Screen 6de0e0a4a10f) */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500 text-blue-950 shadow-lg font-bold">
-          <Building2 className="w-7 h-7" />
-        </div>
-        <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-          HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
-        </h1>
-        <p className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
-          Hệ thống Quản lý Kế hoạch & Điều hành Tác nghiệp
-        </p>
-      </div>
+    <div className="w-full min-h-screen bg-app-bg text-on-surface flex flex-col lg:flex-row antialiased">
+      {/* =========================================================================
+          LEFT HERO PANEL (DESKTOP ONLY — Split-screen Enterprise Layout)
+          ========================================================================= */}
+      <section className="hidden lg:flex lg:w-1/2 xl:w-[54%] bg-gradient-to-br from-primary-container via-[#10243a] to-primary text-on-primary flex-col justify-between p-10 xl:p-14 relative overflow-hidden shadow-2xl">
+        {/* Subtle decorative background ambient elements */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-secondary/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-primary-fixed/10 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-40" />
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-        {/* Form Login */}
-        <div className="md:col-span-5 bg-white py-6 sm:py-8 px-5 sm:px-6 shadow-xl rounded-2xl border border-slate-200 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
-              <Shield className="w-5 h-5 text-blue-900" />
-              <h2 className="text-base font-bold text-slate-900">Đăng nhập tài khoản</h2>
+        {/* Top Header & Official Insignia */}
+        <div className="relative z-10 flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-on-secondary shadow-lg ring-4 ring-white/10 shrink-0">
+              <span className="material-symbols-outlined text-[30px]">shield</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-bold tracking-widest uppercase text-secondary-fixed/90 font-mono">
+                TỔNG CỤC HẢI QUAN • CỤC HẢI QUAN TỈNH CAO BẰNG
+              </span>
+              <h2 className="text-lg xl:text-xl font-bold tracking-tight text-white leading-snug">
+                CHI CỤC HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
+              </h2>
+              <span className="text-xs text-white/70">
+                Bộ phận Công nghệ thông tin &amp; Điều hành tác nghiệp
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Center Main Showcase & Bento Operational Highlights */}
+        <div className="relative z-10 my-auto py-8 flex flex-col gap-6">
+          <div className="flex flex-col gap-2 max-w-xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 w-fit">
+              <span className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
+              <span className="text-xs font-semibold tracking-wide uppercase text-secondary-fixed">
+                HỆ THỐNG ĐIỀU HÀNH SỐ HÓA TALUNG-CUS-WORK v1.2.4
+              </span>
+            </div>
+            <h1 className="text-2xl xl:text-3xl font-extrabold text-white tracking-tight leading-tight mt-1">
+              Quản Lý Kế Hoạch &amp; Điều Hành Tác Nghiệp Hải Quan
+            </h1>
+            <p className="text-sm xl:text-base text-white/80 leading-relaxed">
+              Nền tảng chuẩn hóa 16 màn hình Google Stitch, số hóa 5 nhóm nghiệp vụ và 48 hoạt động mẫu; hỗ trợ phân công nhiệm vụ, nhật ký 1-chạm không phát sinh và xuất biểu mẫu Excel Mẫu A &amp; Mẫu B tự động.
+            </p>
+          </div>
+
+          {/* 4 Feature Highlights Grid */}
+          <div className="grid grid-cols-2 gap-3.5 max-w-xl">
+            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-secondary-fixed">
+                <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Kế hoạch tuần &amp; tháng</span>
+              </div>
+              <p className="text-xs text-white/75 leading-normal">
+                Lập, trình duyệt và phân rã đầu việc theo 5 nhóm nghiệp vụ chuẩn Excel nguồn.
+              </p>
             </div>
 
-            {error && (
-              <div className="mt-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
+            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-secondary-fixed">
+                <span className="material-symbols-outlined text-[20px]">touch_app</span>
+                <span className="text-xs font-bold uppercase tracking-wider">1-Chạm không phát sinh</span>
               </div>
-            )}
+              <p className="text-xs text-white/75 leading-normal">
+                Xác nhận nhật ký công tác linh hoạt, bảo toàn KPI khi không phát sinh vụ việc.
+              </p>
+            </div>
 
+            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-secondary-fixed">
+                <span className="material-symbols-outlined text-[20px]">table_view</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Xuất Excel Mẫu A &amp; B</span>
+              </div>
+              <p className="text-xs text-white/75 leading-normal">
+                Bộ máy ExcelJS chuyên dụng 8 cột và 13 cột, triệt tiêu lỗ hổng Formula Injection.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 text-secondary-fixed">
+                <span className="material-symbols-outlined text-[20px]">verified_user</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Bảo mật &amp; Snapshot</span>
+              </div>
+              <p className="text-xs text-white/75 leading-normal">
+                Scope Guard chặn can thiệp chéo, khóa kỳ số liệu mã băm SHA-256 bất biến.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Operational Status */}
+        <div className="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-xs text-white/70">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-secondary-fixed text-[16px]">lock</span>
+            <span>Xác thực an toàn nội bộ • Kết nối cơ sở dữ liệu PostgreSQL</span>
+          </div>
+          <span className="font-mono text-white/50">Mã đơn vị: HQTL-2026</span>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          RIGHT AUTHENTICATION PANEL (Responsive for both Mobile & Desktop)
+          ========================================================================= */}
+      <section className="w-full lg:w-1/2 xl:w-[46%] flex flex-col justify-center items-center p-6 sm:p-10 lg:p-12 xl:p-14 min-h-screen bg-app-bg overflow-y-auto">
+        <div className="w-full max-w-[420px] flex flex-col gap-space-md py-4">
+          {/* Mobile Top Brand Header (Shown only on small screens) */}
+          <div className="lg:hidden flex flex-col items-center text-center pb-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning-bg shadow-sm mb-3">
+              <span className="material-symbols-outlined text-status-warning text-[14px]">
+                {isDemoMode ? "science" : "verified_user"}
+              </span>
+              <span className="font-label-sm text-[11px] text-status-warning uppercase tracking-wider font-semibold">
+                {isDemoMode ? "MÔI TRƯỜNG THIẾT KẾ — DỮ LIỆU DEMO" : "CỔNG ĐĂNG NHẬP NỘI BỘ CHI CỤC"}
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-md mb-2">
+              <span className="material-symbols-outlined text-[24px] text-secondary-fixed">shield_lock</span>
+            </div>
+            <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
+              HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
+            </p>
+            <h1 className="font-headline-md text-primary mt-0.5 leading-snug font-bold">
+              HỆ THỐNG QUẢN LÝ KẾ HOẠCH &amp; CÔNG VIỆC
+            </h1>
+          </div>
+
+          {/* Desktop Form Header Banner */}
+          <div className="hidden lg:flex flex-col gap-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-status-warning-bg border border-status-warning/30 w-fit mb-1">
+              <span className="material-symbols-outlined text-status-warning text-[13px]">verified_user</span>
+              <span className="font-label-sm text-[11px] text-status-warning uppercase font-semibold">
+                CỔNG ĐĂNG NHẬP NỘI BỘ CHI CỤC
+              </span>
+            </div>
+            <h2 className="font-headline-lg text-primary font-bold tracking-tight text-2xl">
+              Đăng Nhập Cổng Tác Nghiệp
+            </h2>
+            <p className="text-on-surface-variant text-sm">
+              {isDemoMode
+                ? "Nhập mã định danh công chức hoặc bấm chọn vai trò demo phía dưới:"
+                : "Nhập mã định danh công chức và mật khẩu được cấp để truy cập:"}
+            </p>
+          </div>
+
+          {/* Authentication Alert Box (Error) */}
+          {error && (
+            <div className="w-full bg-status-danger-bg rounded-lg p-3 flex items-start gap-2 shadow-sm border border-status-danger/20 transition-panel">
+              <span className="material-symbols-outlined text-status-danger text-[18px] shrink-0 mt-0.5">error</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="font-body-semibold text-xs text-status-danger font-bold">Đăng nhập không thành công</span>
+                  <button
+                    className="text-status-danger/70 hover:text-status-danger p-0.5"
+                    onClick={() => setError(null)}
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">close</span>
+                  </button>
+                </div>
+                <p className="text-xs text-on-surface-variant mt-0.5 leading-normal">
+                  {error}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Main Login Card Container */}
+          <div className="w-full bg-surface-container-lowest rounded-2xl p-6 shadow-md border border-border-default/60">
             <form
+              className="flex flex-col gap-4"
+              id="loginForm"
               onSubmit={(e) => {
                 e.preventDefault();
                 handleLogin();
               }}
-              className="mt-5 space-y-4"
             >
-              <div>
-                <label className="block text-xs font-semibold text-slate-700">Tên đăng nhập</label>
-                <div className="mt-1 relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              {/* Username Field */}
+              <div className="flex flex-col gap-1">
+                <label className="font-body-semibold text-xs text-on-surface flex items-center justify-between" htmlFor="usernameInput">
+                  <span className="font-bold">Mã cán bộ / Tên đăng nhập</span>
+                  <span className="text-[11px] text-outline font-normal">Ví dụ: lanhdao, canbo_a</span>
+                </label>
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">
+                    badge
+                  </span>
                   <input
+                    id="usernameInput"
                     type="text"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600 font-mono"
-                    placeholder="lanhdao, truongnhom_a..."
+                    placeholder="Nhập tên đăng nhập hoặc mã cán bộ..."
+                    className="w-full h-11 pl-10 pr-3 rounded-lg bg-surface-subtle font-body-md text-sm text-on-surface placeholder:text-outline/70 outline-none border border-border-subtle focus:border-secondary focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-fast"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700">Mật khẩu</label>
-                <div className="mt-1 relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              {/* Password Field */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-body-semibold text-xs text-on-surface font-bold" htmlFor="passwordInput">
+                    Mật khẩu bảo mật
+                  </label>
+                  {isDemoMode && (
+                    <span className="text-[11px] text-secondary font-mono">demo: demo123</span>
+                  )}
+                </div>
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">
+                    key
+                  </span>
                   <input
-                    type="password"
+                    id="passwordInput"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    placeholder="Mật khẩu của bạn"
+                    placeholder="Nhập mật khẩu..."
+                    className="w-full h-11 pl-10 pr-10 rounded-lg bg-surface-subtle font-body-md text-sm text-on-surface placeholder:text-outline/70 outline-none border border-border-subtle focus:border-secondary focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-fast"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label="Hiển thị mật khẩu"
+                    className="absolute right-2.5 p-1 text-outline hover:text-on-surface flex items-center justify-center rounded"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      {showPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
                 </div>
               </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg shadow-sm text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 focus:outline-none disabled:opacity-50 transition-colors"
-                >
-                  {loading ? "Đang xác thực..." : "Đăng nhập hệ thống"}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Checkbox: Remember Session */}
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberSession}
+                  onChange={(e) => setRememberSession(e.target.checked)}
+                  className="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-[#006a62]"
+                />
+                <span className="text-xs text-on-surface-variant">
+                  Ghi nhớ phiên làm việc trên thiết bị công vụ này
+                </span>
+              </label>
+
+              {/* Primary Action Button */}
+              <button
+                type="submit"
+                id="submitBtn"
+                disabled={loading}
+                className="w-full h-11 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-body-semibold text-sm flex items-center justify-center gap-2 shadow-md active-press transition-fast font-bold disabled:opacity-60 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                    <span>Đang xác thực bảo mật...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">login</span>
+                    <span>{activeSelectFeedback || "Đăng nhập hệ thống"}</span>
+                  </>
+                )}
+              </button>
             </form>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-500">
-            Môi trường: <span className="font-semibold text-amber-600">GIẢ LẬP NỘI BỘ (DEMO)</span>
-            <br />
-            Mật khẩu demo: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-slate-800">demo123</code>
-          </div>
-        </div>
-
-        {/* Demo Role Selector (Chỉ hiển thị khi ở môi trường cách ly / phát triển) */}
-        {isDemoAllowed && (
-          <div className="md:col-span-7 bg-slate-800/80 backdrop-blur p-5 sm:p-6 rounded-2xl border border-slate-700 text-white space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-700">
-                <div className="flex items-center gap-2 font-bold text-sm text-slate-200">
-                  <KeyRound className="w-4 h-4 text-amber-400" />
-                  Chọn vai trò kiểm thử nhanh (1-Click Switch)
-                </div>
-                <span className="text-[10px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded font-mono">
-                  RBAC DEMO
+          {/* Quick Demo Role Selector (1-Touch for UAT Evaluation) */}
+          {isDemoMode && (
+            <div className="w-full bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-border-default/60 flex flex-col gap-3">
+            <div className="flex items-center justify-between pb-1 border-b border-border-subtle/40">
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-secondary text-[18px]">group</span>
+                <span className="font-body-semibold text-xs text-on-surface font-bold uppercase tracking-wide">
+                  Tài khoản UAT / Vận hành thực tế (1-Chạm)
                 </span>
               </div>
-
-              <p className="text-xs text-slate-400 mt-2">
-                Bấm vào một trong các tài khoản bên dưới để tự động đăng nhập và trải nghiệm phân quyền thực tế:
-              </p>
-
-              <div className="mt-3 space-y-2">
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <div
-                    key={acc.username}
-                    onClick={() => selectDemoAccount(acc.username)}
-                    className="p-2.5 sm:p-3 rounded-xl bg-slate-900/80 border border-slate-700/80 hover:border-amber-400/60 cursor-pointer transition-all hover:bg-slate-900 group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center font-bold text-xs text-amber-400 font-mono">
-                          {acc.username[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">
-                            {acc.name}
-                          </div>
-                          <div className="text-[11px] text-slate-400">
-                            {acc.position} • <span className="font-mono text-slate-300">{acc.username}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-slate-800 border border-slate-700 text-slate-300">
-                          {acc.role}
-                        </span>
-                        <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-transform group-hover:translate-x-1" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <span className="text-[10px] text-secondary font-bold bg-secondary/10 px-2 py-0.5 rounded-full font-mono">
+                Talung@2026
+              </span>
             </div>
+            <p className="text-[11px] text-on-surface-variant leading-tight">
+              Bấm trực tiếp vào tài khoản công chức để tự động điền nhanh:
+            </p>
 
-            <div className="text-[11px] text-slate-500 pt-3 border-t border-slate-700/60 flex items-center justify-between">
-              <span>Được bảo vệ bởi Scope Guard & Anti-IDOR</span>
-              <span>Môi trường cách ly</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* Role 1: Chi cục trưởng */}
+              <button
+                type="button"
+                onClick={() => fillDemoAccount("hqtl001", "Chi cục trưởng Nông Văn Hòa")}
+                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
+                  username === "hqtl001"
+                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
+                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-status-success-bg text-status-success flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[18px]">account_balance</span>
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-bold text-xs text-on-surface truncate">Chi cục trưởng</span>
+                    <span className="text-[10px] text-on-surface-variant font-mono">hqtl001</span>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
+                  check_circle
+                </span>
+              </button>
+
+              {/* Role 2: Trưởng bộ phận A */}
+              <button
+                type="button"
+                onClick={() => fillDemoAccount("hqtl011", "Đội trưởng Triệu Văn Nam")}
+                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
+                  username === "hqtl011"
+                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
+                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-status-unassigned-bg text-status-unassigned flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[18px]">supervisor_account</span>
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-bold text-xs text-on-surface truncate">Trưởng BP Nghiệp vụ A</span>
+                    <span className="text-[10px] text-on-surface-variant font-mono">hqtl011</span>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
+                  check_circle
+                </span>
+              </button>
+
+              {/* Role 3: Cán bộ Nghiệp vụ A */}
+              <button
+                type="button"
+                onClick={() => fillDemoAccount("hqtl014", "Công chức Lý Thị Mai")}
+                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
+                  username === "hqtl014"
+                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
+                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[18px]">person</span>
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-bold text-xs text-on-surface truncate">Công chức Tiếp nhận</span>
+                    <span className="text-[10px] text-on-surface-variant font-mono">hqtl014</span>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
+                  check_circle
+                </span>
+              </button>
+
+              {/* Role 4: Quản trị hệ thống */}
+              <button
+                type="button"
+                onClick={() => fillDemoAccount("admin", "Quản trị viên Hệ thống")}
+                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
+                  username === "admin"
+                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
+                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                  </div>
+                  <div className="min-w-0 flex flex-col">
+                    <span className="font-bold text-xs text-on-surface truncate">Quản trị hệ thống</span>
+                    <span className="text-[10px] text-on-surface-variant font-mono">admin</span>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
+                  check_circle
+                </span>
+              </button>
             </div>
           </div>
-        )}
-      </div>
+          )}
+
+          {/* Compliance & Security Footer */}
+          <footer className="text-center flex flex-col items-center gap-1 pt-1">
+            <div className="inline-flex items-center gap-1.5 text-outline">
+              <span className="material-symbols-outlined text-[13px]">terminal</span>
+              <span className="text-[11px] font-mono">Bản dựng: v1.2.4-TL (Enterprise Build)</span>
+            </div>
+            <p className="text-[11px] text-on-surface-variant">
+              Bộ phận CNTT Chi cục HQCK Quốc tế Tà Lùng • Tỉnh Cao Bằng
+            </p>
+          </footer>
+        </div>
+      </section>
     </div>
   );
 }

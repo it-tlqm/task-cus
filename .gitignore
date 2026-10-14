@@ -27,6 +27,7 @@ dist/
 .agents/
 credentials*.json
 secrets*.json
+*HANDOVER*.json
 
 # Logs & Diagnostics
 *.log
@@ -49,3 +50,4 @@ Thumbs.db
 *.db-journal
 *.sqlite
 *.sqlite3
+*.tsbuildinfo

@@ -9,6 +9,10 @@
     background-color: #F8FAFC;
     color: #131b2e;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .pb-safe {
@@ -16,6 +20,86 @@
   }
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* High-end Tabular Numerals for metrics, codes, timestamps, and data tables */
+  .tabular-nums, table, code, pre, .font-mono, [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Text Wrap Balancers */
+  h1, h2, h3, h4, .text-balance {
+    text-wrap: balance;
+  }
+  p, .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+/* Motion Design Micro-interactions & Tokens */
+.transition-fast {
+  transition: all 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.transition-base {
+  transition: all 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.transition-panel {
+  transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.active-press {
+  transition: transform 120ms ease;
+}
+.active-press:active {
+  transform: scale(0.985);
+}
+
+.hover-lift {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.hover-lift:hover {
+  transform: translateY(-1px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Subtle, elegant scrollbar for wide administrative data tables */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 78, 140, 0.25);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 78, 140, 0.45);
+}
+
+/* Accessible focus rings */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #004e8c;
+}
+
+/* Reduced Motion for Accessibility (WCAG 2.1 AA) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

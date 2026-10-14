@@ -55,3 +55,55 @@ export async function GET(req: NextRequest) {
     return jsonError("Lỗi khi tải cây cơ cấu tổ chức: " + error.message, 500);
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const user = await authenticateRequest(req);
+    const body = await req.json();
+    const { code, name, parentId } = body;
+
+    if (!code || !name) {
+      return jsonError("Mã và tên đơn vị/bộ phận không được để trống", 400);
+    }
+
+    const org = await prisma.organization.findFirst();
+    if (!org) {
+      return jsonError("Không tìm thấy tổ chức gốc trong hệ thống", 404);
+    }
+
+    // Check duplicate code
+    const existing = await prisma.orgUnit.findUnique({
+      where: { code: code.trim().toUpperCase() },
+    });
+    if (existing) {
+      return jsonError(`Mã đơn vị "${code}" đã tồn tại trong hệ thống`, 400);
+    }
+
+    let level = 1;
+    if (parentId) {
+      const parent = await prisma.orgUnit.findUnique({ where: { id: parentId } });
+      if (parent) {
+        level = parent.level + 1;
+      }
+    }
+
+    const newUnit = await prisma.orgUnit.create({
+      data: {
+        orgId: org.id,
+        parentId: parentId || null,
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        level,
+        status: "ACTIVE",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: newUnit,
+      message: "Tạo đơn vị mới thành công",
+    });
+  } catch (error: any) {
+    return jsonError("Lỗi khi thêm đơn vị: " + error.message, 500);
+  }
+}

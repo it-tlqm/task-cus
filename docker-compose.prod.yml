@@ -1,0 +1,78 @@
+version: "3.8"
+
+services:
+  # ============================================================================
+  # 1. DATABASE: PostgreSQL 16 (Bảo mật, Persistent Volume, Healthcheck)
+  # ============================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: talung_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-TalungCus2026SecurePass}
+      POSTGRES_DB: ${POSTGRES_DB:-talung_cus_work}
+    volumes:
+      - talung_pgdata:/var/lib/postgresql/data
+      - talung_backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-talung_cus_work}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - talung_network
+
+  # ============================================================================
+  # 2. WEB APPLICATION: Next.js 15 Standalone
+  # ============================================================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: talung_web
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-TalungCus2026SecurePass}@db:5432/${POSTGRES_DB:-talung_cus_work}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-talung_cus_work_production_jwt_secret_2026_super_secure_key}
+      ENABLE_DEMO_LOGIN: ${ENABLE_DEMO_LOGIN:-false}
+      NEXT_PUBLIC_APP_TITLE: "Hệ thống Quản lý Kế hoạch & Điều hành Tác nghiệp Hải quan Cửa khẩu Quốc tế Tà Lùng"
+      NODE_ENV: production
+    expose:
+      - "3000"
+    networks:
+      - talung_network
+
+  # ============================================================================
+  # 3. REVERSE PROXY: Nginx (SSL Termination, Rate Limiting, Gzip & Security)
+  # ============================================================================
+  proxy:
+    image: nginx:alpine
+    container_name: talung_proxy
+    restart: always
+    depends_on:
+      - web
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - talung_network
+
+volumes:
+  talung_pgdata:
+    name: talung_pgdata
+  talung_backups:
+    name: talung_backups
+
+networks:
+  talung_network:
+    name: talung_network
+    driver: bridge
