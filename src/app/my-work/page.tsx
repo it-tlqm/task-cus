@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 
@@ -23,6 +23,23 @@ interface DeadlineRequestItem {
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
   reviewNotes?: string | null;
+}
+
+interface TaskAttachmentItem {
+  id: string;
+  taskId: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  fileUrl: string;
+  isSigned: boolean;
+  signedBy: string | null;
+  createdAt: string;
+  uploadedBy?: {
+    id: string;
+    fullName: string;
+    code: string;
+  };
 }
 
 interface TaskItem {
@@ -72,6 +89,13 @@ export default function MyWorkPage() {
   const [drawerStatus, setDrawerStatus] = useState<"IN_PROGRESS" | "COMPLETED" | "WAITING_REVIEW">("IN_PROGRESS");
   const [drawerProgress, setDrawerProgress] = useState<number>(85);
   const [drawerNotes, setDrawerNotes] = useState("");
+
+  // Attachments & Review Reminder States
+  const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [remindingTaskId, setRemindingTaskId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New Task Form State
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -139,6 +163,82 @@ export default function MyWorkPage() {
       .catch(() => {});
   }, []);
 
+  const fetchAttachments = async (taskId: string) => {
+    setAttachmentsLoading(true);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/attachments`);
+      if (res.ok) {
+        const data = await res.json();
+        setAttachments(data.data || []);
+      }
+    } catch (err) {
+      console.error("Lỗi lấy danh sách tệp đính kèm:", err);
+    } finally {
+      setAttachmentsLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedTask) return;
+
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("isSigned", "true");
+
+    try {
+      const res = await fetch(`/api/tasks/${selectedTask.id}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không thể tải tệp lên");
+      toast.success(`Đã tải lên tệp: ${file.name}`);
+      await fetchAttachments(selectedTask.id);
+    } catch (err: any) {
+      toast.error(err.message || "Tải tệp thất bại");
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!selectedTask) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa tệp đính kèm này khỏi hồ sơ?")) return;
+
+    try {
+      const res = await fetch(
+        `/api/tasks/${selectedTask.id}/attachments?attachmentId=${attachmentId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không thể xóa tệp");
+      toast.success("Đã xóa tệp đính kèm");
+      await fetchAttachments(selectedTask.id);
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xóa tệp");
+    }
+  };
+
+  const handleSendReminder = async (taskId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setRemindingTaskId(taskId);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/remind`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không thể gửi nhắc duyệt");
+      toast.success(data.message || "Đã gửi thông báo nhắc duyệt tới Lãnh đạo phụ trách");
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi gửi thông báo nhắc duyệt");
+    } finally {
+      setRemindingTaskId(null);
+    }
+  };
+
   const openDrawerForTask = (task: TaskItem) => {
     setSelectedTask(task);
     setDrawerProgress(task.progressPercent || (task.status === "COMPLETED" ? 100 : 50));
@@ -147,6 +247,7 @@ export default function MyWorkPage() {
     setActionSuccess(null);
     setActionError(null);
     setIsDrawerOpen(true);
+    fetchAttachments(task.id);
   };
 
   const handleDrawerSubmit = async (finalSubmit: boolean) => {
@@ -713,11 +814,15 @@ export default function MyWorkPage() {
                           <div className="flex items-center justify-end gap-1.5 flex-wrap">
                             {isWaiting ? (
                               <button
-                                onClick={() => toast.info("Xem trước mô phỏng: Tính năng gửi nhắc duyệt tự động tới Trưởng bộ phận")}
-                                className="px-2.5 py-1 rounded bg-surface-subtle text-on-surface font-label-sm text-label-sm hover:bg-surface-container flex items-center gap-1 active-press"
+                                onClick={(e) => handleSendReminder(task.id, e)}
+                                disabled={remindingTaskId === task.id}
+                                className="px-2.5 py-1 rounded bg-surface-subtle text-on-surface font-label-sm text-label-sm hover:bg-surface-container flex items-center gap-1 active-press disabled:opacity-50"
+                                title="Gửi thông báo nhắc Trưởng bộ phận phê duyệt"
                               >
-                                <span className="material-symbols-outlined text-[14px]">notifications_active</span>
-                                <span>Nhắc duyệt</span>
+                                <span className={`material-symbols-outlined text-[14px] ${remindingTaskId === task.id ? "animate-spin" : ""}`}>
+                                  {remindingTaskId === task.id ? "progress_activity" : "notifications_active"}
+                                </span>
+                                <span>{remindingTaskId === task.id ? "Đang gửi..." : "Nhắc duyệt"}</span>
                               </button>
                             ) : (
                               <button
@@ -1374,39 +1479,136 @@ export default function MyWorkPage() {
 
               {/* Đính kèm biên bản / Chữ ký số */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-body-semibold text-body-semibold text-primary">
-                  4. Đính kèm biên bản / Chữ ký số
-                </label>
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-border-default">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-status-danger text-[22px]">
-                      picture_as_pdf
+                <div className="flex items-center justify-between">
+                  <label className="font-body-semibold text-body-semibold text-primary">
+                    4. Đính kèm biên bản / Chữ ký số ({attachments.length})
+                  </label>
+                  {uploadingFile && (
+                    <span className="text-secondary font-label-sm text-xs flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                      Đang tải lên Supabase...
                     </span>
-                    <div className="flex flex-col">
-                      <span className="font-label-md text-label-md text-primary font-semibold">
-                        BBBG-TL-{selectedTask?.code || "1042"}.pdf
-                      </span>
-                      <span className="font-label-sm text-[11px] text-outline">
-                        2.4 MB · Biên bản kiểm tra điện tử đã ký số
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toast.info("Tệp đính kèm mẫu được bảo lưu trong hồ sơ")}
-                    className="p-1 text-outline hover:text-status-danger transition-fast"
-                    title="Xóa tệp"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
+                  )}
                 </div>
 
+                {/* Danh sách tệp đính kèm thực tế từ Supabase Storage */}
+                <div className="flex flex-col gap-1.5">
+                  {attachmentsLoading ? (
+                    <div className="p-3 rounded-lg bg-surface-container-low text-center text-label-sm text-outline flex items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      Đang tải danh sách tài liệu...
+                    </div>
+                  ) : attachments.length === 0 ? (
+                    <div className="p-3 rounded-lg bg-surface-container-low border border-dashed border-border-default text-center">
+                      <p className="font-label-sm text-label-sm text-outline">
+                        Chưa có tệp đính kèm. Tải lên biên bản kiểm tra điện tử, chứng từ hoặc ảnh giám định hiện trường.
+                      </p>
+                    </div>
+                  ) : (
+                    attachments.map((att) => {
+                      const isPdf = att.mimeType.includes("pdf") || att.fileName.endsWith(".pdf");
+                      const isSheet =
+                        att.mimeType.includes("sheet") ||
+                        att.mimeType.includes("excel") ||
+                        att.fileName.endsWith(".xlsx") ||
+                        att.fileName.endsWith(".xls");
+                      const isImage = att.mimeType.includes("image");
+                      const sizeFormatted =
+                        att.fileSize > 1024 * 1024
+                          ? `${(att.fileSize / (1024 * 1024)).toFixed(1)} MB`
+                          : `${Math.round(att.fileSize / 1024)} KB`;
+
+                      return (
+                        <div
+                          key={att.id}
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-border-default hover:border-secondary/40 transition-fast"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 pr-2">
+                            <span
+                              className={`material-symbols-outlined text-[22px] shrink-0 ${
+                                isPdf
+                                  ? "text-status-danger"
+                                  : isSheet
+                                  ? "text-status-success"
+                                  : isImage
+                                  ? "text-secondary"
+                                  : "text-outline"
+                              }`}
+                            >
+                              {isPdf
+                                ? "picture_as_pdf"
+                                : isSheet
+                                ? "table_view"
+                                : isImage
+                                ? "image"
+                                : "description"}
+                            </span>
+                            <div className="flex flex-col min-w-0">
+                              <a
+                                href={att.fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-label-md text-label-md text-primary font-semibold truncate hover:underline hover:text-secondary"
+                                title={`Mở tệp: ${att.fileName}`}
+                              >
+                                {att.fileName}
+                              </a>
+                              <span className="font-label-sm text-[11px] text-outline">
+                                {sizeFormatted} · {att.uploadedBy?.fullName || "Cán bộ"}
+                                {att.isSigned ? " · Đã xác thực nghiệp vụ" : ""}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <a
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download
+                              className="p-1 text-outline hover:text-secondary transition-fast rounded hover:bg-surface-container"
+                              title="Tải về máy tính"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">download</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAttachment(att.id)}
+                              className="p-1 text-outline hover:text-status-danger transition-fast rounded hover:bg-surface-container"
+                              title="Xóa tệp"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Input chọn file ẩn */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  className="hidden"
+                />
+
                 <button
-                  onClick={() => toast.info("Đang mở trình quản lý tệp đính kèm nghiệp vụ")}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
                   type="button"
-                  className="mt-1 w-full py-2.5 rounded-lg bg-surface-subtle text-secondary font-label-md text-label-md hover:bg-surface-container flex items-center justify-center gap-2 transition-fast active-press border border-border-subtle"
+                  className="mt-1 w-full py-2.5 rounded-lg bg-surface-subtle text-secondary font-label-md text-label-md hover:bg-surface-container flex items-center justify-center gap-2 transition-fast active-press border border-border-subtle disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                  <span>Tải thêm tệp tin đính kèm (PDF, XLSX, Ảnh giám định)</span>
+                  <span className={`material-symbols-outlined text-[18px] ${uploadingFile ? "animate-spin" : ""}`}>
+                    {uploadingFile ? "progress_activity" : "upload_file"}
+                  </span>
+                  <span>
+                    {uploadingFile
+                      ? "Đang tải tệp lên..."
+                      : "Tải thêm tệp tin đính kèm (PDF, XLSX, DOCX, Ảnh)"}
+                  </span>
                 </button>
               </div>
 

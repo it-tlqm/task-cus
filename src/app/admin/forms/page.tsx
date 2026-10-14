@@ -430,13 +430,29 @@ export default function DynamicFormBuilderPage() {
                 </div>
               ))}
 
-              <div className="pt-2 border-t border-surface-container flex justify-end">
+              <div className="pt-2 border-t border-surface-container flex flex-col gap-2">
                 <button
                   type="button"
-                  onClick={() => toast.success("Mô phỏng nộp biểu mẫu thành công: Tất cả các trường đã được xác thực hợp lệ!")}
-                  className="w-full py-2 rounded-lg bg-primary text-on-primary font-body-semibold text-sm shadow-sm hover:opacity-95 transition-all active-press"
+                  onClick={() => {
+                    for (const field of fields) {
+                      const val = previewValues[field.key];
+                      if (field.required && (val === undefined || val === null || String(val).trim() === "")) {
+                        toast.warning(`Trường "${field.label}" là bắt buộc! Vui lòng nhập dữ liệu kiểm thử.`);
+                        return;
+                      }
+                      if (field.type === "number" && val !== undefined && val !== "") {
+                        if (isNaN(Number(val))) {
+                          toast.warning(`Trường "${field.label}" yêu cầu định dạng số hợp lệ!`);
+                          return;
+                        }
+                      }
+                    }
+                    toast.success("Xác thực Schema thành công: Cấu trúc biểu mẫu chuẩn xác 100% và sẵn sàng ban hành!");
+                  }}
+                  className="w-full py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md text-sm font-semibold shadow-sm hover:bg-secondary/90 transition-all active-press flex items-center justify-center gap-2"
                 >
-                  Mô phỏng nộp kết quả theo biểu mẫu
+                  <span className="material-symbols-outlined text-[18px]">verified</span>
+                  <span>Kiểm tra hợp lệ biểu mẫu (Validate Schema)</span>
                 </button>
               </div>
             </div>

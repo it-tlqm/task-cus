@@ -230,6 +230,74 @@ export async function POST(
       });
     }
 
+    // 5. ACTION: REQUEST_AMENDMENT (Trình duyệt bổ sung / Yêu cầu điều chỉnh kế hoạch đã duyệt)
+    if (action === "REQUEST_AMENDMENT") {
+      const canRequest =
+        user.role === "UNIT_LEADER" ||
+        (user.role === "DEPARTMENT_LEADER" && isUnitAuthorized) ||
+        (checkPermission(user, "plans.create") && isUnitAuthorized);
+
+      if (!canRequest) {
+        return jsonError("Bạn không có thẩm quyền đề xuất điều chỉnh/bổ sung kế hoạch này", 403);
+      }
+
+      if (plan.status !== "APPROVED" && plan.status !== "IN_EFFECT") {
+        return jsonError(`Chỉ kế hoạch đã phê duyệt mới có thể trình duyệt bổ sung/điều chỉnh`, 400);
+      }
+
+      const targetStatus = body.unlockToDraft ? "DRAFT" : "SUBMITTED";
+      const updated = await prisma.plan.update({
+        where: { id: planId },
+        data: {
+          status: targetStatus,
+        },
+      });
+
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "PLAN_REQUEST_AMENDMENT",
+        resourceType: "Plan",
+        resourceId: planId,
+        oldData: { status: plan.status },
+        newData: { status: targetStatus, reason: reviewNotes || "Trình duyệt bổ sung/điều chỉnh nhiệm vụ" },
+      });
+
+      const leaders = await prisma.account.findMany({
+        where: {
+          roleGrants: {
+            some: {
+              role: { code: { in: ["UNIT_LEADER", "DEPARTMENT_LEADER"] } },
+            },
+          },
+          status: "ACTIVE",
+        },
+        select: { personId: true },
+      });
+
+      for (const leader of leaders) {
+        if (leader.personId && leader.personId !== user.personId) {
+          await createNotification({
+            recipientId: leader.personId,
+            category: "approval",
+            type: "PLAN_AMENDMENT_REQUEST",
+            title: `Đề xuất điều chỉnh bổ sung kế hoạch: ${plan.title}`,
+            content: `Cán bộ ${user.fullName} vừa trình duyệt bổ sung/điều chỉnh kế hoạch "${plan.title}". Lý do: ${reviewNotes || "Bổ sung nhiệm vụ phát sinh"}`,
+            actionUrl: "/approvals",
+            actionLabel: "Xem phê duyệt",
+          });
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message:
+          targetStatus === "DRAFT"
+            ? "Đã mở khóa kế hoạch về trạng thái Dự thảo để bổ sung, điều chỉnh nhiệm vụ"
+            : "Đã trình duyệt bổ sung kế hoạch lên Lãnh đạo phê duyệt thành công",
+        data: updated,
+      });
+    }
+
     return jsonError(`Action "${action}" không hợp lệ`, 400);
   } catch (error: any) {
     return jsonError("Lỗi hệ thống khi xử lý quy trình kế hoạch: " + error.message, 500);

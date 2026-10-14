@@ -1,9 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
+
+interface TaskAttachmentItem {
+  id: string;
+  taskId: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  fileUrl: string;
+  isSigned: boolean;
+  signedBy: string | null;
+  createdAt: string;
+  uploadedBy?: {
+    id: string;
+    fullName: string;
+    code: string;
+  };
+}
 
 interface TaskDetail {
   id: string;
@@ -70,6 +87,71 @@ export default function TaskDetailPage() {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approvalNotes, setApprovalNotes] = useState("");
 
+  // Attachment state
+  const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchAttachments = async (id: string) => {
+    setAttachmentsLoading(true);
+    try {
+      const res = await fetch(`/api/tasks/${id}/attachments`);
+      if (res.ok) {
+        const json = await res.json();
+        setAttachments(json.data || []);
+      }
+    } catch (err) {
+      console.error("Lỗi lấy tệp đính kèm:", err);
+    } finally {
+      setAttachmentsLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !task) return;
+
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("isSigned", "true");
+
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không thể tải tệp lên");
+      toast.success(`Đã tải lên tệp: ${file.name}`);
+      await fetchAttachments(task.id);
+    } catch (err: any) {
+      toast.error(err.message || "Tải tệp thất bại");
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!task) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa tệp đính kèm này?")) return;
+
+    try {
+      const res = await fetch(
+        `/api/tasks/${task.id}/attachments?attachmentId=${attachmentId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Không thể xóa tệp");
+      toast.success("Đã xóa tệp đính kèm");
+      await fetchAttachments(task.id);
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xóa tệp");
+    }
+  };
+
   const fetchTaskDetail = async () => {
     setLoading(true);
     setError(null);
@@ -95,6 +177,7 @@ export default function TaskDetailPage() {
   useEffect(() => {
     if (taskId) {
       fetchTaskDetail();
+      fetchAttachments(taskId);
     }
   }, [taskId]);
 
@@ -523,6 +606,136 @@ export default function TaskDetailPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Attachments Card */}
+            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-3">
+              <div className="flex items-center justify-between border-b border-border-default pb-2">
+                <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px] text-secondary">attach_file</span>
+                  <span>Hồ Sơ &amp; Tệp Đính Kèm ({attachments.length})</span>
+                </h3>
+                {uploadingFile && (
+                  <span className="text-secondary font-label-sm text-[11px] flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px] animate-spin">progress_activity</span>
+                    Đang tải lên...
+                  </span>
+                )}
+              </div>
+
+              {/* Danh sách file */}
+              <div className="flex flex-col gap-2">
+                {attachmentsLoading ? (
+                  <div className="p-3 rounded-lg bg-surface-subtle text-center text-xs text-outline flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                    Đang tải...
+                  </div>
+                ) : attachments.length === 0 ? (
+                  <div className="p-3 rounded-lg bg-surface-subtle border border-dashed border-border-default text-center">
+                    <p className="text-xs text-outline">Chưa có tệp đính kèm nào trong nhiệm vụ này.</p>
+                  </div>
+                ) : (
+                  attachments.map((att) => {
+                    const isPdf = att.mimeType.includes("pdf") || att.fileName.endsWith(".pdf");
+                    const isSheet =
+                      att.mimeType.includes("sheet") ||
+                      att.mimeType.includes("excel") ||
+                      att.fileName.endsWith(".xlsx") ||
+                      att.fileName.endsWith(".xls");
+                    const isImage = att.mimeType.includes("image");
+                    const sizeFormatted =
+                      att.fileSize > 1024 * 1024
+                        ? `${(att.fileSize / (1024 * 1024)).toFixed(1)} MB`
+                        : `${Math.round(att.fileSize / 1024)} KB`;
+
+                    return (
+                      <div
+                        key={att.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-surface-subtle border border-border-default text-xs hover:border-secondary/40 transition-fast"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-1">
+                          <span
+                            className={`material-symbols-outlined text-[20px] shrink-0 ${
+                              isPdf
+                                ? "text-status-danger"
+                                : isSheet
+                                ? "text-status-success"
+                                : isImage
+                                ? "text-secondary"
+                                : "text-outline"
+                            }`}
+                          >
+                            {isPdf
+                              ? "picture_as_pdf"
+                              : isSheet
+                              ? "table_view"
+                              : isImage
+                              ? "image"
+                              : "description"}
+                          </span>
+                          <div className="flex flex-col min-w-0">
+                            <a
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-bold text-primary truncate hover:underline hover:text-secondary"
+                              title={att.fileName}
+                            >
+                              {att.fileName}
+                            </a>
+                            <span className="text-[11px] text-outline">
+                              {sizeFormatted} · {att.uploadedBy?.fullName || "Cán bộ"}
+                              {att.isSigned ? " · Đã xác thực" : ""}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <a
+                            href={att.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            download
+                            className="p-1 text-outline hover:text-secondary rounded"
+                            title="Tải về máy"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">download</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            className="p-1 text-outline hover:text-status-danger rounded"
+                            title="Xóa tệp"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Input chọn file ẩn */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile}
+                className="w-full py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary font-semibold text-xs flex items-center justify-center gap-1.5 transition-fast active-press border border-border-subtle disabled:opacity-50"
+              >
+                <span className={`material-symbols-outlined text-[16px] ${uploadingFile ? "animate-spin" : ""}`}>
+                  {uploadingFile ? "progress_activity" : "upload_file"}
+                </span>
+                <span>{uploadingFile ? "Đang tải lên..." : "Tải lên tệp đính kèm mới"}</span>
+              </button>
             </div>
           </div>
         </div>

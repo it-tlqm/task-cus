@@ -1,0 +1,132 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/server/db";
+import { authenticateRequest } from "@/server/auth";
+import { jsonError } from "@/server/guard";
+import { recordAuditEvent } from "@/server/audit";
+import { createNotification } from "@/server/notifications";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * POST /api/tasks/[id]/remind
+ * Gửi thông báo nhắc duyệt kết quả công việc tới Lãnh đạo phụ trách
+ */
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await authenticateRequest(req);
+    if (!user) {
+      return jsonError("Yêu cầu đăng nhập để gửi nhắc duyệt", 401);
+    }
+
+    const { id: taskId } = await params;
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        unit: true,
+        owner: true,
+      },
+    });
+
+    if (!task) {
+      return jsonError("Nhiệm vụ không tồn tại", 404);
+    }
+
+    if (task.status !== "WAITING_REVIEW") {
+      return jsonError("Chỉ có thể gửi nhắc duyệt đối với nhiệm vụ đang ở trạng thái 'Chờ duyệt'", 400);
+    }
+
+    // 1. Tìm lãnh đạo phụ trách đơn vị (Trưởng bộ phận, Phó trưởng bộ phận, hoặc Lãnh đạo đơn vị)
+    const leaderAssignments = await prisma.personAssignment.findMany({
+      where: {
+        unitId: task.unitId,
+        position: {
+          code: {
+            in: ["DOI_TRUONG", "PHO_DOI_TRUONG", "CHI_CUC_TRUONG", "PHO_CHI_CUC_TRUONG"],
+          },
+        },
+      },
+      include: {
+        person: true,
+      },
+    });
+
+    // Nếu không tìm thấy lãnh đạo qua position code, tìm các tài khoản có vai trò UNIT_LEADER hoặc DEPARTMENT_LEADER
+    let targetPersonIds: string[] = leaderAssignments.map((a) => a.personId);
+
+    if (targetPersonIds.length === 0) {
+      const leaderAccounts = await prisma.account.findMany({
+        where: {
+          roleGrants: {
+            some: {
+              role: { code: { in: ["UNIT_LEADER", "DEPARTMENT_LEADER"] } },
+            },
+          },
+          status: "ACTIVE",
+        },
+        select: { personId: true },
+      });
+      targetPersonIds = leaderAccounts.map((a) => a.personId);
+    }
+
+    // Loại trừ chính người gửi nhắc duyệt (nếu người gửi là lãnh đạo)
+    targetPersonIds = targetPersonIds.filter((pid) => pid !== user.personId);
+
+    if (targetPersonIds.length === 0) {
+      // Fallback: Tìm bất kỳ tài khoản lãnh đạo nào
+      const fallbackLeader = await prisma.account.findFirst({
+        where: {
+          roleGrants: {
+            some: {
+              role: { code: "UNIT_LEADER" },
+            },
+          },
+          status: "ACTIVE",
+        },
+        select: { personId: true },
+      });
+      if (fallbackLeader?.personId) {
+        targetPersonIds.push(fallbackLeader.personId);
+      }
+    }
+
+    // 2. Tạo thông báo cho từng lãnh đạo
+    const notifyPromises = targetPersonIds.map((leaderPersonId) =>
+      createNotification({
+        recipientId: leaderPersonId,
+        type: "TASK_REVIEW_REMIND",
+        title: `Nhắc duyệt: ${task.code} - ${task.title.slice(0, 45)}...`,
+        content: `Cán bộ ${user.fullName} (${user.personCode || user.username}) vừa gửi nhắc duyệt kết quả hoàn thành nhiệm vụ "${task.title}".`,
+        category: "approval",
+        actionUrl: "/approvals",
+        actionLabel: "Xem phê duyệt",
+      })
+    );
+
+    await Promise.all(notifyPromises);
+
+    // 3. Ghi vết kiểm toán
+    await recordAuditEvent({
+      actorId: user.id,
+      action: "TASK_REVIEW_REMIND_SENT",
+      resourceType: "Task",
+      resourceId: task.id,
+      newData: {
+        taskCode: task.code,
+        recipientCount: targetPersonIds.length,
+        sentBy: user.username,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã gửi thông báo nhắc duyệt tới Lãnh đạo phụ trách thành công (${targetPersonIds.length} người nhận)`,
+    });
+  } catch (err: any) {
+    console.error("[Task Remind Error]", err);
+    return jsonError(err.message || "Lỗi khi gửi nhắc duyệt", 500);
+  }
+}

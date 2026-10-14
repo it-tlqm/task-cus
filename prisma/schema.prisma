@@ -85,6 +85,7 @@ model Person {
   deadlineRequests DeadlineRequest[]  @relation("RequestedBy")
   notifications    Notification[]
   snapshotsLocked  ReportSnapshot[]   @relation("SnapshotLocker")
+  attachments      TaskAttachment[]   @relation("AttachmentUploader")
 
   @@map("people")
 }
@@ -376,6 +377,7 @@ model Task {
   updates          TaskUpdate[]
   deadlineRequests DeadlineRequest[]
   submissions      ResultSubmission[]
+  attachments      TaskAttachment[]
 
   @@map("tasks")
 }
@@ -437,6 +439,25 @@ model DeadlineRequest {
   requestedBy Person @relation("RequestedBy", fields: [requestedById], references: [id])
 
   @@map("deadline_requests")
+}
+
+model TaskAttachment {
+  id           String   @id @default(uuid())
+  taskId       String   @map("task_id")
+  uploadedById String   @map("uploaded_by_id")
+  fileName     String   @map("file_name")
+  fileSize     Int      @map("file_size") // bytes
+  mimeType     String   @map("mime_type")
+  storageKey   String   @map("storage_key")
+  fileUrl      String   @map("file_url")
+  isSigned     Boolean  @default(false) @map("is_signed")
+  signedBy     String?  @map("signed_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  task       Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy Person @relation("AttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@map("task_attachments")
 }
 
 // ----------------------------------------------------

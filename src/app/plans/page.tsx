@@ -103,6 +103,9 @@ export default function PlansPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnNotes, setReturnNotes] = useState("");
+  const [showAmendmentModal, setShowAmendmentModal] = useState(false);
+  const [amendmentNotes, setAmendmentNotes] = useState("");
+  const [unlockToDraft, setUnlockToDraft] = useState(true);
   const [workflowMessage, setWorkflowMessage] = useState<string | null>(null);
 
   // Form states for Add / Edit Modal
@@ -307,8 +310,10 @@ export default function PlansPage() {
     }
   };
 
-  // Workflow Action (SUBMIT, APPROVE, RETURN)
-  const handleWorkflowAction = async (action: "SUBMIT" | "APPROVE" | "RETURN") => {
+  // Workflow Action (SUBMIT, APPROVE, RETURN, REQUEST_AMENDMENT)
+  const handleWorkflowAction = async (
+    action: "SUBMIT" | "APPROVE" | "RETURN" | "REQUEST_AMENDMENT"
+  ) => {
     if (!activePlan) return;
 
     try {
@@ -317,16 +322,24 @@ export default function PlansPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action,
-          reviewNotes: action === "RETURN" ? returnNotes : undefined,
+          reviewNotes:
+            action === "RETURN"
+              ? returnNotes
+              : action === "REQUEST_AMENDMENT"
+              ? amendmentNotes
+              : undefined,
+          unlockToDraft: action === "REQUEST_AMENDMENT" ? unlockToDraft : undefined,
         }),
       });
 
       const json = await res.json();
       if (res.ok) {
         setWorkflowMessage(json.message);
-        toast.success(json.message || "Thao tác phê duyệt kế hoạch thành công!");
+        toast.success(json.message || "Thao tác kế hoạch thành công!");
         setShowReturnModal(false);
+        setShowAmendmentModal(false);
         setReturnNotes("");
+        setAmendmentNotes("");
         fetchPlans();
         setTimeout(() => setWorkflowMessage(null), 3500);
       } else {
@@ -447,8 +460,9 @@ export default function PlansPage() {
                 </>
               ) : (
                 <button
-                  onClick={() => toast.info("Kế hoạch đã có hiệu lực chính thức.")}
+                  onClick={() => setShowAmendmentModal(true)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
+                  title="Đề xuất điều chỉnh bổ sung nhiệm vụ cho kế hoạch đã ban hành"
                 >
                   <span className="material-symbols-outlined text-[18px]">approval_delegation</span>
                   <span>Trình duyệt bổ sung</span>
@@ -1431,6 +1445,66 @@ export default function PlansPage() {
                 className="px-4 py-2 rounded bg-status-danger text-on-error text-xs font-semibold"
               >
                 Xác nhận trả lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TRÌNH DUYỆT BỔ SUNG / ĐIỀU CHỈNH */}
+      {showAmendmentModal && (
+        <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+            <div className="p-space-md bg-secondary text-on-secondary flex items-center justify-between">
+              <span className="font-headline-sm font-semibold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[20px]">approval_delegation</span>
+                Trình Duyệt Bổ Sung / Điều Chỉnh
+              </span>
+              <button onClick={() => setShowAmendmentModal(false)} className="hover:opacity-80">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <div className="p-space-md flex flex-col gap-space-sm">
+              <p className="font-label-sm text-xs text-on-surface-variant">
+                Kế hoạch hiện tại đã có hiệu lực. Bạn có thể mở khóa kế hoạch về trạng thái Dự thảo để cập nhật bổ sung nhiệm vụ mới hoặc trình Lãnh đạo thẩm định lại.
+              </p>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={unlockToDraft}
+                  onChange={(e) => setUnlockToDraft(e.target.checked)}
+                  className="rounded text-secondary"
+                />
+                <span className="font-label-md text-xs font-semibold text-primary">
+                  Mở khóa kế hoạch về Dự thảo (Cho phép thêm / sửa nhiệm vụ)
+                </span>
+              </label>
+
+              <div className="flex flex-col gap-1 pt-1">
+                <label className="text-xs font-semibold text-primary">Lý do / Căn cứ điều chỉnh bổ sung *</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={amendmentNotes}
+                  onChange={(e) => setAmendmentNotes(e.target.value)}
+                  placeholder="Ví dụ: Bổ sung nhiệm vụ kiểm soát đột xuất theo Thông báo số 18/TB-HQTL..."
+                  className="w-full p-2.5 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+              <button
+                onClick={() => setShowAmendmentModal(false)}
+                className="px-4 py-2 rounded bg-surface-container-lowest text-xs font-semibold"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => handleWorkflowAction("REQUEST_AMENDMENT")}
+                className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-secondary/90 transition-fast"
+              >
+                Xác nhận đề xuất
               </button>
             </div>
           </div>
