@@ -64,6 +64,14 @@ export async function GET(req: NextRequest) {
           take: 3,
           include: { author: true },
         },
+        attachments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            uploadedBy: {
+              select: { fullName: true },
+            },
+          },
+        },
       },
       orderBy: [{ currentDeadline: "asc" }, { createdAt: "desc" }],
     });

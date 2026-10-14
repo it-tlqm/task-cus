@@ -91,6 +91,11 @@ export default function TaskDetailPage() {
   const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{
+    url: string;
+    name: string;
+    mimeType: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchAttachments = async (id: string) => {
@@ -691,6 +696,22 @@ export default function TaskDetailPage() {
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
+                          {(isPdf || isImage) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPreviewFile({
+                                  url: att.fileUrl,
+                                  name: att.fileName,
+                                  mimeType: att.mimeType,
+                                })
+                              }
+                              className="p-1 text-outline hover:text-secondary rounded"
+                              title="Xem nhanh tệp"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">visibility</span>
+                            </button>
+                          )}
                           <a
                             href={att.fileUrl}
                             target="_blank"
@@ -902,6 +923,67 @@ export default function TaskDetailPage() {
               >
                 Ký số phê duyệt
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xem trước tệp tài liệu / hình ảnh (Lightbox & PDF viewer) */}
+      {previewFile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="bg-surface-container-lowest rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-border-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-3.5 border-b border-border-default flex items-center justify-between bg-surface-subtle">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <span className="material-symbols-outlined text-secondary text-[22px]">
+                  {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
+                    ? "picture_as_pdf"
+                    : "image"}
+                </span>
+                <span className="font-headline-sm text-sm font-bold text-primary truncate" title={previewFile.name}>
+                  {previewFile.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={previewFile.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={previewFile.name}
+                  className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-fast"
+                >
+                  <span className="material-symbols-outlined text-[15px]">download</span>
+                  <span>Tải về</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewFile(null)}
+                  className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-primary transition-fast"
+                  aria-label="Đóng xem trước"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+            </div>
+            <div className="p-3 md:p-6 flex-1 overflow-auto flex items-center justify-center bg-black/5 min-h-[350px]">
+              {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf") ? (
+                <iframe
+                  src={previewFile.url}
+                  title={previewFile.name}
+                  className="w-full h-[75vh] rounded-lg border border-border-subtle shadow-sm bg-white"
+                />
+              ) : (
+                <img
+                  src={previewFile.url}
+                  alt={previewFile.name}
+                  className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-sm"
+                />
+              )}
             </div>
           </div>
         </div>

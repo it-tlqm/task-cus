@@ -41,6 +41,14 @@ export async function GET(
           orderBy: { createdAt: "desc" },
           include: { author: true },
         },
+        attachments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            uploadedBy: {
+              select: { fullName: true },
+            },
+          },
+        },
       },
     });
 

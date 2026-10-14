@@ -65,6 +65,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"ALL" | "IN_PROGRESS" | "WAITING_REVIEW" | "EXTENSIONS" | "OVERDUE">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilterUnit, setSelectedFilterUnit] = useState<string>("ALL");
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -109,8 +110,11 @@ export default function TasksPage() {
     fetchTasks();
 
     if (typeof window !== "undefined") {
-      const q = new URLSearchParams(window.location.search).get("q");
+      const sp = new URLSearchParams(window.location.search);
+      const q = sp.get("q");
       if (q) setSearchQuery(q);
+      const u = sp.get("unitId");
+      if (u) setSelectedFilterUnit(u);
     }
 
     fetch("/api/org-units/tree")
@@ -247,6 +251,10 @@ export default function TasksPage() {
 
   // Filter tasks
   const filteredTasks = tasks.filter((task) => {
+    if (selectedFilterUnit !== "ALL" && task.unit?.id !== selectedFilterUnit) {
+      return false;
+    }
+
     const matchesSearch =
       task.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -446,8 +454,22 @@ export default function TasksPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-space-sm">
-            <div className="relative w-full sm:w-72">
+          <div className="flex flex-wrap items-center gap-space-sm">
+            <select
+              value={selectedFilterUnit}
+              aria-label="Lọc theo đơn vị nghiệp vụ"
+              onChange={(e) => setSelectedFilterUnit(e.target.value)}
+              className="h-9 px-3 rounded bg-surface-container-lowest text-xs font-semibold border border-border-default focus:outline-none focus:ring-1 focus:ring-secondary cursor-pointer text-primary"
+            >
+              <option value="ALL">Toàn đơn vị (Tất cả)</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="relative w-full sm:w-64">
               <span className="material-symbols-outlined absolute left-2.5 top-2 text-outline text-[18px]">
                 search
               </span>

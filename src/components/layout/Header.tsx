@@ -5,11 +5,18 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChangePasswordModal } from "@/components/ui/ChangePasswordModal";
 
+interface OrgUnitOption {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [isChangePassOpen, setIsChangePassOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("all");
+  const [orgUnits, setOrgUnits] = useState<OrgUnitOption[]>([]);
   const [currentUser, setCurrentUser] = useState<{
     fullName: string;
     role: string;
@@ -36,6 +43,27 @@ export function Header() {
         }
       })
       .catch(() => {});
+
+    // Load live org units from PostgreSQL
+    fetch("/api/org-units/tree")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.flatList && Array.isArray(json.flatList)) {
+          setOrgUnits(
+            json.flatList.map((u: any) => ({
+              id: u.id,
+              name: u.name,
+              code: u.code,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+
+    if (typeof window !== "undefined") {
+      const u = new URLSearchParams(window.location.search).get("unitId");
+      if (u) setSelectedUnit(u);
+    }
 
     // Load live unread notifications count from PostgreSQL
     const loadUnreadCount = () => {
@@ -136,13 +164,29 @@ export function Header() {
               <select
                 value={selectedUnit}
                 aria-label="Chọn đơn vị công tác"
-                onChange={(e) => setSelectedUnit(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedUnit(val);
+                  if (pathname === "/tasks") {
+                    if (val === "all") {
+                      router.push("/tasks");
+                    } else {
+                      router.push(`/tasks?unitId=${encodeURIComponent(val)}`);
+                    }
+                  } else {
+                    if (val !== "all") {
+                      router.push(`/tasks?unitId=${encodeURIComponent(val)}`);
+                    }
+                  }
+                }}
                 className="h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none focus:border-secondary transition-fast cursor-pointer"
               >
                 <option value="all">Toàn đơn vị — Hải quan Tà Lùng</option>
-                <option value="nv-a">Bộ phận Nghiệp vụ A (Thủ tục & Thông quan)</option>
-                <option value="gs-b">Bộ phận Giám sát B (Barie & Giám sát)</option>
-                <option value="th">Bộ phận Tổng hợp & Nghiệp vụ tồn đọng</option>
+                {orgUnits.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

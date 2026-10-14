@@ -5,6 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
 
+interface ApprovalAttachment {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  fileUrl: string;
+  createdAt: string;
+  uploadedBy?: {
+    fullName: string;
+  };
+}
+
 interface ApprovalItem {
   id: string;
   code: string;
@@ -21,6 +33,7 @@ interface ApprovalItem {
   documentTitle?: string;
   documentUrl?: string;
   reqId?: string;
+  attachments?: ApprovalAttachment[];
 }
 
 interface ReviewModalState {
@@ -30,12 +43,50 @@ interface ReviewModalState {
   notes: string;
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(mimeType: string, fileName: string) {
+  const name = fileName.toLowerCase();
+  if (mimeType.includes("pdf") || name.endsWith(".pdf")) {
+    return { icon: "picture_as_pdf", color: "text-rose-600 bg-rose-50 border-rose-200" };
+  }
+  if (
+    mimeType.includes("spreadsheet") ||
+    name.endsWith(".xlsx") ||
+    name.endsWith(".xls") ||
+    name.endsWith(".csv")
+  ) {
+    return { icon: "table_view", color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
+  }
+  if (
+    mimeType.startsWith("image/") ||
+    name.endsWith(".png") ||
+    name.endsWith(".jpg") ||
+    name.endsWith(".jpeg") ||
+    name.endsWith(".webp")
+  ) {
+    return { icon: "image", color: "text-blue-600 bg-blue-50 border-blue-200" };
+  }
+  return { icon: "description", color: "text-slate-600 bg-slate-50 border-slate-200" };
+}
+
 export default function ApprovalsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"all" | "plan" | "result" | "delay">("all");
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Modal xem trước tệp tài liệu / hình ảnh
+  const [previewFile, setPreviewFile] = useState<{
+    url: string;
+    name: string;
+    mimeType: string;
+  } | null>(null);
 
   // Modal giải trình / ý kiến phê duyệt
   const [reviewModal, setReviewModal] = useState<ReviewModalState>({
@@ -73,6 +124,7 @@ export default function ApprovalsPage() {
               unit: t.unit?.name || "BP Nghiệp vụ Hải quan",
               reason: t.actualResultText || "Đã hoàn thành các nội dung theo yêu cầu, trình Lãnh đạo nghiệm thu.",
               documentTitle: `Nhiệm vụ: ${t.code}`,
+              attachments: t.attachments || [],
             });
           }
 
@@ -103,6 +155,7 @@ export default function ApprovalsPage() {
                 newDeadline: newDateStr,
                 extensionDays: "+Gia hạn",
                 reqId: pendingReq.id,
+                attachments: t.attachments || [],
               });
             }
           }
@@ -524,6 +577,86 @@ export default function ApprovalsPage() {
                     )}
                   </div>
 
+                  {/* Hồ sơ & Tài liệu nghiệm thu đính kèm */}
+                  {item.attachments && item.attachments.length > 0 && (
+                    <div className="bg-surface-subtle border border-border-default/60 rounded-lg p-space-sm mb-space-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-label-sm text-[11px] font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
+                          <span className="material-symbols-outlined text-[15px] text-secondary">attach_file</span>
+                          Hồ sơ & Tài liệu nghiệm thu ({item.attachments.length})
+                        </span>
+                        <span className="text-[10px] text-on-surface-variant font-medium">Bấm xem trực tiếp hoặc tải về</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {item.attachments.map((att) => {
+                          const fileStyle = getFileIcon(att.mimeType, att.fileName);
+                          const isPdfOrImg =
+                            att.mimeType.includes("pdf") ||
+                            att.mimeType.startsWith("image/") ||
+                            att.fileName.match(/\.(pdf|png|jpg|jpeg|webp)$/i);
+                          return (
+                            <div
+                              key={att.id}
+                              className="flex items-center justify-between gap-2 p-2 bg-surface-container-lowest rounded-md border border-border-default/50 hover:border-secondary/50 transition-fast"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className={`p-1.5 rounded border text-[16px] shrink-0 ${fileStyle.color} flex items-center justify-center`}>
+                                  <span className="material-symbols-outlined text-[18px]">{fileStyle.icon}</span>
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-body-semibold text-xs text-primary truncate" title={att.fileName}>
+                                    {att.fileName}
+                                  </p>
+                                  <p className="text-[10px] text-on-surface-variant">
+                                    {formatFileSize(att.fileSize)}
+                                    {att.uploadedBy?.fullName && ` · Tải lên bởi ${att.uploadedBy.fullName}`}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {isPdfOrImg && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setPreviewFile({
+                                        url: att.fileUrl,
+                                        name: att.fileName,
+                                        mimeType: att.mimeType,
+                                      })
+                                    }
+                                    className="px-2 py-1 rounded bg-secondary/10 text-secondary hover:bg-secondary/20 text-[11px] font-semibold transition-fast flex items-center gap-1"
+                                    title="Xem nhanh tệp"
+                                  >
+                                    <span className="material-symbols-outlined text-[14px]">visibility</span>
+                                    <span>Xem</span>
+                                  </button>
+                                )}
+                                <a
+                                  href={att.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download={att.fileName}
+                                  className="px-2 py-1 rounded bg-surface-container text-primary hover:bg-surface-container-high text-[11px] font-semibold transition-fast flex items-center gap-1 border border-border-subtle"
+                                  title="Tải về máy tính"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">download</span>
+                                  <span>Tải</span>
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {item.type === "result" && (!item.attachments || item.attachments.length === 0) && (
+                    <div className="px-3 py-2 rounded-lg bg-surface-subtle/80 border border-dashed border-border-default text-[11px] text-on-surface-variant mb-space-sm flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px] text-outline">info</span>
+                      <span>Chưa có tệp đính kèm nào được tải lên cho nhiệm vụ này.</span>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-space-xs">
                     <button
@@ -655,6 +788,67 @@ export default function ApprovalsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xem trước tệp tài liệu / hình ảnh (Lightbox & PDF viewer) */}
+      {previewFile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="bg-surface-container-lowest rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-border-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-3.5 border-b border-border-default flex items-center justify-between bg-surface-subtle">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <span className="material-symbols-outlined text-secondary text-[22px]">
+                  {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
+                    ? "picture_as_pdf"
+                    : "image"}
+                </span>
+                <span className="font-headline-sm text-sm font-bold text-primary truncate" title={previewFile.name}>
+                  {previewFile.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={previewFile.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={previewFile.name}
+                  className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-fast"
+                >
+                  <span className="material-symbols-outlined text-[15px]">download</span>
+                  <span>Tải về</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewFile(null)}
+                  className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-primary transition-fast"
+                  aria-label="Đóng xem trước"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+            </div>
+            <div className="p-3 md:p-6 flex-1 overflow-auto flex items-center justify-center bg-black/5 min-h-[350px]">
+              {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf") ? (
+                <iframe
+                  src={previewFile.url}
+                  title={previewFile.name}
+                  className="w-full h-[75vh] rounded-lg border border-border-subtle shadow-sm bg-white"
+                />
+              ) : (
+                <img
+                  src={previewFile.url}
+                  alt={previewFile.name}
+                  className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-sm"
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
