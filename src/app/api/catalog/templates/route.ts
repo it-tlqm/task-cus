@@ -51,7 +51,14 @@ export async function GET(req: NextRequest) {
       usageCount: (t._count?.workItems || 0) + (t._count?.routines || 0),
     }));
 
-    return NextResponse.json({ success: true, data: enriched, total: enriched.length });
+    return NextResponse.json(
+      { success: true, data: enriched, total: enriched.length },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error: any) {
     return jsonError("Lỗi khi tải danh mục đầu việc mẫu: " + error.message, 500);
   }

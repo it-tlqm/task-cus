@@ -43,6 +43,12 @@ export function verifyToken(token: string): SessionUser | null {
   }
 }
 
+interface CachedAuth {
+  user: SessionUser;
+  expiresAt: number;
+}
+const authMemoryCache = new Map<string, CachedAuth>();
+
 export async function authenticateRequest(req: NextRequest): Promise<SessionUser | null> {
   let token: string | undefined;
 
@@ -56,6 +62,12 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
   if (!token) return null;
   const decoded = verifyToken(token);
   if (!decoded) return null;
+
+  const nowMs = Date.now();
+  const cached = authMemoryCache.get(token);
+  if (cached && cached.expiresAt > nowMs) {
+    return cached.user;
+  }
 
   // Kiểm tra thời gian thực trong PostgreSQL:
   // 1. Tài khoản và Cán bộ phải ở trạng thái ACTIVE (thu hồi token ngay nếu bị vô hiệu hóa)
@@ -110,7 +122,7 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
 
   // Luôn trả về SessionUser được cập nhật theo cơ sở dữ liệu thực tế tại thời điểm gọi API:
   // Ngay sau khi điều chuyển, unitId và scopeUnitId lập tức trỏ về đơn vị mới!
-  return {
+  const sessionUser: SessionUser = {
     ...decoded,
     unitId: primaryAssignment?.unitId || decoded.unitId,
     unitName: primaryAssignment?.unit?.name || decoded.unitName,
@@ -120,6 +132,9 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
     scopeUnitId: primaryGrant?.scopeUnitId !== undefined ? primaryGrant.scopeUnitId : decoded.scopeUnitId,
     permissions: permissions.size > 0 ? Array.from(permissions) : decoded.permissions,
   };
+
+  authMemoryCache.set(token, { user: sessionUser, expiresAt: nowMs + 60_000 });
+  return sessionUser;
 }
 
 export async function getAccountWithPermissions(username: string) {

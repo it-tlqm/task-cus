@@ -35,7 +35,14 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json(
+      { success: true, data },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error: any) {
     return jsonError("Lỗi khi tải nhóm nghiệp vụ: " + error.message, 500);
   }
