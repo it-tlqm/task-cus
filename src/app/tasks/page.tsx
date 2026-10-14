@@ -108,6 +108,11 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks();
 
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q) setSearchQuery(q);
+    }
+
     fetch("/api/org-units/tree")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {

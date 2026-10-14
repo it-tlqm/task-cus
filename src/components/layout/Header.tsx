@@ -20,6 +20,7 @@ export function Header() {
     unitName: "Bộ phận Nghiệp vụ A",
   });
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
     // Attempt to load current user from API
@@ -109,17 +110,27 @@ export function Header() {
               <span className="text-on-surface font-body-semibold">Ban điều hành</span>
             </div>
 
-            <div className="relative flex-1 max-w-md">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (searchKeyword.trim()) {
+                  router.push(`/tasks?q=${encodeURIComponent(searchKeyword.trim())}`);
+                }
+              }}
+              className="relative flex-1 max-w-md"
+            >
               <span className="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">
                 search
               </span>
               <input
                 type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
                 aria-label="Tìm kiếm nhiệm vụ, mã công việc, văn bản chỉ đạo"
-                placeholder="Tìm kiếm nhiệm vụ, mã công việc, văn bản chỉ đạo..."
+                placeholder="Tìm kiếm nhiệm vụ, mã công việc, văn bản chỉ đạo... (Enter để tìm)"
                 className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-fast"
               />
-            </div>
+            </form>
 
             <div className="shrink-0">
               <select
