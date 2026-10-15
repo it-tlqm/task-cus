@@ -115,10 +115,10 @@ export default function MyWorkPage() {
     positionTitle?: string;
     unitName?: string;
   }>({
-    fullName: "Cán bộ công chức",
+    fullName: "Công chức",
     personCode: "HQTL",
     positionTitle: "Chuyên viên nghiệp vụ",
-    unitName: "Chi cục Hải quan Tà Lùng",
+    unitName: "Hải quan cửa khẩu Quốc tế Tà Lùng",
   });
 
   const formatDateTime = (iso?: string) => {
@@ -158,10 +158,10 @@ export default function MyWorkPage() {
       .then((data) => {
         if (data?.user) {
           setCurrentUser({
-            fullName: data.user.fullName || "Cán bộ công chức",
+            fullName: data.user.fullName || "Công chức",
             personCode: data.user.personCode || data.user.username?.toUpperCase() || "HQTL",
             positionTitle: data.user.positionTitle || "Chuyên viên nghiệp vụ",
-            unitName: data.user.unitName || data.user.unit?.name || "Chi cục Hải quan Tà Lùng",
+            unitName: data.user.unitName || data.user.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng",
           });
         }
       })
@@ -329,8 +329,8 @@ export default function MyWorkPage() {
         await fetchTasks();
         toast.success("Đã khởi tạo và thêm thành công công việc mới!");
       }
-    } catch {
-      // ignore
+    } catch (err: any) {
+      toast.error("Lỗi kết nối máy chủ: " + (err.message || "Không thể tạo công việc"));
     }
   };
 
@@ -783,7 +783,7 @@ export default function MyWorkPage() {
                               {task.owner?.fullName || currentUser.fullName}
                             </span>
                             <span className="text-on-surface-variant font-label-sm text-[11px]">
-                              {task.unit?.name || currentUser.unitName || "Chi cục Hải quan Tà Lùng"}
+                              {task.unit?.name || currentUser.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"}
                             </span>
                           </div>
                         </td>
@@ -882,7 +882,7 @@ export default function MyWorkPage() {
                 <span className="material-symbols-outlined text-secondary text-[20px]">manage_history</span>
                 <h2 className="font-headline-sm text-headline-sm text-primary">Nhật Ký Tác Nghiệp Cá Nhân Tự Động (Audit Trail)</h2>
               </div>
-              <span className="font-label-sm text-label-sm text-outline">Ghi nhận UTC+7 (Hải quan Tà Lùng)</span>
+              <span className="font-label-sm text-label-sm text-outline">Ghi nhận UTC+7 (Hải quan cửa khẩu Quốc tế Tà Lùng)</span>
             </div>
             <div className="flex flex-col gap-space-sm my-space-sm">
               <div className="flex items-start gap-3 p-2 rounded-lg bg-surface-container-low">
@@ -1153,7 +1153,7 @@ export default function MyWorkPage() {
                       {task.title}
                     </h3>
                     <p className="font-label-sm text-[12px] text-on-surface-variant mt-1">
-                      Hạn gốc: 11:30 Hôm qua • Ban Lãnh đạo đơn vị trực tiếp giao
+                      Hạn gốc: 11:30 Hôm qua • Lãnh đạo đơn vị trực tiếp giao
                     </p>
                     <div className="mt-2.5 p-2.5 rounded-lg bg-status-warning-bg/80 flex items-start gap-2">
                       <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">info</span>
@@ -1272,7 +1272,7 @@ export default function MyWorkPage() {
                 <div className="bg-surface-container-low p-2 rounded-lg flex items-center justify-between text-[12px] text-on-surface-variant">
                   <span className="flex items-center gap-1">
                     <span className="material-symbols-outlined text-[15px] text-secondary">inventory_2</span>
-                    <span>{task.unit?.name || "Chi cục Hải quan Tà Lùng"}</span>
+                    <span>{task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</span>
                   </span>
                   <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
                 </div>
@@ -1369,7 +1369,7 @@ export default function MyWorkPage() {
                     Hạn xử lý: <strong className="text-status-warning">{formatDateTime(selectedTask.currentDeadline)}</strong>
                   </div>
                   <div className="text-outline text-right">
-                    Phối hợp: <strong className="text-primary">{selectedTask.assignees?.[0]?.person?.fullName || selectedTask.unit?.name || "Chi cục Hải quan Tà Lùng"}</strong>
+                    Phối hợp: <strong className="text-primary">{selectedTask.assignees?.[0]?.person?.fullName || selectedTask.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</strong>
                   </div>
                 </div>
               </div>

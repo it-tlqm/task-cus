@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET || "talung_cus_work_demo_jwt_secret_2026";
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+const JWT_FALLBACK_SECRET = "talung_cus_work_demo_jwt_secret_2026";
+
+function requireJwtSecret(): Uint8Array {
+  const configured = process.env.JWT_SECRET;
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error("SECURITY: JWT_SECRET chưa được cấu hình trong môi trường production");
+  }
+  if (!configured) {
+    console.warn("[middleware] JWT_SECRET chưa cấu hình — dùng secret demo, CHỈ cho môi trường phát triển");
+  }
+  return new TextEncoder().encode(configured || JWT_FALLBACK_SECRET);
+}
 
 // Danh sách các đường dẫn công khai không cần session
 const PUBLIC_PATHS = [
@@ -44,6 +54,8 @@ export async function middleware(req: NextRequest) {
   let isAuthenticated = false;
 
   if (token) {
+    // Fail-fast khi thiếu JWT_SECRET ở production (throw ra ngoài try để không bị nuốt)
+    const secretKey = requireJwtSecret();
     try {
       await jwtVerify(token, secretKey);
       isAuthenticated = true;

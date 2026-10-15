@@ -724,7 +724,7 @@ export default function OrganizationAdminPage() {
               <p className="text-xs text-slate-500 mt-0.5">
                 {selectedUnit
                   ? `Mã đơn vị: ${selectedUnit.code} • Cấp: ${selectedUnit.level || 2}`
-                  : "Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng"}
+                  : "Hải quan cửa khẩu Quốc tế Tà Lùng"}
               </p>
             </div>
 

@@ -525,7 +525,7 @@ export default function SystemAdminPage() {
                 </div>
                 <div className="py-2 flex justify-between">
                   <span className="text-slate-600">Phạm vi chỉ huy cao nhất:</span>
-                  <span className="font-bold text-slate-900">Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng</span>
+                  <span className="font-bold text-slate-900">Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng</span>
                 </div>
               </div>
             </div>

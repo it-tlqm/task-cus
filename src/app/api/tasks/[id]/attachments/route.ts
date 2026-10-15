@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { jsonError } from "@/server/guard";
+import { verifyTaskAccess, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { getStorageProvider } from "@/server/storage";
 
@@ -30,6 +30,11 @@ export async function GET(
 
     if (!task) {
       return jsonError("Nhiệm vụ không tồn tại", 404);
+    }
+
+    const readAccess = await verifyTaskAccess(user, taskId, "READ");
+    if (!readAccess.allowed) {
+      return jsonError(readAccess.reason || "Truy cập bị từ chối", 403);
     }
 
     const attachments = await prisma.taskAttachment.findMany({
@@ -83,6 +88,12 @@ export async function POST(
 
     if (!task) {
       return jsonError("Nhiệm vụ không tồn tại", 404);
+    }
+
+    // Chống đính kèm vào task ngoài phạm vi
+    const attachAccess = await verifyTaskAccess(user, taskId, "WRITE");
+    if (!attachAccess.allowed) {
+      return jsonError(attachAccess.reason || "Truy cập bị từ chối", 403);
     }
 
     const formData = await req.formData();

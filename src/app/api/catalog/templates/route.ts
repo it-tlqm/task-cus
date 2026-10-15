@@ -5,6 +5,12 @@ import { checkPermission, jsonError } from "@/server/guard";
 
 export async function GET(req: NextRequest) {
   try {
+    // Defense in depth: middleware đã chặn unauthenticated, handler tự xác thực lại theo chuẩn dự án
+    const user = await authenticateRequest(req);
+    if (!user) {
+      return jsonError("Yêu cầu đăng nhập để xem danh mục", 401);
+    }
+
     const { searchParams } = new URL(req.url);
     const groupId = searchParams.get("groupId");
     const search = searchParams.get("q");
@@ -119,7 +125,7 @@ export async function POST(req: NextRequest) {
       description,
       sourceRawText,
       defaultPriority = "Trung bình",
-      reportingMode = "EVERY_PERIOD",
+      reportingMode = "UNCONFIGURED",
       reviewStatus = "VERIFIED",
     } = body;
 

@@ -39,7 +39,7 @@ async function main() {
   const org = await prisma.organization.create({
     data: {
       code: "HQ_TA_LUNG",
-      name: "Hải quan Cửa khẩu Quốc tế Tà Lùng",
+      name: "Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng",
       status: "ACTIVE",
     },
   });
@@ -49,7 +49,7 @@ async function main() {
     data: {
       orgId: org.id,
       code: "HQCK_TALUNG",
-      name: "Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng",
+      name: "Hải quan cửa khẩu Quốc tế Tà Lùng",
       level: 1,
       sortOrder: 1,
       status: "ACTIVE",
@@ -61,7 +61,7 @@ async function main() {
       orgId: org.id,
       parentId: rootUnit.id,
       code: "BAN_LANH_DAO",
-      name: "Ban Lãnh đạo Đơn vị",
+      name: "Lãnh đạo đơn vị",
       level: 2,
       sortOrder: 2,
       status: "ACTIVE",
@@ -85,7 +85,7 @@ async function main() {
       orgId: org.id,
       parentId: rootUnit.id,
       code: "BP_GIAMSAT_B",
-      name: "Bộ phận Kiểm tra Giám sát B (Barie & Bãi xe)",
+      name: "Bộ phận Kiểm tra giám sát B (Barie & kho, bãi)",
       level: 2,
       sortOrder: 4,
       status: "ACTIVE",
@@ -109,7 +109,7 @@ async function main() {
       orgId: org.id,
       parentId: rootUnit.id,
       code: "BP_TONGHOP_D",
-      name: "Bộ phận Tổng hợp & Đánh giá D",
+      name: "Bộ phận Tổng hợp & Báo cáo D",
       level: 2,
       sortOrder: 6,
       status: "ACTIVE",
@@ -118,7 +118,7 @@ async function main() {
 
   // 4. Positions
   const posChief = await prisma.position.create({
-    data: { code: "CHI_CUC_TRUONG", title: "Chi cục trưởng" },
+    data: { code: "CHI_CUC_TRUONG", title: "Trưởng hải quan cửa khẩu" },
   });
   const posLeader = await prisma.position.create({
     data: { code: "TRUONG_BO_PHAN", title: "Trưởng bộ phận / Trưởng nhóm" },
@@ -210,13 +210,13 @@ async function main() {
   }
 
   const roleLeader = await prisma.role.create({
-    data: { code: "UNIT_LEADER", name: "Lãnh đạo đơn vị", isSystem: true },
+    data: { code: "UNIT_LEADER", name: "Trưởng hải quan cửa khẩu", isSystem: true },
   });
   const roleDeptLeader = await prisma.role.create({
     data: { code: "DEPARTMENT_LEADER", name: "Trưởng bộ phận", isSystem: true },
   });
   const roleStaff = await prisma.role.create({
-    data: { code: "STAFF", name: "Cán bộ công chức", isSystem: true },
+    data: { code: "STAFF", name: "Công chức", isSystem: true },
   });
   const roleAdmin = await prisma.role.create({
     data: { code: "SYSTEM_ADMIN", name: "Quản trị hệ thống", isSystem: true },

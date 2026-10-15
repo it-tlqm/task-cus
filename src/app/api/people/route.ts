@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
         unitName: primaryAssignment?.unit?.name || "Chưa phân công",
         unitCode: primaryAssignment?.unit?.code || null,
         positionId: primaryAssignment?.positionId || null,
-        position: primaryAssignment?.position?.title || "Cán bộ công chức",
+        position: primaryAssignment?.position?.title || "Công chức",
         orgUnit: primaryAssignment?.unit
           ? {
               id: primaryAssignment.unit.id,
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
               status: p.account.status,
               isActive: p.account.status === "ACTIVE",
               role: primaryGrant?.role?.code || "STAFF",
-              roleName: primaryGrant?.role?.name || "Cán bộ công chức",
+              roleName: primaryGrant?.role?.name || "Công chức",
               lastLoginAt: p.account.lastLoginAt,
             }
           : null,

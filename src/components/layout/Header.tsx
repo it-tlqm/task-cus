@@ -4,6 +4,12 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChangePasswordModal } from "@/components/ui/ChangePasswordModal";
+import {
+  UNIT_OFFICIAL_NAME,
+  UNIT_SHORT_NAME,
+  UNIT_ALL_LABEL,
+  getRoleDisplayName,
+} from "@/lib/unit-info";
 
 interface OrgUnitOption {
   id: string;
@@ -94,17 +100,18 @@ export function Header() {
   };
 
   const getRoleBadgeLabel = (role: string) => {
+    // Mã vai trò cũ (tương thích) giữ nhãn cũ; mã chuẩn dùng tên chức danh chính thức
     switch (role) {
       case "LANH_DAO":
         return "Lãnh đạo đơn vị";
       case "TRUONG_BO_PHAN":
         return "Trưởng bộ phận";
       case "CAN_BO":
-        return "Cán bộ chuyên môn";
+        return "Công chức";
       case "ADMIN":
         return "Quản trị hệ thống";
       default:
-        return "Cán bộ tác nghiệp";
+        return getRoleDisplayName(role);
     }
   };
 
@@ -119,7 +126,7 @@ export function Header() {
               verified
             </span>
             <span className="font-label-sm text-[11px] text-primary uppercase tracking-wide font-semibold">
-              HỆ THỐNG VẬN HÀNH CHÍNH THỨC — CHI CỤC HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
+              HỆ THỐNG VẬN HÀNH CHÍNH THỨC — {UNIT_OFFICIAL_NAME.toUpperCase()}
             </span>
           </div>
           <span className="font-label-sm text-[11px] text-on-surface-variant font-medium">
@@ -132,8 +139,12 @@ export function Header() {
           {/* Left: Location Breadcrumb & Search */}
           <div className="flex items-center gap-space-md flex-1 min-w-0">
             <div className="hidden xl:flex items-center gap-2 font-label-md text-label-md text-on-surface-variant truncate shrink-0">
-              <span className="material-symbols-outlined text-[16px] text-secondary">location_on</span>
-              <span>Đơn vị: HQ CK Quốc tế Tà Lùng</span>
+              <img
+                src="/images/logo-haiquan.png"
+                alt="Logo Hải quan Việt Nam"
+                className="w-9 h-9 rounded-full object-cover bg-white shrink-0"
+              />
+              <span>Đơn vị: {UNIT_SHORT_NAME}</span>
               <span className="text-outline-variant">/</span>
               <span className="text-on-surface font-body-semibold">Ban điều hành</span>
             </div>
@@ -181,7 +192,7 @@ export function Header() {
                 }}
                 className="h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none focus:border-secondary transition-fast cursor-pointer"
               >
-                <option value="all">Toàn đơn vị — Hải quan Tà Lùng</option>
+                <option value="all">{UNIT_ALL_LABEL}</option>
                 {orgUnits.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
@@ -252,6 +263,11 @@ export function Header() {
       <header className="lg:hidden fixed top-0 w-full z-50 pt-safe bg-surface/95 backdrop-blur-xl border-b border-border-default/60 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         <div className="h-14 px-margin flex items-center justify-between">
           <div className="flex items-center gap-space-sm">
+            <img
+              src="/images/logo-haiquan.png"
+              alt="Logo Hải quan Việt Nam"
+              className="w-9 h-9 rounded-full object-cover bg-white shrink-0"
+            />
             <div className="flex flex-col">
               <div className="flex items-center gap-space-xs">
                 <span className="font-headline-sm text-headline-sm text-primary-container tracking-tight font-bold">

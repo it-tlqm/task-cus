@@ -216,6 +216,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 1b. Chặn hoạt động mẫu đã ngừng áp dụng (nhất quán với personal-work-items)
+    if (templateId) {
+      const routineTemplate = await prisma.activityTemplate.findUnique({
+        where: { id: templateId },
+        select: { id: true, reviewStatus: true },
+      });
+      if (!routineTemplate) {
+        return NextResponse.json(
+          { error: "Hoạt động mẫu không tồn tại trong danh mục" },
+          { status: 400 }
+        );
+      }
+      if (routineTemplate.reviewStatus === "RETIRED") {
+        return NextResponse.json(
+          { error: "Hoạt động mẫu này đã ngừng áp dụng, không thể ghi nhật ký mới" },
+          { status: 400 }
+        );
+      }
+    }
+
     // 2. Xác định kỳ báo cáo
     let periodId = inputPeriodId;
     if (!periodId) {

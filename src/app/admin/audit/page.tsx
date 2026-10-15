@@ -31,10 +31,10 @@ export default function AdminAuditPage() {
             timestamp: new Date(e.timestamp).toLocaleString("vi-VN"),
             user: e.actorFullName || e.actorUsername || "Hệ thống",
             role: e.actorUsername === "admin" || e.actorUsername === "lanhdao" || e.actorUsername === "hqtl001"
-              ? "Lãnh đạo đơn vị"
+              ? "Trưởng hải quan cửa khẩu"
               : e.actorUsername?.includes("truongnhom")
               ? "Trưởng bộ phận"
-              : "Cán bộ công chức",
+              : "Công chức",
             action: e.action,
             target: e.resourceType ? `${e.resourceType}: ${e.resourceId || "N/A"}` : "Hệ thống chung",
             ip: e.ipAddress || "127.0.0.1",

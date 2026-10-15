@@ -7,8 +7,11 @@ import { ToastContainer } from "@/components/ui/Toast";
 const inter = Inter({ subsets: ["latin", "vietnamese"] });
 
 export const metadata: Metadata = {
-  title: "HQ TÀ LÙNG — Quản lý Kế hoạch & Công việc (talung-cus-work)",
-  description: "Hệ thống Quản lý Kế hoạch & Công việc Hải quan Cửa khẩu quốc tế Tà Lùng",
+  title: "Hải quan cửa khẩu Quốc tế Tà Lùng — Quản lý Kế hoạch & Công việc",
+  description: "Hệ thống Quản lý Kế hoạch & Công việc — Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng",
+  icons: {
+    icon: "/images/logo-haiquan.png",
+  },
 };
 
 export default function RootLayout({

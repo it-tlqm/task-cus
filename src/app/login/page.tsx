@@ -6,14 +6,12 @@ import { toast } from "@/components/ui/Toast";
 
 export default function LoginPage() {
   const router = useRouter();
-  const isDemoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN !== "false";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeSelectFeedback, setActiveSelectFeedback] = useState<string | null>(null);
 
   const handleLogin = async (customUser?: string, customPass?: string) => {
     const userToLogin = customUser || username;
@@ -59,17 +57,6 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemoAccount = (code: string, name: string, pass = "Talung@2026") => {
-    setUsername(code);
-    setPassword(pass);
-    setError(null);
-    setActiveSelectFeedback(`Đã chọn: ${code}`);
-    toast.info(`Đã điền tài khoản: ${name} (${code})`);
-    setTimeout(() => {
-      setActiveSelectFeedback(null);
-    }, 1500);
-  };
-
   return (
     <div className="w-full min-h-screen bg-app-bg text-on-surface flex flex-col lg:flex-row antialiased">
       {/* =========================================================================
@@ -84,15 +71,17 @@ export default function LoginPage() {
         {/* Top Header & Official Insignia */}
         <div className="relative z-10 flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-on-secondary shadow-lg ring-4 ring-white/10 shrink-0">
-              <span className="material-symbols-outlined text-[30px]">shield</span>
-            </div>
+            <img
+              src="/images/logo-haiquan.png"
+              alt="Logo Hải quan Việt Nam"
+              className="w-14 h-14 rounded-full object-cover shadow-lg ring-4 ring-white/10 shrink-0 bg-white"
+            />
             <div className="flex flex-col">
               <span className="text-[11px] font-bold tracking-widest uppercase text-secondary-fixed/90 font-mono">
-                TỔNG CỤC HẢI QUAN • CỤC HẢI QUAN TỈNH CAO BẰNG
+                CHI CỤC HẢI QUAN KHU VỰC XVI
               </span>
               <h2 className="text-lg xl:text-xl font-bold tracking-tight text-white leading-snug">
-                CHI CỤC HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
+                CHI CỤC HẢI QUAN KHU VỰC XVI - HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
               </h2>
               <span className="text-xs text-white/70">
                 Bộ phận Công nghệ thông tin &amp; Điều hành tác nghiệp
@@ -114,7 +103,7 @@ export default function LoginPage() {
               Quản Lý Kế Hoạch &amp; Điều Hành Tác Nghiệp Hải Quan
             </h1>
             <p className="text-sm xl:text-base text-white/80 leading-relaxed">
-              Nền tảng chuẩn hóa 16 màn hình Google Stitch, số hóa 5 nhóm nghiệp vụ và 48 hoạt động mẫu; hỗ trợ phân công nhiệm vụ, nhật ký 1-chạm không phát sinh và xuất biểu mẫu Excel Mẫu A &amp; Mẫu B tự động.
+              Nền tảng số hóa 5 nhóm nghiệp vụ và 48 hoạt động mẫu; hỗ trợ phân công nhiệm vụ, ghi nhận nhật ký hằng ngày và xuất biểu mẫu Excel Mẫu A &amp; Mẫu B tự động.
             </p>
           </div>
 
@@ -146,17 +135,17 @@ export default function LoginPage() {
                 <span className="text-xs font-bold uppercase tracking-wider">Xuất Excel Mẫu A &amp; B</span>
               </div>
               <p className="text-xs text-white/75 leading-normal">
-                Bộ máy ExcelJS chuyên dụng 8 cột và 13 cột, triệt tiêu lỗ hổng Formula Injection.
+                Xuất biểu tổng hợp 8 cột và báo cáo chi tiết 13 cột đúng biểu mẫu quy định.
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
                 <span className="material-symbols-outlined text-[20px]">verified_user</span>
-                <span className="text-xs font-bold uppercase tracking-wider">Bảo mật &amp; Snapshot</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Bảo mật &amp; Chốt số liệu</span>
               </div>
               <p className="text-xs text-white/75 leading-normal">
-                Scope Guard chặn can thiệp chéo, khóa kỳ số liệu mã băm SHA-256 bất biến.
+                Phân quyền chặt chẽ theo đơn vị, số liệu chốt kỳ được khóa và bảo toàn nguyên vẹn.
               </p>
             </div>
           </div>
@@ -181,15 +170,17 @@ export default function LoginPage() {
           <div className="lg:hidden flex flex-col items-center text-center pb-2">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning-bg shadow-sm mb-3">
               <span className="material-symbols-outlined text-status-warning text-[14px]">
-                {isDemoMode ? "science" : "verified_user"}
+                verified_user
               </span>
               <span className="font-label-sm text-[11px] text-status-warning uppercase tracking-wider font-semibold">
-                {isDemoMode ? "MÔI TRƯỜNG THIẾT KẾ — DỮ LIỆU DEMO" : "CỔNG ĐĂNG NHẬP NỘI BỘ CHI CỤC"}
+                CỔNG ĐĂNG NHẬP NỘI BỘ
               </span>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-md mb-2">
-              <span className="material-symbols-outlined text-[24px] text-secondary-fixed">shield_lock</span>
-            </div>
+            <img
+              src="/images/logo-haiquan.png"
+              alt="Logo Hải quan Việt Nam"
+              className="w-12 h-12 rounded-full object-cover bg-white shadow-md mb-2"
+            />
             <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
               HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
             </p>
@@ -210,9 +201,7 @@ export default function LoginPage() {
               Đăng Nhập Cổng Tác Nghiệp
             </h2>
             <p className="text-on-surface-variant text-sm">
-              {isDemoMode
-                ? "Nhập mã định danh công chức hoặc bấm chọn vai trò demo phía dưới:"
-                : "Nhập mã định danh công chức và mật khẩu được cấp để truy cập:"}
+              Nhập mã định danh công chức và mật khẩu được cấp để truy cập:
             </p>
           </div>
 
@@ -252,7 +241,6 @@ export default function LoginPage() {
               <div className="flex flex-col gap-1">
                 <label className="font-body-semibold text-xs text-on-surface flex items-center justify-between" htmlFor="usernameInput">
                   <span className="font-bold">Mã cán bộ / Tên đăng nhập</span>
-                  <span className="text-[11px] text-outline font-normal">Ví dụ: lanhdao, canbo_a</span>
                 </label>
                 <div className="relative flex items-center">
                   <span className="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">
@@ -276,9 +264,6 @@ export default function LoginPage() {
                   <label className="font-body-semibold text-xs text-on-surface font-bold" htmlFor="passwordInput">
                     Mật khẩu bảo mật
                   </label>
-                  {isDemoMode && (
-                    <span className="text-[11px] text-secondary font-mono">demo: demo123</span>
-                  )}
                 </div>
                 <div className="relative flex items-center">
                   <span className="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">
@@ -334,130 +319,12 @@ export default function LoginPage() {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[18px]">login</span>
-                    <span>{activeSelectFeedback || "Đăng nhập hệ thống"}</span>
+                    <span>Đăng nhập hệ thống</span>
                   </>
                 )}
               </button>
             </form>
           </div>
-
-          {/* Quick Demo Role Selector (1-Touch for UAT Evaluation) */}
-          {isDemoMode && (
-            <div className="w-full bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-border-default/60 flex flex-col gap-3">
-            <div className="flex items-center justify-between pb-1 border-b border-border-subtle/40">
-              <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-secondary text-[18px]">group</span>
-                <span className="font-body-semibold text-xs text-on-surface font-bold uppercase tracking-wide">
-                  Tài khoản UAT / Vận hành thực tế (1-Chạm)
-                </span>
-              </div>
-              <span className="text-[10px] text-secondary font-bold bg-secondary/10 px-2 py-0.5 rounded-full font-mono">
-                Talung@2026
-              </span>
-            </div>
-            <p className="text-[11px] text-on-surface-variant leading-tight">
-              Bấm trực tiếp vào tài khoản công chức để tự động điền nhanh:
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {/* Role 1: Chi cục trưởng */}
-              <button
-                type="button"
-                onClick={() => fillDemoAccount("hqtl001", "Chi cục trưởng Nông Văn Hòa")}
-                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
-                  username === "hqtl001"
-                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
-                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-status-success-bg text-status-success flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[18px]">account_balance</span>
-                  </div>
-                  <div className="min-w-0 flex flex-col">
-                    <span className="font-bold text-xs text-on-surface truncate">Chi cục trưởng</span>
-                    <span className="text-[10px] text-on-surface-variant font-mono">hqtl001</span>
-                  </div>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
-                  check_circle
-                </span>
-              </button>
-
-              {/* Role 2: Trưởng bộ phận A */}
-              <button
-                type="button"
-                onClick={() => fillDemoAccount("hqtl011", "Đội trưởng Triệu Văn Nam")}
-                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
-                  username === "hqtl011"
-                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
-                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-status-unassigned-bg text-status-unassigned flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[18px]">supervisor_account</span>
-                  </div>
-                  <div className="min-w-0 flex flex-col">
-                    <span className="font-bold text-xs text-on-surface truncate">Trưởng BP Nghiệp vụ A</span>
-                    <span className="text-[10px] text-on-surface-variant font-mono">hqtl011</span>
-                  </div>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
-                  check_circle
-                </span>
-              </button>
-
-              {/* Role 3: Cán bộ Nghiệp vụ A */}
-              <button
-                type="button"
-                onClick={() => fillDemoAccount("hqtl014", "Công chức Lý Thị Mai")}
-                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
-                  username === "hqtl014"
-                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
-                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[18px]">person</span>
-                  </div>
-                  <div className="min-w-0 flex flex-col">
-                    <span className="font-bold text-xs text-on-surface truncate">Công chức Tiếp nhận</span>
-                    <span className="text-[10px] text-on-surface-variant font-mono">hqtl014</span>
-                  </div>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
-                  check_circle
-                </span>
-              </button>
-
-              {/* Role 4: Quản trị hệ thống */}
-              <button
-                type="button"
-                onClick={() => fillDemoAccount("admin", "Quản trị viên Hệ thống")}
-                className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between group active-press ${
-                  username === "admin"
-                    ? "bg-secondary/10 border-secondary ring-1 ring-secondary"
-                    : "bg-surface-subtle hover:bg-surface-container border-border-subtle/60"
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-                  </div>
-                  <div className="min-w-0 flex flex-col">
-                    <span className="font-bold text-xs text-on-surface truncate">Quản trị hệ thống</span>
-                    <span className="text-[10px] text-on-surface-variant font-mono">admin</span>
-                  </div>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary">
-                  check_circle
-                </span>
-              </button>
-            </div>
-          </div>
-          )}
 
           {/* Compliance & Security Footer */}
           <footer className="text-center flex flex-col items-center gap-1 pt-1">
@@ -466,7 +333,7 @@ export default function LoginPage() {
               <span className="text-[11px] font-mono">Bản dựng: v1.2.4-TL (Enterprise Build)</span>
             </div>
             <p className="text-[11px] text-on-surface-variant">
-              Bộ phận CNTT Chi cục HQCK Quốc tế Tà Lùng • Tỉnh Cao Bằng
+              Bộ phận CNTT Hải quan cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng
             </p>
           </footer>
         </div>

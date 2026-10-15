@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { getAuthorizedUnitIds, jsonError, checkPermission } from "@/server/guard";
+import { getAuthorizedUnitIds, verifyTaskAccess, jsonError, checkPermission } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -80,6 +80,11 @@ export async function POST(
 
       if (!canApprove) {
         return jsonError("Bạn không có thẩm quyền phê duyệt kế hoạch này", 403);
+      }
+
+      // Tách người trình — người duyệt: không tự phê duyệt kế hoạch do mình lập
+      if (plan.creatorId && plan.creatorId === user.personId) {
+        return jsonError("Người lập kế hoạch không được tự phê duyệt. Vui lòng trình cấp có thẩm quyền khác", 403);
       }
 
       if (plan.status !== "SUBMITTED") {
@@ -200,6 +205,20 @@ export async function POST(
         return jsonError("Nhiệm vụ hoặc Hạng mục kế hoạch không tồn tại", 404);
       }
 
+      // Slice 2: hạng mục phải thuộc đúng kế hoạch trong URL
+      if (targetItem.planId !== planId) {
+        return jsonError("Hạng mục kế hoạch không thuộc kế hoạch này", 400);
+      }
+
+      // Slice 2: chống IDOR — chỉ người có quyền WRITE trên task và trong phạm vi đơn vị của kế hoạch mới được link
+      if (!isUnitAuthorized) {
+        return jsonError("Bạn không có quyền liên kết nhiệm vụ vào kế hoạch của bộ phận khác", 403);
+      }
+      const taskAccess = await verifyTaskAccess(user, taskId, "WRITE");
+      if (!taskAccess.allowed) {
+        return jsonError(taskAccess.reason || "Truy cập bị từ chối", 403);
+      }
+
       // Tạo liên kết nhiều-nhiều bảo toàn Task ID duy nhất
       const link = await prisma.planTaskLink.upsert({
         where: {
@@ -246,6 +265,22 @@ export async function POST(
       }
 
       const targetStatus = body.unlockToDraft ? "DRAFT" : "SUBMITTED";
+
+      // Snapshot toàn vẹn kế hoạch trước khi mở khóa (thay thế bảng plan_versions ở mức pilot:
+      // mọi hạng mục + đầu việc + link nhiệm vụ được niêm trong AuditEvent bất biến)
+      const planSnapshot = await prisma.plan.findUnique({
+        where: { id: planId },
+        include: {
+          items: {
+            include: {
+              workItems: { select: { id: true, title: true, personId: true, status: true } },
+              taskLinks: { select: { taskId: true } },
+            },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      });
+
       const updated = await prisma.plan.update({
         where: { id: planId },
         data: {
@@ -259,7 +294,24 @@ export async function POST(
         resourceType: "Plan",
         resourceId: planId,
         oldData: { status: plan.status },
-        newData: { status: targetStatus, reason: reviewNotes || "Trình duyệt bổ sung/điều chỉnh nhiệm vụ" },
+        newData: {
+          status: targetStatus,
+          reason: reviewNotes || "Trình duyệt bổ sung/điều chỉnh nhiệm vụ",
+          snapshotBeforeUnlock: planSnapshot
+            ? {
+                title: planSnapshot.title,
+                unitId: planSnapshot.unitId,
+                periodId: planSnapshot.periodId,
+                items: planSnapshot.items.map((pi) => ({
+                  id: pi.id,
+                  title: pi.title,
+                  groupId: pi.groupId,
+                  workItems: pi.workItems,
+                  linkedTaskIds: pi.taskLinks.map((l) => l.taskId),
+                })),
+              }
+            : null,
+        },
       });
 
       const leaders = await prisma.account.findMany({

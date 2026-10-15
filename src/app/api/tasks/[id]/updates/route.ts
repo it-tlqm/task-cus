@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
+import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
 import { recordAuditEvent } from "@/server/audit";
 
 export async function GET(
@@ -49,6 +50,19 @@ export async function POST(
     const resolvedStatus = newStatus || statusAfter || status;
 
     const currentTask = access.task;
+    const targetStatus = resolvedStatus || null;
+
+    // Guard tập trung (Slice 1): chặn tự nghiệm thu COMPLETED qua endpoint tiến độ
+    try {
+      assertTaskStatusTransition({
+        currentStatus: currentTask.status,
+        targetStatus,
+        deadlineChanged: false,
+        isLeader: await isTaskLeader(user, currentTask.unitId),
+      });
+    } catch (err: any) {
+      return jsonError(err.message, err.statusCode || 403);
+    }
 
     const createdUpdate = await prisma.taskUpdate.create({
       data: {

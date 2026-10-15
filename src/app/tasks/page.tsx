@@ -539,7 +539,7 @@ export default function TasksPage() {
                           <div className="flex flex-col">
                             <span className="font-semibold text-primary">{task.owner?.fullName || "Chưa phân công"}</span>
                             <span className="text-xs text-on-surface-variant">
-                              {task.unit?.name || "Chi cục Hải quan Tà Lùng"}
+                              {task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}
                               {task.assignees && task.assignees.length > 0 ? ` (+${task.assignees.length} phối hợp)` : ""}
                             </span>
                           </div>
@@ -686,7 +686,7 @@ export default function TasksPage() {
                           </option>
                         ))
                       ) : (
-                        <option value="">Chi cục Hải quan Tà Lùng</option>
+                        <option value="">Hải quan cửa khẩu Quốc tế Tà Lùng</option>
                       )}
                     </select>
                   </div>

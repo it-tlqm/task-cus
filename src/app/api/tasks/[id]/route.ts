@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { verifyTaskAccess, getAuthorizedUnitIds, checkPermission, jsonError } from "@/server/guard";
+import { verifyTaskAccess, jsonError } from "@/server/guard";
+import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -99,31 +100,21 @@ export async function PATCH(
     } = body;
 
     const currentTask = access.task;
-    const authorizedUnits = await getAuthorizedUnitIds(user);
-    const isUnitAuthorized = authorizedUnits === "ALL" || authorizedUnits.includes(currentTask.unitId);
-    const isLeader =
-      user.role === "UNIT_LEADER" ||
-      (user.role === "DEPARTMENT_LEADER" && isUnitAuthorized) ||
-      checkPermission(user, "tasks.approve");
+    const isLeader = await isTaskLeader(user, currentTask.unitId);
 
-    // 1. Kiểm tra nghiệm thu hoàn thành nhiệm vụ (COMPLETED / DONE)
-    if (status === "COMPLETED" || status === "DONE") {
-      // Chống phê duyệt lặp lại
-      if (currentTask.status === "COMPLETED" || currentTask.status === "DONE") {
-        return jsonError("Nhiệm vụ này đã được nghiệm thu hoàn thành trước đó (COMPLETED), không thể phê duyệt lại", 400);
-      }
-
-      // Chỉ Lãnh đạo đơn vị hoặc Trưởng bộ phận phụ trách mới có quyền nghiệm thu
-      if (!isLeader) {
-        return jsonError("Chỉ Lãnh đạo đơn vị hoặc Trưởng bộ phận phụ trách mới có thẩm quyền nghiệm thu xác nhận hoàn thành nhiệm vụ", 403);
-      }
-    }
-
-    // 2. Kiểm tra trả lại yêu cầu giải trình (từ WAITING_REVIEW về IN_PROGRESS)
-    if (currentTask.status === "WAITING_REVIEW" && status === "IN_PROGRESS") {
-      if (!isLeader) {
-        return jsonError("Chỉ Lãnh đạo mới có thẩm quyền yêu cầu giải trình hoặc trả lại kết quả nhiệm vụ", 403);
-      }
+    // Guard tập trung: nghiệm thu / trả lại / dời hạn trực tiếp (Slice 1)
+    const deadlineChanged =
+      currentDeadline !== undefined &&
+      new Date(currentDeadline).getTime() !== new Date(currentTask.currentDeadline).getTime();
+    try {
+      assertTaskStatusTransition({
+        currentStatus: currentTask.status,
+        targetStatus: status ?? null,
+        deadlineChanged,
+        isLeader,
+      });
+    } catch (err: any) {
+      return jsonError(err.message, err.statusCode || 403);
     }
 
     const updateData: any = {};
@@ -165,7 +156,10 @@ export async function PATCH(
       successMessage = "Đã trả lại nhiệm vụ yêu cầu giải trình hoàn thiện";
     }
 
-    if (effectiveProgress !== undefined || status !== undefined) {
+    if (effectiveProgress !== undefined || status !== undefined || deadlineChanged) {
+      const deadlineNote = deadlineChanged
+        ? ` Lãnh đạo điều chỉnh hạn từ ${new Date(currentTask.currentDeadline).toLocaleDateString("vi-VN")} sang ${new Date(updatedTask.currentDeadline).toLocaleDateString("vi-VN")}.`
+        : "";
       await prisma.taskUpdate.create({
         data: {
           taskId,
@@ -173,7 +167,7 @@ export async function PATCH(
           progressPercent: effectiveProgress !== undefined ? effectiveProgress : 100,
           statusBefore: currentTask.status,
           statusAfter: updatedTask.status,
-          notes: actualResultText || (status === "COMPLETED" ? "Lãnh đạo đơn vị nghiệm thu hoàn thành 100%" : "Cập nhật trạng thái nhiệm vụ"),
+          notes: (actualResultText || (status === "COMPLETED" ? "Lãnh đạo đơn vị nghiệm thu hoàn thành 100%" : "Cập nhật trạng thái nhiệm vụ")) + deadlineNote,
         },
       });
     }

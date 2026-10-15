@@ -43,7 +43,7 @@ function mapDbTaskToDrilldown(t: any): DrilldownTask {
     title: t.title || "Nhiệm vụ nghiệp vụ Hải quan",
     category: t.unit?.name || "1. Thủ tục hải quan (TTHQ)",
     officer: t.owner?.fullName || "Cán bộ tác nghiệp",
-    department: t.unit?.name || "Chi cục Hải quan Tà Lùng",
+    department: t.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng",
     shiftTime: t.createdAt
       ? new Date(t.createdAt).toLocaleDateString("vi-VN", {
           weekday: "long",
@@ -64,7 +64,7 @@ function mapDbTaskToDrilldown(t: any): DrilldownTask {
       ? [
           {
             number: t.code,
-            company: t.unit?.name || "Đơn vị Hải quan Tà Lùng",
+            company: t.unit?.name || "Đơn vị Hải quan cửa khẩu Quốc tế Tà Lùng",
             status: t.status === "COMPLETED" ? "ĐÃ THÔNG QUAN" : "ĐANG XỬ LÝ",
           },
         ]
@@ -722,7 +722,9 @@ function ReportsContent() {
                 </span>
                 <span className="font-label-sm text-status-success font-semibold">
                   {dbSummary
-                    ? `${dbSummary.completionRate}%`
+                    ? (dbSummary.completionRate !== null && dbSummary.completionRate !== undefined
+                        ? `${dbSummary.completionRate}%`
+                        : "Chưa có dữ liệu")
                     : dbTasks.length > 0
                     ? `${Math.round((dbTasks.filter((t) => t.status === "COMPLETED").length / dbTasks.length) * 100)}%`
                     : "0%"}
@@ -734,7 +736,7 @@ function ReportsContent() {
                   style={{
                     width: `${
                       dbSummary
-                        ? dbSummary.completionRate
+                        ? (dbSummary.completionRate ?? 0)
                         : dbTasks.length > 0
                         ? Math.round((dbTasks.filter((t) => t.status === "COMPLETED").length / dbTasks.length) * 100)
                         : 0

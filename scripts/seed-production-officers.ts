@@ -13,8 +13,8 @@ const prisma = new PrismaClient({
 
 // Danh sách chức vụ chuẩn
 const POSITIONS_DEF = [
-  { code: "CHIEF", title: "Chi cục trưởng" },
-  { code: "DEPUTY_CHIEF", title: "Phó Chi cục trưởng" },
+  { code: "CHIEF", title: "Trưởng hải quan cửa khẩu" },
+  { code: "DEPUTY_CHIEF", title: "Phó Trưởng hải quan cửa khẩu" },
   { code: "DEPT_LEADER", title: "Đội trưởng / Trưởng bộ phận" },
   { code: "DEPT_DEPUTY", title: "Phó Đội trưởng" },
   { code: "OFFICER", title: "Công chức nghiệp vụ Hải quan" },

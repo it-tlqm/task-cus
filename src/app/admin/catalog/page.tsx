@@ -90,7 +90,7 @@ export default function CatalogAdminPage() {
     description: "",
     sourceRawText: "",
     defaultPriority: "Trung bình",
-    reportingMode: "EVERY_PERIOD",
+    reportingMode: "UNCONFIGURED",
     reviewStatus: "VERIFIED" as "VERIFIED" | "NEEDS_REVIEW" | "RETIRED",
   });
 
@@ -172,7 +172,7 @@ export default function CatalogAdminPage() {
       description: "",
       sourceRawText: "",
       defaultPriority: "Trung bình",
-      reportingMode: "EVERY_PERIOD",
+      reportingMode: "UNCONFIGURED",
       reviewStatus: "VERIFIED",
     });
     setIsAddModalOpen(true);
@@ -189,7 +189,7 @@ export default function CatalogAdminPage() {
       description: tpl.description || "",
       sourceRawText: tpl.sourceRawText || "",
       defaultPriority: tpl.defaultPriority || "Trung bình",
-      reportingMode: tpl.reportingMode || "EVERY_PERIOD",
+      reportingMode: tpl.reportingMode || "UNCONFIGURED",
       reviewStatus: tpl.reviewStatus,
     });
   };
@@ -779,6 +779,7 @@ export default function CatalogAdminPage() {
                     onChange={(e) => setFormData({ ...formData, reportingMode: e.target.value })}
                     className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
+                    <option value="UNCONFIGURED">UNCONFIGURED — Chưa cấu hình</option>
                     <option value="EVERY_PERIOD">EVERY_PERIOD — Định kỳ hằng tuần</option>
                     <option value="DAILY">DAILY — Hằng ngày</option>
                     <option value="MONTHLY">MONTHLY — Hằng tháng</option>
@@ -920,6 +921,7 @@ export default function CatalogAdminPage() {
                     onChange={(e) => setFormData({ ...formData, reportingMode: e.target.value })}
                     className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
+                    <option value="UNCONFIGURED">UNCONFIGURED — Chưa cấu hình</option>
                     <option value="EVERY_PERIOD">EVERY_PERIOD — Định kỳ hằng tuần</option>
                     <option value="DAILY">DAILY — Hằng ngày</option>
                     <option value="MONTHLY">MONTHLY — Hằng tháng</option>

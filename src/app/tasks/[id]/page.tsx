@@ -401,7 +401,7 @@ export default function TaskDetailPage() {
             </h1>
 
             <p className="font-body-md text-on-surface-variant">
-              {task.description || "Nhiệm vụ trực tiếp từ Ban Điều hành Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng."}
+              {task.description || "Nhiệm vụ trực tiếp từ Lãnh đạo Hải quan cửa khẩu Quốc tế Tà Lùng."}
             </p>
           </div>
 
@@ -555,7 +555,7 @@ export default function TaskDetailPage() {
               <div className="flex flex-col gap-3 text-xs">
                 <div>
                   <span className="text-outline block mb-0.5">Đơn vị chủ trì:</span>
-                  <span className="font-bold text-primary text-sm">{task.unit?.name || "Chi cục Hải quan Tà Lùng"}</span>
+                  <span className="font-bold text-primary text-sm">{task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</span>
                 </div>
 
                 <div>

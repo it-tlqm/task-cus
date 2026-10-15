@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
     });
 
     const notOccurredCount = routineEntries.filter((r) => r.occurrenceStatus === "NOT_OCCURRED").length;
-    const completionRate = totalDistinctTasks > 0 ? Math.round((completedTasks / totalDistinctTasks) * 100) : 100;
+    const completionRate = totalDistinctTasks > 0 ? Math.round((completedTasks / totalDistinctTasks) * 100) : null;
 
     // Groups breakdown
     const activityGroups = await prisma.activityGroup.findMany({

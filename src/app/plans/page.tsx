@@ -394,10 +394,10 @@ export default function PlansPage() {
                 </span>
               </div>
               <h1 className="font-headline-xl text-headline-xl text-primary mt-1 tracking-tight">
-                {activePlan ? activePlan.title : "Kế hoạch công tác tuần — Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng"}
+                {activePlan ? activePlan.title : "Kế hoạch công tác tuần — Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng"}
               </h1>
               <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
-                <span>Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng</span>
+                <span>Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng</span>
                 <span className="text-outline-variant">•</span>
                 <span className="font-body-semibold text-secondary">
                   {activePlan?.unit?.name || "Bộ phận Nghiệp vụ A"} — Ca trực điều hành trọng điểm

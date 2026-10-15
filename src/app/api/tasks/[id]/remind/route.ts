@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { jsonError } from "@/server/guard";
+import { verifyTaskAccess, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -33,6 +33,12 @@ export async function POST(
 
     if (!task) {
       return jsonError("Nhiệm vụ không tồn tại", 404);
+    }
+
+    // Chống spam xuyên đơn vị: chỉ người có quyền đọc task mới được nhắc duyệt
+    const taskAccess = await verifyTaskAccess(user, taskId, "READ");
+    if (!taskAccess.allowed) {
+      return jsonError(taskAccess.reason || "Truy cập bị từ chối", 403);
     }
 
     if (task.status !== "WAITING_REVIEW") {
@@ -93,7 +99,8 @@ export async function POST(
       }
     }
 
-    // 2. Tạo thông báo cho từng lãnh đạo
+    // 2. Tạo thông báo cho từng lãnh đạo (idempotency theo ngày: mỗi người chỉ nhắc 1 lần/ngày/task)
+    const todayStr = new Date().toISOString().slice(0, 10);
     const notifyPromises = targetPersonIds.map((leaderPersonId) =>
       createNotification({
         recipientId: leaderPersonId,
@@ -103,6 +110,7 @@ export async function POST(
         category: "approval",
         actionUrl: "/approvals",
         actionLabel: "Xem phê duyệt",
+        idempotencyKey: `EVENT_TASK_REMIND_${taskId}_${user.personId}_${todayStr}_${leaderPersonId}`,
       })
     );
 

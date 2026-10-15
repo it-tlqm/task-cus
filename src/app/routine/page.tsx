@@ -72,7 +72,7 @@ export default function RoutinePage() {
     role?: string;
   }>({
     fullName: "Cán bộ trực ban",
-    unitName: "Chi cục Hải quan Tà Lùng",
+    unitName: "Hải quan cửa khẩu Quốc tế Tà Lùng",
     username: "",
   });
 
@@ -179,7 +179,7 @@ export default function RoutinePage() {
         if (data?.user) {
           setCurrentUser({
             fullName: data.user.fullName || "Cán bộ trực ban",
-            unitName: data.user.unit?.name || "Chi cục Hải quan Tà Lùng",
+            unitName: data.user.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng",
             username: data.user.username || "",
             role: data.user.role,
           });

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { buildScopedWhereClause, verifyTaskAccess, getAuthorizedUnitIds, jsonError } from "@/server/guard";
+import { buildScopedWhereClause, verifyTaskAccess, jsonError } from "@/server/guard";
+import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -140,7 +141,7 @@ export async function POST(req: NextRequest) {
       return jsonError("Bạn chỉ được tạo nhiệm vụ trong bộ phận của mình", 403);
     }
 
-    const taskCode = `NV-${Date.now().toString().slice(-6)}`;
+    const taskCode = `NV-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100).toString().padStart(2, "0")}`;
     const parsedDeadline = new Date(effectiveDeadline);
 
     const newTask = await prisma.task.create({
@@ -271,14 +272,11 @@ export async function PATCH(req: NextRequest) {
       });
     } else if (action === "CONFIRM_COMPLETION") {
       // Người giao việc hoặc Lãnh đạo xác nhận hoàn thành: Chuyển sang COMPLETED
-      const authorizedUnits = await getAuthorizedUnitIds(user);
-      const canConfirm =
-        user.role === "UNIT_LEADER" ||
-        (user.role === "DEPARTMENT_LEADER" && (authorizedUnits === "ALL" || authorizedUnits.includes(currentTask.unitId))) ||
-        currentTask.ownerId === user.personId;
+      // Guard tập trung (Slice 1): chủ trì không tự nghiệm thu việc của mình
+      const canConfirm = await isTaskLeader(user, currentTask.unitId);
 
       if (!canConfirm) {
-        return jsonError("Bạn không có thẩm quyền nghiệm thu xác nhận nhiệm vụ này", 403);
+        return jsonError("Chỉ Lãnh đạo đơn vị hoặc Trưởng bộ phận phụ trách mới có thẩm quyền nghiệm thu xác nhận hoàn thành nhiệm vụ này", 403);
       }
 
       updateData.status = "COMPLETED";
@@ -293,7 +291,17 @@ export async function PATCH(req: NextRequest) {
         },
       });
     } else if (action === "REJECT_COMPLETION") {
-      // Trả lại nhiệm vụ yêu cầu làm tiếp
+      // Trả lại nhiệm vụ yêu cầu làm tiếp — qua guard tập trung (Slice 1)
+      try {
+        assertTaskStatusTransition({
+          currentStatus: currentTask.status,
+          targetStatus: "IN_PROGRESS",
+          deadlineChanged: false,
+          isLeader: await isTaskLeader(user, currentTask.unitId),
+        });
+      } catch (err: any) {
+        return jsonError(err.message, err.statusCode || 403);
+      }
       updateData.status = "IN_PROGRESS";
       if (issueNotes) {
         updateData.hasIssue = true;
@@ -310,7 +318,18 @@ export async function PATCH(req: NextRequest) {
         },
       });
     } else {
-      // Cập nhật thông thường
+      // Cập nhật thông thường — qua guard tập trung (Slice 1): chặn tự set COMPLETED
+      // và chặn trả WAITING_REVIEW về IN_PROGRESS khi không phải lãnh đạo
+      try {
+        assertTaskStatusTransition({
+          currentStatus: currentTask.status,
+          targetStatus: status ?? null,
+          deadlineChanged: false,
+          isLeader: await isTaskLeader(user, currentTask.unitId),
+        });
+      } catch (err: any) {
+        return jsonError(err.message, err.statusCode || 403);
+      }
       if (status) {
         updateData.status = status === "DONE" ? "COMPLETED" : status;
       }

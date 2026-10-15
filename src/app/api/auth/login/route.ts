@@ -3,6 +3,18 @@ import { getAccountWithPermissions, verifyPassword, signToken } from "@/server/a
 import { jsonError } from "@/server/guard";
 import { prisma } from "@/server/db";
 
+const loginAttempts = new Map<string, { count: number; firstAt: number }>();
+const LOGIN_MAX_FAILS = 10;
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+
+function loginRateKey(req: NextRequest, username: string): string {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "local";
+  return `${ip}::${String(username).toLowerCase()}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -11,6 +23,23 @@ export async function POST(req: NextRequest) {
     if (!username || !password) {
       return jsonError("Vui lòng cung cấp đầy đủ tên đăng nhập và mật khẩu", 400);
     }
+
+    // Chống dò mật khẩu: khóa tạm sau nhiều lần sai (bộ nhớ tiến trình — chỉ hiệu lực single-instance;
+    // khi scale nhiều node cần chuyển sang Redis/DB)
+    const rateKey = loginRateKey(req, username);
+    const now = Date.now();
+    const tracked = loginAttempts.get(rateKey);
+    if (tracked && now - tracked.firstAt < LOGIN_WINDOW_MS && tracked.count >= LOGIN_MAX_FAILS) {
+      return jsonError("Tài khoản tạm khóa đăng nhập 10 phút do nhập sai quá nhiều lần", 429);
+    }
+    const recordLoginFail = () => {
+      const cur = loginAttempts.get(rateKey);
+      if (!cur || now - cur.firstAt >= LOGIN_WINDOW_MS) {
+        loginAttempts.set(rateKey, { count: 1, firstAt: now });
+      } else {
+        loginAttempts.set(rateKey, { count: cur.count + 1, firstAt: cur.firstAt });
+      }
+    };
 
     const account = await getAccountWithPermissions(username);
     if (!account) {
@@ -52,6 +81,7 @@ export async function POST(req: NextRequest) {
 
     const isValid = await verifyPassword(password, account.passwordHash);
     if (!isValid) {
+      recordLoginFail();
       await prisma.auditEvent.create({
         data: {
           actorId: account.id,
@@ -78,6 +108,7 @@ export async function POST(req: NextRequest) {
     };
 
     const token = signToken(sessionUser);
+    loginAttempts.delete(rateKey);
 
     // Record login audit event
     await prisma.auditEvent.create({

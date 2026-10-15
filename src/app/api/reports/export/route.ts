@@ -11,6 +11,7 @@ import {
 } from "@/lib/excel";
 import { getReportSnapshotById } from "@/server/snapshots";
 import { formatPeriodRangeFromDates } from "@/lib/period-helper";
+import { UNIT_OFFICIAL_NAME } from "@/lib/unit-info";
 
 export async function GET(req: NextRequest) {
   try {
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
       targetUnit = await prisma.orgUnit.findUnique({ where: { id: authorizedUnits[0] } });
     }
 
-    const unitName = "Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng";
+    const unitName = UNIT_OFFICIAL_NAME;
     const departmentName = targetUnit ? targetUnit.name : "Toàn đơn vị";
 
     // 4. Nếu yêu cầu xuất từ Bản chụp số liệu (Snapshot), kết xuất từ dữ liệu bất biến đã chốt (Tiêu chí P1 FIX 05)

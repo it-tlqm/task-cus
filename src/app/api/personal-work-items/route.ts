@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
         where: { id: targetPersonId },
         include: { assignments: true },
       });
-      const isBelong = targetPerson?.assignments.some((a) => authorizedUnits.includes(a.unitId));
+      const isBelong = targetPerson?.assignments.some((a) => authorizedUnits === "ALL" || authorizedUnits.includes(a.unitId));
       if (!isBelong) {
         return jsonError("Bạn chỉ được tạo đầu việc cho cán bộ thuộc bộ phận của mình", 403);
       }
@@ -307,7 +307,7 @@ export async function PATCH(req: NextRequest) {
 
     if (user.role === "DEPARTMENT_LEADER") {
       const authorizedUnits = await getAuthorizedUnitIds(user);
-      isDeptLeader = currentItem.person.assignments.some((a) => authorizedUnits.includes(a.unitId));
+      isDeptLeader = currentItem.person.assignments.some((a) => authorizedUnits === "ALL" || authorizedUnits.includes(a.unitId));
     }
 
     if (!isOwner && !isDeptLeader && !isLeader) {
@@ -382,7 +382,7 @@ export async function DELETE(req: NextRequest) {
     let isDeptLeader = false;
     if (user.role === "DEPARTMENT_LEADER") {
       const authorizedUnits = await getAuthorizedUnitIds(user);
-      isDeptLeader = currentItem.person.assignments.some((a) => authorizedUnits.includes(a.unitId));
+      isDeptLeader = currentItem.person.assignments.some((a) => authorizedUnits === "ALL" || authorizedUnits.includes(a.unitId));
     }
 
     if (!isOwner && !isDeptLeader && !isLeader) {

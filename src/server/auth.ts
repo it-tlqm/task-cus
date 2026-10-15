@@ -3,7 +3,18 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./db";
 import { NextRequest } from "next/server";
 
-const JWT_SECRET = process.env.JWT_SECRET || "talung_cus_work_demo_jwt_secret_2026";
+const JWT_FALLBACK_SECRET = "talung_cus_work_demo_jwt_secret_2026";
+
+function requireJwtSecret(): string {
+  const configured = process.env.JWT_SECRET;
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error("SECURITY: JWT_SECRET chưa được cấu hình trong môi trường production");
+  }
+  if (!configured) {
+    console.warn("[auth] JWT_SECRET chưa cấu hình — dùng secret demo, CHỈ cho môi trường phát triển");
+  }
+  return configured || JWT_FALLBACK_SECRET;
+}
 
 export interface SessionUser {
   id: string; // accountId
@@ -25,19 +36,16 @@ export async function hashPassword(plain: string): Promise<string> {
 }
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
-  if (await bcrypt.compare(plain, hash)) return true;
-  if (plain === "demo123" && (await bcrypt.compare("Talung@2026", hash))) return true;
-  if (plain === "Talung@2026" && (await bcrypt.compare("demo123", hash))) return true;
-  return false;
+  return await bcrypt.compare(plain, hash);
 }
 
 export function signToken(user: SessionUser): string {
-  return jwt.sign(user, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(user, requireJwtSecret(), { expiresIn: "7d" });
 }
 
 export function verifyToken(token: string): SessionUser | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as SessionUser;
+    return jwt.verify(token, requireJwtSecret()) as SessionUser;
   } catch {
     return null;
   }

@@ -176,8 +176,8 @@ export default function ApprovalsPage() {
               urgent: false,
               timeAgo: "Chờ ký duyệt",
               submitter: p.creator?.fullName || p.unit?.name || "Trưởng bộ phận",
-              unit: p.unit?.name || "Chi cục Hải quan Tà Lùng",
-              reason: "Kế hoạch công tác tuần đã được xây dựng hoàn tất, trình Chi cục trưởng xem xét ký duyệt.",
+              unit: p.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng",
+              reason: "Kế hoạch công tác tuần đã được xây dựng hoàn tất, trình Trưởng hải quan cửa khẩu xem xét ký duyệt.",
             });
           }
         }

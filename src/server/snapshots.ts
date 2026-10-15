@@ -3,6 +3,7 @@ import { prisma } from "./db";
 import { SessionUser } from "./auth";
 import { checkPermission, getAuthorizedUnitIds } from "./guard";
 import { recordAuditEvent } from "./audit";
+import { UNIT_ALL_LABEL } from "@/lib/unit-info";
 
 /**
  * Chuẩn hóa đối tượng thành chuỗi JSON kinh điển (Canonical JSON)
@@ -225,7 +226,7 @@ export async function createReportSnapshot(user: SessionUser, options: CreateSna
     },
     scope: {
       unitId: targetScopeUnit ? targetScopeUnit.id : null,
-      unitName: targetScopeUnit ? targetScopeUnit.name : "Toàn Chi cục Hải quan Cửa khẩu Quốc tế Tà Lùng",
+      unitName: targetScopeUnit ? targetScopeUnit.name : UNIT_ALL_LABEL,
     },
     metadata: {
       generatedAt: now.toISOString(),
