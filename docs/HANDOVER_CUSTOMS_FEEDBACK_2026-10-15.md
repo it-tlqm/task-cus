@@ -46,14 +46,16 @@
 `src/lib/unit-info.ts` (mới), `Header.tsx`, `DemoBanner.tsx`, `login/page.tsx`, `layout.tsx`, `dashboard/reports/plans/tasks*/my-work/routine/approvals/admin/*` (nhãn), `server/system-config.ts` + `server/snapshots.ts` + `api/reports/export/route.ts` (tên đơn vị), `api/people/route.ts` + `admin/audit` (fallback chức danh), `prisma/seed.ts` (tên đơn vị/chức danh seed), `scripts/seed-production-officers.ts` (titles), `scripts/rename-units-official.ts` (mới), `scripts/capture-login-screens.ts` (mới), `public/images/logo-haiquan.png` (mới).
 
 ## 7. Build & kiểm thử
-- `tsc --noEmit`: PASS. `next build`: PASS (xem §9).
+- `tsc --noEmit`: PASS (exit 0). `next build`: PASS (exit 0, 45/45 routes).
 - Trình duyệt thật (Brave headless + production build local): login desktop + mobile chụp tại `docs/screenshots/login-desktop.png`, `login-mobile.png` — đã xác minh: đúng tên chính thức, có logo, không còn demo/UAT.
 - Chưa kiểm được ở local (không có DB sống): đăng nhập tài khoản thật, dropdown 7 đơn vị lọc dữ liệu thật, phân quyền — phải kiểm trên Vercel sau deploy + chạy migration rename.
 
 ## 8. Git checkpoint
-- Commit: (ghi sau khi commit) trên nhánh `main`, remote `origin` = `git@github.com-company:it-tlqm/task-cus.git`.
+- Commit `c5521be` trên nhánh `main` (60 files, +3125/-271), remote `origin` = `git@github.com-company:it-tlqm/task-cus.git` (khớp tên Vercel `task-cus`).
+- Push remote: **ĐÃ PUSH thành công** (`f3daeca..c5521be main -> main`). Nếu Vercel Project đã nối GitHub auto-deploy, bản mới sẽ tự build.
 
-## 9. Trạng thái Vercel — CHƯA TRIỂN KHAI (bị chặn, cần bạn)
-1. Không có `.vercel/` link và không có quyền/token Vercel trong môi trường này → **không xác minh được Vercel Project nào đang phục vụ `task-cus.vercel.app`**, không tự deploy được.
-2. Để hoàn tất §7 của yêu cầu, cần một trong: (a) bạn deploy từ máy đã link Vercel (`vercel --prod` sau khi pull commit này), (b) cấp quyền/token để tôi deploy, hoặc (c) Vercel tự deploy qua GitHubhook khi push `main` (kiểm tra dashboard).
-3. Sau deploy: chạy migration rename trên DB production (`--apply`), kiểm tra URL thật theo checklist §6, rồi mới báo hoàn thành. **Tuyệt đối không reset dữ liệu production.**
+## 9. Trạng thái Vercel — ĐÃ PUSH, CHƯA XÁC MINH DEPLOY (cần bạn kiểm tra dashboard)
+1. Không có `.vercel/` link và không có quyền/token Vercel trong môi trường này → **không xác minh được Vercel Project nào đang phục vụ `task-cus.vercel.app`**.
+2. Code đã lên `origin/main`. Nếu Vercel đã nối GitHub auto-deploy → bản mới sẽ tự build; nếu không, bạn chạy `vercel --prod` từ máy đã link hoặc bấm Deploy trên dashboard.
+3. Sau deploy: chạy migration rename trên DB production (`npx tsx scripts/rename-units-official.ts` dry-run trước, rồi `--apply`), kiểm tra URL thật theo checklist §6 (login, dropdown 7 đơn vị, phân quyền), rồi mới báo hoàn thành. **Tuyệt đối không reset dữ liệu production.**
+4. Lưu ý: tài khoản UAT thật cấp qua kênh riêng, không commit (khoản mục §4 trong yêu cầu gốc).
