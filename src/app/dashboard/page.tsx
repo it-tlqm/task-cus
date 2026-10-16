@@ -121,6 +121,10 @@ export default function DashboardPage() {
     const p = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T17:00`;
   });
+  // AI tóm tắt giao ban (tự ẩn khi máy chủ chưa cấu hình key)
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiSummarizing, setAiSummarizing] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   // YC-01: chủ trì + phối hợp trong modal giao việc nhanh
   const [assignOwner, setAssignOwner] = useState("");
@@ -198,6 +202,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData();
+    fetch("/api/ai")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.enabled) setAiEnabled(true);
+      })
+      .catch(() => {});
     // YC-01: nạp danh sách nhân sự thật cho chọn chủ trì/phối hợp
     fetch("/api/people?pageSize=100")
       .then((res) => (res.ok ? res.json() : null))
@@ -208,6 +218,29 @@ export default function DashboardPage() {
       })
       .catch(() => {});
   }, [unitFilter, period]);
+
+  // AI tóm tắt tình hình từ số liệu thật (người đọc sửa tay trước khi dùng)
+  const handleAiSummarize = async () => {
+    if (aiSummarizing) return;
+    setAiSummarizing(true);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op: "summarize" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.data?.text) {
+        setAiSummary(json.data.text);
+      } else {
+        toast.error(json.error || "AI bận, thử lại sau");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setAiSummarizing(false);
+    }
+  };
 
   const handleQuickAssign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,6 +326,17 @@ export default function DashboardPage() {
 
             {/* Quick Actions (chỉ hiện nút được phép dùng) */}
             <div className="flex flex-wrap items-center gap-space-sm">
+              {aiEnabled && (
+                <button
+                  onClick={handleAiSummarize}
+                  disabled={aiSummarizing}
+                  title="AI tóm tắt tình hình từ số liệu thật để đọc giao ban"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-subtle hover:bg-surface-container text-primary font-body-semibold text-body-semibold transition-fast shadow-sm active-press disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                  <span>{aiSummarizing ? "Đang tóm tắt..." : "Tóm tắt AI"}</span>
+                </button>
+              )}
               {canExport && (
                 <Link
                   href="/reports/excel"
@@ -323,6 +367,22 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
+
+          {/* Kết quả tóm tắt AI (từ số liệu thật — đọc và sửa tay trước khi dùng) */}
+          {aiSummary && (
+            <div className="bg-secondary/10 border border-secondary/30 p-space-md rounded-xl shadow-sm flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="font-label-md text-label-md font-bold text-secondary flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                  Tóm tắt AI (tham khảo)
+                </span>
+                <button onClick={() => setAiSummary("")} className="text-outline hover:text-primary text-xs font-semibold">
+                  Ẩn
+                </button>
+              </div>
+              <p className="font-body-md text-body-md text-on-surface leading-relaxed whitespace-pre-line">{aiSummary}</p>
+            </div>
+          )}
 
           {/* Filter Strip */}
           <div className="flex flex-wrap items-center justify-between gap-space-md pt-space-sm bg-surface-container-low/60 p-space-md rounded-lg">

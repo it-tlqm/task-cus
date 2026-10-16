@@ -92,6 +92,10 @@ export default function TasksPage() {
   const [isCreating, setIsCreating] = useState(false);
   // Đợt A: ảnh/văn bản đính kèm ngay khi giao (tải sau khi Task được tạo)
   const [newAttachFiles, setNewAttachFiles] = useState<File[]>([]);
+  // AI soạn nháp (tự ẩn khi máy chủ chưa cấu hình key)
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiIdea, setAiIdea] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const uploadCreateAttachments = async (taskId: string, files: File[]): Promise<number> => {
     let ok = 0;
@@ -158,7 +162,39 @@ export default function TasksPage() {
         }
       })
       .catch(() => {});
+
+    fetch("/api/ai")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.enabled) setAiEnabled(true);
+      })
+      .catch(() => {});
   }, []);
+
+  // AI soạn nháp nội dung chỉ đạo từ vài từ khóa (người duyệt vẫn sửa tay)
+  const handleAiDraft = async () => {
+    if (aiLoading || !aiIdea.trim()) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op: "draft", idea: aiIdea.trim() }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.data) {
+        if (json.data.title) setNewTitle(json.data.title);
+        if (json.data.content) setNewSource(json.data.content);
+        toast.success("AI đã soạn nháp — kiểm tra và sửa lại trước khi chuyển!");
+      } else {
+        toast.error(json.error || "AI bận, thử lại sau");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -695,6 +731,26 @@ export default function TasksPage() {
 
             <form onSubmit={handleCreateTask}>
               <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
+                {aiEnabled && (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={aiIdea}
+                      onChange={(e) => setAiIdea(e.target.value)}
+                      placeholder="Gõ vài từ khóa, AI soạn nháp giúp..."
+                      className="flex-1 h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-dashed border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAiDraft}
+                      disabled={aiLoading}
+                      title="AI soạn nháp nội dung chỉ đạo"
+                      className="h-10 px-3 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold active-press disabled:opacity-50 shrink-0"
+                    >
+                      {aiLoading ? "..." : "✨ Soạn"}
+                    </button>
+                  </div>
+                )}
                 <div className="flex flex-col gap-1">
                   <label className="font-label-md text-label-md text-primary font-semibold">
                     Tên đầu việc / Nội dung chỉ đạo *

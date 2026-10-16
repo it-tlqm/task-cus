@@ -46,6 +46,7 @@ model OrgUnit {
   plans        Plan[]
   routines     RoutineEntry[]
   reportSnapshots ReportSnapshot[]
+  dutyRosters  DutyRoster[]
 
   @@map("org_units")
 }
@@ -90,6 +91,7 @@ model Person {
   leaveRequests    LeaveRequest[]  @relation("LeaveRequester")
   leaveHandovers   LeaveRequest[]  @relation("LeaveHandover")
   pushSubscriptions PushSubscription[]
+  dutyRosters      DutyRoster[]
 
   @@map("people")
 }
@@ -657,6 +659,29 @@ model LeaveRequest {
 
   @@index([personId, status])
   @@map("leave_requests")
+}
+
+// ----------------------------------------------------
+// 16. LỊCH TRỰC CA (phân công trực theo ngày/ca/điểm)
+// ----------------------------------------------------
+
+model DutyRoster {
+  id          String   @id @default(uuid())
+  date        DateTime // Ngày trực (giờ 00:00)
+  shift       String   @default("CA_NGAY") // SANG, CHIEU, CA_NGAY
+  post        String? // Điểm trực: Barie, Kho bãi, Quầy thủ tục...
+  personId    String   @map("person_id")
+  unitId      String?  @map("unit_id")
+  notes       String?
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  person Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  unit   OrgUnit? @relation(fields: [unitId], references: [id])
+
+  @@index([date, unitId])
+  @@map("duty_rosters")
 }
 
 // ----------------------------------------------------
