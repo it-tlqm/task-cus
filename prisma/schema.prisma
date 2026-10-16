@@ -86,6 +86,7 @@ model Person {
   notifications    Notification[]
   snapshotsLocked  ReportSnapshot[]   @relation("SnapshotLocker")
   attachments      TaskAttachment[]   @relation("AttachmentUploader")
+  monthlyResults   MonthlyWorkResult[]
 
   @@map("people")
 }
@@ -298,8 +299,37 @@ model Plan {
   period    ReportingPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
   unit      OrgUnit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
   items     PlanItem[]
+  versions  PlanVersion[]
 
   @@map("plans")
+}
+
+// Lịch sử phiên bản kế hoạch (E1): niêm snapshot trước mỗi lần mở khóa điều chỉnh,
+// thay cho việc nhét JSON vào AuditEvent — query lại được, đối soát được.
+model PlanVersion {
+  id           String   @id @default(uuid())
+  planId       String   @map("plan_id")
+  version      Int
+  statusBefore String   @map("status_before")
+  statusAfter  String   @map("status_after")
+  reason       String?
+  snapshotData Json     @map("snapshot_data")
+  createdById  String?  @map("created_by_id")
+  createdBy    String?  @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, version])
+  @@map("plan_versions")
+}
+
+// Bộ đếm serial mã nhiệm vụ theo năm (E1): NV-YYYY-NNNN, tăng nguyên tử trong transaction.
+model TaskCounter {
+  year       Int @id
+  lastNumber Int @default(0) @map("last_number")
+
+  @@map("task_counters")
 }
 
 model PlanItem {
@@ -614,5 +644,100 @@ model SystemConfig {
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("system_configs")
+}
+
+// ----------------------------------------------------
+// 12. DANH MỤC SẢN PHẨM/CÔNG VIỆC THEO QĐ 1277/QĐ-BTC (YC-11)
+// Khóa sản phẩm do hệ thống sinh (STT Excel trùng mỗi phần).
+// Lịch sử hệ số được niêm trong MonthlyWorkResult tại thời điểm ghi nhận.
+// ----------------------------------------------------
+
+model ProductCatalogVersion {
+  id          String   @id @default(uuid())
+  code        String   @unique // DM-SP-2026-V1
+  title       String
+  sourceFile  String   @map("source_file")
+  sourceSheet String   @map("source_sheet")
+  qdRef       String?  @map("qd_ref") // 1277/QĐ-BTC ngày 27/5/2026
+  status      String   @default("ACTIVE") // ACTIVE, SUPERSEDED
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  groups ProductGroup[]
+  items  ProductItem[]
+
+  @@map("product_catalog_versions")
+}
+
+model ProductGroup {
+  id        String   @id @default(uuid())
+  versionId String   @map("version_id")
+  code      String // Mã phần trong Excel (A, B, I...) — chỉ dùng hiển thị/gom nhóm
+  title     String
+  sortOrder Int      @default(0) @map("sort_order")
+
+  version ProductCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  items   ProductItem[]
+
+  @@map("product_groups")
+}
+
+model ProductItem {
+  id            String   @id @default(uuid())
+  versionId     String   @map("version_id")
+  groupId       String?  @map("group_id")
+  code          String   @unique // SP-2026-V1-0001 (hệ thống sinh, ổn định)
+  sourceRow     Int      @map("source_row") // Dòng Excel gốc để đối soát
+  sourceStt     String?  @map("source_stt") // STT gốc (trùng giữa các phần)
+  taskName      String   @map("task_name") // Cột B: Nhiệm vụ
+  detailWork    String?  @map("detail_work") // Cột C
+  outputProduct String?  @map("output_product") // Cột D
+  groupName     String?  @map("group_name") // Cột E: Phân nhóm
+  maxScore      Float?   @map("max_score") // Cột F
+  pointValue    Float?   @map("point_value") // Cột G
+  convertFactor Float?   @map("convert_factor") // Cột H: hệ số quy đổi
+  notes         String?
+  status        String   @default("ACTIVE")
+
+  version ProductCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  group   ProductGroup?         @relation(fields: [groupId], references: [id])
+  results MonthlyWorkResult[]
+
+  @@index([versionId, groupId])
+  @@map("product_items")
+}
+
+// ----------------------------------------------------
+// 13. KẾT QUẢ SẢN PHẨM THỰC TẾ THEO THÁNG (YC-12)
+// productItemId null + needsReview = chờ đối chiếu danh mục (không tự gán sai).
+// ----------------------------------------------------
+
+model MonthlyWorkResult {
+  id                String    @id @default(uuid())
+  personId          String    @map("person_id")
+  periodYear        Int       @map("period_year")
+  periodMonth       Int       @map("period_month")
+  productItemId     String?   @map("product_item_id")
+  needsReview       Boolean   @default(false) @map("needs_review")
+  taskId            String?   @map("task_id") // Liên kết nhiệm vụ khi có quan hệ thực tế
+  title             String // Tên nhiệm vụ/công việc
+  outputText        String?   @map("output_text") // Sản phẩm thực tế
+  assignedQty       Float?    @map("assigned_qty") // Số lượng giao
+  completedQty      Float?    @map("completed_qty") // Số lượng hoàn thành
+  dueDate           DateTime? @map("due_date")
+  completedDate     DateTime? @map("completed_date")
+  evidenceRef       String?   @map("evidence_ref") // Minh chứng/số hiệu văn bản
+  factorSnapshot    Float?    @map("factor_snapshot") // Hệ số tại thời điểm ghi nhận
+  lateCount         Int       @default(0) @map("late_count")
+  reworkCount       Int       @default(0) @map("rework_count")
+  notes             String?
+  createdById       String?   @map("created_by_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  person      Person       @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productItem ProductItem? @relation(fields: [productItemId], references: [id])
+
+  @@index([personId, periodYear, periodMonth])
+  @@map("monthly_work_results")
 }
 
