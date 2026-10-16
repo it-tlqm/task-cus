@@ -42,6 +42,8 @@ interface Position {
   id: string;
   code: string;
   title: string;
+  description?: string | null;
+  status?: string;
 }
 
 interface Role {
@@ -97,6 +99,12 @@ export default function OrganizationAdminPage() {
   const [editingUnit, setEditingUnit] = useState<OrgUnit | null>(null);
   const [editUnitName, setEditUnitName] = useState("");
   const [deletingUnit, setDeletingUnit] = useState<OrgUnit | null>(null);
+  const [showPositionModal, setShowPositionModal] = useState(false);
+  const [posForm, setPosForm] = useState({ code: "", title: "" });
+  const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
+  const [editPositionTitle, setEditPositionTitle] = useState("");
+
+  const activePositions = positions.filter((p) => (p.status || "ACTIVE") === "ACTIVE");
   const [showAddPersonModal, setShowAddPersonModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [transferringPerson, setTransferringPerson] = useState<Person | null>(null);
@@ -317,13 +325,88 @@ export default function OrganizationAdminPage() {
     }
   };
 
+  // 1d. Quản lý chức vụ: thêm / đổi tên / ngừng dùng
+  const handleSavePosition = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!posForm.code.trim() || !posForm.title.trim()) return;
+    setModalError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/positions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: posForm.code, title: posForm.title }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setModalError(data.error || "Không thể thêm chức vụ");
+        return;
+      }
+      setPosForm({ code: "", title: "" });
+      showNotification(`Đã thêm chức vụ "${posForm.title.trim()}"`);
+      fetchData();
+    } catch (err: any) {
+      setModalError("Lỗi kết nối máy chủ: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRenamePosition = async (id: string) => {
+    if (!editPositionTitle.trim()) return;
+    setModalError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/positions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editPositionTitle.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setModalError(data.error || "Không thể đổi tên chức vụ");
+        return;
+      }
+      setEditingPositionId(null);
+      showNotification("Đã đổi tên chức vụ");
+      fetchData();
+    } catch (err: any) {
+      setModalError("Lỗi kết nối máy chủ: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTogglePosition = async (id: string, toInactive: boolean) => {
+    setModalError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/positions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: toInactive ? "INACTIVE" : "ACTIVE" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setModalError(data.error || "Không thể đổi trạng thái chức vụ");
+        return;
+      }
+      showNotification(toInactive ? "Đã ngừng dùng chức vụ" : "Đã kích hoạt lại chức vụ");
+      fetchData();
+    } catch (err: any) {
+      setModalError("Lỗi kết nối máy chủ: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // 2. Thêm cán bộ công chức mới
   const handleOpenAddPerson = () => {
     setNewPersonData({
       code: "",
       fullName: "",
       unitId: selectedUnit?.id || flatUnits[0]?.id || "",
-      positionId: positions[0]?.id || "",
+      positionId: activePositions[0]?.id || "",
       email: "",
       phone: "",
       notes: "",
@@ -409,7 +492,7 @@ export default function OrganizationAdminPage() {
     const otherUnit = flatUnits.find((u) => u.id !== p.unitId);
     setTransferData({
       newUnitId: otherUnit?.id || "",
-      newPositionId: p.positionId || positions[0]?.id || "",
+      newPositionId: p.positionId || activePositions[0]?.id || "",
       effectiveDate: new Date().toISOString().slice(0, 10),
       decisionNumber: "",
       notes: "",
@@ -729,6 +812,18 @@ export default function OrganizationAdminPage() {
           >
             <Building2 className="w-3.5 h-3.5" />
             Thêm bộ phận
+          </button>
+          <button
+            onClick={() => {
+              setPosForm({ code: "", title: "" });
+              setEditingPositionId(null);
+              setModalError(null);
+              setShowPositionModal(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <BadgeAlert className="w-3.5 h-3.5" />
+            Chức vụ
           </button>
           <button
             onClick={handleOpenAddPerson}
@@ -1084,7 +1179,7 @@ export default function OrganizationAdminPage() {
                   className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">-- Chọn chức vụ công tác --</option>
-                  {positions.map((pos) => (
+                  {activePositions.map((pos) => (
                     <option key={pos.id} value={pos.id}>
                       {pos.title}
                     </option>
@@ -1345,7 +1440,7 @@ export default function OrganizationAdminPage() {
                   className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">-- Giữ nguyên chức vụ hiện tại --</option>
-                  {positions.map((pos) => (
+                  {activePositions.map((pos) => (
                     <option key={pos.id} value={pos.id}>
                       {pos.title}
                     </option>
@@ -1736,6 +1831,141 @@ export default function OrganizationAdminPage() {
                 {isSubmitting ? "Đang xóa..." : "Xóa đơn vị"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL 5d: QUẢN LÝ CHỨC VỤ */}
+      {/* ---------------------------------------------------- */}
+      {showPositionModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900">Quản lý chức vụ</h3>
+              <button
+                type="button"
+                onClick={() => setShowPositionModal(false)}
+                className="p-1 rounded hover:bg-slate-100 text-slate-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSavePosition} className="flex flex-col sm:flex-row gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <input
+                type="text"
+                required
+                placeholder="Mã (VD: PHO_DOI_TRUONG)"
+                value={posForm.code}
+                onChange={(e) => setPosForm({ ...posForm, code: e.target.value.toUpperCase() })}
+                className="flex-1 min-w-0 text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono uppercase"
+              />
+              <input
+                type="text"
+                required
+                placeholder="Tên chức vụ (VD: Phó Đội trưởng)"
+                value={posForm.title}
+                onChange={(e) => setPosForm({ ...posForm, title: e.target.value })}
+                className="flex-[2] min-w-0 text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-3 py-2 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 disabled:opacity-50 shrink-0"
+              >
+                Thêm
+              </button>
+            </form>
+
+            <div className="space-y-1.5">
+              {positions.length === 0 && (
+                <div className="text-center py-4 text-xs text-slate-400">Chưa có chức vụ nào</div>
+              )}
+              {positions.map((pos) => {
+                const inactive = (pos.status || "ACTIVE") === "INACTIVE";
+                return (
+                  <div
+                    key={pos.id}
+                    className={`flex items-center gap-2 p-2 rounded-lg border ${inactive ? "bg-slate-50 border-slate-200 opacity-70" : "bg-white border-slate-200"}`}
+                  >
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded shrink-0">
+                      {pos.code}
+                    </span>
+                    {editingPositionId === pos.id ? (
+                      <input
+                        type="text"
+                        value={editPositionTitle}
+                        onChange={(e) => setEditPositionTitle(e.target.value)}
+                        className="flex-1 min-w-0 text-xs p-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    ) : (
+                      <span className="flex-1 min-w-0 text-xs font-medium text-slate-800 truncate" title={pos.title}>
+                        {pos.title}
+                      </span>
+                    )}
+                    {inactive && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded shrink-0">
+                        Ngừng dùng
+                      </span>
+                    )}
+                    {editingPositionId === pos.id ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleRenamePosition(pos.id)}
+                          disabled={isSubmitting}
+                          className="text-[11px] font-semibold text-blue-900 hover:underline shrink-0"
+                        >
+                          Lưu
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingPositionId(null)}
+                          className="text-[11px] text-slate-500 hover:underline shrink-0"
+                        >
+                          Hủy
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          title="Đổi tên"
+                          onClick={() => {
+                            setEditingPositionId(pos.id);
+                            setEditPositionTitle(pos.title);
+                            setModalError(null);
+                          }}
+                          className="p-1 rounded hover:bg-slate-100 text-slate-500 shrink-0"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          title={inactive ? "Kích hoạt lại" : "Ngừng dùng"}
+                          onClick={() => handleTogglePosition(pos.id, !inactive)}
+                          disabled={isSubmitting}
+                          className="p-1 rounded hover:bg-slate-100 text-slate-500 shrink-0"
+                        >
+                          {inactive ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Mã chức vụ không đổi sau khi tạo. Chức vụ đang có cán bộ giữ không thể ngừng dùng.
+            </p>
           </div>
         </div>
       )}
