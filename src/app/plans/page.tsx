@@ -228,6 +228,11 @@ export default function PlansPage() {
 
   // Modal Handlers
   const openAddModal = (initialTemplateId = "") => {
+    // E1: kế hoạch đã duyệt/có hiệu lực thì mọi bổ sung đi qua luồng trình duyệt bổ sung
+    if (activePlan?.status === "APPROVED" || activePlan?.status === "IN_EFFECT") {
+      toast.warning("Kế hoạch đã phê duyệt — vui lòng dùng “Trình duyệt bổ sung” để thêm đầu việc theo quy trình");
+      return;
+    }
     setEditingItem(null);
     setModalTemplateId(initialTemplateId);
     if (initialTemplateId) {
@@ -251,6 +256,11 @@ export default function PlansPage() {
   };
 
   const openEditModal = (wi: PersonalWorkItemData) => {
+    // E1: kế hoạch đã duyệt/có hiệu lực thì mọi sửa đổi đi qua luồng trình duyệt bổ sung
+    if (activePlan?.status === "APPROVED" || activePlan?.status === "IN_EFFECT") {
+      toast.warning("Kế hoạch đã phê duyệt — vui lòng dùng “Trình duyệt bổ sung” để điều chỉnh theo quy trình");
+      return;
+    };
     setEditingItem(wi);
     setModalTemplateId(wi.templateId || "");
     setModalTitle(wi.title);
@@ -356,7 +366,7 @@ export default function PlansPage() {
 
   // Workflow Action (SUBMIT, APPROVE, RETURN, REQUEST_AMENDMENT)
   const handleWorkflowAction = async (
-    action: "SUBMIT" | "APPROVE" | "RETURN" | "REQUEST_AMENDMENT"
+    action: "SUBMIT" | "APPROVE" | "RETURN" | "REQUEST_AMENDMENT" | "EFFECT"
   ) => {
     if (!activePlan) return;
 
@@ -424,8 +434,10 @@ export default function PlansPage() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-status-success-bg text-status-success font-label-sm text-label-sm font-semibold">
                   <span className="material-symbols-outlined text-[15px]">verified</span>
-                  {activePlan?.status === "APPROVED"
-                    ? `ĐÃ PHÊ DUYỆT (Lãnh đạo đơn vị${activePlan.approvedAt ? ` — ${new Date(activePlan.approvedAt).toLocaleDateString("vi-VN")}` : ""})`
+                  {activePlan?.status === "IN_EFFECT"
+                    ? `CÓ HIỆU LỰC THI HÀNH${activePlan.approvedAt ? ` — từ ${new Date(activePlan.approvedAt).toLocaleDateString("vi-VN")}` : ""}`
+                    : activePlan?.status === "APPROVED"
+                    ? `ĐÃ PHÊ DUYỆT (chờ ban hành hiệu lực${activePlan.approvedAt ? ` — ${new Date(activePlan.approvedAt).toLocaleDateString("vi-VN")}` : ""})`
                     : activePlan?.status === "SUBMITTED"
                     ? "ĐÃ TRÌNH DUYỆT (Chờ Lãnh đạo phê duyệt)"
                     : activePlan?.status === "RETURNED"
@@ -510,6 +522,25 @@ export default function PlansPage() {
                   >
                     <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
                     <span>Chờ lãnh đạo phê duyệt</span>
+                  </span>
+                )
+              ) : activePlan?.status === "APPROVED" ? (
+                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
+                  <button
+                    onClick={() => handleWorkflowAction("EFFECT")}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-success text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm"
+                    title="Ban hành hiệu lực thi hành cho kế hoạch đã phê duyệt"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">verified</span>
+                    <span>Ban hành hiệu lực</span>
+                  </button>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
+                    title="Kế hoạch đã phê duyệt, chờ lãnh đạo ban hành hiệu lực thi hành."
+                  >
+                    <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
+                    <span>Chờ ban hành hiệu lực</span>
                   </span>
                 )
               ) : (
@@ -1197,13 +1228,15 @@ export default function PlansPage() {
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded text-xs font-bold ${
-                activePlan?.status === "APPROVED"
+                activePlan?.status === "APPROVED" || activePlan?.status === "IN_EFFECT"
                   ? "bg-status-success-bg text-status-success"
                   : activePlan?.status === "SUBMITTED"
                   ? "bg-status-warning-bg text-status-warning"
                   : "bg-surface-container text-outline"
               }`}>
-                {activePlan?.status === "APPROVED"
+                {activePlan?.status === "IN_EFFECT"
+                  ? "CÓ HIỆU LỰC"
+                  : activePlan?.status === "APPROVED"
                   ? "ĐÃ DUYỆT"
                   : activePlan?.status === "SUBMITTED"
                   ? "CHỜ DUYỆT"

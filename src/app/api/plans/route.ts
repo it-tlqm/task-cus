@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { assertPeriodWritable } from "@/server/period-guard";
 import { getIsoWeekFromDate } from "@/lib/period-helper";
 
 export async function GET(req: NextRequest) {
@@ -135,6 +136,13 @@ export async function POST(req: NextRequest) {
     const targetUnitId = unitId || user.unitId;
     if (!periodId || !targetUnitId || !title?.trim()) {
       return jsonError("Kỳ công tác, Đơn vị và Tiêu đề kế hoạch là bắt buộc", 400);
+    }
+
+    // E1: kỳ đã chốt thì không lập kế hoạch mới trong kỳ đó
+    try {
+      await assertPeriodWritable(periodId);
+    } catch (err: any) {
+      return jsonError(err.message, err.statusCode || 423);
     }
 
     // Cán bộ công chức hoặc Trưởng bộ phận chỉ được lập cho bộ phận mình

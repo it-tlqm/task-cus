@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
+import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
 
 export async function GET(req: NextRequest) {
@@ -193,6 +194,13 @@ export async function POST(req: NextRequest) {
       return jsonError("Cán bộ phụ trách, Kỳ công tác và Tiêu đề đầu việc là bắt buộc", 400);
     }
 
+    // E1: kỳ đã chốt thì khóa mọi ghi mới
+    try {
+      await assertPeriodWritable(periodId);
+    } catch (err: any) {
+      return jsonError(err.message, err.statusCode || 423);
+    }
+
     // Phân quyền: Cán bộ chỉ được tạo cho mình; Trưởng bộ phận được tạo cho cán bộ trong tổ
     if (user.role === "STAFF" && targetPersonId !== user.personId) {
       return jsonError("Cán bộ chỉ được tạo danh mục đầu việc cho chính mình", 403);
@@ -207,6 +215,20 @@ export async function POST(req: NextRequest) {
       const isBelong = targetPerson?.assignments.some((a) => authorizedUnits === "ALL" || authorizedUnits.includes(a.unitId));
       if (!isBelong) {
         return jsonError("Bạn chỉ được tạo đầu việc cho cán bộ thuộc bộ phận của mình", 403);
+      }
+    }
+
+    // E1: đầu việc gắn vào kế hoạch đã duyệt/có hiệu lực thì khóa (đi luồng bổ sung)
+    if (planItemId) {
+      const parentItem = await prisma.planItem.findUnique({
+        where: { id: planItemId },
+        include: { plan: { select: { id: true, status: true, title: true } } },
+      });
+      if (parentItem && (parentItem.plan.status === "APPROVED" || parentItem.plan.status === "IN_EFFECT")) {
+        return jsonError(
+          `Kế hoạch "${parentItem.plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì thêm trực tiếp`,
+          403
+        );
       }
     }
 
@@ -293,11 +315,27 @@ export async function PATCH(req: NextRequest) {
       where: { id },
       include: {
         person: { include: { assignments: true } },
+        planItem: { include: { plan: { select: { id: true, status: true, title: true } } } },
       },
     });
 
     if (!currentItem) {
       return jsonError("Đầu việc không tồn tại", 404);
+    }
+
+    // E1: kỳ đã chốt thì khóa chỉnh sửa
+    try {
+      await assertPeriodWritable(currentItem.periodId);
+    } catch (err: any) {
+      return jsonError(err.message, err.statusCode || 423);
+    }
+
+    // E1: đầu việc thuộc kế hoạch đã duyệt/có hiệu lực thì khóa (đi luồng bổ sung)
+    if (currentItem.planItem?.plan && (currentItem.planItem.plan.status === "APPROVED" || currentItem.planItem.plan.status === "IN_EFFECT")) {
+      return jsonError(
+        `Kế hoạch "${currentItem.planItem.plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì sửa trực tiếp`,
+        403
+      );
     }
 
     // Kiểm tra quyền chỉnh sửa
@@ -315,8 +353,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updateData: any = {};
-    if (title && title.trim()) updateData.title = title.trim();
-    if (groupId !== undefined) updateData.groupId = groupId || null;
+    if (title && title.trim()) updateData.title = title.trim();    if (groupId !== undefined) updateData.groupId = groupId || null;
     if (workDate !== undefined) updateData.workDate = workDate ? new Date(workDate) : null;
     if (dateText !== undefined) updateData.dateText = dateText?.trim() || null;
     if (coordinationUnit !== undefined) updateData.coordinationUnit = coordinationUnit?.trim() || null;
@@ -369,12 +406,28 @@ export async function DELETE(req: NextRequest) {
       where: { id },
       include: {
         person: { include: { assignments: true } },
+        planItem: { include: { plan: { select: { id: true, status: true, title: true } } } },
         routines: true,
       },
     });
 
     if (!currentItem) {
       return jsonError("Đầu việc không tồn tại", 404);
+    }
+
+    // E1: kỳ đã chốt thì khóa xóa
+    try {
+      await assertPeriodWritable(currentItem.periodId);
+    } catch (err: any) {
+      return jsonError(err.message, err.statusCode || 423);
+    }
+
+    // E1: đầu việc thuộc kế hoạch đã duyệt/có hiệu lực thì khóa (đi luồng bổ sung)
+    if (currentItem.planItem?.plan && (currentItem.planItem.plan.status === "APPROVED" || currentItem.planItem.plan.status === "IN_EFFECT")) {
+      return jsonError(
+        `Kế hoạch "${currentItem.planItem.plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì xóa trực tiếp`,
+        403
+      );
     }
 
     const isOwner = currentItem.personId === user.personId;

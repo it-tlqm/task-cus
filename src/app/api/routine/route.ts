@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { getAuthorizedUnitIds } from "@/server/guard";
+import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
 import { getIsoWeekFromDate } from "@/lib/period-helper";
 
@@ -268,6 +269,13 @@ export async function POST(req: NextRequest) {
         { error: "Tài khoản chưa được gán bộ phận công tác" },
         { status: 400 }
       );
+    }
+
+    // E1: kỳ đã chốt thì khóa ghi nhật ký mới
+    try {
+      await assertPeriodWritable(periodId);
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: err.statusCode || 423 });
     }
 
     // 3. Xác định phiên bản biểu mẫu áp dụng và kiểm tra tính hợp lệ của schema

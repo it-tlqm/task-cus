@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, verifyTaskAccess, jsonError, checkPermission } from "@/server/guard";
+import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -33,6 +34,13 @@ export async function POST(
 
     const authorizedUnits = await getAuthorizedUnitIds(user);
     const isUnitAuthorized = authorizedUnits === "ALL" || authorizedUnits.includes(plan.unitId);
+
+    // E1: kỳ đã chốt thì mọi chuyển trạng thái kế hoạch đều bị khóa
+    try {
+      await assertPeriodWritable(plan.periodId);
+    } catch (err: any) {
+      return jsonError(err.message, err.statusCode || 423);
+    }
 
     // 1. ACTION: SUBMIT (Trình duyệt kế hoạch)
     if (action === "SUBMIT") {
@@ -170,6 +178,52 @@ export async function POST(
         success: true,
         message: "Đã phê duyệt kế hoạch thành công",
         data: updated,
+      });
+    }
+
+    // E1-2. ACTION: EFFECT (Ban hành hiệu lực thi hành: APPROVED → IN_EFFECT)
+    if (action === "EFFECT") {
+      const canEffect =
+        user.role === "UNIT_LEADER" ||
+        (user.role === "DEPARTMENT_LEADER" && isUnitAuthorized);
+      if (!canEffect) {
+        return jsonError("Bạn không có thẩm quyền ban hành hiệu lực kế hoạch này", 403);
+      }
+      if (plan.status === "IN_EFFECT") {
+        const current = await prisma.plan.findUnique({ where: { id: planId } });
+        return NextResponse.json({
+          success: true,
+          message: "Kế hoạch đã có hiệu lực thi hành (chặn gửi trùng)",
+          data: current,
+          deduplicated: true,
+        });
+      }
+      if (plan.status !== "APPROVED") {
+        return jsonError(`Chỉ kế hoạch đã phê duyệt mới có thể ban hành hiệu lực`, 400);
+      }
+      const effectRes = await prisma.plan.updateMany({
+        where: { id: planId, status: "APPROVED" },
+        data: { status: "IN_EFFECT" },
+      });
+      if (effectRes.count === 0) {
+        const current = await prisma.plan.findUnique({ where: { id: planId } });
+        return NextResponse.json({
+          success: true, message: "Kế hoạch đã được xử lý trước đó (chặn gửi trùng)",
+          data: current, deduplicated: true,
+        });
+      }
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "PLAN_EFFECT",
+        resourceType: "Plan",
+        resourceId: planId,
+        oldData: { status: "APPROVED" },
+        newData: { status: "IN_EFFECT" },
+      });
+      return NextResponse.json({
+        success: true,
+        message: "Kế hoạch chính thức có hiệu lực thi hành",
+        data: await prisma.plan.findUnique({ where: { id: planId } }),
       });
     }
 
@@ -317,8 +371,8 @@ export async function POST(
 
       const targetStatus = body.unlockToDraft ? "DRAFT" : "SUBMITTED";
 
-      // Snapshot toàn vẹn kế hoạch trước khi mở khóa (thay thế bảng plan_versions ở mức pilot:
-      // mọi hạng mục + đầu việc + link nhiệm vụ được niêm trong AuditEvent bất biến)
+      // E1: niêm snapshot vào bảng plan_versions (truy vấn/đối soát được),
+      // thay cho việc chỉ nhét JSON vào AuditEvent ở mức pilot
       const planSnapshot = await prisma.plan.findUnique({
         where: { id: planId },
         include: {
@@ -329,6 +383,37 @@ export async function POST(
             },
             orderBy: { sortOrder: "asc" },
           },
+        },
+      });
+      const snapshotPayload = planSnapshot
+        ? {
+            title: planSnapshot.title,
+            unitId: planSnapshot.unitId,
+            periodId: planSnapshot.periodId,
+            items: planSnapshot.items.map((pi) => ({
+              id: pi.id,
+              title: pi.title,
+              groupId: pi.groupId,
+              workItems: pi.workItems,
+              linkedTaskIds: pi.taskLinks.map((l) => l.taskId),
+            })),
+          }
+        : null;
+      const lastVersion = await prisma.planVersion.findFirst({
+        where: { planId },
+        orderBy: { version: "desc" },
+        select: { version: true },
+      });
+      await prisma.planVersion.create({
+        data: {
+          planId,
+          version: (lastVersion?.version || 0) + 1,
+          statusBefore: plan.status,
+          statusAfter: targetStatus,
+          reason: reviewNotes?.trim() || "Trình duyệt bổ sung/điều chỉnh nhiệm vụ",
+          snapshotData: (snapshotPayload || {}) as any,
+          createdById: user.personId,
+          createdBy: `${user.fullName} (${user.username})`,
         },
       });
 

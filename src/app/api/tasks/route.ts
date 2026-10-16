@@ -4,6 +4,7 @@ import { authenticateRequest } from "@/server/auth";
 import { buildScopedWhereClause, verifyTaskAccess, jsonError } from "@/server/guard";
 import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
 import { advisoryLock, normalizeTitle } from "@/server/idempotency";
+import { nextTaskCode } from "@/server/task-code";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -181,11 +182,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const taskCode = `NV-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100).toString().padStart(2, "0")}`;
     const parsedDeadline = new Date(effectiveDeadline);
 
     // YC-04: chống giao việc trùng — khóa tư vấn theo (chủ trì + tiêu đề) rồi kiểm tra
     // cửa sổ 120s. Hai request đồng thời/bấm liên tiếp chỉ tạo đúng 1 Task.
+    // E1: mã NV serial theo năm (NV-YYYY-NNNN), cấp phát nguyên tử trong cùng transaction.
     const dedupKey = `task-create:${effectiveOwnerId}:${normalizeTitle(title)}`;
     const newTask = await prisma.$transaction(async (tx) => {
       await advisoryLock(tx, dedupKey);
@@ -204,6 +205,7 @@ export async function POST(req: NextRequest) {
       });
       if (recent) return { task: recent, deduplicated: true };
 
+      const taskCode = await nextTaskCode(tx);
       const created = await tx.task.create({
         data: {
           code: taskCode,
