@@ -65,6 +65,34 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { canApprove, canExport, canLock, showAdminMenu } = usePermissions();
+  // Gấp/mở từng cụm menu (nhớ trên máy để sidebar luôn gọn)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("hqtl-nav-open") : null;
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {};
+  });
+  const isOpen = (g: string) => openGroups[g] !== false;
+  // Tự mở cụm chứa trang đang xem (trường hợp vào link trực tiếp khi cụm đang gấp)
+  React.useEffect(() => {
+    const hit = navigationItems.find((g) =>
+      g.items.some((it) => pathname === it.href || (it.href !== "/dashboard" && pathname.startsWith(it.href)))
+    );
+    if (hit && openGroups[hit.group] === false) {
+      setOpenGroups((prev) => ({ ...prev, [hit.group]: true }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+  const toggleGroup = (g: string) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [g]: !isOpen(g) };
+      try {
+        localStorage.setItem("hqtl-nav-open", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Ẩn mục không có quyền thay vì hiện ra rồi chặn 403 (backend vẫn chặn thật)
   const visibleGroups = navigationItems
@@ -129,16 +157,24 @@ export function Sidebar() {
         <nav className="flex flex-col gap-space-xs p-space-sm">
           {visibleGroups.map((group, groupIdx) => (
             <div key={groupIdx} className="mb-1">
-              {!collapsed && (
-                <div className="px-space-sm pt-space-sm pb-space-xs">
+              {!collapsed ? (
+                <button
+                  onClick={() => toggleGroup(group.group)}
+                  className="w-full flex items-center justify-between px-space-sm pt-space-sm pb-space-xs hover:opacity-80 transition-fast"
+                  title={isOpen(group.group) ? "Gấp cụm này lại" : "Mở cụm này ra"}
+                >
                   <span className="font-label-sm text-label-sm text-on-primary-container uppercase tracking-wider font-semibold">
                     {group.group}
                   </span>
-                </div>
-              )}
+                  <span className={`material-symbols-outlined text-[16px] text-on-primary-container transition-transform ${isOpen(group.group) ? "" : "-rotate-90"}`}>
+                    expand_more
+                  </span>
+                </button>
+              ) : null}
               {collapsed && groupIdx > 0 && (
                 <div className="h-px bg-white/10 my-2 mx-2" />
               )}
+              {(collapsed || isOpen(group.group)) && (
               <div className="flex flex-col gap-0.5">
                 {group.items.map((item) => {
                   const isActive =
@@ -165,6 +201,7 @@ export function Sidebar() {
                   );
                 })}
               </div>
+              )}
             </div>
           ))}
         </nav>
