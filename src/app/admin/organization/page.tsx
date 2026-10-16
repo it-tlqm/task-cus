@@ -26,6 +26,7 @@ import {
   FileText,
   BadgeAlert,
 } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface OrgUnit {
   id: string;
@@ -80,6 +81,7 @@ interface Person {
 
 export default function OrganizationAdminPage() {
   const [orgTree, setOrgTree] = useState<OrgUnit[]>([]);
+  const { canManageOrg } = usePermissions();
   const [flatUnits, setFlatUnits] = useState<OrgUnit[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -142,6 +144,7 @@ export default function OrganizationAdminPage() {
     phone: "",
     status: "ACTIVE" as "ACTIVE" | "INACTIVE",
     notes: "",
+    positionId: "",
   });
 
   // Transfer Form
@@ -452,6 +455,7 @@ export default function OrganizationAdminPage() {
       phone: p.phone || "",
       status: p.status,
       notes: p.notes || "",
+      positionId: p.positionId || "",
     });
     setModalError(null);
   };
@@ -738,7 +742,7 @@ export default function OrganizationAdminPage() {
                 {node.personnelCount}
               </span>
             )}
-            {isSelected && (
+            {isSelected && canManageOrg && (
               <>
                 <button
                   type="button"
@@ -803,35 +807,41 @@ export default function OrganizationAdminPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : ""}`} />
             Làm mới
           </button>
-          <button
-            onClick={() => {
-              setModalError(null);
-              setShowAddUnitModal(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            Thêm bộ phận
-          </button>
-          <button
-            onClick={() => {
-              setPosForm({ code: "", title: "" });
-              setEditingPositionId(null);
-              setModalError(null);
-              setShowPositionModal(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-          >
-            <BadgeAlert className="w-3.5 h-3.5" />
-            Chức vụ
-          </button>
-          <button
-            onClick={handleOpenAddPerson}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Thêm cán bộ mới
-          </button>
+          {canManageOrg && (
+            <button
+              onClick={() => {
+                setModalError(null);
+                setShowAddUnitModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              Thêm bộ phận
+            </button>
+          )}
+          {canManageOrg && (
+            <button
+              onClick={() => {
+                setPosForm({ code: "", title: "" });
+                setEditingPositionId(null);
+                setModalError(null);
+                setShowPositionModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <BadgeAlert className="w-3.5 h-3.5" />
+              Chức vụ
+            </button>
+          )}
+          {canManageOrg && (
+            <button
+              onClick={handleOpenAddPerson}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Thêm cán bộ mới
+            </button>
+          )}
         </div>
       </div>
 
@@ -1314,6 +1324,24 @@ export default function OrganizationAdminPage() {
                     className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Chức vụ <span className="font-normal text-slate-500">(hiện tại: {editingPerson.position || "chưa rõ"})</span>
+                </label>
+                <select
+                  value={editPersonData.positionId}
+                  onChange={(e) => setEditPersonData({ ...editPersonData, positionId: e.target.value })}
+                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">-- Giữ nguyên chức vụ hiện tại --</option>
+                  {activePositions.map((pos) => (
+                    <option key={pos.id} value={pos.id}>
+                      {pos.title} ({pos.code})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

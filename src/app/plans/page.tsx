@@ -468,7 +468,7 @@ export default function PlansPage() {
               </button>
 
               {activePlan?.status === "DRAFT" || activePlan?.status === "RETURNED" ? (
-                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" || currentUser?.role === "SYSTEM_ADMIN" ? (
+                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
                   <button
                     onClick={() => handleWorkflowAction("SUBMIT")}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-fast active-press shadow-sm"
@@ -486,22 +486,32 @@ export default function PlansPage() {
                   </span>
                 )
               ) : activePlan?.status === "SUBMITTED" ? (
-                <>
-                  <button
-                    onClick={() => handleWorkflowAction("APPROVE")}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-success text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm"
+                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
+                  <>
+                    <button
+                      onClick={() => handleWorkflowAction("APPROVE")}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-success text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                      <span>Phê duyệt kế hoạch</span>
+                    </button>
+                    <button
+                      onClick={() => setShowReturnModal(true)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-danger text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">undo</span>
+                      <span>Trả lại</span>
+                    </button>
+                  </>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
+                    title="Kế hoạch đang chờ lãnh đạo phụ trách phê duyệt."
                   >
-                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                    <span>Phê duyệt kế hoạch</span>
-                  </button>
-                  <button
-                    onClick={() => setShowReturnModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-danger text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">undo</span>
-                    <span>Trả lại</span>
-                  </button>
-                </>
+                    <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
+                    <span>Chờ lãnh đạo phê duyệt</span>
+                  </span>
+                )
               ) : (
                 <button
                   onClick={() => setShowAmendmentModal(true)}

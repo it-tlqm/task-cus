@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const navigationItems = [
   {
@@ -17,7 +18,7 @@ const navigationItems = [
       { name: "Kế hoạch công tác", href: "/plans", icon: "event_note" },
       { name: "Công việc của tôi", href: "/my-work", icon: "assignment_ind" },
       { name: "Nhiệm vụ chỉ đạo / phối hợp", href: "/tasks", icon: "hub" },
-      { name: "Phê duyệt điều hành", href: "/approvals", icon: "fact_check" },
+      { name: "Phê duyệt điều hành", href: "/approvals", icon: "fact_check", leadersOnly: true },
       { name: "Nhật ký công tác thường xuyên", href: "/routine", icon: "history_edu" },
     ],
   },
@@ -31,6 +32,7 @@ const navigationItems = [
   },
   {
     group: "Quản Trị Nghiệp Vụ",
+    adminOnly: true,
     items: [
       { name: "Cơ cấu tổ chức & Nhân sự", href: "/admin/organization", icon: "corporate_fare" },
       { name: "Danh mục đầu việc mẫu", href: "/admin/catalog", icon: "list_alt" },
@@ -44,6 +46,16 @@ const navigationItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { canApprove, showAdminMenu } = usePermissions();
+
+  // Ẩn mục không có quyền thay vì hiện ra rồi chặn 403 (backend vẫn chặn thật)
+  const visibleGroups = navigationItems
+    .filter((group) => !(group as any).adminOnly || showAdminMenu)
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !(item as any).leadersOnly || canApprove),
+    }))
+    .filter((group) => group.items.length > 0);
 
   // Hide sidebar on login page
   if (pathname === "/login") return null;
@@ -87,7 +99,7 @@ export function Sidebar() {
 
         {/* Navigation Groups */}
         <nav className="flex flex-col gap-space-xs p-space-sm">
-          {navigationItems.map((group, groupIdx) => (
+          {visibleGroups.map((group, groupIdx) => (
             <div key={groupIdx} className="mb-1">
               {!collapsed && (
                 <div className="px-space-sm pt-space-sm pb-space-xs">

@@ -90,15 +90,36 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
-    const { fullName, email, phone, notes, status } = body;
+    const { fullName, email, phone, notes, status, positionId } = body;
 
     // 1. Kiểm tra cán bộ tồn tại trong CSDL
     const existing = await prisma.person.findUnique({
       where: { id },
-      include: { account: true, assignments: { where: { isPrimary: true } } },
+      include: {
+        account: true,
+        assignments: {
+          where: { isPrimary: true },
+          include: { position: true },
+        },
+      },
     });
     if (!existing) {
       return jsonError("Không tìm thấy hồ sơ cán bộ để cập nhật", 404);
+    }
+
+    // 1b. Kiểm tra chức vụ nếu muốn đổi (áp dụng vào phân công chính)
+    let targetPosition: { id: string; title: string } | null = null;
+    if (positionId !== undefined && positionId) {
+      targetPosition = await prisma.position.findUnique({
+        where: { id: positionId },
+        select: { id: true, title: true, status: true } as any,
+      }) as any;
+      if (!targetPosition) {
+        return jsonError("Chức vụ được chọn không tồn tại", 400);
+      }
+      if ((targetPosition as any).status !== "ACTIVE") {
+        return jsonError("Chức vụ được chọn đã ngừng áp dụng", 400);
+      }
     }
 
     // 2. Kiểm tra dữ liệu đầu vào
@@ -159,6 +180,18 @@ export async function PUT(
         },
       });
 
+      // 5b. Đổi chức vụ trên phân công chính (giữ nguyên đơn vị, ngày hiệu lực)
+      const primaryAssignment = existing.assignments[0];
+      if (targetPosition) {
+        if (!primaryAssignment) {
+          throw new Error("Cán bộ chưa có phân công chính — hãy dùng chức năng Điều chuyển để gán đơn vị và chức vụ");
+        }
+        await tx.personAssignment.update({
+          where: { id: primaryAssignment.id },
+          data: { positionId: targetPosition.id },
+        });
+      }
+
       // Nếu trạng thái cán bộ chuyển sang INACTIVE và cán bộ có tài khoản, vô hiệu hóa tài khoản ngay lập tức
       if (status === "INACTIVE" && existing.account && existing.account.status === "ACTIVE") {
         await tx.account.update({
@@ -191,8 +224,9 @@ export async function PUT(
             phone: existing.phone,
             notes: existing.notes,
             status: existing.status,
+            position: primaryAssignment?.position?.title || null,
           },
-          newData: updateData,
+          newData: { ...updateData, position: targetPosition?.title || undefined },
         },
       });
 

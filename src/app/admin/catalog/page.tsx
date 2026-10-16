@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
 import {
   Layers,
@@ -67,6 +68,7 @@ interface ActivityTemplate {
 
 export default function CatalogAdminPage() {
   const [groups, setGroups] = useState<ActivityGroup[]>([]);
+  const { canManageCatalog } = usePermissions();
   const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -438,20 +440,24 @@ export default function CatalogAdminPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Làm mới
           </button>
-          <button
-            onClick={handleOpenAddGroup}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg shadow-sm transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Thêm nhóm nghiệp vụ
-          </button>
-          <button
-            onClick={handleOpenAddModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Thêm đầu việc mẫu
-          </button>
+          {canManageCatalog && (
+            <button
+              onClick={handleOpenAddGroup}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg shadow-sm transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Thêm nhóm nghiệp vụ
+            </button>
+          )}
+          {canManageCatalog && (
+            <button
+              onClick={handleOpenAddModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Thêm đầu việc mẫu
+            </button>
+          )}
           <Link
             href="/admin/organization"
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 shadow-sm"
@@ -476,13 +482,15 @@ export default function CatalogAdminPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleApproveAll}
-            disabled={approving}
-            className="px-3.5 py-2 text-xs font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-100 transition-colors shrink-0 shadow-sm"
-          >
-            {approving ? "Đang xử lý..." : "Chuyển về xem xét (Reset)"}
-          </button>
+          {canManageCatalog && (
+            <button
+              onClick={handleApproveAll}
+              disabled={approving}
+              className="px-3.5 py-2 text-xs font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-100 transition-colors shrink-0 shadow-sm"
+            >
+              {approving ? "Đang xử lý..." : "Chuyển về xem xét (Reset)"}
+            </button>
+          )}
         </div>
       ) : (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
@@ -497,13 +505,15 @@ export default function CatalogAdminPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleApproveAll}
-            disabled={approving}
-            className="px-3.5 py-2 text-xs font-semibold bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition-colors shrink-0 shadow-sm"
-          >
-            {approving ? "Đang xử lý..." : "Phê duyệt chính thức toàn bộ"}
-          </button>
+          {canManageCatalog && (
+            <button
+              onClick={handleApproveAll}
+              disabled={approving}
+              className="px-3.5 py-2 text-xs font-semibold bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition-colors shrink-0 shadow-sm"
+            >
+              {approving ? "Đang xử lý..." : "Phê duyệt chính thức toàn bộ"}
+            </button>
+          )}
         </div>
       )}
 
@@ -546,27 +556,29 @@ export default function CatalogAdminPage() {
             >
               <div className="text-[11px] font-mono font-bold uppercase opacity-80 flex items-center justify-between gap-1">
                 <span className="truncate">{grp.code}</span>
-                <span className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    title="Đổi tên nhóm"
-                    onClick={() => handleOpenRenameGroup(grp)}
-                    className={`p-0.5 rounded ${isSelected ? "hover:bg-white/20" : "hover:bg-slate-200 text-slate-500"}`}
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Xóa nhóm (chỉ khi không còn đầu việc mẫu)"
-                    onClick={() => {
-                      setDeletingGroup(grp);
-                      setFormError(null);
-                    }}
-                    className={`p-0.5 rounded ${isSelected ? "hover:bg-white/20" : "hover:bg-slate-200 text-slate-500"}`}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </span>
+                {canManageCatalog && (
+                  <span className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      title="Đổi tên nhóm"
+                      onClick={() => handleOpenRenameGroup(grp)}
+                      className={`p-0.5 rounded ${isSelected ? "hover:bg-white/20" : "hover:bg-slate-200 text-slate-500"}`}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Xóa nhóm (chỉ khi không còn đầu việc mẫu)"
+                      onClick={() => {
+                        setDeletingGroup(grp);
+                        setFormError(null);
+                      }}
+                      className={`p-0.5 rounded ${isSelected ? "hover:bg-white/20" : "hover:bg-slate-200 text-slate-500"}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
               </div>
               <div className="text-xl font-bold mt-1">{count}</div>
               <div className="text-[10px] truncate opacity-90 mt-0.5" title={grp.name}>
@@ -741,43 +753,45 @@ export default function CatalogAdminPage() {
                         )}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => handleOpenEditModal(tpl)}
-                            className="p-1.5 text-slate-600 hover:text-blue-900 hover:bg-slate-100 rounded-md transition-colors"
-                            title="Chỉnh sửa thông tin"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                        {canManageCatalog && (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleOpenEditModal(tpl)}
+                              className="p-1.5 text-slate-600 hover:text-blue-900 hover:bg-slate-100 rounded-md transition-colors"
+                              title="Chỉnh sửa thông tin"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
 
-                          {isRetired ? (
-                            <button
-                              onClick={() =>
-                                setStatusConfirmTarget({
-                                  template: tpl,
-                                  nextStatus: "VERIFIED",
-                                })
-                              }
-                              className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-md transition-colors"
-                              title="Kích hoạt lại áp dụng"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                setStatusConfirmTarget({
-                                  template: tpl,
-                                  nextStatus: "RETIRED",
-                                })
-                              }
-                              className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors"
-                              title="Ngừng áp dụng mẫu này"
-                            >
-                              <EyeOff className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
+                            {isRetired ? (
+                              <button
+                                onClick={() =>
+                                  setStatusConfirmTarget({
+                                    template: tpl,
+                                    nextStatus: "VERIFIED",
+                                  })
+                                }
+                                className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-md transition-colors"
+                                title="Kích hoạt lại áp dụng"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  setStatusConfirmTarget({
+                                    template: tpl,
+                                    nextStatus: "RETIRED",
+                                  })
+                                }
+                                className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors"
+                                title="Ngừng áp dụng mẫu này"
+                              >
+                                <EyeOff className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface KPIData {
   totalTasks: number;
@@ -107,6 +108,7 @@ export default function DashboardPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isAdminBlocked, setIsAdminBlocked] = useState(false);
   const periodLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
+  const { canAssign, canExport, canApprove } = usePermissions();
 
   // Quick Task Assign Modal State
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -245,22 +247,26 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions (chỉ hiện nút được phép dùng) */}
             <div className="flex flex-wrap items-center gap-space-sm">
-              <Link
-                href="/reports/excel"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-subtle hover:bg-surface-container text-primary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
-              >
-                <span className="material-symbols-outlined text-[18px]">table_view</span>
-                <span>Xuất báo cáo giao ban (.xlsx)</span>
-              </Link>
-              <button
-                onClick={() => setShowAssignModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
-              >
-                <span className="material-symbols-outlined text-[18px]">add_task</span>
-                <span>Giao nhiệm vụ đột xuất</span>
-              </button>
+              {canExport && (
+                <Link
+                  href="/reports/excel"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-subtle hover:bg-surface-container text-primary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px]">table_view</span>
+                  <span>Xuất báo cáo giao ban (.xlsx)</span>
+                </Link>
+              )}
+              {canAssign && (
+                <button
+                  onClick={() => setShowAssignModal(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add_task</span>
+                  <span>Giao nhiệm vụ đột xuất</span>
+                </button>
+              )}
               <button
                 onClick={fetchDashboardData}
                 disabled={loading}
@@ -937,20 +943,22 @@ export default function DashboardPage() {
               <span className="material-symbols-outlined text-[20px] mb-1">add_task</span>
               <span className="font-label-sm text-label-sm text-center leading-tight">Giao việc đột xuất</span>
             </button>
-            <Link
-              href="/approvals"
-              className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-surface-container-highest text-primary shadow-sm active:opacity-80 transition-fast active-press"
-            >
-              <div className="relative">
-                <span className="material-symbols-outlined text-[20px] mb-1">rate_review</span>
-                {kpis.waitingReview > 0 && (
-                  <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-status-warning text-surface-container-lowest font-label-sm text-[9px] flex items-center justify-center rounded-full leading-none font-bold">
-                    {kpis.waitingReview}
-                  </span>
-                )}
-              </div>
-              <span className="font-label-sm text-label-sm text-center leading-tight">Duyệt nhanh</span>
-            </Link>
+            {canApprove && (
+              <Link
+                href="/approvals"
+                className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-surface-container-highest text-primary shadow-sm active:opacity-80 transition-fast active-press"
+              >
+                <div className="relative">
+                  <span className="material-symbols-outlined text-[20px] mb-1">rate_review</span>
+                  {kpis.waitingReview > 0 && (
+                    <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-status-warning text-surface-container-lowest font-label-sm text-[9px] flex items-center justify-center rounded-full leading-none font-bold">
+                      {kpis.waitingReview}
+                    </span>
+                  )}
+                </div>
+                <span className="font-label-sm text-label-sm text-center leading-tight">Duyệt nhanh</span>
+              </Link>
+            )}
             <Link
               href="/reports"
               className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-surface-container-highest text-primary shadow-sm active:opacity-80 transition-fast active-press"

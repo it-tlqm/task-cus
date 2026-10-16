@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface DrilldownTask {
   id: string;
@@ -135,6 +136,8 @@ function ReportsContent() {
   });
   const [isSavingBuilder, setIsSavingBuilder] = useState(false);
   const [isPreviewingBuilder, setIsPreviewingBuilder] = useState(false);
+  const { canExport, canLock, can } = usePermissions();
+  const canEditBuilderConfig = can("system.config");
 
   const loadBuilderConfig = async () => {
     try {
@@ -454,35 +457,41 @@ function ReportsContent() {
             <span className="material-symbols-outlined text-[18px]">filter_list</span>
             <span>{filterExpanded ? "Ẩn bộ lọc" : "Bộ lọc nâng cao"}</span>
           </button>
-          <button
-            onClick={handleOpenLockModal}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press"
-          >
-            <span className="material-symbols-outlined text-[18px]">lock_clock</span>
-            <span>Chốt số liệu kỳ này</span>
-          </button>
-          <button
-            onClick={() => handleExportXlsx("legacy")}
-            disabled={isExporting}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-secondary text-on-secondary font-body-semibold shadow-sm hover:opacity-95 transition-all active-press disabled:opacity-50"
-            title="Xuất theo mẫu gốc Kế hoạch công tác.xlsx (8 cột)"
-          >
-            <span className={`material-symbols-outlined text-[18px] ${isExporting ? "animate-spin" : ""}`}>
-              {isExporting ? "refresh" : "download"}
-            </span>
-            <span>Mẫu A (Kế hoạch tuần gốc)</span>
-          </button>
-          <button
-            onClick={() => handleExportXlsx("detailed")}
-            disabled={isExporting}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-primary text-on-primary font-body-semibold shadow-sm hover:opacity-95 transition-all active-press disabled:opacity-50"
-            title="Xuất chi tiết danh mục đầu việc theo từng cán bộ"
-          >
-            <span className={`material-symbols-outlined text-[18px] ${isExporting ? "animate-spin" : ""}`}>
-              {isExporting ? "refresh" : "table_view"}
-            </span>
-            <span>Mẫu B (Chi tiết đầu việc)</span>
-          </button>
+          {canLock && (
+            <button
+              onClick={handleOpenLockModal}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press"
+            >
+              <span className="material-symbols-outlined text-[18px]">lock_clock</span>
+              <span>Chốt số liệu kỳ này</span>
+            </button>
+          )}
+          {canExport && (
+            <button
+              onClick={() => handleExportXlsx("legacy")}
+              disabled={isExporting}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-secondary text-on-secondary font-body-semibold shadow-sm hover:opacity-95 transition-all active-press disabled:opacity-50"
+              title="Xuất theo mẫu gốc Kế hoạch công tác.xlsx (8 cột)"
+            >
+              <span className={`material-symbols-outlined text-[18px] ${isExporting ? "animate-spin" : ""}`}>
+                {isExporting ? "refresh" : "download"}
+              </span>
+              <span>Mẫu A (Kế hoạch tuần gốc)</span>
+            </button>
+          )}
+          {canExport && (
+            <button
+              onClick={() => handleExportXlsx("detailed")}
+              disabled={isExporting}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-primary text-on-primary font-body-semibold shadow-sm hover:opacity-95 transition-all active-press disabled:opacity-50"
+              title="Xuất chi tiết danh mục đầu việc theo từng cán bộ"
+            >
+              <span className={`material-symbols-outlined text-[18px] ${isExporting ? "animate-spin" : ""}`}>
+                {isExporting ? "refresh" : "table_view"}
+              </span>
+              <span>Mẫu B (Chi tiết đầu việc)</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -929,24 +938,28 @@ function ReportsContent() {
               )}
             </div>
 
-            {/* Mobile Export Buttons Strip */}
-            <div className="pt-2 space-y-2">
-              <button
-                onClick={() => handleExportXlsx("legacy")}
-                disabled={isExporting}
-                className="w-full h-11 bg-secondary text-on-secondary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-space-xs shadow-md active-press transition-all"
-              >
-                <span className="material-symbols-outlined text-[18px]">file_download</span>
-                <span>Tải Mẫu A (Kế hoạch tuần .xlsx)</span>
-              </button>
-              <button
-                onClick={() => handleExportXlsx("detailed")}
-                disabled={isExporting}
-                className="w-full h-11 bg-primary text-on-primary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-space-xs shadow-md active-press transition-all"
-              >
-                <span className="material-symbols-outlined text-[18px]">table_view</span>
-                <span>Tải Mẫu B (Chi tiết đầu việc .xlsx)</span>
-              </button>
+            {/* Mobile Export Buttons Strip (chỉ hiện khi có quyền xuất) */}
+            {canExport && (
+              <div className="pt-2 space-y-2">
+                <button
+                  onClick={() => handleExportXlsx("legacy")}
+                  disabled={isExporting}
+                  className="w-full h-11 bg-secondary text-on-secondary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-space-xs shadow-md active-press transition-all"
+                >
+                  <span className="material-symbols-outlined text-[18px]">file_download</span>
+                  <span>Tải Mẫu A (Kế hoạch tuần .xlsx)</span>
+                </button>
+                <button
+                  onClick={() => handleExportXlsx("detailed")}
+                  disabled={isExporting}
+                  className="w-full h-11 bg-primary text-on-primary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-space-xs shadow-md active-press transition-all"
+                >
+                  <span className="material-symbols-outlined text-[18px]">table_view</span>
+                  <span>Tải Mẫu B (Chi tiết đầu việc .xlsx)</span>
+                </button>
+              </div>
+            )}
+            {canLock && (
               <div className="bg-surface-container-lowest p-space-sm rounded-lg flex items-center justify-between border border-border-default/40">
                 <div className="flex items-center gap-space-xs">
                   <div className="w-7 h-7 rounded-full bg-status-warning-bg flex items-center justify-center shrink-0">
@@ -962,7 +975,7 @@ function ReportsContent() {
                   <span>Chốt</span>
                 </button>
               </div>
-            </div>
+            )}
           </div>
 
           {/* DESKTOP LIVE PREVIEW SHEET TABLE FRAME */}
@@ -1259,20 +1272,24 @@ function ReportsContent() {
               >
                 {isPreviewingBuilder ? "Đang kết xuất..." : "Xem trước file mẫu"}
               </button>
-              <button
-                onClick={() => handleExportXlsx(selectedTemplate === "detailed" ? "detailed" : "legacy")}
-                disabled={isExporting}
-                className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press disabled:opacity-60"
-              >
-                {isExporting ? "Đang tải..." : "Tải file mẫu thử nghiệm"}
-              </button>
-              <button
-                onClick={handleSaveBuilderConfig}
-                disabled={isSavingBuilder}
-                className="px-4 py-2 rounded bg-secondary text-on-secondary font-body-semibold hover:opacity-95 shadow-sm transition-all active-press disabled:opacity-60"
-              >
-                {isSavingBuilder ? "Đang lưu..." : "Lưu cấu hình mẫu v1.2"}
-              </button>
+              {canExport && (
+                <button
+                  onClick={() => handleExportXlsx(selectedTemplate === "detailed" ? "detailed" : "legacy")}
+                  disabled={isExporting}
+                  className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press disabled:opacity-60"
+                >
+                  {isExporting ? "Đang tải..." : "Tải file mẫu thử nghiệm"}
+                </button>
+              )}
+              {canEditBuilderConfig && (
+                <button
+                  onClick={handleSaveBuilderConfig}
+                  disabled={isSavingBuilder}
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-body-semibold hover:opacity-95 shadow-sm transition-all active-press disabled:opacity-60"
+                >
+                  {isSavingBuilder ? "Đang lưu..." : "Lưu cấu hình mẫu v1.2"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1614,13 +1631,15 @@ function ReportsContent() {
               <p className="font-body-md text-on-surface-variant max-w-md">
                 Hiện tại chưa có kỳ báo cáo nào được chốt khóa trong PostgreSQL. Nhấn nút bên dưới để tạo bản chụp đầu tiên.
               </p>
-              <button
-                onClick={handleOpenLockModal}
-                className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[18px]">lock_clock</span>
-                <span>Chốt số liệu kỳ này ngay</span>
-              </button>
+              {canLock && (
+                <button
+                  onClick={handleOpenLockModal}
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-[18px]">lock_clock</span>
+                  <span>Chốt số liệu kỳ này ngay</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -1921,18 +1940,22 @@ function ReportsContent() {
                   Trạng thái bản ghi: <strong className="text-status-success">{viewingSnapshot.status}</strong>
                 </span>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleExportSnapshotXlsx(viewingSnapshot.id, "legacy")}
-                    className="px-3 py-1.5 rounded bg-surface-container-low text-primary font-label-sm hover:bg-surface-container transition-colors"
-                  >
-                    Mẫu A (Tổng hợp .xlsx)
-                  </button>
-                  <button
-                    onClick={() => handleExportSnapshotXlsx(viewingSnapshot.id, "detailed")}
-                    className="px-3 py-1.5 rounded bg-primary text-on-primary font-label-sm hover:bg-primary/95 transition-colors"
-                  >
-                    Mẫu B (Chi tiết .xlsx)
-                  </button>
+                  {canExport && (
+                    <button
+                      onClick={() => handleExportSnapshotXlsx(viewingSnapshot.id, "legacy")}
+                      className="px-3 py-1.5 rounded bg-surface-container-low text-primary font-label-sm hover:bg-surface-container transition-colors"
+                    >
+                      Mẫu A (Tổng hợp .xlsx)
+                    </button>
+                  )}
+                  {canExport && (
+                    <button
+                      onClick={() => handleExportSnapshotXlsx(viewingSnapshot.id, "detailed")}
+                      className="px-3 py-1.5 rounded bg-primary text-on-primary font-label-sm hover:bg-primary/95 transition-colors"
+                    >
+                      Mẫu B (Chi tiết .xlsx)
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
