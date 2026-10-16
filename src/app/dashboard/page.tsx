@@ -104,23 +104,35 @@ export default function DashboardPage() {
   const [unitFilter, setUnitFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isAdminBlocked, setIsAdminBlocked] = useState(false);
 
   // Quick Task Assign Modal State
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignTitle, setAssignTitle] = useState("");
   const [assignUnit, setAssignUnit] = useState("");
   const [assignPriority, setAssignPriority] = useState("Cao");
-  const [assignDeadline, setAssignDeadline] = useState("2026-10-14T17:00");
+  const [assignDeadline, setAssignDeadline] = useState(() => {
+    const d = new Date(Date.now() + 24 * 3600 * 1000);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T17:00`;
+  });
   const [isAssigning, setIsAssigning] = useState(false);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     setErrorMsg(null);
+    setIsAdminBlocked(false);
     try {
       const res = await fetch(`/api/dashboard/kpi?unitId=${unitFilter}&period=${period}`);
       const data = await res.json();
 
       if (!res.ok) {
+        // Tài khoản quản trị kỹ thuật bị chặn xem số liệu nghiệp vụ theo thiết kế —
+        // hiển thị panel giải thích thay vì báo lỗi đỏ
+        if (res.status === 403 && /Quản trị kỹ thuật/.test(data.error || "")) {
+          setIsAdminBlocked(true);
+          return;
+        }
         throw new Error(data.error || "Không thể tải số liệu KPI");
       }
 
@@ -359,7 +371,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ERROR BANNER IF API FAILED */}
-        {errorMsg && (
+        {errorMsg && !isAdminBlocked && (
           <div className="p-4 rounded-xl bg-status-danger-bg border border-status-danger text-status-danger flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[22px]">error</span>
@@ -371,6 +383,19 @@ export default function DashboardPage() {
             >
               Thử lại
             </button>
+          </div>
+        )}
+
+        {/* PANEL GIẢI THÍCH CHO TÀI KHOẢN QUẢN TRỊ KỸ THUẬT */}
+        {isAdminBlocked && (
+          <div className="p-6 rounded-xl bg-surface-container-lowest border border-border-default flex flex-col items-center text-center gap-2">
+            <span className="material-symbols-outlined text-[32px] text-secondary">admin_panel_settings</span>
+            <p className="font-semibold text-on-surface">Tài khoản Quản trị hệ thống không xem số liệu điều hành</p>
+            <p className="text-sm text-on-surface-variant max-w-xl">
+              Theo phân quyền, tài khoản kỹ thuật chỉ quản trị cơ cấu, tài khoản và cấu hình — không đọc số liệu
+              nghiệp vụ. Để theo dõi điều hành, đăng nhập bằng tài khoản Trưởng hải quan cửa khẩu, Trưởng bộ phận
+              hoặc Công chức.
+            </p>
           </div>
         )}
 
@@ -546,8 +571,10 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col gap-4 my-space-md">
-              {departments.length === 0 ? (
+              {loading ? (
                 <div className="text-xs text-slate-400 py-4 text-center">Đang tải tiến độ các bộ phận...</div>
+              ) : departments.length === 0 ? (
+                <div className="text-xs text-slate-400 py-4 text-center">Chưa có dữ liệu bộ phận</div>
               ) : (
                 departments.map((dept) => {
                   const hasData = dept.taskCount > 0 && dept.completionRate !== null;
@@ -1015,8 +1042,10 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-surface-container-lowest rounded-lg p-3 shadow-sm flex flex-col gap-4 border border-border-default/40">
-            {departments.length === 0 ? (
+            {loading ? (
               <div className="text-xs text-slate-400 py-3 text-center">Đang tải tiến độ các bộ phận...</div>
+            ) : departments.length === 0 ? (
+              <div className="text-xs text-slate-400 py-3 text-center">Chưa có dữ liệu bộ phận</div>
             ) : (
               departments.map((dept) => {
                 const hasData = dept.taskCount > 0 && dept.completionRate !== null;
