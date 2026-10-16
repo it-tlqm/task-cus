@@ -47,6 +47,17 @@ export function ContextHelp() {
                 <li key={i}>{b}</li>
               ))}
             </ol>
+            {help.modals && help.modals.length > 0 && (
+              <div className="flex flex-col gap-1.5 pt-1 border-t border-border-default">
+                <span className="text-xs font-bold text-primary uppercase tracking-wide">Trong các cửa sổ thao tác</span>
+                {help.modals.map((m) => (
+                  <p key={m.name} className="text-sm text-on-surface">
+                    <strong>{m.name}: </strong>
+                    <span className="text-on-surface-variant">{m.tip}</span>
+                  </p>
+                ))}
+              </div>
+            )}
             <Link
               href="/huong-dan"
               onClick={() => setOpen(false)}
