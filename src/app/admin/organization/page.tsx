@@ -1606,7 +1606,7 @@ export default function OrganizationAdminPage() {
                       className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="DEPARTMENT">DEPARTMENT — Phạm vi Bộ phận / Đội trực thuộc</option>
-                      <option value="ORGANIZATION">ORGANIZATION — Toàn đơn vị Hải quan</option>
+                      <option value="ORGANIZATION">ORGANIZATION — Toàn bộ đơn vị</option>
                     </select>
                   </div>
                 </>
