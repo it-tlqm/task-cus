@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
+import { advisoryLock } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 
 export async function GET(
@@ -64,29 +65,53 @@ export async function POST(
       return jsonError("Định dạng ngày không hợp lệ", 400);
     }
 
-    const newRequest = await prisma.deadlineRequest.create({
-      data: {
-        taskId,
-        requestedById: user.personId,
-        requestedDeadline: parsedDate,
-        reason: reason.trim(),
-        status: "PENDING",
-      },
-      include: { requestedBy: true },
+    // Chống gửi trùng đề nghị (bấm liên tiếp): cùng người + cùng hạn trong 120s
+    const newRequest = await prisma.$transaction(async (tx) => {
+      await advisoryLock(tx, `deadline-req:${taskId}:${user.personId}:${parsedDate.toISOString()}`);
+      const recent = await tx.deadlineRequest.findFirst({
+        where: {
+          taskId,
+          requestedById: user.personId,
+          requestedDeadline: parsedDate,
+          createdAt: { gte: new Date(Date.now() - 120_000) },
+        },
+        include: { requestedBy: true },
+      });
+      if (recent) return { row: recent, deduplicated: true as const };
+      const created = await tx.deadlineRequest.create({
+        data: {
+          taskId,
+          requestedById: user.personId,
+          requestedDeadline: parsedDate,
+          reason: reason.trim(),
+          status: "PENDING",
+        },
+        include: { requestedBy: true },
+      });
+      return { row: created, deduplicated: false as const };
     });
+
+    if (newRequest.deduplicated) {
+      return NextResponse.json({
+        success: true,
+        message: "Đề nghị này vừa được gửi (chặn bấm trùng)",
+        data: newRequest.row,
+        deduplicated: true,
+      });
+    }
 
     await recordAuditEvent({
       actorId: user.id,
       action: "TASK_DEADLINE_REQUEST_CREATE",
       resourceType: "DeadlineRequest",
-      resourceId: newRequest.id,
+      resourceId: newRequest.row.id,
       newData: { taskId, requestedDeadline: parsedDate, reason: reason.trim() },
     });
 
     return NextResponse.json({
       success: true,
       message: "Đã gửi đề nghị lùi thời hạn hoàn thành nhiệm vụ",
-      data: newRequest,
+      data: newRequest.row,
     }, { status: 201 });
   } catch (error: any) {
     return jsonError("Lỗi khi tạo đề nghị lùi hạn: " + error.message, 500);

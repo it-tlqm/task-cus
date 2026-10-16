@@ -45,9 +45,9 @@ export async function POST(
 
     const isApproved = action === "APPROVE";
 
-    // Cập nhật DeadlineRequest
-    const updatedReq = await prisma.deadlineRequest.update({
-      where: { id: reqId },
+    // Chống duyệt trùng đồng thời: chỉ request còn PENDING mới chuyển được
+    const claimRes = await prisma.deadlineRequest.updateMany({
+      where: { id: reqId, status: "PENDING" },
       data: {
         status: isApproved ? "APPROVED" : "REJECTED",
         reviewedById: user.personId,
@@ -55,6 +55,16 @@ export async function POST(
         reviewNotes: reviewNotes || null,
       },
     });
+    if (claimRes.count === 0) {
+      const current = await prisma.deadlineRequest.findUnique({ where: { id: reqId } });
+      return NextResponse.json({
+        success: true,
+        message: `Đề nghị này đã được xử lý trước đó (${current?.status || "?"}) — không tạo tác dụng phụ mới`,
+        data: { request: current },
+        deduplicated: true,
+      });
+    }
+    const updatedReq = await prisma.deadlineRequest.findUnique({ where: { id: reqId } });
 
     // Nếu phê duyệt -> cập nhật currentDeadline của Task sang thời hạn mới
     let updatedTask = task;
@@ -109,7 +119,7 @@ export async function POST(
       actionUrl: `/tasks/${taskId}`,
       actionLabel: "Xem chi tiết nhiệm vụ",
       taskCode: task.code,
-      idempotencyKey: `EVENT_DR_REV_${reqId}_${Date.now()}`,
+      idempotencyKey: `EVENT_DR_REV_${reqId}`,
     });
 
     return NextResponse.json({

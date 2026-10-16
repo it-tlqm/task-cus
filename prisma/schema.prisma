@@ -287,6 +287,7 @@ model ReportingPeriod {
   routines  RoutineEntry[]
   snapshots ReportSnapshot[]
 
+  @@unique([type, title])
   @@map("reporting_periods")
 }
 

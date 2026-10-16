@@ -56,6 +56,15 @@ interface CachedAuth {
   expiresAt: number;
 }
 const authMemoryCache = new Map<string, CachedAuth>();
+const AUTH_CACHE_MAX = 1000;
+
+function pruneAuthCache(nowMs: number) {
+  if (authMemoryCache.size <= AUTH_CACHE_MAX) return;
+  for (const [k, v] of authMemoryCache) {
+    if (v.expiresAt <= nowMs) authMemoryCache.delete(k);
+    if (authMemoryCache.size <= AUTH_CACHE_MAX / 2) break;
+  }
+}
 
 export async function authenticateRequest(req: NextRequest): Promise<SessionUser | null> {
   let token: string | undefined;
@@ -142,6 +151,7 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
   };
 
   authMemoryCache.set(token, { user: sessionUser, expiresAt: nowMs + 60_000 });
+  pruneAuthCache(nowMs);
   return sessionUser;
 }
 

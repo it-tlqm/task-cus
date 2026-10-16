@@ -121,8 +121,11 @@ export async function POST(req: NextRequest) {
           ? new Date(planYear, monthNumber || new Date().getMonth() + 1, 0)
           : new Date(start.getTime() + 6 * 86400000);
 
-        period = await prisma.reportingPeriod.create({
-          data: {
+        // Upsert theo unique (type, title): 2 request đồng thời không tạo trùng kỳ
+        period = await prisma.reportingPeriod.upsert({
+          where: { type_title: { type: typeStr, title: titleStr } },
+          update: {},
+          create: {
             type: typeStr,
             title: titleStr,
             startAt: start,

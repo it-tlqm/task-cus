@@ -48,11 +48,17 @@ export default function LoginPage() {
       }
 
       toast.success("Đăng nhập thành công! Đang chuyển hướng...");
-      if (data.user?.role === "SYSTEM_ADMIN") {
-        router.push("/admin/system");
-      } else {
-        router.push("/dashboard");
+      // Quay lại đúng trang đã yêu cầu trước khi bị chặn (middleware ?redirect=), chống open-redirect
+      let dest = "/dashboard";
+      try {
+        const sp = new URLSearchParams(window.location.search);
+        const r = sp.get("redirect") || "";
+        if (r.startsWith("/") && !r.startsWith("//") && !r.startsWith("/login")) dest = r;
+      } catch {}
+      if (data.user?.role === "SYSTEM_ADMIN" && dest === "/dashboard") {
+        dest = "/admin/system";
       }
+      router.push(dest);
       router.refresh();
     } catch (err: any) {
       setError(err.message || "Lỗi kết nối máy chủ");

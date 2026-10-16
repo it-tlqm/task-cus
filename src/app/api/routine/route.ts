@@ -248,8 +248,11 @@ export async function POST(req: NextRequest) {
         periodId = activePeriod.id;
       } else {
         const currentIsoWeek = getIsoWeekFromDate(new Date());
-        const newPeriod = await prisma.reportingPeriod.create({
-          data: {
+        // Upsert theo unique (type, title): 2 request đồng thời không tạo trùng kỳ
+        const newPeriod = await prisma.reportingPeriod.upsert({
+          where: { type_title: { type: "WEEK", title: currentIsoWeek.standardTitle } },
+          update: {},
+          create: {
             type: "WEEK",
             title: currentIsoWeek.standardTitle,
             startAt: currentIsoWeek.startAt,
