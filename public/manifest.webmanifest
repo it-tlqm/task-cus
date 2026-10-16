@@ -1,0 +1,16 @@
+{
+  "name": "Hải quan Tà Lùng — Kế hoạch & Công việc",
+  "short_name": "HQ Tà Lùng",
+  "description": "Quản lý kế hoạch, công việc và điều hành tác nghiệp — Hải quan cửa khẩu Quốc tế Tà Lùng",
+  "start_url": "/my-work",
+  "display": "standalone",
+  "background_color": "#0f2a43",
+  "theme_color": "#0f2a43",
+  "icons": [
+    {
+      "src": "/images/logo-haiquan.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}

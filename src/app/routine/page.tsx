@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 
@@ -96,6 +97,9 @@ export default function RoutinePage() {
   const [inspectEntry, setInspectEntry] = useState<WorkLogEntry | null>(null);
 
   // Tab 2: Admin Form Builder State
+  // Chỉ người có quyền quản trị biểu mẫu / xem audit mới thấy tab 2-3
+  const { can: canPerm, canAudit } = usePermissions();
+  const canManageForms = canPerm("form.manage");
   const [builderFields, setBuilderFields] = useState<FormFieldDef[]>([]);
   const [builderTemplateId, setBuilderTemplateId] = useState<string>("");
   const [isPublishingVersion, setIsPublishingVersion] = useState(false);
@@ -395,6 +399,7 @@ export default function RoutinePage() {
                   {entries.length} việc
                 </span>
               </button>
+              {canManageForms && (
               <button
                 onClick={() => setActiveTab("tab2")}
                 className={`flex items-center gap-2 px-space-md py-2.5 rounded-lg transition-fast ${
@@ -409,6 +414,8 @@ export default function RoutinePage() {
                   No-Code v{activeFormVersion?.version || 1}
                 </span>
               </button>
+              )}
+              {(canManageForms || canAudit) && (
               <button
                 onClick={() => setActiveTab("tab3")}
                 className={`flex items-center gap-2 px-space-md py-2.5 rounded-lg transition-fast ${
@@ -420,6 +427,7 @@ export default function RoutinePage() {
                 <span className="material-symbols-outlined text-[18px]">history_toggle_off</span>
                 <span>3. Lịch sử kiểm toán Audit Trail</span>
               </button>
+              )}
             </div>
             <div className="flex items-center gap-2 px-2 text-on-surface-variant font-label-sm text-label-sm">
               <span className="inline-block w-2 h-2 rounded-full bg-status-success" />

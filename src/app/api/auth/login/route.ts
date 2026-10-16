@@ -18,7 +18,7 @@ function loginRateKey(req: NextRequest, username: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { username, password } = body;
+    const { username, password, remember } = body;
 
     if (!username || !password) {
       return jsonError("Vui lòng cung cấp đầy đủ tên đăng nhập và mật khẩu", 400);
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       permissions: account.permissions,
     };
 
-    const token = signToken(sessionUser);
+    const token = signToken(sessionUser, remember !== false);
     loginAttempts.delete(rateKey);
 
     // Record login audit event
@@ -127,15 +127,16 @@ export async function POST(req: NextRequest) {
       token,
     });
 
-    // Set cookie
+    // Set cookie (không "ghi nhớ" thì cookie theo phiên trình duyệt + token 8h)
     const host = req.headers.get("host") || "";
     const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+    const keepLogin = remember !== false;
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production" && !isLocal,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      ...(keepLogin ? { maxAge: 60 * 60 * 24 * 7 } : {}),
     });
 
     return response;

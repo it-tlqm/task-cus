@@ -9,8 +9,16 @@ const inter = Inter({ subsets: ["latin", "vietnamese"] });
 export const metadata: Metadata = {
   title: "Hải quan cửa khẩu Quốc tế Tà Lùng — Quản lý Kế hoạch & Công việc",
   description: "Hệ thống Quản lý Kế hoạch & Công việc — Hải quan cửa khẩu Quốc tế Tà Lùng",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#0f2a43",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "HQ Tà Lùng",
+  },
   icons: {
     icon: "/images/logo-haiquan.png",
+    apple: "/images/logo-haiquan.png",
   },
 };
 

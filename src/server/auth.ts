@@ -39,8 +39,8 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
   return await bcrypt.compare(plain, hash);
 }
 
-export function signToken(user: SessionUser): string {
-  return jwt.sign(user, requireJwtSecret(), { expiresIn: "7d" });
+export function signToken(user: SessionUser, remember: boolean = true): string {
+  return jwt.sign(user, requireJwtSecret(), { expiresIn: remember ? "7d" : "8h" });
 }
 
 export function verifyToken(token: string): SessionUser | null {
