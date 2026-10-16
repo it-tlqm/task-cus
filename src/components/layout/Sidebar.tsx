@@ -20,6 +20,7 @@ const navigationItems = [
       { name: "Nhiệm vụ chỉ đạo / phối hợp", href: "/tasks", icon: "hub" },
       { name: "Danh mục sản phẩm QĐ1277", href: "/products", icon: "inventory_2" },
       { name: "Kết quả công tác tháng", href: "/monthly-results", icon: "assessment" },
+      { name: "Nghỉ phép & công tác", href: "/leaves", icon: "beach_access" },
       { name: "Phê duyệt điều hành", href: "/approvals", icon: "fact_check", leadersOnly: true },
       { name: "Nhật ký công tác thường xuyên", href: "/routine", icon: "history_edu" },
     ],

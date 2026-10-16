@@ -87,6 +87,8 @@ model Person {
   snapshotsLocked  ReportSnapshot[]   @relation("SnapshotLocker")
   attachments      TaskAttachment[]   @relation("AttachmentUploader")
   monthlyResults   MonthlyWorkResult[]
+  leaveRequests    LeaveRequest[]  @relation("LeaveRequester")
+  leaveHandovers   LeaveRequest[]  @relation("LeaveHandover")
 
   @@map("people")
 }
@@ -626,6 +628,34 @@ model ReportSnapshot {
   @@index([checksum])
   @@index([periodId, status])
   @@map("report_snapshots")
+}
+
+// ----------------------------------------------------
+// 14. ĐƠN NGHỈ PHÉP/BÙ/CÔNG TÁC/CUỐI TUẦN (Đợt B v1: theo dõi + duyệt,
+// chưa trừ hạn mức phép năm)
+// ----------------------------------------------------
+
+model LeaveRequest {
+  id            String    @id @default(uuid())
+  personId      String    @map("person_id")
+  type          String // NGHI_PHEP, NGHI_BU, CONG_TAC, NGHI_CUOI_TUAN
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  reason        String
+  handoverToId  String?   @map("handover_to_id")
+  handoverNotes String?   @map("handover_notes")
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELED
+  reviewedById  String?   @map("reviewed_by_id")
+  reviewedAt    DateTime? @map("reviewed_at")
+  reviewNotes   String?   @map("review_notes")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  person     Person  @relation("LeaveRequester", fields: [personId], references: [id], onDelete: Cascade)
+  handoverTo Person? @relation("LeaveHandover", fields: [handoverToId], references: [id])
+
+  @@index([personId, status])
+  @@map("leave_requests")
 }
 
 // ----------------------------------------------------
