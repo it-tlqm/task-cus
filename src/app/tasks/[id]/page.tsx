@@ -62,6 +62,17 @@ interface TaskDetail {
     createdAt: string;
     author?: { fullName: string };
   }>;
+  timeline?: Array<{
+    id: string;
+    at: string;
+    actor: string;
+    kind: string;
+    title: string;
+    detail: string | null;
+    progress: number | null;
+    statusFrom: string | null;
+    statusTo: string | null;
+  }>;
 }
 
 export default function TaskDetailPage() {
@@ -645,35 +656,82 @@ export default function TaskDetailPage() {
               )}
             </div>
 
-            {/* Timeline / Updates Card */}
+            {/* Timeline / Updates Card — nhật ký hợp nhất từ lúc giao việc */}
             <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-border-default pb-3">
                 <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-[20px]">history</span>
-                  Nhật Ký Tác Nghiệp &amp; Cập Nhật ({task.updates?.length || 0})
+                  Nhật Ký Tác Nghiệp &amp; Cập Nhật ({task.timeline?.length || task.updates?.length || 0})
                 </h3>
               </div>
 
-              {(!task.updates || task.updates.length === 0) ? (
+              {(!task.timeline || task.timeline.length === 0) && (!task.updates || task.updates.length === 0) ? (
                 <div className="py-8 text-center text-outline text-xs">
-                  Chưa có lịch sử cập nhật tác nghiệp nào. Nhấn &quot;Báo cáo tiến độ&quot; để ghi nhận nhật ký.
+                  Chưa có lịch sử tác nghiệp nào. Nhấn &quot;Báo cáo tiến độ&quot; để ghi nhận nhật ký.
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {task.updates.map((up) => (
-                    <div key={up.id} className="p-3 rounded-lg bg-surface-subtle border border-border-default/50 flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-primary">{up.author?.fullName || "Cán bộ thụ lý"}</span>
-                        <span className="text-outline">{formatDateTime(up.createdAt)}</span>
+                  {(task.timeline && task.timeline.length > 0
+                    ? task.timeline
+                    : (task.updates || []).map((up: any) => ({
+                        id: up.id, at: up.createdAt, actor: up.author?.fullName || "Cán bộ thụ lý",
+                        kind: "progress", title: "Cập nhật tiến độ", detail: up.notes || null,
+                        progress: up.progressPercent, statusFrom: null, statusTo: null,
+                      }))
+                  ).map((ev: any) => {
+                    const kindStyle: Record<string, { icon: string; cls: string }> = {
+                      create: { icon: "add_task", cls: "bg-primary/10 text-primary" },
+                      accept: { icon: "handshake", cls: "bg-status-success-bg text-status-success" },
+                      progress: { icon: "trending_up", cls: "bg-secondary/15 text-secondary" },
+                      submit: { icon: "rate_review", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+                      approve: { icon: "verified", cls: "bg-status-success-bg text-status-success" },
+                      return: { icon: "undo", cls: "bg-status-danger-bg text-status-danger" },
+                      extend: { icon: "update", cls: "bg-status-unassigned-bg text-status-unassigned" },
+                      file: { icon: "attach_file", cls: "bg-surface-container text-on-surface-variant" },
+                      edit: { icon: "edit_note", cls: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+                      cancel: { icon: "delete_sweep", cls: "bg-status-danger-bg text-status-danger" },
+                      link: { icon: "link", cls: "bg-surface-container text-on-surface-variant" },
+                    };
+                    const statusVi: Record<string, string> = {
+                      NOT_STARTED: "Chưa thực hiện",
+                      IN_PROGRESS: "Đang thực hiện",
+                      WAITING_REVIEW: "Chờ duyệt",
+                      COMPLETED: "Hoàn thành",
+                      DONE: "Hoàn thành",
+                      CANCELED: "Đã hủy",
+                    };
+                    const ks = kindStyle[ev.kind] || kindStyle.progress;
+                    return (
+                      <div key={ev.id} className="flex gap-2.5">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${ks.cls}`}>
+                          <span className="material-symbols-outlined text-[16px]">{ks.icon}</span>
+                        </div>
+                        <div className="p-3 rounded-lg bg-surface-subtle border border-border-default/50 flex flex-col gap-1 flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 text-xs">
+                            <span className="font-bold text-primary truncate">
+                              {ev.actor} <span className="font-normal text-on-surface-variant">· {ev.title}</span>
+                            </span>
+                            <span className="text-outline shrink-0">{formatDateTime(ev.at)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs flex-wrap">
+                            {typeof ev.progress === "number" && (
+                              <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary font-bold">
+                                Tiến độ: {ev.progress}%
+                              </span>
+                            )}
+                            {ev.statusTo && (
+                              <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-semibold">
+                                {ev.statusFrom && ev.statusFrom !== ev.statusTo
+                                  ? `${statusVi[ev.statusFrom] || ev.statusFrom} → ${statusVi[ev.statusTo] || ev.statusTo}`
+                                  : statusVi[ev.statusTo] || ev.statusTo}
+                              </span>
+                            )}
+                          </div>
+                          {ev.detail && <p className="text-xs text-on-surface mt-0.5 whitespace-pre-line">{ev.detail}</p>}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary font-bold">
-                          Tiến độ: {up.progressPercent}%
-                        </span>
-                      </div>
-                      {up.notes && <p className="text-xs text-on-surface mt-1">{up.notes}</p>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

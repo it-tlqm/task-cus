@@ -61,12 +61,203 @@ export async function GET(
     const isOverdue = !isFinished && new Date(task.currentDeadline) < now;
     const latestProgress = (task.updates as any[])?.[0]?.progressPercent;
 
+    // Nhật ký hợp nhất: tiến độ + toàn bộ lai lịch (ai giao/nhận/sửa/duyệt/gia hạn/đính kèm)
+    // từ TaskUpdate, DeadlineRequest, Attachment và AuditEvent (bỏ các audit trùng với TaskUpdate)
+    const audits = await prisma.auditEvent.findMany({
+      where: { resourceType: "Task", resourceId: taskId },
+      include: { actor: { include: { person: { select: { fullName: true } } } } },
+      orderBy: { timestamp: "asc" },
+    });
+    const personIds = new Set<string>();
+    for (const a of audits) {
+      const nd: any = a.newData || {};
+      if (typeof nd.ownerId === "string") personIds.add(nd.ownerId);
+      if (Array.isArray(nd.assignees)) nd.assignees.forEach((x: any) => typeof x === "string" && personIds.add(x));
+    }
+    const extraPeople = personIds.size > 0
+      ? await prisma.person.findMany({ where: { id: { in: [...personIds] } }, select: { id: true, fullName: true } })
+      : [];
+    const pname = new Map(extraPeople.map((p) => [p.id, p.fullName]));
+    const actorName = (a: any) => a.actor?.person?.fullName || "Hệ thống";
+
+    const timeline: any[] = [];
+
+    // 1. Dòng khởi tạo / giao nhiệm vụ (luôn có)
+    const createAudit = audits.find((a) => a.action === "TASK_CREATE");
+    {
+      const nd: any = createAudit?.newData || {};
+      const ownerName = (task.owner as any)?.fullName || (typeof nd.ownerId === "string" ? pname.get(nd.ownerId) || null : null);
+      const collaboratorNames = (task.assignees || []).map((as: any) => as.person?.fullName).filter(Boolean);
+      const extraAssigneeCount = Array.isArray(nd.assignees) ? nd.assignees.length : 0;
+      
+      let assigneesText = "";
+      if (collaboratorNames.length > 0) {
+        assigneesText = ` (phối hợp: ${collaboratorNames.join(", ")})`;
+      } else if (extraAssigneeCount > 0) {
+        assigneesText = ` (+ ${extraAssigneeCount} cán bộ phối hợp)`;
+      }
+
+      timeline.push({
+        id: `create-${taskId}`,
+        at: createAudit?.timestamp || task.createdAt,
+        actor: createAudit ? actorName(createAudit) : "Lãnh đạo đơn vị",
+        kind: "create",
+        title: "Giao nhiệm vụ",
+        detail: ownerName ? `Phân công chủ trì: ${ownerName}${assigneesText}` : null,
+        progress: null,
+        statusFrom: null,
+        statusTo: "NOT_STARTED",
+      });
+    }
+
+    // 2. Chỉnh sửa chỉ đạo / nội dung (từ AuditEvent TASK_UPDATE có sửa nội dung)
+    const FIELD_LABELS: Record<string, string> = {
+      title: "Tiêu đề",
+      description: "Nội dung chỉ đạo",
+      priority: "Độ ưu tiên",
+      currentDeadline: "Hạn giải quyết",
+      expectedResultText: "Sản phẩm mục tiêu",
+      ownerId: "Cán bộ chủ trì",
+      assignees: "Cán bộ phối hợp",
+    };
+
+    for (const a of audits) {
+      if (a.action === "TASK_UPDATE") {
+        const nd: any = a.newData || {};
+        const od: any = a.oldData || {};
+        const changed: string[] = Array.isArray(nd.changedFields) ? nd.changedFields : [];
+        const hasContentChange = changed.some((f) => FIELD_LABELS[f]) || (od.title && nd.title && od.title !== nd.title) || nd.assigneesChanged;
+        
+        if (hasContentChange) {
+          const detailParts: string[] = [];
+          if (od.title && nd.title && od.title !== nd.title) {
+            detailParts.push(`Đổi tiêu đề: "${nd.title}"`);
+          }
+          if (od.currentDeadline && nd.currentDeadline && new Date(od.currentDeadline).getTime() !== new Date(nd.currentDeadline).getTime()) {
+            detailParts.push(`Đổi hạn giải quyết: ${new Date(nd.currentDeadline).toLocaleDateString("vi-VN")}`);
+          }
+          if (nd.assigneesChanged) {
+            detailParts.push("Điều chỉnh phân công cán bộ phối hợp");
+          }
+          const otherChanged = changed.filter((f) => f !== "title" && f !== "currentDeadline" && f !== "assignees" && FIELD_LABELS[f]);
+          if (otherChanged.length > 0) {
+            detailParts.push(`Điều chỉnh ${otherChanged.map((f) => FIELD_LABELS[f]).join(", ")}`);
+          }
+
+          timeline.push({
+            id: `aud-${a.id}`,
+            at: a.timestamp,
+            actor: actorName(a),
+            kind: "edit",
+            title: "Chỉnh sửa chỉ đạo",
+            detail: detailParts.join(" · ") || "Lãnh đạo điều chỉnh thông tin nhiệm vụ",
+            progress: null,
+            statusFrom: null,
+            statusTo: null,
+          });
+        }
+      } else if (a.action === "PLAN_TASK_LINK") {
+        timeline.push({
+          id: `aud-${a.id}`,
+          at: a.timestamp,
+          actor: actorName(a),
+          kind: "link",
+          title: "Gắn vào kế hoạch",
+          detail: typeof (a.newData as any)?.planTitle === "string" ? (a.newData as any).planTitle : null,
+          progress: null,
+          statusFrom: null,
+          statusTo: null,
+        });
+      }
+    }
+
+    // 3. Tiến độ, nhận việc, nghiệm thu, trả lại (từ TaskUpdate)
+    for (const u of (task.updates as any[]) || []) {
+      const notes = u.notes || "";
+      const isAccept = (u.statusBefore === "NOT_STARTED" && u.statusAfter === "IN_PROGRESS") || notes.toLowerCase().includes("nhận việc");
+      const isSubmit = u.statusAfter === "WAITING_REVIEW";
+      const isApprove = u.statusAfter === "COMPLETED" || u.statusAfter === "DONE" || notes.includes("nghiệm thu") || notes.includes("hoàn thành 100%");
+      const isReturn = (u.statusBefore === "WAITING_REVIEW" && u.statusAfter === "IN_PROGRESS") || notes.toLowerCase().includes("trả lại") || notes.toLowerCase().includes("yêu cầu bổ sung");
+      const isCancel = u.statusAfter === "CANCELED" || notes.includes("loại nhiệm vụ trùng");
+
+      let kind = "progress";
+      let title = "Cập nhật tiến độ";
+
+      if (isAccept) {
+        kind = "accept";
+        title = "Xác nhận nhận việc";
+      } else if (isSubmit) {
+        kind = "submit";
+        title = "Nộp kết quả / Chờ duyệt";
+      } else if (isApprove) {
+        kind = "approve";
+        title = "Nghiệm thu hoàn thành";
+      } else if (isReturn) {
+        kind = "return";
+        title = "Trả lại yêu cầu hoàn thiện";
+      } else if (isCancel) {
+        kind = "cancel";
+        title = "Loại nhiệm vụ trùng";
+      }
+
+      timeline.push({
+        id: `upd-${u.id}`,
+        at: u.createdAt,
+        actor: u.author?.fullName || "Cán bộ thụ lý",
+        kind,
+        title,
+        detail: notes || null,
+        progress: u.progressPercent,
+        statusFrom: u.statusBefore || null,
+        statusTo: u.statusAfter || null,
+      });
+    }
+
+    // 4. Đề nghị & duyệt lùi hạn
+    for (const dr of (task.deadlineRequests as any[]) || []) {
+      const isPending = dr.status === "PENDING";
+      const isApproved = dr.status === "APPROVED";
+      const deadlineStr = dr.requestedDeadline ? new Date(dr.requestedDeadline).toLocaleDateString("vi-VN") : "";
+
+      timeline.push({
+        id: `dr-${dr.id}`,
+        at: dr.createdAt,
+        actor: dr.requestedBy?.fullName || (dr.requestedById ? pname.get(dr.requestedById) || "Cán bộ" : "Cán bộ"),
+        kind: "extend",
+        title: isPending ? "Đề nghị lùi hạn (chờ duyệt)" : isApproved ? "Được duyệt lùi hạn" : "Bị từ chối lùi hạn",
+        detail: `${dr.reason ? `Lý do: ${dr.reason}` : ""}${deadlineStr ? ` → Hạn mới đề xuất: ${deadlineStr}` : ""}`.trim() || null,
+        progress: null,
+        statusFrom: null,
+        statusTo: null,
+      });
+    }
+
+    // 5. Tệp đính kèm
+    for (const at of (task.attachments as any[]) || []) {
+      const sizeStr = at.fileSize ? ` (${Math.round(at.fileSize / 1024)} KB)` : "";
+      timeline.push({
+        id: `file-${at.id}`,
+        at: at.createdAt,
+        actor: at.uploadedBy?.fullName || "Cán bộ",
+        kind: "file",
+        title: "Đính kèm tài liệu",
+        detail: `Tệp: ${at.fileName}${sizeStr}`,
+        progress: null,
+        statusFrom: null,
+        statusTo: null,
+      });
+    }
+
+    // Sắp xếp giảm dần theo thời gian (sự kiện mới nhất lên đầu)
+    timeline.sort((x, y) => new Date(y.at).getTime() - new Date(x.at).getTime());
+
     return NextResponse.json({
       success: true,
       data: {
         ...task,
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
+        timeline,
       },
     });
   } catch (error: any) {
