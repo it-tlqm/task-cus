@@ -26,6 +26,7 @@ export function Header() {
   const [currentUser, setCurrentUser] = useState<{
     fullName: string;
     role: string;
+    positionTitle?: string;
     unitName?: string;
   }>({
     fullName: "Nguyễn Văn An",
@@ -44,6 +45,7 @@ export function Header() {
           setCurrentUser({
             fullName: data.user.fullName || "Nguyễn Văn An",
             role: data.user.role || "TRUONG_BO_PHAN",
+            positionTitle: data.user.positionTitle || undefined,
             unitName: data.user.unit?.name || "Bộ phận Nghiệp vụ A",
           });
         }
@@ -231,7 +233,7 @@ export function Header() {
                   {currentUser.fullName}
                 </span>
                 <span className="font-label-sm text-label-sm text-outline">
-                  {getRoleBadgeLabel(currentUser.role)}
+                  {currentUser.positionTitle || getRoleBadgeLabel(currentUser.role)}
                 </span>
               </div>
             </div>
