@@ -81,7 +81,7 @@ interface Person {
 
 export default function OrganizationAdminPage() {
   const [orgTree, setOrgTree] = useState<OrgUnit[]>([]);
-  const { canManageOrg } = usePermissions();
+  const { canManageOrg, loading: permLoading } = usePermissions();
   const [flatUnits, setFlatUnits] = useState<OrgUnit[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -783,6 +783,14 @@ export default function OrganizationAdminPage() {
 
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-6 pb-20">
+      {!permLoading && !canManageOrg && (
+        <div className="p-8 bg-white border border-amber-200 rounded-xl text-center space-y-2 shadow-sm">
+          <p className="text-lg font-bold text-slate-900">Khu vực dành cho Lãnh đạo đơn vị</p>
+          <p className="text-sm text-slate-600">
+            Tài khoản của đồng chí không có quyền quản trị tổ chức & nhân sự. Mọi thao tác (nếu cố tình gọi API) đều bị backend chặn 403 và ghi audit.
+          </p>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

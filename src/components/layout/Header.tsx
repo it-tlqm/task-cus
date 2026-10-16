@@ -98,6 +98,14 @@ export function Header() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {}
+    try {
+      const { clearPermissionsCache } = await import("@/hooks/usePermissions");
+      clearPermissionsCache();
+    } catch {}
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("currentUser");
+    }
     router.push("/login");
   };
 
@@ -148,7 +156,7 @@ export function Header() {
               />
               <span>Đơn vị: {UNIT_SHORT_NAME}</span>
               <span className="text-outline-variant">/</span>
-              <span className="text-on-surface font-body-semibold">Lãnh đạo đơn vị</span>
+              <span className="text-on-surface font-body-semibold">{getRoleBadgeLabel(currentUser.role)}</span>
             </div>
 
             <form

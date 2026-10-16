@@ -25,6 +25,32 @@ const SYSTEM_ADMIN_TECH = [
 let cachedUser: ClientSessionUser | null | undefined;
 let inflight: Promise<ClientSessionUser | null> | null = null;
 
+/** Xóa cache quyền client — BẮT BUỘC gọi sau đăng nhập/đăng xuất/đổi tài khoản cùng tab. */
+export function clearPermissionsCache() {
+  cachedUser = undefined;
+  inflight = null;
+}
+
+/** Nạp lại quyền từ server, bỏ qua cache (dùng sau khi đổi vai trò mà không reload). */
+export function refreshPermissions(): Promise<ClientSessionUser | null> {
+  clearPermissionsCache();
+  return loadMe();
+}
+
+/** Tái xác thực nền khi mount: giữ paint nhanh từ cache rồi cập nhật nếu token đã đổi acc. */
+function revalidateInBackground(onUpdate: (u: ClientSessionUser | null) => void) {
+  fetch("/api/auth/me")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((json) => {
+      const fresh: ClientSessionUser | null = json?.user || null;
+      const prevKey = cachedUser ? `${cachedUser.id}::${cachedUser.role}` : "__null__";
+      const freshKey = fresh ? `${fresh.id}::${fresh.role}` : "__null__";
+      cachedUser = fresh;
+      if (prevKey !== freshKey) onUpdate(fresh);
+    })
+    .catch(() => {});
+}
+
 function loadMe(): Promise<ClientSessionUser | null> {
   if (cachedUser !== undefined) return Promise.resolve(cachedUser);
   if (!inflight) {
@@ -74,11 +100,21 @@ export function usePermissions() {
   const [loading, setLoading] = useState(cachedUser === undefined);
 
   useEffect(() => {
-    if (cachedUser !== undefined) return;
+    let cancelled = false;
+    // Paint nhanh từ cache rồi tái xác thực nền: tránh kẹt quyền của tài khoản cũ sau khi đổi login cùng tab
     loadMe().then((u) => {
+      if (cancelled) return;
       setUser(u);
       setLoading(false);
     });
+    revalidateInBackground((fresh) => {
+      if (cancelled) return;
+      setUser(fresh);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const role = user?.role || "";

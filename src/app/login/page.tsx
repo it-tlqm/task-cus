@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
+import { clearPermissionsCache } from "@/hooks/usePermissions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,6 +39,10 @@ export default function LoginPage() {
       }
 
       if (data.token) {
+        // Xóa cache quyền của tài khoản cũ (cùng tab) trước khi lưu phiên mới
+        clearPermissionsCache();
+        localStorage.removeItem("token");
+        localStorage.removeItem("currentUser");
         localStorage.setItem("token", data.token);
         localStorage.setItem("currentUser", JSON.stringify(data.user));
       }

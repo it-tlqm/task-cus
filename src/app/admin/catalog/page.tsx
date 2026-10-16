@@ -68,7 +68,7 @@ interface ActivityTemplate {
 
 export default function CatalogAdminPage() {
   const [groups, setGroups] = useState<ActivityGroup[]>([]);
-  const { canManageCatalog } = usePermissions();
+  const { canManageCatalog, loading: permLoading } = usePermissions();
   const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -396,6 +396,14 @@ export default function CatalogAdminPage() {
 
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-6 pb-20">
+      {!permLoading && !canManageCatalog && (
+        <div className="p-8 bg-white border border-amber-200 rounded-xl text-center space-y-2 shadow-sm">
+          <p className="text-lg font-bold text-slate-900">Khu vực quản trị danh mục</p>
+          <p className="text-sm text-slate-600">
+            Tài khoản của đồng chí chỉ được xem danh mục đầu việc mẫu. Thao tác thêm/sửa/phê duyệt do backend chặn 403 và ghi audit.
+          </p>
+        </div>
+      )}
       {/* Toast Notification */}
       {toastMessage && (
         <div
