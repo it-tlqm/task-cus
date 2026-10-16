@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import { PushToggle } from "@/components/ui/PushToggle";
 
 interface NotificationItem {
   id: string;
@@ -177,6 +178,7 @@ export default function NotificationsPage() {
               <span className="material-symbols-outlined text-[16px] text-primary">done_all</span>
               <span>{isProcessingAll ? "Đang xử lý..." : "Đã đọc hết"}</span>
             </button>
+            <PushToggle />
           </div>
         </section>
 

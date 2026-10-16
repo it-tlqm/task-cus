@@ -89,6 +89,7 @@ model Person {
   monthlyResults   MonthlyWorkResult[]
   leaveRequests    LeaveRequest[]  @relation("LeaveRequester")
   leaveHandovers   LeaveRequest[]  @relation("LeaveHandover")
+  pushSubscriptions PushSubscription[]
 
   @@map("people")
 }
@@ -656,6 +657,25 @@ model LeaveRequest {
 
   @@index([personId, status])
   @@map("leave_requests")
+}
+
+// ----------------------------------------------------
+// 15. WEB PUSH SUBSCRIPTIONS (thông báo đẩy về điện thoại)
+// ----------------------------------------------------
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  personId  String   @map("person_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId])
+  @@map("push_subscriptions")
 }
 
 // ----------------------------------------------------

@@ -20,7 +20,8 @@ export interface CreateNotificationInput {
 }
 
 /**
- * Tạo mới thông báo an toàn vào PostgreSQL, chống trùng lặp tuyệt đối bằng idempotencyKey.
+ * Tạo thông báo an toàn vào PostgreSQL, chống trùng lặp tuyệt đối bằng idempotencyKey.
+ * Kèm bắn web-push ra điện thoại nếu người nhận đã bật (best-effort).
  */
 export async function createNotification(input: CreateNotificationInput) {
   try {
@@ -33,7 +34,7 @@ export async function createNotification(input: CreateNotificationInput) {
       }
     }
 
-    return await prisma.notification.create({
+    const created = await prisma.notification.create({
       data: {
         recipientId: input.recipientId,
         category: input.category || "task",
@@ -50,6 +51,21 @@ export async function createNotification(input: CreateNotificationInput) {
         idempotencyKey: input.idempotencyKey || null,
       },
     });
+
+    // Đẩy ra điện thoại (không chặn luồng chính nếu lỗi)
+    try {
+      const { sendPushForNotification } = await import("@/server/push");
+      await sendPushForNotification({
+        recipientId: input.recipientId,
+        type: input.type,
+        title: input.title,
+        content: input.content,
+        actionUrl: input.actionUrl,
+        taskCode: input.taskCode,
+      });
+    } catch {}
+
+    return created;
   } catch (error: any) {
     if (error.code === "P2002" && input.idempotencyKey) {
       return await prisma.notification.findUnique({
