@@ -519,11 +519,35 @@ export default function MyWorkPage() {
   };
 
   // Filter tasks based on tabs and query
+  // Bộ lọc thời gian theo ca/kỳ (nút Hôm nay / Tuần này / Tháng / Tất cả có onClick thật)
+  // Mặc định Tất cả để không giấu việc (đúng như trước khi sửa)
+  const [timeFilter, setTimeFilter] = useState<"DAY" | "WEEK" | "MONTH" | "ALL">("ALL");
+  const inTimeRange = (task: TaskItem): boolean => {
+    if (timeFilter === "ALL") return true;
+    const dl = new Date(task.currentDeadline);
+    if (isNaN(dl.getTime())) return false;
+    const now = new Date();
+    if (timeFilter === "DAY") {
+      return dl.getFullYear() === now.getFullYear() && dl.getMonth() === now.getMonth() && dl.getDate() === now.getDate();
+    }
+    if (timeFilter === "MONTH") {
+      return dl.getFullYear() === now.getFullYear() && dl.getMonth() === now.getMonth();
+    }
+    // WEEK: Thứ 2 → Chủ nhật chứa hôm nay
+    const start = new Date(now);
+    const day = (now.getDay() + 6) % 7;
+    start.setDate(now.getDate() - day);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
+    return dl >= start && dl < end;
+  };
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.title.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
+    if (!inTimeRange(task)) return false;
 
     if (activeTab === "ALL") return true;
     if (activeTab === "IN_PROGRESS") return task.status === "IN_PROGRESS" || task.status === "NOT_STARTED";
@@ -644,16 +668,28 @@ export default function MyWorkPage() {
           {/* BỘ LỌC THỜI GIAN THEO CA/KỲ TÁC NGHIỆP */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low p-space-sm rounded-lg">
             <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm">
-              <button className="px-3 py-1.5 rounded font-label-md text-label-md bg-secondary text-on-secondary shadow-sm font-semibold transition-fast">
+              <button
+                onClick={() => setTimeFilter("DAY")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "DAY" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
+              >
                 Hôm nay ({todayLabel})
               </button>
-              <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
+              <button
+                onClick={() => setTimeFilter("WEEK")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "WEEK" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
+              >
                 Tuần này ({periodLabels.weekShort})
               </button>
-              <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
+              <button
+                onClick={() => setTimeFilter("MONTH")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "MONTH" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
+              >
                 {periodLabels.monthShort}
               </button>
-              <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
+              <button
+                onClick={() => setTimeFilter("ALL")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "ALL" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
+              >
                 Tất cả nhiệm vụ
               </button>
             </div>
@@ -1173,15 +1209,30 @@ export default function MyWorkPage() {
         {/* CHỌN KỲ TÁC NGHIỆP (SEGMENTED PILLS) */}
         <div className="px-margin py-2">
           <div className="bg-surface-container p-1 rounded-lg flex items-center justify-between gap-1 shadow-inner">
-            <button className="flex-1 py-1.5 px-2 rounded-md bg-secondary text-on-secondary font-body-semibold text-label-md text-center shadow-sm flex items-center justify-center gap-1 transition-fast">
+            <button
+              onClick={() => setTimeFilter("DAY")}
+              className={`flex-1 py-1.5 px-2 rounded-md font-body-semibold text-label-md text-center shadow-sm flex items-center justify-center gap-1 transition-fast ${timeFilter === "DAY" ? "bg-secondary text-on-secondary" : "text-on-surface-variant"}`}
+            >
               <span className="material-symbols-outlined text-[15px]">event</span>
               <span>Hôm nay ({new Date().toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })})</span>
             </button>
-            <button className="flex-1 py-1.5 px-2 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md text-center transition-fast">
+            <button
+              onClick={() => setTimeFilter("WEEK")}
+              className={`flex-1 py-1.5 px-2 rounded-md font-label-md text-label-md text-center transition-fast ${timeFilter === "WEEK" ? "bg-secondary text-on-secondary font-body-semibold shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
               {periodLabels.weekShort}
             </button>
-            <button className="flex-1 py-1.5 px-2 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md text-center transition-fast">
+            <button
+              onClick={() => setTimeFilter("MONTH")}
+              className={`flex-1 py-1.5 px-2 rounded-md font-label-md text-label-md text-center transition-fast ${timeFilter === "MONTH" ? "bg-secondary text-on-secondary font-body-semibold shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
               {periodLabels.monthShort}
+            </button>
+            <button
+              onClick={() => setTimeFilter("ALL")}
+              className={`flex-1 py-1.5 px-2 rounded-md font-label-md text-label-md text-center transition-fast ${timeFilter === "ALL" ? "bg-secondary text-on-secondary font-body-semibold shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              Tất cả
             </button>
           </div>
         </div>
