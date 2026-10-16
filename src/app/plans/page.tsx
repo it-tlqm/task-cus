@@ -462,7 +462,7 @@ export default function PlansPage() {
             </div>
 
             {/* Action Group */}
-            <div className="flex flex-wrap items-center gap-space-sm shrink-0">
+            <div data-tour="workflow-actions" className="flex flex-wrap items-center gap-space-sm shrink-0">
               <button
                 data-testid="add-work-item-btn"
                 onClick={() => openAddModal()}
@@ -1278,7 +1278,7 @@ export default function PlansPage() {
         </section>
 
         {/* ACCORDION SECTIONS */}
-        <section className="px-margin mt-space-md flex flex-col gap-3">
+        <section data-tour="plan-items" className="px-margin mt-space-md flex flex-col gap-3">
           {activePlan?.items && activePlan.items.length > 0 ? (
             activePlan.items.map((item, idx) => {
               const secKey = `sec-${idx}`;

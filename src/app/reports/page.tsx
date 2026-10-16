@@ -449,7 +449,7 @@ function ReportsContent() {
         </div>
 
         {/* Desktop Action Area */}
-        <div className="flex flex-wrap items-center gap-space-sm shrink-0">
+        <div data-tour="export-btns" className="flex flex-wrap items-center gap-space-sm shrink-0">
           <button
             onClick={() => setFilterExpanded(!filterExpanded)}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-low text-on-surface-variant font-label-md hover:bg-surface-container-high transition-colors active-press"
@@ -877,7 +877,7 @@ function ReportsContent() {
           </div>
 
           {/* MOBILE TÓM TẮT TIẾN ĐỘ NGÀY CỘT C (Shown only on small screens) */}
-          <div className="lg:hidden bg-surface-container-lowest rounded-xl shadow-sm p-space-md space-y-space-sm">
+          <div data-tour="report-table" className="lg:hidden bg-surface-container-lowest rounded-xl shadow-sm p-space-md space-y-space-sm">
             <div className="flex items-center justify-between pb-space-xs">
               <div className="flex items-center gap-space-xs">
                 <span className="material-symbols-outlined text-primary text-[20px]">format_list_bulleted</span>
@@ -979,7 +979,7 @@ function ReportsContent() {
           </div>
 
           {/* DESKTOP LIVE PREVIEW SHEET TABLE FRAME */}
-          <div id="report-table-card" className="hidden lg:flex bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex-col">
+          <div id="report-table-card" data-tour="report-table" className="hidden lg:flex bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex-col">
             {/* Excel Emulation Bar & Status Indicator */}
             <div className="p-space-md bg-surface-subtle flex flex-col md:flex-row md:items-center justify-between gap-space-md">
               <div className="flex items-center gap-space-sm">

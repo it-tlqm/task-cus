@@ -79,7 +79,7 @@ export default function MeetingsPage() {
           <p className="text-sm text-slate-600">Nhập kết luận họp, bấm chuyển là thành nhiệm vụ — không nhập lại</p>
         </div>
         {canApprove && (
-          <button onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+          <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
             + Lập biên bản
           </button>
         )}
@@ -90,7 +90,7 @@ export default function MeetingsPage() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-slate-500 text-center py-8">Chưa có biên bản giao ban nào</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div data-tour="meeting-list" className="flex flex-col gap-2">
           {rows.map((m) => {
             const total = m._count?.conclusions ?? m.conclusionsCount ?? 0;
             return (

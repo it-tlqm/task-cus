@@ -159,7 +159,7 @@ export default function DocsPage() {
           <h1 className="text-2xl font-bold text-slate-900 mt-1">Sổ văn bản</h1>
           <p className="text-sm text-slate-600">Tra số hiệu, ai đang giữ, hạn nào — cần thì chuyển thành việc</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+        <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
           + Vào sổ văn bản
         </button>
       </div>
@@ -184,7 +184,7 @@ export default function DocsPage() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-slate-500 text-center py-8">Chưa có văn bản nào</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div data-tour="doc-list" className="flex flex-col gap-2">
           {rows.map((r) => {
             const st = STATUS_LABELS[r.status] || STATUS_LABELS.DANG_XU_LY;
             const overdue = r.deadline && r.status === "DANG_XU_LY" && new Date(r.deadline) < new Date();

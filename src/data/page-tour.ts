@@ -38,6 +38,40 @@ export const PAGE_TOUR: Record<string, TourStep[]> = {
     { target: "quick-actions", title: "Thao tác nhanh", text: "Giao việc khẩn, xuất báo cáo, tóm tắt AI — chỉ hiện nút bạn được phép dùng." },
     { target: "kpi-cards", title: "Số điều hành", text: "Việc trễ, chờ duyệt, đơn nghỉ chờ duyệt — bấm vào số để xem chi tiết." },
   ],
+  "/plans": [
+    { target: "workflow-actions", title: "Trình — Duyệt — Ban hành", text: "Dự thảo thì Trình duyệt. Đã duyệt thì Ban hành hiệu lực. Kế hoạch duyệt rồi chỉ sửa qua Trình duyệt bổ sung." },
+    { target: "plan-items", title: "Hạng mục kế hoạch", text: "Bấm vào từng hạng mục để xem đầu việc và nhiệm vụ liên kết." },
+  ],
+  "/approvals": [
+    { target: "filter-tabs", title: "Lọc theo loại", text: "Kế hoạch, kết quả, lùi hạn — bấm từng tab để lọc." },
+    { target: "approval-list", title: "Duyệt từng hồ sơ", text: "Mở hồ sơ, xem kỹ rồi Duyệt hoặc Trả lại kèm lý do." },
+  ],
+  "/reports": [
+    { target: "export-btns", title: "Xuất và chốt", text: "Chọn mẫu A (tuần) hoặc B (chi tiết) để tải. Nút Chốt khóa số kỳ — kiểm tra kỹ trước khi bấm." },
+    { target: "report-table", title: "Bảng xem trước", text: "Đúng mẫu Excel 8 cột. Nút toàn màn hình ở góc để xem rộng." },
+  ],
+  "/products": [
+    { target: "search", title: "Tìm sản phẩm", text: "Gõ mã SP, tên nhiệm vụ hoặc sản phẩm — gõ từ 2 ký tự." },
+    { target: "product-table", title: "Danh mục", text: "Xem hệ số quy đổi từng sản phẩm. Hết trang bấm Sau." },
+  ],
+  "/calendar": [
+    { target: "month-grid", title: "Lịch tháng", text: "Chấm xanh là hạn việc, chấm vàng là nghỉ đã duyệt." },
+  ],
+  "/roster": [
+    { target: "week-list", title: "Lịch trực tuần", text: "Ai trực ngày nào, ca nào, điểm nào. Cờ vàng là trùng nghỉ đã duyệt — báo lãnh đạo đổi ca." },
+  ],
+  "/meetings": [
+    { target: "add-btn", title: "Lập biên bản (lãnh đạo)", text: "Lập biên bản họp, rồi thêm từng kết luận bên trong." },
+    { target: "meeting-list", title: "Danh sách họp", text: "Mở biên bản để thêm kết luận và chuyển thành việc." },
+  ],
+  "/docs": [
+    { target: "add-btn", title: "Vào sổ (lãnh đạo)", text: "Ghi văn bản đến/đi: số hiệu, trích yếu, người giữ, hạn." },
+    { target: "doc-list", title: "Tra cứu", text: "Tìm theo số hiệu hoặc trích yếu. Cần thì chuyển thành việc." },
+  ],
+  "/notifications": [
+    { target: "filter-tabs", title: "Lọc thông báo", text: "Tất cả, giao việc, phê duyệt, nhắc hạn." },
+    { target: "push-toggle", title: "Bật tin về máy", text: "Mỗi máy bấm 1 lần để nhận tin cả khi tắt màn hình." },
+  ],
 };
 
 export function getTour(pathname: string): TourStep[] | null {

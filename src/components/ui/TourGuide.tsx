@@ -90,7 +90,7 @@ export function TourGuide() {
     return () => window.removeEventListener(TOUR_START_EVENT, handler);
   }, [start]);
 
-  // Bước hiện tại: đo khung, thiếu thì nhảy bước kế
+  // Bước hiện tại: đo khung; mạng chậm (đang tải) thì chờ thêm tối đa 3 lần rồi mới bỏ qua
   useEffect(() => {
     if (!active || steps.length === 0) return;
     const step = steps[idx];
@@ -98,10 +98,23 @@ export function TourGuide() {
       stop(true);
       return;
     }
-    if (!measure(step.target)) {
-      if (idx + 1 < steps.length) setIdx(idx + 1);
-      else stop(true);
-    }
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const attempt = () => {
+      if (measure(step.target)) return;
+      tries++;
+      if (tries < 3) {
+        timer = setTimeout(attempt, 800);
+      } else if (idx + 1 < steps.length) {
+        setIdx(idx + 1);
+      } else {
+        stop(true);
+      }
+    };
+    attempt();
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [active, steps, idx, measure, stop]);
 
   // Theo dõi cuộn/resize để khung bám theo

@@ -147,7 +147,7 @@ export default function RosterPage() {
       {loading ? (
         <p className="text-sm text-slate-500 text-center py-8">Đang tải lịch trực...</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div data-tour="week-list" className="flex flex-col gap-2">
           {days.map((d) => {
             const list = rowsOn(d);
             const isToday = toISODate(d) === toISODate(new Date());

@@ -178,7 +178,9 @@ export default function NotificationsPage() {
               <span className="material-symbols-outlined text-[16px] text-primary">done_all</span>
               <span>{isProcessingAll ? "Đang xử lý..." : "Đã đọc hết"}</span>
             </button>
-            <PushToggle />
+            <div data-tour="push-toggle">
+              <PushToggle />
+            </div>
           </div>
         </section>
 
@@ -199,7 +201,7 @@ export default function NotificationsPage() {
         )}
 
         {/* Filter Pills (Horizontal Scrollable) */}
-        <section className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+        <section data-tour="filter-tabs" className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
           <button
             onClick={() => setActiveFilter("all")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${

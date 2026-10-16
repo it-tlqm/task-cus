@@ -129,7 +129,7 @@ export default function CalendarPage() {
       {loading ? (
         <p className="text-sm text-slate-500 text-center py-8">Đang tải lịch...</p>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
+        <div data-tour="month-grid" className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
           <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-500 pb-1">
             {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => <span key={d}>{d}</span>)}
           </div>

@@ -421,7 +421,7 @@ export default function ApprovalsPage() {
         </div>
 
         {/* Filter Segmented Tabs */}
-        <div className="w-full bg-surface-container-high p-1 rounded-lg flex items-center justify-between shadow-inner text-center overflow-x-auto no-scrollbar">
+        <div data-tour="filter-tabs" className="w-full bg-surface-container-high p-1 rounded-lg flex items-center justify-between shadow-inner text-center overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab("all")}
             className={`flex-1 py-1.5 px-2 rounded font-label-md text-label-md transition-fast ${
@@ -465,7 +465,7 @@ export default function ApprovalsPage() {
         </div>
 
         {/* Cards List */}
-        <div className="flex flex-col gap-space-md">
+        <div data-tour="approval-list" className="flex flex-col gap-space-md">
           {loading ? (
             <div className="p-12 text-center text-outline bg-surface-container-lowest rounded-xl animate-pulse">
               Đang nạp danh sách hồ sơ trình ký và nghiệm thu từ cơ sở dữ liệu...

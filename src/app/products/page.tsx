@@ -81,7 +81,7 @@ export default function ProductsPage() {
         </p>
       </div>
 
-      <form onSubmit={onSearch} className="flex flex-col md:flex-row gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+      <form onSubmit={onSearch} data-tour="search" className="flex flex-col md:flex-row gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
         <input
           type="text"
           value={search}
@@ -108,7 +108,7 @@ export default function ProductsPage() {
         {loading ? "Đang tải..." : <>Hiển thị <strong>{items.length}</strong> / <strong>{total}</strong> sản phẩm · Trang {page}/{totalPages}</>}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+      <div data-tour="product-table" className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="bg-slate-50 text-slate-700 text-xs uppercase">
