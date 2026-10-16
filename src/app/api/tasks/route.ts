@@ -3,8 +3,12 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { buildScopedWhereClause, verifyTaskAccess, jsonError } from "@/server/guard";
 import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
+import { advisoryLock, normalizeTitle } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
+
+// YC-04: cửa sổ chống bấm trùng khi giao việc (giây)
+const CREATE_DEDUP_WINDOW_SEC = 120;
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,24 +28,41 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const priority = searchParams.get("priority");
     const hasIssueParam = searchParams.get("hasIssue");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "50", 10)));
 
-    const where: any = {
-      ...scopedFilter,
-    };
+    const filters: any = {};
 
     if (status) {
       if (status === "COMPLETED" || status === "DONE") {
-        where.status = { in: ["COMPLETED", "DONE"] };
+        filters.status = { in: ["COMPLETED", "DONE"] };
       } else {
-        where.status = status;
+        filters.status = status;
       }
     }
-    if (priority) where.priority = priority;
-    if (hasIssueParam !== null) {
-      where.hasIssue = hasIssueParam === "true";
+    if (priority) filters.priority = priority;
+    if (hasIssueParam !== null && hasIssueParam !== "") {
+      filters.hasIssue = hasIssueParam === "true";
     }
 
-    const tasks = await prisma.task.findMany({
+    // YC-05: người chủ trì/phối hợp luôn thấy nhiệm vụ của mình kể cả khác đơn vị
+    // (không nâng quyền — chỉ cộng thêm 2 điều kiện OR, các guard IDOR giữ nguyên)
+    const visibilityClause =
+      Object.keys(scopedFilter).length === 0
+        ? {}
+        : {
+            OR: [
+              scopedFilter,
+              { ownerId: user.personId },
+              { assignees: { some: { personId: user.personId } } },
+            ],
+          };
+
+    const where: any = { ...filters, ...visibilityClause };
+
+    const [total, tasks] = await Promise.all([
+      prisma.task.count({ where }),
+      prisma.task.findMany({
       where,
       include: {
         owner: true,
@@ -75,7 +96,10 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: [{ currentDeadline: "asc" }, { createdAt: "desc" }],
-    });
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      }),
+    ]);
 
     const now = new Date();
 
@@ -89,7 +113,11 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ success: true, data: enrichedTasks });
+    return NextResponse.json({
+      success: true,
+      data: enrichedTasks,
+      pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
+    });
   } catch (error: any) {
     return jsonError("Lỗi khi tải danh sách nhiệm vụ: " + error.message, 500);
   }
@@ -141,84 +169,123 @@ export async function POST(req: NextRequest) {
       return jsonError("Bạn chỉ được tạo nhiệm vụ trong bộ phận của mình", 403);
     }
 
+    // YC-01: chuẩn hóa danh sách phối hợp — bỏ trùng, bỏ chủ trì, chỉ giữ người có thật
+    const rawAssignees: string[] = Array.isArray(assigneeIds) ? assigneeIds.filter((x) => typeof x === "string") : [];
+    const uniqueAssignees = [...new Set(rawAssignees.map((x) => x.trim()).filter(Boolean))].filter(
+      (pId) => pId !== effectiveOwnerId
+    );
+    if (uniqueAssignees.length > 0) {
+      const existingCount = await prisma.person.count({ where: { id: { in: uniqueAssignees } } });
+      if (existingCount !== uniqueAssignees.length) {
+        return jsonError("Danh sách cán bộ phối hợp có người không tồn tại trong hệ thống", 400);
+      }
+    }
+
     const taskCode = `NV-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100).toString().padStart(2, "0")}`;
     const parsedDeadline = new Date(effectiveDeadline);
 
-    const newTask = await prisma.task.create({
-      data: {
-        code: taskCode,
-        title,
-        description,
-        ownerId: effectiveOwnerId,
-        unitId: targetUnitId,
-        priority: priority || "Cao",
-        status: "NOT_STARTED",
-        originalDeadline: parsedDeadline,
-        currentDeadline: parsedDeadline,
-        expectedResultText,
-        assignees: assigneeIds && assigneeIds.length > 0 ? {
-          create: assigneeIds.map((pId: string) => ({
-            personId: pId,
-            role: "COLLABORATOR",
-          })),
-        } : undefined,
-      },
-      include: {
-        owner: true,
-        unit: true,
-        assignees: { include: { person: true } },
-      },
+    // YC-04: chống giao việc trùng — khóa tư vấn theo (chủ trì + tiêu đề) rồi kiểm tra
+    // cửa sổ 120s. Hai request đồng thời/bấm liên tiếp chỉ tạo đúng 1 Task.
+    const dedupKey = `task-create:${effectiveOwnerId}:${normalizeTitle(title)}`;
+    const newTask = await prisma.$transaction(async (tx) => {
+      await advisoryLock(tx, dedupKey);
+      const recent = await tx.task.findFirst({
+        where: {
+          ownerId: effectiveOwnerId,
+          title: title.trim(),
+          createdAt: { gte: new Date(Date.now() - CREATE_DEDUP_WINDOW_SEC * 1000) },
+        },
+        include: {
+          owner: true,
+          unit: true,
+          assignees: { include: { person: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (recent) return { task: recent, deduplicated: true };
+
+      const created = await tx.task.create({
+        data: {
+          code: taskCode,
+          title: title.trim(),
+          description,
+          ownerId: effectiveOwnerId,
+          unitId: targetUnitId,
+          priority: priority || "Cao",
+          status: "NOT_STARTED",
+          originalDeadline: parsedDeadline,
+          currentDeadline: parsedDeadline,
+          expectedResultText,
+          assignees: uniqueAssignees.length > 0 ? {
+            create: uniqueAssignees.map((pId: string) => ({
+              personId: pId,
+              role: "COLLABORATOR",
+            })),
+          } : undefined,
+        },
+        include: {
+          owner: true,
+          unit: true,
+          assignees: { include: { person: true } },
+        },
+      });
+      return { task: created, deduplicated: false };
     });
+
+    // YC-04: request trùng trong cửa sổ 120s → trả về bản ghi đã tạo, không spam thông báo
+    if (newTask.deduplicated) {
+      return NextResponse.json(
+        { success: true, data: newTask.task, deduplicated: true, message: "Nhiệm vụ này vừa được tạo (chặn bấm trùng)" },
+        { status: 200 }
+      );
+    }
+    const createdTask = newTask.task;
 
     await recordAuditEvent({
       actorId: user.id,
       action: "TASK_CREATE",
       resourceType: "Task",
-      resourceId: newTask.id,
-      newData: { code: newTask.code, title: newTask.title, unitId: newTask.unitId, ownerId },
+      resourceId: createdTask.id,
+      newData: { code: createdTask.code, title: createdTask.title, unitId: createdTask.unitId, ownerId, assignees: uniqueAssignees },
     });
 
     // 1. Tạo thông báo giao việc đến người chủ trì thực hiện
     await createNotification({
-      recipientId: newTask.ownerId,
+      recipientId: createdTask.ownerId,
       category: "task",
       type: "TASK_ASSIGNED",
-      title: `Nhiệm vụ mới: [${newTask.code}] ${newTask.title}`,
-      content: `Đồng chí được phân công chủ trì thực hiện nhiệm vụ '${newTask.title}'. Hạn hoàn thành: ${newTask.currentDeadline.toLocaleDateString("vi-VN")}.`,
+      title: `Nhiệm vụ mới: [${createdTask.code}] ${createdTask.title}`,
+      content: `Đồng chí được phân công chủ trì thực hiện nhiệm vụ '${createdTask.title}'. Hạn hoàn thành: ${createdTask.currentDeadline.toLocaleDateString("vi-VN")}.`,
       tag: "GIAO VIỆC MỚI",
       tagType: "primary",
       entityType: "TASK",
-      entityId: newTask.id,
-      actionUrl: `/tasks/${newTask.id}`,
+      entityId: createdTask.id,
+      actionUrl: `/tasks/${createdTask.id}`,
       actionLabel: "Xem chi tiết nhiệm vụ",
-      taskCode: newTask.code,
-      idempotencyKey: `EVENT_TASK_ASSIGNED_${newTask.id}_${newTask.ownerId}`,
+      taskCode: createdTask.code,
+      idempotencyKey: `EVENT_TASK_ASSIGNED_${createdTask.id}_${createdTask.ownerId}`,
     });
 
     // 2. Tạo thông báo cho các cán bộ phối hợp (nếu có)
-    if (assigneeIds && Array.isArray(assigneeIds)) {
-      for (const pId of assigneeIds) {
-        if (pId !== newTask.ownerId) {
-          await createNotification({
-            recipientId: pId,
-            category: "task",
-            type: "TASK_ASSIGNED",
-            title: `Nhiệm vụ phối hợp: [${newTask.code}] ${newTask.title}`,
-            content: `Đồng chí được phân công phối hợp thực hiện nhiệm vụ '${newTask.title}'. Hạn hoàn thành: ${newTask.currentDeadline.toLocaleDateString("vi-VN")}.`,
-            tag: "PHỐI HỢP",
-            tagType: "primary",
-            entityType: "TASK",
-            entityId: newTask.id,
-            actionUrl: `/tasks/${newTask.id}`,
-            actionLabel: "Xem chi tiết nhiệm vụ",
-            taskCode: newTask.code,
-            idempotencyKey: `EVENT_TASK_ASSIGNED_${newTask.id}_${pId}`,
-          });
-        }
-      }
+    for (const pId of uniqueAssignees) {
+      await createNotification({
+        recipientId: pId,
+        category: "task",
+        type: "TASK_ASSIGNED",
+        title: `Nhiệm vụ phối hợp: [${createdTask.code}] ${createdTask.title}`,
+        content: `Đồng chí được phân công phối hợp thực hiện nhiệm vụ '${createdTask.title}'. Hạn hoàn thành: ${createdTask.currentDeadline.toLocaleDateString("vi-VN")}.`,
+        tag: "PHỐI HỢP",
+        tagType: "primary",
+        entityType: "TASK",
+        entityId: createdTask.id,
+        actionUrl: `/tasks/${createdTask.id}`,
+        actionLabel: "Xem chi tiết nhiệm vụ",
+        taskCode: createdTask.code,
+        idempotencyKey: `EVENT_TASK_ASSIGNED_${createdTask.id}_${pId}`,
+      });
     }
 
-    return NextResponse.json({ success: true, data: newTask }, { status: 201 });
+    return NextResponse.json({ success: true, data: createdTask }, { status: 201 });
   } catch (error: any) {
     return jsonError("Lỗi khi tạo nhiệm vụ: " + error.message, 500);
   }
@@ -340,12 +407,15 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    // Cập nhật danh sách phối hợp nếu có
+    // Cập nhật danh sách phối hợp nếu có (YC-01/YC-03: bỏ trùng, bỏ chủ trì)
     if (assigneeIds && Array.isArray(assigneeIds)) {
+      const clean = [...new Set(assigneeIds.filter((x) => typeof x === "string").map((x) => x.trim()).filter(Boolean))].filter(
+        (pId) => pId !== currentTask.ownerId
+      );
       await prisma.taskAssignee.deleteMany({ where: { taskId: id } });
-      if (assigneeIds.length > 0) {
+      if (clean.length > 0) {
         await prisma.taskAssignee.createMany({
-          data: assigneeIds.map((pId: string) => ({
+          data: clean.map((pId: string) => ({
             taskId: id,
             personId: pId,
             role: "COLLABORATOR",

@@ -84,7 +84,8 @@ export default function RoutinePage() {
   const [newCategory, setNewCategory] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [newCompany, setNewCompany] = useState("");
-  const [newConts, setNewConts] = useState<number | string>(2);
+  // YC-07: để trống — không điền sẵn số lượng giả định
+  const [newConts, setNewConts] = useState<number | string>("");
   const [newNotes, setNewNotes] = useState("");
   const [newProgress, setNewProgress] = useState<number>(100);
   const [dynamicFormValues, setDynamicFormValues] = useState<Record<string, any>>({});
@@ -238,7 +239,7 @@ export default function RoutinePage() {
         // Reset form inputs only on confirmed backend success
         setNewTitle("");
         setNewCompany("");
-        setNewConts(2);
+        setNewConts("");
         setNewNotes("");
         setDynamicFormValues({});
         // Reload data from PostgreSQL
@@ -493,7 +494,7 @@ export default function RoutinePage() {
                     required
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="Ví dụ: Kiểm hóa hồ sơ quặng sắt, đối chiếu chứng nhận kiểm dịch thực vật..."
+                    placeholder="Nhập nội dung công việc đã xử lý trong ca..."
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
@@ -536,7 +537,7 @@ export default function RoutinePage() {
                     type="text"
                     value={newCompany}
                     onChange={(e) => setNewCompany(e.target.value)}
-                    placeholder="Ví dụ: Công ty TNHH Vận tải Quốc tế Á Châu..."
+                    placeholder="Nhập doanh nghiệp liên quan (nếu có)..."
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
@@ -549,6 +550,7 @@ export default function RoutinePage() {
                     type="number"
                     min={0}
                     value={newConts}
+                    placeholder="Nhập số lượng thực tế..."
                     onChange={(e) => setNewConts(e.target.value === "" ? "" : Number(e.target.value))}
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />

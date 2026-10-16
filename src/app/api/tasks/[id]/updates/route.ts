@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
 import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
+import { advisoryLock, isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 
 export async function GET(
@@ -49,6 +50,11 @@ export async function POST(
     const { progressPercent, notes, newStatus, statusAfter, status, hasIssue, issueNotes } = body;
     const resolvedStatus = newStatus || statusAfter || status;
 
+    // YC-09: chuẩn hóa bước 5% ngay tại API (0,5,...,100)
+    if (progressPercent !== undefined && !isValidProgressStep(Number(progressPercent))) {
+      return jsonError("Tiến độ phải là bội số của 5% trong khoảng 0–100 (ví dụ 5%, 15%, 25%)", 400);
+    }
+
     const currentTask = access.task;
     const targetStatus = resolvedStatus || null;
 
@@ -64,17 +70,50 @@ export async function POST(
       return jsonError(err.message, err.statusCode || 403);
     }
 
-    const createdUpdate = await prisma.taskUpdate.create({
-      data: {
-        taskId,
-        authorId: user.personId,
-        progressPercent: progressPercent !== undefined ? Number(progressPercent) : 0,
-        statusBefore: currentTask.status,
-        statusAfter: resolvedStatus || currentTask.status,
-        notes: notes || null,
-      },
-      include: { author: true },
+    // YC-04: chống cập nhật trùng (bấm liên tiếp/F5) — cùng người, cùng nội dung trong 15s
+    const deduped = await prisma.$transaction(async (tx) => {
+      await advisoryLock(tx, `task-progress:${taskId}:${user.personId}`);
+      const recent = await tx.taskUpdate.findFirst({
+        where: {
+          taskId,
+          authorId: user.personId,
+          progressPercent: progressPercent !== undefined ? Number(progressPercent) : 0,
+          notes: notes || null,
+          createdAt: { gte: new Date(Date.now() - 15_000) },
+        },
+        include: { author: true },
+        orderBy: { createdAt: "desc" },
+      });
+      if (recent) return { update: recent, deduplicated: true as const };
+
+      const createdUpdate = await tx.taskUpdate.create({
+        data: {
+          taskId,
+          authorId: user.personId,
+          progressPercent: progressPercent !== undefined ? Number(progressPercent) : 0,
+          statusBefore: currentTask.status,
+          statusAfter: resolvedStatus || currentTask.status,
+          notes: notes || null,
+        },
+        include: { author: true },
+      });
+      return { update: createdUpdate, deduplicated: false as const };
     });
+
+    if (deduped.deduplicated) {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: { owner: true, unit: true, assignees: { include: { person: true } } },
+      });
+      return NextResponse.json({
+        success: true,
+        message: "Tiến độ này vừa được lưu (chặn bấm trùng)",
+        data: { update: deduped.update, task },
+        deduplicated: true,
+      }, { status: 200 });
+    }
+
+    const createdUpdate = deduped.update;
 
     // Cập nhật lại Task
     const taskUpdateData: any = {};

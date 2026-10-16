@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
+import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 
 interface KPIData {
   totalTasks: number;
@@ -121,6 +122,10 @@ export default function DashboardPage() {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T17:00`;
   });
   const [isAssigning, setIsAssigning] = useState(false);
+  // YC-01: chủ trì + phối hợp trong modal giao việc nhanh
+  const [assignOwner, setAssignOwner] = useState("");
+  const [assignCollabs, setAssignCollabs] = useState<string[]>([]);
+  const [assignPeople, setAssignPeople] = useState<Array<{ id: string; fullName: string }>>([]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -177,11 +182,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData();
+    // YC-01: nạp danh sách nhân sự thật cho chọn chủ trì/phối hợp
+    fetch("/api/people?pageSize=100")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const list = Array.isArray(json) ? json : json?.data || [];
+        setAssignPeople(list.map((p: any) => ({ id: p.id, fullName: p.fullName })));
+        if (list.length > 0) setAssignOwner((cur) => cur || list[0].id);
+      })
+      .catch(() => {});
   }, [unitFilter, period]);
 
   const handleQuickAssign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignTitle.trim()) return;
+    // YC-04: một thao tác chỉ gửi một request
+    if (!assignTitle.trim() || isAssigning) return;
 
     setIsAssigning(true);
     try {
@@ -194,16 +209,23 @@ export default function DashboardPage() {
           currentDeadline: new Date(assignDeadline).toISOString(),
           description: "Chỉ đạo trực ban lãnh đạo giao khẩn",
           unitId: assignUnit && assignUnit !== "ALL" ? assignUnit : undefined,
+          ownerId: assignOwner || undefined,
+          assigneeIds: assignCollabs,
           status: "IN_PROGRESS",
           progressPercent: 0,
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setShowAssignModal(false);
         setAssignTitle("");
-        toast.success("Đã giao nhiệm vụ đột xuất thành công!");
+        setAssignCollabs([]);
+        toast.success(
+          data.deduplicated
+            ? "Nhiệm vụ vừa được tạo (hệ thống chặn bấm trùng, không tạo thêm bản ghi)"
+            : "Đã chuyển ý kiến chỉ đạo thành công!"
+        );
         await fetchDashboardData();
       } else {
         toast.error(data.error || "Không thể giao nhiệm vụ");
@@ -1135,7 +1157,7 @@ export default function DashboardPage() {
                     required
                     value={assignTitle}
                     onChange={(e) => setAssignTitle(e.target.value)}
-                    placeholder="Ví dụ: Kiểm tra khẩn barie giám sát số 2..."
+                    placeholder="Nhập nội dung nhiệm vụ chỉ đạo..."
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
@@ -1176,6 +1198,31 @@ export default function DashboardPage() {
 
                 <div className="flex flex-col gap-1">
                   <label className="font-label-md text-label-md text-primary font-semibold">
+                    Cán bộ chủ trì
+                  </label>
+                  <select
+                    value={assignOwner}
+                    onChange={(e) => setAssignOwner(e.target.value)}
+                    className="h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary text-xs"
+                  >
+                    {assignPeople.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <CollaboratorPicker
+                  people={assignPeople}
+                  value={assignCollabs}
+                  onChange={setAssignCollabs}
+                  excludeId={assignOwner}
+                  disabled={isAssigning}
+                />
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
                     Hạn chót hoàn thành
                   </label>
                   <input
@@ -1200,7 +1247,7 @@ export default function DashboardPage() {
                   disabled={isAssigning}
                   className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press disabled:opacity-50"
                 >
-                  {isAssigning ? "Đang phát lệnh..." : "Phát lệnh chỉ đạo"}
+                  {isAssigning ? "Đang chuyển..." : "Chuyển ý kiến chỉ đạo"}
                 </button>
               </div>
             </form>

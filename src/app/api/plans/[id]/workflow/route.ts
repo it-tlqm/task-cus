@@ -47,13 +47,33 @@ export async function POST(
       }
 
       if (plan.status !== "DRAFT" && plan.status !== "RETURNED") {
+        // YC-04: retry an toàn — trạng thái đã chuyển thì trả về hiện trạng, không tạo tác dụng phụ mới
+        if (plan.status === "SUBMITTED") {
+          return NextResponse.json({
+            success: true,
+            message: "Kế hoạch đã được trình duyệt trước đó (chặn gửi trùng)",
+            data: plan,
+            deduplicated: true,
+          });
+        }
         return jsonError(`Kế hoạch ở trạng thái "${plan.status}" không thể trình duyệt lại`, 400);
       }
 
-      const updated = await prisma.plan.update({
-        where: { id: planId },
+      // YC-04: update có điều kiện — hai request đồng thời chỉ một request thắng
+      const submitRes = await prisma.plan.updateMany({
+        where: { id: planId, status: { in: ["DRAFT", "RETURNED"] } },
         data: { status: "SUBMITTED" },
       });
+      if (submitRes.count === 0) {
+        const current = await prisma.plan.findUnique({ where: { id: planId } });
+        return NextResponse.json({
+          success: true,
+          message: "Kế hoạch đã được trình duyệt trước đó (chặn gửi trùng)",
+          data: current,
+          deduplicated: true,
+        });
+      }
+      const updated = await prisma.plan.findUnique({ where: { id: planId } });
 
       await recordAuditEvent({
         actorId: user.id,
@@ -88,17 +108,37 @@ export async function POST(
       }
 
       if (plan.status !== "SUBMITTED") {
+        // YC-04: retry an toàn sau khi đã duyệt
+        if (plan.status === "APPROVED" || (plan as any).status === "IN_EFFECT") {
+          return NextResponse.json({
+            success: true,
+            message: "Kế hoạch đã được phê duyệt trước đó (chặn gửi trùng)",
+            data: plan,
+            deduplicated: true,
+          });
+        }
         return jsonError(`Chỉ kế hoạch ở trạng thái "SUBMITTED" mới có thể phê duyệt`, 400);
       }
 
-      const updated = await prisma.plan.update({
-        where: { id: planId },
+      // YC-04: update có điều kiện — chống duyệt trùng đồng thời
+      const approveRes = await prisma.plan.updateMany({
+        where: { id: planId, status: "SUBMITTED" },
         data: {
           status: "APPROVED",
           approvedBy: user.personId,
           approvedAt: new Date(),
         },
       });
+      if (approveRes.count === 0) {
+        const current = await prisma.plan.findUnique({ where: { id: planId } });
+        return NextResponse.json({
+          success: true,
+          message: "Kế hoạch đã được phê duyệt trước đó (chặn gửi trùng)",
+          data: current,
+          deduplicated: true,
+        });
+      }
+      const updated = await prisma.plan.findUnique({ where: { id: planId } });
 
       await recordAuditEvent({
         actorId: user.id,
@@ -122,7 +162,7 @@ export async function POST(
           entityId: plan.id,
           actionUrl: "/plans",
           actionLabel: "Xem kế hoạch",
-          idempotencyKey: `EVENT_PLAN_APP_${plan.id}_${Date.now()}`,
+          idempotencyKey: `EVENT_PLAN_APP_${plan.id}`,
         });
       }
 
@@ -151,12 +191,23 @@ export async function POST(
         return jsonError("Vui lòng ghi rõ lý do hoặc nội dung chỉ đạo chỉnh sửa", 400);
       }
 
-      const updated = await prisma.plan.update({
-        where: { id: planId },
+      // YC-04: update có điều kiện — chống trả trùng đồng thời
+      const returnRes = await prisma.plan.updateMany({
+        where: { id: planId, status: "SUBMITTED" },
         data: {
           status: "RETURNED",
         },
       });
+      if (returnRes.count === 0) {
+        const current = await prisma.plan.findUnique({ where: { id: planId } });
+        return NextResponse.json({
+          success: true,
+          message: "Kế hoạch đã được xử lý trước đó (chặn gửi trùng)",
+          data: current,
+          deduplicated: true,
+        });
+      }
+      const updated = await prisma.plan.findUnique({ where: { id: planId } });
 
       await recordAuditEvent({
         actorId: user.id,
@@ -180,7 +231,7 @@ export async function POST(
           entityId: plan.id,
           actionUrl: "/plans",
           actionLabel: "Chỉnh sửa kế hoạch",
-          idempotencyKey: `EVENT_PLAN_RET_${plan.id}_${Date.now()}`,
+          idempotencyKey: `EVENT_PLAN_RET_${plan.id}`,
         });
       }
 

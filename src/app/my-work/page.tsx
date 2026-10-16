@@ -127,6 +127,8 @@ export default function MyWorkPage() {
   // Drawer & Modal States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  // YC-04: chặn bấm trùng nút tạo việc cá nhân
+  const [isCreatingPersonal, setIsCreatingPersonal] = useState(false);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -306,16 +308,17 @@ export default function MyWorkPage() {
   };
 
   const handleDrawerSubmit = async (finalSubmit: boolean) => {
-    if (!selectedTask) return;
+    if (!selectedTask || drawerLoading) return;
     setDrawerLoading(true);
     setActionError(null);
     try {
-      // 1. Submit progress update
+      // 1. Submit progress update (YC-09: làm tròn về bước 5% gần nhất)
+      const steppedProgress = finalSubmit ? 100 : Math.round(drawerProgress / 5) * 5;
       const updateRes = await fetch(`/api/tasks/${selectedTask.id}/updates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          progressPercent: finalSubmit ? 100 : drawerProgress,
+          progressPercent: steppedProgress,
           notes: drawerNotes || "Cập nhật tiến độ nghiệp vụ",
           newStatus: finalSubmit ? "WAITING_REVIEW" : drawerStatus,
           statusAfter: finalSubmit ? "WAITING_REVIEW" : drawerStatus,
@@ -359,13 +362,15 @@ export default function MyWorkPage() {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    // YC-04: một thao tác chỉ gửi một request
+    if (!newTaskTitle.trim() || isCreatingPersonal) return;
+    setIsCreatingPersonal(true);
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: newTaskTitle,
+          title: newTaskTitle.trim(),
           priority: newTaskPriority,
           currentDeadline: `${newTaskDeadline}T${newTaskTime}:00Z`,
           description: `Nguồn: ${newTaskSource}`,
@@ -373,14 +378,23 @@ export default function MyWorkPage() {
           progressPercent: 0,
         }),
       });
+      const json = await res.json().catch(() => ({}));
       if (res.ok) {
         setIsNewTaskModalOpen(false);
         setNewTaskTitle("");
         await fetchTasks();
-        toast.success("Đã khởi tạo và thêm thành công công việc mới!");
+        toast.success(
+          json.deduplicated
+            ? "Công việc vừa được tạo (hệ thống chặn bấm trùng)"
+            : "Đã khởi tạo và thêm thành công công việc mới!"
+        );
+      } else {
+        toast.error(json.error || "Không thể tạo công việc");
       }
     } catch (err: any) {
       toast.error("Lỗi kết nối máy chủ: " + (err.message || "Không thể tạo công việc"));
+    } finally {
+      setIsCreatingPersonal(false);
     }
   };
 
@@ -1500,10 +1514,12 @@ export default function MyWorkPage() {
                     {drawerProgress}%
                   </span>
                 </div>
+                {/* Thanh trượt tiến độ % — YC-09: bước 5% (0,5,...,100) */}
                 <input
                   type="range"
                   min="0"
                   max="100"
+                  step="5"
                   value={drawerProgress}
                   onChange={(e) => setDrawerProgress(Number(e.target.value))}
                   className="w-full accent-secondary cursor-pointer h-2 bg-surface-container rounded-lg"
@@ -1758,7 +1774,7 @@ export default function MyWorkPage() {
                     required
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
-                    placeholder="Ví dụ: Kiểm tra lại hồ sơ số 240/HQTL..."
+                    placeholder="Nhập nội dung kết quả, số hồ sơ liên quan..."
                     className="h-9 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>

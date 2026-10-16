@@ -481,8 +481,8 @@ async function main() {
       status: "PUBLISHED",
       schemaJson: {
         fields: [
-          { key: "total_files", label: "Tổng số hồ sơ tiếp nhận", type: "INTEGER", required: true, min: 0 },
-          { key: "handled_files", label: "Đã giải quyết thông quan", type: "INTEGER", required: true, min: 0 },
+          { key: "total_files", label: "Tổng số hồ sơ tiếp nhận", type: "INTEGER", required: false, min: 0 },
+          { key: "handled_files", label: "Đã giải quyết thông quan", type: "INTEGER", required: false, min: 0 },
           { key: "green_channel", label: "Luồng Xanh", type: "INTEGER", required: false, min: 0 },
           { key: "yellow_channel", label: "Luồng Vàng", type: "INTEGER", required: false, min: 0 },
           { key: "red_channel", label: "Luồng Đỏ", type: "INTEGER", required: false, min: 0 },

@@ -1633,7 +1633,7 @@ export default function PlansPage() {
                   required
                   value={amendmentNotes}
                   onChange={(e) => setAmendmentNotes(e.target.value)}
-                  placeholder="Ví dụ: Bổ sung nhiệm vụ kiểm soát đột xuất theo Thông báo số 18/TB-HQTL..."
+                  placeholder="Nhập tên hạng mục bổ sung, số văn bản liên quan..."
                   className="w-full p-2.5 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
                 />
               </div>

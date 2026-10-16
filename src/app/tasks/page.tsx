@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 
 interface TaskItem {
   id: string;
@@ -85,6 +86,10 @@ export default function TasksPage() {
   const [selectedUnitId, setSelectedUnitId] = useState("");
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
   const [newExpectedResult, setNewExpectedResult] = useState("");
+  // YC-01: cán bộ phối hợp (mỗi người một hàng, không trùng, không trùng chủ trì)
+  const [collabIds, setCollabIds] = useState<string[]>([]);
+  // YC-04: chặn bấm trùng nút giao việc
+  const [isCreating, setIsCreating] = useState(false);
 
   // Approval review notes
   const [approvalNotes, setApprovalNotes] = useState("");
@@ -141,37 +146,47 @@ export default function TasksPage() {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!newTitle.trim() || isCreating) return;
 
+    // YC-04: khóa nút ngay khi bấm — một thao tác chỉ gửi một request
+    setIsCreating(true);
     try {
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: newTitle,
+          title: newTitle.trim(),
           priority: newPriority,
           currentDeadline: new Date(newDeadline).toISOString(),
           description: newSource,
           expectedResultText: newExpectedResult || undefined,
           unitId: selectedUnitId || undefined,
           ownerId: selectedOwnerId || undefined,
+          assigneeIds: collabIds,
           status: "IN_PROGRESS",
           progressPercent: 0,
         }),
       });
 
+      const json = await res.json().catch(() => ({}));
       if (res.ok) {
         setShowCreateModal(false);
         setNewTitle("");
         setNewExpectedResult("");
+        setCollabIds([]);
         fetchTasks();
-        toast.success("Đã phát lệnh giao nhiệm vụ chỉ đạo thành công!");
+        toast.success(
+          json.deduplicated
+            ? "Nhiệm vụ vừa được tạo (hệ thống chặn bấm trùng, không tạo thêm bản ghi)"
+            : "Đã chuyển ý kiến chỉ đạo thành công!"
+        );
       } else {
-        const json = await res.json();
         toast.error(json.error || "Không thể tạo nhiệm vụ");
       }
     } catch (err: any) {
       toast.error("Lỗi kết nối máy chủ: " + err.message);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -666,7 +681,7 @@ export default function TasksPage() {
                     required
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="Ví dụ: Kiểm tra thực tế lô hàng quá cảnh qua barie..."
+                    placeholder="Nhập nội dung công việc chỉ đạo..."
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
@@ -709,6 +724,14 @@ export default function TasksPage() {
                     </select>
                   </div>
                 </div>
+
+                <CollaboratorPicker
+                  people={people}
+                  value={collabIds}
+                  onChange={setCollabIds}
+                  excludeId={selectedOwnerId}
+                  disabled={isCreating}
+                />
 
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">
@@ -768,9 +791,10 @@ export default function TasksPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm active-press"
+                  disabled={isCreating}
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm active-press disabled:opacity-50"
                 >
-                  Phát lệnh chỉ đạo
+                  {isCreating ? "Đang chuyển..." : "Chuyển ý kiến chỉ đạo"}
                 </button>
               </div>
             </form>

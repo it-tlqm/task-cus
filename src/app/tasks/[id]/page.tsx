@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 
 interface TaskAttachmentItem {
   id: string;
@@ -86,6 +88,26 @@ export default function TaskDetailPage() {
   // Approval modal state
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approvalNotes, setApprovalNotes] = useState("");
+
+  // YC-03: chỉnh sửa nội dung chỉ đạo (mở lại form với dữ liệu PostgreSQL)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPriority, setEditPriority] = useState("Cao");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editExpectedResult, setEditExpectedResult] = useState("");
+  const [editOwnerId, setEditOwnerId] = useState("");
+  const [editCollabs, setEditCollabs] = useState<string[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+  const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
+
+  // YC-08: lãnh đạo loại nhiệm vụ trùng (xóa mềm, có xác nhận + lý do)
+  const [showCancelDupModal, setShowCancelDupModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelSaving, setCancelSaving] = useState(false);
+
+  const { canApprove } = usePermissions();
+  const isLockedTask = task?.status === "COMPLETED" || (task?.status as string) === "DONE" || task?.status === "CANCELED";
 
   // Attachment state
   const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
@@ -184,7 +206,95 @@ export default function TaskDetailPage() {
       fetchTaskDetail();
       fetchAttachments(taskId);
     }
+    // YC-01/YC-03: danh sách nhân sự thật cho chọn chủ trì/phối hợp khi sửa
+    fetch("/api/people?pageSize=100")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const list = Array.isArray(json) ? json : json?.data || [];
+        setPeople(list.map((p: any) => ({ id: p.id, fullName: p.fullName })));
+      })
+      .catch(() => {});
   }, [taskId]);
+
+  // YC-03: mở form sửa với đúng dữ liệu đang lưu trong PostgreSQL
+  const openEditModal = () => {
+    if (!task) return;
+    setEditTitle(task.title || "");
+    setEditDescription(task.description || "");
+    setEditPriority(task.priority || "Cao");
+    try {
+      const d = new Date(task.currentDeadline);
+      const p = (n: number) => String(n).padStart(2, "0");
+      setEditDeadline(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`);
+    } catch {
+      setEditDeadline("");
+    }
+    setEditExpectedResult(task.expectedResultText || "");
+    setEditOwnerId(task.owner?.id || "");
+    setEditCollabs((task.assignees || []).map((a) => a.person.id));
+    setShowEditModal(true);
+  };
+
+  // YC-03: lưu thay đổi vào đúng bản ghi (không tạo Task mới), có lưu vết audit ở backend
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!task || editSaving || !editTitle.trim()) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          description: editDescription,
+          priority: editPriority,
+          currentDeadline: editDeadline ? new Date(editDeadline).toISOString() : undefined,
+          expectedResultText: editExpectedResult,
+          ownerId: editOwnerId || undefined,
+          assigneeIds: editCollabs,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã lưu chỉnh sửa chỉ đạo (ghi nhận lịch sử thay đổi)");
+        setShowEditModal(false);
+        fetchTaskDetail();
+      } else {
+        toast.error(json.error || "Không thể lưu chỉnh sửa");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // YC-08: lãnh đạo xác nhận loại trùng — đúng mã, đúng bản ghi, có lý do
+  const handleCancelDuplicate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!task || cancelSaving || !cancelReason.trim()) return;
+    setCancelSaving(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "CANCEL_DUPLICATE", cancelReason: cancelReason.trim() }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(json.message || "Đã loại nhiệm vụ trùng khỏi danh sách");
+        setShowCancelDupModal(false);
+        setCancelReason("");
+        fetchTaskDetail();
+      } else {
+        toast.error(json.error || "Không thể xử lý nhiệm vụ trùng");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setCancelSaving(false);
+    }
+  };
 
   const handleProgressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -407,6 +517,26 @@ export default function TaskDetailPage() {
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-space-sm shrink-0">
+            {/* YC-03: chỉnh sửa nội dung chỉ đạo (khóa khi đã nghiệm thu/kết thúc) */}
+            {!isLockedTask && (
+              <button
+                onClick={openEditModal}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-subtle hover:bg-surface-container text-primary font-semibold text-sm border border-border-default active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                <span>Chỉnh sửa chỉ đạo</span>
+              </button>
+            )}
+            {/* YC-08: lãnh đạo loại nhiệm vụ trùng */}
+            {!isLockedTask && canApprove && (
+              <button
+                onClick={() => setShowCancelDupModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-status-danger/10 hover:bg-status-danger/20 text-status-danger font-semibold text-sm border border-status-danger/30 active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+                <span>Xóa nhiệm vụ trùng</span>
+              </button>
+            )}
             {!isCompleted && (
               <button
                 onClick={() => setShowUpdateModal(true)}
@@ -861,7 +991,7 @@ export default function TaskDetailPage() {
                   required
                   value={extReason}
                   onChange={(e) => setExtReason(e.target.value)}
-                  placeholder="Ví dụ: Đang chờ chứng từ giám định bổ sung từ đối tác..."
+                  placeholder="Nhập lý do xin lùi thời hạn, ví dụ chứng từ chờ bổ sung..."
                   className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
                 />
               </div>
@@ -924,6 +1054,163 @@ export default function TaskDetailPage() {
                 Ký duyệt hoàn thành
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* YC-03: MODAL CHỈNH SỬA NỘI DUNG CHỈ ĐẠO — lưu trên đúng bản ghi */}
+      {showEditModal && task && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <h3 className="font-headline-sm font-semibold">Chỉnh sửa chỉ đạo [{task.code}]</h3>
+              <button onClick={() => setShowEditModal(false)}>
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit}>
+              <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Tên / Nội dung chỉ đạo *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Nhập nội dung công việc chỉ đạo..."
+                    className="h-10 px-3 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-space-sm">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-primary">Cán bộ chủ trì</label>
+                    <select
+                      value={editOwnerId}
+                      onChange={(e) => setEditOwnerId(e.target.value)}
+                      className="h-10 px-2 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      {task.owner && <option value={task.owner.id}>{task.owner.fullName}</option>}
+                      {people.filter((p) => p.id !== task.owner?.id).map((p) => (
+                        <option key={p.id} value={p.id}>{p.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-primary">Mức độ ưu tiên</label>
+                    <select
+                      value={editPriority}
+                      onChange={(e) => setEditPriority(e.target.value)}
+                      className="h-10 px-2 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      <option value="Khẩn">Khẩn cấp</option>
+                      <option value="Cao">Cao</option>
+                      <option value="Trung bình">Trung bình</option>
+                      <option value="Thấp">Thấp</option>
+                    </select>
+                  </div>
+                </div>
+                <CollaboratorPicker
+                  people={people}
+                  value={editCollabs}
+                  onChange={setEditCollabs}
+                  excludeId={editOwnerId}
+                  disabled={editSaving}
+                />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Hạn hoàn thành</label>
+                  <input
+                    type="datetime-local"
+                    value={editDeadline}
+                    onChange={(e) => setEditDeadline(e.target.value)}
+                    className="h-10 px-3 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Nguồn gốc / Chỉ đạo từ đâu</label>
+                  <input
+                    type="text"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Nhập nguồn gốc chỉ đạo..."
+                    className="h-10 px-3 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Sản phẩm / Kết quả yêu cầu</label>
+                  <textarea
+                    rows={2}
+                    value={editExpectedResult}
+                    onChange={(e) => setEditExpectedResult(e.target.value)}
+                    placeholder="Nhập sản phẩm, kết quả yêu cầu..."
+                    className="p-2.5 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                  />
+                </div>
+              </div>
+              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 rounded bg-surface-container-lowest text-xs font-semibold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold active-press disabled:opacity-50"
+                >
+                  {editSaving ? "Đang lưu..." : "Lưu chỉnh sửa"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* YC-08: MODAL XÁC NHẬN LOẠI NHIỆM VỤ TRÙNG — xóa mềm, giữ vết */}
+      {showCancelDupModal && task && (
+        <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+            <div className="p-space-md bg-status-danger text-white flex items-center justify-between">
+              <h3 className="font-headline-sm font-semibold">Xóa nhiệm vụ trùng</h3>
+              <button onClick={() => setShowCancelDupModal(false)}>
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleCancelDuplicate} className="p-space-md flex flex-col gap-3">
+              <p className="text-xs text-on-surface">
+                Sẽ loại khỏi danh sách thực hiện (không tính KPI, giữ lịch sử và liên kết để đối soát):
+              </p>
+              <div className="p-3 rounded-lg bg-surface-subtle border border-border-default text-xs flex flex-col gap-1">
+                <span className="font-mono font-bold text-primary">{task.code}</span>
+                <span className="font-semibold">{task.title}</span>
+              </div>
+              <label className="text-xs font-semibold text-primary">Lý do loại trùng * (ghi rõ mã nhiệm vụ được giữ lại)</label>
+              <textarea
+                rows={3}
+                required
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Nhập lý do, ví dụ: trùng với NV-2026-0007 đã giao trước đó, giữ lại NV-2026-0007..."
+                className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+              />
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-default">
+                <button
+                  type="button"
+                  onClick={() => setShowCancelDupModal(false)}
+                  className="px-3 py-1.5 rounded bg-surface-container text-xs font-semibold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={cancelSaving}
+                  className="px-4 py-1.5 rounded bg-status-danger text-white text-xs font-semibold active-press disabled:opacity-50"
+                >
+                  {cancelSaving ? "Đang xử lý..." : "Xác nhận loại trùng"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
