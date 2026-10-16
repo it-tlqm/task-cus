@@ -197,16 +197,15 @@ export default function MonthlyResultsPage() {
 
   const missing = (it: MonthlyItem) => it.completedQty === null || it.completedQty === undefined || !it.completedDate;
 
-  // Xuất Excel Bảng 1 + 01A (GĐ3)
   const [exporting, setExporting] = useState(false);
-  const handleExport = async () => {
+  const doDownload = async (template: "bang1" | "02c", defaultName: string) => {
     if (exporting) return;
     setExporting(true);
     try {
       const res = await fetch("/api/monthly-export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ personId: personId || undefined, year, month }),
+        body: JSON.stringify({ personId: personId || undefined, year, month, template }),
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
@@ -218,18 +217,24 @@ export default function MonthlyResultsPage() {
       const cd = res.headers.get("Content-Disposition") || "";
       const m = cd.match(/filename="([^"]+)"/);
       a.href = url;
-      a.download = m ? m[1] : `Bang1-01A-T${month}-${year}.xlsx`;
+      a.download = m ? m[1] : defaultName;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success("Đã xuất Bảng 1 + Biểu 01A (giữ nguyên công thức mẫu — mở bằng Excel để xem số tính)");
+      toast.success(
+        template === "02c"
+          ? "Đã xuất Kế hoạch tháng 02C (cột KPI để trống — hệ thống chưa có nguồn số này)"
+          : "Đã xuất Bảng 1 + Biểu 01A (giữ nguyên công thức mẫu — mở bằng Excel để xem số tính)"
+      );
     } catch (err: any) {
       toast.error(err.message || "Lỗi khi xuất báo cáo");
     } finally {
       setExporting(false);
     }
   };
+  const handleExport = () => doDownload("bang1", `Bang1-01A-T${month}-${year}.xlsx`);
+  const handleExport02C = () => doDownload("02c", `KeHoachThang02C-T${month}-${year}.xlsx`);
 
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
@@ -248,6 +253,10 @@ export default function MonthlyResultsPage() {
           <button onClick={handleExport} disabled={exporting}
             className="px-4 py-2 rounded-lg bg-white border border-teal-700 text-teal-900 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50">
             {exporting ? "Đang xuất..." : "Xuất Bảng 1 + 01A (.xlsx)"}
+          </button>
+          <button onClick={handleExport02C} disabled={exporting}
+            className="px-4 py-2 rounded-lg bg-white border border-teal-700 text-teal-900 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50">
+            {exporting ? "Đang xuất..." : "Xuất KH tháng 02C (.xlsx)"}
           </button>
         </div>
       </div>

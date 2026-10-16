@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { buildMonthlyWorkbook } from "@/server/monthly-export";
+import { buildMonthlyPlan02C } from "@/server/monthly-plan-02c";
 import { recordAuditEvent } from "@/server/audit";
 
 /**
@@ -54,7 +55,28 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: "asc" },
     });
 
-    const buf = await buildMonthlyWorkbook(
+    const template = body.template === "02c" ? "02c" : "bang1";
+    const personInfo = {
+      fullName: person.fullName,
+      positionTitle: person.assignments[0]?.position?.title || null,
+      unitName: person.assignments[0]?.unit?.name || null,
+    };
+    const buf =
+      template === "02c"
+        ? await buildMonthlyPlan02C(
+            rows.map((r) => ({
+              title: r.title,
+              outputText: r.outputText,
+              evidenceRef: r.evidenceRef,
+              dueDate: r.dueDate,
+              completedDate: r.completedDate,
+              notes: r.notes,
+            })),
+            personInfo,
+            year,
+            month
+          )
+        : await buildMonthlyWorkbook(
       rows.map((r) => ({
         title: r.title,
         outputText: r.outputText,
@@ -67,23 +89,22 @@ export async function POST(req: NextRequest) {
         lateCount: r.lateCount || 0,
         reworkCount: r.reworkCount || 0,
       })),
-      {
-        fullName: person.fullName,
-        positionTitle: person.assignments[0]?.position?.title || null,
-        unitName: person.assignments[0]?.unit?.name || null,
-      },
+      personInfo,
       year,
       month
     );
 
     await recordAuditEvent({
       actorId: user.id,
-      action: "MONTHLY_EXPORT_BANG1_01A",
+      action: template === "02c" ? "MONTHLY_EXPORT_PLAN02C" : "MONTHLY_EXPORT_BANG1_01A",
       resourceType: "MonthlyWorkResult",
       newData: { personId: targetPersonId, year, month, rows: rows.length, by: user.username },
     });
 
-    const filename = `Bang1-01A-${person.account?.username || "cc"}-T${month}-${year}.xlsx`;
+    const filename =
+      template === "02c"
+        ? `KeHoachThang02C-${person.account?.username || "cc"}-T${month}-${year}.xlsx`
+        : `Bang1-01A-${person.account?.username || "cc"}-T${month}-${year}.xlsx`;
     return new NextResponse(new Uint8Array(buf), {
       status: 200,
       headers: {
