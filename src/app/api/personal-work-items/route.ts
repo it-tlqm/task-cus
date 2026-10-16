@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
     // Tự động phân giải hoặc tạo ReportingPeriod nếu truyền periodType, periodYear, periodNumber
     if (!periodId && periodType && periodNumber) {
       const typeStr = periodType === "WEEKLY" ? "WEEK" : periodType === "MONTHLY" ? "MONTH" : "DAY";
-      const year = periodYear || 2026;
+      const year = periodYear || new Date().getFullYear();
       const titleStr = periodType === "WEEKLY" ? `Tuần ${periodNumber}/${year}` : `Tháng ${periodNumber}/${year}`;
 
       let period = await prisma.reportingPeriod.findFirst({

@@ -125,6 +125,27 @@ export function getIsoWeekFromDate(date: Date): IsoWeekInfo {
 }
 
 /**
+ * Nhãn kỳ hiện tại theo lịch (GMT+7) — dùng cho UI thay vì hardcode "Tuần 41", "Tháng 10".
+ */
+export function getCurrentPeriodLabels(): {
+  weekNumber: number;
+  year: number;
+  month: number;
+  weekShort: string;
+  monthShort: string;
+} {
+  const now = new Date();
+  const vn = getVnDateParts(now);
+  const iso = getIsoWeekFromDate(now);
+  return {
+    weekNumber: iso.weekNumber,
+    year: vn.year,
+    month: vn.month,
+    weekShort: `Tuần ${iso.weekNumber}`,
+    monthShort: `Tháng ${vn.month}/${vn.year}`,
+  };
+}
+/**
  * Format chuỗi khoảng ngày từ cặp startAt và endAt bất kỳ trong CSDL
  */
 export function formatPeriodRangeFromDates(startAt: Date, endAt: Date): string {

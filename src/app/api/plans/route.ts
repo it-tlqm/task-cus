@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { getIsoWeekFromDate } from "@/lib/period-helper";
 
 export async function GET(req: NextRequest) {
   try {
@@ -100,21 +101,23 @@ export async function POST(req: NextRequest) {
     // Tự động phân giải hoặc tạo ReportingPeriod nếu chưa có periodId
     if (!periodId && type) {
       const typeStr = type === "MONTHLY" || type === "MONTH" ? "MONTH" : type === "WEEKLY" || type === "WEEK" ? "WEEK" : "DAY";
-      const planYear = year || 2026;
-      const titleStr = typeStr === "MONTH" 
-        ? `Tháng ${monthNumber || 10}/${planYear}`
-        : `Tuần ${weekNumber || 41}/${planYear}`;
+      const planYear = year || new Date().getFullYear();
+      const currentIso = getIsoWeekFromDate(new Date());
+      const effectiveWeek = weekNumber || currentIso.weekNumber;
+      const titleStr = typeStr === "MONTH"
+        ? `Tháng ${monthNumber || new Date().getMonth() + 1}/${planYear}`
+        : `Tuần ${effectiveWeek}/${planYear}`;
 
       let period = await prisma.reportingPeriod.findFirst({
         where: { type: typeStr, title: titleStr },
       });
 
       if (!period) {
-        const start = typeStr === "MONTH" 
-          ? new Date(planYear, (monthNumber || 10) - 1, 1)
-          : new Date(planYear, 0, 1 + ((weekNumber || 41) - 1) * 7);
+        const start = typeStr === "MONTH"
+          ? new Date(planYear, (monthNumber || new Date().getMonth() + 1) - 1, 1)
+          : new Date(planYear, 0, 1 + (effectiveWeek - 1) * 7);
         const end = typeStr === "MONTH"
-          ? new Date(planYear, monthNumber || 10, 0)
+          ? new Date(planYear, monthNumber || new Date().getMonth() + 1, 0)
           : new Date(start.getTime() + 6 * 86400000);
 
         period = await prisma.reportingPeriod.create({

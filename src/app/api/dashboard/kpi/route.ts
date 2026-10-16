@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
+import { getIsoWeekFromDate } from "@/lib/period-helper";
 
 export async function GET(req: NextRequest) {
   try {
@@ -113,6 +114,41 @@ export async function GET(req: NextRequest) {
           periodStart = new Date("2026-10-01T00:00:00Z");
           periodEnd = new Date("2026-10-31T23:59:59Z");
           selectedPeriodTitle = "Tháng 10/2026";
+        }
+      } else if (targetPeriodKey === "week") {
+        // Tuần hiện tại theo lịch (động — không kẹt ở Tuần 41):
+        // ưu tiên kỳ WEEK trong DB chứa hôm nay, nếu không có thì tính Thứ 2–Chủ nhật theo lịch
+        const nowW = new Date();
+        const containing = availablePeriods.find(
+          (p) => p.type === "WEEK" && p.startAt <= nowW && nowW <= p.endAt
+        );
+        if (containing) {
+          periodStart = containing.startAt;
+          periodEnd = containing.endAt;
+          selectedPeriodTitle = containing.title;
+          matchedPeriodId = containing.id;
+        } else {
+          const dow = (nowW.getDay() + 6) % 7; // Thứ 2 = 0
+          periodStart = new Date(nowW.getFullYear(), nowW.getMonth(), nowW.getDate() - dow, 0, 0, 0);
+          periodEnd = new Date(periodStart.getTime() + 6 * 86400000 + 86399999);
+          const iso = getIsoWeekFromDate(nowW);
+          selectedPeriodTitle = `Tuần ${iso.weekNumber}/${iso.year}`;
+        }
+      } else if (targetPeriodKey === "month") {
+        // Tháng hiện tại theo lịch (động)
+        const nowM = new Date();
+        const containingM = availablePeriods.find(
+          (p) => p.type === "MONTH" && p.startAt <= nowM && nowM <= p.endAt
+        );
+        if (containingM) {
+          periodStart = containingM.startAt;
+          periodEnd = containingM.endAt;
+          selectedPeriodTitle = containingM.title;
+          matchedPeriodId = containingM.id;
+        } else {
+          periodStart = new Date(nowM.getFullYear(), nowM.getMonth(), 1, 0, 0, 0);
+          periodEnd = new Date(nowM.getFullYear(), nowM.getMonth() + 1, 0, 23, 59, 59, 999);
+          selectedPeriodTitle = `Tháng ${nowM.getMonth() + 1}/${nowM.getFullYear()}`;
         }
       } else if (targetPeriodKey === "custom" && startDateParam && endDateParam) {
         periodStart = new Date(startDateParam);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import { getCurrentPeriodLabels } from "@/lib/period-helper";
 
 interface TaskUpdateItem {
   id: string;
@@ -121,6 +122,7 @@ export default function MyWorkPage() {
     const weekdays = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     return `${weekdays[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
   }, []);
+  const periodLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
 
   // Drawer & Modal States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -512,10 +514,10 @@ export default function MyWorkPage() {
                 Hôm nay ({todayLabel})
               </button>
               <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
-                Tuần này (Tuần 41)
+                Tuần này ({periodLabels.weekShort})
               </button>
               <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
-                Tháng 10/2026
+                {periodLabels.monthShort}
               </button>
               <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
                 Tất cả nhiệm vụ
@@ -1039,13 +1041,13 @@ export default function MyWorkPage() {
           <div className="bg-surface-container p-1 rounded-lg flex items-center justify-between gap-1 shadow-inner">
             <button className="flex-1 py-1.5 px-2 rounded-md bg-secondary text-on-secondary font-body-semibold text-label-md text-center shadow-sm flex items-center justify-center gap-1 transition-fast">
               <span className="material-symbols-outlined text-[15px]">event</span>
-              <span>Hôm nay (14/10)</span>
+              <span>Hôm nay ({new Date().toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })})</span>
             </button>
             <button className="flex-1 py-1.5 px-2 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md text-center transition-fast">
-              Tuần 41
+              {periodLabels.weekShort}
             </button>
             <button className="flex-1 py-1.5 px-2 rounded-md text-on-surface-variant hover:text-on-surface font-label-md text-label-md text-center transition-fast">
-              Tháng 10
+              {periodLabels.monthShort}
             </button>
           </div>
         </div>

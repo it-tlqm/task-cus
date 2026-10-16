@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
+import { getCurrentPeriodLabels } from "@/lib/period-helper";
 
 interface DrilldownTask {
   id: string;
@@ -94,6 +95,11 @@ function ReportsContent() {
 
   const [activeTab, setActiveTab] = useState<"preview" | "builder" | "snapshots">(initialTab);
   const [period, setPeriod] = useState<"today" | "week" | "month" | "quarter">("week");
+  const periodLabels = React.useMemo(() => {
+    const base = getCurrentPeriodLabels();
+    const q = Math.floor((base.month - 1) / 3) + 1;
+    return { ...base, quarterShort: `Quý ${["I", "II", "III", "IV"][q - 1]}/${base.year}` };
+  }, []);
   const [selectedUnit, setSelectedUnit] = useState("all");
   const [selectedOfficer, setSelectedOfficer] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState("legacy");
@@ -488,7 +494,7 @@ function ReportsContent() {
               radio_button_checked
             </span>
             <span className="font-label-sm text-label-sm text-status-warning uppercase tracking-wide font-semibold">
-              Kỳ Tuần 41: DỮ LIỆU ĐANG MỞ (Thời gian thực)
+              Kỳ {periodLabels.weekShort}: DỮ LIỆU ĐANG MỞ (Thời gian thực)
             </span>
           </div>
           <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
@@ -663,7 +669,7 @@ function ReportsContent() {
                     : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
                 }`}
               >
-                Tuần này (Tuần 41)
+                Tuần này ({periodLabels.weekShort})
               </button>
               <button
                 onClick={() => setPeriod("month")}
@@ -673,7 +679,7 @@ function ReportsContent() {
                     : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
                 }`}
               >
-                Tháng 10/2026
+                {periodLabels.monthShort}
               </button>
               <button
                 onClick={() => setPeriod("quarter")}
@@ -683,7 +689,7 @@ function ReportsContent() {
                     : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
                 }`}
               >
-                Quý IV/2026
+                {periodLabels.quarterShort}
               </button>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low text-on-surface text-label-md font-label-md">
                 <span className="material-symbols-outlined text-[16px] text-outline">calendar_month</span>
@@ -1750,7 +1756,7 @@ function ReportsContent() {
                     </option>
                   ))}
                   {availablePeriods.length === 0 && (
-                    <option value="">Tuần 41 — Năm 2026 (Mặc định)</option>
+                    <option value="">{periodLabels.weekShort} — Năm {periodLabels.year} (Mặc định)</option>
                   )}
                 </select>
               </div>

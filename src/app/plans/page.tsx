@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
-import { getDaysOfWeekFromStart, formatPeriodRangeFromDates } from "@/lib/period-helper";
+import { getDaysOfWeekFromStart, formatPeriodRangeFromDates, getCurrentPeriodLabels } from "@/lib/period-helper";
 
 interface ActivityGroup {
   id: string;
@@ -143,6 +143,7 @@ export default function PlansPage() {
 
   // Mobile View Filters
   const [mobilePeriod, setMobilePeriod] = useState<"day" | "week" | "month">("week");
+  const mobileLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
   const [mobileScope, setMobileScope] = useState<"personal" | "unit">("personal");
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
     "sec-1": true,
@@ -1100,7 +1101,7 @@ export default function PlansPage() {
                   : "text-on-surface-variant"
               }`}
             >
-              Tuần 41 (Hiện tại)
+              {mobileLabels.weekShort} (Hiện tại)
             </button>
             <button
               onClick={() => setMobilePeriod("month")}
@@ -1110,7 +1111,7 @@ export default function PlansPage() {
                   : "text-on-surface-variant"
               }`}
             >
-              Tháng 10
+              {mobileLabels.monthShort}
             </button>
           </div>
 

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import { getCurrentPeriodLabels } from "@/lib/period-helper";
 
 interface KPIData {
   totalTasks: number;
@@ -100,11 +101,12 @@ export default function DashboardPage() {
   const [hotAlerts, setHotAlerts] = useState<HotAlert[]>([]);
   const [availablePeriods, setAvailablePeriods] = useState<ReportingPeriodItem[]>([]);
   const [selectedPeriodInfo, setSelectedPeriodInfo] = useState<SelectedPeriodInfo | null>(null);
-  const [period, setPeriod] = useState<string>("w41");
+  const [period, setPeriod] = useState<string>("week");
   const [unitFilter, setUnitFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isAdminBlocked, setIsAdminBlocked] = useState(false);
+  const periodLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
 
   // Quick Task Assign Modal State
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -288,24 +290,24 @@ export default function DashboardPage() {
                   Hôm nay
                 </button>
                 <button
-                  onClick={() => setPeriod("w41")}
+                  onClick={() => setPeriod("week")}
                   className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
-                    period === "w41"
+                    period === "week"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
                   }`}
                 >
-                  Tuần 41
+                  {periodLabels.weekShort}
                 </button>
                 <button
-                  onClick={() => setPeriod("month10")}
+                  onClick={() => setPeriod("month")}
                   className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
-                    period === "month10"
+                    period === "month"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
                   }`}
                 >
-                  Tháng 10
+                  {periodLabels.monthShort}
                 </button>
                 <button
                   onClick={() => setPeriod("all")}
@@ -566,7 +568,7 @@ export default function DashboardPage() {
                 <h3 className="font-headline-sm text-headline-sm text-primary">Tiến Độ Theo Bộ Phận</h3>
               </div>
               <span className="font-label-sm text-label-sm text-outline">
-                {period === "w41" ? "Tuần 41" : "Toàn bộ"}
+                {period === "week" ? periodLabels.weekShort : "Toàn bộ"}
               </span>
             </div>
 
@@ -779,24 +781,24 @@ export default function DashboardPage() {
                 Hôm nay
               </button>
               <button
-                onClick={() => setPeriod("w41")}
+                onClick={() => setPeriod("week")}
                 className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
-                  period === "w41"
+                  period === "week"
                     ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                     : "text-on-surface-variant hover:text-primary"
                 }`}
               >
-                Tuần 41
+                {periodLabels.weekShort}
               </button>
               <button
-                onClick={() => setPeriod("month10")}
+                onClick={() => setPeriod("month")}
                 className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
-                  period === "month10"
+                  period === "month"
                     ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                     : "text-on-surface-variant hover:text-primary"
                 }`}
               >
-                Tháng 10
+                {periodLabels.monthShort}
               </button>
               <button
                 onClick={() => setPeriod("all")}
