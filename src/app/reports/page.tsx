@@ -754,13 +754,16 @@ function ReportsContent() {
                     value={selectedTemplate}
                     onChange={(e) => {
                       setSelectedTemplate(e.target.value);
-                      showToast(`Đã chuyển sang mẫu: ${e.target.value}`);
+                      const label =
+                        e.target.value === "detailed"
+                          ? "Mẫu B (chi tiết)"
+                          : "Mẫu A (kế hoạch tuần)";
+                      showToast(`Đã chuyển sang ${label}`);
                     }}
                     className="w-full h-10 px-3 pr-8 rounded bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-all cursor-pointer"
                   >
                     <option value="legacy">RPT-PLAN-WEEK-LEGACY (Mẫu công tác tuần chuẩn Tà Lùng)</option>
-                    <option value="detail">RPT-PLAN-DETAIL (Bảng tổng hợp chi tiết theo từng nhiệm vụ &amp; kết quả)</option>
-                    <option value="issues">RPT-ISSUES (Chuyên đề công việc tồn đọng &amp; vướng mắc nghiệp vụ)</option>
+                    <option value="detailed">RPT-PLAN-DETAILED (Bảng chi tiết theo từng nhiệm vụ &amp; kết quả)</option>
                   </select>
                   <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-outline pointer-events-none text-[20px]">
                     tune
@@ -2050,7 +2053,6 @@ function ReportsContent() {
             <span className="material-symbols-outlined text-status-success text-[20px]">task_alt</span>
             <span className="font-body-semibold text-[13px]">{toastMsg}</span>
           </div>
-          <span className="font-label-sm text-[11px] text-primary-fixed-dim">Watermark [TX-8392]</span>
         </div>
       )}
     </div>
