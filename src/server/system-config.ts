@@ -56,7 +56,7 @@ export const DEFAULT_CONFIGS: Array<{
   },
   {
     key: "unitDisplayName",
-    value: "Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng",
+    value: "Hải quan cửa khẩu Quốc tế Tà Lùng",
     dataType: "STRING",
     category: "DISPLAY",
     description: "Tên chính thức của Chi cục hiển thị trên tiêu đề báo cáo và giao diện",

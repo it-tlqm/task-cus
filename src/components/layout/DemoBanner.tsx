@@ -1,6 +1,6 @@
 import React from "react";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
-import { UNIT_OFFICIAL_NAME, PARENT_UNIT_NAME } from "@/lib/unit-info";
+import { UNIT_OFFICIAL_NAME } from "@/lib/unit-info";
 
 export function DemoBanner() {
   return (
@@ -12,7 +12,7 @@ export function DemoBanner() {
         </span>
       </div>
       <div className="flex items-center gap-2 text-[11px] text-slate-500">
-        <span className="hidden md:inline">{PARENT_UNIT_NAME}</span>
+        <span className="hidden md:inline">Hải quan Việt Nam</span>
         <span className="px-1.5 py-0.2 bg-emerald-200/50 text-emerald-900 rounded font-semibold text-[10px]">
           CHÍNH THỨC
         </span>

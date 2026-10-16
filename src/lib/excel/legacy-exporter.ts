@@ -20,7 +20,7 @@ export interface LegacyReportGroupData {
 
 export interface LegacyReportOptions {
   periodTitle: string; // e.g. "Tuần 41 (05/10/2026 - 11/10/2026)"
-  unitName: string;   // e.g. "Chi cục Hải quan CKQT Tà Lùng"
+  unitName: string;   // e.g. "Hải quan cửa khẩu Quốc tế Tà Lùng"
   departmentName?: string;
   officerName?: string;
   groups: LegacyReportGroupData[];

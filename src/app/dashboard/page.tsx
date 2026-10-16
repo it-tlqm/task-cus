@@ -236,7 +236,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
-                  <span>Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng</span>
+                  <span>Hải quan cửa khẩu Quốc tế Tà Lùng</span>
                   <span className="text-outline-variant">•</span>
                   <span className="font-mono text-label-sm text-outline">
                     {selectedPeriodInfo ? selectedPeriodInfo.title : "Kỳ giám sát hiện tại"}

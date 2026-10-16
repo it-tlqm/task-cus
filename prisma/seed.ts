@@ -39,7 +39,7 @@ async function main() {
   const org = await prisma.organization.create({
     data: {
       code: "HQ_TA_LUNG",
-      name: "Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng",
+      name: "Hải quan cửa khẩu Quốc tế Tà Lùng",
       status: "ACTIVE",
     },
   });

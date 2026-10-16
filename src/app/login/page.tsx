@@ -77,11 +77,8 @@ export default function LoginPage() {
               className="w-14 h-14 rounded-full object-cover shadow-lg ring-4 ring-white/10 shrink-0 bg-white"
             />
             <div className="flex flex-col">
-              <span className="text-[11px] font-bold tracking-widest uppercase text-secondary-fixed/90 font-mono">
-                CHI CỤC HẢI QUAN KHU VỰC XVI
-              </span>
               <h2 className="text-lg xl:text-xl font-bold tracking-tight text-white leading-snug">
-                CHI CỤC HẢI QUAN KHU VỰC XVI - HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
+                HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
               </h2>
               <span className="text-xs text-white/70">
                 Bộ phận Công nghệ thông tin &amp; Điều hành tác nghiệp

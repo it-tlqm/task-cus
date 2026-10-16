@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Plus,
   Edit2,
+  Trash2,
   Shield,
   Search,
   CheckCircle2,
@@ -93,6 +94,9 @@ export default function OrganizationAdminPage() {
 
   // Modals state
   const [showAddUnitModal, setShowAddUnitModal] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<OrgUnit | null>(null);
+  const [editUnitName, setEditUnitName] = useState("");
+  const [deletingUnit, setDeletingUnit] = useState<OrgUnit | null>(null);
   const [showAddPersonModal, setShowAddPersonModal] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [transferringPerson, setTransferringPerson] = useState<Person | null>(null);
@@ -249,6 +253,62 @@ export default function OrganizationAdminPage() {
       setShowAddUnitModal(false);
       setNewUnitData({ code: "", name: "", type: "TEAM" });
       showNotification(`Đã thêm bộ phận "${newUnitData.name}" thành công`);
+      fetchData();
+    } catch (err: any) {
+      setModalError("Lỗi kết nối máy chủ: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 1b. Đổi tên đơn vị (mã code bất biến)
+  const handleOpenRenameUnit = (node: OrgUnit) => {
+    setEditingUnit(node);
+    setEditUnitName(node.name);
+    setModalError(null);
+  };
+
+  const handleRenameUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUnit || !editUnitName.trim()) return;
+    setModalError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/org-units/${editingUnit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editUnitName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setModalError(data.error || "Không thể đổi tên đơn vị");
+        return;
+      }
+      setEditingUnit(null);
+      showNotification(`Đã đổi tên thành "${editUnitName.trim()}"`);
+      fetchData();
+    } catch (err: any) {
+      setModalError("Lỗi kết nối máy chủ: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 1c. Xóa đơn vị trống (server chặn khi còn dữ liệu liên quan)
+  const handleDeleteUnit = async () => {
+    if (!deletingUnit) return;
+    setModalError(null);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/org-units/${deletingUnit.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        setModalError(data.error || "Không thể xóa đơn vị");
+        return;
+      }
+      setDeletingUnit(null);
+      if (selectedUnit?.id === deletingUnit.id) setSelectedUnit(null);
+      showNotification(data.message || "Đã xóa đơn vị");
       fetchData();
     } catch (err: any) {
       setModalError("Lỗi kết nối máy chủ: " + err.message);
@@ -594,6 +654,33 @@ export default function OrganizationAdminPage() {
               >
                 {node.personnelCount}
               </span>
+            )}
+            {isSelected && (
+              <>
+                <button
+                  type="button"
+                  title="Đổi tên đơn vị"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenRenameUnit(node);
+                  }}
+                  className="p-1 rounded hover:bg-white/20 text-white"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  title="Xóa đơn vị (chỉ khi không còn dữ liệu)"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeletingUnit(node);
+                    setModalError(null);
+                  }}
+                  className="p-1 rounded hover:bg-white/20 text-white"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -1424,7 +1511,7 @@ export default function OrganizationAdminPage() {
                       className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="DEPARTMENT">DEPARTMENT — Phạm vi Bộ phận / Đội trực thuộc</option>
-                      <option value="ORGANIZATION">ORGANIZATION — Toàn bộ Chi cục Hải quan</option>
+                      <option value="ORGANIZATION">ORGANIZATION — Toàn đơn vị Hải quan</option>
                     </select>
                   </div>
                 </>
@@ -1558,6 +1645,97 @@ export default function OrganizationAdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL 5b: ĐỔI TÊN ĐƠN VỊ */}
+      {/* ---------------------------------------------------- */}
+      {editingUnit && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Đổi tên đơn vị</h3>
+            <p className="text-xs text-slate-500">
+              Mã <span className="font-mono font-semibold">{editingUnit.code}</span> giữ nguyên để bảo toàn liên kết dữ liệu.
+            </p>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleRenameUnit} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Tên đơn vị *</label>
+                <input
+                  type="text"
+                  required
+                  value={editUnitName}
+                  onChange={(e) => setEditUnitName(e.target.value)}
+                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingUnit(null)}
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm disabled:opacity-50"
+                >
+                  {isSubmitting ? "Đang lưu..." : "Lưu tên mới"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL 5c: XÁC NHẬN XÓA ĐƠN VỊ */}
+      {/* ---------------------------------------------------- */}
+      {deletingUnit && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <h3 className="text-base font-bold text-rose-700">Xóa đơn vị "{deletingUnit.name}"?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Chỉ xóa được đơn vị <strong>không còn</strong> đơn vị con, cán bộ, nhiệm vụ, kế hoạch và bản chốt kỳ.
+              Hệ thống sẽ tự kiểm tra và từ chối nếu còn dữ liệu liên quan.
+            </p>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletingUnit(null)}
+                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUnit}
+                disabled={isSubmitting}
+                className="px-4 py-1.5 text-xs font-semibold text-white bg-rose-700 rounded-lg hover:bg-rose-800 shadow-sm disabled:opacity-50"
+              >
+                {isSubmitting ? "Đang xóa..." : "Xóa đơn vị"}
+              </button>
+            </div>
           </div>
         </div>
       )}

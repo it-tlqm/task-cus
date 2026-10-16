@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin", "vietnamese"] });
 
 export const metadata: Metadata = {
   title: "Hải quan cửa khẩu Quốc tế Tà Lùng — Quản lý Kế hoạch & Công việc",
-  description: "Hệ thống Quản lý Kế hoạch & Công việc — Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng",
+  description: "Hệ thống Quản lý Kế hoạch & Công việc — Hải quan cửa khẩu Quốc tế Tà Lùng",
   icons: {
     icon: "/images/logo-haiquan.png",
   },

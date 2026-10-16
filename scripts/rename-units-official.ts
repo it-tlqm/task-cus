@@ -18,7 +18,7 @@ const ORG_UNIT_RENAMES: Array<[string, string]> = [
 ];
 const ORG_RENAME: [string, string] = [
   "HQ_TA_LUNG",
-  "Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng",
+  "Hải quan cửa khẩu Quốc tế Tà Lùng",
 ];
 const POSITION_RENAMES: Array<[string, string]> = [
   ["CHI_CUC_TRUONG", "Trưởng hải quan cửa khẩu"],
@@ -29,7 +29,7 @@ const ROLE_RENAMES: Array<[string, string]> = [
   ["UNIT_LEADER", "Trưởng hải quan cửa khẩu"],
   ["STAFF", "Công chức"],
 ];
-const CONFIG_VALUE = "Chi cục Hải quan khu vực XVI - Hải quan cửa khẩu Quốc tế Tà Lùng";
+const CONFIG_VALUE = "Hải quan cửa khẩu Quốc tế Tà Lùng";
 
 async function main() {
   const apply = process.argv.includes("--apply");
