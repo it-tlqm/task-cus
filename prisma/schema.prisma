@@ -93,6 +93,7 @@ model Person {
   pushSubscriptions PushSubscription[]
   dutyRosters      DutyRoster[]
   handledDocs      OfficialDoc[]
+  taskComments     TaskComment[]
 
   @@map("people")
 }
@@ -415,6 +416,7 @@ model Task {
   deadlineRequests DeadlineRequest[]
   submissions      ResultSubmission[]
   attachments      TaskAttachment[]
+  comments         TaskComment[]
 
   @@map("tasks")
 }
@@ -494,8 +496,29 @@ model TaskAttachment {
 
   task       Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
   uploadedBy Person @relation("AttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  comment    TaskComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId  String?      @map("comment_id")
 
   @@map("task_attachments")
+}
+
+// ----------------------------------------------------
+// 19. TRAO ĐỔI TRONG NHIỆM VỤ (bình luận phẳng + đính file, không thread)
+// ----------------------------------------------------
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  authorId  String   @map("author_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task        Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author      Person           @relation(fields: [authorId], references: [id])
+  attachments TaskAttachment[]
+
+  @@index([taskId, createdAt])
+  @@map("task_comments")
 }
 
 // ----------------------------------------------------

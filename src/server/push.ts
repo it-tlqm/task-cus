@@ -4,6 +4,7 @@ import { prisma } from "./db";
 // Loại tin được bắn push ra điện thoại (tránh spam: chỉ việc giao + duyệt/quyết định)
 const PUSH_TYPES = new Set([
   "TASK_ASSIGNED",
+  "TASK_COMMENT",
   "TASK_ACCEPTED",
   "TASK_COMPLETED",
   "TASK_REJECTED",

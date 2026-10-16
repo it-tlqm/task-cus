@@ -112,6 +112,72 @@ export default function TaskDetailPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
 
+  // Đợt trao đổi: bình luận phẳng + đính file (không thread/sửa)
+  const [comments, setComments] = useState<Array<{
+    id: string; content: string; createdAt: string;
+    author: { id: string; fullName: string };
+    attachments: Array<{ id: string; fileName: string; fileUrl: string; fileSize: number }>;
+  }>>([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentFiles, setCommentFiles] = useState<File[]>([]);
+  const [sendingComment, setSendingComment] = useState(false);
+
+  const fetchComments = async (tid: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${tid}/comments`);
+      if (res.ok) {
+        const json = await res.json();
+        setComments(json.data || []);
+      }
+    } catch {}
+  };
+
+  const handleSendComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!task || sendingComment || !commentText.trim()) return;
+    setSendingComment(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: commentText.trim() }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Không thể gửi bình luận");
+      const cid: string = json.data.id;
+      // Đính file theo bình luận (nếu có)
+      for (const f of commentFiles.slice(0, 3)) {
+        try {
+          const fd = new FormData();
+          fd.append("file", f);
+          fd.append("isSigned", "false");
+          fd.append("commentId", cid);
+          await fetch(`/api/tasks/${task.id}/attachments`, { method: "POST", body: fd });
+        } catch {}
+      }
+      setCommentText("");
+      setCommentFiles([]);
+      toast.success("Đã gửi trao đổi!");
+      fetchComments(task.id);
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi gửi");
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (cid: string) => {
+    if (!task || !confirm("Xóa bình luận này?")) return;
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/comments?commentId=${cid}`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Không thể xóa");
+      toast.success("Đã xóa bình luận.");
+      fetchComments(task.id);
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xóa");
+    }
+  };
   // YC-08: lãnh đạo loại nhiệm vụ trùng (xóa mềm, có xác nhận + lý do)
   const [showCancelDupModal, setShowCancelDupModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -216,6 +282,7 @@ export default function TaskDetailPage() {
     if (taskId) {
       fetchTaskDetail();
       fetchAttachments(taskId);
+      fetchComments(taskId);
     }
     // YC-01/YC-03: danh sách nhân sự thật cho chọn chủ trì/phối hợp khi sửa
     fetch("/api/people?pageSize=100")
@@ -736,7 +803,103 @@ export default function TaskDetailPage() {
               )}
             </div>
 
-            {/* Deadline Requests Card */}
+            {/* Trao đổi trong nhiệm vụ (bình luận phẳng + đính file) */}
+      <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-3">
+        <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2 border-b border-border-default pb-3">
+          <span className="material-symbols-outlined text-primary text-[20px]">forum</span>
+          Trao Đổi ({comments.length})
+        </h3>
+        {comments.length === 0 ? (
+          <p className="text-xs text-outline text-center py-4">
+            Chưa có trao đổi nào. Hỏi đáp, nhắc phối hợp ngay tại đây để giữ vết.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {comments.map((c) => (
+              <div key={c.id} className="flex gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                  {(c.author?.fullName || "?").trim().split(" ").slice(-1)[0]?.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="p-3 rounded-lg bg-surface-subtle border border-border-default/50 flex flex-col gap-1 flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="font-bold text-primary truncate">{c.author?.fullName || "Cán bộ"}</span>
+                    <span className="flex items-center gap-1 shrink-0">
+                      <span className="text-outline">{formatDateTime(c.createdAt)}</span>
+                      <button
+                        onClick={() => handleDeleteComment(c.id)}
+                        title="Xóa bình luận (tác giả hoặc lãnh đạo)"
+                        className="p-0.5 rounded text-outline hover:text-status-danger"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                      </button>
+                    </span>
+                  </div>
+                  <p className="text-xs text-on-surface whitespace-pre-line">{c.content}</p>
+                  {c.attachments.length > 0 && (
+                    <div className="flex flex-col gap-1 mt-1">
+                      {c.attachments.map((f) => (
+                        <a
+                          key={f.id}
+                          href={f.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-secondary hover:underline flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">attach_file</span>
+                          <span className="truncate">{f.fileName}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <form onSubmit={handleSendComment} className="flex flex-col gap-2 pt-1 border-t border-border-default">
+          <textarea
+            rows={2}
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Nhập trao đổi, câu hỏi, nhắc việc..."
+            className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+          />
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <label className="flex items-center gap-1.5 text-xs text-primary font-semibold cursor-pointer">
+              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+              <span>{commentFiles.length > 0 ? `${commentFiles.length} tệp` : "Đính file"}</span>
+              <input
+                type="file"
+                multiple
+                accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx"
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  const valid = files.filter((f) => {
+                    if (f.size > 10 * 1024 * 1024) {
+                      toast.error(`Tệp ${f.name} quá 10MB — bỏ qua`);
+                      return false;
+                    }
+                    return true;
+                  }).slice(0, 3);
+                  setCommentFiles(valid);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <span className="text-[11px] text-outline">Tối đa 3 tệp, mỗi tệp ≤ 10MB</span>
+            <button
+              type="submit"
+              disabled={sendingComment}
+              className="px-4 py-1.5 rounded bg-secondary text-on-secondary text-xs font-bold active-press disabled:opacity-50"
+            >
+              {sendingComment ? "Đang gửi..." : "Gửi"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Deadline Requests Card */}
             {task.deadlineRequests && task.deadlineRequests.length > 0 && (
               <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-3">
                 <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">

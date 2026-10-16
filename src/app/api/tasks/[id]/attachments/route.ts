@@ -100,6 +100,14 @@ export async function POST(
     const file = formData.get("file") as File | null;
     const isSigned = formData.get("isSigned") === "true";
     const signedBy = (formData.get("signedBy") as string) || (isSigned ? user.fullName : null);
+    // Đính file theo bình luận (trao đổi) — file vẫn thuộc task để hiển thị tổng hợp
+    const commentId = (formData.get("commentId") as string) || null;
+    if (commentId) {
+      const cmt = await prisma.taskComment.findUnique({ where: { id: commentId } });
+      if (!cmt || cmt.taskId !== taskId) {
+        return jsonError("Bình luận không thuộc nhiệm vụ này", 400);
+      }
+    }
 
     if (!file) {
       return jsonError("Vui lòng chọn tệp tin cần tải lên", 400);
@@ -133,6 +141,7 @@ export async function POST(
         fileUrl: uploadResult.url,
         isSigned,
         signedBy,
+        commentId,
       },
       include: {
         uploadedBy: {
