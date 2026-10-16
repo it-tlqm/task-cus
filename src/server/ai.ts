@@ -58,7 +58,19 @@ export async function draftDirective(idea: string): Promise<{ title: string; con
   };
 }
 
-/** Tóm tắt tình hình kỳ từ số liệu tổng hợp (không gửi dữ liệu cá nhân chi tiết). */
+/** Tách biên bản thô thành các đầu việc kết luận (1 dòng 1 việc). */
+export async function extractConclusions(minutes: string): Promise<string[]> {
+  const raw = await callGemini(
+    `Bạn đọc biên bản họp giao ban Hải quan và trích các KẾT LUẬN GIAO VIỆC (việc phải làm, có người chịu trách nhiệm hoặc hạn).\n` +
+    `Trả về MỖI kết luận 1 dòng, mỗi dòng bắt đầu bằng "- ". Không đánh số khác, không thêm lời dẫn/kết, tối đa 20 dòng, mỗi dòng dưới 200 ký tự.\n` +
+    `Bỏ qua nội dung báo cáo thuần túy không phát sinh việc.\nBiên bản:\n${minutes.slice(0, 4000)}`
+  );
+  return raw
+    .split("\n")
+    .map((l) => l.replace(/^[-\s*•\d.)\s]+/, "").trim())
+    .filter((l) => l.length >= 5)
+    .slice(0, 20);
+}
 export async function summarizePeriod(input: {
   label: string;
   total: number; completed: number; inProgress: number; overdue: number;

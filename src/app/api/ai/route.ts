@@ -41,8 +41,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: out });
     }
 
-    if (op === "summarize") {
-      if (!(await checkQuota(user, "AI_SUMMARY"))) return jsonError(`Hết lượt tóm tắt hôm nay (${DAILY_LIMIT} lượt)`, 429);
+    if (op === "extract") {
+      const { extractConclusions } = await import("@/server/ai");
+      const minutes = String(body.minutes || "").trim();
+      if (minutes.length < 20) return jsonError("Dán biên bản họp (ít nhất vài dòng) để AI tách kết luận", 400);
+      if (!(await checkQuota(user, "AI_EXTRACT"))) return jsonError(`Hết lượt trích xuất hôm nay (${DAILY_LIMIT} lượt)`, 429);
+      const items = await extractConclusions(minutes);
+      await recordAuditEvent({
+        actorId: user.id, action: "AI_EXTRACT", resourceType: "Meeting", newData: { minutesLen: minutes.length, count: items.length },
+      });
+      return NextResponse.json({ success: true, data: { items } });
+    }
+
+    if (op === "summarize") {      if (!(await checkQuota(user, "AI_SUMMARY"))) return jsonError(`Hết lượt tóm tắt hôm nay (${DAILY_LIMIT} lượt)`, 429);
       // Chỉ dùng số tổng hợp theo phạm vi của người gọi — không gửi chi tiết cá nhân
       const authorizedUnits = await getAuthorizedUnitIds(user);
       const scopeWhere =

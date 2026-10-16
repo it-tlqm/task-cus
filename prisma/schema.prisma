@@ -685,6 +685,45 @@ model DutyRoster {
 }
 
 // ----------------------------------------------------
+// 17. BIÊN BẢN GIAO BAN → NHIỆM VỤ (kết luận họp sinh việc, chống rơi rớt)
+// ----------------------------------------------------
+
+model Meeting {
+  id        String   @id @default(uuid())
+  title     String
+  meetingAt DateTime @map("meeting_at")
+  chair     String?
+  unitId    String?  @map("unit_id")
+  notes     String?
+  createdById String? @map("created_by_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  conclusions MeetingConclusion[]
+
+  @@index([meetingAt])
+  @@map("meetings")
+}
+
+model MeetingConclusion {
+  id          String    @id @default(uuid())
+  meetingId   String    @map("meeting_id")
+  content     String
+  ownerId     String?   @map("owner_id")
+  assigneeIds String[]  @map("assignee_ids")
+  deadline    DateTime?
+  priority    String    @default("Cao")
+  taskId      String?   @map("task_id") // Task đã sinh (chống sinh trùng)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@map("meeting_conclusions")
+}
+
+// ----------------------------------------------------
 // 15. WEB PUSH SUBSCRIPTIONS (thông báo đẩy về điện thoại)
 // ----------------------------------------------------
 
