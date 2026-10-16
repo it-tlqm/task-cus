@@ -106,7 +106,7 @@ export default function TaskDetailPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelSaving, setCancelSaving] = useState(false);
 
-  const { canApprove } = usePermissions();
+  const { canApprove, user: permUser } = usePermissions();
   const isLockedTask = task?.status === "COMPLETED" || (task?.status as string) === "DONE" || task?.status === "CANCELED";
 
   // Attachment state
@@ -296,8 +296,36 @@ export default function TaskDetailPage() {
     }
   };
 
-  const handleProgressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Đợt A: người được giao xác nhận đã nhận việc
+  const [accepting, setAccepting] = useState(false);
+  const isMyTask =
+    !!task && !!permUser &&
+    (task.owner?.id === permUser.personId ||
+      (task.assignees || []).some((a: any) => (a.person?.id || a.personId) === permUser.personId));
+  const handleAcceptTask = async () => {
+    if (!task || accepting) return;
+    setAccepting(true);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: task.id, action: "ACCEPT_TASK" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(json.message || "Đã xác nhận nhận việc!");
+        fetchTaskDetail();
+      } else {
+        toast.error(json.error || "Không thể nhận việc");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleProgressSubmit = async (e: React.FormEvent) => {    e.preventDefault();
     if (!task) return;
     setUpdating(true);
 
@@ -517,6 +545,17 @@ export default function TaskDetailPage() {
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-space-sm shrink-0">
+            {/* Đợt A: nhận việc khi chưa bắt đầu (chủ trì/phối hợp) */}
+            {task?.status === "NOT_STARTED" && isMyTask && (
+              <button
+                onClick={handleAcceptTask}
+                disabled={accepting}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary hover:opacity-95 text-on-secondary font-semibold text-sm shadow-sm active-press disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">handshake</span>
+                <span>{accepting ? "Đang xác nhận..." : "Nhận việc"}</span>
+              </button>
+            )}
             {/* YC-03: chỉnh sửa nội dung chỉ đạo (khóa khi đã nghiệm thu/kết thúc) */}
             {!isLockedTask && (
               <button

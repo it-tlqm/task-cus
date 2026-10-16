@@ -325,7 +325,83 @@ export async function PATCH(req: NextRequest) {
     const updateData: any = {};
 
     // Xử lý các action chuyên biệt
-    if (action === "SUBMIT_COMPLETION") {
+    if (action === "ACCEPT_TASK") {
+      // Đợt A: người được giao xác nhận đã nhận việc (chủ trì/phối hợp).
+      // Chuyển NOT_STARTED → IN_PROGRESS, báo lại người giao việc.
+      const isOwner = currentTask.ownerId === user.personId;
+      const isAssignee = (currentTask.assignees || []).some((a: any) => a.personId === user.personId);
+      if (!isOwner && !isAssignee) {
+        return jsonError("Chỉ người chủ trì hoặc phối hợp mới xác nhận nhận việc này", 403);
+      }
+      if (currentTask.status !== "NOT_STARTED") {
+        const fresh = await prisma.task.findUnique({
+          where: { id },
+          include: { owner: true, unit: true, assignees: { include: { person: true } } },
+        });
+        return NextResponse.json({
+          success: true, data: fresh, deduplicated: true,
+          message: "Nhiệm vụ đã được nhận trước đó",
+        });
+      }
+      await prisma.taskUpdate.create({
+        data: {
+          taskId: id,
+          authorId: user.personId,
+          progressPercent: 0,
+          statusBefore: "NOT_STARTED",
+          statusAfter: "IN_PROGRESS",
+          notes: `Đã nhận việc, bắt đầu triển khai thực hiện`,
+        },
+      });
+      const accepted = await prisma.task.update({
+        where: { id },
+        data: { status: "IN_PROGRESS" },
+        include: { owner: true, unit: true, assignees: { include: { person: true } } },
+      });
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "TASK_ACCEPT",
+        resourceType: "Task",
+        resourceId: id,
+        oldData: { status: "NOT_STARTED" },
+        newData: { status: "IN_PROGRESS", acceptedBy: user.fullName },
+      });
+      // Đánh dấu đã đọc các thông báo giao việc của chính mình cho task này
+      await prisma.notification.updateMany({
+        where: { recipientId: user.personId, entityType: "TASK", entityId: id, type: "TASK_ASSIGNED", isRead: false },
+        data: { isRead: true, readAt: new Date() },
+      });
+      // Báo lại người đã giao việc (tra từ audit TASK_CREATE)
+      try {
+        const createAudit = await prisma.auditEvent.findFirst({
+          where: { resourceType: "Task", resourceId: id, action: "TASK_CREATE" },
+          orderBy: { timestamp: "asc" },
+        });
+        if (createAudit?.actorId && createAudit.actorId !== user.id) {
+          const assigner = await prisma.account.findUnique({
+            where: { id: createAudit.actorId }, select: { personId: true },
+          });
+          if (assigner && assigner.personId !== user.personId) {
+            await createNotification({
+              recipientId: assigner.personId,
+              category: "task",
+              type: "TASK_ACCEPTED",
+              title: `Đã nhận việc: [${accepted.code}]`,
+              content: `${user.fullName} đã xác nhận nhận nhiệm vụ '${accepted.title}' và bắt đầu triển khai.`,
+              tag: "ĐÃ NHẬN VIỆC",
+              tagType: "success",
+              entityType: "TASK",
+              entityId: id,
+              actionUrl: `/tasks/${id}`,
+              actionLabel: "Xem nhiệm vụ",
+              taskCode: accepted.code,
+              idempotencyKey: `EVENT_TASK_ACCEPT_${id}_${user.personId}`,
+            });
+          }
+        }
+      } catch {}
+      return NextResponse.json({ success: true, message: "Đã xác nhận nhận việc!", data: accepted });
+    } else if (action === "SUBMIT_COMPLETION") {
       // Cán bộ báo hoàn thành: Chuyển sang WAITING_REVIEW ("Chờ xác nhận hoàn thành")
       updateData.status = "WAITING_REVIEW";
       if (actualResultText) updateData.actualResultText = actualResultText;

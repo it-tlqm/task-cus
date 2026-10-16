@@ -420,6 +420,30 @@ export default function MyWorkPage() {
     }
   };
 
+  // Đợt A: xác nhận đã nhận việc (chỉ khi chưa bắt đầu)
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const handleAcceptTask = async (task: TaskItem) => {
+    if (acceptingId) return;
+    setAcceptingId(task.id);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: task.id, action: "ACCEPT_TASK" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(json.message || "Đã xác nhận nhận việc!");
+        await fetchTasks();
+      } else {
+        toast.error(json.error || "Không thể nhận việc");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setAcceptingId(null);
+    }
+  };
   // Lãnh đạo/Trưởng nhóm: mở sửa giao việc với đúng dữ liệu đang lưu
   const openEditAssign = (task: TaskItem) => {
     setEditTask(task);
@@ -1436,6 +1460,19 @@ export default function MyWorkPage() {
                   </span>
                   <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
                 </div>
+                {task.status === "NOT_STARTED" ? (
+                  <div className="grid grid-cols-1 gap-2 pt-1">
+                    <button
+                      onClick={() => handleAcceptTask(task)}
+                      disabled={acceptingId === task.id}
+                      className="h-11 px-3 rounded-lg bg-secondary text-on-secondary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">handshake</span>
+                      <span>{acceptingId === task.id ? "Đang xác nhận..." : "Nhận việc"}</span>
+                    </button>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={() => openDrawerForTask(task)}
@@ -1454,6 +1491,7 @@ export default function MyWorkPage() {
                     <span>Báo hoàn thành</span>
                   </button>
                 </div>
+                )}
                 {canApprove && task.status !== "COMPLETED" && task.status !== "CANCELED" && (
                   <div className="grid grid-cols-2 gap-2">
                     <button

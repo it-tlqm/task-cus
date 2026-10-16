@@ -90,6 +90,22 @@ export default function TasksPage() {
   const [collabIds, setCollabIds] = useState<string[]>([]);
   // YC-04: chặn bấm trùng nút giao việc
   const [isCreating, setIsCreating] = useState(false);
+  // Đợt A: ảnh/văn bản đính kèm ngay khi giao (tải sau khi Task được tạo)
+  const [newAttachFiles, setNewAttachFiles] = useState<File[]>([]);
+
+  const uploadCreateAttachments = async (taskId: string, files: File[]): Promise<number> => {
+    let ok = 0;
+    for (const f of files.slice(0, 5)) {
+      try {
+        const fd = new FormData();
+        fd.append("file", f);
+        fd.append("isSigned", "false");
+        const r = await fetch(`/api/tasks/${taskId}/attachments`, { method: "POST", body: fd });
+        if (r.ok) ok++;
+      } catch {}
+    }
+    return ok;
+  };
 
   // Approval review notes
   const [approvalNotes, setApprovalNotes] = useState("");
@@ -170,15 +186,22 @@ export default function TasksPage() {
 
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
+        // Đợt A: tải tài liệu đính kèm kèm theo chỉ đạo (nếu có)
+        let attachMsg = "";
+        if (newAttachFiles.length > 0 && json.data?.id) {
+          const n = await uploadCreateAttachments(json.data.id, newAttachFiles);
+          attachMsg = n > 0 ? ` (đính kèm ${n} tệp)` : " (tải đính kèm thất bại, bổ sung ở chi tiết)";
+        }
         setShowCreateModal(false);
         setNewTitle("");
         setNewExpectedResult("");
         setCollabIds([]);
+        setNewAttachFiles([]);
         fetchTasks();
         toast.success(
           json.deduplicated
             ? "Nhiệm vụ vừa được tạo (hệ thống chặn bấm trùng, không tạo thêm bản ghi)"
-            : "Đã chuyển ý kiến chỉ đạo thành công!"
+            : `Đã chuyển ý kiến chỉ đạo thành công!${attachMsg}`
         );
       } else {
         toast.error(json.error || "Không thể tạo nhiệm vụ");
@@ -778,6 +801,31 @@ export default function TasksPage() {
                     placeholder="Biên bản kiểm tra điện tử, xác nhận thông quan đúng hạn..."
                     className="p-2.5 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
                   />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Ảnh / Văn bản kèm theo {newAttachFiles.length > 0 && `(${newAttachFiles.length} tệp)`}
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx"
+                    disabled={isCreating}
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      const valid = files.filter((f) => {
+                        if (f.size > 10 * 1024 * 1024) {
+                          toast.warning(`Tệp ${f.name} quá 10MB — bỏ qua (bổ sung ở chi tiết sau)`);
+                          return false;
+                        }
+                        return true;
+                      }).slice(0, 5);
+                      setNewAttachFiles(valid);
+                    }}
+                    className="text-body-md font-body-md text-on-surface file:mr-2 file:px-3 file:py-1.5 file:rounded file:bg-surface-container file:text-primary file:text-xs file:font-semibold file:border file:border-border-subtle"
+                  />
+                  <p className="text-[11px] text-on-surface-variant">Tối đa 5 tệp, mỗi tệp ≤ 10MB. Tải lên sau khi nhiệm vụ được tạo.</p>
                 </div>
               </div>
 
