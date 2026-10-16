@@ -9,43 +9,54 @@ const navigationItems = [
   {
     group: "Tổng Quan",
     items: [
-      { name: "Dashboard điều hành", href: "/dashboard", icon: "space_dashboard" },
+      { name: "Bảng điều hành", href: "/dashboard", icon: "space_dashboard" },
+      { name: "Hướng dẫn 5 phút", href: "/huong-dan", icon: "help" },
     ],
   },
   {
-    group: "Kế Hoạch & Công Việc",
+    group: "Công Việc",
     items: [
-      { name: "Kế hoạch công tác", href: "/plans", icon: "event_note" },
-      { name: "Công việc của tôi", href: "/my-work", icon: "assignment_ind" },
-      { name: "Nhiệm vụ chỉ đạo / phối hợp", href: "/tasks", icon: "hub" },
-      { name: "Danh mục sản phẩm QĐ1277", href: "/products", icon: "inventory_2" },
-      { name: "Kết quả công tác tháng", href: "/monthly-results", icon: "assessment" },
-      { name: "Nghỉ phép & công tác", href: "/leaves", icon: "beach_access" },
-      { name: "Lịch công tác", href: "/calendar", icon: "calendar_month" },
-      { name: "Lịch trực ca", href: "/roster", icon: "schedule" },
+      { name: "Việc của tôi", href: "/my-work", icon: "assignment_ind" },
+      { name: "Việc đơn vị", href: "/tasks", icon: "hub" },
+      { name: "Việc tháng của tôi", href: "/monthly-results", icon: "assessment" },
+      { name: "Kế hoạch tuần", href: "/plans", icon: "event_note" },
+      { name: "Phê duyệt", href: "/approvals", icon: "fact_check", leadersOnly: true },
       { name: "Biên bản giao ban", href: "/meetings", icon: "forum" },
       { name: "Sổ văn bản", href: "/docs", icon: "mail" },
-      { name: "Phê duyệt điều hành", href: "/approvals", icon: "fact_check", leadersOnly: true },
-      { name: "Nhật ký công tác thường xuyên", href: "/routine", icon: "history_edu" },
+    ],
+  },
+  {
+    group: "Lịch & Nghỉ",
+    items: [
+      { name: "Nhật ký ca trực", href: "/routine", icon: "history_edu" },
+      { name: "Lịch công tác", href: "/calendar", icon: "calendar_month" },
+      { name: "Lịch trực ca", href: "/roster", icon: "schedule" },
+      { name: "Nghỉ phép & công tác", href: "/leaves", icon: "beach_access" },
     ],
   },
   {
     group: "Báo Cáo",
     items: [
-      { name: "Báo cáo trực tuyến", href: "/reports", icon: "query_stats" },
-      { name: "Xuất Excel (.XLSX)", href: "/reports/excel", icon: "table_view" },
-      { name: "Báo cáo chốt kỳ", href: "/reports/snapshots", icon: "verified" },
+      { name: "Báo cáo tuần", href: "/reports", icon: "query_stats" },
+      { name: "Xuất Excel", href: "/reports/excel", icon: "table_view", needExport: true },
+      { name: "Số liệu đã chốt", href: "/reports/snapshots", icon: "verified", needLock: true },
     ],
   },
   {
-    group: "Quản Trị Nghiệp Vụ",
+    group: "Danh Mục",
+    items: [
+      { name: "Mẫu công việc tuần", href: "/admin/catalog", icon: "list_alt", adminOnly: true },
+      { name: "Sản phẩm QĐ1277", href: "/products", icon: "inventory_2" },
+    ],
+  },
+  {
+    group: "Quản Trị",
     adminOnly: true,
     items: [
-      { name: "Cơ cấu tổ chức & Nhân sự", href: "/admin/organization", icon: "corporate_fare" },
-      { name: "Danh mục đầu việc mẫu", href: "/admin/catalog", icon: "list_alt" },
+      { name: "Tổ chức & Nhân sự", href: "/admin/organization", icon: "corporate_fare" },
       { name: "Biểu mẫu & Quy trình", href: "/admin/forms", icon: "rule_folder" },
-      { name: "Quản trị & Cấu hình", href: "/admin/system", icon: "settings" },
-      { name: "Nhật ký hệ thống (Audit)", href: "/admin/audit", icon: "manage_history" },
+      { name: "Cấu hình hệ thống", href: "/admin/system", icon: "settings" },
+      { name: "Nhật ký hệ thống", href: "/admin/audit", icon: "manage_history" },
     ],
   },
 ];
@@ -53,14 +64,24 @@ const navigationItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { canApprove, showAdminMenu } = usePermissions();
+  const { canApprove, canExport, canLock, showAdminMenu } = usePermissions();
 
   // Ẩn mục không có quyền thay vì hiện ra rồi chặn 403 (backend vẫn chặn thật)
   const visibleGroups = navigationItems
-    .filter((group) => !(group as any).adminOnly || showAdminMenu)
+    .filter((group) => {
+      if ((group as any).adminOnly && !showAdminMenu) return false;
+      return true;
+    })
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !(item as any).leadersOnly || canApprove),
+      items: group.items.filter((item) => {
+        const it = item as any;
+        if (it.adminOnly && !showAdminMenu) return false;
+        if (it.leadersOnly && !canApprove) return false;
+        if (it.needExport && !canExport) return false;
+        if (it.needLock && !canLock) return false;
+        return true;
+      }),
     }))
     .filter((group) => group.items.length > 0);
 

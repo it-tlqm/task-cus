@@ -6,12 +6,13 @@ import { usePathname } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
 
 const MORE_LINKS = [
+  { name: "Hướng dẫn", href: "/huong-dan", icon: "help" },
   { name: "Tổng quan", href: "/dashboard", icon: "space_dashboard" },
-  { name: "Nhiệm vụ", href: "/tasks", icon: "hub" },
+  { name: "Việc đơn vị", href: "/tasks", icon: "hub" },
   { name: "Phê duyệt", href: "/approvals", icon: "fact_check", leadersOnly: true },
-  { name: "Báo cáo", href: "/reports", icon: "query_stats" },
-  { name: "Danh mục SP", href: "/products", icon: "inventory_2" },
-  { name: "KQ tháng", href: "/monthly-results", icon: "assessment" },
+  { name: "Báo cáo tuần", href: "/reports", icon: "query_stats" },
+  { name: "Sản phẩm QĐ", href: "/products", icon: "inventory_2" },
+  { name: "Việc tháng", href: "/monthly-results", icon: "assessment" },
   { name: "Nghỉ phép", href: "/leaves", icon: "beach_access" },
   { name: "Lịch công tác", href: "/calendar", icon: "calendar_month" },
   { name: "Lịch trực", href: "/roster", icon: "schedule" },
@@ -49,9 +50,9 @@ export function BottomNav() {
   if (pathname === "/login") return null;
 
   const navItems = [
-    { name: "Công việc", href: "/my-work", icon: "assignment" },
+    { name: "Việc của tôi", href: "/my-work", icon: "assignment" },
     { name: "Kế hoạch", href: "/plans", icon: "calendar_month" },
-    { name: "Nhật ký", href: "/routine", icon: "history_edu" },
+    { name: "Nhật ký ca", href: "/routine", icon: "history_edu" },
     { name: "Thông báo", href: "/notifications", icon: "notifications", hasBadge: unreadCount > 0 },
     { name: "Thêm", href: "__more__", icon: "apps" },
   ];
