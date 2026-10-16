@@ -370,6 +370,7 @@ export async function PATCH(req: NextRequest) {
           progressPercent: 0,
           statusBefore: "NOT_STARTED",
           statusAfter: "IN_PROGRESS",
+          kind: "accept",
           notes: `Đã nhận việc, bắt đầu triển khai thực hiện`,
         },
       });
@@ -432,6 +433,7 @@ export async function PATCH(req: NextRequest) {
           authorId: user.personId,
           statusBefore: currentTask.status,
           statusAfter: "WAITING_REVIEW",
+          kind: "submit",
           notes: `Cán bộ báo hoàn thành nhiệm vụ. Kết quả: ${actualResultText || "Đã xong theo yêu cầu"}`,
         },
       });
@@ -463,6 +465,7 @@ export async function PATCH(req: NextRequest) {
           authorId: user.personId,
           statusBefore: currentTask.status,
           statusAfter: "COMPLETED",
+          kind: "approve",
           notes: "Lãnh đạo / Người giao việc đã xác nhận hoàn thành nhiệm vụ.",
         },
       });
@@ -490,6 +493,7 @@ export async function PATCH(req: NextRequest) {
           authorId: user.personId,
           statusBefore: currentTask.status,
           statusAfter: "IN_PROGRESS",
+          kind: "return",
           notes: `Trả lại nhiệm vụ yêu cầu hoàn thiện thêm: ${issueNotes || "Chưa đạt yêu cầu"}`,
         },
       });

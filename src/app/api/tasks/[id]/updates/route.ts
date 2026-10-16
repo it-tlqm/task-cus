@@ -93,6 +93,12 @@ export async function POST(
           progressPercent: progressPercent !== undefined ? Number(progressPercent) : 0,
           statusBefore: currentTask.status,
           statusAfter: resolvedStatus || currentTask.status,
+          kind:
+            targetStatus === "COMPLETED" || targetStatus === "DONE"
+              ? "approve"
+              : targetStatus === "WAITING_REVIEW"
+              ? "submit"
+              : "progress",
           notes: notes || null,
         },
         include: { author: true },

@@ -81,6 +81,7 @@ export async function POST(
         data: {
           taskId,
           authorId: user.personId,
+          kind: "extend",
           notes: `Lãnh đạo phê duyệt gia hạn nhiệm vụ đến ngày ${deadlineReq.requestedDeadline.toLocaleDateString("vi-VN")}. Lý do: ${deadlineReq.reason}`,
         },
       });
@@ -89,6 +90,7 @@ export async function POST(
         data: {
           taskId,
           authorId: user.personId,
+          kind: "extend",
           notes: `Lãnh đạo từ chối đề nghị gia hạn nhiệm vụ. Lý do: ${reviewNotes || "Không chấp thuận"}`,
         },
       });

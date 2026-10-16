@@ -160,49 +160,38 @@ export async function GET(
             statusTo: null,
           });
         }
-      } else if (a.action === "PLAN_TASK_LINK") {
-        timeline.push({
-          id: `aud-${a.id}`,
-          at: a.timestamp,
-          actor: actorName(a),
-          kind: "link",
-          title: "Gắn vào kế hoạch",
-          detail: typeof (a.newData as any)?.planTitle === "string" ? (a.newData as any).planTitle : null,
-          progress: null,
-          statusFrom: null,
-          statusTo: null,
-        });
       }
     }
 
     // 3. Tiến độ, nhận việc, nghiệm thu, trả lại (từ TaskUpdate)
+    // kind đã lưu lúc ghi thì dùng thẳng; dữ liệu cũ (kind null) mới suy luận dự phòng
+    const KIND_TITLES: Record<string, string> = {
+      accept: "Xác nhận nhận việc",
+      submit: "Nộp kết quả / Chờ duyệt",
+      approve: "Nghiệm thu hoàn thành",
+      return: "Trả lại yêu cầu hoàn thiện",
+      cancel: "Loại nhiệm vụ trùng",
+      extend: "Gia hạn",
+      progress: "Cập nhật tiến độ",
+    };
     for (const u of (task.updates as any[]) || []) {
       const notes = u.notes || "";
-      const isAccept = (u.statusBefore === "NOT_STARTED" && u.statusAfter === "IN_PROGRESS") || notes.toLowerCase().includes("nhận việc");
-      const isSubmit = u.statusAfter === "WAITING_REVIEW";
-      const isApprove = u.statusAfter === "COMPLETED" || u.statusAfter === "DONE" || notes.includes("nghiệm thu") || notes.includes("hoàn thành 100%");
-      const isReturn = (u.statusBefore === "WAITING_REVIEW" && u.statusAfter === "IN_PROGRESS") || notes.toLowerCase().includes("trả lại") || notes.toLowerCase().includes("yêu cầu bổ sung");
-      const isCancel = u.statusAfter === "CANCELED" || notes.includes("loại nhiệm vụ trùng");
-
-      let kind = "progress";
-      let title = "Cập nhật tiến độ";
-
-      if (isAccept) {
-        kind = "accept";
-        title = "Xác nhận nhận việc";
-      } else if (isSubmit) {
-        kind = "submit";
-        title = "Nộp kết quả / Chờ duyệt";
-      } else if (isApprove) {
-        kind = "approve";
-        title = "Nghiệm thu hoàn thành";
-      } else if (isReturn) {
-        kind = "return";
-        title = "Trả lại yêu cầu hoàn thiện";
-      } else if (isCancel) {
-        kind = "cancel";
-        title = "Loại nhiệm vụ trùng";
+      let kind: string = typeof u.kind === "string" && KIND_TITLES[u.kind] ? u.kind : "";
+      let title = "";
+      if (!kind) {
+        const isAccept = (u.statusBefore === "NOT_STARTED" && u.statusAfter === "IN_PROGRESS") || notes.toLowerCase().includes("nhận việc");
+        const isSubmit = u.statusAfter === "WAITING_REVIEW";
+        const isApprove = u.statusAfter === "COMPLETED" || u.statusAfter === "DONE" || notes.includes("nghiệm thu") || notes.includes("hoàn thành 100%");
+        const isReturn = (u.statusBefore === "WAITING_REVIEW" && u.statusAfter === "IN_PROGRESS") || notes.toLowerCase().includes("trả lại") || notes.toLowerCase().includes("yêu cầu bổ sung");
+        const isCancel = u.statusAfter === "CANCELED" || notes.includes("loại nhiệm vụ trùng");
+        if (isAccept) kind = "accept";
+        else if (isSubmit) kind = "submit";
+        else if (isApprove) kind = "approve";
+        else if (isReturn) kind = "return";
+        else if (isCancel) kind = "cancel";
+        else kind = "progress";
       }
+      title = KIND_TITLES[kind] || "Cập nhật tiến độ";
 
       timeline.push({
         id: `upd-${u.id}`,
@@ -335,6 +324,7 @@ export async function PATCH(
           progressPercent: 0,
           statusBefore: currentTask.status,
           statusAfter: "CANCELED",
+          kind: "cancel",
           notes: `Lãnh đạo loại nhiệm vụ trùng: ${cancelReason.trim()} (giữ ${linkCount} liên kết kế hoạch để đối soát)`,
         },
       });
@@ -468,6 +458,12 @@ export async function PATCH(
           progressPercent: effectiveProgress !== undefined ? effectiveProgress : 100,
           statusBefore: currentTask.status,
           statusAfter: updatedTask.status,
+          kind:
+            updatedTask.status === "COMPLETED" || updatedTask.status === "DONE"
+              ? "approve"
+              : currentTask.status === "WAITING_REVIEW" && updatedTask.status === "IN_PROGRESS"
+              ? "return"
+              : "progress",
           notes: (actualResultText || (status === "COMPLETED" ? "Lãnh đạo đơn vị nghiệm thu hoàn thành 100%" : "Cập nhật trạng thái nhiệm vụ")) + deadlineNote,
         },
       });

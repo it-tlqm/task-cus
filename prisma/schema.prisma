@@ -451,6 +451,7 @@ model TaskUpdate {
   progressPercent Int      @default(0) @map("progress_percent")
   statusBefore    String?  @map("status_before")
   statusAfter     String?  @map("status_after")
+  kind            String? // accept, submit, approve, return, progress, extend, cancel (null = dữ liệu cũ, suy luận khi đọc)
   notes           String?
   createdAt       DateTime @default(now()) @map("created_at")
 
