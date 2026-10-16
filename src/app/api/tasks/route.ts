@@ -29,6 +29,8 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const priority = searchParams.get("priority");
     const hasIssueParam = searchParams.get("hasIssue");
+    const deadlineFrom = searchParams.get("deadlineFrom");
+    const deadlineTo = searchParams.get("deadlineTo");
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "50", 10)));
 
@@ -42,6 +44,14 @@ export async function GET(req: NextRequest) {
       }
     }
     if (priority) filters.priority = priority;
+    if (deadlineFrom) {
+      const d = new Date(deadlineFrom);
+      if (!isNaN(d.getTime())) filters.currentDeadline = { ...(filters.currentDeadline || {}), gte: d };
+    }
+    if (deadlineTo) {
+      const d = new Date(deadlineTo);
+      if (!isNaN(d.getTime())) filters.currentDeadline = { ...(filters.currentDeadline || {}), lte: d };
+    }
     if (hasIssueParam !== null && hasIssueParam !== "") {
       filters.hasIssue = hasIssueParam === "true";
     }
