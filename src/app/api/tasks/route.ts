@@ -347,6 +347,17 @@ export async function PATCH(req: NextRequest) {
       if (!canConfirm) {
         return jsonError("Chỉ Lãnh đạo đơn vị hoặc Trưởng bộ phận phụ trách mới có thẩm quyền nghiệm thu xác nhận hoàn thành nhiệm vụ này", 403);
       }
+      // Chống duyệt trùng: đã hoàn thành thì không duyệt lại
+      try {
+        assertTaskStatusTransition({
+          currentStatus: currentTask.status,
+          targetStatus: "COMPLETED",
+          deadlineChanged: false,
+          isLeader: true,
+        });
+      } catch (err: any) {
+        return jsonError(err.message, err.statusCode || 400);
+      }
 
       updateData.status = "COMPLETED";
 

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
+import { usePermissions } from "@/hooks/usePermissions";
+import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 
 interface TaskUpdateItem {
   id: string;
@@ -129,6 +131,18 @@ export default function MyWorkPage() {
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   // YC-04: chặn bấm trùng nút tạo việc cá nhân
   const [isCreatingPersonal, setIsCreatingPersonal] = useState(false);
+
+  // Lãnh đạo + Trưởng nhóm: sửa giao việc và duyệt ngay trên mobile
+  const { canApprove } = usePermissions();
+  const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
+  const [editTask, setEditTask] = useState<TaskItem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editOwnerId, setEditOwnerId] = useState("");
+  const [editCollabs, setEditCollabs] = useState<string[]>([]);
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editPriority, setEditPriority] = useState("Cao");
+  const [editSaving, setEditSaving] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -205,6 +219,14 @@ export default function MyWorkPage() {
 
   useEffect(() => {
     fetchTasks();
+    // Danh sách nhân sự cho sửa giao việc (lãnh đạo/trưởng nhóm)
+    fetch("/api/people?pageSize=100")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const list = Array.isArray(json) ? json : json?.data || [];
+        setPeople(list.map((p: any) => ({ id: p.id, fullName: p.fullName })));
+      })
+      .catch(() => {});
     fetch("/api/auth/me")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -395,6 +417,80 @@ export default function MyWorkPage() {
       toast.error("Lỗi kết nối máy chủ: " + (err.message || "Không thể tạo công việc"));
     } finally {
       setIsCreatingPersonal(false);
+    }
+  };
+
+  // Lãnh đạo/Trưởng nhóm: mở sửa giao việc với đúng dữ liệu đang lưu
+  const openEditAssign = (task: TaskItem) => {
+    setEditTask(task);
+    setEditTitle(task.title || "");
+    setEditOwnerId(task.owner?.id || "");
+    setEditCollabs((task.assignees || []).map((a) => a.person.id));
+    try {
+      const d = new Date(task.currentDeadline);
+      const p = (n: number) => String(n).padStart(2, "0");
+      setEditDeadline(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`);
+    } catch {
+      setEditDeadline("");
+    }
+    setEditPriority(task.priority || "Cao");
+  };
+
+  // Lãnh đạo/Trưởng nhóm: lưu sửa giao việc (backend phân quyền + lưu vết)
+  // Dùng API chi tiết (hỗ trợ đổi tiêu đề/chủ trì/hạn/ưu tiên/phối hợp), không tạo Task mới
+  const handleEditAssignSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTask || editSaving || !editTitle.trim()) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/tasks/${editTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          ownerId: editOwnerId || undefined,
+          assigneeIds: editCollabs,
+          currentDeadline: editDeadline ? new Date(editDeadline).toISOString() : undefined,
+          priority: editPriority,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã lưu sửa giao việc (ghi nhận lịch sử thay đổi)");
+        setEditTask(null);
+        await fetchTasks();
+      } else {
+        toast.error(json.error || "Không thể lưu sửa giao việc");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // Lãnh đạo/Trưởng nhóm: duyệt hoàn thành ngay trên mobile (chỉ khi chờ duyệt)
+  const handleApproveTask = async (task: TaskItem) => {
+    if (approvingId) return;
+    if (!confirm(`Duyệt hoàn thành nhiệm vụ [${task.code}] ${task.title}?`)) return;
+    setApprovingId(task.id);
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: task.id, action: "CONFIRM_COMPLETION" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã duyệt hoàn thành nhiệm vụ!");
+        await fetchTasks();
+      } else {
+        toast.error(json.error || "Không thể duyệt nhiệm vụ");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -1358,6 +1454,37 @@ export default function MyWorkPage() {
                     <span>Báo hoàn thành</span>
                   </button>
                 </div>
+                {canApprove && task.status !== "COMPLETED" && task.status !== "CANCELED" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => openEditAssign(task)}
+                      className="h-10 px-3 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-border-default active:scale-[0.98] transition-all"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+                      <span>Sửa giao việc</span>
+                    </button>
+                    {task.status === "WAITING_REVIEW" ? (
+                      <button
+                        onClick={() => handleApproveTask(task)}
+                        disabled={approvingId === task.id}
+                        className="h-10 px-3 rounded-lg bg-status-success text-white font-body-semibold text-body-md flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all disabled:opacity-50"
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">verified</span>
+                        <span>{approvingId === task.id ? "Đang duyệt..." : "Duyệt hoàn thành"}</span>
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/tasks/${task.id}`}
+                        className="h-10 px-3 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-border-default active:scale-[0.98] transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                        <span>Chi tiết & duyệt</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1737,6 +1864,66 @@ export default function MyWorkPage() {
               </div>
             </div>
           </aside>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: SỬA GIAO VIỆC (lãnh đạo/trưởng nhóm, mobile-friendly)
+          ========================================================================= */}
+      {editTask && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <h3 className="font-headline-sm font-semibold">Sửa giao việc [{editTask.code}]</h3>
+              <button onClick={() => setEditTask(null)}>
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleEditAssignSave}>
+              <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Tên / Nội dung chỉ đạo *</label>
+                  <input type="text" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Nhập nội dung công việc chỉ đạo..."
+                    className="h-10 px-3 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
+                </div>
+                <div className="grid grid-cols-2 gap-space-sm">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-primary">Cán bộ chủ trì</label>
+                    <select value={editOwnerId} onChange={(e) => setEditOwnerId(e.target.value)}
+                      className="h-10 px-2 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
+                      {editTask.owner && <option value={editTask.owner.id}>{editTask.owner.fullName}</option>}
+                      {people.filter((p) => p.id !== editTask.owner?.id).map((p) => (
+                        <option key={p.id} value={p.id}>{p.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-primary">Ưu tiên</label>
+                    <select value={editPriority} onChange={(e) => setEditPriority(e.target.value)}
+                      className="h-10 px-2 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
+                      <option value="Khẩn">Khẩn cấp</option>
+                      <option value="Cao">Cao</option>
+                      <option value="Trung bình">Trung bình</option>
+                      <option value="Thấp">Thấp</option>
+                    </select>
+                  </div>
+                </div>
+                <CollaboratorPicker people={people} value={editCollabs} onChange={setEditCollabs} excludeId={editOwnerId} disabled={editSaving} />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Hạn hoàn thành</label>
+                  <input type="datetime-local" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)}
+                    className="h-10 px-3 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
+                </div>
+              </div>
+              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+                <button type="button" onClick={() => setEditTask(null)} className="px-4 py-2 rounded text-xs font-semibold">Hủy</button>
+                <button type="submit" disabled={editSaving} className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50">
+                  {editSaving ? "Đang lưu..." : "Lưu sửa giao việc"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
