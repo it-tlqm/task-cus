@@ -1040,13 +1040,15 @@ export default function DashboardPage() {
         {/* Quick Action Shortcuts */}
         <section className="px-margin pt-space-md">
           <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => setShowAssignModal(true)}
-              className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-secondary text-on-secondary shadow-sm active:opacity-90 transition-fast active-press"
-            >
-              <span className="material-symbols-outlined text-[20px] mb-1">add_task</span>
-              <span className="font-label-sm text-label-sm text-center leading-tight">Giao việc đột xuất</span>
-            </button>
+            {canAssign && (
+              <button
+                onClick={() => setShowAssignModal(true)}
+                className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-secondary text-on-secondary shadow-sm active:opacity-90 transition-fast active-press"
+              >
+                <span className="material-symbols-outlined text-[20px] mb-1">add_task</span>
+                <span className="font-label-sm text-label-sm text-center leading-tight">Giao việc đột xuất</span>
+              </button>
+            )}
             {canApprove && (
               <Link
                 href="/approvals"
