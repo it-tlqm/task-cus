@@ -94,6 +94,7 @@ model Person {
   dutyRosters      DutyRoster[]
   handledDocs      OfficialDoc[]
   taskComments     TaskComment[]
+  commentReactions CommentReaction[]
 
   @@map("people")
 }
@@ -512,13 +513,29 @@ model TaskComment {
   authorId  String   @map("author_id")
   content   String
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  task        Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  author      Person           @relation(fields: [authorId], references: [id])
+  task        Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author      Person            @relation(fields: [authorId], references: [id])
   attachments TaskAttachment[]
+  reactions   CommentReaction[]
 
   @@index([taskId, createdAt])
   @@map("task_comments")
+}
+
+model CommentReaction {
+  id        String   @id @default(uuid())
+  commentId String   @map("comment_id")
+  personId  String   @map("person_id")
+  emoji     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  comment TaskComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  person  Person      @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, personId, emoji])
+  @@map("comment_reactions")
 }
 
 // ----------------------------------------------------

@@ -114,13 +114,124 @@ export default function TaskDetailPage() {
 
   // Đợt trao đổi: bình luận phẳng + đính file (không thread/sửa)
   const [comments, setComments] = useState<Array<{
-    id: string; content: string; createdAt: string;
+    id: string; content: string; createdAt: string; updatedAt?: string;
     author: { id: string; fullName: string };
     attachments: Array<{ id: string; fileName: string; fileUrl: string; fileSize: number }>;
+    reactions?: Array<{ emoji: string; personId: string }>;
   }>>([]);
   const [commentText, setCommentText] = useState("");
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const [sendingComment, setSendingComment] = useState(false);
+  // @mention: gợi ý người trong việc khi gõ @
+  const commentBoxRef = React.useRef<HTMLTextAreaElement>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const mentionables =
+    task != null
+      ? [
+          ...(task.owner ? [{ id: task.owner.id, fullName: task.owner.fullName }] : []),
+          ...((task.assignees || []).map((a: any) => ({ id: a.person.id, fullName: a.person.fullName }))),
+        ].filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i)
+      : [];
+  const mentionMatches =
+    mentionQuery === null
+      ? []
+      : mentionables.filter((p) => p.fullName.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 5);
+
+  const handleCommentChange = (value: string, cursor?: number | null) => {
+    setCommentText(value);
+    const pos = cursor ?? value.length;
+    const before = value.slice(0, pos);
+    const m = before.match(/@([^\n@]{1,30})$/);
+    setMentionQuery(m ? m[1] : null);
+  };
+
+  const insertMention = (name: string) => {
+    const el = commentBoxRef.current;
+    const pos = el?.selectionStart ?? commentText.length;
+    const before = commentText.slice(0, pos);
+    const m = before.match(/@([^\n@]{1,30})$/);
+    const cutFrom = m ? pos - m[0].length : pos;
+    const next = `${commentText.slice(0, cutFrom)}@${name} ${commentText.slice(pos)}`;
+    setCommentText(next);
+    setMentionQuery(null);
+    requestAnimationFrame(() => {
+      if (el) {
+        const at = cutFrom + name.length + 2;
+        el.focus();
+        el.setSelectionRange(at, at);
+      }
+    });
+  };
+
+  // Sửa tin của mình + reaction
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [reactingId, setReactingId] = useState<string | null>(null);
+  const REACT_EMOJI = ["👍", "❤️", "✅"];
+
+  const handleSaveEditComment = async (cid: string) => {
+    if (!task || !editCommentText.trim()) return;
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/comments`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId: cid, content: editCommentText.trim() }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Không thể sửa");
+      setEditingCommentId(null);
+      toast.success("Đã sửa bình luận.");
+      fetchComments(task.id);
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi sửa");
+    }
+  };
+
+  const handleReact = async (cid: string, emoji: string) => {
+    if (!task || reactingId) return;
+    setReactingId(cid + emoji);
+    // Cập nhật lạc quan
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c.id !== cid || !permUser) return c;
+        const mine = (c.reactions || []).some((r: any) => r.emoji === emoji && r.personId === permUser.personId);
+        return {
+          ...c,
+          reactions: mine
+            ? (c.reactions || []).filter((r: any) => !(r.emoji === emoji && r.personId === permUser.personId))
+            : [...(c.reactions || []), { emoji, personId: permUser.personId }],
+        };
+      })
+    );
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/comments/reactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId: cid, emoji }),
+      });
+      if (!res.ok) throw new Error("Không thả được cảm xúc");
+      fetchComments(task.id);
+    } catch {
+      fetchComments(task!.id);
+    } finally {
+      setReactingId(null);
+    }
+  };
+
+  // Tô đậm @tên người trong việc khi hiển thị
+  const renderContent = (text: string) => {
+    const names = mentionables.map((p) => p.fullName).filter(Boolean).sort((a, b) => b.length - a.length);
+    if (names.length === 0) return text;
+    const pattern = new RegExp(`(@(?:${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")}))`, "g");
+    const parts = text.split(pattern);
+    return parts.map((part, i) =>
+      part.startsWith("@") && names.some((n) => part === `@${n}`) ? (
+        <strong key={i} className="text-secondary">{part}</strong>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
+  };
 
   const fetchComments = async (tid: string) => {
     try {
@@ -815,16 +926,33 @@ export default function TaskDetailPage() {
           </p>
         ) : (
           <div className="flex flex-col gap-2.5">
-            {comments.map((c) => (
+            {comments.map((c) => {
+              const isMine = !!permUser && c.author?.id === permUser.personId;
+              const isEdited = c.updatedAt && new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 1000;
+              const counts = new Map<string, number>();
+              for (const r of c.reactions || []) counts.set(r.emoji, (counts.get(r.emoji) || 0) + 1);
+              return (
               <div key={c.id} className="flex gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
                   {(c.author?.fullName || "?").trim().split(" ").slice(-1)[0]?.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="p-3 rounded-lg bg-surface-subtle border border-border-default/50 flex flex-col gap-1 flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="font-bold text-primary truncate">{c.author?.fullName || "Cán bộ"}</span>
+                    <span className="font-bold text-primary truncate">
+                      {c.author?.fullName || "Cán bộ"}
+                      {isEdited && <span className="font-normal text-outline"> · đã sửa</span>}
+                    </span>
                     <span className="flex items-center gap-1 shrink-0">
                       <span className="text-outline">{formatDateTime(c.createdAt)}</span>
+                      {isMine && editingCommentId !== c.id && (
+                        <button
+                          onClick={() => { setEditingCommentId(c.id); setEditCommentText(c.content); }}
+                          title="Sửa bình luận của mình"
+                          className="p-0.5 rounded text-outline hover:text-primary"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">edit</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteComment(c.id)}
                         title="Xóa bình luận (tác giả hoặc lãnh đạo)"
@@ -834,7 +962,32 @@ export default function TaskDetailPage() {
                       </button>
                     </span>
                   </div>
-                  <p className="text-xs text-on-surface whitespace-pre-line">{c.content}</p>
+                  {editingCommentId === c.id ? (
+                    <div className="flex flex-col gap-1.5">
+                      <textarea
+                        rows={2}
+                        value={editCommentText}
+                        onChange={(e) => setEditCommentText(e.target.value)}
+                        className="w-full p-2 rounded bg-surface-container-lowest text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                      />
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => handleSaveEditComment(c.id)}
+                          className="px-3 py-1 rounded bg-secondary text-on-secondary text-xs font-bold"
+                        >
+                          Lưu
+                        </button>
+                        <button
+                          onClick={() => setEditingCommentId(null)}
+                          className="px-3 py-1 rounded bg-surface-container text-xs font-semibold"
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-on-surface whitespace-pre-line">{renderContent(c.content)}</p>
+                  )}
                   {c.attachments.length > 0 && (
                     <div className="flex flex-col gap-1 mt-1">
                       {c.attachments.map((f) => (
@@ -851,19 +1004,60 @@ export default function TaskDetailPage() {
                       ))}
                     </div>
                   )}
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {REACT_EMOJI.map((e) => {
+                      const n = counts.get(e) || 0;
+                      const mine = (c.reactions || []).some((r) => r.emoji === e && permUser && r.personId === permUser.personId);
+                      return (
+                        <button
+                          key={e}
+                          onClick={() => handleReact(c.id, e)}
+                          title="Thả cảm xúc (bấm lại để gỡ)"
+                          className={`px-1.5 py-0.5 rounded-full text-[13px] leading-none border transition-fast active-press ${
+                            mine ? "bg-secondary/20 border-secondary" : "bg-surface-container-lowest border-border-subtle hover:border-secondary/50"
+                          }`}
+                        >
+                          {e}{n > 0 && <span className="text-[11px] font-bold ml-0.5">{n}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <form onSubmit={handleSendComment} className="flex flex-col gap-2 pt-1 border-t border-border-default">
-          <textarea
-            rows={2}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Nhập trao đổi, câu hỏi, nhắc việc..."
-            className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
-          />
+          <div className="relative">
+            <textarea
+              ref={commentBoxRef}
+              rows={2}
+              value={commentText}
+              onChange={(e) => handleCommentChange(e.target.value, e.target.selectionStart)}
+              onClick={(e) => handleCommentChange(commentText, (e.target as HTMLTextAreaElement).selectionStart)}
+              onKeyUp={(e) => handleCommentChange(commentText, (e.target as HTMLTextAreaElement).selectionStart)}
+              placeholder="Nhập trao đổi, câu hỏi, nhắc việc... (gõ @ để nhắc tên)"
+              className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+            />
+            {mentionMatches.length > 0 && (
+              <div className="absolute left-0 right-0 bottom-full mb-1 bg-surface-container-lowest border border-border-default rounded-lg shadow-xl overflow-hidden z-10">
+                {mentionMatches.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => insertMention(p.fullName)}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-surface-container flex items-center gap-2"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] shrink-0">
+                      {p.fullName.trim().split(" ").slice(-1)[0]?.slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="font-semibold">{p.fullName}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <label className="flex items-center gap-1.5 text-xs text-primary font-semibold cursor-pointer">
               <span className="material-symbols-outlined text-[18px]">upload_file</span>
