@@ -28,6 +28,7 @@ const PUBLIC_PATHS = [
 const PUBLIC_API_PREFIXES = [
   "/api/auth/login",
   "/api/auth/me",
+  "/api/health",
 ];
 
 export async function middleware(req: NextRequest) {
