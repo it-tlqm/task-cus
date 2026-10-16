@@ -59,12 +59,14 @@ export async function GET(
     const now = new Date();
     const isFinished = task.status === "COMPLETED" || task.status === "DONE" || task.status === "CANCELED";
     const isOverdue = !isFinished && new Date(task.currentDeadline) < now;
+    const latestProgress = (task.updates as any[])?.[0]?.progressPercent;
 
     return NextResponse.json({
       success: true,
       data: {
         ...task,
         isOverdue,
+        progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
       },
     });
   } catch (error: any) {

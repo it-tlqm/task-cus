@@ -979,7 +979,7 @@ function ReportsContent() {
           </div>
 
           {/* DESKTOP LIVE PREVIEW SHEET TABLE FRAME */}
-          <div className="hidden lg:flex bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex-col">
+          <div id="report-table-card" className="hidden lg:flex bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex-col">
             {/* Excel Emulation Bar & Status Indicator */}
             <div className="p-space-md bg-surface-subtle flex flex-col md:flex-row md:items-center justify-between gap-space-md">
               <div className="flex items-center gap-space-sm">
@@ -1006,9 +1006,17 @@ function ReportsContent() {
                 </span>
                 <div className="h-4 w-px bg-border-subtle mx-1"></div>
                 <button
-                  onClick={() => showToast("Bật chế độ bảng tính mở rộng toàn màn hình")}
+                  onClick={() => {
+                    const el = document.getElementById("report-table-card");
+                    if (!el) return;
+                    if (document.fullscreenElement) {
+                      document.exitFullscreen().catch(() => {});
+                    } else {
+                      el.requestFullscreen?.().catch(() => showToast("Trình duyệt không cho phép toàn màn hình", "error"));
+                    }
+                  }}
                   className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant transition-colors"
-                  title="Toàn màn hình bảng tính"
+                  title="Toàn màn hình bảng tính (bấm lại để thoát)"
                 >
                   <span className="material-symbols-outlined text-[18px]">fullscreen</span>
                 </button>
@@ -1454,12 +1462,6 @@ function ReportsContent() {
                   Bảng ánh xạ các cột (Excel Column Mapping Matrix)
                 </span>
               </div>
-              <button
-                onClick={() => showToast("Đã mở modal thêm cột dữ liệu mở rộng")}
-                className="px-2.5 py-1 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press"
-              >
-                + Thêm cột mở rộng
-              </button>
             </div>
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left font-table-data text-table-data">

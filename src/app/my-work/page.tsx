@@ -79,6 +79,11 @@ export default function MyWorkPage() {
     "ALL" | "IN_PROGRESS" | "WAITING_REVIEW" | "OVERDUE" | "COMPLETED"
   >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  // UX: tìm kiếm + phân trang server (API giới hạn 50/trang)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
 
@@ -200,22 +205,45 @@ export default function MyWorkPage() {
     }
   };
 
-  const fetchTasks = async () => {
-    setLoading(true);
+  const fetchTasks = async (opts?: { page?: number; append?: boolean; search?: string }) => {
+    const p = opts?.page ?? 1;
+    const q = opts?.search ?? searchQuery;
+    if (opts?.append) setLoadingMore(true);
+    else setLoading(true);
     try {
-      const res = await fetch("/api/tasks");
+      const params = new URLSearchParams({ page: String(p), pageSize: "50" });
+      if (q.trim()) params.set("search", q.trim());
+      const res = await fetch(`/api/tasks?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         const data = Array.isArray(json) ? json : json.data || [];
-        setTasks(data);
+        setTasks((prev) => (opts?.append ? [...prev, ...data] : data));
+        setPage(p);
+        setTotalPages(json.pagination?.totalPages || 1);
+        setTotalCount(json.pagination?.total ?? data.length);
         setLastSyncAt(new Date());
       }
     } catch {
       // fallback
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  // Tìm kiếm server (debounce, bỏ qua lần đầu)
+  const firstSearch = React.useRef(true);
+  useEffect(() => {
+    if (firstSearch.current) {
+      firstSearch.current = false;
+      return;
+    }
+    const t = setTimeout(() => {
+      fetchTasks({ page: 1, search: searchQuery });
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   useEffect(() => {
     fetchTasks();
@@ -699,7 +727,7 @@ export default function MyWorkPage() {
                 Đồng bộ lúc: {lastSyncAt ? lastSyncAt.toLocaleTimeString("vi-VN") : "chưa đồng bộ"}
               </span>
               <button
-                onClick={fetchTasks}
+                onClick={() => fetchTasks({ page: 1 })}
                 className="p-1 hover:text-primary transition-fast"
                 title="Tải lại dữ liệu"
               >
@@ -1021,14 +1049,14 @@ export default function MyWorkPage() {
                             <div className="flex flex-col gap-1 w-28">
                               <div className="flex items-center justify-between text-label-sm">
                                 <span className="text-secondary font-semibold">
-                                  {task.progressPercent || 85}%
+                                  {task.progressPercent ?? (isCompleted ? 100 : 0)}%
                                 </span>
                                 <span className="text-outline">Đang chạy</span>
                               </div>
                               <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
                                 <div
                                   className="bg-secondary h-full rounded-full transition-all duration-300"
-                                  style={{ width: `${task.progressPercent || 85}%` }}
+                                  style={{ width: `${task.progressPercent ?? (isCompleted ? 100 : 0)}%` }}
                                 />
                               </div>
                             </div>
@@ -1076,20 +1104,22 @@ export default function MyWorkPage() {
             </table>
           </div>
 
-          {/* PHÂN TRANG BẢNG NGHIỆP VỤ */}
+          {/* PHÂN TRANG BẢNG NGHIỆP VỤ (server, 50/trang) */}
           <div className="p-space-sm bg-surface-subtle flex flex-col sm:flex-row items-center justify-between text-label-sm text-on-surface-variant gap-space-sm border-t border-border-default">
             <div className="flex items-center gap-2">
-              <span>Hiển thị <strong>{filteredTasks.length}</strong> trên tổng số <strong>{tasks.length}</strong> nhiệm vụ</span>
+              <span>Đã tải <strong>{tasks.length}</strong> trên tổng số <strong>{totalCount}</strong> nhiệm vụ</span>
             </div>
-            <div className="flex items-center gap-1">
-              <button className="px-2.5 py-1 rounded bg-surface-container-lowest text-outline hover:text-primary transition-fast">
-                Trang trước
+            {page < totalPages ? (
+              <button
+                onClick={() => fetchTasks({ page: page + 1, append: true })}
+                disabled={loadingMore}
+                className="px-4 py-1.5 rounded bg-secondary text-on-secondary font-semibold disabled:opacity-50 active-press"
+              >
+                {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
               </button>
-              <button className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-semibold">1</button>
-              <button className="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface-variant hover:text-primary transition-fast">
-                Trang sau
-              </button>
-            </div>
+            ) : (
+              <span className="text-xs text-outline">Đã hiển thị tất cả</span>
+            )}
           </div>
         </section>
 
@@ -1577,6 +1607,19 @@ export default function MyWorkPage() {
               </div>
             );
           })}
+        </div>
+
+        <div className="flex flex-col items-center gap-1 pt-1">
+          <span className="text-[11px] text-outline">Đã tải {tasks.length}/{totalCount} nhiệm vụ</span>
+          {page < totalPages && (
+            <button
+              onClick={() => fetchTasks({ page: page + 1, append: true })}
+              disabled={loadingMore}
+              className="w-full h-11 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-md shadow-sm border border-border-default active-press disabled:opacity-50"
+            >
+              {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
+            </button>
+          )}
         </div>
 
         {/* FLOATING ACTION BUTTON (FAB) GÓC DƯỚI PHẢI */}

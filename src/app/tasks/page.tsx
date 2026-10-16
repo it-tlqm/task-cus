@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getRoleDisplayName } from "@/lib/unit-info";
 
 interface TaskItem {
   id: string;
@@ -67,6 +69,12 @@ export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<"ALL" | "IN_PROGRESS" | "WAITING_REVIEW" | "EXTENSIONS" | "OVERDUE">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilterUnit, setSelectedFilterUnit] = useState<string>("ALL");
+  // UX: phân trang server + tìm kiếm server (API giới hạn 50/trang)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const { canAssign, canApprove, canAudit, user: permUser } = usePermissions();
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -115,21 +123,44 @@ export default function TasksPage() {
   const [approvalNotes, setApprovalNotes] = useState("");
   const [extDecisionNotes, setExtDecisionNotes] = useState("");
 
-  const fetchTasks = async () => {
-    setLoading(true);
+  const fetchTasks = async (opts?: { page?: number; append?: boolean; search?: string }) => {
+    const p = opts?.page ?? 1;
+    const q = opts?.search ?? searchQuery;
+    if (opts?.append) setLoadingMore(true);
+    else setLoading(true);
     try {
-      const res = await fetch("/api/tasks");
+      const params = new URLSearchParams({ page: String(p), pageSize: "50" });
+      if (q.trim()) params.set("search", q.trim());
+      const res = await fetch(`/api/tasks?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         const data = Array.isArray(json) ? json : json.data || [];
-        setTasks(data);
+        setTasks((prev) => (opts?.append ? [...prev, ...data] : data));
+        setPage(p);
+        setTotalPages(json.pagination?.totalPages || 1);
+        setTotalCount(json.pagination?.total ?? data.length);
       }
     } catch {
       // ignore
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  // Tìm kiếm server (debounce): gõ xong 500ms mới tải lại từ trang 1 (bỏ qua lần đầu)
+  const firstSearch = React.useRef(true);
+  useEffect(() => {
+    if (firstSearch.current) {
+      firstSearch.current = false;
+      return;
+    }
+    const t = setTimeout(() => {
+      fetchTasks({ page: 1, search: searchQuery });
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   useEffect(() => {
     fetchTasks();
@@ -317,7 +348,7 @@ export default function TasksPage() {
   };
 
   // Computed KPI counts
-  const totalCount = tasks.length;
+  const loadedCount = tasks.length;
   const inProgressCount = tasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "NOT_STARTED").length;
   const waitingReviewCount = tasks.filter((t) => t.status === "WAITING_REVIEW").length;
   const extCount = tasks.filter((t) => (t.deadlineRequests && t.deadlineRequests.length > 0) || t.hasIssue).length;
@@ -351,8 +382,6 @@ export default function TasksPage() {
             <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
               <span>HQ CK Quốc tế Tà Lùng</span>
               <span className="text-outline">/</span>
-              <span>Lãnh đạo đơn vị</span>
-              <span className="text-outline">/</span>
               <span className="text-secondary font-body-semibold">Nhiệm vụ chỉ đạo &amp; Giao việc</span>
             </div>
             <div className="flex items-center gap-space-sm">
@@ -360,7 +389,7 @@ export default function TasksPage() {
                 Nhiệm Vụ Chỉ Đạo &amp; Điều Hành Giao Việc
               </h1>
               <span className="px-2.5 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm uppercase font-bold">
-                Cấp Quyền: Lãnh đạo Đơn vị
+                {permUser?.role ? getRoleDisplayName(permUser.role) : "Đang tải..."}
               </span>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-3xl">
@@ -369,27 +398,33 @@ export default function TasksPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-space-sm shrink-0">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-space-md h-10 bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-md rounded-lg transition-fast shadow-sm active-press font-semibold"
-            >
-              <span className="material-symbols-outlined text-[18px]">add_task</span>
-              <span>+ Giao nhiệm vụ đột xuất / Chỉ đạo mới</span>
-            </button>
-            <Link
-              href="/reports/excel"
-              className="flex items-center gap-2 px-space-md h-10 bg-surface-container-lowest hover:bg-surface-subtle text-on-surface font-body-semibold text-body-md rounded-lg shadow-sm transition-fast border border-border-default active-press"
-            >
-              <span className="material-symbols-outlined text-[18px] text-secondary">file_download</span>
-              <span>Xuất phiếu giao việc (.xlsx)</span>
-            </Link>
-            <Link
-              href="/admin/audit"
-              className="flex items-center gap-2 px-space-md h-10 bg-surface-container hover:bg-surface-container-high text-primary font-body-semibold text-body-md rounded-lg transition-fast active-press"
-            >
-              <span className="material-symbols-outlined text-[18px]">manage_history</span>
-              <span>Lịch sử chỉ đạo</span>
-            </Link>
+            {canAssign && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-space-md h-10 bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-md rounded-lg transition-fast shadow-sm active-press font-semibold"
+              >
+                <span className="material-symbols-outlined text-[18px]">add_task</span>
+                <span>+ Giao nhiệm vụ đột xuất / Chỉ đạo mới</span>
+              </button>
+            )}
+            {canApprove && (
+              <Link
+                href="/reports/excel"
+                className="flex items-center gap-2 px-space-md h-10 bg-surface-container-lowest hover:bg-surface-subtle text-on-surface font-body-semibold text-body-md rounded-lg shadow-sm transition-fast border border-border-default active-press"
+              >
+                <span className="material-symbols-outlined text-[18px] text-secondary">file_download</span>
+                <span>Xuất phiếu giao việc (.xlsx)</span>
+              </Link>
+            )}
+            {canAudit && (
+              <Link
+                href="/admin/audit"
+                className="flex items-center gap-2 px-space-md h-10 bg-surface-container hover:bg-surface-container-high text-primary font-body-semibold text-body-md rounded-lg transition-fast active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">manage_history</span>
+                <span>Lịch sử chỉ đạo</span>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -664,7 +699,7 @@ export default function TasksPage() {
 
                         <td className="py-3 px-space-md align-top text-right">
                           <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                            {isWaiting && (
+                            {isWaiting && canApprove && (
                               <button
                                 onClick={() => {
                                   setSelectedTask(task);
@@ -675,7 +710,7 @@ export default function TasksPage() {
                                 Duyệt kết quả
                               </button>
                             )}
-                            {task.deadlineRequests && task.deadlineRequests.some((r) => r.status === "PENDING") && (
+                            {task.deadlineRequests && task.deadlineRequests.some((r) => r.status === "PENDING") && canApprove && (
                               <button
                                 onClick={() => {
                                   setSelectedTask(task);
@@ -686,7 +721,7 @@ export default function TasksPage() {
                                 Duyệt hạn
                               </button>
                             )}
-                            {isOverdue && !isWaiting && (
+                            {isOverdue && !isWaiting && canApprove && (
                               <button
                                 onClick={() => {
                                   setSelectedTask(task);
@@ -711,6 +746,21 @@ export default function TasksPage() {
                 )}
               </tbody>
             </table>
+          </div>
+          {/* UX: tải thêm khi còn trang (API giới hạn 50/trang) */}
+          <div className="flex items-center justify-center gap-3 p-3 border-t border-border-default/50">
+            <span className="text-xs text-outline">
+              Đã tải {tasks.length}/{totalCount} nhiệm vụ
+            </span>
+            {page < totalPages && (
+              <button
+                onClick={() => fetchTasks({ page: page + 1, append: true })}
+                disabled={loadingMore}
+                className="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-xs font-bold active-press disabled:opacity-50"
+              >
+                {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
     const deadlineTo = searchParams.get("deadlineTo");
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "50", 10)));
+    const search = searchParams.get("search")?.trim() || "";
 
     const filters: any = {};
 
@@ -44,6 +45,12 @@ export async function GET(req: NextRequest) {
       }
     }
     if (priority) filters.priority = priority;
+    if (search) {
+      filters.OR = [
+        { code: { contains: search, mode: "insensitive" } },
+        { title: { contains: search, mode: "insensitive" } },
+      ];
+    }
     if (deadlineFrom) {
       const d = new Date(deadlineFrom);
       if (!isNaN(d.getTime())) filters.currentDeadline = { ...(filters.currentDeadline || {}), gte: d };
@@ -114,13 +121,16 @@ export async function GET(req: NextRequest) {
 
     const now = new Date();
 
-    // Tính toán cờ isOverdue độc lập với hasIssue
+    // Tính toán cờ isOverdue độc lập với hasIssue + % tiến độ từ cập nhật mới nhất
+    // (Task không lưu sẵn % — nguồn duy nhất là TaskUpdate)
     const enrichedTasks = tasks.map((t) => {
       const isFinished = t.status === "COMPLETED" || t.status === "DONE" || t.status === "CANCELED";
       const isOverdue = !isFinished && new Date(t.currentDeadline) < now;
+      const latestProgress = (t.updates as any[])?.[0]?.progressPercent;
       return {
         ...t,
         isOverdue,
+        progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
       };
     });
 
