@@ -5,6 +5,7 @@ import { buildScopedWhereClause, verifyTaskAccess, jsonError } from "@/server/gu
 import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
 import { advisoryLock, normalizeTitle } from "@/server/idempotency";
 import { nextTaskCode } from "@/server/task-code";
+import { unaccentSearchIds } from "@/server/search";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 
@@ -46,10 +47,15 @@ export async function GET(req: NextRequest) {
     }
     if (priority) filters.priority = priority;
     if (search) {
-      filters.OR = [
-        { code: { contains: search, mode: "insensitive" } },
-        { title: { contains: search, mode: "insensitive" } },
-      ];
+      // Tìm không dấu: gõ "Nguyen" ra "Nguyễn" (unaccent 2 vế)
+      const ids = await unaccentSearchIds("tasks", ["code", "title"], search);
+      if (!ids || ids.length === 0) {
+        return NextResponse.json({
+          success: true, data: [],
+          pagination: { page, pageSize, total: 0, totalPages: 0 },
+        });
+      }
+      filters.id = { in: ids };
     }
     if (deadlineFrom) {
       const d = new Date(deadlineFrom);

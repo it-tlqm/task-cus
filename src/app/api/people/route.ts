@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { checkPermission, getAuthorizedUnitIds, jsonError } from "@/server/guard";
+import { unaccentSearchIds } from "@/server/search";
 import { recordAuditEvent } from "@/server/audit";
 
 export async function GET(req: NextRequest) {
@@ -43,13 +44,10 @@ export async function GET(req: NextRequest) {
       whereClause.status = status;
     }
 
-    // 3. Tìm kiếm theo từ khóa (Mã CC, Họ tên, Email, SĐT)
+    // 3. Tìm kiếm không dấu (Mã CC, Họ tên, Email, SĐT) + chức vụ giữ contains thường
     if (search) {
-      whereClause.OR = [
-        { code: { contains: search, mode: "insensitive" } },
-        { fullName: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { phone: { contains: search, mode: "insensitive" } },
+      const ids = await unaccentSearchIds("people", ["code", "full_name", "email", "phone"], search);
+      const orClauses: any[] = [
         {
           assignments: {
             some: {
@@ -59,6 +57,10 @@ export async function GET(req: NextRequest) {
           },
         },
       ];
+      if (ids && ids.length > 0) {
+        orClauses.unshift({ id: { in: ids } });
+      }
+      whereClause.OR = orClauses;
     }
 
     const [total, people] = await Promise.all([

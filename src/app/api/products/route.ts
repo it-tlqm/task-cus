@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
+import { unaccentSearchIds } from "@/server/search";
 
 /**
  * YC-11 — Danh mục sản phẩm QĐ1277: xem + tìm kiếm + phân trang.
@@ -29,25 +30,8 @@ export async function GET(req: NextRequest) {
 
     const where: any = { versionId: version.id, status: "ACTIVE" };
     if (groupId) where.groupId = groupId;
-    if (search) {
-      where.OR = [
-        { code: { contains: search, mode: "insensitive" } },
-        { sourceStt: { contains: search, mode: "insensitive" } },
-        { taskName: { contains: search, mode: "insensitive" } },
-        { detailWork: { contains: search, mode: "insensitive" } },
-        { outputProduct: { contains: search, mode: "insensitive" } },
-      ];
-    }
 
-    const [total, items, groups, versions] = await Promise.all([
-      prisma.productItem.count({ where }),
-      prisma.productItem.findMany({
-        where,
-        include: { group: { select: { id: true, code: true, title: true } } },
-        orderBy: [{ sourceRow: "asc" }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
+    const [allGroups, allVersions] = await Promise.all([
       prisma.productGroup.findMany({
         where: { versionId: version.id },
         orderBy: { sortOrder: "asc" },
@@ -59,12 +43,43 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    if (search) {
+      // Tìm không dấu trên mã/STT/tên/sản phẩm
+      const ids = await unaccentSearchIds(
+        "product_items",
+        ["code", "source_stt", "task_name", "detail_work", "output_product"],
+        search
+      );
+      if (!ids || ids.length === 0) {
+        return NextResponse.json({
+          success: true,
+          version: { code: version.code, title: version.title, qdRef: version.qdRef },
+          data: [],
+          groups: allGroups,
+          versions: allVersions,
+          pagination: { page, pageSize, total: 0, totalPages: 0 },
+        });
+      }
+      where.id = { in: ids };
+    }
+
+    const [total, items] = await Promise.all([
+      prisma.productItem.count({ where }),
+      prisma.productItem.findMany({
+        where,
+        include: { group: { select: { id: true, code: true, title: true } } },
+        orderBy: [{ sourceRow: "asc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
     return NextResponse.json({
       success: true,
       version: { code: version.code, title: version.title, qdRef: version.qdRef },
       data: items,
-      groups,
-      versions,
+      groups: allGroups,
+      versions: allVersions,
       pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     });
   } catch (error: any) {

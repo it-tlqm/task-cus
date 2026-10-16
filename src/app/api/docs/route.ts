@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { advisoryLock, normalizeTitle } from "@/server/idempotency";
+import { unaccentSearchIds } from "@/server/search";
 import { nextTaskCode } from "@/server/task-code";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
@@ -24,11 +25,12 @@ export async function GET(req: NextRequest) {
     if (direction === "DEN" || direction === "DI") where.direction = direction;
     if (status) where.status = status;
     if (search) {
-      where.OR = [
-        { number: { contains: search, mode: "insensitive" } },
-        { title: { contains: search, mode: "insensitive" } },
-        { fromTo: { contains: search, mode: "insensitive" } },
-      ];
+      // Tìm không dấu: gõ "cong van" ra "công văn"
+      const ids = await unaccentSearchIds("official_docs", ["number", "title", "from_to"], search);
+      if (!ids || ids.length === 0) {
+        return NextResponse.json({ success: true, data: [] });
+      }
+      where.id = { in: ids };
     }
     const rows = await prisma.officialDoc.findMany({
       where,
