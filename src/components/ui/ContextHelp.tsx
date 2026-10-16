@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getPageHelp } from "@/data/page-help";
+import { getTour, TOUR_START_EVENT } from "@/data/page-tour";
 
 /**
  * Nút "?" nổi toàn app (trừ trang đăng nhập): mở hướng dẫn
@@ -14,10 +15,12 @@ export function ContextHelp() {
   const [open, setOpen] = useState(false);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
 
-  // Lần đầu vào trang này → tự mở lời hỏi xem hướng dẫn (mỗi trang 1 lần/máy)
+  // Lần đầu vào trang này → tự mở lời hỏi xem hướng dẫn (mỗi trang 1 lần/máy).
+  // Trang nào có tour từng bước thì để tour tự chạy, bảng này không giành.
   useEffect(() => {
     setOpen(false);
     setIsFirstVisit(false);
+    if (getTour(pathname)) return;
     let seen: Record<string, boolean> = {};
     try {
       seen = JSON.parse(localStorage.getItem("hqtl-seen-pages") || "{}");
@@ -97,6 +100,17 @@ export function ContextHelp() {
               >
                 Xem hướng dẫn 5 phút ›
               </Link>
+              {getTour(pathname) && (
+                <button
+                  onClick={() => {
+                    close();
+                    window.dispatchEvent(new Event(TOUR_START_EVENT));
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-secondary text-on-secondary text-xs font-bold"
+                >
+                  ▶ Tour từng bước
+                </button>
+              )}
               {isFirstVisit && (
                 <button
                   onClick={close}

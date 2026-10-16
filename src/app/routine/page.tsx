@@ -471,7 +471,7 @@ export default function RoutinePage() {
             </div>
 
             {/* Form Thêm Đầu Việc Tác Nghiệp Hàng Ngày */}
-            <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
+            <div data-tour="log-form" className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
               <div className="flex items-center justify-between border-b border-surface-container pb-space-sm">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-secondary text-[22px]">add_task</span>
@@ -683,7 +683,7 @@ export default function RoutinePage() {
             </div>
 
             {/* Bảng Danh Sách Nhật Ký Đã Ghi Nhận */}
-            <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
+            <div data-tour="log-list" className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
               <div className="p-space-md bg-surface-subtle border-b border-border-default flex items-center justify-between">
                 <span className="font-headline-sm text-primary font-bold">
                   Nhật Ký Đã Khai Báo Trong Ca Ngày {logDate}

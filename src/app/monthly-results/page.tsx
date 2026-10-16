@@ -247,10 +247,10 @@ export default function MonthlyResultsPage() {
           <p className="text-sm text-slate-600">Ghi nhận sản phẩm thực tế · đúng người, đúng tháng · thiếu mã SP thì chờ đối chiếu</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={openAdd} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+          <button data-tour="add-btn" onClick={openAdd} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
             + Ghi nhận kết quả
           </button>
-          <button onClick={handleExport} disabled={exporting}
+          <button data-tour="export-btns" onClick={handleExport} disabled={exporting}
             className="px-4 py-2 rounded-lg bg-white border border-teal-700 text-teal-900 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50">
             {exporting ? "Đang xuất..." : "Xuất Bảng 1 + 01A (.xlsx)"}
           </button>
@@ -282,7 +282,7 @@ export default function MonthlyResultsPage() {
       </div>
 
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div data-tour="summary" className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
             <div className="text-[11px] text-slate-500 uppercase">Đầu việc ghi nhận</div>
             <div className="text-2xl font-bold text-slate-900">{summary.totalItems}</div>

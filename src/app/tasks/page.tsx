@@ -400,6 +400,7 @@ export default function TasksPage() {
           <div className="flex flex-wrap items-center gap-space-sm shrink-0">
             {canAssign && (
               <button
+                data-tour="create-btn"
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 px-space-md h-10 bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-md rounded-lg transition-fast shadow-sm active-press font-semibold"
               >
@@ -583,6 +584,7 @@ export default function TasksPage() {
                 search
               </span>
               <input
+                data-tour="search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -594,7 +596,7 @@ export default function TasksPage() {
         </div>
 
         {/* BẢNG DỮ LIỆU NHIỆM VỤ CHỈ ĐẠO */}
-        <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
+        <div data-tour="task-table" className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse table-dense">
               <thead>

@@ -170,7 +170,7 @@ export default function LeavesPage() {
           <h1 className="text-2xl font-bold text-slate-900 mt-1">Quản lý nghỉ & công tác</h1>
           <p className="text-sm text-slate-600">Ai nghỉ vào báo trên hệ thống — lãnh đạo duyệt theo phạm vi</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+        <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
           + Báo nghỉ / công tác
         </button>
       </div>
@@ -187,7 +187,7 @@ export default function LeavesPage() {
         </select>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div data-tour="leave-list" className="flex flex-col gap-2">
         {loading && <p className="text-sm text-slate-500 text-center py-8">Đang tải...</p>}
         {!loading && rows.length === 0 && (
           <p className="text-sm text-slate-500 text-center py-8">Chưa có đơn nghỉ nào</p>

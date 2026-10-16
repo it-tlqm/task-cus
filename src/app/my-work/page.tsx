@@ -694,7 +694,7 @@ export default function MyWorkPage() {
           </div>
 
           {/* BỘ LỌC THỜI GIAN THEO CA/KỲ TÁC NGHIỆP */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low p-space-sm rounded-lg">
+          <div data-tour="time-filter" className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low p-space-sm rounded-lg">
             <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm">
               <button
                 onClick={() => setTimeFilter("DAY")}
@@ -830,7 +830,7 @@ export default function MyWorkPage() {
         </section>
 
         {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP */}
-        <section className="bg-surface-container-lowest rounded-xl shadow-sm flex flex-col overflow-hidden border border-border-default/50">
+        <section data-tour="task-list" className="bg-surface-container-lowest rounded-xl shadow-sm flex flex-col overflow-hidden border border-border-default/50">
           {/* TAB ĐIỀU HƯỚNG TRẠNG THÁI & TÌM KIẾM NHANH */}
           <div className="p-space-md bg-surface-subtle flex flex-col md:flex-row md:items-center justify-between gap-space-md border-b border-border-default">
             <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
@@ -1238,7 +1238,7 @@ export default function MyWorkPage() {
 
         {/* CHỌN KỲ TÁC NGHIỆP (SEGMENTED PILLS) */}
         <div className="px-margin py-2">
-          <div className="bg-surface-container p-1 rounded-lg flex items-center justify-between gap-1 shadow-inner">
+          <div data-tour="time-filter" className="bg-surface-container p-1 rounded-lg flex items-center justify-between gap-1 shadow-inner">
             <button
               onClick={() => setTimeFilter("DAY")}
               className={`flex-1 py-1.5 px-2 rounded-md font-body-semibold text-label-md text-center shadow-sm flex items-center justify-center gap-1 transition-fast ${timeFilter === "DAY" ? "bg-secondary text-on-secondary" : "text-on-surface-variant"}`}
@@ -1388,7 +1388,7 @@ export default function MyWorkPage() {
 
         {/* DANH SÁCH THẺ NHIỆM VỤ MOBILE */}
         {/* DANH SÁCH THẺ NHIỆM VỤ MOBILE BÁM SÁT STITCH */}
-        <div className="px-margin flex flex-col gap-3">
+        <div data-tour="task-list" className="px-margin flex flex-col gap-3">
           {filteredTasks.map((task) => {
             const isOverdue = task.isOverdue || task.hasIssue;
             const isWaiting = task.status === "WAITING_REVIEW";
@@ -1623,7 +1623,7 @@ export default function MyWorkPage() {
         </div>
 
         {/* FLOATING ACTION BUTTON (FAB) GÓC DƯỚI PHẢI */}
-        <div className="fixed bottom-20 right-4 z-40">
+        <div data-tour="fab-add" className="fixed bottom-20 right-4 z-40">
           <button
             onClick={() => setIsNewTaskModalOpen(true)}
             aria-label="Thêm đầu việc mới"

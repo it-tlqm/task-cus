@@ -325,7 +325,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Actions (chỉ hiện nút được phép dùng) */}
-            <div className="flex flex-wrap items-center gap-space-sm">
+            <div data-tour="quick-actions" className="flex flex-wrap items-center gap-space-sm">
               {aiEnabled && (
                 <button
                   onClick={handleAiSummarize}
@@ -512,7 +512,7 @@ export default function DashboardPage() {
         )}
 
         {/* KPI SUMMARY: 6 STANDARDIZED EXECUTIVE CARDS WITH REAL METRICS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-space-md">
+        <div data-tour="kpi-cards" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-space-md">
           {/* Card 1: Total Tasks */}
           <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between hover-lift border border-border-default/50">
             <div className="flex items-center justify-between">
