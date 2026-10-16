@@ -123,6 +123,7 @@ export default function PlansPage() {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
   const [returnNotes, setReturnNotes] = useState("");
   const [showAmendmentModal, setShowAmendmentModal] = useState(false);
   const [amendmentNotes, setAmendmentNotes] = useState("");
@@ -368,7 +369,8 @@ export default function PlansPage() {
   const handleWorkflowAction = async (
     action: "SUBMIT" | "APPROVE" | "RETURN" | "REQUEST_AMENDMENT" | "EFFECT"
   ) => {
-    if (!activePlan) return;
+    if (!activePlan || workflowBusy) return;
+    setWorkflowBusy(true);
 
     try {
       const res = await fetch(`/api/plans/${activePlan.id}/workflow`, {
@@ -401,6 +403,8 @@ export default function PlansPage() {
       }
     } catch (err: any) {
       toast.error("Lỗi kết nối máy chủ: " + err.message);
+    } finally {
+      setWorkflowBusy(false);
     }
   };
 
@@ -483,10 +487,11 @@ export default function PlansPage() {
                 currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
                   <button
                     onClick={() => handleWorkflowAction("SUBMIT")}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-fast active-press shadow-sm"
+                    disabled={workflowBusy}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary-container transition-fast active-press shadow-sm disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[18px]">send</span>
-                    <span>Trình duyệt kế hoạch</span>
+                    <span>{workflowBusy ? "Đang xử lý..." : "Trình duyệt kế hoạch"}</span>
                   </button>
                 ) : (
                   <span
@@ -502,10 +507,11 @@ export default function PlansPage() {
                   <>
                     <button
                       onClick={() => handleWorkflowAction("APPROVE")}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-success text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm"
+                      disabled={workflowBusy}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-success text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm disabled:opacity-50"
                     >
                       <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                      <span>Phê duyệt kế hoạch</span>
+                      <span>{workflowBusy ? "Đang xử lý..." : "Phê duyệt kế hoạch"}</span>
                     </button>
                     <button
                       onClick={() => setShowReturnModal(true)}
@@ -528,11 +534,12 @@ export default function PlansPage() {
                 currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
                   <button
                     onClick={() => handleWorkflowAction("EFFECT")}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-success text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm"
+                    disabled={workflowBusy}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-status-success text-on-primary font-label-md text-label-md font-semibold hover:opacity-90 transition-fast active-press shadow-sm disabled:opacity-50"
                     title="Ban hành hiệu lực thi hành cho kế hoạch đã phê duyệt"
                   >
                     <span className="material-symbols-outlined text-[18px]">verified</span>
-                    <span>Ban hành hiệu lực</span>
+                    <span>{workflowBusy ? "Đang xử lý..." : "Ban hành hiệu lực"}</span>
                   </button>
                 ) : (
                   <span
@@ -1620,9 +1627,10 @@ export default function PlansPage() {
               </button>
               <button
                 onClick={() => handleWorkflowAction("RETURN")}
-                className="px-4 py-2 rounded bg-status-danger text-on-error text-xs font-semibold"
+                disabled={workflowBusy}
+                className="px-4 py-2 rounded bg-status-danger text-on-error text-xs font-semibold disabled:opacity-50"
               >
-                Xác nhận trả lại
+                {workflowBusy ? "Đang xử lý..." : "Xác nhận trả lại"}
               </button>
             </div>
           </div>
@@ -1680,9 +1688,10 @@ export default function PlansPage() {
               </button>
               <button
                 onClick={() => handleWorkflowAction("REQUEST_AMENDMENT")}
-                className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-secondary/90 transition-fast"
+                disabled={workflowBusy}
+                className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold hover:bg-secondary/90 transition-fast disabled:opacity-50"
               >
-                Xác nhận đề xuất
+                {workflowBusy ? "Đang xử lý..." : "Xác nhận đề xuất"}
               </button>
             </div>
           </div>
