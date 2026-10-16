@@ -58,19 +58,18 @@ export function Sidebar() {
         {/* Brand Header */}
         <div className="p-space-md border-b border-border-default/15 flex items-center justify-between gap-space-sm">
           <Link href="/dashboard" className="flex items-center gap-space-sm min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0 shadow-sm active-press">
-              <span className="material-symbols-outlined text-on-secondary text-[24px]">shield</span>
-            </div>
+            <img
+              src="/images/logo-haiquan.png"
+              alt="Logo Hải quan Việt Nam"
+              className="w-10 h-10 rounded-full object-cover bg-white shrink-0 shadow-sm"
+            />
             {!collapsed && (
               <div className="flex flex-col min-w-0">
                 <span className="font-headline-sm text-headline-sm uppercase tracking-wide truncate text-white leading-tight">
-                  HQ CKQT TÀ LÙNG
+                  HQCKQT TÀ LÙNG
                 </span>
                 <span className="font-label-sm text-label-sm text-on-primary-container truncate">
                   Quản lý Kế hoạch &amp; Công việc
-                </span>
-                <span className="font-label-sm text-[11px] text-secondary-fixed tracking-wider uppercase font-semibold">
-                  talung-cus-work
                 </span>
               </div>
             )}
@@ -136,17 +135,17 @@ export function Sidebar() {
         {!collapsed ? (
           <>
             <div className="flex items-center justify-between mb-space-xs">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-status-warning/20 text-status-warning border border-status-warning/40">
-                DỮ LIỆU MINH HỌA - V1.1
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-emerald-500/20 text-emerald-100 border border-emerald-300/40">
+                VẬN HÀNH CHÍNH THỨC
               </span>
-              <span className="font-label-sm text-[11px] text-on-primary-container">v1.1.24</span>
+              <span className="font-label-sm text-[11px] text-on-primary-container">v1.2.4</span>
             </div>
             <p className="font-label-sm text-[12px] text-on-primary-container leading-relaxed">
               Hỗ trợ kỹ thuật: Bộ phận CNTT — Nội bộ Tà Lùng
             </p>
           </>
         ) : (
-          <div className="flex justify-center" title="Dữ liệu minh họa v1.1.24">
+          <div className="flex justify-center" title="Vận hành chính thức v1.2.4">
             <span className="w-2.5 h-2.5 rounded-full bg-status-warning" />
           </div>
         )}

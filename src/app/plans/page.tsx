@@ -45,7 +45,7 @@ interface PlanItem {
   status: "DRAFT" | "SUBMITTED" | "APPROVED" | "RETURNED" | "IN_EFFECT";
   approvedBy?: string;
   approvedAt?: string;
-  period: { id: string; name: string; title?: string; code: string; year: number; weekNumber?: number; periodType: string; startAt?: string; endAt?: string };
+  period: { id: string; name?: string; title?: string; code?: string; year?: number; weekNumber?: number; periodType?: string; type?: string; startAt?: string; endAt?: string };
   unit: { id: string; name: string; code: string };
   items: Array<{
     id: string;
@@ -79,12 +79,33 @@ export default function PlansPage() {
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [selectedOfficerFilter, setSelectedOfficerFilter] = useState("all");
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<"day" | "week" | "month" | "gantt">("week");
+
+  const planPeriodType = (p: PlanItem): string =>
+    ((p.period as any)?.type || (p.period as any)?.periodType || "").toString().toUpperCase();
+
+  // Lọc kế hoạch theo tab kỳ: dữ liệu thật từ period.type của API (DAY/WEEK/MONTH)
+  const filteredPlans = React.useMemo(() => {
+    if (viewMode === "gantt") return plans;
+    const want = viewMode === "day" ? "DAY" : viewMode === "month" ? "MONTH" : "WEEK";
+    const matched = plans.filter((p) => planPeriodType(p) === want);
+    // Kỳ không xác định type: giữ lại ở tab Tuần để không mất dữ liệu
+    return viewMode === "week" ? plans.filter((p) => ["WEEK", ""].includes(planPeriodType(p))) : matched;
+  }, [plans, viewMode]);
+
+  const countBy = (t: string) => plans.filter((p) => planPeriodType(p) === t || (t === "WEEK" && planPeriodType(p) === "")).length;
+
+  const activePlan = filteredPlans[Math.min(selectedPlanIndex, Math.max(0, filteredPlans.length - 1))] || null;
+
+  const switchView = (m: "day" | "week" | "month" | "gantt") => {
+    setViewMode(m);
+    setSelectedPlanIndex(0);
+  };
 
   const planOfficers = React.useMemo(() => {
-    const currentPlan = plans[selectedPlanIndex];
-    if (!currentPlan) return [];
+    if (!activePlan) return [];
     const map = new Map<string, string>();
-    currentPlan.items?.forEach((item) => {
+    activePlan.items?.forEach((item) => {
       item.workItems?.forEach((wi) => {
         if (wi.person?.fullName) map.set(wi.person.fullName, wi.person.fullName);
       });
@@ -93,7 +114,7 @@ export default function PlansPage() {
       });
     });
     return Array.from(map.values());
-  }, [plans, selectedPlanIndex]);
+  }, [activePlan]);
 
   const [groups, setGroups] = useState<ActivityGroup[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string; personId: string; fullName: string; role: string } | null>(null);
@@ -171,7 +192,29 @@ export default function PlansPage() {
     fetchPlans();
   }, []);
 
-  const activePlan = plans[selectedPlanIndex] || null;
+  // Dữ liệu Gantt: nhiệm vụ liên kết của kế hoạch đang chọn (dedupe theo Task.id)
+  const ganttData = React.useMemo(() => {
+    if (!activePlan) return null;
+    const seen = new Map<string, any>();
+    (activePlan.items || []).forEach((item) => {
+      (item.taskLinks || []).forEach((tl) => {
+        if (tl.task && !seen.has(tl.task.id)) seen.set(tl.task.id, tl.task);
+      });
+    });
+    const tasks = Array.from(seen.values());
+    if (tasks.length === 0) return { tasks: [], start: null as Date | null, end: null as Date | null, days: 0 };
+    const periodStart = activePlan.period?.startAt ? new Date(activePlan.period.startAt) : null;
+    const periodEnd = activePlan.period?.endAt ? new Date(activePlan.period.endAt) : null;
+    const deadlines = tasks.map((t) => new Date(t.currentDeadline).getTime()).filter((n) => !isNaN(n));
+    const minT = Math.min(periodStart ? periodStart.getTime() : Infinity, ...deadlines);
+    const maxT = Math.max(periodEnd ? periodEnd.getTime() : -Infinity, ...deadlines);
+    const start = new Date(minT);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(maxT);
+    end.setHours(0, 0, 0, 0);
+    const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+    return { tasks, start, end, days, periodStart, periodEnd };
+  }, [activePlan]);
 
   // Options for days of the week based on activePlan (Chuẩn hóa ISO 8601 GMT+7)
   const weekDaysOptions = React.useMemo(() => {
@@ -484,18 +527,35 @@ export default function PlansPage() {
 
           {/* View Mode Switcher + Interactive Filters */}
           <div className="mt-space-lg pt-space-md border-t border-border-default/50 flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
-            {/* Tabs */}
+            {/* Tabs lọc theo kỳ thật + Góc nhìn Gantt */}
             <div className="inline-flex p-1 rounded-lg bg-surface-subtle gap-1 text-on-surface-variant">
-              <button className="px-3.5 py-1.5 rounded font-label-md text-label-md hover:text-on-surface transition-fast">
-                Kế hoạch Ngày
-              </button>
-              <button className="px-3.5 py-1.5 rounded bg-surface-container-lowest text-primary font-body-semibold text-label-md shadow-sm">
-                Kế hoạch Tuần (W41)
-              </button>
-              <button className="px-3.5 py-1.5 rounded font-label-md text-label-md hover:text-on-surface transition-fast">
-                Kế hoạch Tháng 10
-              </button>
-              <button className="px-3.5 py-1.5 rounded font-label-md text-label-md hover:text-on-surface transition-fast flex items-center gap-1">
+              {(
+                [
+                  { key: "day", label: `Kế hoạch Ngày (${countBy("DAY")})` },
+                  { key: "week", label: `Kế hoạch Tuần (${countBy("WEEK")})` },
+                  { key: "month", label: `Kế hoạch Tháng (${countBy("MONTH")})` },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => switchView(t.key)}
+                  className={`px-3.5 py-1.5 rounded font-label-md text-label-md transition-fast ${
+                    viewMode === t.key
+                      ? "bg-surface-container-lowest text-primary font-body-semibold shadow-sm"
+                      : "hover:text-on-surface"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+              <button
+                onClick={() => switchView("gantt")}
+                className={`px-3.5 py-1.5 rounded font-label-md text-label-md transition-fast flex items-center gap-1 ${
+                  viewMode === "gantt"
+                    ? "bg-surface-container-lowest text-primary font-body-semibold shadow-sm"
+                    : "hover:text-on-surface"
+                }`}
+              >
                 <span className="material-symbols-outlined text-[16px]">view_timeline</span>
                 Góc nhìn Gantt
               </button>
@@ -528,16 +588,16 @@ export default function PlansPage() {
                 </button>
               </div>
 
-              {plans.length > 0 && (
+              {filteredPlans.length > 0 && (
                 <div className="flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle">
                   <span className="font-label-sm text-label-sm text-outline">Kế hoạch:</span>
                   <select
                     data-testid="plan-select"
-                    value={selectedPlanIndex}
+                    value={Math.min(selectedPlanIndex, Math.max(0, filteredPlans.length - 1))}
                     onChange={(e) => setSelectedPlanIndex(Number(e.target.value))}
                     className="bg-transparent font-label-md text-label-md font-semibold text-primary focus:outline-none cursor-pointer max-w-[280px] truncate"
                   >
-                    {plans.map((p, idx) => (
+                    {filteredPlans.map((p, idx) => (
                       <option key={p.id} value={idx}>
                         {p.unit?.name || "Đơn vị"}: {p.title} ({p.status})
                       </option>
@@ -574,6 +634,80 @@ export default function PlansPage() {
             </div>
           </div>
         </div>
+
+        {/* Góc nhìn Gantt — timeline nhiệm vụ liên kết của kế hoạch đang chọn (dữ liệu thật) */}
+        {viewMode === "gantt" && (
+          <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
+            <div className="px-space-lg py-2.5 bg-primary-container text-on-primary text-label-sm font-label-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary-fixed text-[18px]">view_timeline</span>
+              <span>
+                <strong className="text-white uppercase tracking-wider font-semibold">Gantt:</strong>{" "}
+                {activePlan ? `${activePlan.title} — ${ganttData?.tasks.length || 0} nhiệm vụ liên kết` : "Chưa có kế hoạch"}
+              </span>
+            </div>
+            {!ganttData || ganttData.tasks.length === 0 ? (
+              <div className="p-8 text-center text-sm text-outline">
+                Kế hoạch này chưa liên kết nhiệm vụ nào. Dùng thao tác liên kết nhiệm vụ vào hạng mục để xem trên Gantt.
+              </div>
+            ) : (
+              <div className="overflow-x-auto p-space-md">
+                <div className="min-w-[720px]">
+                  <div className="flex text-[11px] text-outline font-mono mb-1">
+                    <div className="w-64 shrink-0 pr-2">Nhiệm vụ / Chủ trì</div>
+                    <div className="flex-1 relative h-5">
+                      {Array.from({ length: ganttData.days }).map((_, i) => {
+                        const d = new Date(ganttData.start!.getTime() + i * 86400000);
+                        return (
+                          <span key={i} className="absolute text-center" style={{ left: `${(i / ganttData.days) * 100}%` }}>
+                            {d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {ganttData.tasks.map((t: any) => {
+                    const dl = new Date(t.currentDeadline).getTime();
+                    const s = ganttData.start!.getTime();
+                    const total = Math.max(1, ganttData.end!.getTime() - s);
+                    const offsetPct = Math.max(0, ((Math.min(dl, ganttData.end!.getTime()) - s) / total) * 100);
+                    const barStartPct = ganttData.periodStart
+                      ? Math.max(0, ((ganttData.periodStart.getTime() - s) / total) * 100)
+                      : 0;
+                    const widthPct = Math.max(2, offsetPct - barStartPct);
+                    const done = t.status === "COMPLETED" || t.status === "DONE";
+                    const overdue = !done && dl < Date.now();
+                    const color = done ? "bg-status-success" : t.status === "WAITING_REVIEW" ? "bg-status-warning" : overdue ? "bg-status-danger" : "bg-secondary";
+                    return (
+                      <div key={t.id} className="flex items-center py-1.5 border-t border-border-subtle/50">
+                        <div className="w-64 shrink-0 pr-2 min-w-0">
+                          <div className="text-xs font-semibold text-on-surface truncate" title={t.title}>
+                            [{t.code}] {t.title}
+                          </div>
+                          <div className="text-[11px] text-outline truncate">
+                            {t.owner?.fullName || "Chưa phân công"} • Hạn {new Date(t.currentDeadline).toLocaleDateString("vi-VN")}
+                          </div>
+                        </div>
+                        <div className="flex-1 relative h-6 bg-surface-subtle rounded">
+                          <div
+                            className={`absolute top-1 h-4 rounded ${color}`}
+                            style={{ left: `${barStartPct}%`, width: `${widthPct}%` }}
+                            title={`${t.title} — Hạn ${new Date(t.currentDeadline).toLocaleDateString("vi-VN")}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex gap-4 mt-2 text-[11px] text-outline">
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-secondary inline-block" /> Đang thực hiện</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-status-warning inline-block" /> Chờ nghiệm thu</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-status-success inline-block" /> Hoàn thành</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-status-danger inline-block" /> Quá hạn</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Main Administrative Data-Dense Table (Excel Grid Representation - Stitch d8279bd2bf0c4198b665f567223d0bf4) */}
         <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">

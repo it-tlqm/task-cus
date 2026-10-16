@@ -77,6 +77,50 @@ export default function MyWorkPage() {
   >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
+
+  // Số liệu thật từ tasks đã tải (không hardcode)
+  const myStats = React.useMemo(() => {
+    const now = Date.now();
+    const active = tasks.filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELED");
+    const high = active.filter((t) => t.priority === "Cao" || t.priority === "Khẩn").length;
+    const dueSoon = active.filter((t) => {
+      const dl = new Date(t.currentDeadline).getTime();
+      return !isNaN(dl) && dl >= now && dl <= now + 24 * 3600 * 1000;
+    }).length;
+    const overdueList = tasks.filter((t) => t.isOverdue || t.hasIssue);
+    const waiting = tasks.filter((t) => t.status === "WAITING_REVIEW").length;
+    const done = tasks.filter((t) => t.status === "COMPLETED").length;
+    const maxOverdueDays = overdueList.reduce((m, t) => {
+      const dl = new Date(t.currentDeadline).getTime();
+      if (isNaN(dl)) return m;
+      return Math.max(m, Math.floor((now - dl) / 86400000));
+    }, 0);
+    return { active: active.length, high, dueSoon, overdue: overdueList.length, waiting, done, maxOverdueDays };
+  }, [tasks]);
+
+  // Hoạt động gần nhất từ TaskUpdate thật (tối đa 2)
+  const recentActivity = React.useMemo(() => {
+    const all: Array<{ taskCode: string; taskTitle: string; notes: string; at: string; author: string }> = [];
+    tasks.forEach((t) => {
+      (t.updates || []).forEach((u: any) => {
+        all.push({
+          taskCode: t.code,
+          taskTitle: t.title,
+          notes: u.notes || "Cập nhật tiến độ",
+          at: u.createdAt,
+          author: u.author?.fullName || t.owner?.fullName || "",
+        });
+      });
+    });
+    return all.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 2);
+  }, [tasks]);
+
+  const todayLabel = React.useMemo(() => {
+    const d = new Date();
+    const weekdays = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+    return `${weekdays[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
 
   // Drawer & Modal States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -105,7 +149,10 @@ export default function MyWorkPage() {
   // New Task Form State
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<"Cao" | "Trung bình" | "Thấp">("Trung bình");
-  const [newTaskDeadline, setNewTaskDeadline] = useState("2026-10-14");
+  const [newTaskDeadline, setNewTaskDeadline] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [newTaskTime, setNewTaskTime] = useState("17:00");
   const [newTaskSource, setNewTaskSource] = useState("Tự khởi tạo phát sinh");
 
@@ -116,8 +163,8 @@ export default function MyWorkPage() {
     unitName?: string;
   }>({
     fullName: "Công chức",
-    personCode: "HQTL",
-    positionTitle: "Chuyên viên nghiệp vụ",
+    personCode: "—",
+    positionTitle: "Cán bộ",
     unitName: "Hải quan cửa khẩu Quốc tế Tà Lùng",
   });
 
@@ -143,6 +190,7 @@ export default function MyWorkPage() {
         const json = await res.json();
         const data = Array.isArray(json) ? json : json.data || [];
         setTasks(data);
+        setLastSyncAt(new Date());
       }
     } catch {
       // fallback
@@ -159,8 +207,8 @@ export default function MyWorkPage() {
         if (data?.user) {
           setCurrentUser({
             fullName: data.user.fullName || "Công chức",
-            personCode: data.user.personCode || data.user.username?.toUpperCase() || "HQTL",
-            positionTitle: data.user.positionTitle || "Chuyên viên nghiệp vụ",
+            personCode: data.user.personCode || data.user.username?.toUpperCase() || "—",
+            positionTitle: data.user.positionTitle || "Cán bộ",
             unitName: data.user.unitName || data.user.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng",
           });
         }
@@ -349,7 +397,7 @@ export default function MyWorkPage() {
     return true;
   });
 
-  const overdueTask = tasks.find((t) => t.isOverdue || t.hasIssue || t.code === "TSK-1038");
+  const overdueTask = tasks.find((t) => t.isOverdue || t.hasIssue);
 
   return (
     <div className="w-full min-h-screen bg-app-bg pb-12">
@@ -461,7 +509,7 @@ export default function MyWorkPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low p-space-sm rounded-lg">
             <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm">
               <button className="px-3 py-1.5 rounded font-label-md text-label-md bg-secondary text-on-secondary shadow-sm font-semibold transition-fast">
-                Hôm nay (Thứ Tư, 14/10)
+                Hôm nay ({todayLabel})
               </button>
               <button className="px-3 py-1.5 rounded font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-subtle transition-fast">
                 Tuần này (Tuần 41)
@@ -476,7 +524,7 @@ export default function MyWorkPage() {
             <div className="flex items-center gap-3 text-outline font-label-sm text-label-sm px-2">
               <span className="flex items-center gap-1 text-on-surface-variant">
                 <span className="material-symbols-outlined text-[16px] text-secondary">update</span>
-                Đồng bộ lúc: 14:15:28 (Cổng thông tin HQ)
+                Đồng bộ lúc: {lastSyncAt ? lastSyncAt.toLocaleTimeString("vi-VN") : "chưa đồng bộ"}
               </span>
               <button
                 onClick={fetchTasks}
@@ -501,15 +549,15 @@ export default function MyWorkPage() {
             </div>
             <div className="my-space-sm flex items-baseline gap-2">
               <span className="font-headline-xl text-headline-xl text-primary font-bold">
-                {String(tasks.filter((t) => t.status !== "COMPLETED").length).padStart(2, "0")}
+                {String(myStats.active).padStart(2, "0")}
               </span>
               <span className="font-label-sm text-label-sm text-outline">đầu việc</span>
             </div>
             <div className="flex items-center justify-between pt-space-xs bg-surface-container-low px-2 py-1 rounded">
               <span className="font-label-sm text-label-sm text-status-danger font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">priority_high</span> 02 việc ưu tiên cao
+                <span className="material-symbols-outlined text-[14px]">priority_high</span> {String(myStats.high).padStart(2, "0")} việc ưu tiên cao
               </span>
-              <span className="font-label-sm text-label-sm text-outline">Chỉ tiêu 100%</span>
+              <span className="font-label-sm text-label-sm text-outline">{String(myStats.done).padStart(2, "0")} đã xong</span>
             </div>
           </div>
 
@@ -522,14 +570,14 @@ export default function MyWorkPage() {
               </div>
             </div>
             <div className="my-space-sm flex items-baseline gap-2">
-              <span className="font-headline-xl text-headline-xl text-status-warning font-bold">03</span>
+              <span className="font-headline-xl text-headline-xl text-status-warning font-bold">{String(myStats.dueSoon).padStart(2, "0")}</span>
               <span className="font-label-sm text-label-sm text-outline">nhiệm vụ</span>
             </div>
             <div className="flex items-center justify-between pt-space-xs bg-status-warning-bg/40 px-2 py-1 rounded">
               <span className="font-label-sm text-label-sm text-status-warning font-semibold">
-                Hạn chót trước 17:00
+                Hạn trong 24 giờ tới
               </span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">Còn 2h 45p</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">{myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}</span>
             </div>
           </div>
 
@@ -543,7 +591,7 @@ export default function MyWorkPage() {
             </div>
             <div className="my-space-sm flex items-baseline gap-2">
               <span className="font-headline-xl text-headline-xl text-status-danger font-bold">
-                {String(tasks.filter((t) => t.isOverdue || t.hasIssue).length || 1).padStart(2, "0")}
+                {String(myStats.overdue).padStart(2, "0")}
               </span>
               <span className="font-label-sm text-label-sm text-outline">hồ sơ trễ</span>
             </div>
@@ -554,7 +602,7 @@ export default function MyWorkPage() {
               >
                 <span className="material-symbols-outlined text-[14px]">edit_note</span> Giải trình ngay
               </button>
-              <span className="font-label-sm text-label-sm text-status-danger">Chậm 1 ngày</span>
+              <span className="font-label-sm text-label-sm text-status-danger">{myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Không trễ hạn"}</span>
             </div>
           </div>
 
@@ -568,7 +616,7 @@ export default function MyWorkPage() {
             </div>
             <div className="my-space-sm flex items-baseline gap-2">
               <span className="font-headline-xl text-headline-xl text-primary font-bold">
-                {String(tasks.filter((t) => t.status === "WAITING_REVIEW").length || 2).padStart(2, "0")}
+                {String(myStats.waiting).padStart(2, "0")}
               </span>
               <span className="font-label-sm text-label-sm text-outline">đã nộp kết quả</span>
             </div>
@@ -594,7 +642,7 @@ export default function MyWorkPage() {
                     : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
                 }`}
               >
-                Tất cả ({tasks.length || 8})
+                Tất cả ({tasks.length})
               </button>
               <button
                 onClick={() => setActiveTab("IN_PROGRESS")}
@@ -604,7 +652,7 @@ export default function MyWorkPage() {
                     : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
                 }`}
               >
-                Đang thực hiện ({tasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "NOT_STARTED").length || 5})
+                Đang thực hiện ({tasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "NOT_STARTED").length})
               </button>
               <button
                 onClick={() => setActiveTab("OVERDUE")}
@@ -614,7 +662,7 @@ export default function MyWorkPage() {
                     : "text-status-danger bg-status-danger-bg/80 font-semibold"
                 }`}
               >
-                Sắp hạn / Quá hạn ({tasks.filter((t) => t.isOverdue || t.hasIssue).length || 1})
+                Sắp hạn / Quá hạn ({tasks.filter((t) => t.isOverdue || t.hasIssue).length})
               </button>
               <button
                 onClick={() => setActiveTab("WAITING_REVIEW")}
@@ -624,7 +672,7 @@ export default function MyWorkPage() {
                     : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
                 }`}
               >
-                Chờ xác nhận ({tasks.filter((t) => t.status === "WAITING_REVIEW").length || 2})
+                Chờ xác nhận ({tasks.filter((t) => t.status === "WAITING_REVIEW").length})
               </button>
               <button
                 onClick={() => setActiveTab("COMPLETED")}
@@ -634,7 +682,7 @@ export default function MyWorkPage() {
                     : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
                 }`}
               >
-                Đã hoàn thành ({tasks.filter((t) => t.status === "COMPLETED").length || 14})
+                Đã hoàn thành ({tasks.filter((t) => t.status === "COMPLETED").length})
               </button>
             </div>
             <div className="flex items-center gap-space-sm shrink-0">
@@ -885,30 +933,30 @@ export default function MyWorkPage() {
               <span className="font-label-sm text-label-sm text-outline">Ghi nhận UTC+7 (Hải quan cửa khẩu Quốc tế Tà Lùng)</span>
             </div>
             <div className="flex flex-col gap-space-sm my-space-sm">
-              <div className="flex items-start gap-3 p-2 rounded-lg bg-surface-container-low">
-                <span className="material-symbols-outlined text-status-success text-[18px] shrink-0 mt-0.5">check_circle</span>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-body-semibold text-body-semibold text-primary truncate">Hoàn tất kiểm tra 12 hồ sơ Luồng Vàng (TSK-1042)</span>
-                    <span className="font-label-sm text-[11px] text-outline shrink-0">14:05:12</span>
-                  </div>
-                  <p className="font-table-data text-[13px] text-on-surface-variant mt-0.5">
-                    Cán bộ {currentUser.fullName} cập nhật tiến độ công việc, bổ sung tài liệu điện tử và ghi nhận thông tin tác nghiệp.
-                  </p>
+              {recentActivity.length === 0 ? (
+                <div className="text-xs text-outline text-center py-4">
+                  Chưa có hoạt động nào. Cập nhật tiến độ công việc để ghi nhận tại đây.
                 </div>
-              </div>
-              <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-surface-subtle transition-fast">
-                <span className="material-symbols-outlined text-status-unassigned text-[18px] shrink-0 mt-0.5">send</span>
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-body-semibold text-body-semibold text-primary truncate">Trình duyệt Báo cáo thống kê tác nghiệp</span>
-                    <span className="font-label-sm text-[11px] text-outline shrink-0">09:15:40</span>
+              ) : (
+                recentActivity.map((a, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-2 rounded-lg bg-surface-container-low">
+                    <span className="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5">update</span>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-body-semibold text-body-semibold text-primary truncate">
+                          [{a.taskCode}] {a.taskTitle}
+                        </span>
+                        <span className="font-label-sm text-[11px] text-outline shrink-0">
+                          {new Date(a.at).toLocaleString("vi-VN")}
+                        </span>
+                      </div>
+                      <p className="font-table-data text-[13px] text-on-surface-variant mt-0.5">
+                        {a.author ? `${a.author}: ` : ""}{a.notes}
+                      </p>
+                    </div>
                   </div>
-                  <p className="font-table-data text-[13px] text-on-surface-variant mt-0.5">
-                    Đã gửi văn bản kèm tệp tin điện tử trình Lãnh đạo {currentUser.unitName || "đơn vị"} ký số xác thực.
-                  </p>
-                </div>
-              </div>
+                ))
+              )}
             </div>
             <div className="flex items-center justify-between pt-2 text-label-sm text-outline">
               <span>Toàn bộ hành vi tác nghiệp được lưu trữ vĩnh viễn trên máy chủ nội bộ.</span>
@@ -918,29 +966,29 @@ export default function MyWorkPage() {
             </div>
           </div>
 
-          {/* KHỐI 3: NGUYÊN TẮC KỶ CƯƠNG HÀNH CHÍNH & HỖ TRỢ */}
+          {/* KHỐI 3: HƯỚNG DẪN THAO TÁC NHANH */}
           <div className="bg-primary text-on-primary rounded-xl p-space-md shadow-sm flex flex-col justify-between">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 text-secondary-fixed">
                 <span className="material-symbols-outlined text-[22px]">policy</span>
-                <h3 className="font-headline-sm text-headline-sm">Kỷ Cương Nghiệp Vụ HQ</h3>
+                <h3 className="font-headline-sm text-headline-sm">Hướng dẫn thao tác</h3>
               </div>
               <p className="font-body-md text-body-md text-on-primary-container leading-relaxed">
-                Đảm bảo đúng quy định của Tổng cục Hải quan về kỷ luật, thời hạn thông quan và tính chính xác của dữ liệu tác nghiệp.
+                Cập nhật tiến độ thường xuyên để lãnh đạo nắm tình hình và hỗ trợ kịp thời.
               </p>
               <div className="flex flex-col gap-2 mt-2">
                 <div className="flex items-start gap-2">
                   <span className="material-symbols-outlined text-secondary-fixed text-[18px] shrink-0 mt-0.5">check_circle</span>
-                  <span className="font-label-md text-label-md text-surface-container-high">Báo cáo ngay khi phát hiện nghi vấn gian lận xuất xứ, trị giá hải quan.</span>
+                  <span className="font-label-md text-label-md text-surface-container-high">Xong việc: bấm Báo hoàn thành để trình nghiệm thu.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="material-symbols-outlined text-secondary-fixed text-[18px] shrink-0 mt-0.5">check_circle</span>
-                  <span className="font-label-md text-label-md text-surface-container-high">Không tự ý gia hạn quá 2 lần mà không có phê duyệt của Lãnh đạo Chi cục.</span>
+                  <span className="font-label-md text-label-md text-surface-container-high">Cần thêm thời gian: xin lùi hạn kèm lý do, chờ phê duyệt.</span>
                 </div>
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-primary-container flex items-center justify-between">
-              <span className="font-label-sm text-label-sm text-on-primary-container">Đường dây nóng hỗ trợ CNTT: <strong>Nhánh 104</strong></span>
+              <span className="font-label-sm text-label-sm text-on-primary-container">Cần hỗ trợ? Liên hệ quản trị hệ thống.</span>
               <span className="material-symbols-outlined text-secondary-fixed text-[18px]">support_agent</span>
             </div>
           </div>
@@ -956,7 +1004,7 @@ export default function MyWorkPage() {
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="material-symbols-outlined text-primary text-[16px] shrink-0">verified</span>
             <span className="font-label-sm text-primary truncate uppercase tracking-wider text-[11px] font-bold">
-              KHÔNG GIAN LÀM VIỆC CÁ NHÂN — HẢI QUAN TÀ LÙNG
+              KHÔNG GIAN LÀM VIỆC CÁ NHÂN — HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
             </span>
           </div>
           <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-label-sm text-[10px] shrink-0 font-bold">
@@ -1125,8 +1173,8 @@ export default function MyWorkPage() {
         {/* DANH SÁCH THẺ NHIỆM VỤ MOBILE BÁM SÁT STITCH */}
         <div className="px-margin flex flex-col gap-3">
           {filteredTasks.map((task) => {
-            const isOverdue = task.isOverdue || task.hasIssue || task.code === "TSK-1038";
-            const isWaiting = task.status === "WAITING_REVIEW" || task.code === "TSK-1031";
+            const isOverdue = task.isOverdue || task.hasIssue;
+            const isWaiting = task.status === "WAITING_REVIEW";
 
             if (isOverdue) {
               return (
@@ -1482,11 +1530,11 @@ export default function MyWorkPage() {
                 </span>
               </div>
 
-              {/* Đính kèm biên bản / Chữ ký số */}
+              {/* Đính kèm biên bản / tài liệu */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <label className="font-body-semibold text-body-semibold text-primary">
-                    4. Đính kèm biên bản / Chữ ký số ({attachments.length})
+                    4. Đính kèm biên bản / tài liệu ({attachments.length})
                   </label>
                   {uploadingFile && (
                     <span className="text-secondary font-label-sm text-xs flex items-center gap-1">

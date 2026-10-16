@@ -120,6 +120,69 @@ function ReportsContent() {
   const [isVerifyingSnapshot, setIsVerifyingSnapshot] = useState(false);
   const [verificationFeedback, setVerificationFeedback] = useState<any | null>(null);
 
+  // Builder mẫu báo cáo: cấu hình thật lưu trong system_configs (key reportBuilderConfig)
+  const [builderConfig, setBuilderConfig] = useState({
+    grouping: "week",
+    showNotOccurredLabel: true,
+    highlightNotOccurred: true,
+    wrapText: true,
+  });
+  const [isSavingBuilder, setIsSavingBuilder] = useState(false);
+  const [isPreviewingBuilder, setIsPreviewingBuilder] = useState(false);
+
+  const loadBuilderConfig = async () => {
+    try {
+      const res = await fetch("/api/admin/system/config");
+      if (!res.ok) return;
+      const json = await res.json();
+      const found = (json.data || []).find((c: any) => c.key === "reportBuilderConfig");
+      if (found?.value) {
+        const parsed = JSON.parse(found.value);
+        setBuilderConfig((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {
+      // giữ mặc định
+    }
+  };
+
+  const handleSaveBuilderConfig = async () => {
+    setIsSavingBuilder(true);
+    try {
+      const res = await fetch("/api/admin/system/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "reportBuilderConfig", value: JSON.stringify(builderConfig) }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Không thể lưu cấu hình mẫu");
+      showToast("Đã lưu cấu hình mẫu báo cáo vào hệ thống", "success");
+    } catch (err: any) {
+      showToast(err.message || "Lỗi khi lưu cấu hình mẫu", "error");
+    } finally {
+      setIsSavingBuilder(false);
+    }
+  };
+
+  // Xem trước: kết xuất file thật từ dữ liệu hiện tại và mở tab mới
+  const handlePreviewBuilderFile = async () => {
+    setIsPreviewingBuilder(true);
+    try {
+      const res = await fetch(`/api/reports/export?template=${selectedTemplate}`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Không thể kết xuất file xem trước");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(new Blob([blob], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+      window.open(url, "_blank");
+      showToast("Đã mở file mẫu xem trước trong tab mới", "success");
+    } catch (err: any) {
+      showToast(err.message || "Lỗi khi xem trước file mẫu", "error");
+    } finally {
+      setIsPreviewingBuilder(false);
+    }
+  };
+
   const loadData = () => {
     // 1. Fetch real snapshots & available periods from PostgreSQL
     fetch("/api/reports/snapshots")
@@ -190,6 +253,7 @@ function ReportsContent() {
 
   useEffect(() => {
     loadData();
+    loadBuilderConfig();
   }, []);
 
   useEffect(() => {
@@ -513,10 +577,10 @@ function ReportsContent() {
                     <span className="px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-status-warning-bg text-status-warning">
                       ĐANG MỞ - DỮ LIỆU THỜI GIAN THỰC
                     </span>
-                    <span className="font-label-sm text-outline">| Cập nhật lúc 15:42 hôm nay</span>
+                    <span className="font-label-sm text-outline">| Cập nhật lúc {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} hôm nay</span>
                   </div>
                   <p className="font-table-data text-table-data text-on-surface-variant mt-0.5">
-                    Hệ thống tự động đồng bộ từ 48 sổ nhật ký cá nhân và phân hệ thông quan điện tử VNACCS/VCIS Tà Lùng.
+                    Số liệu tổng hợp trực tiếp từ kế hoạch, nhiệm vụ và nhật ký trong cơ sở dữ liệu.
                   </p>
                 </div>
               </div>
@@ -524,11 +588,17 @@ function ReportsContent() {
             <div className="lg:col-span-4 flex items-center justify-start lg:justify-end gap-space-md bg-surface-container-low/60 p-3 rounded-lg">
               <span className="material-symbols-outlined text-outline text-[20px]">inventory_2</span>
               <div className="flex flex-col">
-                <span className="font-label-sm text-outline uppercase tracking-wider">Kỳ trước liền kề</span>
-                <span className="font-body-semibold text-[13px] text-on-surface">Tuần 40: ĐÃ CHỐT SỐ LIỆU</span>
-                <span className="font-label-sm text-[11px] text-status-success font-mono font-semibold">
-                  Checksum: #SHA256-TL40-9921
-                </span>
+                <span className="font-label-sm text-outline uppercase tracking-wider">Kỳ đã chốt gần nhất</span>
+                {snapshotsList.length > 0 ? (
+                  <>
+                    <span className="font-body-semibold text-[13px] text-on-surface">{snapshotsList[0].periodTitle || snapshotsList[0].title}: ĐÃ CHỐT SỐ LIỆU</span>
+                    <span className="font-label-sm text-[11px] text-status-success font-mono font-semibold">
+                      Checksum: {String(snapshotsList[0].checksum || "").slice(0, 20)}...
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-body-semibold text-[13px] text-outline">Chưa chốt kỳ nào</span>
+                )}
               </div>
               <button
                 className="ml-auto text-secondary hover:text-on-secondary-container font-label-md"
@@ -550,7 +620,10 @@ function ReportsContent() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => showToast("Đã tải lại dữ liệu mới nhất từ VNACCS!")}
+                  onClick={() => {
+                    loadData();
+                    showToast("Đã tải lại dữ liệu mới nhất");
+                  }}
                   className="font-label-md text-secondary hover:underline"
                 >
                   Tải lại dữ liệu
@@ -932,10 +1005,10 @@ function ReportsContent() {
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[15px] text-status-warning">security</span>
                 <span>
-                  Bản xuất ra file sẽ tự động chèn Watermark nội bộ: &quot;HQ TÀ LÙNG - XUẤT BỞI CÁN BỘ QUẢN LÝ - 10/10/2026&quot;
+                  Bản xuất ra file sẽ tự động chèn Watermark nội bộ (tên đơn vị, người xuất, ngày xuất).
                 </span>
               </div>
-              <span className="font-mono text-outline">AUDIT: #TL-EXP-20261010-0988</span>
+              <span className="font-mono text-outline">Mọi lượt xuất được ghi nhật ký tự động</span>
             </div>
 
             {/* The Real Data Table Matching Customs Layout */}
@@ -1122,7 +1195,7 @@ function ReportsContent() {
             <div className="p-space-md bg-surface-subtle flex flex-col sm:flex-row items-center justify-between gap-space-sm">
               <div className="flex items-center gap-2 text-[12px] text-outline">
                 <span className="material-symbols-outlined text-[16px]">info</span>
-                <span>Dữ liệu tuân theo Quy định số 184/QĐ-HQTL về mẫu báo cáo tiến độ tuần</span>
+                <span>Dữ liệu tổng hợp theo kỳ kế hoạch đã chọn</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1171,22 +1244,25 @@ function ReportsContent() {
             </div>
             <div className="flex items-center gap-space-sm flex-wrap">
               <button
-                onClick={() => showToast("Đang nạp file mẫu thử nghiệm...")}
-                className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press"
+                onClick={handlePreviewBuilderFile}
+                disabled={isPreviewingBuilder}
+                className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press disabled:opacity-60"
               >
-                Xem trước file mẫu
+                {isPreviewingBuilder ? "Đang kết xuất..." : "Xem trước file mẫu"}
               </button>
               <button
-                onClick={() => showToast("Đã tải tệp mẫu chuẩn Tà Lùng (.xlsx)")}
-                className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press"
+                onClick={() => handleExportXlsx(selectedTemplate === "detailed" ? "detailed" : "legacy")}
+                disabled={isExporting}
+                className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press disabled:opacity-60"
               >
-                Tải file mẫu thử nghiệm
+                {isExporting ? "Đang tải..." : "Tải file mẫu thử nghiệm"}
               </button>
               <button
-                onClick={() => showToast("Xem trước giao diện: Đã lưu tạm cấu hình mẫu báo cáo v1.2", "info")}
-                className="px-4 py-2 rounded bg-secondary text-on-secondary font-body-semibold hover:opacity-95 shadow-sm transition-all active-press"
+                onClick={handleSaveBuilderConfig}
+                disabled={isSavingBuilder}
+                className="px-4 py-2 rounded bg-secondary text-on-secondary font-body-semibold hover:opacity-95 shadow-sm transition-all active-press disabled:opacity-60"
               >
-                Lưu cấu hình mẫu v1.2
+                {isSavingBuilder ? "Đang lưu..." : "Lưu cấu hình mẫu v1.2"}
               </button>
             </div>
           </div>
@@ -1204,10 +1280,14 @@ function ReportsContent() {
               <div className="flex flex-col gap-space-sm">
                 <div>
                   <label className="font-label-md text-on-surface-variant">Phương thức gom nhóm (Grouping mode):</label>
-                  <select className="w-full mt-1 h-9 px-3 rounded bg-surface-container-low font-body-md text-on-surface focus:outline-none">
-                    <option>Gom theo Nhóm thứ trong tuần (Thứ 2 -&gt; Chủ nhật)</option>
-                    <option>Gom theo Nhóm nghiệp vụ (5 nhóm thường xuyên)</option>
-                    <option>Gom theo Cán bộ phụ trách (Cá nhân CC)</option>
+                  <select
+                    value={builderConfig.grouping}
+                    onChange={(e) => setBuilderConfig({ ...builderConfig, grouping: e.target.value })}
+                    className="w-full mt-1 h-9 px-3 rounded bg-surface-container-low font-body-md text-on-surface focus:outline-none"
+                  >
+                    <option value="week">Gom theo Nhóm thứ trong tuần (Thứ 2 -&gt; Chủ nhật)</option>
+                    <option value="group">Gom theo Nhóm nghiệp vụ (5 nhóm thường xuyên)</option>
+                    <option value="officer">Gom theo Cán bộ phụ trách (Cá nhân CC)</option>
                   </select>
                 </div>
                 <div className="p-3 bg-surface-container-low rounded-lg flex flex-col gap-2">
@@ -1215,7 +1295,12 @@ function ReportsContent() {
                     Xử lý trường hợp &quot;Không phát sinh&quot;:
                   </span>
                   <label className="flex items-start gap-2 cursor-pointer">
-                    <input defaultChecked type="checkbox" className="mt-1 accent-secondary" />
+                    <input
+                      type="checkbox"
+                      checked={builderConfig.showNotOccurredLabel}
+                      onChange={(e) => setBuilderConfig({ ...builderConfig, showNotOccurredLabel: e.target.checked })}
+                      className="mt-1 accent-secondary"
+                    />
                     <span className="font-table-data text-[13px] text-on-surface-variant">
                       Tự động hiển thị nhãn{" "}
                       <code className="bg-surface px-1 py-0.5 rounded text-primary font-mono text-[11px]">
@@ -1225,7 +1310,12 @@ function ReportsContent() {
                     </span>
                   </label>
                   <label className="flex items-start gap-2 cursor-pointer">
-                    <input defaultChecked type="checkbox" className="mt-1 accent-secondary" />
+                    <input
+                      type="checkbox"
+                      checked={builderConfig.highlightNotOccurred}
+                      onChange={(e) => setBuilderConfig({ ...builderConfig, highlightNotOccurred: e.target.checked })}
+                      className="mt-1 accent-secondary"
+                    />
                     <span className="font-table-data text-[13px] text-on-surface-variant">
                       Tô màu xanh nhạt phân biệt cho dòng không phát sinh
                     </span>
@@ -1236,7 +1326,12 @@ function ReportsContent() {
                     Ngắt dòng nội dung (Wrap text):
                   </span>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input defaultChecked type="checkbox" className="accent-secondary" />
+                    <input
+                      type="checkbox"
+                      checked={builderConfig.wrapText}
+                      onChange={(e) => setBuilderConfig({ ...builderConfig, wrapText: e.target.checked })}
+                      className="accent-secondary"
+                    />
                     <span className="font-table-data text-[13px] text-on-surface-variant">
                       Bật tự động co giãn chiều cao dòng theo nội dung Cột C
                     </span>
@@ -1887,7 +1982,7 @@ function ReportsContent() {
               {/* Source documents */}
               <div className="flex flex-col gap-2">
                 <span className="font-body-semibold text-body-semibold text-on-surface">
-                  Chứng từ nguồn &amp; Dữ liệu liên kết VNACCS:
+                  Chứng từ nguồn &amp; Dữ liệu liên kết:
                 </span>
                 <div className="flex flex-col gap-1.5">
                   {drilldownTask.vouchers.length > 0 ? (

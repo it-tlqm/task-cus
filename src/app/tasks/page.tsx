@@ -277,7 +277,7 @@ export default function TasksPage() {
             <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
               <span>HQ CK Quốc tế Tà Lùng</span>
               <span className="text-outline">/</span>
-              <span>Ban Điều hành</span>
+              <span>Lãnh đạo đơn vị</span>
               <span className="text-outline">/</span>
               <span className="text-secondary font-body-semibold">Nhiệm vụ chỉ đạo &amp; Giao việc</span>
             </div>
@@ -290,7 +290,7 @@ export default function TasksPage() {
               </span>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant max-w-3xl">
-              Hệ thống phân công chỉ đạo nghiệp vụ đột xuất, giám sát tiến độ thực hiện liên bộ phận, giải quyết đề xuất gia hạn và ký số phê duyệt kết quả công tác.
+              Hệ thống phân công chỉ đạo nghiệp vụ đột xuất, giám sát tiến độ thực hiện liên bộ phận, giải quyết đề xuất gia hạn và phê duyệt kết quả công tác.
             </p>
           </div>
 

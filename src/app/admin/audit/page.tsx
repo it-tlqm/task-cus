@@ -30,11 +30,15 @@ export default function AdminAuditPage() {
             id: e.id.slice(0, 8),
             timestamp: new Date(e.timestamp).toLocaleString("vi-VN"),
             user: e.actorFullName || e.actorUsername || "Hệ thống",
-            role: e.actorUsername === "admin" || e.actorUsername === "lanhdao" || e.actorUsername === "hqtl001"
+            role: e.actorRole === "UNIT_LEADER"
               ? "Trưởng hải quan cửa khẩu"
-              : e.actorUsername?.includes("truongnhom")
+              : e.actorRole === "DEPARTMENT_LEADER"
               ? "Trưởng bộ phận"
-              : "Công chức",
+              : e.actorRole === "SYSTEM_ADMIN"
+              ? "Quản trị hệ thống"
+              : e.actorRole === "STAFF"
+              ? "Công chức"
+              : "Hệ thống",
             action: e.action,
             target: e.resourceType ? `${e.resourceType}: ${e.resourceId || "N/A"}` : "Hệ thống chung",
             ip: e.ipAddress || "127.0.0.1",

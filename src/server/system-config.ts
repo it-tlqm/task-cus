@@ -5,8 +5,8 @@ export interface SystemConfigItem {
   id: string;
   key: string;
   value: string;
-  dataType: "NUMBER" | "BOOLEAN" | "STRING";
-  category: "TASK_MANAGEMENT" | "NOTIFICATION" | "DISPLAY" | "SECURITY";
+  dataType: "NUMBER" | "BOOLEAN" | "STRING" | "JSON";
+  category: "TASK_MANAGEMENT" | "NOTIFICATION" | "DISPLAY" | "SECURITY" | "REPORT";
   description: string;
   updatedBy?: string | null;
   updatedAt: Date;
@@ -16,8 +16,8 @@ export interface SystemConfigItem {
 export const DEFAULT_CONFIGS: Array<{
   key: string;
   value: string;
-  dataType: "NUMBER" | "BOOLEAN" | "STRING";
-  category: "TASK_MANAGEMENT" | "NOTIFICATION" | "DISPLAY" | "SECURITY";
+  dataType: "NUMBER" | "BOOLEAN" | "STRING" | "JSON";
+  category: "TASK_MANAGEMENT" | "NOTIFICATION" | "DISPLAY" | "SECURITY" | "REPORT";
   description: string;
   min?: number;
   max?: number;
@@ -60,6 +60,13 @@ export const DEFAULT_CONFIGS: Array<{
     dataType: "STRING",
     category: "DISPLAY",
     description: "Tên chính thức của Chi cục hiển thị trên tiêu đề báo cáo và giao diện",
+  },
+  {
+    key: "reportBuilderConfig",
+    value: '{"grouping":"week","showNotOccurredLabel":true,"highlightNotOccurred":true,"wrapText":true}',
+    dataType: "JSON",
+    category: "REPORT",
+    description: "Cấu hình Builder mẫu báo cáo XLSX (gom nhóm, nhãn không phát sinh, ngắt dòng)",
   },
 ];
 
@@ -175,6 +182,18 @@ export async function updateSystemConfig(
     }
     if (validatedValue.length > 255) {
       return { success: false, error: `Giá trị của "${def.description}" không được vượt quá 255 ký tự` };
+    }
+  } else if (def.dataType === "JSON") {
+    if (!validatedValue) {
+      return { success: false, error: `Giá trị của "${def.description}" không được để trống` };
+    }
+    try {
+      JSON.parse(validatedValue);
+    } catch {
+      return { success: false, error: `Giá trị của "${def.description}" phải là JSON hợp lệ` };
+    }
+    if (validatedValue.length > 4000) {
+      return { success: false, error: `Giá trị của "${def.description}" không được vượt quá 4000 ký tự` };
     }
   }
 

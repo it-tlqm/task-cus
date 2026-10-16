@@ -346,7 +346,7 @@ export default function DashboardPage() {
                   onChange={(e) => setUnitFilter(e.target.value)}
                   className="w-full h-9 pl-3 pr-8 rounded-lg bg-surface-container-lowest font-body-semibold text-body-semibold text-on-surface border border-border-default focus:outline-none cursor-pointer shadow-sm text-xs"
                 >
-                  <option value="ALL">Toàn đơn vị — Hải quan CKQT Tà Lùng</option>
+                  <option value="ALL">Toàn đơn vị - Hải quan cửa khẩu Quốc tế Tà Lùng</option>
                   {departments.map((dept) => (
                     <option key={dept.id} value={dept.id}>
                       {dept.name} ({dept.taskCount} việc)

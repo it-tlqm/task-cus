@@ -146,7 +146,7 @@ export function Header() {
               />
               <span>Đơn vị: {UNIT_SHORT_NAME}</span>
               <span className="text-outline-variant">/</span>
-              <span className="text-on-surface font-body-semibold">Ban điều hành</span>
+              <span className="text-on-surface font-body-semibold">Lãnh đạo đơn vị</span>
             </div>
 
             <form

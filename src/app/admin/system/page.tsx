@@ -123,7 +123,7 @@ export default function SystemAdminPage() {
       const auditRes = await fetch("/api/admin/audit?limit=10");
       if (auditRes.ok) {
         const auditJson = await auditRes.json();
-        setRecentAudits(Array.isArray(auditJson) ? auditJson : auditJson.data || []);
+        setRecentAudits(Array.isArray(auditJson) ? auditJson : auditJson.events || []);
       }
     } catch (err: any) {
       setError(err.message || "Lỗi kết nối máy chủ");

@@ -921,7 +921,7 @@ export default function TaskDetailPage() {
                 onClick={handleApproveResult}
                 className="px-4 py-1.5 rounded bg-status-success text-white text-xs font-semibold active-press"
               >
-                Ký số phê duyệt
+                Ký duyệt hoàn thành
               </button>
             </div>
           </div>

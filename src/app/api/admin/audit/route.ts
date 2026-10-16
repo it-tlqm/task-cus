@@ -32,6 +32,10 @@ export async function GET(req: NextRequest) {
         actor: {
           include: {
             person: true,
+            roleGrants: {
+              include: { role: true },
+              take: 1,
+            },
           },
         },
       },
@@ -47,6 +51,7 @@ export async function GET(req: NextRequest) {
       resourceId: e.resourceId,
       actorUsername: e.actor?.username || "Hệ thống",
       actorFullName: e.actor?.person?.fullName || "Hệ thống tự động",
+      actorRole: e.actor?.roleGrants?.[0]?.role?.code || null,
       ipAddress: e.ipAddress || "127.0.0.1",
       oldData: e.oldData,
       newData: e.newData,
