@@ -31,6 +31,11 @@ interface Summary {
   lateTotal: number; reworkTotal: number;
 }
 
+interface ScorePreview {
+  qtyRatio: number | null; progressRatio: number | null; qualityRatio: number | null;
+  averageD: number | null; score70: number | null; official: false; note: string;
+}
+
 /**
  * YC-12/YC-13 — Ghi nhận + tổng hợp kết quả tháng (chưa chấm điểm — YC-14).
  * Đúng người, đúng tháng, không nhân đôi; thiếu mã SP → chờ đối chiếu.
@@ -43,6 +48,7 @@ export default function MonthlyResultsPage() {
   const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
   const [items, setItems] = useState<MonthlyItem[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [scorePreview, setScorePreview] = useState<ScorePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const { user, canApprove, isUnitLeader } = usePermissions();
   const canPickPerson = canApprove || isUnitLeader;
@@ -78,6 +84,7 @@ export default function MonthlyResultsPage() {
       if (res.ok) {
         setItems(json.data || []);
         setSummary(json.summary || null);
+        setScorePreview(json.scorePreview || null);
       } else {
         toast.error(json.error || "Không thể tải kết quả tháng");
       }
@@ -285,6 +292,22 @@ export default function MonthlyResultsPage() {
             <div className="text-2xl font-bold text-rose-700">{summary.missingFieldsCount}</div>
             <div className="text-[11px] text-slate-400">chậm: {summary.lateTotal} · làm lại: {summary.reworkTotal}</div>
           </div>
+        </div>
+      )}
+
+      {scorePreview && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 text-[11px] font-bold uppercase">Điểm tính thử — chưa chính thức</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
+            <div><div className="text-[11px] text-slate-500">Số lượng (a)</div><div className="text-xl font-bold">{scorePreview.qtyRatio ?? "—"}{scorePreview.qtyRatio !== null && "%"}</div></div>
+            <div><div className="text-[11px] text-slate-500">Tiến độ (b)</div><div className="text-xl font-bold">{scorePreview.progressRatio ?? "—"}{scorePreview.progressRatio !== null && "%"}</div></div>
+            <div><div className="text-[11px] text-slate-500">Chất lượng (c)</div><div className="text-xl font-bold">{scorePreview.qualityRatio ?? "—"}{scorePreview.qualityRatio !== null && "%"}</div></div>
+            <div><div className="text-[11px] text-slate-500">d = (a+b+c)/3</div><div className="text-xl font-bold">{scorePreview.averageD ?? "—"}</div></div>
+            <div><div className="text-[11px] text-slate-500">Điểm KQ ×70%</div><div className="text-xl font-bold text-amber-800">{scorePreview.score70 ?? "—"}</div></div>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-2">Tính đúng công thức mẫu Bảng 1/01A từ số liệu đã ghi. {scorePreview.note}</p>
         </div>
       )}
 

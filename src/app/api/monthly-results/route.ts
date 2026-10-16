@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { advisoryLock } from "@/server/idempotency";
+import { computeScorePreview } from "@/server/monthly-score";
 import { recordAuditEvent } from "@/server/audit";
 
 // YC-12: kết quả sản phẩm thực tế theo tháng. Chưa chấm điểm (YC-14) — chỉ số liệu thô.
@@ -74,6 +75,23 @@ export async function GET(req: NextRequest) {
         unmappedCount: unmapped,
         missingFieldsCount: missingFields,
         lateTotal, reworkTotal,
+      },
+      // GĐ4-tham-khảo: tính thử đúng công thức mẫu, KHÔNG phải điểm chính thức,
+      // không dùng xếp loại/khóa số khi chưa xác nhận quy tắc
+      scorePreview: {
+        ...computeScorePreview(
+          items.map((it) => ({
+            factor: it.factorSnapshot ?? it.productItem?.convertFactor ?? null,
+            assignedQty: it.assignedQty,
+            completedQty: it.completedQty,
+            lateDays:
+              it.dueDate && it.completedDate
+                ? Math.max(0, Math.floor((new Date(it.completedDate).getTime() - new Date(it.dueDate).getTime()) / 86400000))
+                : it.lateCount || 0,
+            reworkCount: it.reworkCount || 0,
+          }))
+        ),
+        note: "Điểm tính thử theo công thức mẫu Bảng 1/01A — chỉ tham khảo, chưa phải kết quả đánh giá chính thức",
       },
     });
   } catch (error: any) {
