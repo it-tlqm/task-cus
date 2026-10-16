@@ -24,6 +24,7 @@ const navigationItems = [
       { name: "Lịch công tác", href: "/calendar", icon: "calendar_month" },
       { name: "Lịch trực ca", href: "/roster", icon: "schedule" },
       { name: "Biên bản giao ban", href: "/meetings", icon: "forum" },
+      { name: "Sổ văn bản", href: "/docs", icon: "mail" },
       { name: "Phê duyệt điều hành", href: "/approvals", icon: "fact_check", leadersOnly: true },
       { name: "Nhật ký công tác thường xuyên", href: "/routine", icon: "history_edu" },
     ],

@@ -92,6 +92,7 @@ model Person {
   leaveHandovers   LeaveRequest[]  @relation("LeaveHandover")
   pushSubscriptions PushSubscription[]
   dutyRosters      DutyRoster[]
+  handledDocs      OfficialDoc[]
 
   @@map("people")
 }
@@ -721,6 +722,32 @@ model MeetingConclusion {
 
   @@index([meetingId])
   @@map("meeting_conclusions")
+}
+
+// ----------------------------------------------------
+// 18. SỔ VĂN BẢN ĐẾN/ĐI GỌN (tra ai đang giữ, hạn nào)
+// ----------------------------------------------------
+
+model OfficialDoc {
+  id          String    @id @default(uuid())
+  direction   String // DEN, DI
+  number      String // Số hiệu văn bản
+  title       String // Trích yếu
+  fromTo      String?   @map("from_to") // Nơi gửi / nơi nhận
+  docDate     DateTime? @map("doc_date")
+  handlerId   String?   @map("handler_id")
+  deadline    DateTime?
+  status      String    @default("DANG_XU_LY") // DANG_XU_LY, HOAN_THANH, LUU_TRU
+  taskId      String?   @map("task_id")
+  notes       String?
+  createdById String?   @map("created_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  handler Person? @relation(fields: [handlerId], references: [id])
+
+  @@index([direction, status])
+  @@map("official_docs")
 }
 
 // ----------------------------------------------------
