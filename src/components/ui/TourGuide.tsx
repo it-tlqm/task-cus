@@ -49,10 +49,14 @@ export function TourGuide() {
   const measure = useCallback((target: string): boolean => {
     const el = findVisible(target);
     if (!el) return false;
+    const r = el.getBoundingClientRect();
+    // Phần tử quá bé/coi như ẩn (menu gấp, tab ẩn) thì bỏ qua bước
+    if (r.width < 24 || r.height < 24) return false;
     el.scrollIntoView({ block: "center", behavior: "smooth" });
     // Đo sau khi cuộn xong
     window.setTimeout(() => {
       const r = el.getBoundingClientRect();
+      if (r.width < 24 || r.height < 24) return;
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     }, 350);
     return true;
@@ -109,6 +113,7 @@ export function TourGuide() {
       const el = findVisible(step.target);
       if (!el) return;
       const r = el.getBoundingClientRect();
+      if (r.width < 24 || r.height < 24) return;
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
     window.addEventListener("scroll", onMove, true);

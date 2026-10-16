@@ -17,9 +17,11 @@ export function ContextHelp() {
 
   // Lần đầu vào trang này → tự mở lời hỏi xem hướng dẫn (mỗi trang 1 lần/máy).
   // Trang nào có tour từng bước thì để tour tự chạy, bảng này không giành.
+  // Trang hướng dẫn tổng thì không tự phủ overlay lên chính nó.
   useEffect(() => {
     setOpen(false);
     setIsFirstVisit(false);
+    if (pathname === "/huong-dan") return;
     if (getTour(pathname)) return;
     let seen: Record<string, boolean> = {};
     try {

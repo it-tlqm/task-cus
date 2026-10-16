@@ -8,7 +8,7 @@ export interface PageHelp {
   modals?: Array<{ name: string; tip: string }>;
 }
 
-const HELP: Record<string, PageHelp> = {
+export const HELP: Record<string, PageHelp> = {
   "/plans": {
     title: "Kế hoạch tuần",
     bullets: [
