@@ -190,6 +190,40 @@ export default function MonthlyResultsPage() {
 
   const missing = (it: MonthlyItem) => it.completedQty === null || it.completedQty === undefined || !it.completedDate;
 
+  // Xuất Excel Bảng 1 + 01A (GĐ3)
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await fetch("/api/monthly-export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ personId: personId || undefined, year, month }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "Không thể xuất báo cáo");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const cd = res.headers.get("Content-Disposition") || "";
+      const m = cd.match(/filename="([^"]+)"/);
+      a.href = url;
+      a.download = m ? m[1] : `Bang1-01A-T${month}-${year}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Đã xuất Bảng 1 + Biểu 01A (giữ nguyên công thức mẫu — mở bằng Excel để xem số tính)");
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xuất báo cáo");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -200,9 +234,15 @@ export default function MonthlyResultsPage() {
           <h1 className="text-2xl font-bold text-slate-900 mt-1">Kết quả công tác tháng</h1>
           <p className="text-sm text-slate-600">Ghi nhận sản phẩm thực tế · đúng người, đúng tháng · thiếu mã SP thì chờ đối chiếu</p>
         </div>
-        <button onClick={openAdd} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
-          + Ghi nhận kết quả
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={openAdd} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+            + Ghi nhận kết quả
+          </button>
+          <button onClick={handleExport} disabled={exporting}
+            className="px-4 py-2 rounded-lg bg-white border border-teal-700 text-teal-900 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50">
+            {exporting ? "Đang xuất..." : "Xuất Bảng 1 + 01A (.xlsx)"}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
