@@ -74,6 +74,10 @@ export async function GET(
       if (typeof nd.ownerId === "string") personIds.add(nd.ownerId);
       if (Array.isArray(nd.assignees)) nd.assignees.forEach((x: any) => typeof x === "string" && personIds.add(x));
     }
+    // Người đề nghị lùi hạn (requestedById là personId nhưng không nằm trong audit newData)
+    for (const dr of (task.deadlineRequests as any[]) || []) {
+      if (typeof dr.requestedById === "string") personIds.add(dr.requestedById);
+    }
     const extraPeople = personIds.size > 0
       ? await prisma.person.findMany({ where: { id: { in: [...personIds] } }, select: { id: true, fullName: true } })
       : [];
