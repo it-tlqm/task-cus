@@ -461,6 +461,9 @@ export default function MonthlyResultsPage() {
                   <textarea rows={2} value={fNotes} onChange={(e) => setFNotes(e.target.value)}
                     className="p-2.5 rounded-lg border border-slate-300 text-sm" />
                 </div>
+                <p className="text-[11px] text-slate-500">
+                  Gửi xong lãnh đạo nhận tin duyệt ngay. Chọn mã SP để hệ số quy đổi được chốt theo danh mục hiện hành.
+                </p>
               </div>
               <div className="p-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm">Hủy</button>

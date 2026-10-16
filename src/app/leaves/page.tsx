@@ -297,6 +297,9 @@ export default function LeavesPage() {
                     placeholder="Nhập việc cần tiếp nhận khi vắng mặt..."
                     className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
                 </div>
+                <p className="text-[11px] text-slate-500">
+                  Gửi xong lãnh đạo và người bàn giao đều nhận tin ngay. Đơn đang chờ thì tự hủy được.
+                </p>
               </div>
               <div className="p-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm">Hủy</button>

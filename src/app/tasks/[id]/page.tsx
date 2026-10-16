@@ -1394,6 +1394,9 @@ export default function TaskDetailPage() {
                 />
                 <span>Trình Lãnh đạo đơn vị ký phê duyệt kết quả hoàn thành</span>
               </label>
+              <p className="text-[11px] text-outline">
+                Kéo thanh theo mức 5%. Tick ô trên (hoặc chọn 100%) thì việc chuyển sang Chờ duyệt — lãnh đạo duyệt mới xong hẳn.
+              </p>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-default">
                 <button
