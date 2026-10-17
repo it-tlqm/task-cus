@@ -10,18 +10,23 @@ export function aiEnabled(): boolean {
 }
 
 export function aiModel(): string {
-  return process.env.AI_MODEL || "gemini-2.5-pro";
+  // Mặc định bản Flash mới nhất (chất lượng tốt); đổi qua AI_MODEL nếu cần.
+  return process.env.AI_MODEL || "gemini-flash-latest";
 }
 
 async function callGemini(prompt: string): Promise<string> {
   const key = process.env.GOOGLE_GENERATIVE_AI_KEY;
   if (!key) throw new Error("Máy chủ chưa cấu hình AI (thiếu API key)");
-  const tryModels = [aiModel(), "gemini-2.5-flash"];
+  // Hạn mức miễn phí Google tính theo TỪNG model và theo CẢ dự án:
+  //   Flash thường: ~20 lượt/ngày — Flash Lite: ~500 lượt/ngày.
+  // Hết lượt model chính (429) → tự lùi sang Flash Lite, người dùng không thấy gián đoạn.
+  const tryModels = Array.from(new Set([aiModel(), "gemini-flash-lite-latest"]));
   let lastErr = "";
   for (const model of tryModels) {
-    const res = await fetch(`${API_BASE}/${model}:generateContent?key=${key}`, {
+    const res = await fetch(`${API_BASE}/${model}:generateContent`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      // Header theo khuyến nghị của Google (thay cho ?key= trên URL)
+      headers: { "Content-Type": "application/json", "X-goog-api-key": key },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
