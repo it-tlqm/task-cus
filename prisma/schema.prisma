@@ -948,3 +948,222 @@ model Feedback {
   @@map("feedbacks")
 }
 
+// ----------------------------------------------------
+// 21. SỐ LIỆU GIAO BAN & BÁO CÁO TUẦN (YC-16 → YC-22) — GIAI ĐOẠN 2
+// Toàn bộ chỉ tiêu, đơn vị, quy trình xác nhận, chỉ tiêu giao, mốc lũy kế và
+// phân công nhập liệu đều là CẤU HÌNH TRÊN GIAO DIỆN — không hardcode trong code.
+// ----------------------------------------------------
+
+model MetricGroup {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  metrics     MetricDefinition[]
+  assignments MetricEntryAssignment[]
+  sections    NarrativeSection[]
+
+  @@map("metric_groups")
+}
+
+// valueKind:
+//   FLOW    = "phát sinh trong kỳ" — cộng dồn các bản ghi trong kỳ (số thuế, kim ngạch, số vụ...)
+//   BALANCE = "số dư thời điểm" — lấy bản ghi có ngày mới nhất ≤ ngày xem (công nợ, chờ tham vấn...)
+//   DERIVED = "tự tính" — công thức từ các chỉ tiêu khác (tổng = a + b; còn phải thu = PS − đã thu + mốc...)
+// unitType: VND | USD | COUNT ; displayScale: 1 = đơn vị gốc, 1e6 = triệu, 1e9 = tỷ (lưu gốc luôn là đơn vị gốc)
+// derivation (JSON): { terms: [{ metricId, sign: 1 | -1 }], includeBaseline: boolean }
+model MetricDefinition {
+  id                String   @id @default(uuid())
+  groupId           String   @map("group_id")
+  code              String   @unique
+  name              String
+  unitType          String   @default("COUNT") @map("unit_type")
+  unitLabel         String?  @map("unit_label")
+  displayScale      Int      @default(1) @map("display_scale")
+  decimals          Int      @default(0)
+  valueKind         String   @default("FLOW") @map("value_kind")
+  derivation        Json?
+  requireConfirm    Boolean  @default(false) @map("require_confirm")
+  showOnDashboard   Boolean  @default(false) @map("show_on_dashboard")
+  dashboardOrder    Int      @default(0) @map("dashboard_order")
+  allowBackdateDays Int      @default(0) @map("allow_backdate_days") // -1 = không giới hạn, N = trong N ngày gần nhất
+  expectDaily       Boolean  @default(true) @map("expect_daily")
+  active            Boolean  @default(true)
+  note              String?
+  sortOrder         Int      @default(0) @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  group           MetricGroup            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  classifications MetricClassification[]
+  entries         MetricDailyEntry[]
+  baselines       MetricBaseline[]
+  targets         MetricPlanTarget[]
+
+  @@index([groupId, sortOrder])
+  @@map("metric_definitions")
+}
+
+model MetricClassification {
+  id        String   @id @default(uuid())
+  metricId  String   @map("metric_id")
+  code      String
+  label     String
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  metric MetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([metricId, code])
+  @@map("metric_classifications")
+}
+
+// status: RECORDED (nhập là xong) | DRAFT (nháp — chỉ khi chỉ tiêu bật kiểm tra)
+//         | SUBMITTED (đã gửi kiểm tra) | CONFIRMED (đã xác nhận) | NEEDS_FIX (cần điều chỉnh)
+model MetricDailyEntry {
+  id               String    @id @default(uuid())
+  metricId         String    @map("metric_id")
+  classificationId String    @default("") @map("classification_id")
+  entryDate        DateTime  @map("entry_date") @db.Date
+  valueNumeric     Decimal   @map("value_numeric") @db.Decimal(24, 4)
+  status           String    @default("RECORDED")
+  note             String?
+  enteredById      String    @map("entered_by_id")
+  submittedAt      DateTime? @map("submitted_at")
+  confirmedById    String?   @map("confirmed_by_id")
+  confirmedAt      DateTime? @map("confirmed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  metric MetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([metricId, classificationId, entryDate])
+  @@index([entryDate])
+  @@map("metric_daily_entries")
+}
+
+model MetricEntryRevision {
+  id        String    @id @default(uuid())
+  entryId   String    @map("entry_id")
+  action    String // CREATE | UPDATE | DELETE | SUBMIT | CONFIRM | NEEDS_FIX | RECORDED
+  oldValue  Decimal?  @map("old_value") @db.Decimal(24, 4)
+  newValue  Decimal?  @map("new_value") @db.Decimal(24, 4)
+  oldStatus String?   @map("old_status")
+  newStatus String?   @map("new_status")
+  reason    String?
+  editedById String   @map("edited_by_id")
+  editedAt  DateTime  @default(now()) @map("edited_at")
+
+  @@index([entryId, editedAt])
+  @@map("metric_entry_revisions")
+}
+
+// cumKind:
+//   MONTH | QUARTER | YEAR = mốc lũy kế kỳ (chỉ áp dụng khi ngày mốc nằm trong đúng kỳ đang xem)
+//   LEDGER                 = mốc số dư liên tục (áp dụng từ ngày mốc trở đi, không hết hạn)
+// status: PROPOSED | CONFIRMED — chỉ mốc CONFIRMED mới được dùng để tính lũy kế.
+model MetricBaseline {
+  id               String    @id @default(uuid())
+  metricId         String    @map("metric_id")
+  classificationId String    @default("") @map("classification_id")
+  cumKind          String    @map("cum_kind")
+  asOfDate         DateTime  @map("as_of_date") @db.Date
+  valueNumeric     Decimal   @map("value_numeric") @db.Decimal(24, 4)
+  sourceNote       String?   @map("source_note")
+  status           String    @default("PROPOSED")
+  proposedById     String?   @map("proposed_by_id")
+  confirmedById    String?   @map("confirmed_by_id")
+  confirmedAt      DateTime? @map("confirmed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  metric MetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([metricId, classificationId, cumKind, asOfDate])
+  @@map("metric_baselines")
+}
+
+// periodType: YEAR | QUARTER | MONTH — periodNo: tháng 1-12 / quý 1-4 / null nếu YEAR
+// label: tên chỉ tiêu giao (VD: "Chỉ tiêu BTC", "Chỉ tiêu UBND", "KH tháng", "Chỉ tiêu giao")
+model MetricPlanTarget {
+  id               String   @id @default(uuid())
+  metricId         String   @map("metric_id")
+  classificationId String   @default("") @map("classification_id")
+  label            String
+  periodType       String   @map("period_type")
+  year             Int
+  periodNo         Int?     @map("period_no")
+  valueNumeric     Decimal  @map("value_numeric") @db.Decimal(24, 4)
+  note             String?
+  updatedById      String?  @map("updated_by_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  metric MetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([metricId, classificationId, label, periodType, year, periodNo])
+  @@map("metric_plan_targets")
+}
+
+// Phân công nhập liệu: hoặc theo NHÓM (groupId) hoặc theo CHỈ TIÊU (metricId).
+// Leader luôn nhập/xác nhận được mọi chỉ tiêu; cán bộ chỉ trong phạm vi được phân công.
+model MetricEntryAssignment {
+  id                String    @id @default(uuid())
+  personId          String    @map("person_id")
+  groupId           String?   @map("group_id")
+  metricId          String?   @map("metric_id")
+  canEnter          Boolean   @default(true) @map("can_enter")
+  canConfirm        Boolean   @default(false) @map("can_confirm")
+  allowBackdateDays Int?      @map("allow_backdate_days")
+  validFrom         DateTime? @map("valid_from") @db.Date
+  validTo           DateTime? @map("valid_to") @db.Date
+  active            Boolean   @default(true)
+  createdById       String?   @map("created_by_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  group MetricGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([personId, active])
+  @@map("metric_entry_assignments")
+}
+
+model NarrativeSection {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  title     String
+  groupId   String?  @map("group_id")
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  group      MetricGroup?        @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  narratives BriefingNarrative[]
+
+  @@map("narrative_sections")
+}
+
+// periodType: WEEK | MONTH | QUARTER | YEAR — periodKey: "2026-W42" | "2026-10" | "2026-Q4" | "2026"
+model BriefingNarrative {
+  id          String   @id @default(uuid())
+  sectionId   String   @map("section_id")
+  periodType  String   @map("period_type")
+  periodKey   String   @map("period_key")
+  content     String
+  updatedById String?  @map("updated_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  section NarrativeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, periodType, periodKey])
+  @@map("briefing_narratives")
+}
+

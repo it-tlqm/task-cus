@@ -26,6 +26,14 @@ const navigationItems = [
     ],
   },
   {
+    group: "Giao Ban",
+    items: [
+      { name: "Số liệu giao ban", href: "/giao-ban", icon: "monitoring" },
+      { name: "Nhập số liệu", href: "/giao-ban/nhap", icon: "edit_note" },
+      { name: "Cấu hình số liệu", href: "/giao-ban/cau-hinh", icon: "tune", adminOnly: true },
+    ],
+  },
+  {
     group: "Lịch & Nghỉ",
     items: [
       { name: "Nhật ký ca trực", href: "/routine", icon: "history_edu" },

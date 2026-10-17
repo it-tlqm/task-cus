@@ -6,6 +6,7 @@ import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
+import { TaxSummarySection } from "@/components/dashboard/TaxSummarySection";
 
 interface KPIData {
   totalTasks: number;
@@ -938,6 +939,9 @@ export default function DashboardPage() {
             )}
           </div>
         </section>
+
+        {/* Số liệu giao ban (YC-17/YG-19) — tự ẩn khi chưa bật chỉ tiêu */}
+        <TaxSummarySection />
 
         {/* 4 KPI Cards (2x2 Grid) */}
         <section className="px-margin pt-space-xs">

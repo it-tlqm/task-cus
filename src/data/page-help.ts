@@ -9,6 +9,36 @@ export interface PageHelp {
 }
 
 export const HELP: Record<string, PageHelp> = {
+  "/giao-ban": {
+    title: "Số liệu giao ban",
+    bullets: [
+      "Số liệu tự cộng từ các bản ghi nhập theo ngày: Tuần – Tháng – Quý – Năm.",
+      "Chọn kỳ ở thanh phía trên; cột đang xem được tô nổi bật.",
+      "Chip % là tỷ lệ hoàn thành so với chỉ tiêu giao (do lãnh đạo cấu hình).",
+      "Nhãn 'Thiếu N ngày' = các ngày trong tuần chưa có số liệu (rê chuột xem ngày).",
+      "Tab Nhận xét: nhập nội dung theo mục (II, III…) cho đúng kỳ đang chọn.",
+    ],
+  },
+  "/giao-ban/nhap": {
+    title: "Nhập số liệu",
+    bullets: [
+      "Mặc định là hôm nay; đổi ngày bằng ô ngày hoặc mũi tên trái/phải.",
+      "Chỉ hiện các chỉ tiêu bạn được phân công — ô bị khóa là số liệu đã gửi/xác nhận.",
+      "Nhập xong bấm nút Lưu số liệu ở thanh dưới cùng (chỉ lưu các ô đã thay đổi).",
+      "Chỉ tiêu có nhãn CẦN KIỂM TRA: sau khi nhập bấm Gửi kiểm tra để lãnh đạo xác nhận.",
+      "Biểu tượng đồng hồ cạnh ô số = xem lịch sử sửa (giá trị cũ → mới, người sửa).",
+    ],
+  },
+  "/giao-ban/cau-hinh": {
+    title: "Cấu hình số liệu giao ban",
+    bullets: [
+      "Nhóm & chỉ tiêu: thêm/sửa/ẩn chỉ tiêu, đơn vị hiển thị, phân loại (Ô tô, Than cốc…), công thức tự tính.",
+      "Quy trình kiểm tra bật/tắt bằng ô 'Cần kiểm tra' — không cần sửa code.",
+      "Chỉ tiêu giao: nhập BTC/UBND/KH tháng… để hệ thống tự tính %.",
+      "Mốc lũy kế: nhập giá trị đã có đến một ngày — hệ thống chỉ cộng phần sau mốc (chống cộng trùng).",
+      "Phân công nhập: chọn người + phạm vi (nhóm/chỉ tiêu) + số ngày được nhập bù.",
+    ],
+  },
   "/plans": {
     title: "Kế hoạch tuần",
     bullets: [
