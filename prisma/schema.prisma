@@ -967,6 +967,7 @@ model MetricGroup {
   metrics     MetricDefinition[]
   assignments MetricEntryAssignment[]
   sections    NarrativeSection[]
+  reportBlocks ReportBlock[]
 
   @@map("metric_groups")
 }
@@ -1144,8 +1145,9 @@ model NarrativeSection {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  group      MetricGroup?        @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  narratives BriefingNarrative[]
+  group        MetricGroup?        @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  narratives   BriefingNarrative[]
+  reportBlocks ReportBlock[]
 
   @@map("narrative_sections")
 }
@@ -1165,5 +1167,50 @@ model BriefingNarrative {
 
   @@unique([sectionId, periodType, periodKey])
   @@map("briefing_narratives")
+}
+
+// Cấu trúc báo cáo giao ban (GĐ3) — các khối hiển thị theo thứ tự trong bản xem trước & file Word.
+// kind:
+//   HEADING      = tiêu đề mục (chỉ có dòng tiêu đề)
+//   METRIC_GROUP = tiêu đề + bảng số liệu tự tổng hợp của một nhóm chỉ tiêu (groupId)
+//   NARRATIVE    = tiêu đề (có thể rỗng) + nội dung nhận xét theo kỳ của một mục (sectionId)
+model ReportBlock {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  title     String   @default("")
+  kind      String   @default("HEADING")
+  groupId   String?  @map("group_id")
+  sectionId String?  @map("section_id")
+  sortOrder Int      @default(0) @map("sort_order")
+  active    Boolean  @default(true)
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  group   MetricGroup?      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  section NarrativeSection? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@map("report_blocks")
+}
+
+// Bản chụp báo cáo giao ban đã lưu (snapshot). Báo cáo đã chốt KHÔNG tự đổi khi số liệu nguồn sửa:
+// mọi số liệu hiển thị đã được định dạng sẵn trong contentJson tại thời điểm lưu.
+// periodType/periodKey giống BriefingNarrative. versionNo tăng dần theo từng kỳ.
+model BriefingReportVersion {
+  id           String   @id @default(uuid())
+  periodType   String   @map("period_type")
+  periodKey    String   @map("period_key")
+  versionNo    Int      @map("version_no")
+  title        String
+  subtitle     String?
+  meetingStart String?  @map("meeting_start")
+  meetingEnd   String?  @map("meeting_end")
+  contentJson  Json     @map("content_json")
+  createdById  String?  @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([periodType, periodKey, versionNo])
+  @@index([periodType, periodKey])
+  @@map("briefing_report_versions")
 }
 

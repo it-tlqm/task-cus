@@ -37,6 +37,17 @@ export const HELP: Record<string, PageHelp> = {
       "Chỉ tiêu giao: nhập BTC/UBND/KH tháng… để hệ thống tự tính %.",
       "Mốc lũy kế: nhập giá trị đã có đến một ngày — hệ thống chỉ cộng phần sau mốc (chống cộng trùng).",
       "Phân công nhập: chọn người + phạm vi (nhóm/chỉ tiêu) + số ngày được nhập bù.",
+      "Cấu trúc báo cáo: sắp xếp các khối của báo cáo giao ban (tiêu đề / bảng số liệu / nội dung) — thứ tự nhỏ hiển thị trước.",
+    ],
+  },
+  "/giao-ban/bao-cao": {
+    title: "Báo cáo giao ban (xuất Word)",
+    bullets: [
+      "Chọn kỳ (Tuần/Tháng/Quý/Năm) — báo cáo tự ghép từ số liệu đã nhập + nội dung nhận xét của kỳ đó.",
+      "Dấu '…' trong bảng = chưa nhập số liệu (không hiển thị 0 giả).",
+      "Sửa Tiêu đề/Phụ đề/Thời gian họp nếu cần, bấm 'Tải Word' để xuất file .docx theo mẫu.",
+      "Lãnh đạo bấm 'Lưu phiên bản' để chốt: bản đã lưu là ảnh chụp, số liệu sửa sau không làm thay đổi bản đã xuất.",
+      "Cấu trúc các mục trong báo cáo sửa tại Cấu hình → tab 'Cấu trúc báo cáo'.",
     ],
   },
   "/plans": {

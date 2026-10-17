@@ -30,6 +30,7 @@ const navigationItems = [
     items: [
       { name: "Số liệu giao ban", href: "/giao-ban", icon: "monitoring" },
       { name: "Nhập số liệu", href: "/giao-ban/nhap", icon: "edit_note" },
+      { name: "Báo cáo giao ban (Word)", href: "/giao-ban/bao-cao", icon: "article" },
       { name: "Cấu hình số liệu", href: "/giao-ban/cau-hinh", icon: "tune", adminOnly: true },
     ],
   },

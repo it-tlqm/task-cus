@@ -203,6 +203,27 @@ const SECTIONS: { code: string; title: string; groupCode?: string }[] = [
   { code: "XOA_NO_15", title: "1.5. Xóa nợ thuế (chi tiết)", groupCode: "THUE" },
 ];
 
+// Cấu trúc báo cáo giao ban mặc định (theo mẫu Tuần 42) — sửa được trên giao diện Cấu hình.
+const REPORT_BLOCKS: { code: string; kind: string; title: string; groupCode?: string; sectionCode?: string }[] = [
+  { code: "H_I", kind: "HEADING", title: "I. CÔNG TÁC NGHIỆP VỤ HẢI QUAN" },
+  { code: "G_THUE", kind: "METRIC_GROUP", title: "1. QUẢN LÝ THUẾ", groupCode: "THUE" },
+  { code: "N_XOA_NO", kind: "NARRATIVE", title: "1.5. Xóa nợ thuế", sectionCode: "XOA_NO_15" },
+  { code: "G_KIM_NGACH", kind: "METRIC_GROUP", title: "2. KIM NGẠCH", groupCode: "KIM_NGACH" },
+  { code: "G_THAM_VAN", kind: "METRIC_GROUP", title: "3. THAM VẤN TRỊ GIÁ HẢI QUAN", groupCode: "THAM_VAN" },
+  { code: "G_QLRR", kind: "METRIC_GROUP", title: "4. QUẢN LÝ RỦI RO", groupCode: "QLRR" },
+  { code: "G_KSBL", kind: "METRIC_GROUP", title: "5. SỐ LIỆU KIỂM SOÁT CHỐNG BUÔN LẬU", groupCode: "KSBL" },
+  { code: "H_II", kind: "HEADING", title: "II. ĐÁNH GIÁ KẾT QUẢ CÔNG TÁC KIỂM SOÁT CHỐNG BUÔN LẬU" },
+  { code: "N_KSBL_II", kind: "NARRATIVE", title: "", sectionCode: "KSBL_II" },
+  { code: "H_III", kind: "HEADING", title: "III. CÔNG TÁC TỔNG HỢP, BÁO CÁO" },
+  { code: "N_KTSTQ", kind: "NARRATIVE", title: "1. Công tác Phúc tập và KTSTQ", sectionCode: "KTSTQ_III1" },
+  { code: "G_KTSTQ", kind: "METRIC_GROUP", title: "Biểu số liệu kiểm tra sau thông quan (đơn vị: đồng)", groupCode: "TONG_HOP" },
+  { code: "N_VP", kind: "NARRATIVE", title: "2. Công tác Văn phòng", sectionCode: "VP_III2" },
+  { code: "N_HTQT", kind: "NARRATIVE", title: "3. Công tác hợp tác quốc tế", sectionCode: "HTQT_III3" },
+  { code: "N_PS", kind: "NARRATIVE", title: "4. Công tác phát sinh khác trong kỳ", sectionCode: "PS_III4" },
+  { code: "H_IV", kind: "HEADING", title: "IV. CÔNG TÁC ĐẢNG – ĐOÀN THỂ" },
+  { code: "N_DANG", kind: "NARRATIVE", title: "", sectionCode: "DANG_IV" },
+];
+
 async function main() {
   let createdGroups = 0;
   let createdMetrics = 0;
@@ -287,8 +308,30 @@ async function main() {
     }
   }
 
+  // Cấu trúc báo cáo giao ban mặc định (tạo nếu chưa có — không đè chỉnh sửa trên giao diện)
+  let createdBlocks = 0;
+  for (let bi = 0; bi < REPORT_BLOCKS.length; bi++) {
+    const b = REPORT_BLOCKS[bi];
+    const dup = await prisma.reportBlock.findUnique({ where: { code: b.code } });
+    if (!dup) {
+      const group = b.groupCode ? await prisma.metricGroup.findUnique({ where: { code: b.groupCode } }) : null;
+      const section = b.sectionCode ? await prisma.narrativeSection.findUnique({ where: { code: b.sectionCode } }) : null;
+      await prisma.reportBlock.create({
+        data: {
+          code: b.code,
+          kind: b.kind,
+          title: b.title,
+          groupId: group?.id ?? null,
+          sectionId: section?.id ?? null,
+          sortOrder: (bi + 1) * 10,
+        },
+      });
+      createdBlocks++;
+    }
+  }
+
   console.log(
-    `SEED DONE — nhóm mới: ${createdGroups}, chỉ tiêu mới: ${createdMetrics}, phân loại mới: ${createdClasses}, mục nhận xét mới: ${createdSections}`
+    `SEED DONE — nhóm mới: ${createdGroups}, chỉ tiêu mới: ${createdMetrics}, phân loại mới: ${createdClasses}, mục nhận xét mới: ${createdSections}, khối báo cáo mới: ${createdBlocks}`
   );
   console.log("Đã có sẵn (không đụng vào):", (await prisma.metricDefinition.count()) - createdMetrics, "chỉ tiêu");
   await prisma.$disconnect();

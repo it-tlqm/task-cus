@@ -5,7 +5,7 @@ import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { fmtMetric, fmtDate } from "@/lib/metric-format";
 
-type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION";
+type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION" | "REPORT";
 
 const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: "STRUCT", label: "Nhóm & chỉ tiêu", icon: "list_alt" },
@@ -13,6 +13,7 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: "BASELINE", label: "Mốc lũy kế", icon: "bookmark" },
   { key: "ASSIGN", label: "Phân công nhập", icon: "person_add" },
   { key: "SECTION", label: "Mục nhận xét", icon: "notes" },
+  { key: "REPORT", label: "Cấu trúc báo cáo", icon: "article" },
 ];
 
 const SCALE_OPTIONS = [
@@ -32,6 +33,11 @@ const CUM_LABELS: Record<string, string> = {
   QUARTER: "Lũy kế Quý",
   YEAR: "Lũy kế Năm",
   LEDGER: "Số dư liên tục (từ ngày mốc trở đi)",
+};
+const BLOCK_KIND_LABELS: Record<string, string> = {
+  HEADING: "Tiêu đề mục",
+  METRIC_GROUP: "Bảng số liệu (theo nhóm chỉ tiêu)",
+  NARRATIVE: "Nội dung nhận xét",
 };
 
 export default function CauHinhSoLieuPage() {
@@ -186,6 +192,11 @@ export default function CauHinhSoLieuPage() {
   const [editSectionId, setEditSectionId] = useState("");
   const [sectionDraft, setSectionDraft] = useState<any>({});
 
+  // ------------------- REPORT BLOCKS -------------------
+  const [newBlock, setNewBlock] = useState<any>({ code: "", kind: "HEADING", title: "", groupId: "", sectionId: "", sortOrder: 0 });
+  const [editBlockId, setEditBlockId] = useState("");
+  const [blockDraft, setBlockDraft] = useState<any>({});
+
   const metricById = useMemo(() => {
     const m = new Map<string, any>();
     for (const g of groups) for (const x of g.metrics) m.set(x.id, { ...x, groupName: g.name });
@@ -196,6 +207,11 @@ export default function CauHinhSoLieuPage() {
     for (const g of groups) m.set(g.id, g.name);
     return m;
   }, [groups]);
+  const sectionTitleById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of cfg?.sections || []) m.set(s.id, s.title);
+    return m;
+  }, [cfg]);
 
   const selTargetMetric = metricById.get(selTargetMetricId);
   const selBaseMetric = metricById.get(selBaseMetricId);
@@ -971,6 +987,181 @@ export default function CauHinhSoLieuPage() {
                 className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
               >
                 + Thêm mục
+              </button>
+            </div>
+          </div>
+        )}
+
+        {tab === "REPORT" && (
+          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
+            <span className="font-label-md text-label-md text-primary font-bold">Cấu trúc báo cáo giao ban (bản xem trước & file Word)</span>
+            <p className="text-body-xs text-on-surface-variant">
+              Các khối hiển thị theo thứ tự tăng dần. “Bảng số liệu” tự tổng hợp theo nhóm chỉ tiêu; “Nội dung nhận xét” lấy văn bản theo kỳ đã nhập;
+              “Tiêu đề mục” chỉ là dòng tiêu đề (VD: I. CÔNG TÁC NGHIỆP VỤ HẢI QUAN). Sửa tại đây — không cần sửa code.
+            </p>
+            <div className="flex flex-col gap-1">
+              {(cfg?.reportBlocks || []).map((b: any) => (
+                <div key={b.id} className="border border-border-default/40 rounded px-3 py-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {editBlockId === b.id ? (
+                      <>
+                        <select value={blockDraft.kind} onChange={(e) => setBlockDraft({ ...blockDraft, kind: e.target.value })} className="px-2 py-1 rounded border border-border-default text-body-sm">
+                          {Object.entries(BLOCK_KIND_LABELS).map(([k, v]) => (
+                            <option key={k} value={k}>
+                              {v}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          value={blockDraft.title || ""}
+                          onChange={(e) => setBlockDraft({ ...blockDraft, title: e.target.value })}
+                          placeholder="Tiêu đề (để trống nếu không cần dòng tiêu đề)"
+                          className="flex-1 min-w-[200px] px-2 py-1 rounded border border-border-default text-body-sm"
+                        />
+                        {blockDraft.kind === "METRIC_GROUP" && (
+                          <select value={blockDraft.groupId || ""} onChange={(e) => setBlockDraft({ ...blockDraft, groupId: e.target.value })} className="px-2 py-1 rounded border border-border-default text-body-sm">
+                            <option value="">— Chọn nhóm chỉ tiêu —</option>
+                            {groups.map((g) => (
+                              <option key={g.id} value={g.id}>
+                                {g.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {blockDraft.kind === "NARRATIVE" && (
+                          <select value={blockDraft.sectionId || ""} onChange={(e) => setBlockDraft({ ...blockDraft, sectionId: e.target.value })} className="px-2 py-1 rounded border border-border-default text-body-sm">
+                            <option value="">— Chọn mục nội dung —</option>
+                            {(cfg?.sections || []).map((s: any) => (
+                              <option key={s.id} value={s.id}>
+                                {s.title}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <input
+                          type="number"
+                          value={blockDraft.sortOrder ?? 0}
+                          onChange={(e) => setBlockDraft({ ...blockDraft, sortOrder: Number(e.target.value) })}
+                          className="w-20 px-2 py-1 rounded border border-border-default text-body-sm"
+                          title="Thứ tự hiển thị"
+                        />
+                        <button
+                          onClick={async () => {
+                            const r = await post("report_block", "update", { id: b.id, ...blockDraft }, "Đã lưu khối");
+                            if (r) setEditBlockId("");
+                          }}
+                          className="px-2 py-1 rounded bg-primary text-on-primary text-body-xs font-semibold"
+                        >
+                          Lưu
+                        </button>
+                        <button onClick={() => setEditBlockId("")} className="px-2 py-1 rounded border border-border-default text-body-xs">
+                          Hủy
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default bg-surface-container-low text-on-surface-variant">
+                          {BLOCK_KIND_LABELS[b.kind] || b.kind}
+                        </span>
+                        <span className="font-medium text-body-sm">{b.title || "(không có dòng tiêu đề)"}</span>
+                        {b.groupId && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700">Nhóm: {groupNameById.get(b.groupId) || "?"}</span>
+                        )}
+                        {b.sectionId && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700">
+                            Mục: {sectionTitleById.get(b.sectionId) || "?"}
+                          </span>
+                        )}
+                        {!b.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700">Đã ẩn</span>}
+                        <span className="text-body-xs text-on-surface-variant">Thứ tự: {b.sortOrder}</span>
+                        <span className="text-body-xs text-on-surface-variant">· {b.code}</span>
+                        <div className="ml-auto flex gap-1">
+                          <button
+                            onClick={() => {
+                              setEditBlockId(b.id);
+                              setBlockDraft({
+                                title: b.title,
+                                kind: b.kind,
+                                groupId: b.groupId || "",
+                                sectionId: b.sectionId || "",
+                                sortOrder: b.sortOrder,
+                              });
+                            }}
+                            className="px-2 py-1 rounded border border-primary text-primary text-body-xs font-semibold"
+                          >
+                            Sửa
+                          </button>
+                          <button onClick={() => post("report_block", "update", { id: b.id, active: !b.active }, b.active ? "Đã ẩn khối" : "Đã bật khối")} className="px-2 py-1 rounded border border-border-default text-body-xs">
+                            {b.active ? "Ẩn" : "Bật"}
+                          </button>
+                          <button onClick={() => post("report_block", "delete", { id: b.id }, "Đã xóa khối")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-border-default/40 pt-3 grid grid-cols-2 sm:grid-cols-6 gap-2">
+              <input
+                placeholder="Mã (VD: KB_MOI)"
+                value={newBlock.code}
+                onChange={(e) => setNewBlock({ ...newBlock, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })}
+                className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+              />
+              <select value={newBlock.kind} onChange={(e) => setNewBlock({ ...newBlock, kind: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                {Object.entries(BLOCK_KIND_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="Tiêu đề hiển thị trong báo cáo"
+                value={newBlock.title}
+                onChange={(e) => setNewBlock({ ...newBlock, title: e.target.value })}
+                className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2"
+              />
+              {newBlock.kind === "METRIC_GROUP" && (
+                <select value={newBlock.groupId} onChange={(e) => setNewBlock({ ...newBlock, groupId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                  <option value="">— Chọn nhóm —</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {newBlock.kind === "NARRATIVE" && (
+                <select value={newBlock.sectionId} onChange={(e) => setNewBlock({ ...newBlock, sectionId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                  <option value="">— Chọn mục —</option>
+                  {(cfg?.sections || []).map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {newBlock.kind === "HEADING" && <div className="hidden sm:block" />}
+              <input
+                type="number"
+                placeholder="Thứ tự"
+                value={newBlock.sortOrder}
+                onChange={(e) => setNewBlock({ ...newBlock, sortOrder: Number(e.target.value) })}
+                className="w-full px-2 py-1.5 rounded border border-border-default text-body-sm"
+                title="Thứ tự hiển thị"
+              />
+              <button
+                disabled={busy === "report_block.create"}
+                onClick={async () => {
+                  const r = await post("report_block", "create", newBlock, "Đã thêm khối báo cáo");
+                  if (r) setNewBlock({ code: "", kind: "HEADING", title: "", groupId: "", sectionId: "", sortOrder: 0 });
+                }}
+                className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40 col-span-2 sm:col-span-1"
+              >
+                + Thêm khối
               </button>
             </div>
           </div>

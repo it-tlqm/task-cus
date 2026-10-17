@@ -19,6 +19,7 @@ const MORE_LINKS = [
   { name: "Giao ban", href: "/meetings", icon: "forum" },
   { name: "Số liệu giao ban", href: "/giao-ban", icon: "monitoring" },
   { name: "Nhập số liệu", href: "/giao-ban/nhap", icon: "edit_note" },
+  { name: "Báo cáo giao ban (Word)", href: "/giao-ban/bao-cao", icon: "article" },
   { name: "Cấu hình số liệu", href: "/giao-ban/cau-hinh", icon: "tune", adminOnly: true },
   { name: "Sổ văn bản", href: "/docs", icon: "mail" },
   { name: "Tổ chức", href: "/admin/organization", icon: "corporate_fare", adminOnly: true },

@@ -26,6 +26,7 @@
     "@prisma/client": "^6.4.1",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
+    "docx": "^9.11.0",
     "exceljs": "^4.4.0",
     "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.2",

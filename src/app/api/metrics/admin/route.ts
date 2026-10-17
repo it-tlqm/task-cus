@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     });
     const metricIds = metrics.map((m) => m.id);
 
-    const [classifications, targets, baselines, assignments, sections, people] = await Promise.all([
+    const [classifications, targets, baselines, assignments, sections, people, reportBlocks] = await Promise.all([
       prisma.metricClassification.findMany({ orderBy: [{ sortOrder: "asc" }, { label: "asc" }] }),
       prisma.metricPlanTarget.findMany({ where: { metricId: { in: metricIds } } }),
       prisma.metricBaseline.findMany({ where: { metricId: { in: metricIds } } }),
@@ -67,6 +67,7 @@ export async function GET(req: NextRequest) {
         orderBy: { code: "asc" },
         take: 500,
       }),
+      prisma.reportBlock.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
     ]);
 
     const personIds = new Set<string>();
@@ -170,6 +171,17 @@ export async function GET(req: NextRequest) {
         sortOrder: s.sortOrder,
         active: s.active,
       })),
+      reportBlocks: reportBlocks.map((b) => ({
+        id: b.id,
+        code: b.code,
+        kind: b.kind,
+        title: b.title,
+        groupId: b.groupId,
+        sectionId: b.sectionId,
+        sortOrder: b.sortOrder,
+        active: b.active,
+        note: b.note,
+      })),
       assignments: assignments.map((a) => ({
         id: a.id,
         personId: a.personId,
@@ -203,7 +215,7 @@ export async function GET(req: NextRequest) {
 
 // ============================================================
 // POST — thao tác cấu hình: { entity, action, data }
-// entity: group | metric | classification | target | baseline | assignment | section
+// entity: group | metric | classification | target | baseline | assignment | section | report_block
 // action: create | update | delete | confirm
 // ============================================================
 
@@ -607,6 +619,93 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true });
       }
       return jsonError("Thao tác mục nhận xét không hợp lệ", 400);
+    }
+
+    // ---------- KHỐI CẤU TRÚC BÁO CÁO ----------
+    if (entity === "report_block") {
+      const KINDS = ["HEADING", "METRIC_GROUP", "NARRATIVE"];
+      const titleOf = (v: unknown): string => (typeof v === "string" ? v.trim().slice(0, 300) : "");
+      const validateRefs = async (
+        kind: string,
+        groupId: string | null,
+        sectionId: string | null
+      ): Promise<string | null> => {
+        if (kind === "METRIC_GROUP") {
+          if (!groupId) return "Khối bảng số liệu phải chọn nhóm chỉ tiêu";
+          const g = await prisma.metricGroup.findUnique({ where: { id: groupId } });
+          if (!g) return "Nhóm chỉ tiêu không tồn tại";
+        }
+        if (kind === "NARRATIVE") {
+          if (!sectionId) return "Khối nhận xét phải chọn mục nội dung";
+          const s = await prisma.narrativeSection.findUnique({ where: { id: sectionId } });
+          if (!s) return "Mục nội dung không tồn tại";
+        }
+        return null;
+      };
+
+      if (action === "create") {
+        const code = str(data.code);
+        const kind = str(data.kind) || "HEADING";
+        const title = titleOf(data.title);
+        if (!code) return jsonError("Thiếu mã khối", 400);
+        if (!KINDS.includes(kind)) return jsonError("Loại khối không hợp lệ", 400);
+        if (kind === "HEADING" && !title) return jsonError("Khối tiêu đề phải có nội dung tiêu đề", 400);
+        const dup = await prisma.reportBlock.findUnique({ where: { code } });
+        if (dup) return jsonError(`Mã khối "${code}" đã tồn tại`, 400);
+        const groupId = kind === "METRIC_GROUP" ? str(data.groupId) : null;
+        const sectionId = kind === "NARRATIVE" ? str(data.sectionId) : null;
+        const refErr = await validateRefs(kind, groupId, sectionId);
+        if (refErr) return jsonError(refErr, 400);
+        const b = await prisma.reportBlock.create({
+          data: {
+            code,
+            kind,
+            title,
+            groupId,
+            sectionId,
+            sortOrder: intOf(data.sortOrder, 0) || 0,
+            note: str(data.note),
+          },
+        });
+        await audit("REPORT_BLOCK_CREATED", b.id, { code, kind, title });
+        return NextResponse.json({ success: true, id: b.id });
+      }
+      if (action === "update") {
+        const id = str(data.id);
+        if (!id) return jsonError("Thiếu id khối", 400);
+        const existing = await prisma.reportBlock.findUnique({ where: { id } });
+        if (!existing) return jsonError("Khối không tồn tại", 404);
+        const kind = data.kind !== undefined ? str(data.kind) || existing.kind : existing.kind;
+        if (!KINDS.includes(kind)) return jsonError("Loại khối không hợp lệ", 400);
+        const groupId =
+          kind === "METRIC_GROUP" ? (data.groupId !== undefined ? str(data.groupId) : existing.groupId) : null;
+        const sectionId =
+          kind === "NARRATIVE" ? (data.sectionId !== undefined ? str(data.sectionId) : existing.sectionId) : null;
+        const refErr = await validateRefs(kind, groupId, sectionId);
+        if (refErr) return jsonError(refErr, 400);
+        await prisma.reportBlock.update({
+          where: { id },
+          data: {
+            kind,
+            title: data.title !== undefined ? titleOf(data.title) : undefined,
+            groupId,
+            sectionId,
+            sortOrder: data.sortOrder !== undefined ? intOf(data.sortOrder, 0) || 0 : undefined,
+            active: data.active !== undefined ? boolOf(data.active, true) : undefined,
+            note: data.note !== undefined ? str(data.note) : undefined,
+          },
+        });
+        await audit("REPORT_BLOCK_UPDATED", id, { kind });
+        return NextResponse.json({ success: true });
+      }
+      if (action === "delete") {
+        const id = str(data.id);
+        if (!id) return jsonError("Thiếu id khối", 400);
+        await prisma.reportBlock.delete({ where: { id } });
+        await audit("REPORT_BLOCK_DELETED", id);
+        return NextResponse.json({ success: true });
+      }
+      return jsonError("Thao tác khối báo cáo không hợp lệ", 400);
     }
 
     return jsonError("Đối tượng cấu hình không hợp lệ", 400);
