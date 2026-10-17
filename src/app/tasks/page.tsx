@@ -89,7 +89,15 @@ export default function TasksPage() {
   // Forms
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<"Cao" | "Trung bình" | "Thấp" | "Khẩn">("Cao");
-  const [newDeadline, setNewDeadline] = useState("2026-10-15T17:00");
+  // Hạn mặc định: 7 ngày kể từ hôm nay lúc 17:00 (trước đây là hạn cứng cũ,
+  // việc mới tạo ra đã quá hạn ngay)
+  const defaultDeadline = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T17:00`;
+  };
+  const [newDeadline, setNewDeadline] = useState(defaultDeadline);
   const [newSource, setNewSource] = useState("Chỉ đạo đột xuất Lãnh đạo");
   const [selectedUnitId, setSelectedUnitId] = useState("");
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
@@ -264,6 +272,8 @@ export default function TasksPage() {
         setNewExpectedResult("");
         setCollabIds([]);
         setNewAttachFiles([]);
+        setNewDeadline(defaultDeadline());
+        setAiIdea("");
         fetchTasks();
         toast.success(
           json.deduplicated
