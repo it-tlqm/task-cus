@@ -122,16 +122,20 @@ export default function TaskDetailPage() {
   const [commentText, setCommentText] = useState("");
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const [sendingComment, setSendingComment] = useState(false);
-  // @mention: gợi ý người trong việc khi gõ @
+  // @mention: gợi ý toàn bộ cán bộ (dùng danh sách nhân sự đã nạp), ưu tiên người trong việc
   const commentBoxRef = React.useRef<HTMLTextAreaElement>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const mentionables =
-    task != null
-      ? [
-          ...(task.owner ? [{ id: task.owner.id, fullName: task.owner.fullName }] : []),
-          ...((task.assignees || []).map((a: any) => ({ id: a.person.id, fullName: a.person.fullName }))),
-        ].filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i)
-      : [];
+  const mentionables = React.useMemo(() => {
+    const inTask = new Set<string>();
+    if (task?.owner) inTask.add(task.owner.id);
+    for (const a of task?.assignees || []) inTask.add((a as any).person.id);
+    const base = (people.length > 0 ? people : [
+      ...(task?.owner ? [{ id: task.owner.id, fullName: task.owner.fullName }] : []),
+      ...((task?.assignees || []).map((a: any) => ({ id: a.person.id, fullName: a.person.fullName }))),
+    ]).filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i);
+    // Người trong việc lên trước
+    return [...base].sort((a, b) => Number(inTask.has(b.id)) - Number(inTask.has(a.id)));
+  }, [people, task]);
   const mentionMatches =
     mentionQuery === null
       ? []
@@ -142,7 +146,14 @@ export default function TaskDetailPage() {
     const pos = cursor ?? value.length;
     const before = value.slice(0, pos);
     const m = before.match(/@([^\n@]{1,30})$/);
-    setMentionQuery(m ? m[1] : null);
+    if (!m) {
+      setMentionQuery(null);
+      return;
+    }
+    const q = m[1];
+    // Gõ xong đủ tên (khớp chính xác + có dấu cách/kết thúc) thì đóng gợi ý
+    const done = mentionables.some((p) => q.trim().toLowerCase() === p.fullName.toLowerCase());
+    setMentionQuery(done || !q.trim() ? null : q);
   };
 
   const insertMention = (name: string) => {
@@ -268,6 +279,7 @@ export default function TaskDetailPage() {
       }
       setCommentText("");
       setCommentFiles([]);
+      setMentionQuery(null);
       toast.success("Đã gửi trao đổi!");
       fetchComments(task.id);
     } catch (err: any) {
@@ -1041,8 +1053,12 @@ export default function TaskDetailPage() {
               className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
             />
             {mentionMatches.length > 0 && (
-              <div className="absolute left-0 right-0 bottom-full mb-1 bg-surface-container-lowest border border-border-default rounded-lg shadow-xl overflow-hidden z-10">
-                {mentionMatches.map((p) => (
+              <div className="absolute left-0 right-0 bottom-full mb-1 bg-surface-container-lowest border border-border-default rounded-lg shadow-xl overflow-hidden z-10 max-h-44 overflow-y-auto">
+                {mentionMatches.map((p) => {
+                  const inTask =
+                    task?.owner?.id === p.id ||
+                    (task?.assignees || []).some((a: any) => a.person.id === p.id);
+                  return (
                   <button
                     key={p.id}
                     type="button"
@@ -1052,9 +1068,15 @@ export default function TaskDetailPage() {
                     <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] shrink-0">
                       {p.fullName.trim().split(" ").slice(-1)[0]?.slice(0, 2).toUpperCase()}
                     </span>
-                    <span className="font-semibold">{p.fullName}</span>
+                    <span className="font-semibold truncate">{p.fullName}</span>
+                    {inTask && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 font-bold shrink-0">
+                        trong việc
+                      </span>
+                    )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
