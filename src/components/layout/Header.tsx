@@ -17,7 +17,7 @@ interface OrgUnitOption {
   code: string;
 }
 
-export function Header() {
+export function Header({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isChangePassOpen, setIsChangePassOpen] = useState(false);
@@ -128,7 +128,11 @@ export function Header() {
   return (
     <>
       {/* DESKTOP HEADER */}
-      <header className="hidden lg:flex fixed top-0 left-[260px] right-0 h-24 bg-surface-container-lowest z-40 flex-col border-b border-border-default shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+      <header
+        className={`hidden lg:flex fixed top-0 right-0 h-24 bg-surface-container-lowest z-40 flex-col border-b border-border-default shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out ${
+          collapsed ? "left-[72px]" : "left-[260px]"
+        }`}
+      >
         {/* Banner Vận hành Chính thức */}
         <div className="h-6 bg-primary/10 border-b border-border-default/40 px-space-md flex items-center justify-between">
           <div className="flex items-center gap-2">

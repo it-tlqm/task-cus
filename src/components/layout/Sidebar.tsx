@@ -61,9 +61,8 @@ const navigationItems = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
   const { canApprove, canExport, canLock, showAdminMenu } = usePermissions();
   // Gấp/mở từng cụm menu (nhớ trên máy để sidebar luôn gọn)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -143,7 +142,7 @@ export function Sidebar() {
             )}
           </Link>
           <button
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={onToggle}
             title={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
             className="text-on-primary-container hover:text-white p-1 rounded hover:bg-primary transition-colors text-xs"
           >
