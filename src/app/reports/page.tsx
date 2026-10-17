@@ -228,7 +228,7 @@ function ReportsContent() {
       .catch((err) => console.log("Fetch summary error:", err));
 
     // 3. Fetch tasks
-    fetch("/api/tasks")
+    fetch("/api/tasks?pageSize=100")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {

@@ -99,8 +99,11 @@ export default function ApprovalsPage() {
   // Tải danh sách hồ sơ thực tế từ PostgreSQL
   const fetchLiveApprovals = useCallback(async () => {
     try {
-      const [tasksRes, plansRes] = await Promise.all([
-        fetch("/api/tasks"),
+      // Chỉ lấy ĐÚNG hai nguồn cần duyệt (trước đây kéo 50 việc đầu về lọc —
+      // hồ sơ chờ duyệt nằm ngoài 50 việc đó sẽ vô hình)
+      const [tasksRes, delayRes, plansRes] = await Promise.all([
+        fetch("/api/tasks?status=WAITING_REVIEW&pageSize=100"),
+        fetch("/api/tasks?deadlinePending=1&pageSize=100"),
         fetch("/api/plans"),
       ]);
 
@@ -127,7 +130,14 @@ export default function ApprovalsPage() {
               attachments: t.attachments || [],
             });
           }
+        }
+      }
 
+      if (delayRes.ok) {
+        const delayData = await delayRes.json();
+        const delayList = Array.isArray(delayData) ? delayData : delayData.data || [];
+
+        for (const t of delayList) {
           // 2. Nhiệm vụ có đề xuất lùi hạn chót (delay)
           if (t.deadlineRequests && t.deadlineRequests.length > 0) {
             const pendingReq = t.deadlineRequests.find((dr: any) => dr.status === "PENDING");

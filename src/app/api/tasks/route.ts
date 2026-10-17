@@ -68,6 +68,11 @@ export async function GET(req: NextRequest) {
     if (hasIssueParam !== null && hasIssueParam !== "") {
       filters.hasIssue = hasIssueParam === "true";
     }
+    // Chỉ lấy việc đang có đề xuất lùi hạn chờ duyệt (màn Phê duyệt)
+    const deadlinePending = searchParams.get("deadlinePending");
+    if (deadlinePending === "1" || deadlinePending === "true") {
+      filters.deadlineRequests = { some: { status: "PENDING" } };
+    }
 
     // YC-05: người chủ trì/phối hợp luôn thấy nhiệm vụ của mình kể cả khác đơn vị
     // (không nâng quyền — chỉ cộng thêm 2 điều kiện OR, các guard IDOR giữ nguyên)
