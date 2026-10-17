@@ -95,6 +95,7 @@ model Person {
   handledDocs      OfficialDoc[]
   taskComments     TaskComment[]
   commentReactions CommentReaction[]
+  feedbacks        Feedback[]
 
   @@map("people")
 }
@@ -730,7 +731,6 @@ model DutyRoster {
 // ----------------------------------------------------
 // 17. BIÊN BẢN GIAO BAN → NHIỆM VỤ (kết luận họp sinh việc, chống rơi rớt)
 // ----------------------------------------------------
-
 model Meeting {
   id        String   @id @default(uuid())
   title     String
@@ -922,5 +922,29 @@ model MonthlyWorkResult {
 
   @@index([personId, periodYear, periodMonth])
   @@map("monthly_work_results")
+}
+
+// ----------------------------------------------------
+// 20. GÓP Ý & BÁO LỖI TRONG APP (gom phản hồi UAT về một mối)
+// ----------------------------------------------------
+
+model Feedback {
+  id           String    @id @default(uuid())
+  category     String    @default("GOP_Y") // GOP_Y, BAO_LOI, DE_XUAT
+  content      String
+  pagePath     String?   @map("page_path") // Màn hình lúc gửi — để biết lỗi ở đâu
+  userAgent    String?   @map("user_agent")
+  status       String    @default("NEW") // NEW, DONE
+  adminNote    String?   @map("admin_note")
+  personId     String    @map("person_id") // Người gửi
+  resolvedById String?   @map("resolved_by_id") // Người đánh dấu xử lý xong
+  resolvedAt   DateTime? @map("resolved_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([personId, createdAt])
+  @@map("feedbacks")
 }
 

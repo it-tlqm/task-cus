@@ -122,6 +122,7 @@ export default function GuidePage() {
           ["Bấm mãi mà việc không mất khỏi danh sách?", "Việc chỉ xong khi lãnh đạo duyệt. Báo hoàn thành xong thì chờ — có tin báo khi được duyệt."],
           ["Quên mật khẩu?", "Báo trực tiếp lãnh đạo đơn vị hoặc quản trị hệ thống để đặt lại — không tự đăng ký tài khoản mới."],
           ["Số liệu tháng sai, muốn sửa?", "Mở lại bản ghi trong Việc tháng và Sửa — mọi lần sửa đều lưu vết, kỳ đã chốt thì không sửa được."],
+          ["Gặp lỗi hoặc muốn góp ý?", "Bấm nút Góp ý ở góc phải dưới màn hình — chọn Góp ý/Báo lỗi/Đề xuất, ghi vài dòng là gửi thẳng tới lãnh đạo và kỹ thuật, kèm sẵn màn hình bạn đang mở."],
         ].map(([q, a]) => (
           <div key={q} className="text-sm">
             <p className="font-bold text-slate-900">{q}</p>

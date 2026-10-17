@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ContextHelp } from "@/components/ui/ContextHelp";
 import { TourGuide } from "@/components/ui/TourGuide";
+import { FeedbackButton } from "@/components/ui/FeedbackButton";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -48,6 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <BottomNav />
       <ContextHelp />
       <TourGuide />
+      <FeedbackButton />
     </>
   );
 }

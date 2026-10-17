@@ -191,6 +191,14 @@ export const HELP: Record<string, PageHelp> = {
       "Lọc theo người, hành động, thời gian. Chỉ xem, không sửa/xóa được.",
     ],
   },
+  "/admin/feedback": {
+    title: "Góp ý & Báo lỗi (lãnh đạo, kỹ thuật)",
+    bullets: [
+      "Toàn bộ phản hồi công chức gửi từ nút Góp ý trong app — kèm màn hình lúc gửi để soi đúng chỗ.",
+      "Xem xong bấm Đánh dấu đã xử lý (ghi chú tùy chọn) để không sót; còn vướng thì Mở lại.",
+      "Tab Mới / Đã xử lý / Tất cả có số đếm; ô tìm kiếm gõ không dấu vẫn ra.",
+    ],
+  },
   "/dashboard": {
     title: "Bảng điều hành",
     bullets: [
@@ -238,6 +246,7 @@ export function getPageHelp(pathname: string): PageHelp {
     bullets: [
       "Nút nào bạn không được dùng thì không hiện — đúng thiết kế, không phải lỗi.",
       "Thao tác xong mà chưa thấy đổi, bấm Làm mới hoặc F5.",
+      "Gặp vướng mắc: bấm nút Góp ý (góc phải dưới màn hình) để báo lỗi/góp ý — lãnh đạo và kỹ thuật nhận được ngay.",
       "Cần giúp thêm: mở Hướng dẫn 5 phút ở menu Tổng quan.",
     ],
   };

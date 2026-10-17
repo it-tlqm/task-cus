@@ -11,7 +11,7 @@ export interface CreateNotificationInput {
   content: string;
   tag?: string;
   tagType?: "danger" | "primary" | "success" | "warning";
-  entityType?: "TASK" | "PLAN" | "DEADLINE_REQUEST" | "ROUTINE";
+  entityType?: "TASK" | "PLAN" | "DEADLINE_REQUEST" | "ROUTINE" | "FEEDBACK";
   entityId?: string;
   actionUrl: string;
   actionLabel?: string;

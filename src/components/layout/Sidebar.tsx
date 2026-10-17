@@ -57,6 +57,7 @@ const navigationItems = [
       { name: "Biểu mẫu & Quy trình", href: "/admin/forms", icon: "rule_folder" },
       { name: "Cấu hình hệ thống", href: "/admin/system", icon: "settings" },
       { name: "Nhật ký hệ thống", href: "/admin/audit", icon: "manage_history" },
+      { name: "Góp ý & Báo lỗi", href: "/admin/feedback", icon: "campaign" },
     ],
   },
 ];
