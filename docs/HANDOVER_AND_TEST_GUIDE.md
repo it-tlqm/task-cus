@@ -7,6 +7,17 @@
 
 ---
 
+## 🔄 CẬP NHẬT 17/10/2026 (đọc trước khi dùng các mục bên dưới)
+
+- **Hệ thống đang chạy thật tại:** `https://task-cus.vercel.app` (Vercel + Supabase). Mục I bên dưới (localhost) chỉ còn dùng cho môi trường phát triển.
+- **Tài khoản demo cũ đã bị xóa khỏi hệ thống** — bảng tài khoản ở mục II là tài liệu lịch sử, KHÔNG dùng để đăng nhập. Tài khoản thật do quản trị cấp riêng (không ghi mật khẩu vào tài liệu bàn giao).
+- **Đăng nhập chấp nhận nhiều định dạng gõ** (tên đăng nhập hoặc mã cán bộ): không phân biệt hoa/thường; bỏ qua dấu `-`, `_`, `.`, khoảng trắng; bỏ tiền tố danh sách ("1.", "1)"); tự khớp các dạng đệm số 0 (`cb018` ↔ `cb0018`). Khớp trùng nhiều tài khoản → từ chối. Sai mật khẩu 10 lần/10 phút → tạm khóa 10 phút.
+- **Phân hệ Giao ban (bổ sung mới):** Số liệu giao ban / Nhập số liệu (phân công, có thể bật luồng Nháp → Gửi kiểm tra → Xác nhận) / Báo cáo giao ban (xuất Word theo mẫu, lưu phiên bản snapshot — đã lưu thì sửa số nguồn không đổi) / Cấu hình số liệu (49 chỉ tiêu, mốc lũy kế, chỉ tiêu giao — dành cho lãnh đạo/quản trị).
+- **Kiểm tra sức khỏe hệ thống:** `GET /api/health` trả trạng thái DB + **mã commit đang chạy** (dùng đối chiếu phiên bản khi nghiệm thu).
+- **Tài liệu mới cần đọc kèm:** `GIAO_BAN_SO_LIEU_PHASE1_PHAN_TICH.md` · `KPI_2C_2D_2E_ANH_XA_CONG_THUC.md` · `PHAN_LOAI_XAC_NHAN_49_CHI_TIEU.md` · `TRANG_THAI_YC_01_25.md`.
+
+---
+
 ## I. THÔNG TIN KẾT NỐI HỆ THỐNG
 
 | Thành phần | Thông số / Địa chỉ truy cập |
@@ -20,7 +31,7 @@
 
 ## II. DANH SÁCH TÀI KHOẢN ĐĂNG NHẬP & PHÂN QUYỀN
 
-Mật khẩu chung cho tất cả tài khoản thử nghiệm: **`demo123`** (Đã tích hợp sẵn 4 nút bấm chọn nhanh 1-chạm tại trang Login)
+**ĐÃ VÔ HIỆU HÓA (17/10/2026):** toàn bộ tài khoản demo cũ và mật khẩu chung đã bị xóa khỏi hệ thống — bảng dưới đây chỉ mang tính lịch sử, KHÔNG dùng để đăng nhập.
 
 | STT | Tên đăng nhập | Họ và tên | Chức danh & Đơn vị | Vai trò (Role) & Phạm vi (Scope) | Chức năng nghiệp vụ chính |
 | :---: | :--- | :--- | :--- | :--- | :--- |

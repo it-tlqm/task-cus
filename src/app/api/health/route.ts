@@ -1,21 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 
-/** Sức khỏe hệ thống cho giám sát/uptime (không cần đăng nhập, không lộ dữ liệu). */
+/** Sức khỏe hệ thống cho giám sát/uptime (không cần đăng nhập, không lộ dữ liệu).
+ *  Kèm thông tin phiên bản đang chạy trên Vercel để đối chiếu khi nghiệm thu/triển khai. */
 export async function GET() {
   const started = Date.now();
+  const build = {
+    commit: (process.env.VERCEL_GIT_COMMIT_SHA || "dev").slice(0, 7),
+    env: process.env.VERCEL_ENV || "local",
+  };
   try {
     await prisma.$queryRawUnsafe("SELECT 1");
     return NextResponse.json({
       success: true,
       status: "ok",
       db: "up",
+      ...build,
       latencyMs: Date.now() - started,
       time: new Date().toISOString(),
     });
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, status: "degraded", db: "down", error: error.message },
+      { success: false, status: "degraded", db: "down", ...build, error: error.message },
       { status: 503 }
     );
   }

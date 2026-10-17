@@ -61,3 +61,39 @@ Tài liệu này ghi lại các quyết định kiến trúc kỹ thuật quan t
 - **Hệ quả:**
   - Đáp ứng 100% nhu cầu in ấn / nộp báo cáo truyền thống lẫn phân tích số liệu hiện đại.
   - Bảo mật tuyệt đối trước các nguy cơ tấn công chèn mã lệnh vào bảng tính.
+
+---
+
+### ADR-006: Chốt YC-21 theo Phương án B — tách bạch Giao ban số liệu với KQ tháng
+- **Trạng thái:** ACCEPTED
+- **Ngày:** 17/10/2026
+- **Bối cảnh:** YC-21 có hai cách hiểu: (a) chuyển "KQ tháng" vào nhóm Giao ban; (b) giữ KQ tháng nguyên chỗ, Giao ban chỉ quản lý số liệu nghiệp vụ + báo cáo tuần.
+- **Quyết định:** Chọn **(b)**. Không đụng dữ liệu, API, chức năng KQ tháng. Nhóm menu Giao ban giữ bố cục bổ sung hiện tại (Số liệu / Nhập số liệu / Báo cáo Word / Cấu hình); chuẩn hóa Desktop/Mobile chỉ được làm theo hướng bổ sung, không mất chức năng.
+- **Hệ quả:** Không cần thay đổi code điều hướng; có thể điều chỉnh khi đơn vị sử dụng xác nhận khác.
+
+---
+
+### ADR-007: Không tự đặt công thức chấm điểm KPI (mẫu 2C/2D/2E)
+- **Trạng thái:** ACCEPTED
+- **Ngày:** 17/10/2026
+- **Bối cảnh:** Ba mẫu 2C (báo cáo kết quả, có đếm nhiệm vụ), 2D (điểm + xếp loại cá nhân), 2E (tỷ lệ hoàn thành chỉ tiêu) khác bản chất nhưng dễ bị gọi chung là "KPI" và gộp công thức.
+- **Quyết định:** Lập bảng ánh xạ công thức (`docs/KPI_2C_2D_2E_ANH_XA_CONG_THUC.md`) để đơn vị xác nhận trước. Chỉ triển khai tính điểm chính thức khi có công thức thành phần (02A/02B) + ngưỡng xếp loại được duyệt. Điểm tính thử hiện có (KQ tháng) giữ nguyên nhãn "tham khảo — chưa chính thức", không dùng để xếp loại/khóa số.
+- **Hệ quả:** Bước này không phát sinh code tính điểm; chờ hồ sơ 02A/02B + xác nhận.
+
+---
+
+### ADR-008: Mốc lũy kế & chỉ tiêu giao — chỉ mốc CONFIRMED được tính; không seed số liệu chính thức
+- **Trạng thái:** ACCEPTED
+- **Ngày:** 17/10/2026
+- **Bối cảnh:** Số liệu trong file Word/ảnh cũ (mốc hết Tuần 41 – 11/10/2026) là căn cứ đối chiếu, không được mặc nhiên coi là số liệu chính thức.
+- **Quyết định:** Mốc tạo ở trạng thái Đề xuất (PROPOSED) → lãnh đạo/quản trị "Xác nhận mốc" → CONFIRMED; chỉ CONFIRMED được dùng tính lũy kế; lưu người đề xuất/người xác nhận/thời điểm + audit. Chỉ tiêu BTC, UBND tỉnh, KH tháng cấu hình theo kỳ hiệu lực (YEAR/QUARTER/MONTH). Không cộng lặp ngày đã nằm trong mốc. Không seed bất kỳ số liệu chính thức nào vào DB.
+- **Hệ quả:** Ngày bắt đầu nhập liệu thật và mốc đầu tiên do Hải quan quyết định; hệ thống đã sẵn sàng vận hành.
+
+---
+
+### ADR-009: Phân loại mức xác nhận cho 49 chỉ tiêu — duyệt theo bậc, không bật đồng loạt
+- **Trạng thái:** ACCEPTED
+- **Ngày:** 17/10/2026
+- **Bối cảnh:** 49/49 chỉ tiêu đang tắt "Cần kiểm tra"; không đồng ý coi mọi giá trị vừa nhập là dữ liệu chính thức.
+- **Quyết định:** Đề xuất 4 mức A (12 — tiền/số dư trọng yếu), B (16 — kim ngạch & số liệu trọng yếu), C (18 — nhập là ghi nhận), D (3 — dẫn xuất tự tính) tại `docs/PHAN_LOAI_XAC_NHAN_49_CHI_TIEU.md`; phân biệt rõ **Đã nhập / Đã xác nhận / Đã chốt báo cáo**. Triển khai bằng cấu hình UI sau khi duyệt, thứ tự: mức A trước.
+- **Hệ quả:** Chưa thay đổi bất kỳ cấu hình chỉ tiêu nào.
