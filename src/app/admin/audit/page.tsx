@@ -14,57 +14,101 @@ interface AuditEntry {
   status: "SUCCESS" | "WARNING" | "BLOCKED";
 }
 
+// Mã hành động quen thuộc → tên thân thiện; mã lạ giữ nguyên mã
+const ACTION_LABELS: Record<string, string> = {
+  LOGIN: "Đăng nhập",
+  LOGIN_FAILED: "Đăng nhập thất bại (sai mật khẩu)",
+  LOGIN_REJECTED_INACTIVE: "Đăng nhập bị chặn (tài khoản khóa)",
+  LOGIN_REJECTED_PERSON_INACTIVE: "Đăng nhập bị chặn (đã ngừng công tác)",
+  AI_DRAFT: "AI soạn nháp chỉ đạo",
+  AI_SUMMARY: "AI tóm tắt tình hình",
+  AI_EXTRACT: "AI tách kết luận họp",
+  TASK_PROGRESS_UPDATE: "Cập nhật tiến độ",
+  TASK_ACCEPT: "Tiếp nhận đầu việc",
+  REPORT_EXPORTED: "Xuất báo cáo XLSX",
+  ROUTINE_ENTRY_CREATED: "Ghi nhật ký tác nghiệp",
+  ROUTINE_ENTRY_NOT_OCCURRED: "Xác nhận không phát sinh",
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  UNIT_LEADER: "Trưởng hải quan cửa khẩu",
+  DEPARTMENT_LEADER: "Trưởng bộ phận",
+  SYSTEM_ADMIN: "Quản trị hệ thống",
+  STAFF: "Công chức",
+};
+
+const PAGE_SIZE = 50;
+
 export default function AdminAuditPage() {
   const [logs, setLogs] = useState<AuditEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterAction, setFilterAction] = useState("ALL");
+  const [actions, setActions] = useState<Array<{ action: string; count: number }>>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  // Gõ tới đâu chờ 400ms mới hỏi máy chủ (tránh gọi liên tục), đổi từ khóa thì về trang 1
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Danh sách hành động thực tế có trong nhật ký → đổ vào dropdown lọc
+  React.useEffect(() => {
+    fetch("/api/admin/audit?meta=actions")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.actions)) setActions(data.actions);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Tải dữ liệu theo trang + bộ lọc (lọc phía máy chủ)
   React.useEffect(() => {
     setLoading(true);
-    fetch("/api/admin/audit?limit=100")
-      .then((res) => res.json())
+    const qs = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+    if (debouncedSearch) qs.set("search", debouncedSearch);
+    if (filterAction !== "ALL") qs.set("action", filterAction);
+    fetch(`/api/admin/audit?${qs.toString()}`)
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data.success && Array.isArray(data.events)) {
+        if (data?.success && Array.isArray(data.events)) {
           const mapped: AuditEntry[] = data.events.map((e: any) => ({
             id: e.id.slice(0, 8),
             timestamp: new Date(e.timestamp).toLocaleString("vi-VN"),
             user: e.actorFullName || e.actorUsername || "Hệ thống",
-            role: e.actorRole === "UNIT_LEADER"
-              ? "Trưởng hải quan cửa khẩu"
-              : e.actorRole === "DEPARTMENT_LEADER"
-              ? "Trưởng bộ phận"
-              : e.actorRole === "SYSTEM_ADMIN"
-              ? "Quản trị hệ thống"
-              : e.actorRole === "STAFF"
-              ? "Công chức"
-              : "Hệ thống",
+            role: ROLE_LABELS[e.actorRole] || e.actorRole || "Hệ thống",
             action: e.action,
             target: e.resourceType ? `${e.resourceType}: ${e.resourceId || "N/A"}` : "Hệ thống chung",
-            ip: e.ipAddress || "127.0.0.1",
+            ip: e.ipAddress || "—",
             status: e.status || "SUCCESS",
           }));
           setLogs(mapped);
+          setTotal(data.pagination?.total ?? mapped.length);
+          setTotalPages(data.pagination?.totalPages ?? 1);
         } else {
           setLogs([]);
+          setTotal(0);
+          setTotalPages(1);
         }
       })
       .catch((err) => {
         console.error("Audit fetch error:", err);
         setLogs([]);
+        setTotal(0);
+        setTotalPages(1);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, debouncedSearch, filterAction]);
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      !searchTerm ||
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.target.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAction = filterAction === "ALL" || log.action === filterAction;
-    return matchesSearch && matchesAction;
-  });
+  const pageBtn =
+    "px-2.5 h-8 rounded bg-surface-subtle hover:bg-surface-container text-[12px] font-semibold text-on-surface transition-fast active-press disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
     <div className="flex flex-col w-full p-space-md lg:p-space-lg gap-space-lg pb-16">
@@ -110,7 +154,7 @@ export default function AdminAuditPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary transition-all"
-            placeholder="Tìm theo người dùng, hành động, mục tiêu..."
+            placeholder="Tìm theo người dùng, hành động, mục tiêu... (không cần dấu)"
             type="text"
           />
         </div>
@@ -118,14 +162,18 @@ export default function AdminAuditPage() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
             value={filterAction}
-            onChange={(e) => setFilterAction(e.target.value)}
-            className="h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none cursor-pointer"
+            onChange={(e) => {
+              setFilterAction(e.target.value);
+              setPage(1);
+            }}
+            className="h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none cursor-pointer max-w-[320px]"
           >
             <option value="ALL">Tất cả hành động</option>
-            <option value="EXPORT_XLSX">Xuất tệp XLSX</option>
-            <option value="UPDATE_STATUS">Cập nhật tiến độ</option>
-            <option value="SUBMIT_ROUTINE_LOG">Nhật ký tác nghiệp</option>
-            <option value="ACCESS_ADMIN_AREA">Truy cập khu vực Quản trị</option>
+            {actions.map((a) => (
+              <option key={a.action} value={a.action}>
+                {`${ACTION_LABELS[a.action] || a.action} (${a.count})`}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -155,7 +203,7 @@ export default function AdminAuditPage() {
                     Đang nạp dữ liệu kiểm toán từ hệ thống...
                   </td>
                 </tr>
-              ) : filteredLogs.length === 0 ? (
+              ) : logs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-on-surface-variant">
                     <span className="material-symbols-outlined text-outline text-[32px] block mb-2">
@@ -165,7 +213,7 @@ export default function AdminAuditPage() {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => (
+                logs.map((log) => (
                   <tr key={log.id} className="hover:bg-surface-container-low transition-colors">
                     <td className="py-3 px-3 font-mono text-[12px] text-secondary font-semibold">
                       {log.id}
@@ -184,7 +232,10 @@ export default function AdminAuditPage() {
                       </div>
                     </td>
                     <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-primary-fixed text-on-primary-fixed">
+                      <span
+                        className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-primary-fixed text-on-primary-fixed"
+                        title={ACTION_LABELS[log.action] || log.action}
+                      >
                         {log.action}
                       </span>
                     </td>
@@ -212,6 +263,46 @@ export default function AdminAuditPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Phân trang phía máy chủ */}
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-border-default/40 flex-wrap">
+          <span className="font-label-sm text-[12px] text-on-surface-variant">
+            Tổng <b>{total.toLocaleString("vi-VN")}</b> bản ghi • Trang <b>{page}</b>/{totalPages} •{" "}
+            {PAGE_SIZE} bản ghi/trang
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={page <= 1 || loading}
+              onClick={() => setPage(1)}
+              className={pageBtn}
+              title="Trang đầu"
+            >
+              « Đầu
+            </button>
+            <button
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className={pageBtn}
+            >
+              ‹ Trước
+            </button>
+            <button
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className={pageBtn}
+            >
+              Sau ›
+            </button>
+            <button
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage(totalPages)}
+              className={pageBtn}
+              title="Trang cuối"
+            >
+              Cuối »
+            </button>
+          </div>
         </div>
       </div>
     </div>

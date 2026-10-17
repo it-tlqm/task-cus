@@ -28,6 +28,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { username, password, remember } = body;
 
+    // IP thật của người đăng nhập (sau proxy Vercel: chặng đầu của x-forwarded-for)
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      undefined;
+
     if (!username || !password) {
       return jsonError("Vui lòng cung cấp đầy đủ tên đăng nhập và mật khẩu", 400);
     }
@@ -43,6 +49,7 @@ export async function POST(req: NextRequest) {
         data: {
           action: "LOGIN_FAILED",
           resourceType: "Account",
+          ipAddress: clientIp,
           newData: { username, reason: "Account not found" },
         },
       });
@@ -56,6 +63,7 @@ export async function POST(req: NextRequest) {
           action: "LOGIN_REJECTED_INACTIVE",
           resourceType: "Account",
           resourceId: account.id,
+          ipAddress: clientIp,
           newData: { username: account.username, status: account.status },
         },
       });
@@ -69,6 +77,7 @@ export async function POST(req: NextRequest) {
           action: "LOGIN_REJECTED_PERSON_INACTIVE",
           resourceType: "Person",
           resourceId: account.personId,
+          ipAddress: clientIp,
           newData: { username: account.username, personStatus: account.personStatus },
         },
       });
@@ -84,6 +93,7 @@ export async function POST(req: NextRequest) {
           action: "LOGIN_FAILED",
           resourceType: "Account",
           resourceId: account.id,
+          ipAddress: clientIp,
           newData: { username: account.username, reason: "Invalid password" },
         },
       });
@@ -112,6 +122,7 @@ export async function POST(req: NextRequest) {
         action: "LOGIN",
         resourceType: "Account",
         resourceId: account.id,
+        ipAddress: clientIp,
         newData: { username: account.username, role: account.role },
       },
     });
