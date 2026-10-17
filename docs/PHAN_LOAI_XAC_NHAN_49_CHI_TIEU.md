@@ -1,6 +1,6 @@
 # PHÂN LOẠI MỨC XÁC NHẬN CHO 49 CHỈ TIÊU SỐ LIỆU GIAO BAN — ĐỀ XUẤT
 
-**Ngày lập:** 17/10/2026 · **Trạng thái:** ĐỀ XUẤT — **chưa bật/tắt bất kỳ cấu hình nào**, chờ lãnh đạo duyệt.
+**Ngày lập:** 17/10/2026 · **Trạng thái:** ĐỀ XUẤT — **chưa bật/tắt bất kỳ cấu hình nào**, chờ lãnh đạo duyệt. **Chốt 17/10/2026 (đợt 2): chưa phê duyệt bật kể cả mức A — giữ nguyên đề xuất, chờ quyết định.**
 **Bối cảnh:** hiện 49/49 chỉ tiêu đều tắt "Cần kiểm tra" (`requireConfirm=false`), dữ liệu nhập vào được ghi nhận ngay (RECORDED).
 
 ---
@@ -65,6 +65,8 @@ Bật **từng chỉ tiêu** tại: *Giao ban → Cấu hình số liệu → ta
 Luồng sau khi bật: `DRAFT` (nháp) → người nhập bấm **Gửi kiểm tra** (`SUBMITTED`) → lãnh đạo **Xác nhận** (`CONFIRMED`) hoặc **Yêu cầu sửa** (`NEEDS_FIX`); mọi bước lưu vết người/thời điểm/giá trị trước-sau.
 
 **Đề xuất thứ tự duyệt:** duyệt mức **A (12 chỉ tiêu)** trước → chạy thử 1–2 tuần → nếu êm mới xét tới mức B. **Không bật đồng loạt 49 chỉ tiêu.**
+
+> **Chốt đợt 2 (17/10/2026):** đơn vị **chưa phê duyệt bật kể cả mức A** — giữ nguyên đề xuất, chỉ triển khai khi có quyết định mới.
 
 ## 5. Việc KHÔNG làm trong bước này
 

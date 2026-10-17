@@ -14,7 +14,17 @@
 - **Đăng nhập chấp nhận nhiều định dạng gõ** (tên đăng nhập hoặc mã cán bộ): không phân biệt hoa/thường; bỏ qua dấu `-`, `_`, `.`, khoảng trắng; bỏ tiền tố danh sách ("1.", "1)"); tự khớp các dạng đệm số 0 (`cb018` ↔ `cb0018`). Khớp trùng nhiều tài khoản → từ chối. Sai mật khẩu 10 lần/10 phút → tạm khóa 10 phút.
 - **Phân hệ Giao ban (bổ sung mới):** Số liệu giao ban / Nhập số liệu (phân công, có thể bật luồng Nháp → Gửi kiểm tra → Xác nhận) / Báo cáo giao ban (xuất Word theo mẫu, lưu phiên bản snapshot — đã lưu thì sửa số nguồn không đổi) / Cấu hình số liệu (49 chỉ tiêu, mốc lũy kế, chỉ tiêu giao — dành cho lãnh đạo/quản trị).
 - **Kiểm tra sức khỏe hệ thống:** `GET /api/health` trả trạng thái DB + **mã commit đang chạy** (dùng đối chiếu phiên bản khi nghiệm thu).
-- **Tài liệu mới cần đọc kèm:** `GIAO_BAN_SO_LIEU_PHASE1_PHAN_TICH.md` · `KPI_2C_2D_2E_ANH_XA_CONG_THUC.md` · `PHAN_LOAI_XAC_NHAN_49_CHI_TIEU.md` · `TRANG_THAI_YC_01_25.md`.
+- **Tài liệu mới cần đọc kèm:** `GIAO_BAN_SO_LIEU_PHASE1_PHAN_TICH.md` · `ANH_XA_BIEU_MAU_DANH_GIA.md` (bản 2 — đính chính; thay tên cũ `KPI_2C_2D_2E_ANH_XA_CONG_THUC.md`) · `PHAN_LOAI_XAC_NHAN_49_CHI_TIEU.md` · `TRANG_THAI_YC_01_25.md` · `DE_XUAT_MOI_TRUONG_UAT.md` · `RA_SOAT_AN_TOAN_DANG_NHAP_VA_PHAN_QUYEN.md`.
+
+### Cập nhật tiếp ngày 17/10/2026 (đợt 2 — sau rà soát lại toàn bộ `Dữ liệu.zip`)
+
+- **ĐÍNH CHÍNH quan trọng:** biểu **01A/01B/02A/02B đã có** trong `Dữ liệu.zip` (nằm trong workbook cá nhân dạng sheet — không chỉ ở file có chữ "Mẫu"). Đã trích xuất **công thức Excel gốc** (Bảng 1 → 01A/01B → 02A/02B; tổng điểm = Điểm Mục I + 70% × Mục II). Kết luận cũ "chưa có 02A/02B" **không còn hiệu lực** → `ANH_XA_BIEU_MAU_DANH_GIA.md`.
+- **Giữ nguyên, không thay đổi hệ thống:** 49 chỉ tiêu **chưa bật kể cả mức A**; mốc Tuần 41 **chưa xác nhận**; chỉ tiêu BTC/UBND/KH tháng **chưa nhập**; **chưa xoay JWT_SECRET**; **không xóa biến môi trường Vercel** trong bước này; **không migration/seed/deploy code** đợt này (chỉ tài liệu).
+- **Rà soát đăng nhập (đợt 2):** an toàn — 20 tài khoản hiện có không trùng biến thể; alias đệm số 0 hoạt động đúng; khóa đếm dùng chung theo khóa chuẩn hóa; alias không lách được tài khoản khóa. 3 khuyến nghị (1 quan trọng: chặn trùng alias khi **tạo** tài khoản) → `RA_SOAT_AN_TOAN_DANG_NHAP_VA_PHAN_QUYEN.md`.
+- **Nguyên tắc phân quyền (đơn vị nhấn mạnh):** quản trị hệ thống **không mặc nhiên** có thẩm quyền xác nhận số liệu thuế/kết quả nghiệp vụ — đã rà soát; ghi nhận 1 điểm tiềm ẩn cần xử lý khi được lệnh (module số liệu đang coi SYSTEM_ADMIN là "quản trị số liệu" qua quyền `system.config`; hiện **chưa có** tài khoản SYSTEM_ADMIN nào).
+- **Đề xuất môi trường UAT riêng:** chỉ đề xuất (Supabase project #2 + Vercel Preview scoped) → `DE_XUAT_MOI_TRUONG_UAT.md`. **Chưa tạo/migrate/seed.**
+- **Cập nhật YC:** bổ sung nội dung 6 mã YC-10/15/17/23/24/25 → `TRANG_THAI_YC_01_25.md`.
+- **Gói công việc tiếp theo đề xuất (duy nhất 1 gói):** thiết lập **môi trường UAT độc lập** để nghiệm thu an toàn (tiêu chí nghiệm thu chi tiết trong doc UAT).
 
 ---
 
