@@ -76,6 +76,16 @@ function cellVal(v: any): any {
   }
   return v;
 }
+/**
+ * Giá trị cache của ô công thức khi ĐỌC LẠI bằng ExcelJS.
+ * Lưu ý: hàm xuất ghi đúng `<v>0</v>` (đã đối chiếu raw XML xlsx), nhưng ExcelJS khi đọc lại
+ * bỏ qua cache = 0 (giá trị falsy) → ô trả về `{ formula }` không kèm `result`.
+ * Vì vậy ô `{ formula }` thiếu result được coi là cache 0 — đúng ý đồ ghi của hàm xuất.
+ */
+function cachedNum(v: any): any {
+  if (v && typeof v === "object" && "formula" in v && !("result" in v)) return 0;
+  return cellVal(v);
+}
 function sameNum(a: any, b: any): boolean {
   if (a === null || a === undefined || a === "") return b === null || b === undefined;
   if (b === null || b === undefined) return false;
@@ -241,12 +251,12 @@ async function main() {
         const E = e.factor, F = e.assignedQty, H = e.completedQty;
         const expG = E !== null && F !== null ? r2(E * F) : 0;
         const expI = E !== null && H !== null ? r2(E * H) : 0;
-        if (!sameNum(cellVal(row.getCell(7).value), expG)) mathBad.push(`R${d0 + i}: G ${cellVal(row.getCell(7).value)} ≠ ${expG}`);
-        if (!sameNum(cellVal(row.getCell(9).value), expI)) mathBad.push(`R${d0 + i}: I ${cellVal(row.getCell(9).value)} ≠ ${expI}`);
+        if (!sameNum(cachedNum(row.getCell(7).value), expG)) mathBad.push(`R${d0 + i}: G ${cachedNum(row.getCell(7).value)} ≠ ${expG}`);
+        if (!sameNum(cachedNum(row.getCell(9).value), expI)) mathBad.push(`R${d0 + i}: I ${cachedNum(row.getCell(9).value)} ≠ ${expI}`);
         if (e.dueDate && e.completedDate) {
           const K = Math.max(0, Math.floor((new Date(e.completedDate).getTime() - new Date(e.dueDate).getTime()) / 86400000));
           const expL = r2(expI - K * 0.25 * expI);
-          if (!sameNum(cellVal(row.getCell(12).value), expL)) mathBad.push(`R${d0 + i}: L ${cellVal(row.getCell(12).value)} ≠ ${expL}`);
+          if (!sameNum(cachedNum(row.getCell(12).value), expL)) mathBad.push(`R${d0 + i}: L ${cachedNum(row.getCell(12).value)} ≠ ${expL}`);
         }
       });
       add("8c", "Kết quả tính sẵn (cache) khớp công thức G=E*F, I=E*H, L=I-K*25%*I (3 dòng đầu)", mathBad.length === 0, mathBad.join("; ") || "khớp");

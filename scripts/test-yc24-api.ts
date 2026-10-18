@@ -1,17 +1,18 @@
 /**
  * YC-24 — Kiểm thử API THẬT trên môi trường test cục bộ (localhost:3100 + PostgreSQL local).
  *
- * 12 kịch bản (phần API; phần UI do scripts/test-yc24-ui.ts):
- *  S1  Phân công 1 người / 1 vị trí (snapshot nội dung; chống trùng ô)
+ * Phương án B — bảng phân công định danh theo (BỘ PHẬN + NGÀY + Ô):
+ *  S1  Phân công 1 người / 1 vị trí (snapshot nội dung; chống trùng ô TRONG CÙNG BỘ PHẬN)
  *  S2  Nhiều người cùng một vị trí (nhiều ô)
+ *  PA-B Hai bộ phận cùng ngày cùng tồn tại độc lập; danh mục riêng; chặn unitId giả mạo
  *  S3  Nhiều nhóm nhiệm vụ trong cùng một ngày
- *  S4  Đổi người thực hiện — bắt buộc lý do (≥3 ký tự) + lưu vết audit
+ *  S4  Đổi người thực hiện — bắt buộc lý do (≥3 ký tự) + lưu vết audit + cảnh báo chéo bộ phận
  *  S5  Cán bộ có đơn nghỉ đã duyệt — cảnh báo mềm, không chặn
  *  S6  Trùng phân công trong ngày — cờ overlapCount + cảnh báo
- *  S8  Ma trận quyền API (staff / trưởng bộ phận / lãnh đạo đơn vị / SYSTEM_ADMIN)
- *  S10 Xuất Excel đúng mẫu (cấu trúc khối in, không lặp dữ liệu, không trộn ngày)
+ *  S8  Ma trận quyền API (staff / trưởng bộ phận / lãnh đạo đơn vị / SYSTEM_ADMIN) theo bộ phận
+ *  S10 Xuất Excel theo ĐÚNG MỘT bộ phận (tiêu đề/bìa thể hiện bộ phận; không trộn ngày/bộ phận)
  *  S12 Không tạo Task từ phân công; không thay đổi lịch sử khi sửa danh mục
- *  + Backward-compat dữ liệu cũ (không positionId), thông tin tổng hợp ngày, dọn dẹp sau test.
+ *  + Backward-compat dữ liệu cũ (không positionId), thông tin tổng hợp ngày THEO BỘ PHẬN, dọn dẹp sau test.
  *
  * Chạy:
  *   $env:DATABASE_URL="postgresql://postgres:postgres@localhost:54329/talung_dev"; $env:DIRECT_URL=$env:DATABASE_URL;
@@ -223,6 +224,16 @@ async function main() {
   });
   if (!leave) throw new Error("Không có đơn nghỉ đã duyệt trong khoảng 16–26/10 để test cảnh báo (S5)");
   const leaveDate = new Date(leave.startDate);
+  // Bộ phận của người có đơn nghỉ (bảng phân công S5 sẽ thuộc bộ phận này; fallback bộ phận A)
+  const leaveUnitRow = await prisma.orgUnit.findFirst({
+    where: { level: { gt: 1 }, status: "ACTIVE", assignments: { some: { personId: leave.personId, isPrimary: true } } },
+    select: { id: true, code: true },
+  });
+  const leaveUnitId = leaveUnitRow?.id || deptA.unitId!;
+  // Tên đơn vị (cho kiểm tra tiêu đề/bìa file xuất — Phương án B)
+  const deptAUnit = await prisma.orgUnit.findUnique({ where: { id: deptA.unitId! }, select: { name: true, code: true } });
+  const deptBUnit = await prisma.orgUnit.findUnique({ where: { id: deptB.unitId! }, select: { name: true, code: true } });
+  if (!deptAUnit || !deptBUnit) throw new Error("Thiếu đơn vị bộ phận A/B trong DB test");
 
   // Danh mục vị trí
   const posRows = await prisma.dutyPosition.findMany({ orderBy: { sortOrder: "asc" } });
@@ -274,6 +285,7 @@ async function main() {
   // =====================================================================
   console.log("\n[S1] Phân công 1 người / 1 vị trí\n");
   const s1 = await api("POST", "/api/rosters", tDeptA, {
+    unitId: deptA.unitId,
     date: "2026-10-19",
     personId: p1.id,
     positionId: POS["YC24-04"].id,
@@ -289,34 +301,35 @@ async function main() {
       s1Row?.slotLabel === null,
     `title="${s1Row?.positionTitle}" slotKey="${s1Row?.slotKey}"`
   );
-  check("S1c. Bản ghi tự gắn đơn vị chính của cán bộ được phân công", s1Row?.unitId === deptA.unitId);
+  check("S1c. Bản ghi gắn ĐÚNG bộ phận của bảng phân công (không suy từ client khác)", s1Row?.unitId === deptA.unitId);
 
   const s1dup = await api("POST", "/api/rosters", tDeptA, {
+    unitId: deptA.unitId,
     date: "2026-10-19",
     personId: p2.id,
     positionId: POS["YC24-04"].id,
     slotOrder: 0,
   });
-  check("S1d. Chống trùng ô: phân công lại đúng ô/ngày đã có người → 409", s1dup.status === 409, `HTTP ${s1dup.status}`);
+  check("S1d. Chống trùng ô TRONG CÙNG BỘ PHẬN: phân công lại đúng ô/ngày đã có người → 409", s1dup.status === 409, `HTTP ${s1dup.status}`);
 
-  const noAuth = await api("POST", "/api/rosters", undefined, { date: "2026-10-19", personId: p1.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
+  const noAuth = await api("POST", "/api/rosters", undefined, { unitId: deptA.unitId, date: "2026-10-19", personId: p1.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
   check("S1e. Không đăng nhập → 401", noAuth.status === 401, `HTTP ${noAuth.status}`);
 
-  const adminPost = await api("POST", "/api/rosters", tAdmin, { date: "2026-10-19", personId: p1.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
+  const adminPost = await api("POST", "/api/rosters", tAdmin, { unitId: deptA.unitId, date: "2026-10-19", personId: p1.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
   check("S1f. SYSTEM_ADMIN không được phân công (403)", adminPost.status === 403, `HTTP ${adminPost.status}`);
 
-  const staffPost = await api("POST", "/api/rosters", tStaff, { date: "2026-10-19", personId: p1.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
+  const staffPost = await api("POST", "/api/rosters", tStaff, { unitId: deptA.unitId, date: "2026-10-19", personId: p1.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
   check("S1g. Cán bộ không được phân công (403)", staffPost.status === 403, `HTTP ${staffPost.status}`);
 
-  const badSlot = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-19", personId: p2.id, positionId: POS["YC24-04"].id, slotOrder: 5 });
+  const badSlot = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-19", personId: p2.id, positionId: POS["YC24-04"].id, slotOrder: 5 });
   check("S1h. Ô ngoài phạm vi vị trí → 400", badSlot.status === 400, `HTTP ${badSlot.status}`);
 
   // =====================================================================
   // S2 — Nhiều người cùng một vị trí (nhiều ô)
   // =====================================================================
   console.log("\n[S2] Nhiều người cùng một vị trí\n");
-  const s2a = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-19", personId: p2.id, positionId: POS["YC24-02"].id, slotOrder: 0 });
-  const s2b = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-19", personId: p3.id, positionId: POS["YC24-02"].id, slotOrder: 1 });
+  const s2a = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-19", personId: p2.id, positionId: POS["YC24-02"].id, slotOrder: 0 });
+  const s2b = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-19", personId: p3.id, positionId: POS["YC24-02"].id, slotOrder: 1 });
   check("S2a. Ô 1 của vị trí 2 ô: phân công người thứ nhất (201)", s2a.status === 201);
   check("S2b. Ô 2 cùng vị trí: phân công người thứ hai (201)", s2b.status === 201);
   check(
@@ -324,22 +337,82 @@ async function main() {
     s2a.json?.data?.personId !== s2b.json?.data?.personId && s2a.json?.data?.slotKey !== s2b.json?.data?.slotKey
   );
 
-  const s2day = await api("GET", "/api/rosters?from=2026-10-19&to=2026-10-19", tDeptA);
+  const s2day = await api("GET", `/api/rosters?from=2026-10-19&to=2026-10-19&unitId=${deptA.unitId}`, tDeptA);
   const s2rows = (s2day.json?.data || []).filter((r: any) => r.positionId === POS["YC24-02"].id);
   check("S2d. GET theo ngày trả đủ 2 dòng của vị trí 2 ô", s2rows.length === 2, `${s2rows.length} dòng`);
 
-  // Đơn vị B phân công cán bộ B (kiểm tra phạm vi dữ liệu 2 đơn vị)
-  const bRow = await api("POST", "/api/rosters", tDeptB, { date: "2026-10-19", personId: pB.id, positionId: POS["YC24-06"].id, slotOrder: 0 });
-  check("S2e. Trưởng bộ phận B phân công cán bộ B vào ô có nhãn (NC) thành công", bRow.status === 201 && bRow.json?.data?.slotLabel === "NC", `HTTP ${bRow.status}, nhãn="${bRow.json?.data?.slotLabel}"`);
+  // =====================================================================
+  // PA-B — Bảng phân công ĐỘC LẬP theo bộ phận (Phương án B)
+  // =====================================================================
+  console.log("\n[PA-B] Bảng phân công độc lập theo bộ phận\n");
+  const bPos = await api("POST", "/api/rosters/positions", tDeptB, {
+    unitId: deptB.unitId,
+    title: "[TEST] Vị trí kiểm thử bộ phận B",
+    detail: "Dòng phụ B",
+    slots: [{ k: "s1", l: "NC" }],
+  });
+  check("PA-B1. Trưởng bộ phận B tạo được vị trí trong danh mục CỦA BỘ PHẬN MÌNH (201)", bPos.status === 201, `HTTP ${bPos.status}`);
+  const bPosId = bPos.json?.data?.id;
+
+  const bCrossPos = await api("POST", "/api/rosters", tDeptB, { unitId: deptB.unitId, date: "2026-10-19", personId: pB.id, positionId: POS["YC24-06"].id, slotOrder: 0 });
+  check("PA-B2. Vị trí thuộc danh mục bộ phận A KHÔNG dùng được cho bảng của bộ phận B (400)", bCrossPos.status === 400, `HTTP ${bCrossPos.status}`);
+
+  const bRow = await api("POST", "/api/rosters", tDeptB, { unitId: deptB.unitId, date: "2026-10-19", personId: pB.id, positionId: bPosId, slotOrder: 0 });
+  check(
+    "PA-B3. Trưởng bộ phận B phân công vào ô có nhãn của danh mục B (201, nhãn NC)",
+    bRow.status === 201 && bRow.json?.data?.slotLabel === "NC",
+    `HTTP ${bRow.status}, nhãn="${bRow.json?.data?.slotLabel}"`
+  );
+  const bRowId = bRow.json?.data?.id;
+
+  const aSameDay = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-19", personId: p3.id, positionId: POS["YC24-03"].id, slotOrder: 0 });
+  check("PA-B4. CÙNG NGÀY, bộ phận A phân công ô khác — hai bảng cùng tồn tại song song (201)", aSameDay.status === 201, `HTTP ${aSameDay.status}`);
+
+  const dayA = await api("GET", `/api/rosters?from=2026-10-19&to=2026-10-19&unitId=${deptA.unitId}`, tDeptA);
+  const dayB2 = await api("GET", `/api/rosters?from=2026-10-19&to=2026-10-19&unitId=${deptB.unitId}`, tDeptB);
+  check(
+    "PA-B5. Dữ liệu hai bộ phận KHÔNG lẫn nhau (A chỉ thấy A, B chỉ thấy B)",
+    (dayA.json?.data || []).length > 0 &&
+      (dayA.json?.data || []).every((r: any) => r.unitId === deptA.unitId) &&
+      (dayB2.json?.data || []).length > 0 &&
+      (dayB2.json?.data || []).every((r: any) => r.unitId === deptB.unitId),
+    `A=${dayA.json?.data?.length || 0} dòng, B=${dayB2.json?.data?.length || 0} dòng`
+  );
+
+  const forgedPost = await api("POST", "/api/rosters", tDeptA, { unitId: deptB.unitId, date: "2026-10-19", personId: p1.id, positionId: bPosId, slotOrder: 0 });
+  check("PA-B6. unitId giả mạo (ngoài phạm vi) bị chặn ở backend (403)", forgedPost.status === 403, `HTTP ${forgedPost.status}`);
+
+  const catCross = await api("PATCH", "/api/rosters/positions", tDeptA, { id: bPosId, title: "Sửa trộm danh mục B" });
+  check("PA-B7. Trưởng bộ phận A KHÔNG sửa được danh mục của bộ phận B (403)", catCross.status === 403, `HTTP ${catCross.status}`);
+
+  const bPosList = await api("GET", `/api/rosters/positions?unitId=${deptB.unitId}`, tDeptB);
+  const bPosCodes: string[] = (bPosList.json?.data || []).map((p: any) => p.code);
+  check(
+    "PA-B9. Danh mục trả về theo bộ phận (B thấy vị trí của B; 8 mẫu của A không lộ sang B)",
+    bPosList.status === 200 && bPosCodes.includes(bPos.json?.data?.code) && !bPosCodes.includes("YC24-06"),
+    `${deptBUnit!.code}: [${bPosCodes.join(", ")}]`
+  );
+
+  const leadBoard = await api("GET", "/api/rosters?from=2026-10-19&to=2026-10-19", tLeader);
+  const bsList: any[] = leadBoard.json?.boardStatus || [];
+  check(
+    "PA-B8. Lãnh đạo đơn vị thấy trạng thái đã/chưa lập bảng theo TỪNG bộ phận trong kỳ",
+    leadBoard.status === 200 &&
+      bsList.length >= 6 &&
+      (bsList.find((b) => b.unitId === deptA.unitId)?.assignments || 0) > 0 &&
+      (bsList.find((b) => b.unitId === deptB.unitId)?.assignments || 0) > 0 &&
+      bsList.some((b) => b.assignments === 0 && b.dayInfos === 0),
+    bsList.map((b) => `${String(b.unitId).slice(0, 8)}:${b.assignments}`).join(" ")
+  );
 
   // =====================================================================
   // S3 — Nhiều nhóm nhiệm vụ trong cùng một ngày
   // =====================================================================
   console.log("\n[S3] Nhiều nhóm nhiệm vụ trong cùng một ngày (20/10)\n");
-  const s3a = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-20", personId: p4.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
-  const s3b = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-20", personId: p1.id, positionId: POS["YC24-05"].id, slotOrder: 0 });
-  const s3c = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-20", personId: p2.id, positionId: POS["YC24-07"].id, slotOrder: 0 });
-  const s3day = await api("GET", "/api/rosters?from=2026-10-20&to=2026-10-20", tDeptA);
+  const s3a = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-20", personId: p4.id, positionId: POS["YC24-01"].id, slotOrder: 0 });
+  const s3b = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-20", personId: p1.id, positionId: POS["YC24-05"].id, slotOrder: 0 });
+  const s3c = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-20", personId: p2.id, positionId: POS["YC24-07"].id, slotOrder: 0 });
+  const s3day = await api("GET", `/api/rosters?from=2026-10-20&to=2026-10-20&unitId=${deptA.unitId}`, tDeptA);
   const s3rows = s3day.json?.data || [];
   const s3posIds = new Set(s3rows.map((r: any) => r.positionId));
   check(
@@ -364,7 +437,14 @@ async function main() {
   check("S4b. Lý do quá ngắn (2 ký tự) → 400", s4short.status === 400, `HTTP ${s4short.status}`);
 
   const s4cross = await api("PATCH", "/api/rosters", tDeptA, { id: s1Row!.id, personId: pB.id, reason: "Đổi sang cán bộ bộ phận khác" });
-  check("S4c. Đổi sang cán bộ NGOÀI phạm vi bộ phận → 403", s4cross.status === 403, `HTTP ${s4cross.status}`);
+  check(
+    "S4c. Đổi sang cán bộ BỘ PHẬN KHÁC: CHO PHÉP nhưng kèm cảnh báo chéo bộ phận (chỉ cảnh báo, không chặn)",
+    s4cross.status === 200 && !!s4cross.json?.crossWarning,
+    `HTTP ${s4cross.status}, cảnh báo="${s4cross.json?.crossWarning || "(không có)"}"`
+  );
+
+  const s4sec = await api("PATCH", "/api/rosters", tDeptA, { id: bRowId, personId: p4.id, reason: "Sửa trộm bảng bộ phận khác" });
+  check("S4c2. Trưởng bộ phận A KHÔNG đổi được người trên bảng của bộ phận B (403)", s4sec.status === 403, `HTTP ${s4sec.status}`);
 
   const s4 = await api("PATCH", "/api/rosters", tDeptA, { id: s1Row!.id, personId: p2.id, reason: "Điều chỉnh theo phân công mới của Lãnh đạo đội" });
   check("S4d. Đổi người kèm lý do hợp lệ → 200", s4.status === 200, `HTTP ${s4.status}`);
@@ -381,7 +461,7 @@ async function main() {
   const auNew: any = auditUpd?.newData || {};
   check(
     "S4f. Lưu vết audit: người cũ → người mới + lý do được ghi lại",
-    !!auditUpd && auOld.personId === p1.id && auNew.personId === p2.id && String(auNew.reason).includes("Điều chỉnh"),
+    !!auditUpd && auOld.personId === pB.id && auNew.personId === p2.id && String(auNew.reason).includes("Điều chỉnh"),
     `old=${auOld.personId?.slice(0, 8)}… new=${auNew.personId?.slice(0, 8)}…`
   );
 
@@ -390,15 +470,16 @@ async function main() {
   // =====================================================================
   console.log("\n[S5] Cán bộ có đơn nghỉ đã duyệt — cảnh báo, không chặn\n");
   const s5 = await api("POST", "/api/rosters", tLeader, {
+    unitId: leaveUnitId,
     date: ISO(leaveDate),
     personId: leave.personId,
-    positionId: POS["YC24-01"].id,
+    positionId: bPosId,
     slotOrder: 0,
   });
   check("S5a. Vẫn CHO LƯU phân công (không chặn cứng) → 201", s5.status === 201, `HTTP ${s5.status}`);
   check("S5b. Phản hồi kèm cảnh báo trùng đơn nghỉ đã duyệt", !!s5.json?.warning && !!s5.json?.data?.leaveClash, `${s5.json?.warning || "(không có cảnh báo)"}`);
 
-  const s5day = await api("GET", `/api/rosters?from=${ISO(leaveDate)}&to=${ISO(leaveDate)}`, tLeader);
+  const s5day = await api("GET", `/api/rosters?from=${ISO(leaveDate)}&to=${ISO(leaveDate)}&unitId=${leaveUnitId}`, tLeader);
   const s5row = (s5day.json?.data || []).find((r: any) => r.personId === leave.personId);
   check("S5c. GET kèm cờ leaveClash trên dòng bị trùng", !!s5row?.leaveClash, `leaveClash=${JSON.stringify(s5row?.leaveClash)}`);
   check(
@@ -410,9 +491,9 @@ async function main() {
   // S6 — Trùng phân công trong ngày (một người nhiều vị trí)
   // =====================================================================
   console.log("\n[S6] Trùng phân công trong ngày\n");
-  await api("POST", "/api/rosters", tDeptA, { date: "2026-10-21", personId: p2.id, positionId: POS["YC24-02"].id, slotOrder: 0 });
-  await api("POST", "/api/rosters", tDeptA, { date: "2026-10-21", personId: p2.id, positionId: POS["YC24-03"].id, slotOrder: 0 });
-  const s6day = await api("GET", "/api/rosters?from=2026-10-21&to=2026-10-21", tDeptA);
+  await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-21", personId: p2.id, positionId: POS["YC24-02"].id, slotOrder: 0 });
+  await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-21", personId: p2.id, positionId: POS["YC24-03"].id, slotOrder: 0 });
+  const s6day = await api("GET", `/api/rosters?from=2026-10-21&to=2026-10-21&unitId=${deptA.unitId}`, tDeptA);
   const s6rows = (s6day.json?.data || []).filter((r: any) => r.personId === p2.id);
   check("S6a. Cho phép một cán bộ nhiều vị trí trong ngày (không chặn cứng)", s6rows.length === 2, `${s6rows.length} dòng`);
   check("S6b. Cờ overlapCount = 2 để UI cảnh báo trùng phân công", s6rows.every((r: any) => r.overlapCount === 2));
@@ -422,56 +503,66 @@ async function main() {
   // =====================================================================
   console.log("\n[S8] Ma trận quyền — phần sửa danh mục + snapshot\n");
   const catDept = await api("PATCH", "/api/rosters/positions", tDeptA, { id: POS["YC24-01"].id, title: "Trực lãnh đạo (đổi thử)" });
-  check("S8g. Trưởng bộ phận KHÔNG được sửa danh mục vị trí (403)", catDept.status === 403, `HTTP ${catDept.status}`);
+  check("S8g. Trưởng bộ phận sửa được danh mục CỦA BỘ PHẬN MÌNH (200)", catDept.status === 200, `HTTP ${catDept.status}`);
   const catStaff = await api("PATCH", "/api/rosters/positions", tStaff, { id: POS["YC24-01"].id, title: "Trực lãnh đạo (đổi thử)" });
   check("S8h. Cán bộ KHÔNG được sửa danh mục vị trí (403)", catStaff.status === 403, `HTTP ${catStaff.status}`);
   const catAdmin = await api("PATCH", "/api/rosters/positions", tAdmin, { id: POS["YC24-01"].id, title: "Trực lãnh đạo (đổi thử)" });
   check("S8i. SYSTEM_ADMIN KHÔNG được sửa danh mục vị trí (403)", catAdmin.status === 403, `HTTP ${catAdmin.status}`);
 
-  const catLeader = await api("PATCH", "/api/rosters/positions", tLeader, { id: POS["YC24-01"].id, title: "Trực lãnh đạo (KIỂM THỬ)" });
+  const catLeader = await api("PATCH", "/api/rosters/positions", tLeader, { id: POS["YC24-04"].id, title: POS["YC24-04"].title + " (KIỂM THỬ)" });
   check("S8j. Lãnh đạo đơn vị sửa được danh mục (200)", catLeader.status === 200, `HTTP ${catLeader.status}`);
 
-  const snapCheck = await api("GET", `/api/rosters?from=${ISO(leaveDate)}&to=2026-10-20`, tLeader);
-  const snapRow = (snapCheck.json?.data || []).find((r: any) => r.positionId === POS["YC24-01"].id);
+  const snapCheck = await api("GET", `/api/rosters?from=2026-10-19&to=2026-10-19&unitId=${deptA.unitId}`, tLeader);
+  const snapRow = (snapCheck.json?.data || []).find((r: any) => r.id === s1Row!.id);
   check(
     "S12a. Sửa danh mục KHÔNG làm thay đổi lịch sử: bản ghi cũ giữ nguyên tiêu đề đã ghi",
-    !!snapRow && snapRow.positionTitle === POS["YC24-01"].title,
-    `bản ghi="${snapRow?.positionTitle}" — danh mục mới="Trực lãnh đạo (KIỂM THỬ)"`
+    !!snapRow && snapRow.positionTitle === POS["YC24-04"].title,
+    `bản ghi="${snapRow?.positionTitle}" — danh mục mới="${POS["YC24-04"].title} (KIỂM THỬ)"`
   );
 
+  await api("PATCH", "/api/rosters/positions", tLeader, { id: POS["YC24-04"].id, title: POS["YC24-04"].title });
   await api("PATCH", "/api/rosters/positions", tLeader, { id: POS["YC24-01"].id, title: POS["YC24-01"].title });
   const catBack = await prisma.dutyPosition.findUnique({ where: { id: POS["YC24-01"].id } });
-  check("S12b. Khôi phục tên danh mục về nguyên trạng", norm(catBack?.title) === norm(POS["YC24-01"].title));
+  const catBack4 = await prisma.dutyPosition.findUnique({ where: { id: POS["YC24-04"].id } });
+  check(
+    "S12b. Khôi phục tên danh mục về nguyên trạng",
+    norm(catBack?.title) === norm(POS["YC24-01"].title) && norm(catBack4?.title) === norm(POS["YC24-04"].title)
+  );
 
   await api("PATCH", "/api/rosters/positions", tLeader, { id: POS["YC24-07"].id, status: "INACTIVE" });
-  const inactivePost = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-22", personId: p3.id, positionId: POS["YC24-07"].id, slotOrder: 0 });
+  const inactivePost = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-22", personId: p3.id, positionId: POS["YC24-07"].id, slotOrder: 0 });
   check("S8k. Vị trí ngừng sử dụng: KHÔNG cho phân công mới (400)", inactivePost.status === 400, `HTTP ${inactivePost.status}`);
   await api("PATCH", "/api/rosters/positions", tLeader, { id: POS["YC24-07"].id, status: "ACTIVE" });
   const reactivated = await prisma.dutyPosition.findUnique({ where: { id: POS["YC24-07"].id } });
   check("S8l. Bật lại trạng thái vị trí về ACTIVE", reactivated?.status === "ACTIVE");
 
-  const seedAgain = await api("POST", "/api/rosters/positions", tLeader, { action: "seed-defaults" });
-  check("S8m. Khôi phục vị trí mẫu là idempotent (đủ 8 mẫu → tạo thêm 0)", seedAgain.status === 200 && seedAgain.json?.created === 0, `created=${seedAgain.json?.created}`);
+  const seedAgain = await api("POST", "/api/rosters/positions", tLeader, { action: "seed-defaults", unitId: deptA.unitId });
+  check(
+    "S8m. Khôi phục vị trí mẫu là idempotent cho ĐÚNG bộ phận chỉ định (đủ 8 mẫu → tạo thêm 0)",
+    seedAgain.status === 200 && seedAgain.json?.created === 0,
+    `created=${seedAgain.json?.created}, kept=${seedAgain.json?.kept}, skipped=${seedAgain.json?.skipped}`
+  );
 
-  const newPos = await api("POST", "/api/rosters/positions", tLeader, { title: "[TEST] Vị trí kiểm thử tự động YC-24", detail: "Dòng phụ kiểm thử", slots: [{ k: "s1", l: null }] });
-  check("S8n. Lãnh đạo đơn vị tạo vị trí mới (201, mã tự sinh)", newPos.status === 201 && /^YC24-\d+$/.test(newPos.json?.data?.code || ""), `mã=${newPos.json?.data?.code}`);
+  const newPos = await api("POST", "/api/rosters/positions", tLeader, { unitId: deptA.unitId, title: "[TEST] Vị trí kiểm thử tự động YC-24", detail: "Dòng phụ kiểm thử", slots: [{ k: "s1", l: null }] });
+  check("S8n. Lãnh đạo đơn vị tạo vị trí mới trong bộ phận (201, mã tự sinh)", newPos.status === 201 && /^YC24-\d+$/.test(newPos.json?.data?.code || ""), `mã=${newPos.json?.data?.code}`);
   const newPosId = newPos.json?.data?.id;
   const newPosSlot = await api("PATCH", "/api/rosters/positions", tLeader, { id: newPosId, slots: [{ k: "s1", l: null }, { k: "s2", l: "K2" }] });
   check("S8o. Sửa số ô + nhãn ô của vị trí (200)", newPosSlot.status === 200 && Array.isArray(newPosSlot.json?.data?.slots) && newPosSlot.json.data.slots.length === 2);
-  const newPosAssign = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-22", personId: p4.id, positionId: newPosId, slotOrder: 1 });
+  const newPosAssign = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-22", personId: p4.id, positionId: newPosId, slotOrder: 1 });
   check("S8p. Phân công ngay vào vị trí mới, đúng ô có nhãn (201, nhãn K2)", newPosAssign.status === 201 && newPosAssign.json?.data?.slotLabel === "K2", `HTTP ${newPosAssign.status}`);
 
   // =====================================================================
   // Thông tin tổng hợp ngày (Tổng số công chức / Có mặt / Vắng / Lý do)
   // =====================================================================
-  console.log("\n[Phần bổ sung] Thông tin tổng hợp ngày\n");
-  const diStaff = await api("PUT", "/api/rosters/day-info", tStaff, { date: "2026-10-19", totalStaff: 24 });
+  console.log("\n[Phần bổ sung] Thông tin tổng hợp ngày THEO BỘ PHẬN\n");
+  const diStaff = await api("PUT", "/api/rosters/day-info", tStaff, { unitId: deptA.unitId, date: "2026-10-19", totalStaff: 24 });
   check("B1. Cán bộ không được sửa thông tin tổng hợp ngày (403)", diStaff.status === 403, `HTTP ${diStaff.status}`);
-  const diAdmin = await api("PUT", "/api/rosters/day-info", tAdmin, { date: "2026-10-19", totalStaff: 24 });
+  const diAdmin = await api("PUT", "/api/rosters/day-info", tAdmin, { unitId: deptA.unitId, date: "2026-10-19", totalStaff: 24 });
   check("B2. SYSTEM_ADMIN không được sửa thông tin tổng hợp ngày (403)", diAdmin.status === 403, `HTTP ${diAdmin.status}`);
-  const diBad = await api("PUT", "/api/rosters/day-info", tDeptA, { date: "2026-10-19", totalStaff: -5 });
+  const diBad = await api("PUT", "/api/rosters/day-info", tDeptA, { unitId: deptA.unitId, date: "2026-10-19", totalStaff: -5 });
   check("B3. Số liệu âm → 400", diBad.status === 400, `HTTP ${diBad.status}`);
   const diPut = await api("PUT", "/api/rosters/day-info", tDeptA, {
+    unitId: deptA.unitId,
     date: "2026-10-19",
     totalStaff: 24,
     presentStaff: 22,
@@ -479,21 +570,40 @@ async function main() {
     absentReason: "01 nghỉ phép, 01 đi công tác",
   });
   check("B4. Trưởng bộ phận lưu thông tin tổng hợp ngày (200)", diPut.status === 200, `HTTP ${diPut.status}`);
-  const diPut2 = await api("PUT", "/api/rosters/day-info", tDeptA, { date: "2026-10-19", notes: "Lưu lần 2 (upsert)" });
-  check("B5. Lưu lần 2 cùng ngày KHÔNG tạo bản ghi trùng (upsert)", diPut2.status === 200 && diPut2.json?.data?.id === diPut.json?.data?.id);
-  const diGet = await api("GET", "/api/rosters/day-info?from=2026-10-19&to=2026-10-25", tDeptA);
+  const diPut2 = await api("PUT", "/api/rosters/day-info", tDeptA, { unitId: deptA.unitId, date: "2026-10-19", notes: "Lưu lần 2 (upsert)" });
+  check("B5. Lưu lần 2 cùng NGÀY + cùng BỘ PHẬN KHÔNG tạo bản ghi trùng (upsert)", diPut2.status === 200 && diPut2.json?.data?.id === diPut.json?.data?.id);
+  const diGet = await api("GET", `/api/rosters/day-info?from=2026-10-19&to=2026-10-25&unitId=${deptA.unitId}`, tDeptA);
   check(
     "B6. GET thông tin ngày trả đúng số liệu đã nhập",
     (diGet.json?.data || []).some((d: any) => d.presentStaff === 22 && d.absentCount === 2 && String(d.absentReason).includes("nghỉ phép"))
+  );
+
+  const diB = await api("PUT", "/api/rosters/day-info", tDeptB, {
+    unitId: deptB.unitId,
+    date: "2026-10-19",
+    totalStaff: 9,
+    presentStaff: 8,
+    absentCount: 1,
+    absentReason: "01 nghỉ phép",
+  });
+  check(
+    "B7. CÙNG NGÀY, thông tin tổng hợp của bộ phận B là bản ghi RIÊNG (không ghi đè bộ phận A)",
+    diB.status === 200 && diB.json?.data?.id !== diPut.json?.data?.id && diB.json?.data?.unitId === deptB.unitId,
+    `HTTP ${diB.status}`
+  );
+  const diGetA2 = await api("GET", `/api/rosters/day-info?from=2026-10-19&to=2026-10-19&unitId=${deptA.unitId}`, tDeptA);
+  check(
+    "B8. GET theo bộ phận A vẫn trả đúng số liệu A (không lẫn số liệu B)",
+    (diGetA2.json?.data || []).some((d: any) => d.totalStaff === 24 && d.presentStaff === 22)
   );
 
   // =====================================================================
   // Backward-compat: dữ liệu cũ không gắn vị trí (ca trực cũ)
   // =====================================================================
   console.log("\n[Backward-compat] Bản ghi cũ không gắn vị trí\n");
-  const legacy = await api("POST", "/api/rosters", tDeptA, { date: "2026-10-23", shift: "SANG", post: "Kiểm tra hồ sơ", personId: p1.id });
+  const legacy = await api("POST", "/api/rosters", tDeptA, { unitId: deptA.unitId, date: "2026-10-23", shift: "SANG", post: "Kiểm tra hồ sơ", personId: p1.id });
   check("C1. Vẫn nhận body cũ (date/shift/post) → 201, slotKey rỗng", legacy.status === 201 && legacy.json?.data?.slotKey === null && legacy.json?.data?.positionId === null, `HTTP ${legacy.status}`);
-  const legacyGet = await api("GET", "/api/rosters?from=2026-10-23&to=2026-10-23", tDeptA);
+  const legacyGet = await api("GET", `/api/rosters?from=2026-10-23&to=2026-10-23&unitId=${deptA.unitId}`, tDeptA);
   check("C2. Dữ liệu cũ hiện trong GET theo ngày", (legacyGet.json?.data || []).length === 1);
 
   // =====================================================================
@@ -505,7 +615,10 @@ async function main() {
   const longExport = await api("GET", "/api/rosters/export?from=2026-10-01&to=2026-11-15", tDeptA);
   check("S10b. Khoảng xuất > 31 ngày → 400", longExport.status === 400, `HTTP ${longExport.status}`);
 
-  const exportRes = await fetch(`${BASE_URL}/api/rosters/export?from=2026-10-17&to=2026-10-25`, {
+  const noUnitExport = await api("GET", "/api/rosters/export?from=2026-10-19&to=2026-10-19", tLeader);
+  check("S10q. Tài khoản có NHIỀU bộ phận trong phạm vi xuất mà không chọn bộ phận → 400", noUnitExport.status === 400, `HTTP ${noUnitExport.status}`);
+
+  const exportRes = await fetch(`${BASE_URL}/api/rosters/export?from=2026-10-17&to=2026-10-25&unitId=${deptA.unitId}`, {
     headers: { Authorization: `Bearer ${tDeptA}` },
   });
   check("S10c. Trưởng bộ phận xuất được file .xlsx (200)", exportRes.status === 200, `HTTP ${exportRes.status}`);
@@ -527,10 +640,21 @@ async function main() {
     coverTexts.some((t) => t.includes("2026")) && coverTexts.some((t) => /phân công nhiệm vụ/i.test(t)),
     coverTexts.slice(0, 3).join(" / ")
   );
+  check(
+    "S10e2. Trang bìa thể hiện ĐÚNG bộ phận được xuất (không hardcode 'Bộ phận Nghiệp vụ')",
+    coverTexts.some((t) => t.toUpperCase().includes(deptAUnit!.name.toUpperCase())),
+    deptAUnit!.name
+  );
 
   const daySheets = ["Phân công 1", "Phân công 2", "Phân công 3"].map((n) => wb.getWorksheet(n)!).filter(Boolean);
   const allTexts = daySheets.flatMap((ws) => masterTexts(ws));
   const joined = allTexts.join("\n");
+
+  check(
+    "S10e3. Tiêu đề biểu trong file thể hiện đúng bộ phận được xuất (mỗi khối ngày)",
+    joined.includes(`PHÂN CÔNG NHIỆM VỤ ${deptAUnit!.name.toUpperCase()}`),
+    deptAUnit!.name
+  );
 
   let dateOk = true;
   const dateDetail: string[] = [];
@@ -620,7 +744,7 @@ async function main() {
   );
 
   // Xuất gọn: bỏ trang bìa + chỉ ngày có phân công
-  const exportSkip = await fetch(`${BASE_URL}/api/rosters/export?from=2026-10-17&to=2026-10-25&skipEmpty=1&cover=0`, {
+  const exportSkip = await fetch(`${BASE_URL}/api/rosters/export?from=2026-10-17&to=2026-10-25&unitId=${deptA.unitId}&skipEmpty=1&cover=0`, {
     headers: { Authorization: `Bearer ${tDeptA}` },
   });
   const bufSkip = Buffer.from(await exportSkip.arrayBuffer());
@@ -636,7 +760,7 @@ async function main() {
   );
 
   // Xuất theo từng ngày (đúng 1 khối)
-  const dayExport = await fetch(`${BASE_URL}/api/rosters/export?from=2026-10-19&to=2026-10-19`, { headers: { Authorization: `Bearer ${tDeptA}` } });
+  const dayExport = await fetch(`${BASE_URL}/api/rosters/export?from=2026-10-19&to=2026-10-19&unitId=${deptA.unitId}`, { headers: { Authorization: `Bearer ${tDeptA}` } });
   const wbDay = new ExcelJS.Workbook();
   const dayBuf = Buffer.from(await dayExport.arrayBuffer());
   const dayTmp = path.join(OUT_DIR, "export-19-19.xlsx");
@@ -680,7 +804,6 @@ async function main() {
   // DELETE + audit + dọn dẹp
   // =====================================================================
   console.log("\n[DELETE] Gỡ phân công + lưu vết\n");
-  const bRowId = bRow.json?.data?.id;
   const delOther = await api("DELETE", `/api/rosters?id=${s1Row!.id}`, tDeptB);
   check("D1. Trưởng bộ phận B không gỡ được phân công của bộ phận A (403)", delOther.status === 403, `HTTP ${delOther.status}`);
   const delStaff = await api("DELETE", `/api/rosters?id=${bRowId}`, tStaff);

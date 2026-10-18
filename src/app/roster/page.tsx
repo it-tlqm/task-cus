@@ -41,6 +41,8 @@ interface DutyRow {
   slotOrder: number | null;
   leaveClash: { type: string } | null;
   overlapCount: number;
+  /** Số phân công của cán bộ NGOÀI bảng này trong cùng ngày (chỉ số lượng — không lộ chi tiết ngoài quyền). */
+  overlapOutsideCount: number;
 }
 
 interface CatalogPosition {
@@ -79,6 +81,22 @@ interface LeaveLite {
   type: string;
   startDate: string;
   endDate: string;
+}
+
+/** Trạng thái lập bảng phân công của một bộ phận trong kỳ đang xem. */
+interface BoardStatusRow {
+  unitId: string;
+  assignments: number;
+  dayInfos: number;
+}
+
+/** Bản ghi lịch trực cũ chưa xác định được bộ phận — chỉ Lãnh đạo đơn vị thấy, để đối chiếu (không tự gán). */
+interface LegacyUnassignedRow {
+  id: string;
+  date: string;
+  shift: string;
+  post: string | null;
+  person: { id: string; fullName: string };
 }
 
 interface MatrixGroup {
@@ -226,9 +244,11 @@ export default function RosterPage() {
   const [positions, setPositions] = useState<CatalogPosition[]>([]);
   const [dayInfos, setDayInfos] = useState<DayInfoRow[]>([]);
   const [units, setUnits] = useState<UnitLite[]>([]);
+  const [boardStatus, setBoardStatus] = useState<BoardStatusRow[]>([]);
+  const [legacyUnassigned, setLegacyUnassigned] = useState<LegacyUnassignedRow[]>([]);
   const [leaves, setLeaves] = useState<LeaveLite[]>([]);
   const [people, setPeople] = useState<PersonLite[]>([]);
-  const [fUnitId, setFUnitId] = useState("");
+  const [selUnitId, setSelUnitId] = useState("");
   const [fPersonId, setFPersonId] = useState("");
   const [fPositionId, setFPositionId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -243,7 +263,7 @@ export default function RosterPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ from: rangeFrom, to: rangeTo });
-      if (fUnitId) params.set("unitId", fUnitId);
+      if (selUnitId) params.set("unitId", selUnitId);
       const res = await fetch(`/api/rosters?${params.toString()}`);
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -255,12 +275,16 @@ export default function RosterPage() {
       setDayInfos(json.dayInfos || []);
       setUnits(json.units || []);
       setLeaves(json.leaves || []);
+      setBoardStatus(json.boardStatus || []);
+      setLegacyUnassigned(json.legacyUnassigned || []);
+      // Backend xác định bộ phận mặc định (trưởng bộ phận / cán bộ 1 bộ phận) — đồng bộ lại selector.
+      if (json.selectedUnitId && json.selectedUnitId !== selUnitId) setSelUnitId(json.selectedUnitId);
     } catch (err: any) {
       toast.error("Lỗi kết nối: " + err.message);
     } finally {
       setLoading(false);
     }
-  }, [rangeFrom, rangeTo, fUnitId]);
+  }, [rangeFrom, rangeTo, selUnitId]);
 
   useEffect(() => {
     fetchData();
@@ -292,6 +316,8 @@ export default function RosterPage() {
       ),
     [rows, fPersonId, fPositionId]
   );
+
+  const selUnit = useMemo(() => units.find((u) => u.id === selUnitId) || null, [units, selUnitId]);
 
   const groups = useMemo(() => buildMatrixGroups(displayRows, positions), [displayRows, positions]);
 
@@ -330,6 +356,11 @@ export default function RosterPage() {
     for (const [, arr] of byPersonDay) {
       if (arr.length > 1) {
         list.push(`${arr[0].person.fullName} — ngày ${fmtDM(arr[0].date)}: được phân công ${arr.length} vị trí trong ngày.`);
+      }
+      if (arr.some((r) => (r.overlapOutsideCount || 0) > 0)) {
+        list.push(
+          `${arr[0].person.fullName} — ngày ${fmtDM(arr[0].date)}: có phân công ở bộ phận khác trong cùng ngày — kiểm tra lại (chỉ cảnh báo, không chặn).`
+        );
       }
     }
     return list;
@@ -418,21 +449,30 @@ export default function RosterPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {units.length > 1 && (
+          {units.length > 1 ? (
             <select
-              data-testid="roster-filter-unit"
-              value={fUnitId}
-              onChange={(e) => setFUnitId(e.target.value)}
-              className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs max-w-[190px]"
-              title="Lọc theo bộ phận của cán bộ được phân công"
+              data-testid="roster-unit-select"
+              value={selUnitId}
+              onChange={(e) => setSelUnitId(e.target.value)}
+              className="rounded-lg border border-teal-300 bg-teal-50/60 px-2 py-1.5 text-xs font-semibold text-teal-900 max-w-[230px]"
+              title="Chọn bộ phận để xem/lập bảng phân công (mỗi bộ phận có bảng riêng)"
             >
-              <option value="">Tất cả bộ phận</option>
               {units.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
                 </option>
               ))}
             </select>
+          ) : (
+            selUnit && (
+              <span
+                data-testid="roster-unit-static"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-semibold text-slate-700 max-w-[230px] truncate"
+                title="Bộ phận đang xem"
+              >
+                {selUnit.name}
+              </span>
+            )
           )}
           <select
             data-testid="roster-filter-person"
@@ -477,11 +517,12 @@ export default function RosterPage() {
               Xuất Excel
             </button>
           )}
-          {isUnitLeader && (
+          {canApprove && (
             <button
               data-testid="roster-btn-catalog"
               onClick={() => setShowCatalog(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
+              title="Danh mục vị trí/nhiệm vụ của bộ phận đang xem"
             >
               <span className="material-symbols-outlined text-[16px]">list_alt</span>
               Danh mục vị trí
@@ -520,6 +561,66 @@ export default function RosterPage() {
         </div>
       )}
 
+      {/* Bộ phận đang xem + trạng thái đã/chưa lập bảng của các bộ phận trong phạm vi (Lãnh đạo chuyển nhanh) */}
+      <div className="flex flex-wrap items-center gap-1.5" data-testid="roster-unit-strip">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Bộ phận đang xem:</span>
+        <span
+          data-testid="roster-unit-label"
+          className="rounded-full bg-teal-700 text-white px-2.5 py-0.5 text-[11px] font-semibold max-w-[260px] truncate"
+        >
+          {selUnit?.name || "—"}
+        </span>
+        {units.length > 1 && (
+          <div className="hidden lg:flex flex-wrap items-center gap-1" data-testid="roster-unit-status">
+            {units.map((u) => {
+              const st = boardStatus.find((b) => b.unitId === u.id);
+              const active = selUnitId === u.id;
+              const has = (st?.assignments || 0) > 0 || (st?.dayInfos || 0) > 0;
+              return (
+                <button
+                  key={u.id}
+                  data-testid={`roster-unit-chip-${u.code}`}
+                  onClick={() => setSelUnitId(u.id)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
+                    active
+                      ? "border-teal-300 bg-teal-50 text-teal-800 font-semibold"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                  title={`${u.name} — ${has ? "đã có phân công trong kỳ đang xem" : "chưa lập bảng phân công trong kỳ đang xem"}`}
+                >
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${has ? "bg-emerald-500" : "bg-slate-300"}`} />
+                  {u.name}
+                  <span className="text-[10px] text-slate-400">{has ? `đã lập (${st?.assignments || 0})` : "chưa lập"}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Dữ liệu lịch trực cũ CHƯA xác định được bộ phận — chỉ Lãnh đạo đơn vị thấy, để đối chiếu; không tự gán bộ phận */}
+      {legacyUnassigned.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3" data-testid="roster-legacy-unassigned">
+          <div className="flex items-center gap-2 text-amber-800 text-xs font-bold uppercase tracking-wide">
+            <span className="material-symbols-outlined text-[16px]">help</span>
+            Dữ liệu lịch trực cũ chưa xác định bộ phận cần đối chiếu ({legacyUnassigned.length})
+          </div>
+          <ul className="mt-1.5 space-y-0.5">
+            {legacyUnassigned.slice(0, 10).map((r) => (
+              <li key={r.id} className="text-xs text-amber-800">
+                • {fmtDMY(r.date)} — {r.person.fullName} — {r.post?.trim() || SHIFT_LABELS[r.shift] || r.shift}
+              </li>
+            ))}
+            {legacyUnassigned.length > 10 && (
+              <li className="text-xs italic text-amber-700">… và {legacyUnassigned.length - 10} bản ghi khác</li>
+            )}
+          </ul>
+          <div className="mt-1 text-[11px] text-amber-700">
+            Hệ thống không tự suy đoán bộ phận cho các bản ghi này — đề nghị rà soát dữ liệu gốc trước khi gán.
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
           Đang tải phân công…
@@ -528,6 +629,11 @@ export default function RosterPage() {
         <>
           {/* Desktop: ma trận Vị trí × Ngày */}
           <div className="hidden lg:block rounded-xl border border-slate-200 bg-white overflow-hidden" data-testid="roster-matrix" data-tour="roster-week">
+            {positions.length === 0 && (
+              <div className="px-4 py-3 text-sm text-slate-500 border-b border-dashed border-slate-200" data-testid="roster-empty-catalog">
+                Bộ phận đang chọn chưa có danh mục vị trí/nhiệm vụ — Trưởng bộ phận hoặc Lãnh đạo đơn vị vào “Danh mục vị trí” (khôi phục 8 vị trí mẫu nếu cần) để thiết lập.
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
@@ -687,6 +793,8 @@ export default function RosterPage() {
       ) : (
         <DayFormView
           dateISO={selDay}
+          unitId={selUnitId}
+          unitName={selUnit?.name || ""}
           rows={rows}
           groups={buildMatrixGroups(rows, positions)}
           info={infoByDay.get(selDay)}
@@ -696,8 +804,12 @@ export default function RosterPage() {
           onEdit={() => setEditorDate(selDay)}
           onInfoSaved={fetchData}
           onQuickExport={async () => {
-            const url = `/api/rosters/export?from=${selDay}&to=${selDay}`;
-            await downloadExcel(url, `so-phan-cong_${selDay}.xlsx`);
+            if (!selUnitId) {
+              toast.error("Chưa xác định bộ phận để xuất — chọn bộ phận trước.");
+              return;
+            }
+            const url = `/api/rosters/export?from=${selDay}&to=${selDay}&unitId=${selUnitId}`;
+            await downloadExcel(url, `so-phan-cong_${selUnit?.code || ""}_${selDay}.xlsx`);
           }}
         />
       )}
@@ -707,6 +819,8 @@ export default function RosterPage() {
         <DayEditorModal
           key="editor"
           dateISO={editorDate}
+          unitId={selUnitId}
+          unitName={selUnit?.name || ""}
           onDateChange={setEditorDate}
           rows={rows}
           groups={buildMatrixGroups(rows, positions)}
@@ -719,16 +833,26 @@ export default function RosterPage() {
         />
       )}
 
-      {/* Modal danh mục vị trí */}
+      {/* Modal danh mục vị trí (theo bộ phận đang xem) */}
       {showCatalog && (
-        <CatalogModal positions={positions} onClose={() => setShowCatalog(false)} onChanged={fetchData} />
+        <CatalogModal
+          unitId={selUnitId}
+          unitName={selUnit?.name || ""}
+          isUnitLeader={isUnitLeader}
+          positions={positions}
+          onClose={() => setShowCatalog(false)}
+          onChanged={fetchData}
+        />
       )}
 
-      {/* Modal xuất Excel */}
+      {/* Modal xuất Excel (theo bộ phận đang xem) */}
       {showExport && (
         <ExportModal
           defaultFrom={rangeFrom}
           defaultTo={rangeTo}
+          unitId={selUnitId}
+          unitName={selUnit?.name || ""}
+          unitCode={selUnit?.code || ""}
           onClose={() => setShowExport(false)}
         />
       )}
@@ -767,6 +891,8 @@ async function downloadExcel(url: string, fallbackName: string): Promise<boolean
 /** Chế độ xem theo ngày: bảng đúng cấu trúc biểu mẫu + ô tổng hợp + cảnh báo. */
 function DayFormView({
   dateISO,
+  unitId,
+  unitName,
   rows,
   groups,
   info,
@@ -778,6 +904,8 @@ function DayFormView({
   onQuickExport,
 }: {
   dateISO: string;
+  unitId: string;
+  unitName: string;
   rows: DutyRow[];
   groups: MatrixGroup[];
   info: DayInfoRow | undefined;
@@ -823,12 +951,19 @@ function DayFormView({
       <div className="rounded-xl border border-slate-200 bg-white p-4 overflow-x-auto" data-testid="roster-day-form">
         <div className="text-center min-w-[520px]">
           <div className="text-sm font-bold text-slate-800 uppercase">Hải quan cửa khẩu Quốc tế Tà Lùng</div>
-          <div className="text-sm font-bold text-slate-800 uppercase mt-0.5">Phân công nhiệm vụ bộ phận nghiệp vụ</div>
+          <div className="text-sm font-bold text-slate-800 uppercase mt-0.5" data-testid="roster-day-form-title">
+            Phân công nhiệm vụ {unitName || "bộ phận"}
+          </div>
           <div className="text-xs italic text-slate-600 mt-0.5 underline underline-offset-4">
             Ngày {String(new Date(dateISO).getDate()).padStart(2, "0")} tháng {new Date(dateISO).getMonth() + 1} năm{" "}
             {new Date(dateISO).getFullYear()}
           </div>
         </div>
+        {groups.length === 0 && (
+          <div className="mt-2 text-xs text-slate-500 border border-dashed border-slate-300 rounded-lg p-2" data-testid="dayform-empty-catalog">
+            Bộ phận đang chọn chưa có danh mục vị trí/nhiệm vụ — vào “Danh mục vị trí” để thiết lập.
+          </div>
+        )}
         <table className="w-full mt-3 text-xs border-collapse min-w-[520px]">
           <thead>
             <tr>
@@ -907,20 +1042,24 @@ function DayFormView({
         </div>
       </div>
 
-      <DayInfoPanel key={dateISO} dateISO={dateISO} info={info} canAssign={canApprove} onSaved={onInfoSaved} />
+      <DayInfoPanel key={dateISO} dateISO={dateISO} unitId={unitId} unitName={unitName} info={info} canAssign={canApprove} onSaved={onInfoSaved} />
     </div>
   );
 }
 
-/** Ô tổng hợp theo ngày: Tổng số công chức / Có mặt / Vắng / Lý do (lãnh đạo nhập, biểu in giữ nguyên). */
+/** Ô tổng hợp theo ngày CỦA TỪNG BỘ PHẬN: Tổng số công chức / Có mặt / Vắng / Lý do (lãnh đạo nhập, biểu in giữ nguyên). */
 function DayInfoPanel({
   dateISO,
+  unitId,
+  unitName,
   info,
   canAssign,
   compact,
   onSaved,
 }: {
   dateISO: string;
+  unitId: string;
+  unitName?: string;
   info: DayInfoRow | undefined;
   canAssign: boolean;
   compact?: boolean;
@@ -953,7 +1092,7 @@ function DayInfoPanel({
       const res = await fetch("/api/rosters/day-info", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: dateISO, totalStaff: t, presentStaff: p, absentCount: a, absentReason: reason }),
+        body: JSON.stringify({ unitId, date: dateISO, totalStaff: t, presentStaff: p, absentCount: a, absentReason: reason }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -969,7 +1108,9 @@ function DayInfoPanel({
 
   return (
     <div className={`rounded-xl border border-slate-200 bg-white ${compact ? "p-3" : "p-4"}`}>
-      <div className="text-xs font-bold text-slate-700 uppercase">Thông tin tổng hợp ngày {fmtDMY(dateISO)}</div>
+      <div className="text-xs font-bold text-slate-700 uppercase">
+        Thông tin tổng hợp ngày {fmtDMY(dateISO)}{unitName ? ` — ${unitName}` : ""}
+      </div>
       {canAssign ? (
         <div className="mt-2 grid grid-cols-2 lg:grid-cols-5 gap-2 items-end">
           <label className="text-[11px] text-slate-500">
@@ -1037,6 +1178,8 @@ function DayInfoPanel({
 /** Modal phiếu phân công của một ngày: theo từng vị trí/ô, chọn cán bộ, đổi người kèm lý do. */
 function DayEditorModal({
   dateISO,
+  unitId,
+  unitName,
   onDateChange,
   rows,
   groups,
@@ -1048,6 +1191,8 @@ function DayEditorModal({
   onChanged,
 }: {
   dateISO: string;
+  unitId: string;
+  unitName: string;
   onDateChange: (d: string) => void;
   rows: DutyRow[];
   groups: MatrixGroup[];
@@ -1071,17 +1216,22 @@ function DayEditorModal({
       toast.error("Hãy chọn cán bộ trước khi phân công.");
       return;
     }
+    if (!unitId) {
+      toast.error("Chưa xác định bộ phận của bảng phân công — chọn bộ phận trước.");
+      return;
+    }
     setBusyKey(key);
     try {
       const res = await fetch("/api/rosters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: dateISO, personId, positionId: g.positionId, slotOrder: idx }),
+        body: JSON.stringify({ unitId, date: dateISO, personId, positionId: g.positionId, slotOrder: idx }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
         toast.success("Đã phân công nhiệm vụ.");
         if (json.warning) toast.warning(json.warning);
+        if (json.crossWarning) toast.warning(json.crossWarning);
         setSel((s) => ({ ...s, [key]: "" }));
         onChanged();
       } else {
@@ -1116,6 +1266,7 @@ function DayEditorModal({
       if (res.ok) {
         toast.success("Đã đổi người thực hiện (có lưu vết).");
         if (json.warning) toast.warning(json.warning);
+        if (json.crossWarning) toast.warning(json.crossWarning);
         setSel((s) => ({ ...s, [key]: "" }));
         setReasons((s) => ({ ...s, [key]: "" }));
         onChanged();
@@ -1162,9 +1313,11 @@ function DayEditorModal({
         <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 bg-white border-b border-slate-200">
           <div>
             <div className="text-sm font-bold text-slate-800" data-testid="editor-title">
-              Phiếu phân công ngày {fmtDMY(dateISO)}
+              Phiếu phân công ngày {fmtDMY(dateISO)}{unitName ? ` — ${unitName}` : ""}
             </div>
-            <div className="text-[11px] text-slate-500">Chọn cán bộ cho từng ô; đổi người phải ghi lý do (lưu vết).</div>
+            <div className="text-[11px] text-slate-500">
+              Bảng phân công của bộ phận đang xem; chọn cán bộ cho từng ô, đổi người phải ghi lý do (lưu vết).
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -1186,6 +1339,11 @@ function DayEditorModal({
         </div>
 
         <div className="p-4 space-y-4">
+          {activeGroups.length === 0 && (
+            <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500" data-testid="editor-empty-catalog">
+              Bộ phận đang chọn chưa có danh mục vị trí/nhiệm vụ — vào “Danh mục vị trí” trên thanh công cụ để thiết lập trước khi phân công.
+            </div>
+          )}
           {activeGroups.map((g) => {
             const lines = slotLinesFor(g, dayRows);
             return (
@@ -1249,7 +1407,18 @@ function DayEditorModal({
             );
           })}
 
-          {canAssign && <DayInfoPanel key={`${dateISO}-info`} dateISO={dateISO} info={info} canAssign={canAssign} compact onSaved={onChanged} />}
+          {canAssign && (
+            <DayInfoPanel
+              key={`${dateISO}-info`}
+              dateISO={dateISO}
+              unitId={unitId}
+              unitName={unitName}
+              info={info}
+              canAssign={canAssign}
+              compact
+              onSaved={onChanged}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -1396,12 +1565,18 @@ function SlotRow({
   );
 }
 
-/** Modal quản lý danh mục vị trí (chỉ Lãnh đạo đơn vị): sửa không làm thay đổi phân công đã ghi. */
+/** Modal quản lý danh mục vị trí CỦA BỘ PHẬN ĐANG XEM: sửa không làm thay đổi phân công đã ghi. */
 function CatalogModal({
+  unitId,
+  unitName,
+  isUnitLeader,
   positions,
   onClose,
   onChanged,
 }: {
+  unitId: string;
+  unitName: string;
+  isUnitLeader: boolean;
   positions: CatalogPosition[];
   onClose: () => void;
   onChanged: () => void;
@@ -1447,12 +1622,16 @@ function CatalogModal({
   };
 
   const seedDefaults = async () => {
+    if (!unitId) {
+      toast.error("Chưa xác định bộ phận — chọn bộ phận trước.");
+      return;
+    }
     setBusy("seed");
     try {
       const res = await fetch("/api/rosters/positions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "seed-defaults" }),
+        body: JSON.stringify({ action: "seed-defaults", unitId }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -1471,12 +1650,16 @@ function CatalogModal({
       toast.error("Nhập tên vị trí/nhiệm vụ mới.");
       return;
     }
+    if (!unitId) {
+      toast.error("Chưa xác định bộ phận — chọn bộ phận trước.");
+      return;
+    }
     setBusy("new");
     try {
       const res = await fetch("/api/rosters/positions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle.trim(), detail: newDetail.trim() || null, slots: [{ k: "s1", l: null }] }),
+        body: JSON.stringify({ unitId, title: newTitle.trim(), detail: newDetail.trim() || null, slots: [{ k: "s1", l: null }] }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -1507,7 +1690,7 @@ function CatalogModal({
           <div>
             <div className="text-sm font-bold text-slate-800">Danh mục vị trí/nhiệm vụ phân công</div>
             <div className="text-[11px] text-slate-500">
-              Bám mẫu “Sổ phân công nhiệm vụ”. Sửa/xếp lại danh mục không làm thay đổi phân công đã ghi.
+              Bộ phận: <span className="font-semibold text-slate-700">{unitName || "—"}</span>. Sửa/xếp lại danh mục không làm thay đổi phân công đã ghi.
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100" aria-label="Đóng" data-testid="catalog-close">
@@ -1516,17 +1699,21 @@ function CatalogModal({
         </div>
 
         <div className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              data-testid="catalog-seed-btn"
-              onClick={seedDefaults}
-              disabled={busy === "seed"}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
-            >
-              Khôi phục 8 vị trí mẫu còn thiếu
-            </button>
-            <span className="text-[11px] text-slate-500">Dùng khi danh mục bị xoá nhầm hoặc thiếu so với mẫu.</span>
-          </div>
+          {isUnitLeader && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                data-testid="catalog-seed-btn"
+                onClick={seedDefaults}
+                disabled={busy === "seed"}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Khôi phục 8 vị trí mẫu còn thiếu (cho bộ phận đang xem)
+              </button>
+              <span className="text-[11px] text-slate-500">
+                Danh mục mẫu gắn với ĐÚNG bộ phận đang chọn — không tự áp dụng cho bộ phận khác; phân công đã ghi giữ nguyên.
+              </span>
+            </div>
+          )}
 
           {positions.map((p) => {
             const d = draftOf(p);
@@ -1644,14 +1831,20 @@ function CatalogModal({
   );
 }
 
-/** Modal xuất Excel theo kỳ/ngày. */
+/** Modal xuất Excel theo kỳ/ngày CỦA BỘ PHẬN ĐANG XEM (không trộn dữ liệu giữa các bộ phận). */
 function ExportModal({
   defaultFrom,
   defaultTo,
+  unitId,
+  unitName,
+  unitCode,
   onClose,
 }: {
   defaultFrom: string;
   defaultTo: string;
+  unitId: string;
+  unitName: string;
+  unitCode: string;
   onClose: () => void;
 }) {
   const [from, setFrom] = useState(defaultFrom);
@@ -1661,6 +1854,10 @@ function ExportModal({
   const [busy, setBusy] = useState(false);
 
   const download = async () => {
+    if (!unitId) {
+      toast.error("Chưa xác định bộ phận cần xuất — chọn bộ phận trước.");
+      return;
+    }
     if (!from || !to) {
       toast.error("Chọn khoảng ngày cần xuất.");
       return;
@@ -1675,10 +1872,10 @@ function ExportModal({
       return;
     }
     setBusy(true);
-    const params = new URLSearchParams({ from, to });
+    const params = new URLSearchParams({ from, to, unitId });
     if (skipEmpty) params.set("skipEmpty", "1");
     if (!cover) params.set("cover", "0");
-    const ok = await downloadExcel(`/api/rosters/export?${params.toString()}`, `so-phan-cong_${from}_${to}.xlsx`);
+    const ok = await downloadExcel(`/api/rosters/export?${params.toString()}`, `so-phan-cong_${unitCode}_${from}_${to}.xlsx`);
     setBusy(false);
     if (ok) onClose();
   };
@@ -1687,7 +1884,12 @@ function ExportModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl" data-testid="export-dialog">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-          <div className="text-sm font-bold text-slate-800">Xuất Excel phân công nhiệm vụ</div>
+          <div>
+            <div className="text-sm font-bold text-slate-800">Xuất Excel phân công nhiệm vụ</div>
+            <div className="text-[11px] text-slate-500">
+              Bộ phận xuất: <span className="font-semibold text-slate-700">{unitName || "—"}</span>
+            </div>
+          </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100" aria-label="Đóng">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
@@ -1724,7 +1926,8 @@ function ExportModal({
             Kèm trang bìa “Sổ phân công nhiệm vụ”
           </label>
           <div className="text-[11px] text-slate-500 bg-slate-50 rounded-lg p-2">
-            File giữ cấu trúc mẫu: mỗi ngày một khối, 4 khối/trang in A4 ngang; ô tổng hợp chỉ điền khi đã nhập.
+            File giữ cấu trúc mẫu: mỗi ngày một khối, 4 khối/trang in A4 ngang; tiêu đề &amp; trang bìa thể hiện đúng bộ phận được
+            xuất; ô tổng hợp chỉ điền khi đã nhập.
           </div>
           <div className="flex justify-end gap-2">
             <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50">
@@ -1733,7 +1936,7 @@ function ExportModal({
             <button
               data-testid="export-download"
               onClick={download}
-              disabled={busy}
+              disabled={busy || !unitId}
               className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-50"
             >
               {busy ? "Đang tạo file…" : "Tải xuống .xlsx"}

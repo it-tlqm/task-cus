@@ -4,19 +4,24 @@ import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { parseSlots, slotKeyOf } from "@/server/duty-catalog";
+import { primaryUnitOf, resolveDutyUnitId as resolveUnitId } from "@/server/duty-scope";
+
+/**
+ * YC-24 PHƯƠNG ÁN B — Bảng phân công định danh theo (BỘ PHẬN + NGÀY + Ô).
+ *
+ * Nguyên tắc phân quyền (backend là chốt chặn cuối cùng — KHÔNG tin unitId do client gửi):
+ * - UNIT_LEADER (Lãnh đạo đơn vị): phạm vi toàn đơn vị (mọi bộ phận trực thuộc).
+ * - DEPARTMENT_LEADER (Trưởng bộ phận): chỉ bộ phận (và cây con) được cấp.
+ * - STAFF: chỉ xem trong phạm vi được cấp; không quản lý.
+ * - SYSTEM_ADMIN: không có quyền nghiệp vụ (chặn 403).
+ * Mọi tham số unitId gửi lên đều được đối chiếu với phạm vi thực tế của tài khoản.
+ */
 
 const SHIFTS: Record<string, string> = {
   SANG: "Sáng",
   CHIEU: "Chiều",
   CA_NGAY: "Cả ngày",
 };
-
-async function inScope(user: any, unitId?: string | null): Promise<boolean> {
-  if (user.role === "UNIT_LEADER") return true;
-  const au = await getAuthorizedUnitIds(user);
-  if (au === "ALL") return true;
-  return !!unitId && au.includes(unitId);
-}
 
 function parseDayStart(raw: string | null): Date | null {
   if (!raw) return null;
@@ -34,27 +39,25 @@ function parseDayEnd(raw: string | null): Date | null {
   return d;
 }
 
-/** Đơn vị chính của cán bộ (nguồn gán unit cho bản ghi phân công). */
-async function primaryUnitOf(personId: string): Promise<string | null> {
-  const asg = await prisma.personAssignment.findFirst({
-    where: { personId, isPrimary: true },
-    select: { unitId: true },
-  });
-  return asg?.unitId || null;
+function dayBounds(d: Date): { start: Date; end: Date } {
+  const start = new Date(d);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(d);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
 }
+
+// Phạm vi bộ phận: dùng chung tại @/server/duty-scope (scopeUnitsOf/resolveDutyUnitId/primaryUnitOf).
 
 /** Cảnh báo mềm: cán bộ có đơn nghỉ đã duyệt trùng ngày (không chặn lưu). */
 async function leaveClashOf(personId: string, d: Date): Promise<{ type: string } | null> {
-  const dayStart = new Date(d);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(d);
-  dayEnd.setHours(23, 59, 59, 999);
+  const { start, end } = dayBounds(d);
   const clash = await prisma.leaveRequest.findFirst({
     where: {
       personId,
       status: "APPROVED",
-      startDate: { lte: dayEnd },
-      endDate: { gte: dayStart },
+      startDate: { lte: end },
+      endDate: { gte: start },
     },
     select: { type: true },
   });
@@ -62,9 +65,22 @@ async function leaveClashOf(personId: string, d: Date): Promise<{ type: string }
 }
 
 /**
- * GET /api/rosters?from=YYYY-MM-DD&to=YYYY-MM-DD[&unitId&personId&positionId]
- * Trả về: phân công trong kỳ + danh mục vị trí + thông tin tổng hợp ngày + danh sách đơn vị
- * kèm cảnh báo: trùng đơn nghỉ đã duyệt (leaveClash) và trùng phân công trong ngày (overlapCount).
+ * Cảnh báo cán bộ được phân công ở bảng khác trong cùng ngày (chỉ trả SỐ LƯỢNG — không lộ chi tiết ngoài quyền).
+ * TheCross = số phân công ngoài bộ phận đang xét.
+ */
+async function crossCountOf(personId: string, d: Date, boardUnitId: string): Promise<{ total: number; board: number; outside: number }> {
+  const { start, end } = dayBounds(d);
+  const [total, board] = await Promise.all([
+    prisma.dutyRoster.count({ where: { personId, date: { gte: start, lte: end } } }),
+    prisma.dutyRoster.count({ where: { personId, date: { gte: start, lte: end }, unitId: boardUnitId } }),
+  ]);
+  return { total, board, outside: Math.max(0, total - board) };
+}
+
+/**
+ * GET /api/rosters?from=YYYY-MM-DD&to=YYYY-MM-DD[&unitId=...][&personId&positionId]
+ * Trả về: phân công CỦA ĐÚNG MỘT BỘ PHẬN trong kỳ + danh mục của bộ phận đó + thông tin tổng hợp ngày
+ * + danh sách bộ phận trong phạm vi (kèm trạng thái đã/chưa lập bảng) + dữ liệu cũ cần đối chiếu (chỉ Lãnh đạo đơn vị).
  */
 export async function GET(req: NextRequest) {
   try {
@@ -75,7 +91,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const from = parseDayStart(searchParams.get("from")) || parseDayStart(new Date().toISOString())!;
     const to = parseDayEnd(searchParams.get("to")) || new Date(from.getTime() + 7 * 86400000);
-    const unitId = searchParams.get("unitId") || "";
     const personId = searchParams.get("personId") || "";
     const positionId = searchParams.get("positionId") || "";
 
@@ -83,16 +98,11 @@ export async function GET(req: NextRequest) {
       return jsonError("Khoảng xem tối đa 62 ngày", 400);
     }
 
-    const authorizedUnits = await getAuthorizedUnitIds(user);
-    const where: any = { date: { gte: from, lte: to } };
-    if (unitId) {
-      if (authorizedUnits !== "ALL" && !authorizedUnits.includes(unitId)) {
-        return jsonError("Bạn không có quyền xem lịch đơn vị này", 403);
-      }
-      where.unitId = unitId;
-    } else if (authorizedUnits !== "ALL") {
-      where.OR = [{ unitId: { in: authorizedUnits } }, { unitId: null, personId: user.personId }];
-    }
+    const resolved = await resolveUnitId(user, searchParams.get("unitId") || null);
+    if (!resolved.ok) return jsonError(resolved.error, resolved.status);
+    const { unitId, authorized, units } = resolved;
+
+    const where: any = { unitId, date: { gte: from, lte: to } };
     if (personId) where.personId = personId;
     if (positionId) where.positionId = positionId;
 
@@ -106,11 +116,11 @@ export async function GET(req: NextRequest) {
       take: 1000,
     });
 
-    // Cảnh báo trùng đơn nghỉ đã duyệt — trả theo PHẠM VI ĐƠN VỊ của người xem + kỳ đang xem,
-    // để client cảnh báo được NGAY khi chọn cán bộ (kể cả ngày chưa có phân công nào).
-    const leaveScope = authorizedUnits === "ALL"
-      ? {}
-      : { person: { assignments: { some: { isPrimary: true, unitId: { in: authorizedUnits } } } } };
+    // Cảnh báo trùng đơn nghỉ đã duyệt — theo phạm vi đơn vị của người xem + kỳ đang xem
+    const leaveScope =
+      authorized === "ALL"
+        ? {}
+        : { person: { assignments: { some: { isPrimary: true, unitId: { in: authorized } } } } };
     const leaves = await prisma.leaveRequest.findMany({
       where: {
         status: "APPROVED",
@@ -128,15 +138,29 @@ export async function GET(req: NextRequest) {
       leaveByPerson.set(l.personId, arr);
     }
 
-    // Cảnh báo trùng phân công trong cùng ngày (một cán bộ ở nhiều vị trí/ô)
+    // Đếm phân công theo (cán bộ, ngày) TRONG bảng này — cảnh báo trùng phân công nội bộ bảng
     const dayKey = (d: Date | string) => {
       const x = new Date(d);
       return `${x.getFullYear()}-${x.getMonth() + 1}-${x.getDate()}`;
     };
-    const countByPersonDay = new Map<string, number>();
+    const boardCount = new Map<string, number>();
     for (const r of rows) {
       const k = `${r.personId}|${dayKey(r.date)}`;
-      countByPersonDay.set(k, (countByPersonDay.get(k) || 0) + 1);
+      boardCount.set(k, (boardCount.get(k) || 0) + 1);
+    }
+
+    // Đếm phân công theo (cán bộ, ngày) TRÊN TOÀN HỆ THỐNG (chỉ số lượng) — cảnh báo phân công chéo bộ phận
+    const personIds = [...new Set(rows.map((r) => r.personId))];
+    const allCount = new Map<string, number>();
+    if (personIds.length > 0) {
+      const grouped = await prisma.dutyRoster.groupBy({
+        by: ["personId", "date"],
+        where: { personId: { in: personIds }, date: { gte: from, lte: to } },
+        _count: { id: true },
+      });
+      for (const g of grouped) {
+        allCount.set(`${g.personId}|${dayKey(g.date)}`, g._count.id);
+      }
     }
 
     const data = rows.map((r) => {
@@ -146,18 +170,36 @@ export async function GET(req: NextRequest) {
         const e = new Date(l.endDate);
         return rd >= new Date(s.setHours(0, 0, 0, 0)) && rd <= new Date(e.setHours(23, 59, 59, 999));
       });
-      const overlapCount = countByPersonDay.get(`${r.personId}|${dayKey(r.date)}`) || 1;
-      return { ...r, leaveClash: clash ? { type: clash.type } : null, overlapCount };
+      const k = `${r.personId}|${dayKey(r.date)}`;
+      const overlapCount = boardCount.get(k) || 1;
+      const outside = Math.max(0, (allCount.get(k) || overlapCount) - overlapCount);
+      return { ...r, leaveClash: clash ? { type: clash.type } : null, overlapCount, overlapOutsideCount: outside };
     });
 
-    const [positionsRaw, dayInfos, units] = await Promise.all([
-      prisma.dutyPosition.findMany({ orderBy: [{ sortOrder: "asc" }, { code: "asc" }] }),
-      prisma.dutyDayInfo.findMany({ where: { date: { gte: from, lte: to } } }),
-      prisma.orgUnit.findMany({
-        where: authorizedUnits === "ALL" ? { status: "ACTIVE" } : { id: { in: authorizedUnits } },
-        select: { id: true, code: true, name: true },
-        orderBy: { code: "asc" },
+    const scopeUnitIds = units.map((u) => u.id);
+
+    const [positionsRaw, dayInfos, assignGroups, infoGroups, legacyUnassigned] = await Promise.all([
+      prisma.dutyPosition.findMany({ where: { unitId }, orderBy: [{ sortOrder: "asc" }, { code: "asc" }] }),
+      prisma.dutyDayInfo.findMany({ where: { unitId, date: { gte: from, lte: to } }, orderBy: { date: "asc" } }),
+      // Trạng thái đã/chưa lập bảng theo bộ phận (chỉ trong phạm vi người xem)
+      prisma.dutyRoster.groupBy({
+        by: ["unitId"],
+        where: { unitId: { in: scopeUnitIds }, date: { gte: from, lte: to }, positionId: { not: null } },
+        _count: { id: true },
       }),
+      prisma.dutyDayInfo.groupBy({
+        by: ["unitId"],
+        where: { unitId: { in: scopeUnitIds }, date: { gte: from, lte: to } },
+        _count: { id: true },
+      }),
+      authorized === "ALL"
+        ? prisma.dutyRoster.findMany({
+            where: { unitId: null, date: { gte: from, lte: to } },
+            include: { person: { select: { id: true, fullName: true } } },
+            orderBy: { date: "asc" },
+            take: 200,
+          })
+        : Promise.resolve([] as any[]),
     ]);
 
     const positions = positionsRaw.map((p) => ({
@@ -170,12 +212,21 @@ export async function GET(req: NextRequest) {
       status: p.status,
     }));
 
+    const boardStatus = units.map((u) => ({
+      unitId: u.id,
+      assignments: assignGroups.find((g) => g.unitId === u.id)?._count.id || 0,
+      dayInfos: infoGroups.find((g) => g.unitId === u.id)?._count.id || 0,
+    }));
+
     return NextResponse.json({
       success: true,
       data,
       dayInfos,
       positions,
       units,
+      selectedUnitId: unitId,
+      boardStatus,
+      legacyUnassigned,
       // Đơn nghỉ đã duyệt trong kỳ — client dùng để cảnh báo TRƯỚC khi lưu phân công
       leaves: leaves.map((l) => ({ personId: l.personId, type: l.type, startDate: l.startDate, endDate: l.endDate })),
     });
@@ -185,10 +236,12 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/rosters — lãnh đạo phân công một cán bộ vào một ô của biểu.
- * Body: { date, personId, positionId, slotOrder, unitId?, reason?, notes? }
- * (Vẫn chấp nhận body cũ: {date, shift, personId, post, notes} khi không có positionId.)
- * Kèm cảnh báo mềm nếu trùng đơn nghỉ đã duyệt — vẫn cho lưu.
+ * POST /api/rosters — lãnh đạo phân công một cán bộ vào một ô của BẢNG THUỘC MỘT BỘ PHẬN.
+ * Body: { date, unitId, personId, positionId, slotOrder, reason?, notes? }
+ * (Vẫn chấp nhận body cũ: { date, unitId, shift, personId, post, notes } khi không có positionId.)
+ * - unitId là BẮT BUỘC: bảng phân công thuộc bộ phận nào do người lập chọn, không tự suy từ người được phân công.
+ * - Vị trí (positionId) phải thuộc đúng danh mục của bộ phận đó.
+ * - Cảnh báo mềm: trùng đơn nghỉ đã duyệt; cán bộ đã có phân công khác trong cùng ngày (nội bộ/ngoài bảng).
  */
 export async function POST(req: NextRequest) {
   try {
@@ -200,23 +253,24 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { date, personId, positionId, slotOrder, unitId, reason, notes } = body;
     if (!date || !personId) return jsonError("Ngày và người thực hiện là bắt buộc", 400);
+    if (!unitId) return jsonError("Thiếu bộ phận của bảng phân công", 400);
     const d = parseDayStart(String(date));
     if (!d) return jsonError("Ngày phân công không hợp lệ", 400);
 
+    const resolved = await resolveUnitId(user, String(unitId));
+    if (!resolved.ok) return jsonError(resolved.error, resolved.status);
+    const targetUnitId = resolved.unitId;
+
     const person = await prisma.person.findUnique({ where: { id: personId }, select: { id: true, status: true } });
     if (!person || person.status !== "ACTIVE") return jsonError("Cán bộ không tồn tại hoặc đã ngừng hoạt động", 400);
-
-    // Đơn vị mặc định = đơn vị chính của người được phân công
-    let targetUnitId: string | null = unitId || null;
-    if (!targetUnitId) targetUnitId = await primaryUnitOf(personId);
-    if (!(await inScope(user, targetUnitId))) {
-      return jsonError("Bạn không có quyền phân công cho đơn vị này", 403);
-    }
 
     // ---- Trường hợp 1: phân công theo biểu mẫu (có positionId) ----
     if (positionId) {
       const position = await prisma.dutyPosition.findUnique({ where: { id: positionId } });
       if (!position) return jsonError("Vị trí/nhiệm vụ không tồn tại", 400);
+      if (position.unitId !== targetUnitId) {
+        return jsonError("Vị trí không thuộc danh mục của bộ phận đang phân công", 400);
+      }
       if (position.status !== "ACTIVE") return jsonError("Vị trí/nhiệm vụ đã ngừng sử dụng — không phân công mới", 400);
       const slots = parseSlots(position.slots);
       const idx = Number(slotOrder);
@@ -226,7 +280,7 @@ export async function POST(req: NextRequest) {
       const slot = slots[idx];
       const slotKey = slotKeyOf(position.id, idx);
 
-      const dup = await prisma.dutyRoster.findUnique({ where: { date_slotKey: { date: d, slotKey } } });
+      const dup = await prisma.dutyRoster.findFirst({ where: { unitId: targetUnitId, date: d, slotKey } });
       if (dup) {
         return jsonError("Ô này đã có người — hãy đổi người thay vì phân công thêm", 409);
       }
@@ -255,6 +309,7 @@ export async function POST(req: NextRequest) {
       });
 
       const clash = await leaveClashOf(personId, d);
+      const cross = await crossCountOf(personId, d, targetUnitId);
       await recordAuditEvent({
         actorId: user.id,
         action: "ROSTER_CREATE",
@@ -262,6 +317,7 @@ export async function POST(req: NextRequest) {
         resourceId: created.id,
         newData: {
           date: d.toISOString().slice(0, 10),
+          unitId: targetUnitId,
           personId,
           positionId: position.id,
           positionCode: position.code,
@@ -273,8 +329,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: true,
-          data: { ...created, leaveClash: clash, overlapCount: 1 },
+          data: { ...created, leaveClash: clash, overlapCount: cross.board, overlapOutsideCount: cross.outside },
           warning: clash ? "Người này có đơn nghỉ đã duyệt trùng ngày — kiểm tra lại phân công!" : undefined,
+          crossWarning:
+            cross.outside > 0
+              ? `Cán bộ còn ${cross.outside} phân công khác trong cùng ngày (ngoài bảng này) — kiểm tra trùng.`
+              : undefined,
         },
         { status: 201 }
       );
@@ -299,18 +359,23 @@ export async function POST(req: NextRequest) {
       },
     });
     const clash = await leaveClashOf(personId, d);
+    const cross = await crossCountOf(personId, d, targetUnitId);
     await recordAuditEvent({
       actorId: user.id,
       action: "ROSTER_CREATE",
       resourceType: "DutyRoster",
       resourceId: created.id,
-      newData: { personId, date: d.toISOString().slice(0, 10), shift, post: post || undefined },
+      newData: { personId, date: d.toISOString().slice(0, 10), unitId: targetUnitId, shift, post: post || undefined },
     });
     return NextResponse.json(
       {
         success: true,
-        data: { ...created, leaveClash: clash, overlapCount: 1 },
+        data: { ...created, leaveClash: clash, overlapCount: cross.board, overlapOutsideCount: cross.outside },
         warning: clash ? "Người này có đơn nghỉ đã duyệt trùng ngày — kiểm tra lại phân công!" : undefined,
+        crossWarning:
+          cross.outside > 0
+            ? `Cán bộ còn ${cross.outside} phân công khác trong cùng ngày (ngoài bảng này) — kiểm tra trùng.`
+            : undefined,
       },
       { status: 201 }
     );
@@ -322,6 +387,7 @@ export async function POST(req: NextRequest) {
 /**
  * PATCH /api/rosters — đổi người thực hiện (bắt buộc ghi lý do) / cập nhật ghi chú.
  * Body: { id, personId?, reason?, notes? } — lưu vết đầy đủ vào audit.
+ * Lưu ý Phương án B: đổi người KHÔNG đổi bộ phận của bảng (bảng thuộc bộ phận nào giữ nguyên).
  */
 export async function PATCH(req: NextRequest) {
   try {
@@ -336,8 +402,14 @@ export async function PATCH(req: NextRequest) {
 
     const current = await prisma.dutyRoster.findUnique({ where: { id } });
     if (!current) return jsonError("Phân công không tồn tại", 404);
-    if (!(await inScope(user, current.unitId))) {
-      return jsonError("Bạn không có quyền sửa phân công của đơn vị này", 403);
+
+    // Phạm vi: bảng thuộc bộ phận nào thì phải có quyền với bộ phận đó.
+    // Bản ghi cũ không gắn bộ phận (unitId null): chỉ Lãnh đạo đơn vị được thao tác.
+    if (current.unitId) {
+      const resolved = await resolveUnitId(user, current.unitId);
+      if (!resolved.ok) return jsonError("Bạn không có quyền sửa phân công của bộ phận này", 403);
+    } else if (user.role !== "UNIT_LEADER") {
+      return jsonError("Bạn không có quyền sửa dữ liệu lịch trực cũ chưa gắn bộ phận", 403);
     }
 
     const data: any = {};
@@ -349,6 +421,7 @@ export async function PATCH(req: NextRequest) {
       auditNew.notes = data.notes;
     }
 
+    let crossWarning: string | undefined;
     if (personId && personId !== current.personId) {
       const trimmedReason = String(reason || "").trim();
       if (trimmedReason.length < 3) {
@@ -356,16 +429,17 @@ export async function PATCH(req: NextRequest) {
       }
       const person = await prisma.person.findUnique({ where: { id: personId }, select: { id: true, status: true } });
       if (!person || person.status !== "ACTIVE") return jsonError("Cán bộ không tồn tại hoặc đã ngừng hoạt động", 400);
-      const newUnitId = await primaryUnitOf(personId);
-      if (!(await inScope(user, newUnitId))) {
-        return jsonError("Bạn không có quyền phân công cho cán bộ thuộc đơn vị này", 403);
-      }
       data.personId = personId;
-      data.unitId = newUnitId;
       data.reason = trimmedReason;
       auditNew.personId = personId;
-      auditNew.unitId = newUnitId;
       auditNew.reason = trimmedReason;
+      // Cảnh báo mềm nếu người mới thuộc bộ phận khác bảng (phân công chéo — chỉ cảnh báo, không chặn)
+      if (current.unitId) {
+        const newUnit = await primaryUnitOf(personId);
+        if (newUnit && newUnit !== current.unitId) {
+          crossWarning = "Cán bộ được điều động từ bộ phận khác — phân công chéo, kiểm tra thống nhất trước khi lưu.";
+        }
+      }
     } else if (reason !== undefined) {
       data.reason = String(reason).trim() || null;
       auditNew.reason = data.reason;
@@ -395,6 +469,7 @@ export async function PATCH(req: NextRequest) {
       success: true,
       data: { ...updated, leaveClash: clash },
       warning: clash ? "Người này có đơn nghỉ đã duyệt trùng ngày — kiểm tra lại phân công!" : undefined,
+      crossWarning,
     });
   } catch (error: any) {
     return jsonError("Lỗi khi cập nhật phân công: " + error.message, 500);
@@ -414,7 +489,12 @@ export async function DELETE(req: NextRequest) {
     if (!id) return jsonError("Thiếu ID", 400);
     const current = await prisma.dutyRoster.findUnique({ where: { id } });
     if (!current) return jsonError("Không tồn tại", 404);
-    if (!(await inScope(user, current.unitId))) return jsonError("Bạn không có quyền gỡ phân công của đơn vị này", 403);
+    if (current.unitId) {
+      const resolved = await resolveUnitId(user, current.unitId);
+      if (!resolved.ok) return jsonError("Bạn không có quyền gỡ phân công của bộ phận này", 403);
+    } else if (user.role !== "UNIT_LEADER") {
+      return jsonError("Bạn không có quyền gỡ dữ liệu lịch trực cũ chưa gắn bộ phận", 403);
+    }
     await prisma.dutyRoster.delete({ where: { id } });
     await recordAuditEvent({
       actorId: user.id,
@@ -424,6 +504,7 @@ export async function DELETE(req: NextRequest) {
       oldData: {
         personId: current.personId,
         date: current.date,
+        unitId: current.unitId,
         positionId: current.positionId,
         positionTitle: current.positionTitle,
         slotLabel: current.slotLabel,

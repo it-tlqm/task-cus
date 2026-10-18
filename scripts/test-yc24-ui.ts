@@ -13,6 +13,8 @@
  *  S9  Bền vững dữ liệu: F5 + đăng nhập lại
  *  S10 Xuất Excel ngay trên UI (tải file thật về máy, đọc lại kiểm tra nội dung)
  *  S12 Mở danh mục vị trí (không sửa dữ liệu) — lịch sử phân công giữ nguyên
+ *  PA-B Bảng phân công độc lập theo TỪNG BỘ PHẬN: chọn bộ phận (quick switch + trạng thái đã/chưa lập),
+ *       dữ liệu không lẫn giữa các bộ phận, nhãn/tiêu đề thể hiện đúng bộ phận đang xem.
  *  Dọn sạch dữ liệu test sau khi chạy (qua API + DB cục bộ).
  *
  * Chạy:
@@ -98,7 +100,10 @@ async function newPage(browser: Browser, token: string, width: number, height: n
   await page.setCookie({ name: "token", value: token, domain: "localhost", path: "/" } as any);
   await page.evaluateOnNewDocument(() => {
     try {
-      localStorage.setItem("hqtl-tour-done", JSON.stringify({ "/plans": true, "/monthly-results": true, "/dashboard": true }));
+      localStorage.setItem(
+        "hqtl-tour-done",
+        JSON.stringify({ "/plans": true, "/monthly-results": true, "/dashboard": true, "/roster": true, "/my-work": true })
+      );
     } catch {}
   });
   return page;
@@ -229,6 +234,33 @@ async function exists(page: Page, selector: string): Promise<boolean> {
   return (await page.$(selector)) !== null;
 }
 
+/** Chờ dải bộ phận sẵn sàng (selector cho nhiều bộ phận / nhãn tĩnh khi chỉ một bộ phận). */
+async function waitUnitReady(page: Page, kind: "select" | "static") {
+  await page.waitForSelector(
+    kind === "select" ? '[data-testid="roster-unit-select"]' : '[data-testid="roster-unit-static"]',
+    { timeout: 30000 }
+  );
+  await sleep(400);
+}
+
+/** Đếm số ô ma trận ổn định (chờ hết nhịp tải lại sau khi chọn bộ phận). */
+async function countCellsStable(page: Page, expected: number): Promise<number> {
+  let n = 0;
+  for (let i = 0; i < 12; i++) {
+    n = await page.$$eval('[data-testid^="roster-cell-"]', (els) => els.length);
+    if (n === expected) return n;
+    await sleep(400);
+  }
+  return n;
+}
+
+/** Chọn bộ phận A trên dải chọn bộ phận (bảng phân công theo bộ phận). */
+async function selectUnitA(page: Page, unitAId: string) {
+  await page.select('[data-testid="roster-unit-select"]', unitAId);
+  await sleep(900);
+  await waitLoaded(page);
+}
+
 let cleanupNeeded = true;
 
 async function main() {
@@ -264,6 +296,7 @@ async function main() {
   if (!leave) throw new Error("Không có đơn nghỉ đã duyệt trong tuần 12–18/10 để test cảnh báo");
 
   const unitB = await prisma.orgUnit.findUniqueOrThrow({ where: { code: "BP_GIAMSAT_B" }, select: { id: true, name: true } });
+  const unitA = await prisma.orgUnit.findUniqueOrThrow({ where: { code: "BP_NGHIEPVU_A" }, select: { id: true, name: true } });
 
   console.log(`• Cán bộ A dùng cho test: ${aPersons.map((p) => p.fullName).join(", ")}`);
   console.log(`• Người có đơn nghỉ: ${leave.person.fullName} (${leave.type})\n`);
@@ -294,8 +327,17 @@ async function main() {
     check("P1a. Trang lịch trực tải được, tiêu đề đúng", (await textOf(page, "h1")).includes("Phân công nhiệm vụ"));
     const week0 = norm(await weekLabelText(page));
     check("P1b. Mặc định mở tuần hiện tại (12–18/10)", week0.includes("12/10") && week0.includes("18/10"), week0);
-    const cellCount0 = await page.$$eval('[data-testid^="roster-cell-"]', (els) => els.length);
-    check("P1c. Ma trận đủ 8 nhóm nhiệm vụ × 7 ngày = 56 ô", cellCount0 === 56, `${cellCount0} ô`);
+    // Phương án B: Lãnh đạo đơn vị có dải chọn bộ phận + trạng thái đã/chưa lập bảng
+    await waitUnitReady(page, "select");
+    check(
+      "P1e. Lãnh đạo đơn vị thấy bộ phận selector + dải trạng thái các bộ phận",
+      (await exists(page, '[data-testid="roster-unit-status"]')) && (await exists(page, '[data-testid="roster-unit-chip-BP_NGHIEPVU_A"]'))
+    );
+    await selectUnitA(page, unitA.id);
+    const unitLabel0 = norm(await safeText(page, '[data-testid="roster-unit-label"]'));
+    check("P1f. Nhãn 'Bộ phận đang xem' hiển thị đúng bộ phận A", unitLabel0.includes(norm(unitA.name)), unitLabel0);
+    const cellCount0 = await countCellsStable(page, 56);
+    check("P1c. Ma trận đủ 8 nhóm nhiệm vụ × 7 ngày = 56 ô (bộ phận A)", cellCount0 === 56, `${cellCount0} ô`);
     check("P1d. Nút phân công / danh mục / xuất Excel hiện đủ cho Lãnh đạo đơn vị",
       (await exists(page, '[data-testid="roster-btn-assign"]')) &&
       (await exists(page, '[data-testid="roster-btn-catalog"]')) &&
@@ -351,6 +393,8 @@ async function main() {
     console.log("\n[P5–P6] S9 — Bền vững sau F5 và đăng nhập lại\n");
     await page.reload({ waitUntil: "networkidle0" });
     await page.waitForSelector('[data-testid="roster-page"]', { timeout: 30000 });
+    await waitUnitReady(page, "select");
+    await selectUnitA(page, unitA.id);
     await gotoWeek(page, WEEK2);
     const reloadC02 = norm(await textOf(page, `[data-testid="roster-cell-${D19}-YC24-02"]`));
     check("P5. Sau F5 dữ liệu phân công vẫn hiển thị đúng", reloadC02.includes(norm(pa3.fullName)) && reloadC02.includes(norm(pa4.fullName)));
@@ -359,6 +403,8 @@ async function main() {
     await page.setCookie({ name: "token", value: tLeader2, domain: "localhost", path: "/" } as any);
     await page.reload({ waitUntil: "networkidle0" });
     await page.waitForSelector('[data-testid="roster-page"]', { timeout: 30000 });
+    await waitUnitReady(page, "select");
+    await selectUnitA(page, unitA.id);
     await gotoWeek(page, WEEK2);
     const reloginC04 = norm(await textOf(page, `[data-testid="roster-cell-${D19}-YC24-04"]`));
     check("P6. Đăng nhập lại (phiên mới) dữ liệu vẫn còn", reloginC04.includes(norm(pa2.fullName)));
@@ -450,15 +496,24 @@ async function main() {
     await page.click('[data-testid="roster-view-week"]');
     await waitLoaded(page);
     await gotoWeek(page, WEEK2);
-    // Lọc theo bộ phận (server) — chọn bộ phận B: kỳ này không có phân công nào của B
-    await page.select('[data-testid="roster-filter-unit"]', unitB.id);
+    // Phương án B: chuyển sang bộ phận B → bảng của A không còn hiển thị (không lẫn dữ liệu giữa các bộ phận)
+    await page.select('[data-testid="roster-unit-select"]', unitB.id);
     await sleep(900);
     await waitLoaded(page);
-    const bFilterText = norm(await textOf(page, `[data-testid="roster-cell-${D19}-YC24-04"]`));
-    check("P11a. Lọc theo bộ phận B → ô 19/10 trống (không thấy dữ liệu đơn vị khác)", bFilterText.includes("—"));
-    await page.select('[data-testid="roster-filter-unit"]', "");
-    await sleep(900);
-    await waitLoaded(page);
+    const bHasA = await exists(page, `[data-testid="roster-cell-${D19}-YC24-04"]`);
+    const bLabel = norm(await safeText(page, '[data-testid="roster-unit-label"]'));
+    check(
+      "P11a. Chuyển sang bộ phận B → nhãn đổi theo bộ phận + bảng của A không còn hiển thị",
+      !bHasA && bLabel.includes(norm(unitB.name)),
+      `nhãn="${bLabel}", ô A còn hiển thị=${bHasA}`
+    );
+    check(
+      "P11a2. Bộ phận B (chưa có danh mục) hiện thông báo chưa thiết lập danh mục",
+      await exists(page, '[data-testid="roster-empty-catalog"]')
+    );
+    // Quay lại bộ phận A
+    await selectUnitA(page, unitA.id);
+    await countCellsStable(page, 56);
     // Lọc theo cán bộ (client)
     await page.select('[data-testid="roster-filter-person"]', pa1.id);
     await sleep(500);
@@ -484,12 +539,19 @@ async function main() {
     await page.waitForSelector('[data-testid="catalog-modal"]', { timeout: 10000 });
     const catalogCodes = await page.$$eval('[data-testid^="catalog-pos-"]', (els) => els.map((e) => e.getAttribute("data-testid")));
     check("P12a. Danh mục vị trí mở được, đủ 8 vị trí mẫu", catalogCodes.length === 8, catalogCodes.join(", ").slice(0, 120));
+    const catText = norm(await textOf(page, '[data-testid="catalog-modal"]'));
+    check("P12a2. Danh mục hiển thị ĐÚNG bộ phận đang xem (không lẫn bộ phận khác)", catText.includes(norm(unitA.name)), catText.slice(0, 100));
+    check("P12a3. Nút khôi phục 8 vị trí mẫu hiện cho Lãnh đạo đơn vị", await exists(page, '[data-testid="catalog-seed-btn"]'));
     await shot(page, "09-catalog.png");
     await page.click('[data-testid="catalog-close"]');
     await sleep(400);
 
     await page.click('[data-testid="roster-btn-export"]');
     await page.waitForSelector('[data-testid="export-dialog"]', { timeout: 10000 });
+    check(
+      "P12a4. Hộp thoại Xuất Excel ghi rõ ĐÚNG bộ phận sẽ xuất (A)",
+      norm(await textOf(page, '[data-testid="export-dialog"]')).includes(norm(unitA.name))
+    );
     await setInput(page, '[data-testid="export-from"]', D19);
     await setInput(page, '[data-testid="export-to"]', "2026-10-25");
     // Dọn file tải về của lần chạy trước để nhận diện file mới
@@ -531,6 +593,11 @@ async function main() {
         `${names.join(" | ")} — ngày 19/10: ${day19}`);
       check("P12f. Nội dung file tải về có tên người vừa phân công + tiêu đề nhiệm vụ",
         joined.includes(norm(pa1.fullName)) && joined.includes("Trả hồ sơ hải quan"));
+      check(
+        "P12g. File tải về có tiêu đề thể hiện đúng bộ phận A (không hardcode 'Bộ phận Nghiệp vụ')",
+        joined.includes(`PHÂN CÔNG NHIỆM VỤ ${norm(unitA.name).toUpperCase()}`),
+        unitA.name
+      );
       fs.renameSync(dlPath, path.join(OUT_DIR, "ui-export-download.xlsx"));
       console.log("   📄 Đã lưu file tải về: ui-export-download.xlsx");
     }
@@ -544,9 +611,16 @@ async function main() {
     staffPage.on("pageerror", (e) => pageErrors.push(`P13: ${e.message}`));
     await staffPage.goto(`${BASE_URL}/roster`, { waitUntil: "networkidle0", timeout: 60000 });
     await staffPage.waitForSelector('[data-testid="roster-matrix"]', { timeout: 30000 });
+    await waitUnitReady(staffPage, "static");
     await waitLoaded(staffPage);
-    check("P13a. Cán bộ xem được ma trận tuần",
-      (await staffPage.$$eval('[data-testid^="roster-cell-"]', (els) => els.length)) === 56);
+    const staffCells = await countCellsStable(staffPage, 56);
+    check("P13a. Cán bộ xem được ma trận tuần (mặc định đúng bộ phận của mình)", staffCells === 56, `${staffCells} ô`);
+    const staffLabel = norm(await safeText(staffPage, '[data-testid="roster-unit-static"]'));
+    check(
+      "P13d. Cán bộ thấy nhãn bộ phận tĩnh (không có selector chuyển bộ phận)",
+      staffLabel.includes(norm(unitA.name)) && !(await exists(staffPage, '[data-testid="roster-unit-select"]')),
+      staffLabel
+    );
     check("P13b. Cán bộ KHÔNG có nút Phân công / Danh mục / Xuất Excel",
       !(await exists(staffPage, '[data-testid="roster-btn-assign"]')) &&
       !(await exists(staffPage, '[data-testid="roster-btn-catalog"]')) &&
@@ -579,12 +653,19 @@ async function main() {
     mPage.on("pageerror", (e) => pageErrors.push(`P15: ${e.message}`));
     await mPage.goto(`${BASE_URL}/roster`, { waitUntil: "networkidle0", timeout: 60000 });
     await mPage.waitForSelector('[data-testid="roster-mobile"]', { timeout: 30000 });
+    await waitUnitReady(mPage, "select");
+    await selectUnitA(mPage, unitA.id);
+    const mLabel = norm(await safeText(mPage, '[data-testid="roster-unit-label"]'));
+    check("P15g. Mobile hiển thị rõ bộ phận đang xem (A)", mLabel.includes(norm(unitA.name)), mLabel);
     await gotoWeek(mPage, WEEK2);
     const ovf1 = await mPage.evaluate(() => ({ sw: document.scrollingElement!.scrollWidth, iw: window.innerWidth }));
     check("P15a. Tuần mobile: không tràn ngang", ovf1.sw <= ovf1.iw + 2, `scrollWidth=${ovf1.sw}, viewport=${ovf1.iw}`);
     check("P15b. Thẻ ngày 19/10 hiện phân công vừa lưu", norm(await textOf(mPage, `[data-testid="roster-day-card-${D19}"]`)).includes(norm(pa1.fullName)));
     await shot(mPage, "13-mobile-week.png", true);
     // Mở ngày từ thẻ
+    const dayCardEl = await mPage.$(`[data-testid="roster-day-card-${D19}"]`);
+    await dayCardEl!.evaluate((el) => el.scrollIntoView({ block: "center" }));
+    await sleep(400);
     const cardBtns = await mPage.$$(`[data-testid="roster-day-card-${D19}"] button`);
     await cardBtns[0].click();
     await mPage.waitForSelector('[data-testid="roster-day-form"]', { timeout: 10000 });
@@ -593,7 +674,10 @@ async function main() {
     check("P15c. Phiếu ngày mobile: không tràn ngang", ovf2.sw <= ovf2.iw + 2, `scrollWidth=${ovf2.sw}`);
     check("P15d. Phiếu ngày mobile có dữ liệu + nút chỉnh sửa trong quyền Lãnh đạo", (await exists(mPage, '[data-testid="roster-btn-edit-day"]')));
     await shot(mPage, "14-mobile-day.png", true);
-    await mPage.click('[data-testid="roster-btn-edit-day"]');
+    const editDayBtn = await mPage.$('[data-testid="roster-btn-edit-day"]');
+    await editDayBtn!.evaluate((el) => el.scrollIntoView({ block: "center" }));
+    await sleep(300);
+    await editDayBtn!.click();
     await mPage.waitForSelector('[data-testid="editor-modal"]', { timeout: 10000 });
     const ovf3 = await mPage.evaluate(() => ({ sw: document.scrollingElement!.scrollWidth, iw: window.innerWidth }));
     check("P15e. Phiếu phân công mobile mở được, không tràn ngang", ovf3.sw <= ovf3.iw + 2, `scrollWidth=${ovf3.sw}`);
@@ -604,7 +688,8 @@ async function main() {
     mStaff.on("pageerror", (e) => pageErrors.push(`P15f: ${e.message}`));
     await mStaff.goto(`${BASE_URL}/roster`, { waitUntil: "networkidle0", timeout: 60000 });
     await mStaff.waitForSelector('[data-testid="roster-mobile"]', { timeout: 30000 });
-    await sleep(400);
+    await waitUnitReady(mStaff, "static");
+    await waitLoaded(mStaff);
     const assignBtns = await mStaff.$$eval('[data-testid^="roster-day-assign-"]', (els) => els.length);
     check("P15f. Cán bộ trên mobile không có nút phân công trong thẻ ngày", assignBtns === 0, `${assignBtns} nút`);
     await mStaff.close();
@@ -614,17 +699,19 @@ async function main() {
     // =====================================================================
     console.log("\n[P16] Dọn dẹp dữ liệu test\n");
     const tClean = await loginToken("demold01");
-    const list = await apiGet(`/api/rosters?from=${RANGE_FROM}&to=${RANGE_TO}`, tClean);
     let delOk = 0;
-    for (const r of list.json?.data || []) {
-      const st = await apiDelete(`/api/rosters?id=${r.id}&reason=Dọn dẹp sau kiểm thử giao diện`, tClean);
-      if (st === 200) delOk++;
+    for (const u of [unitA.id, unitB.id]) {
+      const list = await apiGet(`/api/rosters?from=${RANGE_FROM}&to=${RANGE_TO}&unitId=${u}`, tClean);
+      for (const r of list.json?.data || []) {
+        const st = await apiDelete(`/api/rosters?id=${r.id}&reason=Dọn dẹp sau kiểm thử giao diện`, tClean);
+        if (st === 200) delOk++;
+      }
     }
     const leftAfterApi = (await prisma.dutyRoster.count({ where: { date: { gte: new Date(2026, 9, 12), lte: new Date(2026, 9, 26, 23, 59, 59) } } }));
     await prisma.dutyRoster.deleteMany({ where: { date: { gte: new Date(2026, 9, 12), lte: new Date(2026, 9, 26, 23, 59, 59) } } });
     await prisma.dutyDayInfo.deleteMany({ where: { date: { gte: new Date(2026, 9, 12), lte: new Date(2026, 9, 26, 23, 59, 59) } } });
     const posCount = await prisma.dutyPosition.count();
-    const finalList = await apiGet(`/api/rosters?from=${RANGE_FROM}&to=${RANGE_TO}`, tClean);
+    const finalList = await apiGet(`/api/rosters?from=${RANGE_FROM}&to=${RANGE_TO}&unitId=${unitA.id}`, tClean);
     check("P16a. Dọn sạch phân công test qua API", leftAfterApi === 0 && (finalList.json?.data || []).length === 0, `xóa ${delOk} bản ghi, còn lại ${leftAfterApi}`);
     check("P16b. Danh mục vẫn nguyên 8 vị trí mẫu (UI chỉ xem, không sửa)", posCount === 8, `${posCount} vị trí`);
     cleanupNeeded = false;
@@ -653,7 +740,7 @@ main().catch(async (e) => {
   if (cleanupNeeded) {
     try {
       const t = await loginToken("demold01");
-      const list = await apiGet(`/api/rosters?from=${RANGE_FROM}&to=${RANGE_TO}`, t);
+      const list = await apiGet(`/api/rosters?from=${RANGE_FROM}&to=${RANGE_TO}&unitId=${unitA.id}`, t);
       for (const r of list.json?.data || []) {
         await apiDelete(`/api/rosters?id=${r.id}&reason=Dọn dẹp sau kiểm thử giao diện (lỗi giữa chừng)`, t);
       }

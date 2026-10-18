@@ -47,6 +47,10 @@ export interface DutyExportDayInfo {
 export interface DutyExportOptions {
   from: Date;
   to: Date;
+  /** Tên bộ phận được xuất — hiển thị trên tiêu đề biểu & trang bìa (không hardcode "Bộ phận Nghiệp vụ"). */
+  unitName?: string | null;
+  /** Mã bộ phận (dùng cho tên tệp/đối chiếu). */
+  unitCode?: string | null;
   assignments: DutyExportAssignment[];
   catalog: DutyExportCatalogPosition[];
   dayInfos: DutyExportDayInfo[];
@@ -71,6 +75,18 @@ const SHIFT_LABEL: Record<string, string> = { SANG: "Sáng", CHIEU: "Chiều", C
 
 /** Chiều cao dòng vị trí mặc định theo mẫu (8 dòng đầu), các dòng thêm dùng mặc định 42. */
 const POSITION_ROW_HEIGHTS = [30.75, 42.75, 40.5, 29.25, 45.75, 42.75, 26.25, 99.75];
+
+/** Tiêu đề biểu theo bộ phận: "PHÂN CÔNG NHIỆM VỤ <TÊN BỘ PHẬN>" (mặc định giữ mẫu gốc khi không truyền). */
+function formTitleOf(unitName?: string | null): string {
+  const n = (unitName || "").trim();
+  return n ? `PHÂN CÔNG NHIỆM VỤ ${n.toUpperCase()}` : FORM_TITLE;
+}
+
+/** Dòng tên bộ phận trên trang bìa (không hardcode cho mọi file). */
+function coverUnitLine(unitName?: string | null): string {
+  const n = (unitName || "").trim();
+  return n ? n.toUpperCase() : "BỘ PHẬN NGHIỆP VỤ HẢI QUAN";
+}
 
 function dayKey(d: Date): string {
   const x = new Date(d);
@@ -217,7 +233,8 @@ function writeDayBlock(
   day: Date,
   dayRows: DutyExportAssignment[],
   catalog: DutyExportCatalogPosition[],
-  info: DutyExportDayInfo | undefined
+  info: DutyExportDayInfo | undefined,
+  formTitle: string
 ): number {
   const cTT = startCol;
   const cTask = startCol + 1;
@@ -231,9 +248,9 @@ function writeDayBlock(
   styleCell(ws.getCell(r, cTT), { size: 11, bold: true, h: "center", v: "bottom" });
   ws.getRow(r).height = 18.75;
 
-  // R2: tiêu đề biểu
+  // R2: tiêu đề biểu (theo bộ phận được xuất)
   r++;
-  ws.getCell(r, cTT).value = FORM_TITLE;
+  ws.getCell(r, cTT).value = formTitle;
   merge(r);
   styleCell(ws.getCell(r, cTT), { size: 11, bold: true, h: "center", v: "bottom" });
   ws.getRow(r).height = 18.75;
@@ -316,8 +333,8 @@ function writeDayBlock(
   return r + 3; // 2 dòng trống giữa các khối (đúng mẫu: khối 1 kết thúc dòng 17, khối 2 bắt đầu dòng 20)
 }
 
-/** Ghi trang bìa (bám sheet Sheet1 của mẫu: NĂM + nơi ký). */
-function writeCover(ws: ExcelJS.Worksheet, year: number) {
+/** Ghi trang bìa (bám sheet Sheet1 của mẫu: NĂM + nơi ký); tên bộ phận theo file xuất. */
+function writeCover(ws: ExcelJS.Worksheet, year: number, unitLine: string) {
   const setMerged = (row: number, col1: number, col2: number, value: string, size: number, bold: boolean, italic = false) => {
     ws.getCell(row, col1).value = value;
     ws.mergeCells(row, col1, row, col2);
@@ -329,7 +346,7 @@ function writeCover(ws: ExcelJS.Worksheet, year: number) {
   ws.getRow(15).height = 20.25;
 
   setMerged(1, 1, 5, ORG_LINE, 14, false);
-  setMerged(2, 1, 5, "BỘ PHẬN NGHIỆP VỤ HẢI QUAN", 14, true);
+  setMerged(2, 1, 5, unitLine, 14, true);
   setMerged(14, 1, 12, "SỔ PHÂN CÔNG NHIỆM VỤ CÔNG TÁC GIÁM SÁT QUẢN LÝ", 16, true);
   setMerged(15, 1, 12, `NĂM ${year}`, 16, true);
   setMerged(27, 8, 12, `Phục Hòa, ngày 01 tháng 01 năm ${year}`, 14, false, true);
@@ -355,6 +372,8 @@ const DAY_COL_WIDTHS = [
 ];
 
 export async function buildDutyRosterWorkbook(opts: DutyExportOptions): Promise<Buffer> {
+  const formTitle = formTitleOf(opts.unitName);
+  const coverUnit = coverUnitLine(opts.unitName);
   const days = eachDay(opts.from, opts.to);
   const byDay = new Map<string, DutyExportAssignment[]>();
   for (const a of opts.assignments) {
@@ -378,7 +397,7 @@ export async function buildDutyRosterWorkbook(opts: DutyExportOptions): Promise<
 
   if (opts.includeCover !== false) {
     const cover = wb.addWorksheet("Bìa");
-    writeCover(cover, exportDays[0].getFullYear());
+    writeCover(cover, exportDays[0].getFullYear(), coverUnit);
     setupPrint(cover);
   }
 
@@ -409,7 +428,8 @@ export async function buildDutyRosterWorkbook(opts: DutyExportOptions): Promise<
         day,
         byDay.get(dayKey(day)) || [],
         opts.catalog,
-        infoByDay.get(dayKey(day))
+        infoByDay.get(dayKey(day)),
+        formTitle
       );
     });
     setupPrint(ws);

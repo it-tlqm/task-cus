@@ -3,6 +3,12 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { resolveDutyUnitId } from "@/server/duty-scope";
+
+/**
+ * YC-24 PHƯƠNG ÁN B — Thông tin tổng hợp ngày định danh theo (BỘ PHẬN + NGÀY).
+ * Số liệu (Tổng số công chức/Có mặt/Vắng/Lý do) nhập TAY theo biểu — hệ thống không tự tính.
+ */
 
 function parseDayStart(raw: string | null): Date | null {
   if (!raw) return null;
@@ -24,7 +30,10 @@ function optionalInt(v: unknown): { present: boolean; ok: boolean; value: number
   return { present: true, ok: true, value: i };
 }
 
-/** GET /api/rosters/day-info?from&to — thông tin tổng hợp ngày (Tổng số công chức/Có mặt/Vắng/Lý do). */
+/**
+ * GET /api/rosters/day-info?from&to[&unitId=...] — thông tin tổng hợp ngày CỦA MỘT BỘ PHẬN.
+ * unitId bắt buộc theo ngữ cảnh; nếu thiếu, backend mặc định bộ phận trong phạm vi (1 bộ phận) hoặc bộ phận chính.
+ */
 export async function GET(req: NextRequest) {
   try {
     const user = await authenticateRequest(req);
@@ -36,16 +45,23 @@ export async function GET(req: NextRequest) {
     if (!from || !to) return jsonError("Thiếu khoảng ngày (from/to)", 400);
     const end = new Date(to);
     end.setHours(23, 59, 59, 999);
-    const rows = await prisma.dutyDayInfo.findMany({ where: { date: { gte: from, lte: end } }, orderBy: { date: "asc" } });
-    return NextResponse.json({ success: true, data: rows });
+
+    const resolved = await resolveDutyUnitId(user, searchParams.get("unitId") || null);
+    if (!resolved.ok) return jsonError(resolved.error, resolved.status);
+
+    const rows = await prisma.dutyDayInfo.findMany({
+      where: { unitId: resolved.unitId, date: { gte: from, lte: end } },
+      orderBy: { date: "asc" },
+    });
+    return NextResponse.json({ success: true, data: rows, selectedUnitId: resolved.unitId });
   } catch (error: any) {
     return jsonError("Lỗi khi tải thông tin ngày: " + error.message, 500);
   }
 }
 
 /**
- * PUT /api/rosters/day-info — lãnh đạo lưu thông tin tổng hợp của một ngày (upsert theo ngày).
- * Body: { date, totalStaff?, presentStaff?, absentCount?, absentReason?, notes? }
+ * PUT /api/rosters/day-info — lãnh đạo lưu thông tin tổng hợp của MỘT BỘ PHẬN trong một ngày.
+ * Body: { unitId, date, totalStaff?, presentStaff?, absentCount?, absentReason?, notes? }
  */
 export async function PUT(req: NextRequest) {
   try {
@@ -57,6 +73,11 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const date = parseDayStart(body?.date ? String(body.date) : null);
     if (!date) return jsonError("Ngày không hợp lệ", 400);
+    if (!body?.unitId) return jsonError("Thiếu bộ phận của bảng phân công", 400);
+
+    const resolved = await resolveDutyUnitId(user, String(body.unitId));
+    if (!resolved.ok) return jsonError(resolved.error, resolved.status);
+    const unitId = resolved.unitId;
 
     const totalStaff = optionalInt(body?.totalStaff);
     const presentStaff = optionalInt(body?.presentStaff);
@@ -67,7 +88,8 @@ export async function PUT(req: NextRequest) {
     const absentReason = body?.absentReason !== undefined ? String(body.absentReason).trim() || null : undefined;
     const notes = body?.notes !== undefined ? String(body.notes).trim() || null : undefined;
 
-    const existing = await prisma.dutyDayInfo.findUnique({ where: { date } });
+    // Khóa nghiệp vụ: (bộ phận, ngày) — mỗi bộ phận có bảng tổng hợp riêng cho cùng ngày.
+    const existing = await prisma.dutyDayInfo.findFirst({ where: { unitId, date } });
     const data: any = {};
     if (totalStaff.present) data.totalStaff = totalStaff.value;
     if (presentStaff.present) data.presentStaff = presentStaff.value;
@@ -76,8 +98,10 @@ export async function PUT(req: NextRequest) {
     if (notes !== undefined) data.notes = notes;
 
     const saved = existing
-      ? await prisma.dutyDayInfo.update({ where: { date }, data: { ...data, updatedById: user.personId } })
-      : await prisma.dutyDayInfo.create({ data: { date, ...data, createdById: user.personId, updatedById: user.personId } });
+      ? await prisma.dutyDayInfo.update({ where: { id: existing.id }, data: { ...data, updatedById: user.personId } })
+      : await prisma.dutyDayInfo.create({
+          data: { date, unitId, ...data, createdById: user.personId, updatedById: user.personId },
+        });
 
     await recordAuditEvent({
       actorId: user.id,
@@ -85,9 +109,16 @@ export async function PUT(req: NextRequest) {
       resourceType: "DutyDayInfo",
       resourceId: saved.id,
       oldData: existing
-        ? { totalStaff: existing.totalStaff, presentStaff: existing.presentStaff, absentCount: existing.absentCount, absentReason: existing.absentReason, notes: existing.notes }
+        ? {
+            unitId,
+            totalStaff: existing.totalStaff,
+            presentStaff: existing.presentStaff,
+            absentCount: existing.absentCount,
+            absentReason: existing.absentReason,
+            notes: existing.notes,
+          }
         : undefined,
-      newData: { date: date.toISOString().slice(0, 10), ...data },
+      newData: { unitId, date: date.toISOString().slice(0, 10), ...data },
     });
     return NextResponse.json({ success: true, data: saved });
   } catch (error: any) {

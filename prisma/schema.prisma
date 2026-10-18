@@ -47,6 +47,8 @@ model OrgUnit {
   routines     RoutineEntry[]
   reportSnapshots ReportSnapshot[]
   dutyRosters  DutyRoster[]
+  dutyPositions DutyPosition[]
+  dutyDayInfos DutyDayInfo[]
   departmentWorkItems DepartmentWorkItem[]
 
   @@map("org_units")
@@ -771,8 +773,11 @@ model DutyRoster {
   unit     OrgUnit?       @relation(fields: [unitId], references: [id])
   position DutyPosition?  @relation(fields: [positionId], references: [id], onDelete: SetNull)
 
-  @@unique([date, slotKey])
-  @@index([date, unitId])
+  // YC-24 Phương án B: bảng phân công định danh theo (BỘ PHẬN + NGÀY + Ô).
+  // - Bản ghi cũ (unit_id/slot_key NULL) không bị ảnh hưởng (PostgreSQL: NULL khác nhau trong unique index).
+  // - Một ô của biểu chỉ có một bản ghi/bộ phận/ngày.
+  @@unique([unitId, date, slotKey])
+  @@index([unitId, date])
   @@index([date, positionId])
   @@map("duty_rosters")
 }
@@ -784,7 +789,8 @@ model DutyRoster {
 
 model DutyPosition {
   id          String   @id @default(uuid())
-  code        String   @unique // Mã ổn định: YC24-01..YC24-08
+  code        String   @unique // Mã ổn định: YC24-01..YC24-08 (duy nhất toàn hệ thống)
+  unitId      String?  @map("unit_id") // YC-24 Phương án B: bộ phận SỞ HỮU danh mục (null = chưa gán — chỉ Lãnh đạo đơn vị xử lý)
   title       String // Tiêu đề nhiệm vụ (dòng 1)
   detail      String? // Dòng phụ của mẫu (nếu có)
   slots       Json // Danh sách ô của vị trí: [{ "k": "s1", "l": null | "NC" | "Vị trí bãi Phú Anh" }]
@@ -795,15 +801,17 @@ model DutyPosition {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   createdBy   Person?      @relation("DutyPositionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  unit        OrgUnit?     @relation(fields: [unitId], references: [id])
   assignments DutyRoster[]
 
-  @@index([status, sortOrder])
+  @@index([unitId, status, sortOrder])
   @@map("duty_positions")
 }
 
 model DutyDayInfo {
   id           String   @id @default(uuid())
-  date         DateTime @unique // Ngày (giờ 00:00) — biểu dùng chung cho đơn vị
+  date         DateTime // Ngày (giờ 00:00) — YC-24 Phương án B: định danh theo (BỘ PHẬN + NGÀY)
+  unitId       String?  @map("unit_id") // Bộ phận (null = bản ghi cũ chưa gắn — không dùng cho bản ghi mới)
   totalStaff   Int?     @map("total_staff") // Tổng số công chức (nhập theo biểu)
   presentStaff Int?     @map("present_staff") // Có mặt
   absentCount  Int?     @map("absent_count") // Vắng
@@ -814,6 +822,10 @@ model DutyDayInfo {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  unit         OrgUnit? @relation(fields: [unitId], references: [id])
+
+  @@unique([unitId, date])
+  @@index([unitId])
   @@map("duty_day_infos")
 }
 

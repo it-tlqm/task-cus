@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { checkPermission, getAuthorizedUnitIds, jsonError } from "@/server/guard";
+import { checkPermission, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { parseSlots } from "@/server/duty-catalog";
+import { scopeUnitsOf } from "@/server/duty-scope";
 import { buildDutyRosterWorkbook, DutyExportAssignment } from "@/server/duty-export";
 
 function parseDay(raw: string | null, endOfDay = false): Date | null {
@@ -15,8 +16,11 @@ function parseDay(raw: string | null, endOfDay = false): Date | null {
 }
 
 /**
- * GET /api/rosters/export?from=YYYY-MM-DD&to=YYYY-MM-DD[&unitId=...][&skipEmpty=1][&cover=0]
- * Xuất "Sổ phân công nhiệm vụ" (.xlsx) theo mẫu Hải quan — mỗi ngày 1 khối, 4 khối/trang in.
+ * GET /api/rosters/export?from=YYYY-MM-DD&to=YYYY-MM-DD&unitId=...[&skipEmpty=1][&cover=0]
+ * Xuất "Sổ phân công nhiệm vụ" (.xlsx) CỦA ĐÚNG MỘT BỘ PHẬN — mỗi ngày 1 khối, 4 khối/trang in.
+ * - Bắt buộc có unitId khi tài khoản có nhiều bộ phận trong phạm vi; một bộ phận thì mặc định chính bộ phận đó.
+ * - Tiêu đề biểu/trang bìa/tên tệp thể hiện ĐÚNG bộ phận được xuất — không hardcode "Bộ phận Nghiệp vụ".
+ * - Không trộn dữ liệu giữa các bộ phận (mọi truy vấn lọc theo unitId + phạm vi quyền).
  */
 export async function GET(req: NextRequest) {
   try {
@@ -34,30 +38,34 @@ export async function GET(req: NextRequest) {
     if (to.getTime() - from.getTime() > 31 * 86400000) {
       return jsonError("Mỗi lần xuất tối đa 31 ngày — hãy tách thành nhiều kỳ", 400);
     }
-    const unitId = searchParams.get("unitId") || "";
     const skipEmpty = searchParams.get("skipEmpty") === "1";
     const includeCover = searchParams.get("cover") !== "0";
 
-    const authorizedUnits = await getAuthorizedUnitIds(user);
-    const where: any = { date: { gte: from, lte: to } };
-    if (unitId) {
-      if (authorizedUnits !== "ALL" && !authorizedUnits.includes(unitId)) {
-        return jsonError("Bạn không có quyền xuất lịch đơn vị này", 403);
+    // Xác định bộ phận xuất: ưu tiên tham số, đối chiếu phạm vi thực tế của tài khoản.
+    const requested = searchParams.get("unitId") || "";
+    const { units } = await scopeUnitsOf(user);
+    let unitId = "";
+    if (requested) {
+      if (!units.some((u) => u.id === requested)) {
+        return jsonError("Bạn không có quyền xuất bảng phân công của bộ phận này", 403);
       }
-      where.unitId = unitId;
-    } else if (authorizedUnits !== "ALL") {
-      where.unitId = { in: authorizedUnits };
+      unitId = requested;
+    } else if (units.length === 1) {
+      unitId = units[0].id;
+    } else {
+      return jsonError("Vui lòng chọn bộ phận cần xuất", 400);
     }
+    const unit = units.find((u) => u.id === unitId)!;
 
     const [rows, positions, dayInfos] = await Promise.all([
       prisma.dutyRoster.findMany({
-        where,
+        where: { unitId, date: { gte: from, lte: to } },
         include: { person: { select: { fullName: true } } },
         orderBy: [{ date: "asc" }, { positionOrder: "asc" }, { slotOrder: "asc" }],
         take: 3000,
       }),
-      prisma.dutyPosition.findMany({ orderBy: [{ sortOrder: "asc" }, { code: "asc" }] }),
-      prisma.dutyDayInfo.findMany({ where: { date: { gte: from, lte: to } } }),
+      prisma.dutyPosition.findMany({ where: { unitId }, orderBy: [{ sortOrder: "asc" }, { code: "asc" }] }),
+      prisma.dutyDayInfo.findMany({ where: { unitId, date: { gte: from, lte: to } } }),
     ]);
 
     const assignments: DutyExportAssignment[] = rows.map((r) => ({
@@ -75,6 +83,8 @@ export async function GET(req: NextRequest) {
     const buf = await buildDutyRosterWorkbook({
       from,
       to,
+      unitName: unit.name,
+      unitCode: unit.code,
       assignments,
       catalog: positions.map((p) => ({
         id: p.id,
@@ -103,14 +113,15 @@ export async function GET(req: NextRequest) {
       newData: {
         from: from.toISOString().slice(0, 10),
         to: to.toISOString().slice(0, 10),
-        unitId: unitId || "ALL",
+        unitId,
+        unitCode: unit.code,
         rows: rows.length,
         skipEmpty,
         by: user.username,
       },
     });
 
-    const filename = `so-phan-cong-nhiem-vu_${from.toISOString().slice(0, 10)}_${to.toISOString().slice(0, 10)}.xlsx`;
+    const filename = `so-phan-cong_${unit.code}_${from.toISOString().slice(0, 10)}_${to.toISOString().slice(0, 10)}.xlsx`;
     return new NextResponse(new Uint8Array(buf), {
       status: 200,
       headers: {
