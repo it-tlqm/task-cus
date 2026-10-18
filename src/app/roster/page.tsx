@@ -1,253 +1,1746 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
-const SHIFT_LABELS: Record<string, string> = { SANG: "Sáng", CHIEU: "Chiều", CA_NGAY: "Cả ngày" };
+/**
+ * YC-24 — Phân công nhiệm vụ & lịch trực theo biểu mẫu
+ * "Sổ phân công nhiệm vụ công tác giám sát quản lý" (Hải quan cửa khẩu Quốc tế Tà Lùng).
+ *
+ * - Desktop: bảng ma trận Vị trí × Ngày; bấm ô để mở phiếu phân công của ngày.
+ * - Mobile: thẻ theo ngày, không tràn ngang; lãnh đạo vẫn phân công được trong quyền.
+ * - Cảnh báo mềm: trùng đơn nghỉ đã duyệt, một cán bộ bị phân công nhiều vị trí trong ngày.
+ * - Xuất Excel theo kỳ/ngày đúng cấu trúc biểu mẫu; sửa danh mục không đổi lịch sử phân công.
+ */
 
-interface RosterRow {
+const SHIFT_LABELS: Record<string, string> = { SANG: "Sáng", CHIEU: "Chiều", CA_NGAY: "Cả ngày" };
+const WEEKDAYS = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"];
+
+interface DutySlotDef {
+  k: string;
+  l: string | null;
+}
+
+interface DutyRow {
   id: string;
   date: string;
   shift: string;
   post: string | null;
   notes: string | null;
+  reason: string | null;
+  personId: string;
   person: { id: string; fullName: string };
-  unit: { id: string; name: string } | null;
+  unitId: string | null;
+  unit: { id: string; name: string; code: string } | null;
+  positionId: string | null;
+  positionTitle: string | null;
+  positionDetail: string | null;
+  positionOrder: number | null;
+  slotLabel: string | null;
+  slotOrder: number | null;
   leaveClash: { type: string } | null;
+  overlapCount: number;
 }
 
-/**
- * Lịch trực ca — gọn cho end user: xem theo tuần, lãnh đạo xếp/sửa/xóa,
- * tự cảnh báo khi người trực có đơn nghỉ đã duyệt trùng ngày.
- */
+interface CatalogPosition {
+  id: string;
+  code: string;
+  title: string;
+  detail: string | null;
+  slots: DutySlotDef[];
+  sortOrder: number;
+  status: string;
+}
+
+interface DayInfoRow {
+  id: string;
+  date: string;
+  totalStaff: number | null;
+  presentStaff: number | null;
+  absentCount: number | null;
+  absentReason: string | null;
+  notes: string | null;
+}
+
+interface UnitLite {
+  id: string;
+  code: string;
+  name: string;
+}
+
+interface PersonLite {
+  id: string;
+  fullName: string;
+}
+
+interface LeaveLite {
+  personId: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+}
+
+interface MatrixGroup {
+  kind: "catalog" | "orphan" | "legacy";
+  /** Mã hiển thị/test: YC24-01..., X1 (ngoài danh mục), CU (dữ liệu cũ) */
+  code: string;
+  positionId: string | null;
+  title: string;
+  detail: string | null;
+  slots: DutySlotDef[];
+  sortOrder: number;
+}
+
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function dateKey(v: Date | string): string {
+  const d = new Date(v);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function mondayOf(d: Date): Date {
+  const x = new Date(d);
+  const shift = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - shift);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function fmtDM(v: Date | string): string {
+  const d = new Date(v);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function fmtDMY(v: Date | string): string {
+  const d = new Date(v);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+/** Dựng các nhóm hiển thị: vị trí danh mục (đang dùng) + vị trí ngoài danh mục + dữ liệu cũ. */
+function buildMatrixGroups(rows: DutyRow[], positions: CatalogPosition[]): MatrixGroup[] {
+  const groups: MatrixGroup[] = [];
+  const usedIds = new Set<string>();
+  const activeCatalog = positions
+    .filter((p) => p.status === "ACTIVE")
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  for (const p of activeCatalog) {
+    groups.push({
+      kind: "catalog",
+      code: p.code,
+      positionId: p.id,
+      title: p.title,
+      detail: p.detail,
+      slots: p.slots,
+      sortOrder: p.sortOrder,
+    });
+    usedIds.add(p.id);
+  }
+  // Vị trí không còn hiệu lực nhưng có phân công trong kỳ — hiển thị để không mất dấu dữ liệu
+  const orphanIds = [...new Set(rows.map((r) => r.positionId).filter((x): x is string => !!x && !usedIds.has(x)))];
+  let orphanIdx = 0;
+  for (const pid of orphanIds) {
+    const rs = rows.filter((r) => r.positionId === pid);
+    const maxSlot = Math.max(0, ...rs.map((r) => r.slotOrder ?? 0));
+    const slots: DutySlotDef[] = Array.from({ length: maxSlot + 1 }, (_, idx) => {
+      const row = rs.find((r) => r.slotOrder === idx);
+      return { k: `s${idx + 1}`, l: row?.slotLabel ?? null };
+    });
+    orphanIdx++;
+    groups.push({
+      kind: "orphan",
+      code: `X${orphanIdx}`,
+      positionId: pid,
+      title: rs[0]?.positionTitle || "(vị trí ngoài danh mục)",
+      detail: rs[0]?.positionDetail || null,
+      slots,
+      sortOrder: rs[0]?.positionOrder ?? 900 + orphanIdx,
+    });
+  }
+  // Dữ liệu cũ (không gắn vị trí)
+  if (rows.some((r) => !r.positionId)) {
+    groups.push({
+      kind: "legacy",
+      code: "CU",
+      positionId: null,
+      title: "Dữ liệu cũ (trước nâng cấp)",
+      detail: null,
+      slots: [],
+      sortOrder: 999,
+    });
+  }
+  return groups.sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+/** Các dòng hiển thị của một nhóm trong một ngày: mỗi ô một dòng. */
+function slotLinesFor(group: MatrixGroup, dayRows: DutyRow[]): Array<{ key: string; label: string | null; row: DutyRow | null }> {
+  if (group.kind === "legacy") {
+    return dayRows
+      .filter((r) => !r.positionId)
+      .map((r) => ({ key: r.id, label: r.post?.trim() || SHIFT_LABELS[r.shift] || r.shift, row: r }));
+  }
+  if (group.positionId) {
+    return group.slots.map((s, idx) => {
+      const row = dayRows.find((r) => r.positionId === group.positionId && r.slotOrder === idx) || null;
+      return { key: `${idx}`, label: s.l, row };
+    });
+  }
+  return [];
+}
+
+/** Gợi ý cảnh báo trước khi lưu: nghỉ phép trùng ngày / đã phân công vị trí khác trong ngày. */
+function prewarnFor(personId: string, dateISO: string, dayRows: DutyRow[], leaves: LeaveLite[]): string[] {
+  const out: string[] = [];
+  const d = new Date(dateISO);
+  const hit = leaves.find((l) => {
+    if (l.personId !== personId) return false;
+    const s = new Date(l.startDate);
+    const e = new Date(l.endDate);
+    s.setHours(0, 0, 0, 0);
+    e.setHours(23, 59, 59, 999);
+    return d >= s && d <= e;
+  });
+  if (hit) out.push(`Cán bộ có đơn nghỉ đã duyệt (${hit.type}) trùng ngày — cân nhắc lại.`);
+  if (dayRows.some((r) => r.personId === personId)) {
+    out.push("Cán bộ đã được phân công vị trí khác trong ngày (trùng phân công).");
+  }
+  return out;
+}
+
 export default function RosterPage() {
-  const monday = (() => {
-    const n = new Date();
-    const d = (n.getDay() + 6) % 7;
-    n.setDate(n.getDate() - d);
-    n.setHours(0, 0, 0, 0);
-    return n;
-  })();
-  const [weekStart, setWeekStart] = useState(monday);
-  const [rows, setRows] = useState<RosterRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { canApprove } = usePermissions();
-
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [fDate, setFDate] = useState("");
-  const [fShift, setFShift] = useState("CA_NGAY");
-  const [fPost, setFPost] = useState("");
+  const { canApprove, canExport, isUnitLeader } = usePermissions();
+  const [view, setView] = useState<"week" | "day">("week");
+  const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
+  const [selDay, setSelDay] = useState<string>(() => toISODate(new Date()));
+  const [rows, setRows] = useState<DutyRow[]>([]);
+  const [positions, setPositions] = useState<CatalogPosition[]>([]);
+  const [dayInfos, setDayInfos] = useState<DayInfoRow[]>([]);
+  const [units, setUnits] = useState<UnitLite[]>([]);
+  const [leaves, setLeaves] = useState<LeaveLite[]>([]);
+  const [people, setPeople] = useState<PersonLite[]>([]);
+  const [fUnitId, setFUnitId] = useState("");
   const [fPersonId, setFPersonId] = useState("");
-  const [fNotes, setFNotes] = useState("");
-  const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
+  const [fPositionId, setFPositionId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [editorDate, setEditorDate] = useState<string | null>(null);
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
-  const toISODate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const rangeFrom = view === "week" ? toISODate(weekStart) : selDay;
+  const rangeTo = view === "week" ? toISODate(addDays(weekStart, 6)) : selDay;
 
-  const fetchWeek = useCallback(async (start: Date) => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const from = toISODate(start);
-      const end = new Date(start); end.setDate(end.getDate() + 6);
-      const res = await fetch(`/api/rosters?from=${from}&to=${toISODate(end)}`);
-      const json = await res.json();
-      if (res.ok) setRows(json.data || []);
-      else toast.error(json.error || "Không thể tải lịch trực");
+      const params = new URLSearchParams({ from: rangeFrom, to: rangeTo });
+      if (fUnitId) params.set("unitId", fUnitId);
+      const res = await fetch(`/api/rosters?${params.toString()}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json.error || "Không thể tải phân công nhiệm vụ");
+        return;
+      }
+      setRows(json.data || []);
+      setPositions(json.positions || []);
+      setDayInfos(json.dayInfos || []);
+      setUnits(json.units || []);
+      setLeaves(json.leaves || []);
     } catch (err: any) {
       toast.error("Lỗi kết nối: " + err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [rangeFrom, rangeTo, fUnitId]);
 
-  useEffect(() => { fetchWeek(weekStart); }, [fetchWeek, weekStart]);
   useEffect(() => {
-    fetch("/api/people?pageSize=100")
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    fetch("/api/people?pageSize=100&status=ACTIVE")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const list = Array.isArray(json) ? json : json?.data || [];
-        setPeople(list.map((p: any) => ({ id: p.id, fullName: p.fullName })));
+        setPeople(
+          list
+            .map((p: any) => ({ id: p.id, fullName: p.fullName }))
+            .sort((a: PersonLite, b: PersonLite) => a.fullName.localeCompare(b.fullName, "vi"))
+        );
       })
       .catch(() => {});
   }, []);
 
-  const openAdd = (dayISO: string) => {
-    setFDate(dayISO); setFShift("CA_NGAY"); setFPost(""); setFPersonId(""); setFNotes("");
-    setShowModal(true);
+  const days = useMemo(() => {
+    if (view === "day") return [new Date(selDay)];
+    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  }, [view, selDay, weekStart]);
+
+  const displayRows = useMemo(
+    () =>
+      rows.filter(
+        (r) => (!fPersonId || r.personId === fPersonId) && (!fPositionId || r.positionId === fPositionId)
+      ),
+    [rows, fPersonId, fPositionId]
+  );
+
+  const groups = useMemo(() => buildMatrixGroups(displayRows, positions), [displayRows, positions]);
+
+  const infoByDay = useMemo(() => {
+    const m = new Map<string, DayInfoRow>();
+    for (const i of dayInfos) m.set(dateKey(i.date), i);
+    return m;
+  }, [dayInfos]);
+
+  const rowsOnDay = useCallback(
+    (iso: string, source?: DutyRow[]) => (source || displayRows).filter((r) => dateKey(r.date) === iso),
+    [displayRows]
+  );
+
+  const warnings = useMemo(() => {
+    const list: string[] = [];
+    const leaveSeen = new Set<string>();
+    for (const r of rows) {
+      if (r.leaveClash) {
+        const k = `${r.personId}|${dateKey(r.date)}`;
+        if (!leaveSeen.has(k)) {
+          leaveSeen.add(k);
+          list.push(
+            `${r.person.fullName} — ngày ${fmtDM(r.date)}: trùng đơn nghỉ đã duyệt (${r.leaveClash.type}).`
+          );
+        }
+      }
+    }
+    const byPersonDay = new Map<string, DutyRow[]>();
+    for (const r of rows) {
+      const k = `${r.personId}|${dateKey(r.date)}`;
+      const arr = byPersonDay.get(k) || [];
+      arr.push(r);
+      byPersonDay.set(k, arr);
+    }
+    for (const [, arr] of byPersonDay) {
+      if (arr.length > 1) {
+        list.push(`${arr[0].person.fullName} — ngày ${fmtDM(arr[0].date)}: được phân công ${arr.length} vị trí trong ngày.`);
+      }
+    }
+    return list;
+  }, [rows]);
+
+  const prevPeriod = () => {
+    if (view === "week") setWeekStart((w) => addDays(w, -7));
+    else setSelDay((d) => toISODate(addDays(new Date(d), -1)));
+  };
+  const nextPeriod = () => {
+    if (view === "week") setWeekStart((w) => addDays(w, 7));
+    else setSelDay((d) => toISODate(addDays(new Date(d), 1)));
+  };
+  const goToday = () => {
+    const t = new Date();
+    setWeekStart(mondayOf(t));
+    setSelDay(toISODate(t));
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (saving || !fDate || !fPersonId) return;
-    setSaving(true);
+  return (
+    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-24" data-testid="roster-page">
+      {/* Tiêu đề */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-lg lg:text-xl font-bold text-slate-800">Phân công nhiệm vụ &amp; lịch trực</h1>
+        <p className="text-xs text-slate-500">
+          Bám biểu mẫu “Sổ phân công nhiệm vụ công tác giám sát quản lý” — Hải quan cửa khẩu Quốc tế Tà Lùng
+        </p>
+      </div>
+
+      {/* Thanh điều khiển */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5" data-tour="roster-toolbar">
+        <div className="inline-flex rounded-lg border border-slate-200 overflow-hidden">
+          <button
+            data-testid="roster-view-week"
+            onClick={() => setView("week")}
+            className={`px-3 py-1.5 text-xs font-semibold ${view === "week" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+          >
+            Theo tuần
+          </button>
+          <button
+            data-testid="roster-view-day"
+            onClick={() => setView("day")}
+            className={`px-3 py-1.5 text-xs font-semibold border-l border-slate-200 ${view === "day" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+          >
+            Theo ngày
+          </button>
+        </div>
+
+        <div className="inline-flex items-center gap-1">
+          <button
+            data-testid="roster-prev"
+            onClick={prevPeriod}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"
+            aria-label="Kỳ trước"
+          >
+            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          {view === "week" ? (
+            <span className="px-2 text-xs font-semibold text-slate-700 min-w-[150px] text-center">
+              Tuần {fmtDM(weekStart)} – {fmtDM(addDays(weekStart, 6))}/{addDays(weekStart, 6).getFullYear()}
+            </span>
+          ) : (
+            <input
+              data-testid="roster-day-input"
+              type="date"
+              value={selDay}
+              onChange={(e) => e.target.value && setSelDay(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+            />
+          )}
+          <button
+            data-testid="roster-next"
+            onClick={nextPeriod}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"
+            aria-label="Kỳ sau"
+          >
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+          <button
+            data-testid="roster-today"
+            onClick={goToday}
+            className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
+          >
+            Hôm nay
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {units.length > 1 && (
+            <select
+              data-testid="roster-filter-unit"
+              value={fUnitId}
+              onChange={(e) => setFUnitId(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs max-w-[190px]"
+              title="Lọc theo bộ phận của cán bộ được phân công"
+            >
+              <option value="">Tất cả bộ phận</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <select
+            data-testid="roster-filter-person"
+            value={fPersonId}
+            onChange={(e) => setFPersonId(e.target.value)}
+            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs max-w-[170px]"
+            title="Lọc theo cán bộ"
+          >
+            <option value="">Tất cả cán bộ</option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.fullName}
+              </option>
+            ))}
+          </select>
+          <select
+            data-testid="roster-filter-position"
+            value={fPositionId}
+            onChange={(e) => setFPositionId(e.target.value)}
+            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs max-w-[210px]"
+            title="Lọc theo vị trí/nhiệm vụ"
+          >
+            <option value="">Tất cả vị trí</option>
+            {positions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.sortOrder}. {p.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex-1" />
+
+        <div className="flex flex-wrap items-center gap-2">
+          {canExport && (
+            <button
+              data-testid="roster-btn-export"
+              onClick={() => setShowExport(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
+            >
+              <span className="material-symbols-outlined text-[16px]">download</span>
+              Xuất Excel
+            </button>
+          )}
+          {isUnitLeader && (
+            <button
+              data-testid="roster-btn-catalog"
+              onClick={() => setShowCatalog(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
+            >
+              <span className="material-symbols-outlined text-[16px]">list_alt</span>
+              Danh mục vị trí
+            </button>
+          )}
+          {canApprove && (
+            <button
+              data-testid="roster-btn-assign"
+              onClick={() => setEditorDate(view === "day" ? selDay : toISODate(new Date()))}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Phân công
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Cảnh báo */}
+      {warnings.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-3" data-testid="roster-warnings">
+          <div className="flex items-center gap-2 text-amber-800 text-xs font-bold uppercase tracking-wide">
+            <span className="material-symbols-outlined text-[16px]">warning</span>
+            Cảnh báo phân công ({warnings.length})
+          </div>
+          <ul className="mt-1.5 space-y-1">
+            {warnings.slice(0, 8).map((w, i) => (
+              <li key={i} className="text-xs text-amber-800">
+                • {w}
+              </li>
+            ))}
+            {warnings.length > 8 && (
+              <li className="text-xs text-amber-700 italic">… và {warnings.length - 8} cảnh báo khác</li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+          Đang tải phân công…
+        </div>
+      ) : view === "week" ? (
+        <>
+          {/* Desktop: ma trận Vị trí × Ngày */}
+          <div className="hidden lg:block rounded-xl border border-slate-200 bg-white overflow-hidden" data-testid="roster-matrix" data-tour="roster-week">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="sticky left-0 bg-slate-50 z-10 text-left px-3 py-2 font-bold text-slate-700 border-b border-slate-200 min-w-[240px]">
+                      Nhiệm vụ được phân công
+                    </th>
+                    {days.map((d, i) => {
+                      const iso = toISODate(d);
+                      const info = infoByDay.get(iso);
+                      return (
+                        <th key={iso} className="px-2 py-2 border-b border-l border-slate-200 text-center min-w-[132px]">
+                          <div className="font-bold text-slate-700">{WEEKDAYS[i]}</div>
+                          <div className="text-[11px] text-slate-500">{fmtDM(d)}</div>
+                          {info && (info.presentStaff !== null || info.absentCount !== null) && (
+                            <div className="text-[10px] text-teal-700 mt-0.5">
+                              Có mặt {info.presentStaff ?? "…"} / Vắng {info.absentCount ?? "…"}
+                            </div>
+                          )}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups.map((g) => (
+                    <tr key={`${g.kind}-${g.code}`} className="align-top">
+                      <td className="sticky left-0 bg-white z-10 px-3 py-2 border-b border-slate-100">
+                        <div className="font-semibold text-slate-700">
+                          {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
+                        </div>
+                        {g.detail && <div className="text-[11px] text-slate-500">{g.detail}</div>}
+                        {g.kind === "orphan" && <div className="text-[10px] text-amber-600 italic">Ngoài danh mục hiện hành</div>}
+                      </td>
+                      {days.map((d) => {
+                        const iso = toISODate(d);
+                        const dayRows = rowsOnDay(iso);
+                        const lines = slotLinesFor(g, dayRows);
+                        return (
+                          <td
+                            key={iso}
+                            data-testid={`roster-cell-${iso}-${g.code}`}
+                            onClick={canApprove ? () => setEditorDate(iso) : undefined}
+                            className={`px-2 py-1.5 border-b border-l border-slate-100 ${canApprove ? "cursor-pointer hover:bg-teal-50/40" : ""}`}
+                          >
+                            {lines.length === 0 ? (
+                              <span className="text-slate-300">—</span>
+                            ) : (
+                              <div className="space-y-0.5">
+                                {lines.map((ln) => (
+                                  <div key={ln.key} className="flex items-start gap-1">
+                                    <span className={ln.row ? "text-slate-700" : "text-slate-300"}>
+                                      {ln.label && (ln.label.length <= 3 || g.kind === "legacy") ? `${ln.label}: ` : ""}
+                                      {ln.row ? ln.row.person.fullName : "—"}
+                                    </span>
+                                    {ln.row?.leaveClash && (
+                                      <span
+                                        className="material-symbols-outlined text-[13px] text-amber-500"
+                                        title={`Trùng đơn nghỉ đã duyệt (${ln.row.leaveClash.type})`}
+                                      >
+                                        warning
+                                      </span>
+                                    )}
+                                    {ln.row && ln.row.overlapCount > 1 && (
+                                      <span className="material-symbols-outlined text-[13px] text-rose-500" title="Cán bộ được phân công nhiều vị trí trong ngày">
+                                        error
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile: thẻ theo ngày */}
+          <div className="lg:hidden space-y-3" data-testid="roster-mobile" data-tour="roster-week">
+            {days.map((d, i) => {
+              const iso = toISODate(d);
+              const dayRows = rowsOnDay(iso, rows);
+              return (
+                <div key={iso} className="rounded-xl border border-slate-200 bg-white overflow-hidden" data-testid={`roster-day-card-${iso}`}>
+                  <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+                    <button
+                      className="text-left"
+                      onClick={() => {
+                        setSelDay(iso);
+                        setView("day");
+                      }}
+                    >
+                      <span className="text-xs font-bold text-slate-700">{WEEKDAYS[i]} </span>
+                      <span className="text-xs text-slate-500">{fmtDM(d)}</span>
+                    </button>
+                    {canApprove && (
+                      <button
+                        data-testid={`roster-day-assign-${iso}`}
+                        onClick={() => setEditorDate(iso)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">add</span>
+                        Phân công
+                      </button>
+                    )}
+                  </div>
+                  <div className="px-3 py-2 space-y-2">
+                    {dayRows.length === 0 ? (
+                      <div className="text-xs text-slate-400 italic">Chưa phân công nhiệm vụ cho ngày này.</div>
+                    ) : (
+                      (() => {
+                        const dayGroups = buildMatrixGroups(dayRows, positions);
+                        return dayGroups.map((g) => {
+                          const lines = slotLinesFor(g, dayRows);
+                          const filled = lines.filter((l) => l.row);
+                          if (filled.length === 0) return null;
+                          return (
+                            <div key={g.code}>
+                              <div className="text-[11px] font-semibold text-slate-600">
+                                {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
+                              </div>
+                              <div className="mt-0.5 space-y-0.5">
+                                {filled.map((ln) => (
+                                  <div key={ln.key} className="flex items-center gap-1 text-xs text-slate-700">
+                                    <span className="truncate">
+                                      {(ln.label && ln.label.length <= 3 ? `${ln.label}: ` : "") + (ln.row?.person.fullName || "")}
+                                    </span>
+                                    {ln.row?.leaveClash && (
+                                      <span className="material-symbols-outlined text-[13px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
+                                        warning
+                                      </span>
+                                    )}
+                                    {ln.row && ln.row.overlapCount > 1 && (
+                                      <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công trong ngày">
+                                        error
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <DayFormView
+          dateISO={selDay}
+          rows={rows}
+          groups={buildMatrixGroups(rows, positions)}
+          info={infoByDay.get(selDay)}
+          warnings={warnings.filter((w) => w.includes(fmtDM(selDay)))}
+          canApprove={canApprove}
+          canExport={canExport}
+          onEdit={() => setEditorDate(selDay)}
+          onInfoSaved={fetchData}
+          onQuickExport={async () => {
+            const url = `/api/rosters/export?from=${selDay}&to=${selDay}`;
+            await downloadExcel(url, `so-phan-cong_${selDay}.xlsx`);
+          }}
+        />
+      )}
+
+      {/* Modal phiếu phân công */}
+      {editorDate && (
+        <DayEditorModal
+          key="editor"
+          dateISO={editorDate}
+          onDateChange={setEditorDate}
+          rows={rows}
+          groups={buildMatrixGroups(rows, positions)}
+          info={infoByDay.get(editorDate)}
+          people={people}
+          leaves={leaves}
+          canAssign={canApprove}
+          onClose={() => setEditorDate(null)}
+          onChanged={fetchData}
+        />
+      )}
+
+      {/* Modal danh mục vị trí */}
+      {showCatalog && (
+        <CatalogModal positions={positions} onClose={() => setShowCatalog(false)} onChanged={fetchData} />
+      )}
+
+      {/* Modal xuất Excel */}
+      {showExport && (
+        <ExportModal
+          defaultFrom={rangeFrom}
+          defaultTo={rangeTo}
+          onClose={() => setShowExport(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Tải file Excel qua fetch (giữ phiên đăng nhập) rồi kích hoạt tải xuống. */
+async function downloadExcel(url: string, fallbackName: string): Promise<boolean> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      toast.error(json.error || "Không thể xuất Excel");
+      return false;
+    }
+    const blob = await res.blob();
+    const dispo = res.headers.get("Content-Disposition") || "";
+    const m = dispo.match(/filename="([^"]+)"/);
+    const name = m?.[1] || fallbackName;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+    toast.success("Đã tạo file Excel phân công.");
+    return true;
+  } catch (err: any) {
+    toast.error("Lỗi xuất Excel: " + err.message);
+    return false;
+  }
+}
+
+/** Chế độ xem theo ngày: bảng đúng cấu trúc biểu mẫu + ô tổng hợp + cảnh báo. */
+function DayFormView({
+  dateISO,
+  rows,
+  groups,
+  info,
+  warnings,
+  canApprove,
+  canExport,
+  onEdit,
+  onInfoSaved,
+  onQuickExport,
+}: {
+  dateISO: string;
+  rows: DutyRow[];
+  groups: MatrixGroup[];
+  info: DayInfoRow | undefined;
+  warnings: string[];
+  canApprove: boolean;
+  canExport: boolean;
+  onEdit: () => void;
+  onInfoSaved: () => void;
+  onQuickExport: () => Promise<void>;
+}) {
+  const dayRows = rows.filter((r) => dateKey(r.date) === dateISO);
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {canApprove && (
+          <button
+            data-testid="roster-btn-edit-day"
+            onClick={onEdit}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800"
+          >
+            <span className="material-symbols-outlined text-[16px]">edit</span>
+            Phân công ngày này
+          </button>
+        )}
+        {canExport && (
+          <button
+            data-testid="roster-btn-export-day"
+            onClick={() => onQuickExport()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Xuất Excel ngày này
+          </button>
+        )}
+        {warnings.length > 0 && (
+          <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+            <span className="material-symbols-outlined text-[15px]">warning</span>
+            {warnings.length} cảnh báo trong ngày
+          </span>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 overflow-x-auto" data-testid="roster-day-form">
+        <div className="text-center min-w-[520px]">
+          <div className="text-sm font-bold text-slate-800 uppercase">Hải quan cửa khẩu Quốc tế Tà Lùng</div>
+          <div className="text-sm font-bold text-slate-800 uppercase mt-0.5">Phân công nhiệm vụ bộ phận nghiệp vụ</div>
+          <div className="text-xs italic text-slate-600 mt-0.5 underline underline-offset-4">
+            Ngày {String(new Date(dateISO).getDate()).padStart(2, "0")} tháng {new Date(dateISO).getMonth() + 1} năm{" "}
+            {new Date(dateISO).getFullYear()}
+          </div>
+        </div>
+        <table className="w-full mt-3 text-xs border-collapse min-w-[520px]">
+          <thead>
+            <tr>
+              <th className="border border-slate-400 px-1 py-1 w-8 font-bold">TT</th>
+              <th className="border border-slate-400 px-2 py-1 font-bold text-left">Nhiệm vụ được phân công</th>
+              <th className="border border-slate-400 px-2 py-1 font-bold text-left w-[38%]">Người thực hiện</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((g, gi) => {
+              const lines = slotLinesFor(g, dayRows);
+              if (g.kind !== "legacy" && lines.length === 0) {
+                return (
+                  <tr key={g.code}>
+                    <td className="border border-slate-400 px-1 py-1 text-center align-top">{gi + 1}</td>
+                    <td className="border border-slate-400 px-2 py-1 align-top">
+                      <div className="font-semibold">{g.title}</div>
+                      {g.detail && <div className="text-[11px] text-slate-600">{g.detail}</div>}
+                    </td>
+                    <td className="border border-slate-400 px-2 py-1 align-top text-slate-400">—</td>
+                  </tr>
+                );
+              }
+              const taskLines = [g.title];
+              if (g.detail) taskLines.push(g.detail);
+              for (const s of g.slots) {
+                if (s.l && /^vị\s*trí/i.test(s.l)) taskLines.push(s.l);
+              }
+              return (
+                <tr key={g.code}>
+                  <td className="border border-slate-400 px-1 py-1 text-center align-top font-bold">{gi + 1}</td>
+                  <td className="border border-slate-400 px-2 py-1 align-top">
+                    {taskLines.map((t, i) => (
+                      <div key={i} className={i === 0 ? "font-semibold" : "text-[11px] text-slate-600"}>
+                        {t}
+                      </div>
+                    ))}
+                  </td>
+                  <td className="border border-slate-400 px-2 py-1 align-top">
+                    {lines.length === 0 ? (
+                      <span className="text-slate-400">—</span>
+                    ) : (
+                      lines.map((ln) => (
+                        <div key={ln.key} className={ln.row ? "text-slate-800" : "text-slate-300"}>
+                          {ln.row
+                            ? `${ln.label && ln.label.length <= 3 ? ln.label + " " : ""}đ/c ${ln.row.person.fullName}`
+                            : ln.label && ln.label.length <= 3
+                              ? `${ln.label} đ/c………`
+                              : "đ/c………"}
+                          {ln.row?.leaveClash && (
+                            <span className="material-symbols-outlined text-[12px] text-amber-500 ml-1 align-middle" title="Trùng đơn nghỉ đã duyệt">
+                              warning
+                            </span>
+                          )}
+                          {ln.row && ln.row.overlapCount > 1 && (
+                            <span className="material-symbols-outlined text-[12px] text-rose-500 ml-1 align-middle" title="Trùng phân công trong ngày">
+                              error
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="mt-3 text-xs text-slate-700 min-w-[520px]">
+          <div className="font-semibold">
+            Tổng số công chức: {info?.totalStaff ?? "………"} — Có mặt: {info?.presentStaff ?? "……"} — Vắng:{" "}
+            {info?.absentCount ?? "……………"}
+          </div>
+          <div className="mt-1">Lý do: {info?.absentReason || "……………………………………………………"}</div>
+          <div className="mt-1 text-center font-bold mt-4">LÃNH ĐẠO ĐỘI</div>
+        </div>
+      </div>
+
+      <DayInfoPanel key={dateISO} dateISO={dateISO} info={info} canAssign={canApprove} onSaved={onInfoSaved} />
+    </div>
+  );
+}
+
+/** Ô tổng hợp theo ngày: Tổng số công chức / Có mặt / Vắng / Lý do (lãnh đạo nhập, biểu in giữ nguyên). */
+function DayInfoPanel({
+  dateISO,
+  info,
+  canAssign,
+  compact,
+  onSaved,
+}: {
+  dateISO: string;
+  info: DayInfoRow | undefined;
+  canAssign: boolean;
+  compact?: boolean;
+  onSaved?: () => void;
+}) {
+  const [total, setTotal] = useState<string>(info?.totalStaff !== null && info?.totalStaff !== undefined ? String(info.totalStaff) : "");
+  const [present, setPresent] = useState<string>(info?.presentStaff !== null && info?.presentStaff !== undefined ? String(info.presentStaff) : "");
+  const [absent, setAbsent] = useState<string>(info?.absentCount !== null && info?.absentCount !== undefined ? String(info.absentCount) : "");
+  const [reason, setReason] = useState<string>(info?.absentReason || "");
+  const [busy, setBusy] = useState(false);
+
+  const toIntOrNull = (v: string): number | null | undefined => {
+    const t = v.trim();
+    if (t === "") return null;
+    const n = Number(t);
+    if (!Number.isInteger(n) || n < 0 || n > 9999) return undefined;
+    return n;
+  };
+
+  const save = async () => {
+    const t = toIntOrNull(total);
+    const p = toIntOrNull(present);
+    const a = toIntOrNull(absent);
+    if (t === undefined || p === undefined || a === undefined) {
+      toast.error("Số liệu phải là số nguyên từ 0 đến 9999");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/rosters/day-info", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: dateISO, totalStaff: t, presentStaff: p, absentCount: a, absentReason: reason }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã lưu thông tin tổng hợp ngày.");
+        onSaved?.();
+      } else toast.error(json.error || "Không thể lưu thông tin ngày");
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={`rounded-xl border border-slate-200 bg-white ${compact ? "p-3" : "p-4"}`}>
+      <div className="text-xs font-bold text-slate-700 uppercase">Thông tin tổng hợp ngày {fmtDMY(dateISO)}</div>
+      {canAssign ? (
+        <div className="mt-2 grid grid-cols-2 lg:grid-cols-5 gap-2 items-end">
+          <label className="text-[11px] text-slate-500">
+            Tổng số công chức
+            <input
+              data-testid="dayinfo-total"
+              type="number"
+              min={0}
+              value={total}
+              onChange={(e) => setTotal(e.target.value)}
+              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+            />
+          </label>
+          <label className="text-[11px] text-slate-500">
+            Có mặt
+            <input
+              data-testid="dayinfo-present"
+              type="number"
+              min={0}
+              value={present}
+              onChange={(e) => setPresent(e.target.value)}
+              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+            />
+          </label>
+          <label className="text-[11px] text-slate-500">
+            Vắng
+            <input
+              data-testid="dayinfo-absent"
+              type="number"
+              min={0}
+              value={absent}
+              onChange={(e) => setAbsent(e.target.value)}
+              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+            />
+          </label>
+          <label className="text-[11px] text-slate-500 col-span-2 lg:col-span-1">
+            Lý do vắng
+            <input
+              data-testid="dayinfo-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="VD: nghỉ phép, đi công tác…"
+              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+            />
+          </label>
+          <button
+            data-testid="dayinfo-save"
+            onClick={save}
+            disabled={busy}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-50"
+          >
+            {busy ? "Đang lưu…" : "Lưu tổng hợp"}
+          </button>
+        </div>
+      ) : (
+        <div className="mt-1 text-xs text-slate-700">
+          Tổng số công chức: {info?.totalStaff ?? "—"} · Có mặt: {info?.presentStaff ?? "—"} · Vắng: {info?.absentCount ?? "—"}
+          {info?.absentReason ? ` · Lý do: ${info.absentReason}` : ""}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Modal phiếu phân công của một ngày: theo từng vị trí/ô, chọn cán bộ, đổi người kèm lý do. */
+function DayEditorModal({
+  dateISO,
+  onDateChange,
+  rows,
+  groups,
+  info,
+  people,
+  leaves,
+  canAssign,
+  onClose,
+  onChanged,
+}: {
+  dateISO: string;
+  onDateChange: (d: string) => void;
+  rows: DutyRow[];
+  groups: MatrixGroup[];
+  info: DayInfoRow | undefined;
+  people: PersonLite[];
+  leaves: LeaveLite[];
+  canAssign: boolean;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [sel, setSel] = useState<Record<string, string>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  const dayRows = rows.filter((r) => dateKey(r.date) === dateISO);
+  const activeGroups = groups.filter((g) => g.kind !== "legacy" || dayRows.some((r) => !r.positionId));
+
+  const handleAssign = async (g: MatrixGroup, idx: number, key: string) => {
+    const personId = sel[key];
+    if (!personId) {
+      toast.error("Hãy chọn cán bộ trước khi phân công.");
+      return;
+    }
+    setBusyKey(key);
     try {
       const res = await fetch("/api/rosters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: fDate, shift: fShift, post: fPost, personId: fPersonId, notes: fNotes }),
+        body: JSON.stringify({ date: dateISO, personId, positionId: g.positionId, slotOrder: idx }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast.success("Đã xếp lịch trực!");
+        toast.success("Đã phân công nhiệm vụ.");
         if (json.warning) toast.warning(json.warning);
-        setShowModal(false);
-        fetchWeek(weekStart);
+        setSel((s) => ({ ...s, [key]: "" }));
+        onChanged();
       } else {
-        toast.error(json.error || "Không thể xếp lịch");
+        toast.error(json.error || "Không thể phân công");
       }
     } catch (err: any) {
       toast.error("Lỗi: " + err.message);
     } finally {
-      setSaving(false);
+      setBusyKey(null);
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Xóa ${name} khỏi lịch trực?`)) return;
+  const handleChange = async (row: DutyRow, key: string) => {
+    const personId = sel[key];
+    if (!personId || personId === row.personId) {
+      toast.error("Chọn cán bộ khác để thay đổi người thực hiện.");
+      return;
+    }
+    const reason = (reasons[key] || "").trim();
+    if (reason.length < 3) {
+      toast.error("Đổi người thực hiện phải ghi lý do (tối thiểu 3 ký tự).");
+      return;
+    }
+    setBusyKey(key);
     try {
-      const res = await fetch(`/api/rosters?id=${id}`, { method: "DELETE" });
+      const res = await fetch("/api/rosters", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: row.id, personId, reason }),
+      });
       const json = await res.json().catch(() => ({}));
-      if (res.ok) { toast.success("Đã xóa."); fetchWeek(weekStart); }
-      else toast.error(json.error || "Không thể xóa");
+      if (res.ok) {
+        toast.success("Đã đổi người thực hiện (có lưu vết).");
+        if (json.warning) toast.warning(json.warning);
+        setSel((s) => ({ ...s, [key]: "" }));
+        setReasons((s) => ({ ...s, [key]: "" }));
+        onChanged();
+      } else {
+        toast.error(json.error || "Không thể đổi người thực hiện");
+      }
     } catch (err: any) {
       toast.error("Lỗi: " + err.message);
+    } finally {
+      setBusyKey(null);
     }
   };
 
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-  const rowsOn = (d: Date) => {
-    const k = toISODate(d);
-    // So sánh theo ngày địa phương (tránh lệch múi giờ UTC)
-    return rows.filter((r) => toISODate(new Date(r.date)) === k);
+  const handleRemove = async (row: DutyRow, key: string) => {
+    if (!confirm(`Gỡ ${row.person.fullName} khỏi vị trí này?`)) return;
+    setBusyKey(key);
+    try {
+      const reason = (reasons[key] || "").trim();
+      const res = await fetch(`/api/rosters?id=${row.id}${reason ? `&reason=${encodeURIComponent(reason)}` : ""}`, {
+        method: "DELETE",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã gỡ phân công.");
+        setSel((s) => ({ ...s, [key]: "" }));
+        setReasons((s) => ({ ...s, [key]: "" }));
+        onChanged();
+      } else {
+        toast.error(json.error || "Không thể gỡ phân công");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setBusyKey(null);
+    }
   };
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-teal-100 text-teal-900 border border-teal-200">
-            Phân công trực
-          </span>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Lịch trực ca</h1>
+    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-slate-900/50 p-0 lg:p-4">
+      <div
+        className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-white rounded-none lg:rounded-2xl shadow-xl"
+        data-testid="editor-modal"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 bg-white border-b border-slate-200">
+          <div>
+            <div className="text-sm font-bold text-slate-800" data-testid="editor-title">
+              Phiếu phân công ngày {fmtDMY(dateISO)}
+            </div>
+            <div className="text-[11px] text-slate-500">Chọn cán bộ cho từng ô; đổi người phải ghi lý do (lưu vết).</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              data-testid="editor-date-input"
+              type="date"
+              value={dateISO}
+              onChange={(e) => e.target.value && onDateChange(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+            />
+            <button
+              data-testid="editor-close"
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-slate-100"
+              aria-label="Đóng"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(d); }}
-            className="w-9 h-9 rounded-lg bg-white border border-slate-300 text-lg">‹</button>
-          <span className="px-1 text-xs font-bold text-center">Tuần {weekStart.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}</span>
-          <button onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(d); }}
-            className="w-9 h-9 rounded-lg bg-white border border-slate-300 text-lg">›</button>
-        </div>
-      </div>
 
-      {loading ? (
-        <p className="text-sm text-slate-500 text-center py-8">Đang tải lịch trực...</p>
-      ) : (
-        <div data-tour="week-list" className="flex flex-col gap-2">
-          {days.map((d) => {
-            const list = rowsOn(d);
-            const isToday = toISODate(d) === toISODate(new Date());
+        <div className="p-4 space-y-4">
+          {activeGroups.map((g) => {
+            const lines = slotLinesFor(g, dayRows);
             return (
-              <div key={toISODate(d)} className={`bg-white rounded-xl border shadow-sm p-3 ${isToday ? "border-teal-600 ring-1 ring-teal-600" : "border-slate-200"}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-sm text-slate-900">
-                    {d.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}
-                    {isToday && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-teal-800 text-white">HÔM NAY</span>}
+              <div key={g.code} className="rounded-xl border border-slate-200 overflow-hidden" data-testid={`editor-pos-${g.code}`}>
+                <div className="px-3 py-2 bg-slate-50 border-b border-slate-200">
+                  <span className="text-xs font-bold text-slate-700">
+                    {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
                   </span>
-                  {canApprove && (
-                    <button onClick={() => openAdd(toISODate(d))} className="text-xs font-bold text-teal-800 px-2 py-1 rounded bg-teal-50">
-                      + Xếp trực
-                    </button>
-                  )}
+                  {g.detail && <span className="text-[11px] text-slate-500"> — {g.detail}</span>}
+                  {g.kind === "orphan" && <span className="text-[10px] text-amber-600 italic"> (ngoài danh mục hiện hành)</span>}
                 </div>
-                {list.length === 0 && <p className="text-xs text-slate-400">Chưa phân trực.</p>}
-                {list.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between py-1.5 border-t border-slate-100">
-                    <div className="text-sm">
-                      <strong>{r.person.fullName}</strong>
-                      <span className="text-slate-500"> · {SHIFT_LABELS[r.shift] || r.shift}{r.post ? ` · ${r.post}` : ""}</span>
-                      {r.leaveClash && (
-                        <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[11px] font-bold">
-                          Trùng nghỉ đã duyệt!
-                        </span>
-                      )}
-                    </div>
-                    {canApprove && (
-                      <button onClick={() => handleDelete(r.id, r.person.fullName)} className="text-xs text-rose-600 px-2 py-1">
-                        Xóa
-                      </button>
-                    )}
-                  </div>
-                ))}
+                <div className="divide-y divide-slate-100">
+                  {g.kind === "legacy"
+                    ? lines.map((ln, idx) => (
+                        <SlotRow
+                          key={ln.key}
+                          testKey={`CU-${idx}`}
+                          label={ln.label}
+                          row={ln.row}
+                          people={people}
+                          dateISO={dateISO}
+                          dayRows={dayRows}
+                          leaves={leaves}
+                          sel={sel}
+                          reasons={reasons}
+                          busyKey={busyKey}
+                          setSel={setSel}
+                          setReasons={setReasons}
+                          onAssign={() => {}}
+                          onChange={handleChange}
+                          onRemove={handleRemove}
+                        />
+                      ))
+                    : g.slots.map((s, idx) => {
+                        const key = `${g.positionId}#${idx}`;
+                        const row = dayRows.find((r) => r.positionId === g.positionId && r.slotOrder === idx) || null;
+                        return (
+                          <SlotRow
+                            key={key}
+                            testKey={`${g.code}-${idx}`}
+                            label={s.l ?? `Người ${idx + 1}`}
+                            row={row}
+                            people={people}
+                            dateISO={dateISO}
+                            dayRows={dayRows}
+                            leaves={leaves}
+                            sel={sel}
+                            reasons={reasons}
+                            busyKey={busyKey}
+                            setSel={setSel}
+                            setReasons={setReasons}
+                            onAssign={() => handleAssign(g, idx, key)}
+                            onChange={handleChange}
+                            onRemove={handleRemove}
+                            selectKey={key}
+                          />
+                        );
+                      })}
+                </div>
               </div>
             );
           })}
-        </div>
-      )}
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-4 bg-teal-900 text-white flex items-center justify-between">
-              <h3 className="font-semibold">Xếp lịch trực</h3>
-              <button onClick={() => setShowModal(false)}>✕</button>
+          {canAssign && <DayInfoPanel key={`${dateISO}-info`} dateISO={dateISO} info={info} canAssign={canAssign} compact onSaved={onChanged} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Một ô phân công trong phiếu: chọn cán bộ, đổi người kèm lý do, gỡ ô. */
+function SlotRow({
+  testKey,
+  label,
+  row,
+  people,
+  dateISO,
+  dayRows,
+  leaves,
+  sel,
+  reasons,
+  busyKey,
+  setSel,
+  setReasons,
+  onAssign,
+  onChange,
+  onRemove,
+  selectKey,
+}: {
+  testKey: string;
+  label: string | null;
+  row: DutyRow | null;
+  people: PersonLite[];
+  dateISO: string;
+  dayRows: DutyRow[];
+  leaves: LeaveLite[];
+  sel: Record<string, string>;
+  reasons: Record<string, string>;
+  busyKey: string | null;
+  setSel: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  setReasons: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onAssign: () => void;
+  onChange: (row: DutyRow, key: string) => void;
+  onRemove: (row: DutyRow, key: string) => void;
+  selectKey?: string;
+}) {
+  const key = selectKey || testKey;
+  const selected = sel[key] ?? "";
+  const busy = busyKey === key;
+  const occupied = !!row;
+  const changed = occupied && !!selected && selected !== row!.personId;
+  const prewarns = selected ? prewarnFor(selected, dateISO, dayRows.filter((r) => r.id !== row?.id), leaves) : [];
+
+  const options = useMemo(() => {
+    const list = people.slice();
+    if (row && !list.some((p) => p.id === row.person.id)) list.push({ id: row.person.id, fullName: row.person.fullName });
+    return list;
+  }, [people, row]);
+
+  return (
+    <div className="px-3 py-2" data-testid={`slot-row-${testKey}`}>
+      <div className="flex flex-col lg:flex-row lg:items-center gap-2">
+        <div className="lg:w-[26%] text-[11px] font-semibold text-slate-600">
+          {label || "—"}
+          {occupied && <span className="block text-[10px] text-slate-400 font-normal">Lý do gần nhất: {row!.reason || "—"}</span>}
+        </div>
+        <div className="flex-1 min-w-0">
+          {occupied ? (
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-semibold text-slate-800 truncate">{row!.person.fullName}</span>
+              {row!.leaveClash && (
+                <span className="material-symbols-outlined text-[14px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
+                  warning
+                </span>
+              )}
+              {row!.overlapCount > 1 && (
+                <span className="material-symbols-outlined text-[14px] text-rose-500" title="Trùng phân công trong ngày">
+                  error
+                </span>
+              )}
             </div>
-            <form onSubmit={handleSave}>
-              <div className="p-4 flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Ngày *</label>
-                    <input type="date" required value={fDate} onChange={(e) => setFDate(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Ca *</label>
-                    <select value={fShift} onChange={(e) => setFShift(e.target.value)}
-                      className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
-                      <option value="CA_NGAY">Cả ngày</option>
-                      <option value="SANG">Sáng</option>
-                      <option value="CHIEU">Chiều</option>
-                    </select>
-                  </div>
+          ) : (
+            <span className="text-xs text-slate-400 italic">— trống —</span>
+          )}
+          {prewarns.length > 0 && (
+            <div className="mt-0.5 text-[10px] text-amber-700" data-testid={`slot-warn-${testKey}`}>
+              {prewarns.map((w, i) => (
+                <div key={i}>⚠ {w}</div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 lg:w-[52%]">
+          <select
+            data-testid={`slot-select-${testKey}`}
+            value={selected}
+            onChange={(e) => setSel((s) => ({ ...s, [key]: e.target.value }))}
+            className="flex-1 min-w-0 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+          >
+            <option value="">{occupied ? "Chọn người thay thế…" : "Chọn cán bộ…"}</option>
+            {options.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.fullName}
+              </option>
+            ))}
+          </select>
+          {occupied && changed && (
+            <input
+              data-testid={`slot-reason-${testKey}`}
+              value={reasons[key] || ""}
+              onChange={(e) => setReasons((s) => ({ ...s, [key]: e.target.value }))}
+              placeholder="Lý do thay đổi (bắt buộc)"
+              className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-50/40 px-2 py-1.5 text-xs"
+            />
+          )}
+          {occupied ? (
+            <div className="flex items-center gap-1">
+              <button
+                data-testid={`slot-save-${testKey}`}
+                disabled={!changed || busy}
+                onClick={() => onChange(row!, key)}
+                className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
+              >
+                {busy ? "…" : "Lưu"}
+              </button>
+              <button
+                data-testid={`slot-remove-${testKey}`}
+                disabled={busy}
+                onClick={() => onRemove(row!, key)}
+                className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+              >
+                Gỡ
+              </button>
+            </div>
+          ) : (
+            <button
+              data-testid={`slot-save-${testKey}`}
+              disabled={!selected || busy}
+              onClick={onAssign}
+              className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
+            >
+              {busy ? "…" : "Phân công"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Modal quản lý danh mục vị trí (chỉ Lãnh đạo đơn vị): sửa không làm thay đổi phân công đã ghi. */
+function CatalogModal({
+  positions,
+  onClose,
+  onChanged,
+}: {
+  positions: CatalogPosition[];
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [drafts, setDrafts] = useState<Record<string, { title: string; detail: string; sortOrder: number; status: string; slots: DutySlotDef[] }>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDetail, setNewDetail] = useState("");
+
+  const draftOf = (p: CatalogPosition) =>
+    drafts[p.id] || { title: p.title, detail: p.detail || "", sortOrder: p.sortOrder, status: p.status, slots: p.slots.map((s) => ({ ...s })) };
+
+  const patchDraft = (p: CatalogPosition, patch: Partial<{ title: string; detail: string; sortOrder: number; status: string; slots: DutySlotDef[] }>) => {
+    setDrafts((d) => ({ ...d, [p.id]: { ...draftOf(p), ...patch } }));
+  };
+
+  const save = async (p: CatalogPosition) => {
+    const d = draftOf(p);
+    setBusy(p.id);
+    try {
+      const res = await fetch("/api/rosters/positions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: p.id, title: d.title, detail: d.detail || null, sortOrder: d.sortOrder, status: d.status, slots: d.slots }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(`Đã lưu vị trí ${p.code}. (Phân công cũ giữ nguyên nội dung đã ghi.)`);
+        setDrafts((d) => {
+          const c = { ...d };
+          delete c[p.id];
+          return c;
+        });
+        onChanged();
+      } else {
+        toast.error(json.error || "Không thể lưu vị trí");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const seedDefaults = async () => {
+    setBusy("seed");
+    try {
+      const res = await fetch("/api/rosters/positions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "seed-defaults" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(json.message || "Đã khôi phục danh mục mẫu.");
+        onChanged();
+      } else {
+        toast.error(json.error || "Không thể khôi phục danh mục mẫu");
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const createNew = async () => {
+    if (!newTitle.trim()) {
+      toast.error("Nhập tên vị trí/nhiệm vụ mới.");
+      return;
+    }
+    setBusy("new");
+    try {
+      const res = await fetch("/api/rosters/positions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle.trim(), detail: newDetail.trim() || null, slots: [{ k: "s1", l: null }] }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã thêm vị trí mới.");
+        setNewTitle("");
+        setNewDetail("");
+        onChanged();
+      } else {
+        toast.error(json.error || "Không thể thêm vị trí");
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const nextSlotKey = (slots: DutySlotDef[]): string => {
+    for (let i = 1; i <= 12; i++) {
+      const k = `s${i}`;
+      if (!slots.some((s) => s.k === k)) return k;
+    }
+    return `s${slots.length + 1}`;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-slate-900/50 p-0 lg:p-4">
+      <div className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-white rounded-none lg:rounded-2xl shadow-xl" data-testid="catalog-modal">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
+          <div>
+            <div className="text-sm font-bold text-slate-800">Danh mục vị trí/nhiệm vụ phân công</div>
+            <div className="text-[11px] text-slate-500">
+              Bám mẫu “Sổ phân công nhiệm vụ”. Sửa/xếp lại danh mục không làm thay đổi phân công đã ghi.
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100" aria-label="Đóng" data-testid="catalog-close">
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              data-testid="catalog-seed-btn"
+              onClick={seedDefaults}
+              disabled={busy === "seed"}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Khôi phục 8 vị trí mẫu còn thiếu
+            </button>
+            <span className="text-[11px] text-slate-500">Dùng khi danh mục bị xoá nhầm hoặc thiếu so với mẫu.</span>
+          </div>
+
+          {positions.map((p) => {
+            const d = draftOf(p);
+            return (
+              <div key={p.id} className="rounded-xl border border-slate-200 p-3 space-y-2" data-testid={`catalog-pos-${p.code}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-500">{p.code}</span>
+                  <input
+                    data-testid={`catalog-title-${p.code}`}
+                    value={d.title}
+                    onChange={(e) => patchDraft(p, { title: e.target.value })}
+                    className="flex-1 min-w-[200px] rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold"
+                    placeholder="Tên nhiệm vụ (dòng 1)"
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={d.sortOrder}
+                    onChange={(e) => patchDraft(p, { sortOrder: Number(e.target.value) || 1 })}
+                    className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                    title="Số TT trên biểu"
+                  />
+                  <button
+                    data-testid={`catalog-toggle-${p.code}`}
+                    onClick={() => patchDraft(p, { status: d.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })}
+                    className={`px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border ${d.status === "ACTIVE" ? "border-emerald-200 text-emerald-700 bg-emerald-50" : "border-slate-200 text-slate-500 bg-slate-50"}`}
+                  >
+                    {d.status === "ACTIVE" ? "Đang dùng" : "Ngừng dùng"}
+                  </button>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Người trực *</label>
-                  <select value={fPersonId} onChange={(e) => setFPersonId(e.target.value)}
-                    className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
-                    <option value="">— Chọn cán bộ —</option>
-                    {people.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-                  </select>
+                <input
+                  data-testid={`catalog-detail-${p.code}`}
+                  value={d.detail}
+                  onChange={(e) => patchDraft(p, { detail: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                  placeholder="Dòng phụ (nếu mẫu có) — VD: Kiểm tra Thuế, lệ phí HQ & Đối chiếu phí cơ sở hạ tầng"
+                />
+                <div className="space-y-1.5">
+                  {d.slots.map((s, idx) => (
+                    <div key={s.k} className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-400 w-8">Ô {idx + 1}</span>
+                      <input
+                        data-testid={`catalog-slot-${p.code}-${idx}`}
+                        value={s.l ?? ""}
+                        onChange={(e) => {
+                          const slots = d.slots.map((x, i) => (i === idx ? { ...x, l: e.target.value.trim() === "" ? null : e.target.value } : x));
+                          patchDraft(p, { slots });
+                        }}
+                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                        placeholder="Nhãn ô (VD: NC, XC, Vị trí bãi Phú Anh) — để trống nếu ô không nhãn"
+                      />
+                      <button
+                        onClick={() => patchDraft(p, { slots: d.slots.filter((_, i) => i !== idx) })}
+                        disabled={d.slots.length <= 1}
+                        className="px-2 py-1 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                      >
+                        Bỏ
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    data-testid={`catalog-slot-add-${p.code}`}
+                    onClick={() => patchDraft(p, { slots: [...d.slots, { k: nextSlotKey(d.slots), l: null }] })}
+                    disabled={d.slots.length >= 12}
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                  >
+                    + Thêm ô
+                  </button>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Điểm trực</label>
-                  <input value={fPost} onChange={(e) => setFPost(e.target.value)}
-                    placeholder="Barie, kho bãi, quầy thủ tục..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                <div className="flex justify-end">
+                  <button
+                    data-testid={`catalog-save-${p.code}`}
+                    onClick={() => save(p)}
+                    disabled={busy === p.id}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-50"
+                  >
+                    Lưu {p.code}
+                  </button>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Ghi chú</label>
-                  <input value={fNotes} onChange={(e) => setFNotes(e.target.value)}
-                    placeholder="Ghi chú thêm..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  Nếu người này có đơn nghỉ đã duyệt trùng ngày, hệ thống sẽ báo ngay sau khi lưu để đổi ca.
-                </p>
               </div>
-              <div className="p-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm">Hủy</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold disabled:opacity-50">
-                  {saving ? "Đang lưu..." : "Lưu lịch trực"}
-                </button>
-              </div>
-            </form>
+            );
+          })}
+
+          <div className="rounded-xl border border-dashed border-slate-300 p-3 space-y-2">
+            <div className="text-xs font-bold text-slate-600">Thêm vị trí mới</div>
+            <input
+              data-testid="catalog-new-title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              placeholder="Tên vị trí/nhiệm vụ"
+            />
+            <input
+              data-testid="catalog-new-detail"
+              value={newDetail}
+              onChange={(e) => setNewDetail(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              placeholder="Dòng phụ (không bắt buộc)"
+            />
+            <div className="flex justify-end">
+              <button
+                data-testid="catalog-add-btn"
+                onClick={createNew}
+                disabled={busy === "new"}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-teal-200 text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+              >
+                Thêm vị trí
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+/** Modal xuất Excel theo kỳ/ngày. */
+function ExportModal({
+  defaultFrom,
+  defaultTo,
+  onClose,
+}: {
+  defaultFrom: string;
+  defaultTo: string;
+  onClose: () => void;
+}) {
+  const [from, setFrom] = useState(defaultFrom);
+  const [to, setTo] = useState(defaultTo);
+  const [skipEmpty, setSkipEmpty] = useState(false);
+  const [cover, setCover] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const download = async () => {
+    if (!from || !to) {
+      toast.error("Chọn khoảng ngày cần xuất.");
+      return;
+    }
+    const span = (new Date(to).getTime() - new Date(from).getTime()) / 86400000;
+    if (span < 0) {
+      toast.error("Khoảng ngày không hợp lệ.");
+      return;
+    }
+    if (span > 31) {
+      toast.error("Mỗi lần xuất tối đa 31 ngày — hãy tách thành nhiều kỳ.");
+      return;
+    }
+    setBusy(true);
+    const params = new URLSearchParams({ from, to });
+    if (skipEmpty) params.set("skipEmpty", "1");
+    if (!cover) params.set("cover", "0");
+    const ok = await downloadExcel(`/api/rosters/export?${params.toString()}`, `so-phan-cong_${from}_${to}.xlsx`);
+    setBusy(false);
+    if (ok) onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl" data-testid="export-dialog">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+          <div className="text-sm font-bold text-slate-800">Xuất Excel phân công nhiệm vụ</div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100" aria-label="Đóng">
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <div className="p-4 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-[11px] text-slate-500">
+              Từ ngày
+              <input
+                data-testid="export-from"
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              />
+            </label>
+            <label className="text-[11px] text-slate-500">
+              Đến ngày
+              <input
+                data-testid="export-to"
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            <input data-testid="export-skip-empty" type="checkbox" checked={skipEmpty} onChange={(e) => setSkipEmpty(e.target.checked)} />
+            Bỏ qua ngày chưa có phân công (không in khối trống)
+          </label>
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            <input data-testid="export-cover" type="checkbox" checked={cover} onChange={(e) => setCover(e.target.checked)} />
+            Kèm trang bìa “Sổ phân công nhiệm vụ”
+          </label>
+          <div className="text-[11px] text-slate-500 bg-slate-50 rounded-lg p-2">
+            File giữ cấu trúc mẫu: mỗi ngày một khối, 4 khối/trang in A4 ngang; ô tổng hợp chỉ điền khi đã nhập.
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50">
+              Hủy
+            </button>
+            <button
+              data-testid="export-download"
+              onClick={download}
+              disabled={busy}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-50"
+            >
+              {busy ? "Đang tạo file…" : "Tải xuống .xlsx"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

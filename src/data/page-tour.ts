@@ -58,7 +58,8 @@ export const PAGE_TOUR: Record<string, TourStep[]> = {
     { target: "month-grid", title: "Lịch tháng", text: "Chấm xanh là hạn việc, chấm vàng là nghỉ đã duyệt." },
   ],
   "/roster": [
-    { target: "week-list", title: "Lịch trực tuần", text: "Ai trực ngày nào, ca nào, điểm nào. Cờ vàng là trùng nghỉ đã duyệt — báo lãnh đạo đổi ca." },
+    { target: "roster-week", title: "Lịch phân công", text: "Ma trận Vị trí × Ngày (trên điện thoại xem theo thẻ ngày). Bấm ô để xem phiếu phân công — Lãnh đạo đơn vị mới sửa được." },
+    { target: "roster-toolbar", title: "Bộ lọc & xuất", text: "Lọc theo bộ phận / cán bộ / vị trí. Lãnh đạo đơn vị có thêm nút Danh mục vị trí và Xuất Excel theo kỳ." },
   ],
   "/meetings": [
     { target: "add-btn", title: "Lập biên bản (lãnh đạo)", text: "Lập biên bản họp, rồi thêm từng kết luận bên trong." },

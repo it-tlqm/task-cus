@@ -93,6 +93,7 @@ model Person {
   leaveHandovers   LeaveRequest[]  @relation("LeaveHandover")
   pushSubscriptions PushSubscription[]
   dutyRosters      DutyRoster[]
+  createdDutyPositions DutyPosition[] @relation("DutyPositionCreator")
   handledDocs      OfficialDoc[]
   taskComments     TaskComment[]
   commentReactions CommentReaction[]
@@ -747,20 +748,73 @@ model LeaveRequest {
 model DutyRoster {
   id          String   @id @default(uuid())
   date        DateTime // Ngày trực (giờ 00:00)
-  shift       String   @default("CA_NGAY") // SANG, CHIEU, CA_NGAY
-  post        String? // Điểm trực: Barie, Kho bãi, Quầy thủ tục...
+  shift       String   @default("CA_NGAY") // SANG, CHIEU, CA_NGAY (giữ cho dữ liệu cũ)
+  post        String? // Điểm trực kiểu cũ (giữ tương thích dữ liệu đã có)
   personId    String   @map("person_id")
   unitId      String?  @map("unit_id")
   notes       String?
+  // --- YC-24: phân công theo biểu mẫu Hải quan (bản sao nội dung tại thời điểm phân công,
+  //     sửa danh mục vị trí về sau KHÔNG làm đổi bản ghi cũ) ---
+  positionId     String? @map("position_id") // FK danh mục vị trí/nhiệm vụ
+  positionTitle  String? @map("position_title") // Bản sao tiêu đề nhiệm vụ
+  positionDetail String? @map("position_detail") // Bản sao dòng phụ (VD: Kiểm tra Thuế, lệ phí HQ...)
+  positionOrder  Int?    @map("position_order") // Số TT trên biểu in tại thời điểm phân công
+  slotLabel      String? @map("slot_label") // Nhãn ô: NC / XC / Vị trí bãi Phú Anh... (null = ô không nhãn)
+  slotOrder      Int?    @map("slot_order") // Thứ tự ô trong vị trí (0-based)
+  slotKey        String? @map("slot_key") // Khóa chống trùng ô: "<positionId>#<slotOrder>"
+  reason         String? // Lý do khi thay đổi người trực
   createdById String?  @map("created_by_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  person Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
-  unit   OrgUnit? @relation(fields: [unitId], references: [id])
+  person   Person         @relation(fields: [personId], references: [id], onDelete: Cascade)
+  unit     OrgUnit?       @relation(fields: [unitId], references: [id])
+  position DutyPosition?  @relation(fields: [positionId], references: [id], onDelete: SetNull)
 
+  @@unique([date, slotKey])
   @@index([date, unitId])
+  @@index([date, positionId])
   @@map("duty_rosters")
+}
+
+// ----------------------------------------------------
+// 16b. YC-24 — DANH MỤC VỊ TRÍ/NHIỆM VỤ PHÂN CÔNG (theo biểu mẫu "Sổ phân công nhiệm vụ")
+//      + THÔNG TIN TỔNG HỢP THEO NGÀY (Tổng số công chức / Có mặt / Vắng / Lý do)
+// ----------------------------------------------------
+
+model DutyPosition {
+  id          String   @id @default(uuid())
+  code        String   @unique // Mã ổn định: YC24-01..YC24-08
+  title       String // Tiêu đề nhiệm vụ (dòng 1)
+  detail      String? // Dòng phụ của mẫu (nếu có)
+  slots       Json // Danh sách ô của vị trí: [{ "k": "s1", "l": null | "NC" | "Vị trí bãi Phú Anh" }]
+  sortOrder   Int      @default(0) @map("sort_order") // Số TT trên biểu in
+  status      String   @default("ACTIVE") // ACTIVE, INACTIVE (ngừng sử dụng — không xóa)
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy   Person?      @relation("DutyPositionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  assignments DutyRoster[]
+
+  @@index([status, sortOrder])
+  @@map("duty_positions")
+}
+
+model DutyDayInfo {
+  id           String   @id @default(uuid())
+  date         DateTime @unique // Ngày (giờ 00:00) — biểu dùng chung cho đơn vị
+  totalStaff   Int?     @map("total_staff") // Tổng số công chức (nhập theo biểu)
+  presentStaff Int?     @map("present_staff") // Có mặt
+  absentCount  Int?     @map("absent_count") // Vắng
+  absentReason String?  @map("absent_reason") // Lý do
+  notes        String? // Ghi chú bổ sung của ngày
+  createdById  String?  @map("created_by_id")
+  updatedById  String?  @map("updated_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("duty_day_infos")
 }
 
 // ----------------------------------------------------

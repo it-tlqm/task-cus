@@ -153,13 +153,17 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/roster": {
-    title: "Lịch trực ca",
+    title: "Phân công nhiệm vụ & lịch trực",
     bullets: [
-      "Xem ai trực ngày nào, ca nào, điểm nào.",
-      "Chỉ lãnh đạo xếp/xóa. Cờ vàng Trùng nghỉ đã duyệt nghĩa là người đó có đơn nghỉ trùng ngày — báo lãnh đạo đổi ca.",
+      "Bám biểu mẫu Sổ phân công nhiệm vụ: xem theo tuần (ma trận Vị trí × Ngày) hoặc theo ngày (phiếu in đúng mẫu).",
+      "Lãnh đạo đơn vị bấm vào ô để phân công; đổi người thực hiện phải ghi lý do — hệ thống lưu vết đầy đủ.",
+      "Cảnh báo vàng (không tự xóa): người có đơn nghỉ đã duyệt trùng ngày, hoặc một người được phân công nhiều vị trí trong ngày.",
+      "Nút Danh mục vị trí (lãnh đạo đơn vị) và Xuất Excel theo kỳ/ngày giữ đúng cấu trúc mẫu để in.",
     ],
     modals: [
-      { name: "Xếp lịch trực", tip: "Chọn đúng ngày, ca, điểm trực. Lưu xong nếu trùng nghỉ sẽ báo vàng ngay." },
+      { name: "Phiếu phân công", tip: "Chọn cán bộ cho từng vị trí của ngày; cảnh báo nghỉ phép / trùng phân công hiện ngay khi chọn, trước khi lưu." },
+      { name: "Danh mục vị trí", tip: "Sửa tên/mô tả vị trí không làm thay đổi lịch sử phân công đã ghi." },
+      { name: "Xuất Excel", tip: "Chọn Từ ngày – Đến ngày; mỗi ngày một khối in riêng, không trộn ngày." },
     ],
   },
   "/meetings": {
