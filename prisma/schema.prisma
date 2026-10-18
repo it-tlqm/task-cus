@@ -47,6 +47,7 @@ model OrgUnit {
   routines     RoutineEntry[]
   reportSnapshots ReportSnapshot[]
   dutyRosters  DutyRoster[]
+  departmentWorkItems DepartmentWorkItem[]
 
   @@map("org_units")
 }
@@ -96,6 +97,7 @@ model Person {
   taskComments     TaskComment[]
   commentReactions CommentReaction[]
   feedbacks        Feedback[]
+  createdDeptWorkItems DepartmentWorkItem[] @relation("DeptWorkItemCreator")
 
   @@map("people")
 }
@@ -238,6 +240,34 @@ model ActivityTemplate {
 }
 
 // ----------------------------------------------------
+// 3b. DANH MỤC ĐẦU VIỆC RIÊNG THEO BỘ PHẬN (YC-25)
+// Tách biệt với danh mục thường xuyên (48 mẫu) và danh mục sản phẩm QĐ1277.
+// Ngừng sử dụng (INACTIVE) thay vì xóa cứng khi đã có kế hoạch tham chiếu;
+// nội dung đã chọn vào kế hoạch là bản sao (title trên PersonalWorkItem)
+// nên sửa danh mục không làm đổi nội dung kế hoạch cũ.
+// ----------------------------------------------------
+
+model DepartmentWorkItem {
+  id          String   @id @default(uuid())
+  unitId      String   @map("unit_id")
+  title       String
+  description String?
+  status      String   @default("ACTIVE") // ACTIVE, INACTIVE (ngừng sử dụng)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  unit      OrgUnit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  createdBy Person?            @relation("DeptWorkItemCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  workItems PersonalWorkItem[]
+
+  @@unique([unitId, title])
+  @@index([unitId, status])
+  @@map("department_work_items")
+}
+
+// ----------------------------------------------------
 // 4. BIỂU MẪU ĐỘNG & QUẢN LÝ PHIÊN BẢN (FORM ENGINE)
 // ----------------------------------------------------
 
@@ -365,6 +395,8 @@ model PersonalWorkItem {
   periodId         String            @map("period_id")
   planItemId       String?           @map("plan_item_id")
   templateId       String?           @map("template_id") // Nullable: có thể chọn từ mẫu hoặc tự thêm mới
+  deptWorkItemId   String?           @map("dept_work_item_id") // YC-25: chọn từ danh mục đầu việc riêng của bộ phận
+  productItemId    String?           @map("product_item_id") // YC-23: liên kết sản phẩm đầu ra theo QĐ1277 (tuỳ chọn)
   groupId          String?           @map("group_id") // Nullable: liên kết trực tiếp nhóm nghiệp vụ cho đầu việc tự tạo
   title            String
   workDate         DateTime?         @map("work_date") // Thứ / Ngày thực hiện
@@ -378,12 +410,15 @@ model PersonalWorkItem {
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
 
-  person   Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
-  period   ReportingPeriod   @relation(fields: [periodId], references: [id], onDelete: Cascade)
-  planItem PlanItem?         @relation(fields: [planItemId], references: [id])
-  template ActivityTemplate? @relation(fields: [templateId], references: [id])
-  group    ActivityGroup?    @relation(fields: [groupId], references: [id])
-  routines RoutineEntry[]
+  person        Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
+  period        ReportingPeriod    @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  planItem      PlanItem?          @relation(fields: [planItemId], references: [id])
+  template      ActivityTemplate?  @relation(fields: [templateId], references: [id])
+  deptWorkItem  DepartmentWorkItem? @relation(fields: [deptWorkItemId], references: [id], onDelete: SetNull)
+  product       ProductItem?       @relation(fields: [productItemId], references: [id], onDelete: SetNull)
+  group         ActivityGroup?     @relation(fields: [groupId], references: [id])
+  routines      RoutineEntry[]
+  monthlyResults MonthlyWorkResult[]
 
   @@map("personal_work_items")
 }
@@ -884,6 +919,7 @@ model ProductItem {
   version ProductCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   group   ProductGroup?         @relation(fields: [groupId], references: [id])
   results MonthlyWorkResult[]
+  personalWorkItems PersonalWorkItem[]
 
   @@index([versionId, groupId])
   @@map("product_items")
@@ -900,6 +936,7 @@ model MonthlyWorkResult {
   periodYear        Int       @map("period_year")
   periodMonth       Int       @map("period_month")
   productItemId     String?   @map("product_item_id")
+  workItemId        String?   @map("work_item_id") // YC-23: liên kết đầu việc thực tế trong kế hoạch cá nhân (chống ghi trùng)
   needsReview       Boolean   @default(false) @map("needs_review")
   taskId            String?   @map("task_id") // Liên kết nhiệm vụ khi có quan hệ thực tế
   title             String // Tên nhiệm vụ/công việc
@@ -919,6 +956,7 @@ model MonthlyWorkResult {
 
   person      Person       @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   productItem ProductItem? @relation(fields: [productItemId], references: [id])
+  workItem    PersonalWorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
 
   @@index([personId, periodYear, periodMonth])
   @@map("monthly_work_results")

@@ -55,6 +55,9 @@ export async function GET(req: NextRequest) {
               include: {
                 person: true,
                 group: true,
+                // YC-23/YC-25: nhãn "BỘ PHẦN:" và "SP:" trên bảng kế hoạch
+                deptWorkItem: true,
+                product: true,
                 template: {
                   include: { group: true },
                 },

@@ -20,6 +20,8 @@ interface MonthlyItem {
   notes: string | null;
   taskId: string | null;
   productItem: { id: string; code: string; sourceStt: string | null; taskName: string; outputProduct: string | null; convertFactor: number | null } | null;
+  // YC-23: đầu việc thực tế trong kế hoạch cá nhân được liên kết (chống ghi trùng)
+  workItem: { id: string; title: string } | null;
   person: { id: string; fullName: string };
 }
 
@@ -73,6 +75,10 @@ export default function MonthlyResultsPage() {
   const [pSearch, setPSearch] = useState("");
   const [pResults, setPResults] = useState<Array<{ id: string; code: string; taskName: string; outputProduct: string | null; convertFactor: number | null }>>([]);
   const [pSearching, setPSearching] = useState(false);
+  // YC-23: liên kết đầu việc thực tế trong kế hoạch cá nhân (chặn ghi trùng theo đầu việc + sản phẩm)
+  const [fWorkItemId, setFWorkItemId] = useState("");
+  const [planWorkItems, setPlanWorkItems] = useState<Array<{ id: string; title: string; productItemId?: string | null; product?: { id: string; code: string; taskName: string; convertFactor: number | null } | null }>>([]);
+  const [workItemsLoading, setWorkItemsLoading] = useState(false);
 
   const fetchData = useCallback(async (y: number, m: number, p: string) => {
     setLoading(true);
@@ -123,12 +129,28 @@ export default function MonthlyResultsPage() {
     finally { setPSearching(false); }
   };
 
+  // YC-23: nạp danh sách đầu việc kế hoạch của cán bộ trong tháng để liên kết khi ghi nhận
+  const loadPlanWorkItems = async () => {
+    const targetPerson = personId || user?.personId;
+    if (!targetPerson) return;
+    setWorkItemsLoading(true);
+    try {
+      const res = await fetch(
+        `/api/personal-work-items?personId=${encodeURIComponent(targetPerson)}&year=${year}&month=${month}`
+      );
+      const json = await res.json();
+      if (res.ok) setPlanWorkItems(json.data || []);
+    } catch {}
+    finally { setWorkItemsLoading(false); }
+  };
+
   const openAdd = () => {
     setEditing(null);
     setFTitle(""); setFOutput(""); setFAssigned(""); setFCompleted("");
     setFDue(""); setFDoneDate(""); setFEvidence("");
     setFLate("0"); setFRework("0"); setFNotes("");
     setFProductId(""); setFProductLabel(""); setPSearch(""); setPResults([]);
+    setFWorkItemId(""); setPlanWorkItems([]); loadPlanWorkItems();
     setShowModal(true);
   };
 
@@ -142,6 +164,7 @@ export default function MonthlyResultsPage() {
     setFNotes(it.notes || "");
     setFProductId(it.productItem?.id || ""); setFProductLabel(it.productItem ? `${it.productItem.code} — ${it.productItem.taskName}` : "");
     setPSearch(""); setPResults([]);
+    setFWorkItemId(it.workItem?.id || ""); setPlanWorkItems([]); loadPlanWorkItems();
     setShowModal(true);
   };
 
@@ -157,6 +180,7 @@ export default function MonthlyResultsPage() {
         completedDate: fDoneDate ? new Date(fDoneDate).toISOString() : null,
         evidenceRef: fEvidence, lateCount: fLate, reworkCount: fRework, notes: fNotes,
         productItemId: fProductId || null,
+        workItemId: fWorkItemId || null,
       };
       let res: Response;
       if (editing) {
@@ -172,7 +196,7 @@ export default function MonthlyResultsPage() {
       }
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast.success(json.deduplicated ? "Bản ghi vừa được tạo (chặn ghi trùng)" : "Đã lưu kết quả tháng");
+        toast.success(json.deduplicated ? "Đầu việc này đã được ghi nhận trong tháng — hiển thị bản ghi hiện có (chống ghi trùng)" : "Đã lưu kết quả tháng");
         setShowModal(false);
         fetchData(year, month, personId);
       } else {
@@ -338,6 +362,13 @@ export default function MonthlyResultsPage() {
                 <td className="py-2.5 px-3">
                   <div className="font-semibold text-slate-900">{it.title}</div>
                   {it.outputText && <div className="text-slate-600 text-xs">{it.outputText}</div>}
+                  {it.workItem && (
+                    <div className="mt-1">
+                      <span className="px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 text-[11px] font-semibold">
+                        Đầu việc: {it.workItem.title}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex gap-1 mt-1">
                     {it.needsReview && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[11px] font-semibold">Chờ đối chiếu mã SP</span>}
                     {missing(it) && <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[11px] font-semibold">Thiếu số liệu</span>}
@@ -384,6 +415,44 @@ export default function MonthlyResultsPage() {
                   <input required value={fTitle} onChange={(e) => setFTitle(e.target.value)}
                     placeholder="Nhập tên nhiệm vụ, công việc thực tế..."
                     className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Liên kết đầu việc trong kế hoạch cá nhân (tuỳ chọn — chống ghi nhận trùng)
+                  </label>
+                  <select
+                    data-testid="work-item-select"
+                    value={fWorkItemId}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFWorkItemId(v);
+                      if (v) {
+                        const wi = planWorkItems.find((x) => x.id === v);
+                        if (wi) {
+                          if (!fTitle.trim()) setFTitle(wi.title);
+                          // Kế thừa sản phẩm đã gắn ở kế hoạch nếu chưa chọn sản phẩm
+                          if (!fProductId && wi.product) {
+                            setFProductId(wi.product.id);
+                            setFProductLabel(`${wi.product.code} — ${wi.product.taskName}`);
+                          }
+                        }
+                      }
+                    }}
+                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm"
+                  >
+                    <option value="">
+                      {workItemsLoading ? "-- Đang tải đầu việc... --" : "-- Không liên kết --"}
+                    </option>
+                    {fWorkItemId && !planWorkItems.some((x) => x.id === fWorkItemId) && editing?.workItem && (
+                      <option value={fWorkItemId}>{editing.workItem.title} (bản ghi hiện tại)</option>
+                    )}
+                    {planWorkItems.map((wi) => (
+                      <option key={wi.id} value={wi.id}>
+                        {wi.title}
+                        {wi.product ? ` · SP ${wi.product.code}` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-slate-700">Mã sản phẩm QĐ1277 (để trống = chờ đối chiếu)</label>

@@ -37,6 +37,34 @@ interface PersonalWorkItemData {
   expectedResult?: string | null;
   templateId?: string | null;
   template?: { id: string; code: string; title: string; groupId?: string; group?: { id: string; name: string; code: string } } | null;
+  // YC-25: đầu việc chọn từ danh mục riêng của bộ phận
+  deptWorkItemId?: string | null;
+  deptWorkItem?: { id: string; title: string; status: string; unit?: { id: string; code: string; name: string } | null } | null;
+  // YC-23: sản phẩm đầu ra theo QĐ1277 gắn kèm đầu việc (tuỳ chọn)
+  productItemId?: string | null;
+  product?: { id: string; code: string; taskName: string; outputProduct?: string | null; convertFactor?: number | null; groupName?: string | null } | null;
+}
+
+// YC-25 — Danh mục đầu việc riêng theo bộ phận
+interface DepartmentWorkItemData {
+  id: string;
+  unitId: string;
+  title: string;
+  description?: string | null;
+  status: string;
+  sortOrder: number;
+  usageCount?: number;
+  unit?: { id: string; code: string; name: string } | null;
+  createdBy?: { id: string; fullName: string } | null;
+}
+
+interface ProductPickerItem {
+  id: string;
+  code: string;
+  taskName: string;
+  outputProduct?: string | null;
+  convertFactor?: number | null;
+  groupName?: string | null;
 }
 
 interface PlanItem {
@@ -142,6 +170,41 @@ export default function PlansPage() {
   const [modalExpectedResult, setModalExpectedResult] = useState("");
   const [modalStatus, setModalStatus] = useState("NOT_STARTED");
 
+  // YC-23 + YC-25: lựa chọn từ danh mục (thường xuyên / sản phẩm QĐ1277 / riêng của bộ phận)
+  const [modalDeptWorkItemId, setModalDeptWorkItemId] = useState("");
+  const [modalProductItemId, setModalProductItemId] = useState("");
+  const [modalProductLabel, setModalProductLabel] = useState("");
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [productResults, setProductResults] = useState<ProductPickerItem[]>([]);
+  const [productPage, setProductPage] = useState(1);
+  const [productTotal, setProductTotal] = useState(0);
+  const [productSearching, setProductSearching] = useState(false);
+  const [deptWorkItems, setDeptWorkItems] = useState<DepartmentWorkItemData[]>([]);
+  const [deptCatalogUnits, setDeptCatalogUnits] = useState<Array<{ id: string; code: string; name: string }>>([]);
+  const [deptCatalogCanManage, setDeptCatalogCanManage] = useState(false);
+  const [deptCatalogMsg, setDeptCatalogMsg] = useState<string | null>(null);
+
+  // Modal quản lý danh mục đầu việc bộ phận (Trưởng bộ phận / Lãnh đạo đơn vị)
+  const [showDeptCatalogModal, setShowDeptCatalogModal] = useState(false);
+  const [deptManageUnitId, setDeptManageUnitId] = useState("");
+  const [deptManageItems, setDeptManageItems] = useState<DepartmentWorkItemData[]>([]);
+  const [deptManageLoading, setDeptManageLoading] = useState(false);
+  const [deptFormTitle, setDeptFormTitle] = useState("");
+  const [deptFormDesc, setDeptFormDesc] = useState("");
+  const [deptEditingId, setDeptEditingId] = useState<string | null>(null);
+  const [deptBusy, setDeptBusy] = useState(false);
+
+  // YC-23: tìm nhanh 48 mẫu thường xuyên phía máy khách (danh mục nhỏ; danh mục sản phẩm 3.000+ mới cần tìm phía máy chủ)
+  const filteredTemplates = React.useMemo(() => {
+    const q = templateSearch.trim().toLowerCase();
+    return templates.filter((tpl) => {
+      if (tpl.reviewStatus === "RETIRED") return false;
+      if (!q) return true;
+      return `${tpl.code} ${tpl.title}`.toLowerCase().includes(q);
+    });
+  }, [templates, templateSearch]);
+
   // Mobile View Filters
   const [mobilePeriod, setMobilePeriod] = useState<"day" | "week" | "month">("week");
   const mobileLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
@@ -154,11 +217,12 @@ export default function PlansPage() {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const [resPlans, resTemplates, resGroups, resUser] = await Promise.all([
+      const [resPlans, resTemplates, resGroups, resUser, resDept] = await Promise.all([
         fetch("/api/plans"),
         fetch("/api/catalog/templates"),
         fetch("/api/catalog/groups"),
         fetch("/api/auth/me"),
+        fetch("/api/department-work-items?status=ACTIVE"),
       ]);
 
       if (resPlans.ok) {
@@ -182,6 +246,13 @@ export default function PlansPage() {
         if (jsonUser.user) {
           setCurrentUser(jsonUser.user);
         }
+      }
+
+      if (resDept.ok) {
+        const jsonDept = await resDept.json();
+        setDeptWorkItems(jsonDept.data || []);
+        setDeptCatalogUnits(jsonDept.units || []);
+        setDeptCatalogCanManage(!!jsonDept.canManage);
       }
     } catch {
       // fallback
@@ -253,6 +324,14 @@ export default function PlansPage() {
     setModalCoordination("");
     setModalExpectedResult("");
     setModalStatus("NOT_STARTED");
+    setModalDeptWorkItemId("");
+    setModalProductItemId("");
+    setModalProductLabel("");
+    setDeptCatalogMsg(null);
+    setTemplateSearch("");
+    setProductSearch("");
+    setProductResults([]);
+    setProductTotal(0);
     setShowAddModal(true);
   };
 
@@ -264,6 +343,18 @@ export default function PlansPage() {
     };
     setEditingItem(wi);
     setModalTemplateId(wi.templateId || "");
+    setModalDeptWorkItemId(wi.deptWorkItemId || "");
+    setModalProductItemId(wi.productItemId || "");
+    setModalProductLabel(wi.product ? `${wi.product.code} — ${wi.product.taskName}` : "");
+    setDeptCatalogMsg(
+      wi.deptWorkItem && wi.deptWorkItem.status !== "ACTIVE"
+        ? "Đầu việc gốc của bộ phận đã ngừng sử dụng — hệ thống giữ nguyên liên kết cũ cho đến khi bạn đổi."
+        : null
+    );
+    setTemplateSearch("");
+    setProductSearch("");
+    setProductResults([]);
+    setProductTotal(0);
     setModalTitle(wi.title);
     setModalGroupId(wi.groupId || wi.template?.groupId || wi.template?.group?.id || groups[0]?.id || "");
     setModalWorkDate(wi.workDate ? new Date(wi.workDate).toISOString().slice(0, 10) : "");
@@ -301,6 +392,8 @@ export default function PlansPage() {
             priority: modalPriority,
             expectedResult: modalExpectedResult.trim() || null,
             status: modalStatus,
+            deptWorkItemId: modalDeptWorkItemId || null,
+            productItemId: modalProductItemId || null,
           }),
         });
         const json = await res.json();
@@ -321,6 +414,8 @@ export default function PlansPage() {
             periodId: activePlan.period?.id,
             planItemId: activePlan.items?.[0]?.id || undefined,
             templateId: modalTemplateId || undefined,
+            deptWorkItemId: modalDeptWorkItemId || undefined,
+            productItemId: modalProductItemId || undefined,
             groupId: modalGroupId || undefined,
             title: modalTitle.trim(),
             workDate: modalWorkDate || undefined,
@@ -363,6 +458,186 @@ export default function PlansPage() {
     } catch (err: any) {
       toast.error("Lỗi kết nối máy chủ: " + err.message);
     }
+  };
+
+  // YC-23: tìm kiếm sản phẩm phía máy chủ (không nạp toàn bộ 3.000+ dòng)
+  const searchModalProducts = async (q: string, page = 1) => {
+    setProductSearch(q);
+    setProductPage(page);
+    if (q.trim().length < 2) {
+      setProductResults([]);
+      setProductTotal(0);
+      return;
+    }
+    setProductSearching(true);
+    try {
+      const res = await fetch(
+        `/api/products?search=${encodeURIComponent(q.trim())}&page=${page}&pageSize=8`
+      );
+      const json = await res.json();
+      if (res.ok) {
+        setProductResults(json.data || []);
+        setProductTotal(json.pagination?.total ?? 0);
+      } else {
+        toast.error(json.error || "Không thể tìm sản phẩm");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi kết nối: " + err.message);
+    } finally {
+      setProductSearching(false);
+    }
+  };
+
+  // YC-25: quản lý danh mục đầu việc bộ phận (Trưởng bộ phận / Lãnh đạo đơn vị)
+  const loadDeptManageItems = async (unitId: string) => {
+    if (!unitId) return;
+    setDeptManageLoading(true);
+    try {
+      const res = await fetch(`/api/department-work-items?unitId=${unitId}&status=ALL`);
+      const json = await res.json();
+      if (res.ok) setDeptManageItems(json.data || []);
+      else toast.error(json.error || "Không tải được danh mục bộ phận");
+    } catch (err: any) {
+      toast.error("Lỗi kết nối: " + err.message);
+    } finally {
+      setDeptManageLoading(false);
+    }
+  };
+
+  const openDeptCatalogManager = () => {
+    const firstUnit = deptCatalogUnits[0]?.id || "";
+    setDeptManageUnitId(firstUnit);
+    setDeptEditingId(null);
+    setDeptFormTitle("");
+    setDeptFormDesc("");
+    setShowDeptCatalogModal(true);
+    loadDeptManageItems(firstUnit);
+  };
+
+  const submitDeptForm = async () => {
+    if (deptBusy) return;
+    if (!deptFormTitle.trim()) {
+      toast.warning("Vui lòng nhập tên đầu việc");
+      return;
+    }
+    setDeptBusy(true);
+    try {
+      const payload: any = {
+        title: deptFormTitle.trim(),
+        description: deptFormDesc.trim() || null,
+      };
+      let res: Response;
+      if (deptEditingId) {
+        res = await fetch("/api/department-work-items", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, id: deptEditingId }),
+        });
+      } else {
+        res = await fetch("/api/department-work-items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, unitId: deptManageUnitId }),
+        });
+      }
+      const json = await res.json();
+      if (res.ok) {
+        toast.success(deptEditingId ? "Đã cập nhật đầu việc bộ phận" : "Đã thêm đầu việc vào danh mục bộ phận");
+        setDeptEditingId(null);
+        setDeptFormTitle("");
+        setDeptFormDesc("");
+        loadDeptManageItems(deptManageUnitId);
+        fetchPlans();
+      } else {
+        toast.error(json.error || "Không thể lưu đầu việc bộ phận");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi kết nối: " + err.message);
+    } finally {
+      setDeptBusy(false);
+    }
+  };
+
+  const toggleDeptItemStatus = async (it: DepartmentWorkItemData) => {
+    if (deptBusy) return;
+    const nextStatus = it.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    setDeptBusy(true);
+    try {
+      const res = await fetch("/api/department-work-items", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: it.id, status: nextStatus }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success(nextStatus === "INACTIVE" ? "Đã ngừng sử dụng đầu việc" : "Đã kích hoạt lại đầu việc");
+        loadDeptManageItems(deptManageUnitId);
+        fetchPlans();
+      } else {
+        toast.error(json.error || "Không thể cập nhật trạng thái");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi kết nối: " + err.message);
+    } finally {
+      setDeptBusy(false);
+    }
+  };
+
+  const removeDeptItem = async (it: DepartmentWorkItemData) => {
+    if (deptBusy) return;
+    if (!confirm(`Xoá (hoặc ngừng sử dụng) đầu việc "${it.title}" khỏi danh mục bộ phận?`)) return;
+    setDeptBusy(true);
+    try {
+      const res = await fetch(`/api/department-work-items?id=${it.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success(json.message || "Đã xoá đầu việc bộ phận");
+        loadDeptManageItems(deptManageUnitId);
+        fetchPlans();
+      } else {
+        toast.error(json.error || "Không thể xoá đầu việc");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi kết nối: " + err.message);
+    } finally {
+      setDeptBusy(false);
+    }
+  };
+
+  // YC-23/YC-25: chọn nguồn đầu việc (mẫu thường xuyên / danh mục bộ phận — hai nguồn loại trừ nhau)
+  // và sản phẩm đầu ra theo QĐ1277 (độc lập, có thể gắn kèm bất kỳ đầu việc nào)
+  const handleSelectRoutineTemplate = (tplId: string) => {
+    if (!tplId) {
+      setModalTemplateId("");
+      return;
+    }
+    const tpl = templates.find((t) => t.id === tplId);
+    if (!tpl) return;
+    setModalTemplateId(tpl.id);
+    setModalDeptWorkItemId("");
+    setModalTitle(tpl.title);
+    if (tpl.groupId) setModalGroupId(tpl.groupId);
+    if (tpl.defaultPriority) setModalPriority(tpl.defaultPriority);
+  };
+
+  const handleSelectDeptWorkItem = (deptItemId: string) => {
+    setModalDeptWorkItemId(deptItemId);
+    if (!deptItemId) return;
+    const it = deptWorkItems.find((x) => x.id === deptItemId);
+    if (!it) return;
+    setModalTemplateId("");
+    setModalTitle(it.title);
+  };
+
+  const handleSelectProduct = (p: ProductPickerItem | null) => {
+    if (!p) {
+      setModalProductItemId("");
+      setModalProductLabel("");
+      return;
+    }
+    setModalProductItemId(p.id);
+    setModalProductLabel(`${p.code} — ${p.taskName}`);
+    setModalTitle(p.taskName);
   };
 
   // Workflow Action (SUBMIT, APPROVE, RETURN, REQUEST_AMENDMENT)
@@ -482,6 +757,18 @@ export default function PlansPage() {
                 <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
                 <span>Chọn từ mẫu nghiệp vụ</span>
               </button>
+
+              {deptCatalogCanManage && (
+                <button
+                  type="button"
+                  data-testid="open-dept-catalog-manager-toolbar"
+                  onClick={openDeptCatalogManager}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-status-warning">settings_applications</span>
+                  <span>Danh mục đầu việc bộ phận (YC-25)</span>
+                </button>
+              )}
 
               {activePlan?.status === "DRAFT" || activePlan?.status === "RETURNED" ? (
                 currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
@@ -841,6 +1128,8 @@ export default function PlansPage() {
                     title: string;
                     code?: string;
                     templateCode?: string;
+                    deptWorkItemTitle?: string;
+                    productCode?: string;
                     ownerName: string;
                     coordinationUnit: string;
                     priority: string;
@@ -876,6 +1165,8 @@ export default function PlansPage() {
                         groupTitle: groupName,
                         title: wi.title,
                         templateCode: wi.template?.code,
+                        deptWorkItemTitle: wi.deptWorkItem?.title,
+                        productCode: wi.product?.code,
                         ownerName: wi.person?.fullName || "Chưa phân công",
                         coordinationUnit: wi.coordinationUnit || "Nội bộ Chi cục",
                         priority: wi.priority || "Trung bình",
@@ -1010,6 +1301,16 @@ export default function PlansPage() {
                             {row.templateCode && (
                               <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-secondary-fixed text-on-secondary-fixed-variant font-semibold">
                                 MÃ MẪU: {row.templateCode}
+                              </span>
+                            )}
+                            {row.deptWorkItemTitle && (
+                              <span className="px-2 py-0.5 rounded text-[11px] bg-surface-container-high text-primary font-semibold border border-border-subtle">
+                                BỘ PHẬN: {row.deptWorkItemTitle}
+                              </span>
+                            )}
+                            {row.productCode && (
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-secondary/15 text-secondary font-semibold">
+                                SP: {row.productCode}
                               </span>
                             )}
                             {row.deadlineText && (
@@ -1258,7 +1559,8 @@ export default function PlansPage() {
           <div className="flex flex-col gap-2">
             {/* Primary Action CTA */}
             <button
-              onClick={() => setShowAddModal(true)}
+              data-testid="add-work-item-btn-mobile"
+              onClick={() => openAddModal()}
               className="w-full h-11 bg-secondary text-on-secondary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 active:scale-[0.99] transition-all active-press"
             >
               <span className="material-symbols-outlined text-[20px]">add_task</span>
@@ -1267,7 +1569,7 @@ export default function PlansPage() {
             {/* Secondary Quick Triggers */}
             <div className="grid grid-cols-2 gap-space-sm">
               <button
-                onClick={() => setShowAddModal(true)}
+                onClick={() => openAddModal()}
                 className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
               >
                 <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
@@ -1281,6 +1583,17 @@ export default function PlansPage() {
                 <span className="truncate">Xem phiếu tuần</span>
               </Link>
             </div>
+            {deptCatalogCanManage && (
+              <button
+                type="button"
+                data-testid="open-dept-catalog-manager-toolbar-mobile"
+                onClick={openDeptCatalogManager}
+                className="w-full h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
+              >
+                <span className="material-symbols-outlined text-[18px] text-status-warning">settings_applications</span>
+                <span className="truncate">Danh mục đầu việc bộ phận (YC-25)</span>
+              </button>
+            )}
           </div>
         </section>
 
@@ -1323,7 +1636,7 @@ export default function PlansPage() {
                             <div key={wi.id} className="p-3 rounded-lg bg-surface-subtle border border-border-default flex flex-col gap-2">
                               <div className="flex items-center justify-between">
                                 <span className="font-label-sm font-bold text-primary">
-                                  {wi.template ? `[${wi.template.code}]` : "ĐẦU VIỆC"}
+                                  {wi.template ? `[${wi.template.code}]` : wi.deptWorkItem ? "[BỘ PHẬN]" : "ĐẦU VIỆC"}
                                 </span>
                                 <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary text-xs font-bold">
                                   {wi.person?.fullName || "Chưa giao"}
@@ -1332,6 +1645,20 @@ export default function PlansPage() {
                               <h4 className="font-body-semibold text-sm text-primary">
                                 {wi.title}
                               </h4>
+                              {(wi.deptWorkItem || wi.product) && (
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {wi.deptWorkItem && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface-container-high text-primary border border-border-subtle">
+                                      {wi.deptWorkItem.title}
+                                    </span>
+                                  )}
+                                  {wi.product && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-secondary/15 text-secondary font-mono">
+                                      SP: {wi.product.code}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                               <div className="flex items-center justify-between text-xs text-outline pt-1 border-t border-border-default">
                                 <span>Trạng thái: {wi.status}</span>
                                 <button
@@ -1393,7 +1720,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-4xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary-fixed text-[22px]">
@@ -1418,38 +1745,260 @@ export default function PlansPage() {
 
             <form onSubmit={handleSaveWorkItem}>
               <div className="p-space-md flex flex-col gap-space-md max-h-[75vh] overflow-y-auto">
-                {/* 1. Chọn từ 48 mẫu nghiệp vụ */}
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold flex items-center justify-between">
-                    <span>Chọn từ danh mục 48 mẫu nghiệp vụ Hải quan</span>
-                    <span className="text-[11px] text-outline font-normal">Tự động điền nhóm &amp; ưu tiên gợi ý</span>
-                  </label>
-                  <select
-                    data-testid="modal-template-select"
-                    value={modalTemplateId}
-                    onChange={(e) => {
-                      const tplId = e.target.value;
-                      setModalTemplateId(tplId);
-                      if (tplId) {
-                        const tpl = templates.find((t) => t.id === tplId);
-                        if (tpl) {
-                          setModalTitle(tpl.title);
-                          if (tpl.groupId) setModalGroupId(tpl.groupId);
-                          if (tpl.defaultPriority) setModalPriority(tpl.defaultPriority);
-                        }
-                      }
-                    }}
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                  >
-                    <option value="">-- Tự nhập đầu việc ngoài danh mục mẫu --</option>
-                    {templates
-                      .filter((tpl) => tpl.reviewStatus !== "RETIRED")
-                      .map((tpl) => (
-                        <option key={tpl.id} value={tpl.id}>
-                          [{tpl.code}] {tpl.title}
+                {/* 1. YC-23 + YC-25: Khu vực chọn đầu việc từ danh mục — mỗi nguồn một cột riêng */}
+                <div
+                  data-testid="catalog-picker"
+                  className="rounded-xl border border-border-subtle bg-surface-subtle/50 p-3 flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="font-label-md text-label-md text-primary font-semibold flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
+                      Chọn từ danh mục — không bắt buộc chọn cả hai cột
+                    </span>
+                    <span className="text-[11px] text-outline">Cột A: thường xuyên · Cột B: sản phẩm theo quyết định</span>
+                  </div>
+
+                  {/* YC-25 — đầu việc riêng của bộ phận (tách biệt 48 mẫu và danh mục sản phẩm) */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-primary flex items-center justify-between gap-2">
+                      <span>
+                        ① Đầu việc riêng của bộ phận
+                        {deptCatalogUnits.length === 1 ? ` — ${deptCatalogUnits[0].name}` : ""}
+                      </span>
+                      {deptCatalogCanManage && (
+                        <button
+                          type="button"
+                          data-testid="open-dept-catalog-manager"
+                          onClick={openDeptCatalogManager}
+                          className="text-[11px] font-semibold text-secondary flex items-center gap-0.5 hover:underline"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">settings</span>
+                          Quản lý danh mục bộ phận
+                        </button>
+                      )}
+                    </label>
+                    <select
+                      data-testid="modal-dept-item-select"
+                      value={modalDeptWorkItemId}
+                      onChange={(e) => handleSelectDeptWorkItem(e.target.value)}
+                      className="h-10 px-3 rounded bg-surface-container-lowest text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    >
+                      <option value="">-- Không chọn từ danh mục bộ phận --</option>
+                      {modalDeptWorkItemId &&
+                        !deptWorkItems.some((x) => x.id === modalDeptWorkItemId) &&
+                        editingItem?.deptWorkItem && (
+                          <option value={modalDeptWorkItemId}>
+                            {editingItem.deptWorkItem.title} (đã ngừng sử dụng — giữ liên kết cũ)
+                          </option>
+                        )}
+                      {deptWorkItems.map((it) => (
+                        <option key={it.id} value={it.id}>
+                          {deptCatalogUnits.length > 1 && it.unit ? `[${it.unit.name}] ` : ""}
+                          {it.title}
                         </option>
                       ))}
-                  </select>
+                    </select>
+                    {deptWorkItems.length === 0 && (
+                      <span className="text-[11px] text-outline">
+                        Bộ phận chưa có danh mục riêng — có thể chọn từ Cột A hoặc Cột B bên dưới, hoặc tự nhập tên đầu việc.
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Hai cột song song: A — thường xuyên; B — sản phẩm theo quyết định (xếp dọc trên mobile) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {/* Cột A — công việc thường xuyên (48 mẫu) */}
+                    <div
+                      data-testid="picker-col-routine"
+                      className="rounded-lg border border-border-default bg-surface-container-lowest flex flex-col min-w-0"
+                    >
+                      <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-primary uppercase tracking-wide">
+                          Cột A · Công việc thường xuyên (48 mẫu)
+                        </span>
+                        {modalTemplateId && (
+                          <button
+                            type="button"
+                            onClick={() => setModalTemplateId("")}
+                            className="text-[11px] text-status-danger font-semibold shrink-0"
+                          >
+                            Bỏ chọn
+                          </button>
+                        )}
+                      </div>
+                      {/* Tương thích công cụ kiểm thử cũ: dropdown đồng bộ cùng trạng thái */}
+                      <select
+                        data-testid="modal-template-select"
+                        value={modalTemplateId}
+                        onChange={(e) => handleSelectRoutineTemplate(e.target.value)}
+                        className="sr-only"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                      >
+                        <option value="">-- Tự nhập đầu việc ngoài danh mục mẫu --</option>
+                        {templates
+                          .filter((tpl) => tpl.reviewStatus !== "RETIRED")
+                          .map((tpl) => (
+                            <option key={tpl.id} value={tpl.id}>
+                              [{tpl.code}] {tpl.title}
+                            </option>
+                          ))}
+                      </select>
+                      <div className="p-2 border-b border-border-subtle">
+                        <input
+                          data-testid="picker-col-routine-search"
+                          value={templateSearch}
+                          onChange={(e) => setTemplateSearch(e.target.value)}
+                          placeholder="Tìm nhanh theo mã hoặc tên mẫu..."
+                          className="w-full h-8 px-2 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto flex flex-col">
+                        {filteredTemplates.length === 0 ? (
+                          <span className="p-3 text-xs text-outline">Không có mẫu phù hợp.</span>
+                        ) : (
+                          filteredTemplates.map((tpl) => {
+                            const active = modalTemplateId === tpl.id;
+                            return (
+                              <button
+                                type="button"
+                                key={tpl.id}
+                                data-testid={`picker-tpl-${tpl.code}`}
+                                onClick={() => {
+                                  if (active) {
+                                    setModalTemplateId("");
+                                    return;
+                                  }
+                                  handleSelectRoutineTemplate(tpl.id);
+                                }}
+                                className={`text-left px-3 py-2 border-b border-border-subtle/60 flex flex-col gap-0.5 transition-colors ${
+                                  active
+                                    ? "bg-secondary/10 border-l-2 border-l-secondary"
+                                    : "hover:bg-surface-container-low"
+                                }`}
+                              >
+                                <span className="text-xs font-semibold text-primary">
+                                  [{tpl.code}] {tpl.title}
+                                </span>
+                                <span className="text-[10px] text-outline">
+                                  {groups.find((g) => g.id === tpl.groupId)?.name || ""}
+                                  {tpl.defaultPriority ? ` · Ưu tiên: ${tpl.defaultPriority}` : ""}
+                                </span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Cột B — danh mục sản phẩm theo quyết định (tìm phía máy chủ, phân trang) */}
+                    <div
+                      data-testid="picker-col-product"
+                      className="rounded-lg border border-border-default bg-surface-container-lowest flex flex-col min-w-0"
+                    >
+                      <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-primary uppercase tracking-wide">
+                          Cột B · Danh mục sản phẩm theo QĐ
+                        </span>
+                        {modalProductItemId && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectProduct(null)}
+                            className="text-[11px] text-status-danger font-semibold shrink-0"
+                          >
+                            Bỏ chọn
+                          </button>
+                        )}
+                      </div>
+                      <div className="p-2 border-b border-border-subtle">
+                        <input
+                          data-testid="picker-col-product-search"
+                          value={productSearch}
+                          onChange={(e) => searchModalProducts(e.target.value, 1)}
+                          placeholder="Tìm theo nhiệm vụ / sản phẩm / mã SP (từ 2 ký tự)..."
+                          className="w-full h-8 px-2 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                        />
+                      </div>
+                      {modalProductItemId && modalProductLabel && (
+                        <div className="px-3 py-1.5 bg-secondary/10 text-[11px] font-semibold text-secondary truncate">
+                          Đã chọn: {modalProductLabel}
+                        </div>
+                      )}
+                      <div className="max-h-44 overflow-y-auto flex flex-col">
+                        {productSearching ? (
+                          <span className="p-3 text-xs text-outline">Đang tìm...</span>
+                        ) : productResults.length === 0 ? (
+                          <span className="p-3 text-xs text-outline">
+                            {productSearch.trim().length < 2
+                              ? "Nhập từ 2 ký tự để tìm trong hơn 3.000 sản phẩm (tìm phía máy chủ)."
+                              : "Không tìm thấy sản phẩm phù hợp."}
+                          </span>
+                        ) : (
+                          productResults.map((p) => {
+                            const active = modalProductItemId === p.id;
+                            return (
+                              <button
+                                type="button"
+                                key={p.id}
+                                data-testid={`picker-product-${p.code}`}
+                                onClick={() => {
+                                  if (active) {
+                                    handleSelectProduct(null);
+                                    return;
+                                  }
+                                  handleSelectProduct(p);
+                                }}
+                                className={`text-left px-3 py-2 border-b border-border-subtle/60 flex flex-col gap-0.5 transition-colors ${
+                                  active
+                                    ? "bg-secondary/10 border-l-2 border-l-secondary"
+                                    : "hover:bg-surface-container-low"
+                                }`}
+                              >
+                                <span className="text-xs font-semibold text-primary">{p.taskName}</span>
+                                <span className="text-[10px] text-outline font-mono">
+                                  {p.code}
+                                  {typeof p.convertFactor === "number" ? ` · Hệ số: ${p.convertFactor}` : " · Chưa rõ hệ số"}
+                                  {p.groupName ? ` · ${p.groupName}` : ""}
+                                </span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                      {productTotal > 8 && (
+                        <div className="px-3 py-2 border-t border-border-subtle flex items-center justify-between text-[11px] text-outline">
+                          <span>
+                            Trang {productPage}/{Math.ceil(productTotal / 8)} · {productTotal} kết quả
+                          </span>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              disabled={productPage <= 1}
+                              onClick={() => searchModalProducts(productSearch, productPage - 1)}
+                              className="px-2 py-0.5 rounded border border-border-subtle disabled:opacity-40"
+                            >
+                              Trước
+                            </button>
+                            <button
+                              type="button"
+                              disabled={productPage >= Math.ceil(productTotal / 8)}
+                              onClick={() => searchModalProducts(productSearch, productPage + 1)}
+                              className="px-2 py-0.5 rounded border border-border-subtle disabled:opacity-40"
+                            >
+                              Sau
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {deptCatalogMsg && (
+                    <div className="text-[11px] text-status-warning flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">info</span>
+                      {deptCatalogMsg}
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Tên đầu việc cụ thể (Cột C) */}
@@ -1593,6 +2142,159 @@ export default function PlansPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: QUẢN LÝ DANH MỤC ĐẦU VIỆC RIÊNG CỦA BỘ PHẬN (YC-25)
+          ========================================================================= */}
+      {showDeptCatalogModal && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-white">
+                  Quản Lý Danh Mục Đầu Việc Bộ Phận
+                </h3>
+                <p className="text-xs text-on-primary-container">
+                  YC-25 — tách biệt với 48 mẫu thường xuyên và danh mục sản phẩm QĐ1277
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeptCatalogModal(false)}
+                className="text-on-primary-container hover:text-white transition-fast"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <div className="p-space-md flex flex-col gap-space-sm max-h-[70vh] overflow-y-auto">
+              {deptCatalogUnits.length > 1 && (
+                <label className="text-xs font-semibold text-primary flex flex-col gap-1">
+                  Bộ phận
+                  <select
+                    data-testid="dept-manager-unit-select"
+                    value={deptManageUnitId}
+                    onChange={(e) => {
+                      setDeptManageUnitId(e.target.value);
+                      setDeptEditingId(null);
+                      setDeptFormTitle("");
+                      setDeptFormDesc("");
+                      loadDeptManageItems(e.target.value);
+                    }}
+                    className="h-10 px-3 rounded bg-surface-container-low text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  >
+                    {deptCatalogUnits.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        [{u.code}] {u.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {/* Form thêm / sửa đầu việc */}
+              <div className="rounded-lg border border-border-default p-3 flex flex-col gap-2 bg-surface-subtle/50">
+                <span className="text-xs font-bold text-primary">
+                  {deptEditingId ? "Sửa đầu việc đang chọn" : "Thêm đầu việc mới vào danh mục bộ phận"}
+                </span>
+                <input
+                  data-testid="dept-form-title"
+                  value={deptFormTitle}
+                  onChange={(e) => setDeptFormTitle(e.target.value)}
+                  placeholder="Tên đầu việc * (VD: Kiểm tra niêm phong GPS ca đêm)"
+                  className="h-9 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                />
+                <input
+                  data-testid="dept-form-desc"
+                  value={deptFormDesc}
+                  onChange={(e) => setDeptFormDesc(e.target.value)}
+                  placeholder="Mô tả ngắn (tuỳ chọn)"
+                  className="h-9 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                />
+                <div className="flex justify-end gap-2">
+                  {deptEditingId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeptEditingId(null);
+                        setDeptFormTitle("");
+                        setDeptFormDesc("");
+                      }}
+                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-surface-container"
+                    >
+                      Huỷ sửa
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    data-testid="dept-form-submit"
+                    disabled={deptBusy}
+                    onClick={submitDeptForm}
+                    className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50 active-press"
+                  >
+                    {deptEditingId ? "Lưu thay đổi" : "Thêm vào danh mục"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Danh sách đầu việc của bộ phận */}
+              {deptManageLoading ? (
+                <span className="text-xs text-outline py-2">Đang tải danh mục...</span>
+              ) : deptManageItems.length === 0 ? (
+                <span className="text-xs text-outline py-2">
+                  Bộ phận này chưa có đầu việc nào trong danh mục riêng.
+                </span>
+              ) : (
+                <div className="flex flex-col divide-y divide-border-subtle border border-border-default rounded-lg overflow-hidden">
+                  {deptManageItems.map((it) => (
+                    <div key={it.id} className="p-3 flex items-center justify-between gap-2" data-testid={`dept-manage-row-${it.id}`}>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-primary truncate">{it.title}</span>
+                        <span className="text-[11px] text-outline truncate">
+                          {it.description ? `${it.description} · ` : ""}
+                          {it.status === "ACTIVE" ? "Đang sử dụng" : "Đã ngừng sử dụng"} · Đã dùng trong {it.usageCount ?? 0} đầu việc kế hoạch
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          title="Sửa"
+                          onClick={() => {
+                            setDeptEditingId(it.id);
+                            setDeptFormTitle(it.title);
+                            setDeptFormDesc(it.description || "");
+                          }}
+                          className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center active-press"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-secondary">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          title={it.status === "ACTIVE" ? "Ngừng sử dụng" : "Kích hoạt lại"}
+                          onClick={() => toggleDeptItemStatus(it)}
+                          className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center active-press"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-status-warning">
+                            {it.status === "ACTIVE" ? "block" : "restart_alt"}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          title="Xoá / ngừng sử dụng"
+                          onClick={() => removeDeptItem(it)}
+                          className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center active-press"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-status-danger">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
     const periodYear = searchParams.get("periodYear");
     const periodNumber = searchParams.get("periodNumber");
     const status = searchParams.get("status");
+    const yearFilter = searchParams.get("year");
+    const monthFilter = searchParams.get("month");
 
     // Nếu tìm theo periodType, periodYear, periodNumber
     if (!periodId && periodType && periodNumber) {
@@ -74,6 +76,20 @@ export async function GET(req: NextRequest) {
       where.personId = user.personId;
     }
 
+    // YC-23: lọc đầu việc theo tháng (phục vụ liên kết khi ghi nhận kết quả tháng)
+    if (yearFilter && monthFilter) {
+      const y = parseInt(yearFilter, 10);
+      const m = parseInt(monthFilter, 10);
+      if (!Number.isNaN(y) && m >= 1 && m <= 12) {
+        const monthStart = new Date(Date.UTC(y, m - 1, 1));
+        const monthEnd = new Date(Date.UTC(y, m, 1));
+        where.OR = [
+          { period: { startAt: { lt: monthEnd }, endAt: { gte: monthStart } } },
+          { workDate: { gte: monthStart, lt: monthEnd } },
+        ];
+      }
+    }
+
     const items = await prisma.personalWorkItem.findMany({
       where,
       include: {
@@ -83,6 +99,10 @@ export async function GET(req: NextRequest) {
         template: {
           include: { group: true },
         },
+        deptWorkItem: {
+          include: { unit: { select: { id: true, code: true, name: true } } },
+        },
+        product: true,
         planItem: {
           include: { plan: true },
         },
@@ -119,6 +139,8 @@ export async function POST(req: NextRequest) {
       periodId,
       planItemId,
       templateId,
+      deptWorkItemId,
+      productItemId,
       groupId,
       title,
       customTitle,
@@ -159,6 +181,48 @@ export async function POST(req: NextRequest) {
       }
       if (!priority) {
         resolvedPriority = template.defaultPriority || "Cao";
+      }
+    }
+
+    // YC-25: chọn từ danh mục đầu việc riêng của bộ phận (tách biệt 48 mẫu và danh mục sản phẩm)
+    let resolvedDeptWorkItemId: string | null = null;
+    if (deptWorkItemId) {
+      if (templateId) {
+        return jsonError("Chỉ chọn một nguồn đầu việc: mẫu thường xuyên hoặc danh mục của bộ phận", 400);
+      }
+      const deptItem = await prisma.departmentWorkItem.findUnique({ where: { id: deptWorkItemId } });
+      if (!deptItem) {
+        return jsonError("Đầu việc không tồn tại trong danh mục của bộ phận", 400);
+      }
+      if (deptItem.status !== "ACTIVE") {
+        return jsonError("Đầu việc này đã ngừng sử dụng, không thể chọn để tạo mới", 400);
+      }
+      const scopeUnits = await getAuthorizedUnitIds(user);
+      if (scopeUnits !== "ALL" && !scopeUnits.includes(deptItem.unitId)) {
+        return jsonError("Bạn chỉ được chọn đầu việc thuộc bộ phận của mình", 403);
+      }
+      resolvedDeptWorkItemId = deptItem.id;
+      if (!resolvedTitle?.trim()) {
+        resolvedTitle = deptItem.title;
+      }
+    }
+
+    // YC-23: liên kết sản phẩm đầu ra theo QĐ1277 (tuỳ chọn — một công việc có thể gắn sản phẩm)
+    let resolvedProductItemId: string | null = null;
+    if (productItemId) {
+      const product = await prisma.productItem.findUnique({
+        where: { id: productItemId },
+        include: { version: { select: { status: true } } },
+      });
+      if (!product) {
+        return jsonError("Sản phẩm không tồn tại trong danh mục QĐ1277", 400);
+      }
+      if (product.status !== "ACTIVE" || product.version?.status !== "ACTIVE") {
+        return jsonError("Sản phẩm này đã ngừng áp dụng, không thể chọn", 400);
+      }
+      resolvedProductItemId = product.id;
+      if (!resolvedTitle?.trim()) {
+        resolvedTitle = product.taskName;
       }
     }
 
@@ -247,6 +311,8 @@ export async function POST(req: NextRequest) {
         periodId,
         planItemId: planItemId || null,
         templateId: templateId || null, // null nếu là đầu việc tự thêm ngoài danh mục 48 mẫu
+        deptWorkItemId: resolvedDeptWorkItemId, // YC-25: nguồn danh mục đầu việc riêng của bộ phận
+        productItemId: resolvedProductItemId, // YC-23: sản phẩm đầu ra theo QĐ1277 (tuỳ chọn)
         groupId: resolvedGroupId,
         title: resolvedTitle.trim(),
         workDate: workDate ? new Date(workDate) : null,
@@ -260,6 +326,8 @@ export async function POST(req: NextRequest) {
       include: {
         person: true,
         template: { include: { group: true } },
+        deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
+        product: true,
         group: true,
         period: true,
       },
@@ -278,7 +346,9 @@ export async function POST(req: NextRequest) {
         priority: newItem.priority,
         coordinationUnit: newItem.coordinationUnit,
         expectedResult: newItem.expectedResult,
-        isCustom: !newItem.templateId,
+        isCustom: !newItem.templateId && !newItem.deptWorkItemId,
+        deptWorkItemId: newItem.deptWorkItemId,
+        productItemId: newItem.productItemId,
       },
     });
 
@@ -308,6 +378,9 @@ export async function PATCH(req: NextRequest) {
       sortOrder,
       status,
       planItemId,
+      templateId,
+      deptWorkItemId,
+      productItemId,
     } = body;
 
     if (!id) {
@@ -355,6 +428,49 @@ export async function PATCH(req: NextRequest) {
       return jsonError("Bạn không có quyền chỉnh sửa đầu việc của cán bộ khác", 403);
     }
 
+    // YC-25: đổi/thiết lập nguồn đầu việc bộ phận (đổi nguồn sẽ bỏ liên kết mẫu thường xuyên)
+    const linkUpdate: any = {};
+    if (deptWorkItemId !== undefined) {
+      if (deptWorkItemId) {
+        const deptItem = await prisma.departmentWorkItem.findUnique({ where: { id: deptWorkItemId } });
+        if (!deptItem) return jsonError("Đầu việc không tồn tại trong danh mục của bộ phận", 400);
+        if (deptItem.status !== "ACTIVE") return jsonError("Đầu việc này đã ngừng sử dụng, không thể chọn mới", 400);
+        const scopeUnits = await getAuthorizedUnitIds(user);
+        if (scopeUnits !== "ALL" && !scopeUnits.includes(deptItem.unitId)) {
+          return jsonError("Bạn chỉ được chọn đầu việc thuộc bộ phận của mình", 403);
+        }
+        linkUpdate.deptWorkItemId = deptItem.id;
+        linkUpdate.templateId = null;
+      } else {
+        linkUpdate.deptWorkItemId = null;
+      }
+    }
+    if (templateId !== undefined && templateId) {
+      const template = await prisma.activityTemplate.findUnique({ where: { id: templateId } });
+      if (!template) return jsonError("Hoạt động mẫu không tồn tại trong danh mục", 400);
+      if (template.reviewStatus === "RETIRED") {
+        return jsonError("Hoạt động mẫu này đã ngừng áp dụng, không thể chọn", 400);
+      }
+      linkUpdate.templateId = templateId;
+      linkUpdate.deptWorkItemId = null;
+    }
+    // YC-23: đổi/thiết lập sản phẩm đầu ra theo QĐ1277 (tuỳ chọn, độc lập với nguồn đầu việc)
+    if (productItemId !== undefined) {
+      if (productItemId) {
+        const product = await prisma.productItem.findUnique({
+          where: { id: productItemId },
+          include: { version: { select: { status: true } } },
+        });
+        if (!product) return jsonError("Sản phẩm không tồn tại trong danh mục QĐ1277", 400);
+        if (product.status !== "ACTIVE" || product.version?.status !== "ACTIVE") {
+          return jsonError("Sản phẩm này đã ngừng áp dụng, không thể chọn", 400);
+        }
+        linkUpdate.productItemId = product.id;
+      } else {
+        linkUpdate.productItemId = null;
+      }
+    }
+
     const updateData: any = {};
     if (title && title.trim()) updateData.title = title.trim();    if (groupId !== undefined) updateData.groupId = groupId || null;
     if (workDate !== undefined) updateData.workDate = workDate ? new Date(workDate) : null;
@@ -365,6 +481,7 @@ export async function PATCH(req: NextRequest) {
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
     if (status) updateData.status = status; // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
     if (planItemId !== undefined) updateData.planItemId = planItemId;
+    Object.assign(updateData, linkUpdate);
 
     const updated = await prisma.personalWorkItem.update({
       where: { id },
@@ -372,6 +489,8 @@ export async function PATCH(req: NextRequest) {
       include: {
         person: true,
         template: { include: { group: true } },
+        deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
+        product: true,
         group: true,
       },
     });
@@ -381,7 +500,7 @@ export async function PATCH(req: NextRequest) {
       action: "PERSONAL_WORK_ITEM_UPDATE",
       resourceType: "PersonalWorkItem",
       resourceId: updated.id,
-      oldData: { title: currentItem.title, status: currentItem.status },
+      oldData: { title: currentItem.title, status: currentItem.status, deptWorkItemId: currentItem.deptWorkItemId, productItemId: currentItem.productItemId },
       newData: updateData,
     });
 

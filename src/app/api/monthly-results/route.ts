@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
       include: {
         productItem: { select: { id: true, code: true, sourceStt: true, taskName: true, outputProduct: true, convertFactor: true } },
         person: { select: { id: true, fullName: true } },
+        workItem: { select: { id: true, title: true, deptWorkItemId: true, templateId: true } },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
     }
     const body = await req.json();
     const {
-      personId, periodYear, periodMonth, productItemId,
+      personId, periodYear, periodMonth, productItemId, workItemId,
       taskId, title, outputText, assignedQty, completedQty,
       dueDate, completedDate, evidenceRef, lateCount, reworkCount, notes,
     } = body;
@@ -125,10 +126,27 @@ export async function POST(req: NextRequest) {
       return jsonError("Cán bộ chỉ được ghi kết quả cho chính mình", 403);
     }
 
+    // YC-23: liên kết đầu việc thực tế trong kế hoạch cá nhân (chống ghi nhận trùng theo đầu việc + sản phẩm)
+    let linkedWorkItem: { id: string; productItemId: string | null } | null = null;
+    if (workItemId) {
+      const wi = await prisma.personalWorkItem.findUnique({
+        where: { id: workItemId },
+        select: { id: true, personId: true, productItemId: true },
+      });
+      if (!wi) return jsonError("Đầu việc kế hoạch không tồn tại — hãy chọn lại", 400);
+      if (wi.personId !== target.personId) {
+        return jsonError("Chỉ liên kết được đầu việc thuộc kế hoạch của chính cán bộ được ghi kết quả", 400);
+      }
+      linkedWorkItem = { id: wi.id, productItemId: wi.productItemId };
+    }
+
+    // Kế thừa sản phẩm đã gắn ở kế hoạch nếu khi ghi nhận không chọn lại sản phẩm
+    const effectiveProductItemId = productItemId || linkedWorkItem?.productItemId || null;
+
     // YC-12: có mã SP → niêm hệ số tại thời điểm ghi; không có → chờ đối chiếu, không tự gán
     let factorSnapshot: number | null = null;
-    if (productItemId) {
-      const item = await prisma.productItem.findUnique({ where: { id: productItemId } });
+    if (effectiveProductItemId) {
+      const item = await prisma.productItem.findUnique({ where: { id: effectiveProductItemId } });
       if (!item) return jsonError("Sản phẩm không tồn tại trong danh mục", 400);
       factorSnapshot = item.convertFactor ?? null;
     }
@@ -137,6 +155,20 @@ export async function POST(req: NextRequest) {
     const lockKey = `monthly:${target.personId}:${year}:${month}:${title.trim().toLowerCase()}`;
     const saved = await prisma.$transaction(async (tx) => {
       await advisoryLock(tx, lockKey);
+      // YC-23: cùng đầu việc + cùng sản phẩm trong tháng → trả bản ghi cũ, không ghi trùng điểm
+      if (linkedWorkItem) {
+        const dupWork = await tx.monthlyWorkResult.findFirst({
+          where: {
+            personId: target.personId,
+            periodYear: year,
+            periodMonth: month,
+            workItemId: linkedWorkItem.id,
+            productItemId: effectiveProductItemId,
+          },
+          include: { productItem: true },
+        });
+        if (dupWork) return { row: dupWork, deduplicated: true as const };
+      }
       const recent = await tx.monthlyWorkResult.findFirst({
         where: {
           personId: target.personId, periodYear: year, periodMonth: month,
@@ -151,8 +183,9 @@ export async function POST(req: NextRequest) {
           personId: target.personId,
           periodYear: year,
           periodMonth: month,
-          productItemId: productItemId || null,
-          needsReview: !productItemId,
+          productItemId: effectiveProductItemId,
+          workItemId: linkedWorkItem?.id || null,
+          needsReview: !effectiveProductItemId,
           taskId: taskId || null,
           title: title.trim(),
           outputText: outputText?.trim() || null,
@@ -178,7 +211,14 @@ export async function POST(req: NextRequest) {
         action: "MONTHLY_RESULT_CREATE",
         resourceType: "MonthlyWorkResult",
         resourceId: saved.row.id,
-        newData: { personId: target.personId, year, month, title: saved.row.title, productItemId: productItemId || null },
+        newData: {
+          personId: target.personId,
+          year,
+          month,
+          title: saved.row.title,
+          productItemId: effectiveProductItemId,
+          workItemId: linkedWorkItem?.id || null,
+        },
       });
     }
 
@@ -196,7 +236,7 @@ export async function PATCH(req: NextRequest) {
     const user = await authenticateRequest(req);
     if (!user) return jsonError("Yêu cầu đăng nhập", 401);
     const body = await req.json();
-    const { id, productItemId, title, outputText, assignedQty, completedQty, dueDate, completedDate, evidenceRef, lateCount, reworkCount, notes, taskId } = body;
+    const { id, productItemId, title, outputText, assignedQty, completedQty, dueDate, completedDate, evidenceRef, lateCount, reworkCount, notes, taskId, workItemId } = body;
     if (!id) return jsonError("Thiếu ID bản ghi", 400);
 
     const current = await prisma.monthlyWorkResult.findUnique({ where: { id } });
@@ -208,6 +248,36 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updateData: any = {};
+    // YC-23: gắn/đổi đầu việc thực tế — chặn ghi trùng (cùng đầu việc + cùng sản phẩm trong tháng)
+    if (workItemId !== undefined) {
+      if (workItemId) {
+        const wi = await prisma.personalWorkItem.findUnique({
+          where: { id: workItemId },
+          select: { id: true, personId: true, productItemId: true },
+        });
+        if (!wi) return jsonError("Đầu việc kế hoạch không tồn tại — hãy chọn lại", 400);
+        if (wi.personId !== current.personId) {
+          return jsonError("Chỉ liên kết được đầu việc thuộc kế hoạch của chính cán bộ này", 400);
+        }
+        const effectiveProduct = productItemId || current.productItemId || wi.productItemId || null;
+        const dupWork = await prisma.monthlyWorkResult.findFirst({
+          where: {
+            personId: current.personId,
+            periodYear: current.periodYear,
+            periodMonth: current.periodMonth,
+            workItemId: wi.id,
+            productItemId: effectiveProduct,
+            NOT: { id },
+          },
+        });
+        if (dupWork) {
+          return jsonError("Đầu việc này đã được ghi nhận kết quả (cùng sản phẩm) trong tháng — hãy sửa bản ghi hiện có thay vì ghi thêm", 409);
+        }
+        updateData.workItemId = wi.id;
+      } else {
+        updateData.workItemId = null;
+      }
+    }
     if (title !== undefined && title.trim()) updateData.title = title.trim();
     if (outputText !== undefined) updateData.outputText = outputText?.trim() || null;
     if (assignedQty !== undefined) updateData.assignedQty = assignedQty === "" || assignedQty === null ? null : Number(assignedQty);
