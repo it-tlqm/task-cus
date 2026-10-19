@@ -6,7 +6,7 @@
 
 > 📌 **Đợt 2 (17/10/2026):** đơn vị đã cung cấp nội dung cho 6 mã trước đây thiếu nguồn — **YC-10, YC-15, YC-17, YC-23, YC-24, YC-25** — đã cập nhật bên dưới. Không còn mã "chưa xác định".
 
-> 📌 **Đợt 3 (19/10/2026):** bổ sung **YC-26 → YC-29** + kết quả rà soát P0 (14 bản ghi CB-014 nhập ngày 18/10). Gói này **được triển khai Production ngày 19/10/2026** để nghiệm thu bằng **tài khoản DEMO** (theo chỉ đạo) — **không migration, không đụng dữ liệu thật, không đụng dữ liệu CB-014**; rollback code-first nếu cần. Chi tiết: `HANDOVER_YC26_29_2026-10-19.md`.
+> 📌 **Đợt 3 (19/10/2026):** bổ sung **YC-26 → YC-29** + kết quả rà soát P0 (14 bản ghi CB-014 nhập ngày 18/10). Gói này **đã triển khai Production ngày 19/10/2026** (merge commit `43dff84`) để nghiệm thu bằng **tài khoản DEMO** — **nghiệm thu thật 47/47 PASS**; **không migration, không đụng dữ liệu thật, không đụng dữ liệu CB-014** (chỉ tạo + xoá ngay 2 phân công test có audit); rollback code-first nếu cần. Chi tiết: `HANDOVER_YC26_29_2026-10-19.md`.
 
 | Mã | Nội dung | Trạng thái | Bằng chứng / ghi chú |
 | :-- | :-- | :-- | :-- |
