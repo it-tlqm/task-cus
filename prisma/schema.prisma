@@ -50,6 +50,7 @@ model OrgUnit {
   dutyPositions DutyPosition[]
   dutyDayInfos DutyDayInfo[]
   departmentWorkItems DepartmentWorkItem[]
+  workCatalogEntries  WorkCatalogEntry[]
 
   @@map("org_units")
 }
@@ -91,6 +92,8 @@ model Person {
   snapshotsLocked  ReportSnapshot[]   @relation("SnapshotLocker")
   attachments      TaskAttachment[]   @relation("AttachmentUploader")
   monthlyResults   MonthlyWorkResult[]
+  workCatalogImports WorkCatalogVersion[] @relation("WorkCatalogImporter")
+  workEvidences    WorkEvidence[]        @relation("EvidenceUploader")
   leaveRequests    LeaveRequest[]  @relation("LeaveRequester")
   leaveHandovers   LeaveRequest[]  @relation("LeaveHandover")
   pushSubscriptions PushSubscription[]
@@ -271,6 +274,88 @@ model DepartmentWorkItem {
 }
 
 // ----------------------------------------------------
+// 3c. DANH MỤC CÔNG VIỆC THƯỜNG XUYÊN (TX) — YC-31
+// Mỗi lần nhập file = 1 phiên bản bất biến; phiên bản cũ chuyển SUPERSEDED,
+// KHÔNG xóa — đầu việc đã gắn vẫn mở/sửa bình thường. Tách biệt hoàn toàn với
+// ActivityTemplate (48 mẫu cũ), DepartmentWorkItem (YC-25) và ProductItem (QĐ1277).
+// ----------------------------------------------------
+
+model WorkCatalogVersion {
+  id             String   @id @default(uuid())
+  code           String   @unique // TX-20261021-01
+  title          String   @default("Danh mục công việc thường xuyên")
+  sourceFileName String?  @map("source_file_name")
+  sourceSheet    String?  @map("source_sheet")
+  entryCount     Int      @map("entry_count")
+  importHash     String   @map("import_hash") // SHA-256 nội dung chuẩn hóa — chống nhập lại cùng file
+  status         String   @default("ACTIVE") // ACTIVE, SUPERSEDED
+  note           String?
+  importedById   String?  @map("imported_by_id")
+  importedAt     DateTime @default(now()) @map("imported_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  importedBy Person?            @relation("WorkCatalogImporter", fields: [importedById], references: [id], onDelete: SetNull)
+  entries    WorkCatalogEntry[]
+
+  @@index([status, importedAt])
+  @@map("work_catalog_versions")
+}
+
+model WorkCatalogEntry {
+  id              String   @id @default(uuid())
+  versionId       String   @map("version_id")
+  code            String // TX-XXXXXXXX: sinh ổn định từ (bộ phận + tên chuẩn hóa), giữ nguyên qua các phiên bản
+  department      String // Tên bộ phận đúng như file nguồn (6 bộ phận)
+  departmentOrder Int      @default(0) @map("department_order")
+  unitId          String?  @map("unit_id") // Gắn đơn vị thật sau khi Hải quan xác nhận (B2 phiếu 04)
+  title           String
+  sortOrder       Int      @default(0) @map("sort_order")
+  sourceRow       Int      @default(0) @map("source_row") // Dòng Excel gốc để đối soát
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE (ngừng dùng riêng lẻ)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  version   WorkCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  unit      OrgUnit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  workItems PersonalWorkItem[]
+
+  @@unique([versionId, department, title])
+  @@unique([versionId, code])
+  @@index([versionId, status, departmentOrder, sortOrder])
+  @@map("work_catalog_entries")
+}
+
+// ----------------------------------------------------
+// 3d. MINH CHỨNG CÔNG VIỆC — YC-32
+// Chỉ lưu metadata + khóa lưu trữ; KHÔNG phát URL công khai. Mọi lượt tải đi qua
+// route kiểm tra quyền và ghi AuditEvent (EVIDENCE_DOWNLOAD).
+// ----------------------------------------------------
+
+model WorkEvidence {
+  id              String   @id @default(uuid())
+  workItemId      String   @map("work_item_id")
+  monthlyResultId String?  @map("monthly_result_id")
+  fileName        String   @map("file_name")
+  fileSize        Int      @map("file_size") // bytes
+  mimeType        String   @map("mime_type")
+  storageKey      String   @map("storage_key")
+  fileUrl         String?  @map("file_url") // Luôn null trong GĐ1 — không dùng URL công khai
+  checksum        String?
+  note            String?
+  uploadedById    String   @map("uploaded_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  workItem      PersonalWorkItem   @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  monthlyResult MonthlyWorkResult? @relation(fields: [monthlyResultId], references: [id], onDelete: SetNull)
+  uploadedBy    Person             @relation("EvidenceUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([workItemId, createdAt])
+  @@index([monthlyResultId])
+  @@map("work_evidences")
+}
+
+// ----------------------------------------------------
 // 4. BIỂU MẪU ĐỘNG & QUẢN LÝ PHIÊN BẢN (FORM ENGINE)
 // ----------------------------------------------------
 
@@ -400,6 +485,10 @@ model PersonalWorkItem {
   templateId       String?           @map("template_id") // Nullable: có thể chọn từ mẫu hoặc tự thêm mới
   deptWorkItemId   String?           @map("dept_work_item_id") // YC-25: chọn từ danh mục đầu việc riêng của bộ phận
   productItemId    String?           @map("product_item_id") // YC-23: liên kết sản phẩm đầu ra theo QĐ1277 (tuỳ chọn)
+  catalogEntryId   String?           @map("catalog_entry_id") // YC-31: đầu việc TX đã chọn (tuỳ chọn)
+  dueDate          DateTime?         @map("due_date") @db.Date // YC-32: hạn xử lý đầu việc (khác hạn chính thức của Task)
+  completedDate    DateTime?         @map("completed_date") @db.Date // YC-32: ngày hoàn thành thực tế
+  taskId           String?           @map("task_id") // YC-32: nhiệm vụ liên quan (lãnh đạo giao từ đầu việc)
   groupId          String?           @map("group_id") // Nullable: liên kết trực tiếp nhóm nghiệp vụ cho đầu việc tự tạo
   title            String
   workDate         DateTime?         @map("work_date") // Thứ / Ngày thực hiện
@@ -419,10 +508,15 @@ model PersonalWorkItem {
   template      ActivityTemplate?  @relation(fields: [templateId], references: [id])
   deptWorkItem  DepartmentWorkItem? @relation(fields: [deptWorkItemId], references: [id], onDelete: SetNull)
   product       ProductItem?       @relation(fields: [productItemId], references: [id], onDelete: SetNull)
+  catalogEntry  WorkCatalogEntry?  @relation(fields: [catalogEntryId], references: [id], onDelete: SetNull)
+  task          Task?              @relation("WorkItemTask", fields: [taskId], references: [id], onDelete: SetNull)
   group         ActivityGroup?     @relation(fields: [groupId], references: [id])
   routines      RoutineEntry[]
   monthlyResults MonthlyWorkResult[]
+  evidences     WorkEvidence[]
 
+  @@index([catalogEntryId])
+  @@index([taskId])
   @@map("personal_work_items")
 }
 
@@ -457,6 +551,7 @@ model Task {
   submissions      ResultSubmission[]
   attachments      TaskAttachment[]
   comments         TaskComment[]
+  workItems        PersonalWorkItem[] @relation("WorkItemTask")
 
   @@map("tasks")
 }
@@ -1024,6 +1119,9 @@ model MonthlyWorkResult {
   productItem ProductItem? @relation(fields: [productItemId], references: [id])
   workItem    PersonalWorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
 
+  evidences WorkEvidence[]
+
+  @@unique([personId, workItemId])
   @@index([personId, periodYear, periodMonth])
   @@map("monthly_work_results")
 }
