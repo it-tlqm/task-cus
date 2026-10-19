@@ -87,6 +87,7 @@ export default function NhapSoLieuPage() {
   const [initial, setInitial] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [saveWarnings, setSaveWarnings] = useState<{ metricCode: string; metricName: string; message: string }[] | null>(null);
   const [historyFor, setHistoryFor] = useState<{ entryId: string; metricName: string } | null>(null);
   const [history, setHistory] = useState<Revision[] | null>(null);
 
@@ -158,6 +159,8 @@ export default function NhapSoLieuPage() {
       const json = await res.json();
       if (res.ok && json.success) {
         toast.success(`Đã lưu ${json.saved} ô số liệu cho ${fmtDate(date)}`);
+        // P0: cảnh báo mềm giá trị bất thường (không chặn lưu) — người nhập tự kiểm tra lại
+        setSaveWarnings(Array.isArray(json.warnings) && json.warnings.length > 0 ? json.warnings : null);
         load(date);
       } else {
         const first = json?.errors?.[0]?.message;
@@ -258,6 +261,26 @@ export default function NhapSoLieuPage() {
       </div>
 
       <div className="px-margin flex flex-col gap-4">
+        {saveWarnings && saveWarnings.length > 0 && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 flex flex-col gap-1.5" data-testid="save-warnings">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-amber-800 text-body-sm flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px]">warning</span>
+                Cảnh báo giá trị bất thường ({saveWarnings.length}) — số liệu VẪN ĐÃ LƯU, hãy kiểm tra lại
+              </span>
+              <button onClick={() => setSaveWarnings(null)} className="text-amber-800 hover:bg-amber-100 rounded p-1" title="Đóng">
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+            <ul className="text-body-xs text-amber-900 list-disc pl-5 flex flex-col gap-0.5">
+              {saveWarnings.map((w, i) => (
+                <li key={i}>
+                  <b>{w.metricName}</b> ({w.metricCode}): {w.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {loading && <div className="text-body-sm text-on-surface-variant py-8 text-center">Đang tải…</div>}
 
         {!loading && data && !data.anyEditable && (
