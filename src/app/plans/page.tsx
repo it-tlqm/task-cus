@@ -43,6 +43,14 @@ interface PersonalWorkItemData {
   // YC-23: sản phẩm đầu ra theo QĐ1277 gắn kèm đầu việc (tuỳ chọn)
   productItemId?: string | null;
   product?: { id: string; code: string; taskName: string; outputProduct?: string | null; convertFactor?: number | null; groupName?: string | null } | null;
+  // YC-31: đầu việc từ Danh mục công việc thường xuyên (phiên bản đang áp dụng)
+  catalogEntryId?: string | null;
+  catalogEntry?: { id: string; code: string; title: string; department: string; status: string } | null;
+  // YC-32: hạn xử lý và ngày hoàn thành thực tế (tách biệt); liên kết nhiệm vụ hai chiều
+  dueDate?: string | null;
+  completedDate?: string | null;
+  taskId?: string | null;
+  task?: { id: string; code: string; title: string; status: string } | null;
 }
 
 // YC-25 — Danh mục đầu việc riêng theo bộ phận
@@ -65,6 +73,23 @@ interface ProductPickerItem {
   outputProduct?: string | null;
   convertFactor?: number | null;
   groupName?: string | null;
+}
+
+// YC-31 — Danh mục công việc thường xuyên (phiên bản đang áp dụng)
+interface WorkCatalogEntryPicker {
+  id: string;
+  code: string;
+  department: string;
+  departmentOrder: number;
+  title: string;
+  sortOrder: number;
+  status: string;
+}
+
+interface WorkCatalogDepartment {
+  name: string;
+  order: number;
+  count: number;
 }
 
 interface PlanItem {
@@ -174,6 +199,13 @@ export default function PlansPage() {
   const [modalDeptWorkItemId, setModalDeptWorkItemId] = useState("");
   const [modalProductItemId, setModalProductItemId] = useState("");
   const [modalProductLabel, setModalProductLabel] = useState("");
+  // YC-31/YC-32: nguồn TX, hạn xử lý, ngày hoàn thành thực tế
+  const [modalCatalogEntryId, setModalCatalogEntryId] = useState("");
+  const [modalDueDate, setModalDueDate] = useState("");
+  const [modalCompletedDate, setModalCompletedDate] = useState("");
+  const [txEntries, setTxEntries] = useState<WorkCatalogEntryPicker[]>([]);
+  const [txDepartments, setTxDepartments] = useState<WorkCatalogDepartment[]>([]);
+  const [legacyTemplatesSelectable, setLegacyTemplatesSelectable] = useState(true);
   const [templateSearch, setTemplateSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [productResults, setProductResults] = useState<ProductPickerItem[]>([]);
@@ -217,12 +249,13 @@ export default function PlansPage() {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const [resPlans, resTemplates, resGroups, resUser, resDept] = await Promise.all([
+      const [resPlans, resTemplates, resGroups, resUser, resDept, resCatalog] = await Promise.all([
         fetch("/api/plans"),
         fetch("/api/catalog/templates"),
         fetch("/api/catalog/groups"),
         fetch("/api/auth/me"),
         fetch("/api/department-work-items?status=ACTIVE"),
+        fetch("/api/work-catalog", { cache: "no-store" }),
       ]);
 
       if (resPlans.ok) {
@@ -253,6 +286,14 @@ export default function PlansPage() {
         setDeptWorkItems(jsonDept.data || []);
         setDeptCatalogUnits(jsonDept.units || []);
         setDeptCatalogCanManage(!!jsonDept.canManage);
+      }
+
+      if (resCatalog.ok) {
+        const jsonCatalog = await resCatalog.json();
+        const catData = jsonCatalog.data || {};
+        setTxEntries(catData.entries || []);
+        setTxDepartments(catData.departments || []);
+        setLegacyTemplatesSelectable(catData.legacyTemplatesSelectable !== false);
       }
     } catch {
       // fallback
@@ -327,6 +368,9 @@ export default function PlansPage() {
     setModalDeptWorkItemId("");
     setModalProductItemId("");
     setModalProductLabel("");
+    setModalCatalogEntryId("");
+    setModalDueDate("");
+    setModalCompletedDate("");
     setDeptCatalogMsg(null);
     setTemplateSearch("");
     setProductSearch("");
@@ -346,6 +390,11 @@ export default function PlansPage() {
     setModalDeptWorkItemId(wi.deptWorkItemId || "");
     setModalProductItemId(wi.productItemId || "");
     setModalProductLabel(wi.product ? `${wi.product.code} — ${wi.product.taskName}` : "");
+    setModalCatalogEntryId(wi.catalogEntryId || "");
+    setModalDueDate(wi.dueDate ? new Date(wi.dueDate).toISOString().slice(0, 10) : "");
+    setModalCompletedDate(
+      wi.completedDate ? new Date(wi.completedDate).toISOString().slice(0, 10) : ""
+    );
     setDeptCatalogMsg(
       wi.deptWorkItem && wi.deptWorkItem.status !== "ACTIVE"
         ? "Đầu việc gốc của bộ phận đã ngừng sử dụng — hệ thống giữ nguyên liên kết cũ cho đến khi bạn đổi."
@@ -394,6 +443,9 @@ export default function PlansPage() {
             status: modalStatus,
             deptWorkItemId: modalDeptWorkItemId || null,
             productItemId: modalProductItemId || null,
+            catalogEntryId: modalCatalogEntryId || null,
+            dueDate: modalDueDate || null,
+            completedDate: modalCompletedDate || null,
           }),
         });
         const json = await res.json();
@@ -416,6 +468,9 @@ export default function PlansPage() {
             templateId: modalTemplateId || undefined,
             deptWorkItemId: modalDeptWorkItemId || undefined,
             productItemId: modalProductItemId || undefined,
+            catalogEntryId: modalCatalogEntryId || undefined,
+            dueDate: modalDueDate || undefined,
+            completedDate: modalCompletedDate || undefined,
             groupId: modalGroupId || undefined,
             title: modalTitle.trim(),
             workDate: modalWorkDate || undefined,
@@ -615,6 +670,7 @@ export default function PlansPage() {
     if (!tpl) return;
     setModalTemplateId(tpl.id);
     setModalDeptWorkItemId("");
+    setModalCatalogEntryId("");
     setModalTitle(tpl.title);
     if (tpl.groupId) setModalGroupId(tpl.groupId);
     if (tpl.defaultPriority) setModalPriority(tpl.defaultPriority);
@@ -626,7 +682,19 @@ export default function PlansPage() {
     const it = deptWorkItems.find((x) => x.id === deptItemId);
     if (!it) return;
     setModalTemplateId("");
+    setModalCatalogEntryId("");
     setModalTitle(it.title);
+  };
+
+  // YC-31: chọn đầu việc từ Danh mục TX — nguồn loại trừ với mẫu cũ và danh mục bộ phận
+  const handleSelectCatalogEntry = (entryId: string) => {
+    setModalCatalogEntryId(entryId);
+    if (!entryId) return;
+    const entry = txEntries.find((x) => x.id === entryId);
+    if (!entry) return;
+    setModalDeptWorkItemId("");
+    setModalTemplateId("");
+    setModalTitle(entry.title);
   };
 
   const handleSelectProduct = (p: ProductPickerItem | null) => {
@@ -1753,16 +1821,84 @@ export default function PlansPage() {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="font-label-md text-label-md text-primary font-semibold flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
-                      Chọn từ danh mục — không bắt buộc chọn cả hai cột
+                      Chọn từ danh mục — tối đa một nguồn đầu việc, không bắt buộc
                     </span>
-                    <span className="text-[11px] text-outline">Cột A: thường xuyên · Cột B: sản phẩm theo quyết định</span>
+                    <span className="text-[11px] text-outline">Nguồn: Danh mục TX · bộ phận · 48 mẫu cũ · sản phẩm QĐ1277 gắn kèm</span>
                   </div>
+
+                  {/* YC-31 — Danh mục công việc thường xuyên (phiên bản đang áp dụng) */}
+                  {txEntries.length > 0 ? (
+                    <div className="flex flex-col gap-1" data-testid="modal-tx-picker">
+                      <label className="text-xs font-semibold text-primary flex items-center justify-between gap-2">
+                        <span>① Công việc thường xuyên — Danh mục TX</span>
+                        <span className="text-[11px] text-outline font-normal">
+                          {txEntries.filter((e) => e.status === "ACTIVE").length} đầu việc đang áp dụng
+                        </span>
+                      </label>
+                      <select
+                        data-testid="modal-tx-item-select"
+                        value={modalCatalogEntryId}
+                        onChange={(e) => handleSelectCatalogEntry(e.target.value)}
+                        className="h-10 px-3 rounded bg-surface-container-lowest text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      >
+                        <option value="">-- Không chọn từ Danh mục TX --</option>
+                        {modalCatalogEntryId &&
+                          !txEntries.some((e) => e.id === modalCatalogEntryId) &&
+                          editingItem?.catalogEntry && (
+                            <option value={modalCatalogEntryId}>
+                              {editingItem.catalogEntry.title} (đã ngừng — giữ liên kết cũ)
+                            </option>
+                          )}
+                        {txDepartments.map((d) => {
+                          const items = txEntries.filter(
+                            (e) => e.department === d.name && e.status === "ACTIVE"
+                          );
+                          if (items.length === 0) return null;
+                          return (
+                            <optgroup key={d.name} label={`${d.name} (${items.length})`}>
+                              {items.map((e) => (
+                                <option key={e.id} value={e.id}>
+                                  {e.title} — {e.code}
+                                </option>
+                              ))}
+                            </optgroup>
+                          );
+                        })}
+                      </select>
+                      {modalCatalogEntryId &&
+                        (() => {
+                          const selected = txEntries.find((e) => e.id === modalCatalogEntryId);
+                          return selected ? (
+                            <span className="text-[11px] text-emerald-700">
+                              Đã chọn: [{selected.department}] {selected.title} · Mã {selected.code}
+                            </span>
+                          ) : null;
+                        })()}
+                      <span className="text-[11px] text-outline">
+                        Danh mục TX độc lập với 48 mẫu cũ và không tự gắn sản phẩm QĐ1277 — có thể gắn sản phẩm ở Cột B nếu cần.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5">
+                      Chưa có Danh mục TX đang áp dụng — tiếp tục dùng danh mục bộ phận hoặc 48 mẫu cũ bên dưới.
+                    </div>
+                  )}
+
+                  {!legacyTemplatesSelectable && !modalTemplateId && (
+                    <div className="text-[11px] text-status-warning flex items-start gap-1">
+                      <span className="material-symbols-outlined text-[14px]">info</span>
+                      <span>
+                        48 mẫu cũ đã ngừng cho chọn khi tạo đầu việc mới. Đầu việc lịch sử vẫn giữ nguyên liên kết và
+                        hiển thị đầy đủ.
+                      </span>
+                    </div>
+                  )}
 
                   {/* YC-25 — đầu việc riêng của bộ phận (tách biệt 48 mẫu và danh mục sản phẩm) */}
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-semibold text-primary flex items-center justify-between gap-2">
                       <span>
-                        ① Đầu việc riêng của bộ phận
+                        ② Đầu việc riêng của bộ phận
                         {deptCatalogUnits.length === 1 ? ` — ${deptCatalogUnits[0].name}` : ""}
                       </span>
                       {deptCatalogCanManage && (
@@ -1806,11 +1942,11 @@ export default function PlansPage() {
                   </div>
 
                   {/* Hai cột song song: A — thường xuyên; B — sản phẩm theo quyết định (xếp dọc trên mobile) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  <div className={`grid grid-cols-1 ${!legacyTemplatesSelectable && !modalTemplateId ? "" : "lg:grid-cols-2"} gap-3`}>
                     {/* Cột A — công việc thường xuyên (48 mẫu) */}
                     <div
                       data-testid="picker-col-routine"
-                      className="rounded-lg border border-border-default bg-surface-container-lowest flex flex-col min-w-0"
+                      className={`${!legacyTemplatesSelectable && !modalTemplateId ? "hidden" : "flex"} rounded-lg border border-border-default bg-surface-container-lowest flex-col min-w-0`}
                     >
                       <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-primary uppercase tracking-wide">
@@ -2073,6 +2209,48 @@ export default function PlansPage() {
                       <option value="Thấp">Thấp</option>
                     </select>
                   </div>
+                </div>
+
+                {/* YC-32: Hạn xử lý và ngày hoàn thành thực tế — hai mốc tách biệt */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-md text-label-md text-primary font-semibold">
+                      Hạn xử lý
+                    </label>
+                    <input
+                      data-testid="modal-due-date"
+                      type="date"
+                      value={modalDueDate}
+                      onChange={(e) => setModalDueDate(e.target.value)}
+                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    />
+                    <span className="text-[10px] text-outline">
+                      Mốc cam kết xử lý — độc lập với ngày hoàn thành thực tế.
+                    </span>
+                  </div>
+
+                  {editingItem ? (
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-md text-label-md text-primary font-semibold">
+                        Ngày hoàn thành thực tế
+                      </label>
+                      <input
+                        data-testid="modal-completed-date"
+                        type="date"
+                        value={modalCompletedDate}
+                        onChange={(e) => setModalCompletedDate(e.target.value)}
+                        className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      />
+                      <span className="text-[10px] text-outline">
+                        Để trống nếu chưa hoàn thành; nhập ngày sẽ chuyển trạng thái sang “Đã hoàn thành”.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5">
+                      Ngày hoàn thành thực tế được ghi nhận khi thực hiện tại mục “Việc của tôi”, tách biệt với hạn
+                      xử lý.
+                    </div>
+                  )}
                 </div>
 
                 {/* 5. Đơn vị phối hợp (Cột E) & Tiến độ / Trạng thái (Cột H) */}

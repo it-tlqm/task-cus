@@ -21,7 +21,15 @@ interface MonthlyItem {
   taskId: string | null;
   productItem: { id: string; code: string; sourceStt: string | null; taskName: string; outputProduct: string | null; convertFactor: number | null } | null;
   // YC-23: đầu việc thực tế trong kế hoạch cá nhân được liên kết (chống ghi trùng)
-  workItem: { id: string; title: string } | null;
+  workItem: {
+    id: string;
+    title: string;
+    dueDate?: string | null;
+    completedDate?: string | null;
+    catalogEntryId?: string | null;
+    catalogEntry?: { id: string; code: string; title: string; department: string } | null;
+    _count?: { evidences: number };
+  } | null;
   person: { id: string; fullName: string };
 }
 
@@ -77,7 +85,15 @@ export default function MonthlyResultsPage() {
   const [pSearching, setPSearching] = useState(false);
   // YC-23: liên kết đầu việc thực tế trong kế hoạch cá nhân (chặn ghi trùng theo đầu việc + sản phẩm)
   const [fWorkItemId, setFWorkItemId] = useState("");
-  const [planWorkItems, setPlanWorkItems] = useState<Array<{ id: string; title: string; productItemId?: string | null; product?: { id: string; code: string; taskName: string; convertFactor: number | null } | null }>>([]);
+  const [planWorkItems, setPlanWorkItems] = useState<Array<{
+    id: string;
+    title: string;
+    dueDate?: string | null;
+    completedDate?: string | null;
+    productItemId?: string | null;
+    catalogEntry?: { id: string; code: string; department: string } | null;
+    product?: { id: string; code: string; taskName: string; convertFactor: number | null } | null;
+  }>>([]);
   const [workItemsLoading, setWorkItemsLoading] = useState(false);
 
   const fetchData = useCallback(async (y: number, m: number, p: string) => {
@@ -363,10 +379,20 @@ export default function MonthlyResultsPage() {
                   <div className="font-semibold text-slate-900">{it.title}</div>
                   {it.outputText && <div className="text-slate-600 text-xs">{it.outputText}</div>}
                   {it.workItem && (
-                    <div className="mt-1">
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
                       <span className="px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 text-[11px] font-semibold">
                         Đầu việc: {it.workItem.title}
                       </span>
+                      {it.workItem.catalogEntry && (
+                        <span className="px-1.5 py-0.5 rounded bg-teal-100 text-teal-800 font-mono text-[10px]">
+                          {it.workItem.catalogEntry.code}
+                        </span>
+                      )}
+                      {typeof it.workItem._count?.evidences === "number" && (
+                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">
+                          {it.workItem._count.evidences} minh chứng
+                        </span>
+                      )}
                     </div>
                   )}
                   <div className="flex gap-1 mt-1">
@@ -429,7 +455,10 @@ export default function MonthlyResultsPage() {
                       if (v) {
                         const wi = planWorkItems.find((x) => x.id === v);
                         if (wi) {
-                          if (!fTitle.trim()) setFTitle(wi.title);
+                          // Đầu việc là nguồn chính: tên, hạn và ngày hoàn thành thực tế đi theo đầu việc
+                          setFTitle(wi.title);
+                          if (wi.dueDate) setFDue(wi.dueDate.slice(0, 16));
+                          if (wi.completedDate) setFDoneDate(wi.completedDate.slice(0, 10));
                           // Kế thừa sản phẩm đã gắn ở kế hoạch nếu chưa chọn sản phẩm
                           if (!fProductId && wi.product) {
                             setFProductId(wi.product.id);
@@ -449,10 +478,17 @@ export default function MonthlyResultsPage() {
                     {planWorkItems.map((wi) => (
                       <option key={wi.id} value={wi.id}>
                         {wi.title}
+                        {wi.catalogEntry ? ` · TX ${wi.catalogEntry.code}` : ""}
                         {wi.product ? ` · SP ${wi.product.code}` : ""}
                       </option>
                     ))}
                   </select>
+                  {fWorkItemId && (
+                    <p className="text-[11px] text-teal-700 bg-teal-50 border border-teal-200 rounded px-2 py-1.5">
+                      Đã liên kết đầu việc — mỗi đầu việc chỉ có một kết quả tháng. Hạn xử lý và ngày hoàn thành được
+                      kế thừa từ đầu việc, có thể sửa trực tiếp bên dưới.
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-slate-700">Mã sản phẩm QĐ1277 (để trống = chờ đối chiếu)</label>

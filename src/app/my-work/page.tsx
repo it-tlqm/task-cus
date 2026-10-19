@@ -6,6 +6,7 @@ import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
+import MyWorkItemsSection from "./MyWorkItemsSection";
 
 interface TaskUpdateItem {
   id: string;
@@ -180,6 +181,7 @@ export default function MyWorkPage() {
   const [newTaskSource, setNewTaskSource] = useState("Tự khởi tạo phát sinh");
 
   const [currentUser, setCurrentUser] = useState<{
+    personId?: string;
     fullName: string;
     personCode?: string;
     positionTitle?: string;
@@ -260,6 +262,7 @@ export default function MyWorkPage() {
       .then((data) => {
         if (data?.user) {
           setCurrentUser({
+            personId: data.user.personId,
             fullName: data.user.fullName || "Công chức",
             personCode: data.user.personCode || data.user.username?.toUpperCase() || "—",
             positionTitle: data.user.positionTitle || "Cán bộ",
@@ -830,6 +833,9 @@ export default function MyWorkPage() {
           </div>
         </section>
 
+        {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng */}
+        <MyWorkItemsSection personId={currentUser.personId} />
+
         {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP */}
         <section data-tour="task-list" className="bg-surface-container-lowest rounded-xl shadow-sm flex flex-col overflow-hidden border border-border-default/50">
           {/* TAB ĐIỀU HƯỚNG TRẠNG THÁI & TÌM KIẾM NHANH */}
@@ -1342,6 +1348,11 @@ export default function MyWorkPage() {
               </span>
             </div>
           </div>
+        </div>
+
+        {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng (bản mobile) */}
+        <div className="px-margin py-2">
+          <MyWorkItemsSection personId={currentUser.personId} />
         </div>
 
         {/* TAB TRẠNG THÁI CÔNG VIỆC (HORIZONTAL SCROLL CHIPS) */}
