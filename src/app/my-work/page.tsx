@@ -348,7 +348,8 @@ export default function MyWorkPage() {
 
   const openDrawerForTask = (task: TaskItem) => {
     setSelectedTask(task);
-    setDrawerProgress(task.progressPercent || (task.status === "COMPLETED" ? 100 : 50));
+    // Tiến độ thật: 0/chưa ghi nhận mở đúng 0% (khớp cột Tiến độ); chỉ nhiệm vụ đã hoàn thành mới mặc định 100%
+    setDrawerProgress(task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0));
     setDrawerStatus(task.status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS");
     setDrawerNotes(task.actualResultText || "");
     setActionSuccess(null);
