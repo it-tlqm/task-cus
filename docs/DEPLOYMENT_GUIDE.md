@@ -5,6 +5,8 @@
 > **Kiến trúc:** Next.js 15 Standalone + PostgreSQL 16 Alpine + Nginx Reverse Proxy (Dockerized)  
 > **Cập nhật:** 10/10/2026
 
+> **⚠️ Hiện trạng (19/10/2026):** Bản đang chạy để nghiệm thu hiện đặt trên **Vercel** (region `hnd1`, không dùng Docker/Nginx). Các thay đổi CSDL gần đây được áp bằng script `scripts/apply-*-ddl.ts`, KHÔNG chạy `prisma migrate deploy`. Phần dưới đây mô tả **phương án triển khai on-prem** (Docker + Nginx + PostgreSQL tại máy chủ nội bộ Chi cục) — sẽ áp dụng khi chuyển lên hạ tầng mạng nội bộ.
+
 ---
 
 ## 1. YÊU CẦU PHẦN CỨNG & HỆ ĐIỀU HÀNH TỐI THIỂU
