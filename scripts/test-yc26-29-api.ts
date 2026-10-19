@@ -219,6 +219,13 @@ async function main() {
   const bulkIds = bulkMetrics.map((m) => m.id);
   const auditBefore = await prisma.auditEvent.count({ where: { action: "METRIC_ADMIN_ASSIGNMENT_BULK_SAVED" } });
 
+  // YC-28 (bổ sung): ghi nhận phân công CÓ SẴN (ngoài phạm vi sắp thao tác) để đối chiếu sau khi lưu hàng loạt
+  const outsideBefore = await prisma.metricEntryAssignment.findMany({
+    where: { personId: cb014.id, NOT: { metricId: { in: bulkIds } } },
+    orderBy: { id: "asc" },
+    select: { id: true, metricId: true, groupId: true, canEnter: true, canConfirm: true, active: true },
+  });
+
   const bulk1 = await api("POST", "/api/metrics/admin", leader, {
     entity: "assignment",
     action: "create_bulk",
@@ -256,6 +263,18 @@ async function main() {
     "2.4 Đổi quyền (xác nhận) → cập nhật 3, không thêm bản ghi",
     bulk3.json?.updated === 3 && bulkRows3 === 3 && bulkConfirmFlags === 3,
     `updated=${bulk3.json?.updated} rows=${bulkRows3} confirmTrue=${bulkConfirmFlags}`
+  );
+
+  // YC-28 (bổ sung): phân công ngoài phạm vi thao tác phải nguyên vẹn sau các lần lưu hàng loạt
+  const outsideAfter = await prisma.metricEntryAssignment.findMany({
+    where: { personId: cb014.id, NOT: { metricId: { in: bulkIds } } },
+    orderBy: { id: "asc" },
+    select: { id: true, metricId: true, groupId: true, canEnter: true, canConfirm: true, active: true },
+  });
+  check(
+    "2.4b Không xóa/không đổi phân công ngoài phạm vi đang thao tác",
+    outsideBefore.length > 0 && JSON.stringify(outsideBefore) === JSON.stringify(outsideAfter),
+    `ngoài phạm vi: trước=${outsideBefore.length}, sau=${outsideAfter.length}`
   );
 
   const emptyBulk = await api("POST", "/api/metrics/admin", leader, {
@@ -366,6 +385,26 @@ async function main() {
     "3.8 Nhiều chỉ tiêu tháng mơ hồ → đánh dấu ambiguous, không tự chọn bừa",
     thuRow2.monthPlan.ambiguous === true && thuRow2.monthPlan.targetValue === null && thuRow2.monthPlan.percent === null
   );
+
+  // YC-26 (bổ sung): cờ chất lượng dữ liệu — nhận diện DEMO trộn trong nguồn số liệu
+  const demoCount = await prisma.metricPlanTarget.count({ where: { label: { startsWith: "[DEMO" } } });
+  const dq = comp2.json?.dataQuality;
+  check(
+    "3.9 Chỉ tiêu [DEMO] vẫn tồn tại nhưng KHÔNG được dùng làm nguồn đối chiếu (đã chứng minh ở 3.2)",
+    demoCount > 0,
+    `${demoCount} chỉ tiêu DEMO trong DB`
+  );
+  check(
+    "3.10 Summary trả cờ dataQuality (mốc lũy kế / bản ghi / chỉ tiêu DEMO)",
+    !!dq && dq.demoBaselines > 0 && dq.demoEntries > 0 && dq.demoTargets > 0 && dq.demoPresent === true,
+    JSON.stringify(dq)
+  );
+  check(
+    "3.11 Cờ phân biệt bản ghi thật (realEntries) và trạng thái trộn (mixedWithReal)",
+    !!dq && Number.isInteger(dq.realEntries) && dq.realEntries >= 0 && typeof dq.mixedWithReal === "boolean",
+    `realEntries=${dq?.realEntries} mixedWithReal=${dq?.mixedWithReal}`
+  );
+  evidence["3_dataQuality"] = dq;
 
   // ============================================================
   // PHẦN 4 — YC-29: cột Trong ngày + trạng thái tháng + đối chiếu DB

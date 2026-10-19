@@ -6,6 +6,7 @@ import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
 import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 
 type Mode = "WEEK" | "MONTH" | "QUARTER" | "YEAR";
 
@@ -54,6 +55,8 @@ interface SummaryData {
     year: { year: number; label: string };
   };
   groups: SummaryGroup[];
+  /** YC-26 — cờ chất lượng dữ liệu (DEMO lẫn số thật) */
+  dataQuality?: MetricDataQuality;
 }
 interface NarrativeSection {
   id: string;
@@ -307,6 +310,7 @@ export default function GiaoBanPage() {
                 Chưa có chỉ tiêu nào được bật. {showAdminMenu ? "Vào Cấu hình để thiết lập." : "Liên hệ lãnh đạo để thiết lập."}
               </div>
             )}
+            {!loading && data && <DataQualityBanner q={data.dataQuality} />}
             {!loading &&
               data?.groups.map((g) => (
                 <div key={g.id} className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
@@ -365,21 +369,40 @@ export default function GiaoBanPage() {
                                     <span className="text-on-surface-variant">—</span>
                                   ) : (
                                     <div className="flex items-center justify-center gap-1 flex-wrap">
-                                      {m.targets.map((t, i) => (
-                                        <span
-                                          key={i}
-                                          title={`${t.label}: ${fmtMetric(t.targetValue, m)}`}
-                                          className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${
-                                            t.percent === null
-                                              ? "border-border-default text-on-surface-variant"
-                                              : t.percent >= 100
-                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                : "border-amber-200 bg-amber-50 text-amber-700"
-                                          }`}
-                                        >
-                                          {t.label.replace(/^Chỉ tiêu\s*/i, "").replace(/^KH\s*/i, "KH ")} {t.percent === null ? "—" : `${t.percent}%`}
-                                        </span>
-                                      ))}
+                                      {m.targets.map((t, i) => {
+                                        // YC-26: chỉ tiêu gắn nhãn [DEMO... là chỉ tiêu MÔ PHỎNG —
+                                        // không hiển thị như chỉ tiêu chính thức (không khoe tỷ lệ đạt).
+                                        if (/^\s*\[DEMO/i.test(t.label)) {
+                                          const cleanLabel = t.label.replace(/^\s*\[DEMO[^\]]*\]\s*/i, "");
+                                          return (
+                                            <span
+                                              key={i}
+                                              data-testid={`target-demo-${m.code}`}
+                                              title={`${t.label}: ${fmtMetric(t.targetValue, m)}${
+                                                t.percent === null ? "" : ` — tỷ lệ tạm tính ${t.percent}%`
+                                              } · Chỉ tiêu MÔ PHỎNG dùng thử (DEMO), chưa phải chỉ tiêu chính thức được duyệt`}
+                                              className="text-[11px] px-1.5 py-0.5 rounded border border-dashed border-slate-300 bg-slate-50 text-slate-500 font-semibold"
+                                            >
+                                              Demo{cleanLabel ? ` · ${cleanLabel}` : ""}
+                                            </span>
+                                          );
+                                        }
+                                        return (
+                                          <span
+                                            key={i}
+                                            title={`${t.label}: ${fmtMetric(t.targetValue, m)}`}
+                                            className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${
+                                              t.percent === null
+                                                ? "border-border-default text-on-surface-variant"
+                                                : t.percent >= 100
+                                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                  : "border-amber-200 bg-amber-50 text-amber-700"
+                                            }`}
+                                          >
+                                            {t.label.replace(/^Chỉ tiêu\s*/i, "").replace(/^KH\s*/i, "KH ")} {t.percent === null ? "—" : `${t.percent}%`}
+                                          </span>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </td>
@@ -514,6 +537,13 @@ function ComparisonSection({ comparison }: { comparison: any }) {
         <span className="text-body-xs text-on-surface-variant">
           ({comparison.anchors?.monthLabel || ""} — tháng trước: {comparison.anchors?.prevMonthLabel || ""}, cùng kỳ:{" "}
           {comparison.anchors?.lastYearLabel || ""})
+        </span>
+        <span
+          data-testid="comparison-rule-pending"
+          title="Quy tắc nguồn đối chiếu (BTC/UBND/KH tháng/tháng trước/cùng kỳ) đang chờ Hải quan xác nhận — chỉ hiển thị tỷ lệ khi có đủ nguồn."
+          className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold whitespace-nowrap"
+        >
+          Quy tắc đối chiếu: CHƯA XÁC NHẬN
         </span>
       </div>
       <div className="p-4 flex flex-col gap-5">

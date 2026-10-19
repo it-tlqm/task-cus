@@ -317,6 +317,24 @@ async function main() {
     }
     check("S3a. Chưa có nguồn đối chiếu → hiển thị 'Chưa có dữ liệu đối chiếu'", compText.includes("Chưa có dữ liệu đối chiếu"));
     check("S3b. Không hiển thị nhãn dữ liệu [DEMO] như số liệu chính thức", !compText.toUpperCase().includes("[DEMO"));
+    // YC-26 (bổ sung): cảnh báo DEMO + nhãn quy tắc chờ xác nhận + chip chỉ tiêu DEMO
+    check("S3c. Cảnh báo dữ liệu DEMO hiển thị tại khu vực số liệu", await exists(p2, '[data-testid="data-quality-warning"]'));
+    const dqText = norm(await textOf(p2, '[data-testid="data-quality-warning"]'));
+    check(
+      "S3d. Cảnh báo nêu rõ 'không sử dụng làm số liệu báo cáo chính thức'",
+      dqText.includes("không sử dụng làm số liệu báo cáo chính thức"),
+      dqText.slice(0, 120)
+    );
+    check(
+      "S3e. Nhãn quy tắc đối chiếu 'CHƯA XÁC NHẬN' hiển thị ở bảng so sánh",
+      norm(await textOf(p2, '[data-testid="comparison-rule-pending"]')).includes("CHƯA XÁC NHẬN")
+    );
+    const demoChips = await p2.$$eval('[data-testid^="target-demo-"]', (els) => els.map((e) => (e.textContent || "").trim()));
+    check(
+      "S3f. Chỉ tiêu giao DEMO không hiển thị như chỉ tiêu chính thức (nhãn Demo, không khoe %)",
+      demoChips.length > 0 && demoChips.every((t) => t.startsWith("Demo") && !t.includes("%")),
+      `${demoChips.length} chip, ví dụ: ${demoChips.slice(0, 2).join(" · ")}`
+    );
     await shot(p2, "S3_yc26_bang_so_sanh.png");
 
     // ============================================================
@@ -336,6 +354,7 @@ async function main() {
       check(`${tag} Trong ngày chưa nhập → hiển thị "—" (khác 0)`, cells[1] === "—", `cell="${cells[1]}"`);
       check(`${tag} Lũy kế tháng khớp số API`, norm(cells[3]) === fmtCell(thuDash.cols.month), `ui="${cells[3]}" api="${fmtCell(thuDash.cols.month)}"`);
       check(`${tag} Có ít nhất 1 dòng nhóm chỉ tiêu`, (await page.$$eval('[data-testid="dashboard-tax-table"] tbody tr', (r) => r.length)) > 3);
+      check(`${tag} Cảnh báo dữ liệu DEMO hiển thị tại khu vực số liệu`, await exists(page, '[data-testid="data-quality-warning"]'));
     };
     const p3 = await newPage(browser, leader, 1440, 900);
     await p3.goto(`${BASE_URL}/dashboard`, { waitUntil: "networkidle0", timeout: 90000 });
@@ -364,6 +383,7 @@ async function main() {
       return wrap ? { scrollW: wrap.scrollWidth, clientW: wrap.clientWidth, overflowX: getComputedStyle(wrap).overflowX } : null;
     });
     check("S5b. Bảng chỉ cuộn trong khung (overflow-x)", !!innerScroll && innerScroll.overflowX === "auto", JSON.stringify(innerScroll));
+    check("S5b2. Cảnh báo DEMO vẫn hiển thị trên mobile", await exists(pm, '[data-testid="data-quality-warning"]'));
     await shot(pm, "S5_yc29_dashboard_mobile.png");
 
     await pm.goto(`${BASE_URL}/giao-ban`, { waitUntil: "networkidle0", timeout: 90000 });

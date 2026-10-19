@@ -255,6 +255,26 @@ export interface MetricSummaryGroup {
   metrics: MetricSummaryRow[];
 }
 
+/**
+ * YC-26 — cờ chất lượng dữ liệu: nhận diện dữ liệu DEMO (mô phỏng) đang trộn
+ * trong cùng kỳ với bản ghi do cán bộ nhập thật. Dùng để hiện cảnh báo rõ ràng
+ * tại khu vực số liệu, tránh hiển thị số liệu dùng thử như số liệu chính thức.
+ */
+export interface MetricDataQuality {
+  /** Số mốc lũy kế đã xác nhận có ghi chú [DEMO... */
+  demoBaselines: number;
+  /** Số bản ghi nhập trong kỳ do tài khoản DEMO nhập (mã người bắt đầu bằng "DEMO") */
+  demoEntries: number;
+  /** Số bản ghi nhập trong kỳ do người thật nhập */
+  realEntries: number;
+  /** Số chỉ tiêu giao gắn nhãn [DEMO... */
+  demoTargets: number;
+  /** Có thành phần DEMO trong nguồn số liệu đang hiển thị */
+  demoPresent: boolean;
+  /** Có trộn DEMO với bản ghi người thật trong cùng kỳ */
+  mixedWithReal: boolean;
+}
+
 export interface MetricSummaryResult {
   range: {
     week: { year: number; weekNumber: number; label: string; startDate: string; endDate: string };
@@ -263,6 +283,8 @@ export interface MetricSummaryResult {
     year: { year: number; label: string };
   };
   groups: MetricSummaryGroup[];
+  /** YC-26 — cờ chất lượng dữ liệu (DEMO lẫn số thật). */
+  dataQuality: MetricDataQuality;
 }
 
 interface RangePair {
@@ -357,12 +379,27 @@ export async function computeMetricSummary(
     baselinesByMetric.set(b.metricId, arr);
   }
 
-  // Tên người nhập cho "latest"
+  // Tên người nhập cho "latest" + mã người (YC-26: nhận diện DEMO)
   const personIds = Array.from(new Set(entries.map((e) => e.enteredById)));
   const persons = personIds.length
-    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true } })
+    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true, code: true } })
     : [];
   const personName = new Map(persons.map((p) => [p.id, p.fullName]));
+  const personCode = new Map(persons.map((p) => [p.id, p.code]));
+
+  // --- YC-26: cờ chất lượng dữ liệu — phát hiện DEMO lẫn trong nguồn số liệu ---
+  const demoBaselines = baselines.filter((b) => /\[DEMO/i.test(b.sourceNote || "")).length;
+  const demoEntries = entries.filter((e) => (personCode.get(e.enteredById) || "").toUpperCase().startsWith("DEMO")).length;
+  const realEntries = entries.length - demoEntries;
+  const demoTargets = targets.filter((t) => /^\s*\[DEMO/i.test(t.label)).length;
+  const dataQuality: MetricDataQuality = {
+    demoBaselines,
+    demoEntries,
+    realEntries,
+    demoTargets,
+    demoPresent: demoBaselines + demoEntries + demoTargets > 0,
+    mixedWithReal: (demoBaselines > 0 || demoEntries > 0) && realEntries > 0,
+  };
 
   const today = todayVnDateOnly();
 
@@ -638,6 +675,7 @@ export async function computeMetricSummary(
       year: { year, label: `Năm ${year}` },
     },
     groups: resultGroups,
+    dataQuality,
   };
 }
 

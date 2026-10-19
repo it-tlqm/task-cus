@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { fmtMetric, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 
 interface Cols {
   day: number | null;
@@ -57,6 +58,7 @@ const COLS = ["day", "week", "month", "year"] as const;
 export function TaxSummarySection() {
   const [groups, setGroups] = useState<DashGroup[] | null>(null);
   const [range, setRange] = useState<any>(null);
+  const [quality, setQuality] = useState<MetricDataQuality | null>(null);
 
   useEffect(() => {
     fetch("/api/metrics/summary?scope=dashboard")
@@ -65,6 +67,7 @@ export function TaxSummarySection() {
         if (json?.success) {
           setGroups(json.groups || []);
           setRange(json.range);
+          setQuality(json.dataQuality || null);
         }
       })
       .catch(() => setGroups([]));
@@ -104,6 +107,8 @@ export function TaxSummarySection() {
           <span className="material-symbols-outlined text-[16px]">chevron_right</span>
         </Link>
       </div>
+
+      <DataQualityBanner q={quality} className="mb-2" />
 
       <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
         <div className="overflow-x-auto">

@@ -134,7 +134,10 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
         }`}
       >
         {/* Banner Vận hành Chính thức */}
-        <div className="h-6 bg-primary/10 border-b border-border-default/40 px-space-md flex items-center justify-between">
+        <div
+          title="Nhãn xác nhận HỆ THỐNG đang vận hành chính thức — không phải xác nhận cho số liệu hiển thị. Trạng thái số liệu xem tại từng khu vực số liệu."
+          className="h-6 bg-primary/10 border-b border-border-default/40 px-space-md flex items-center justify-between"
+        >
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-[14px]">
               verified
@@ -287,7 +290,10 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
                 <span className="font-headline-sm text-headline-sm text-primary-container tracking-tight font-bold">
                   TALUNG-CUS-WORK
                 </span>
-                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-label-sm text-[10px] leading-none uppercase tracking-wide font-bold">
+                <span
+                  title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
+                  className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-label-sm text-[10px] leading-none uppercase tracking-wide font-bold"
+                >
                   CHÍNH THỨC
                 </span>
               </div>

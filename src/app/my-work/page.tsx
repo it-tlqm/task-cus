@@ -1209,7 +1209,10 @@ export default function MyWorkPage() {
               KHÔNG GIAN LÀM VIỆC CÁ NHÂN — HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
             </span>
           </div>
-          <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-label-sm text-[10px] shrink-0 font-bold">
+          <span
+            title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
+            className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-label-sm text-[10px] shrink-0 font-bold"
+          >
             CHÍNH THỨC
           </span>
         </div>
