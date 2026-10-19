@@ -55,17 +55,6 @@ interface AttentionTask {
   hasPendingDeadlineRequest?: boolean;
 }
 
-interface HotAlert {
-  id: string;
-  code: string;
-  title: string;
-  type: string;
-  severity: "DANGER" | "WARNING" | "INFO";
-  ownerName: string;
-  unitName: string;
-  message: string;
-}
-
 interface ReportingPeriodItem {
   id: string;
   title: string;
@@ -101,7 +90,6 @@ export default function DashboardPage() {
 
   const [departments, setDepartments] = useState<DepartmentBreakdown[]>([]);
   const [attentionTasks, setAttentionTasks] = useState<AttentionTask[]>([]);
-  const [hotAlerts, setHotAlerts] = useState<HotAlert[]>([]);
   const [availablePeriods, setAvailablePeriods] = useState<ReportingPeriodItem[]>([]);
   const [selectedPeriodInfo, setSelectedPeriodInfo] = useState<SelectedPeriodInfo | null>(null);
   const [period, setPeriod] = useState<string>("week");
@@ -187,10 +175,6 @@ export default function DashboardPage() {
 
       if (Array.isArray(data.attentionTasks)) {
         setAttentionTasks(data.attentionTasks);
-      }
-
-      if (Array.isArray(data.hotAlerts)) {
-        setHotAlerts(data.hotAlerts);
       }
     } catch (err: any) {
       console.error("Dashboard fetch error:", err);
@@ -859,7 +843,7 @@ export default function DashboardPage() {
                 <span className="material-symbols-outlined text-[18px] text-on-primary-fixed">corporate_fare</span>
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="font-label-sm text-label-sm text-on-surface-variant leading-none text-xs">
+                <span className="font-label-sm text-label-sm text-on-surface-variant leading-none text-xs whitespace-nowrap">
                   Phạm vi giám sát
                 </span>
                 <span className="font-body-semibold text-body-semibold text-primary truncate text-sm">
@@ -872,7 +856,7 @@ export default function DashboardPage() {
             <select
               value={unitFilter}
               onChange={(e) => setUnitFilter(e.target.value)}
-              className="bg-surface-container-high px-2 py-1 rounded text-primary text-xs font-semibold focus:outline-none"
+              className="bg-surface-container-high px-2 py-1 rounded text-primary text-xs font-semibold focus:outline-none max-w-[46%] truncate shrink-0"
             >
               <option value="ALL">Toàn đơn vị</option>
               {departments.map((d) => (
@@ -948,14 +932,14 @@ export default function DashboardPage() {
         {/* Số liệu giao ban (YC-17/YG-19) — tự ẩn khi chưa bật chỉ tiêu */}
         <TaxSummarySection />
 
-        {/* 4 KPI Cards (2x2 Grid) */}
+        {/* 6 KPI Cards (2x3 Grid) — đồng bộ đủ bộ chỉ số với bản desktop */}
         <section className="px-margin pt-space-xs">
           <div className="grid grid-cols-2 gap-space-sm">
             {/* KPI 1 */}
             <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between h-[116px] border border-border-default/40">
               <div className="flex items-start justify-between">
                 <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight text-xs">
-                  Tổng việc giao
+                  Tổng việc giao kỳ
                 </span>
                 <div className="w-6 h-6 rounded bg-primary-fixed flex items-center justify-center">
                   <span className="material-symbols-outlined text-[15px] text-primary">assignment</span>
@@ -972,11 +956,35 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* KPI 2 */}
+            {/* KPI 2: Đang triển khai */}
             <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between h-[116px] border border-border-default/40">
               <div className="flex items-start justify-between">
                 <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight text-xs">
-                  Đã xong &amp; xác nhận
+                  Đang triển khai
+                </span>
+                <div className="w-6 h-6 rounded bg-status-unassigned-bg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[15px] text-status-unassigned">timelapse</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-headline-xl text-headline-xl text-primary leading-none font-bold">
+                    {kpis.inProgress}
+                  </span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant text-xs">việc</span>
+                </div>
+                <div className="flex items-center gap-1 mt-1.5 text-status-unassigned text-xs font-semibold">
+                  <span className="material-symbols-outlined text-[13px]">trending_up</span>
+                  <span>{kpis.averageProgress !== null ? `Tiến độ TB ${kpis.averageProgress}%` : "Chưa có tiến độ"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 3: Đã xong & Nghiệm thu */}
+            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between h-[116px] border border-border-default/40">
+              <div className="flex items-start justify-between">
+                <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight text-xs">
+                  Đã xong &amp; Nghiệm thu
                 </span>
                 <div className="w-6 h-6 rounded bg-status-success-bg flex items-center justify-center">
                   <span className="material-symbols-outlined text-[15px] text-status-success">check_circle</span>
@@ -996,35 +1004,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* KPI 3 */}
-            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between h-[116px] border border-border-default/40">
-              <div className="flex items-start justify-between">
-                <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight text-xs">
-                  Chờ lãnh đạo duyệt
-                </span>
-                <div className="w-6 h-6 rounded bg-status-warning-bg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px] text-status-warning">pending_actions</span>
-                </div>
-              </div>
-              <div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-headline-xl text-headline-xl text-status-warning leading-none font-bold">
-                    {String(kpis.waitingReview).padStart(2, "0")}
-                  </span>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant text-xs">việc</span>
-                </div>
-                <div className="flex items-center gap-1 mt-1.5 text-status-warning text-xs font-semibold">
-                  <span className="material-symbols-outlined text-[13px]">alarm</span>
-                  <span>{kpis.urgentReviewCount > 0 ? `${kpis.urgentReviewCount} việc gấp` : "Chờ nghiệm thu"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* KPI 4 */}
+            {/* KPI 4: Quá hạn / Xử lý khẩn */}
             <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between h-[116px] border border-status-danger/30">
               <div className="flex items-start justify-between">
                 <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight text-xs">
-                  Quá hạn / Nghẽn
+                  Quá hạn / Xử lý khẩn
                 </span>
                 <div className="w-6 h-6 rounded bg-status-danger-bg flex items-center justify-center">
                   <span className="material-symbols-outlined text-[15px] text-status-danger">error</span>
@@ -1033,13 +1017,61 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-baseline gap-1">
                   <span className="font-headline-xl text-headline-xl text-status-danger leading-none font-bold">
-                    {String(kpis.overdue).padStart(2, "0")}
+                    {kpis.overdue}
                   </span>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant text-xs">hồ sơ</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant text-xs">việc</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 text-status-danger text-xs font-semibold">
                   <span className="material-symbols-outlined text-[13px]">report</span>
                   <span>{kpis.overdue > 0 ? "Cần giải trình" : "Đúng tiến độ"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 5: Hồ sơ vướng mắc */}
+            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between h-[116px] border border-border-default/40">
+              <div className="flex items-start justify-between">
+                <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight text-xs">
+                  Hồ sơ vướng mắc
+                </span>
+                <div className="w-6 h-6 rounded bg-status-warning-bg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[15px] text-status-warning">report_problem</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-headline-xl text-headline-xl text-status-warning leading-none font-bold">
+                    {kpis.hasIssue}
+                  </span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant text-xs">hồ sơ</span>
+                </div>
+                <div className="flex items-center gap-1 mt-1.5 text-on-surface-variant text-xs">
+                  <span className="material-symbols-outlined text-[13px] text-status-warning">info</span>
+                  <span>{kpis.hasIssue > 0 ? "Cần hỗ trợ" : "Thông suốt"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 6: Chờ Lãnh đạo duyệt */}
+            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between h-[116px] border border-border-default/40">
+              <div className="flex items-start justify-between">
+                <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight text-xs">
+                  Chờ Lãnh đạo duyệt
+                </span>
+                <div className="w-6 h-6 rounded bg-status-warning-bg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[15px] text-status-warning">pending_actions</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-headline-xl text-headline-xl text-status-warning leading-none font-bold">
+                    {kpis.waitingReview}
+                  </span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant text-xs">việc</span>
+                </div>
+                <div className="flex items-center gap-1 mt-1.5 text-status-warning text-xs font-semibold">
+                  <span className="material-symbols-outlined text-[13px]">alarm</span>
+                  <span>{kpis.urgentReviewCount > 0 ? `${kpis.urgentReviewCount} việc gấp` : "Chờ nghiệm thu"}</span>
                 </div>
               </div>
             </div>
@@ -1084,72 +1116,95 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* High-Priority Alerts & Urgent Directive (Real Database Alerts) */}
+        {/* Nhiệm vụ cần lãnh đạo chỉ đạo — dùng CHUNG nguồn attentionTasks với bản desktop
+            (trước đây mobile lọc bằng hotAlerts với tiêu chí chặt hơn nên báo 0 việc,
+            trong khi desktop vẫn có việc cần chỉ đạo → lệch số liệu giữa 2 bản). */}
         <section className="px-margin pt-space-lg">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-status-danger text-[20px]">notifications_active</span>
-              <h2 className="font-headline-sm text-headline-sm text-primary">Cảnh Báo Nóng &amp; Chỉ Đạo</h2>
+          <div className="flex items-center justify-between mb-2.5 gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="material-symbols-outlined text-status-danger text-[20px] shrink-0">warning</span>
+              <h2 className="font-headline-sm text-headline-sm text-primary leading-tight">Nhiệm Vụ Cần Lãnh Đạo Chỉ Đạo Khẩn</h2>
             </div>
-            <span className="bg-status-danger-bg text-status-danger font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+            <span className="bg-status-danger-bg text-status-danger font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-status-danger" />
-              {hotAlerts.length} Nhiệm vụ
+              {attentionTasks.length} việc
             </span>
           </div>
 
           <div className="flex flex-col gap-2.5">
-            {hotAlerts.length === 0 ? (
+            {attentionTasks.length === 0 ? (
               <div className="bg-surface-container-lowest rounded-lg p-4 text-center text-xs text-on-surface-variant border border-border-default/40">
                 <span className="material-symbols-outlined text-status-success text-[24px] block mb-1">check_circle</span>
-                Hiện không có cảnh báo nóng vi phạm hoặc quá hạn trong ca trực
+                Không có nhiệm vụ nào cần chỉ đạo khẩn trong phạm vi này
               </div>
             ) : (
-              hotAlerts.slice(0, 3).map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`bg-surface-container-lowest rounded-lg p-3 shadow-sm border-l-4 ${
-                    alert.severity === "DANGER" ? "border-status-danger" : "border-status-warning"
-                  } flex flex-col gap-2.5`}
-                >
-                  <div className="flex items-start justify-between gap-2">
+              attentionTasks.slice(0, 3).map((task) => {
+                const isDanger = task.isOverdue || task.hasIssue;
+                const typeLabel = task.isOverdue
+                  ? "Quá hạn xử lý"
+                  : task.hasIssue
+                    ? "Vướng mắc nghiệp vụ"
+                    : task.status === "WAITING_REVIEW"
+                      ? "Chờ lãnh đạo duyệt"
+                      : task.priority === "Khẩn"
+                        ? "Nhiệm vụ khẩn cấp"
+                        : "Ưu tiên cao";
+                const deadlineLabel = task.currentDeadline
+                  ? new Date(task.currentDeadline).toLocaleDateString("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })
+                  : "Chưa đặt hạn";
+                return (
+                  <div
+                    key={task.id}
+                    className={`bg-surface-container-lowest rounded-lg p-3 shadow-sm border-l-4 ${
+                      task.isOverdue ? "border-status-danger" : isDanger ? "border-status-warning" : "border-secondary"
+                    } flex flex-col gap-2.5`}
+                  >
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span
                           className={`font-label-sm text-[11px] px-1.5 py-0.5 rounded font-bold ${
-                            alert.severity === "DANGER"
+                            task.isOverdue
                               ? "bg-status-danger-bg text-status-danger"
-                              : "bg-status-warning-bg text-status-warning"
+                              : isDanger
+                                ? "bg-status-warning-bg text-status-warning"
+                                : "bg-secondary/15 text-secondary"
                           }`}
                         >
-                          {alert.type}
+                          {typeLabel}
                         </span>
                         <span className="font-label-sm text-[11px] text-on-surface-variant font-mono">
-                          {alert.code}
+                          {task.code}
                         </span>
                       </div>
-                      <p className="font-body-semibold text-body-semibold text-primary line-clamp-1">
-                        {alert.title}
+                      <p className="font-body-semibold text-body-semibold text-primary line-clamp-2">
+                        {task.title}
                       </p>
-                      <p className="font-body-md text-xs text-status-danger mt-0.5 flex items-center gap-1 font-medium">
+                      <p className="font-body-md text-xs text-on-surface-variant mt-0.5 flex items-center gap-1">
                         <span className="material-symbols-outlined text-[14px]">schedule</span>
-                        {alert.message}
+                        Hạn: {deadlineLabel}
+                        {task.hasIssue && task.issueNotes ? ` · ${task.issueNotes}` : ""}
                       </p>
                     </div>
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-surface-subtle">
+                      <span className="font-label-sm text-[11px] text-on-surface-variant truncate min-w-0">
+                        Chủ trì: {task.owner?.fullName || "Chưa phân công"}
+                        {task.unit ? ` (${task.unit.name})` : ""}
+                      </span>
+                      <Link
+                        href={`/tasks/${task.id}`}
+                        className="bg-status-danger text-surface-container-lowest font-label-sm text-xs px-3 py-1.5 rounded flex items-center gap-1 active:opacity-90 font-semibold shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">send</span>
+                        <span>Chỉ đạo</span>
+                      </Link>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-surface-subtle">
-                    <span className="font-label-sm text-[11px] text-on-surface-variant">
-                      Chủ trì: {alert.ownerName} ({alert.unitName})
-                    </span>
-                    <Link
-                      href={`/tasks/${alert.id}`}
-                      className="bg-status-danger text-surface-container-lowest font-label-sm text-xs px-3 py-1.5 rounded flex items-center gap-1 active:opacity-90 font-semibold"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">send</span>
-                      <span>Chỉ đạo xử lý</span>
-                    </Link>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>
@@ -1159,7 +1214,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-secondary text-[20px]">domain_verification</span>
-              <h2 className="font-headline-sm text-headline-sm text-primary">Tiến Độ Theo Các Bộ Phận</h2>
+              <h2 className="font-headline-sm text-headline-sm text-primary">Tiến Độ Theo Bộ Phận</h2>
             </div>
             <span className="font-label-sm text-label-sm text-on-surface-variant">
               Tổng: {kpis.totalTasks} việc

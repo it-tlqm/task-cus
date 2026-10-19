@@ -155,15 +155,18 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
         <div className="h-[72px] px-space-lg flex items-center justify-between gap-space-md">
           {/* Left: Location Breadcrumb & Search */}
           <div className="flex items-center gap-space-md flex-1 min-w-0">
-            <div className="hidden xl:flex items-center gap-2 font-label-md text-label-md text-on-surface-variant truncate shrink-0">
+            <div className="hidden min-[1600px]:flex items-center gap-2 font-label-md text-label-md text-on-surface-variant min-w-0 max-w-[260px] min-[1800px]:max-w-[340px]">
               <img
                 src="/images/logo-haiquan.png"
                 alt="Logo Hải quan Việt Nam"
                 className="w-9 h-9 rounded-full object-cover bg-white shrink-0"
               />
-              <span>Đơn vị: {UNIT_SHORT_NAME}</span>
-              <span className="text-outline-variant">/</span>
-              <span className="text-on-surface font-body-semibold">{getRoleBadgeLabel(currentUser.role)}</span>
+              <span
+                className="truncate min-w-0"
+                title={`Đơn vị: ${UNIT_SHORT_NAME}`}
+              >
+                Đơn vị: {UNIT_SHORT_NAME}
+              </span>
             </div>
 
             <form
@@ -173,7 +176,7 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
                   router.push(`/tasks?q=${encodeURIComponent(searchKeyword.trim())}`);
                 }
               }}
-              className="relative flex-1 max-w-md"
+              className="relative flex-1 min-w-0 max-w-md"
             >
               <span className="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">
                 search
@@ -188,10 +191,11 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
               />
             </form>
 
-            <div className="shrink-0">
+            <div className="shrink-0 w-[180px] 2xl:w-[240px]">
               <select
                 value={selectedUnit}
                 aria-label="Chọn đơn vị công tác"
+                title={UNIT_ALL_LABEL}
                 onChange={(e) => {
                   const val = e.target.value;
                   setSelectedUnit(val);
@@ -207,7 +211,7 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
                     }
                   }
                 }}
-                className="h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none focus:border-secondary transition-fast cursor-pointer"
+                className="w-full h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none focus:border-secondary transition-fast cursor-pointer truncate"
               >
                 <option value="all">{UNIT_ALL_LABEL}</option>
                 {orgUnits.map((u) => (
@@ -243,11 +247,14 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-xs shadow-sm">
                 <span className="material-symbols-outlined text-[18px]">person</span>
               </div>
-              <div className="flex flex-col text-left">
-                <span className="font-body-semibold text-body-semibold text-primary leading-tight">
+              <div className="hidden xl:flex flex-col text-left min-w-0">
+                <span
+                  className="font-body-semibold text-body-semibold text-primary leading-tight truncate max-w-[130px] 2xl:max-w-[200px]"
+                  title={currentUser.fullName}
+                >
                   {currentUser.fullName}
                 </span>
-                <span className="font-label-sm text-label-sm text-outline">
+                <span className="font-label-sm text-label-sm text-outline truncate max-w-[130px] 2xl:max-w-[200px]">
                   {currentUser.positionTitle || getRoleBadgeLabel(currentUser.role)}
                 </span>
               </div>

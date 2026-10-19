@@ -197,8 +197,8 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
         </div>
       </div>
       <p className="text-body-xs text-on-surface-variant mt-1.5">
-        “—” là <b>chưa nhập</b> (khác với số 0 đã nhập). Trạng thái theo tháng: Đã nhập → Đã xác nhận → Đã chốt báo cáo. Bảng cuộn ngang trên
-        điện thoại.
+        “—” là <b>chưa nhập</b> (khác với số 0 đã nhập). Trạng thái theo tháng: Đã nhập → Đã xác nhận → Đã chốt báo cáo.
+        <span className="lg:hidden"> Bảng cuộn ngang trên điện thoại.</span>
       </p>
     </section>
   );
