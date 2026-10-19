@@ -63,7 +63,17 @@ export async function GET(req: NextRequest) {
       prisma.narrativeSection.findMany({ orderBy: [{ sortOrder: "asc" }, { title: "asc" }] }),
       prisma.person.findMany({
         where: { status: "ACTIVE" },
-        select: { id: true, code: true, fullName: true },
+        select: {
+          id: true,
+          code: true,
+          fullName: true,
+          account: { select: { status: true } },
+          assignments: {
+            where: { isPrimary: true },
+            select: { unit: { select: { code: true, name: true } } },
+            take: 1,
+          },
+        },
         orderBy: { code: "asc" },
         take: 500,
       }),
@@ -195,7 +205,16 @@ export async function GET(req: NextRequest) {
         validTo: a.validTo ? dateOnlyToStr(a.validTo) : null,
         active: a.active,
       })),
-      people,
+      people: people.map((p) => ({
+        id: p.id,
+        code: p.code,
+        fullName: p.fullName,
+        accountStatus: p.account?.status ?? null,
+        unitName: p.assignments[0]?.unit?.name ?? null,
+        unitCode: p.assignments[0]?.unit?.code ?? null,
+      })),
+      // Danh sách người thô cho các chỗ tra tên (không dùng cho UI chọn người)
+      peopleRaw: people.map((p) => ({ id: p.id, code: p.code, fullName: p.fullName })),
       // Danh sách phẳng để UI chọn công thức / gán chỉ tiêu
       metricsFlat: metrics.map((m) => ({
         id: m.id,
@@ -522,11 +541,118 @@ export async function POST(req: NextRequest) {
 
     // ---------- PHÂN CÔNG ----------
     if (entity === "assignment") {
+      // YC-28 — phân công hàng loạt nhiều chỉ tiêu cho một người (chống trùng, lưu audit)
+      if (action === "create_bulk") {
+        const personId = str(data.personId);
+        const rawIds: unknown[] = Array.isArray(data.metricIds) ? (data.metricIds as unknown[]) : [];
+        const metricIds = Array.from(new Set(rawIds.map((x) => String(x || "")).filter((s) => s !== "")));
+        if (!personId) return jsonError("Thiếu người được phân công", 400);
+        if (metricIds.length === 0) return jsonError("Chưa chọn chỉ tiêu nào để phân công", 400);
+        if (metricIds.length > 100) return jsonError("Mỗi lần chỉ phân công tối đa 100 chỉ tiêu", 400);
+
+        const person = await prisma.person.findUnique({
+          where: { id: personId },
+          select: { id: true, status: true, fullName: true },
+        });
+        if (!person) return jsonError("Cán bộ không tồn tại", 400);
+        if (person.status !== "ACTIVE") return jsonError("Cán bộ đã ngừng công tác — không phân công được", 400);
+
+        const canEnter = boolOf(data.canEnter, true);
+        const canConfirm = boolOf(data.canConfirm, false);
+        if (!canEnter && !canConfirm) return jsonError("Phân công phải có ít nhất quyền Nhập hoặc Xác nhận", 400);
+        const validFrom = data.validFrom ? dateOnlyFromStr(String(data.validFrom)) : null;
+        const validTo = data.validTo ? dateOnlyFromStr(String(data.validTo)) : null;
+        const allowBackdateDays =
+          data.allowBackdateDays === null || data.allowBackdateDays === "" || data.allowBackdateDays === undefined
+            ? null
+            : intOf(data.allowBackdateDays, null);
+
+        const metricRows = await prisma.metricDefinition.findMany({ where: { id: { in: metricIds } } });
+        const foundIds = new Set(metricRows.map((m) => m.id));
+        const missing = metricIds.filter((id) => !foundIds.has(id));
+        if (missing.length > 0) return jsonError(`Có ${missing.length} chỉ tiêu không tồn tại — tải lại trang và thử lại`, 400);
+        const inactive = metricRows.filter((m) => !m.active);
+        if (inactive.length > 0)
+          return jsonError(`Chỉ tiêu đã ẩn không phân công được: ${inactive.map((m) => m.code).join(", ")}`, 400);
+
+        const existing = await prisma.metricEntryAssignment.findMany({
+          where: { personId, metricId: { in: metricIds } },
+        });
+        const byMetricId = new Map(existing.map((a) => [a.metricId, a]));
+        const sameDate = (a: Date | null, b: Date | null) =>
+          (a ? a.getTime() : null) === (b ? b.getTime() : null);
+
+        let created = 0;
+        let updated = 0;
+        let skipped = 0;
+        const details: { metricId: string; code: string; result: "created" | "updated" | "skipped" }[] = [];
+
+        await prisma.$transaction(async (tx) => {
+          for (const m of metricRows) {
+            const ex = byMetricId.get(m.id);
+            if (ex) {
+              const identical =
+                ex.active &&
+                ex.canEnter === canEnter &&
+                ex.canConfirm === canConfirm &&
+                (ex.allowBackdateDays ?? null) === allowBackdateDays &&
+                sameDate(ex.validFrom, validFrom) &&
+                sameDate(ex.validTo, validTo);
+              if (identical) {
+                skipped += 1;
+                details.push({ metricId: m.id, code: m.code, result: "skipped" });
+                continue;
+              }
+              await tx.metricEntryAssignment.update({
+                where: { id: ex.id },
+                data: { canEnter, canConfirm, allowBackdateDays, validFrom, validTo, active: true },
+              });
+              updated += 1;
+              details.push({ metricId: m.id, code: m.code, result: "updated" });
+            } else {
+              await tx.metricEntryAssignment.create({
+                data: {
+                  personId,
+                  metricId: m.id,
+                  canEnter,
+                  canConfirm,
+                  allowBackdateDays,
+                  validFrom,
+                  validTo,
+                  createdById: user.personId,
+                },
+              });
+              created += 1;
+              details.push({ metricId: m.id, code: m.code, result: "created" });
+            }
+          }
+        });
+
+        await audit("ASSIGNMENT_BULK_SAVED", null, {
+          personId,
+          personName: person.fullName,
+          created,
+          updated,
+          skipped,
+          metricCodes: metricRows.map((m) => m.code),
+          canEnter,
+          canConfirm,
+        });
+        return NextResponse.json({ success: true, created, updated, skipped, total: metricIds.length, details });
+      }
+
       if (action === "create" || action === "update") {
         const personId = str(data.personId);
         const groupId = str(data.groupId);
         const metricId = str(data.metricId);
         if (!personId) return jsonError("Thiếu người được phân công", 400);
+        // YC-27: kiểm tra người tồn tại & còn công tác trước khi phân công
+        const person = await prisma.person.findUnique({
+          where: { id: personId },
+          select: { id: true, status: true },
+        });
+        if (!person) return jsonError("Cán bộ không tồn tại", 400);
+        if (person.status !== "ACTIVE") return jsonError("Cán bộ đã ngừng công tác — không phân công được", 400);
         if ((groupId ? 1 : 0) + (metricId ? 1 : 0) !== 1)
           return jsonError("Chọn phạm vi là một NHÓM hoặc một CHỈ TIÊU (không phải cả hai)", 400);
         const canEnter = boolOf(data.canEnter, true);
@@ -557,6 +683,25 @@ export async function POST(req: NextRequest) {
           });
           await audit("ASSIGNMENT_UPDATED", id, { personId, groupId, metricId, canEnter, canConfirm });
           return NextResponse.json({ success: true });
+        }
+        // YC-28 — chống trùng (áp dụng cả luồng đơn): đã có phân công cùng người + cùng phạm vi thì
+        // cập nhật bản ghi cũ thay vì tạo trùng; nếu giống hệt thì báo đã tồn tại.
+        const existing = await prisma.metricEntryAssignment.findFirst({
+          where: { personId, metricId: payload.metricId, groupId: payload.groupId },
+          orderBy: { createdAt: "asc" },
+        });
+        if (existing) {
+          const identical =
+            existing.active &&
+            existing.canEnter === canEnter &&
+            existing.canConfirm === canConfirm &&
+            (existing.allowBackdateDays ?? null) === payload.allowBackdateDays;
+          if (!identical) {
+            await prisma.metricEntryAssignment.update({ where: { id: existing.id }, data: { ...payload, active: true } });
+            await audit("ASSIGNMENT_UPDATED", existing.id, { personId, groupId, metricId, canEnter, canConfirm, dedupe: true });
+            return NextResponse.json({ success: true, id: existing.id, duplicated: true, updated: true });
+          }
+          return NextResponse.json({ success: true, id: existing.id, duplicated: true });
         }
         const a = await prisma.metricEntryAssignment.create({
           data: { ...payload, createdById: user.personId },

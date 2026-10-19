@@ -75,7 +75,7 @@ export default function CauHinhSoLieuPage() {
         });
         const json = await res.json();
         if (res.ok && json.success) {
-          toast.success(successMsg);
+          if (successMsg) toast.success(successMsg);
           load();
           return json;
         }
@@ -180,12 +180,14 @@ export default function CauHinhSoLieuPage() {
     scopeType: "group",
     groupId: "",
     metricId: "",
+    metricIds: [], // YC-28: nhiều chỉ tiêu
     canEnter: true,
-    canConfirm: false,
+    canConfirm: false, // không tự bật "yêu cầu xác nhận" cho hàng loạt
     allowBackdateDays: "",
     validFrom: "",
     validTo: "",
   });
+  const [assignConfirmOpen, setAssignConfirmOpen] = useState(false);
 
   // ------------------- SECTION -------------------
   const [newSection, setNewSection] = useState<any>({ code: "", title: "", groupId: "", sortOrder: 0 });
@@ -213,10 +215,70 @@ export default function CauHinhSoLieuPage() {
     return m;
   }, [cfg]);
 
+  // ------------------- ASSIGN (YC-27/YC-28) -------------------
+  const assignPerson = useMemo(
+    () => (cfg?.people || []).find((p: any) => p.id === assignDraft.personId) || null,
+    [cfg, assignDraft.personId]
+  );
+  const assignedMetricIdsForPerson = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of cfg?.assignments || []) {
+      if (a.personId === assignDraft.personId && a.active && a.metricId) s.add(a.metricId);
+    }
+    return s;
+  }, [cfg, assignDraft.personId]);
+
+  const toggleAssignMetric = (id: string) =>
+    setAssignDraft((d: any) => ({
+      ...d,
+      metricIds: d.metricIds.includes(id) ? d.metricIds.filter((x: string) => x !== id) : [...d.metricIds, id],
+    }));
+  const selectAllAssignMetrics = (ids: string[]) =>
+    setAssignDraft((d: any) => ({ ...d, metricIds: Array.from(new Set([...d.metricIds, ...ids])) }));
+  const clearAssignMetricsInScope = (ids: string[]) =>
+    setAssignDraft((d: any) => ({ ...d, metricIds: d.metricIds.filter((x: string) => !ids.includes(x)) }));
+
+  const submitAssignment = async () => {
+    if (!assignDraft.personId) {
+      toast.error("Chưa chọn người được phân công");
+      return;
+    }
+    const common = {
+      personId: assignDraft.personId,
+      canEnter: assignDraft.canEnter,
+      canConfirm: assignDraft.canConfirm,
+      allowBackdateDays: assignDraft.allowBackdateDays === "" ? null : Number(assignDraft.allowBackdateDays),
+      validFrom: assignDraft.validFrom || null,
+      validTo: assignDraft.validTo || null,
+    };
+    if (assignDraft.scopeType === "group") {
+      const r = await post("assignment", "create", { ...common, groupId: assignDraft.groupId, metricId: null }, "Đã phân công theo nhóm");
+      if (r) setAssignDraft((d: any) => ({ ...d, groupId: "" }));
+      return;
+    }
+    if (assignDraft.metricIds.length === 0) {
+      toast.error("Chưa chọn chỉ tiêu nào — dùng ô tìm kiếm hoặc bộ lọc nhóm để chọn");
+      return;
+    }
+    if (!assignConfirmOpen) {
+      setAssignConfirmOpen(true);
+      return;
+    }
+    const r = await post("assignment", "create_bulk", { ...common, metricIds: assignDraft.metricIds }, "");
+    if (r) {
+      const parts = [`tạo mới ${r.created}`];
+      if (r.updated) parts.push(`cập nhật ${r.updated}`);
+      if (r.skipped) parts.push(`bỏ qua ${r.skipped} (đã có phân công trùng)`);
+      toast.success(`Đã lưu phân công ${r.total} chỉ tiêu: ${parts.join(", ")}`);
+      setAssignConfirmOpen(false);
+      setAssignDraft((d: any) => ({ ...d, metricIds: [] }));
+    }
+  };
+
   const selTargetMetric = metricById.get(selTargetMetricId);
   const selBaseMetric = metricById.get(selBaseMetricId);
 
-  if (permLoading || loading) {
+  if (permLoading) {
     return <div className="p-8 text-body-sm text-on-surface-variant text-center">Đang tải cấu hình…</div>;
   }
   if (!showAdminMenu) {
@@ -226,6 +288,9 @@ export default function CauHinhSoLieuPage() {
         <p className="text-body-md text-on-surface mt-2">Chỉ lãnh đạo/quản trị được cấu hình số liệu giao ban.</p>
       </div>
     );
+  }
+  if (loading) {
+    return <div className="p-8 text-body-sm text-on-surface-variant text-center">Đang tải cấu hình…</div>;
   }
 
   return (
@@ -826,25 +891,36 @@ export default function CauHinhSoLieuPage() {
               </table>
             </div>
 
-            <div className="border-t border-border-default/40 pt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <select value={assignDraft.personId} onChange={(e) => setAssignDraft({ ...assignDraft, personId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
-                <option value="">— chọn người —</option>
-                {(cfg?.people || []).map((p: any) => (
-                  <option key={p.id} value={p.id}>
-                    {p.fullName} ({p.code})
-                  </option>
-                ))}
-              </select>
-              <select
-                value={assignDraft.scopeType}
-                onChange={(e) => setAssignDraft({ ...assignDraft, scopeType: e.target.value })}
-                className="px-2 py-1.5 rounded border border-border-default text-body-sm"
-              >
-                <option value="group">Theo nhóm</option>
-                <option value="metric">Theo chỉ tiêu</option>
-              </select>
+            <div className="border-t border-border-default/40 pt-3 flex flex-col gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <PersonPicker
+                  people={cfg?.people || []}
+                  value={assignDraft.personId}
+                  onChange={(personId) => {
+                    setAssignDraft((d: any) => ({ ...d, personId }));
+                    setAssignConfirmOpen(false);
+                  }}
+                />
+                <select
+                  value={assignDraft.scopeType}
+                  onChange={(e) => {
+                    setAssignDraft((d: any) => ({ ...d, scopeType: e.target.value }));
+                    setAssignConfirmOpen(false);
+                  }}
+                  className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                  data-testid="assign-scope-select"
+                >
+                  <option value="group">Phân công theo nhóm (1 nhóm)</option>
+                  <option value="metric">Phân công theo chỉ tiêu (chọn nhiều)</option>
+                </select>
+              </div>
+
               {assignDraft.scopeType === "group" ? (
-                <select value={assignDraft.groupId} onChange={(e) => setAssignDraft({ ...assignDraft, groupId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                <select
+                  value={assignDraft.groupId}
+                  onChange={(e) => setAssignDraft((d: any) => ({ ...d, groupId: e.target.value }))}
+                  className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                >
                   <option value="">— chọn nhóm —</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
@@ -853,51 +929,61 @@ export default function CauHinhSoLieuPage() {
                   ))}
                 </select>
               ) : (
-                <select value={assignDraft.metricId} onChange={(e) => setAssignDraft({ ...assignDraft, metricId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
-                  <option value="">— chọn chỉ tiêu —</option>
-                  {groups.map((g) => (
-                    <optgroup key={g.id} label={g.name}>
-                      {g.metrics.map((m: any) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                <MetricMultiPicker
+                  groups={groups}
+                  selected={assignDraft.metricIds}
+                  onToggle={toggleAssignMetric}
+                  onSelectAll={selectAllAssignMetrics}
+                  onClearInScope={clearAssignMetricsInScope}
+                  alreadyAssigned={assignedMetricIdsForPerson}
+                />
               )}
-              <div className="flex items-center gap-3 text-body-xs">
-                <label className="flex items-center gap-1">
-                  <input type="checkbox" checked={assignDraft.canEnter} onChange={(e) => setAssignDraft({ ...assignDraft, canEnter: e.target.checked })} />
-                  Được nhập
-                </label>
-                <label className="flex items-center gap-1">
-                  <input type="checkbox" checked={assignDraft.canConfirm} onChange={(e) => setAssignDraft({ ...assignDraft, canConfirm: e.target.checked })} />
-                  Được xác nhận
-                </label>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="flex items-center gap-3 text-body-xs col-span-2">
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" checked={assignDraft.canEnter} onChange={(e) => setAssignDraft((d: any) => ({ ...d, canEnter: e.target.checked }))} />
+                    Được nhập
+                  </label>
+                  <label className="flex items-center gap-1" title="Không tự bật cho hàng loạt — chỉ tích khi thật sự cần quyền xác nhận">
+                    <input type="checkbox" checked={assignDraft.canConfirm} onChange={(e) => setAssignDraft((d: any) => ({ ...d, canConfirm: e.target.checked }))} />
+                    Được xác nhận
+                  </label>
+                </div>
+                <input value={assignDraft.allowBackdateDays} onChange={(e) => setAssignDraft((d: any) => ({ ...d, allowBackdateDays: e.target.value }))} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Nhập bù tối đa (ngày, để trống = theo chỉ tiêu)" />
+                <input type="date" value={assignDraft.validFrom} onChange={(e) => setAssignDraft((d: any) => ({ ...d, validFrom: e.target.value }))} className="px-2 py-1.5 rounded border border-border-default text-body-sm" title="Hiệu lực từ ngày" />
+                <input type="date" value={assignDraft.validTo} onChange={(e) => setAssignDraft((d: any) => ({ ...d, validTo: e.target.value }))} className="px-2 py-1.5 rounded border border-border-default text-body-sm" title="Hiệu lực đến ngày" />
+                <button
+                  disabled={busy === "assignment.create" || busy === "assignment.create_bulk"}
+                  onClick={submitAssignment}
+                  className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
+                  data-testid="assign-submit"
+                >
+                  + Phân công
+                </button>
               </div>
-              <input value={assignDraft.allowBackdateDays} onChange={(e) => setAssignDraft({ ...assignDraft, allowBackdateDays: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Nhập bù tối đa (ngày, để trống = theo chỉ tiêu)" />
-              <input type="date" value={assignDraft.validFrom} onChange={(e) => setAssignDraft({ ...assignDraft, validFrom: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" title="Hiệu lực từ ngày" />
-              <input type="date" value={assignDraft.validTo} onChange={(e) => setAssignDraft({ ...assignDraft, validTo: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" title="Hiệu lực đến ngày" />
-              <button
-                disabled={busy === "assignment.create"}
-                onClick={() => {
-                  const payload: any = {
-                    personId: assignDraft.personId,
-                    groupId: assignDraft.scopeType === "group" ? assignDraft.groupId : null,
-                    metricId: assignDraft.scopeType === "metric" ? assignDraft.metricId : null,
-                    canEnter: assignDraft.canEnter,
-                    canConfirm: assignDraft.canConfirm,
-                    allowBackdateDays: assignDraft.allowBackdateDays === "" ? null : Number(assignDraft.allowBackdateDays),
-                    validFrom: assignDraft.validFrom || null,
-                    validTo: assignDraft.validTo || null,
-                  };
-                  post("assignment", "create", payload, "Đã phân công");
-                }}
-                className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
-              >
-                + Phân công
-              </button>
+
+              {assignConfirmOpen && assignDraft.scopeType === "metric" && (
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-sm" data-testid="assign-confirm-bar">
+                  <span>
+                    Xác nhận lưu phân công <b>{assignDraft.metricIds.length}</b> chỉ tiêu cho{" "}
+                    <b>{assignPerson ? `${assignPerson.code} — ${assignPerson.fullName}` : "?"}</b>?
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={submitAssignment}
+                      disabled={busy === "assignment.create_bulk"}
+                      className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
+                      data-testid="assign-confirm-save"
+                    >
+                      {busy === "assignment.create_bulk" ? "Đang lưu…" : "Lưu phân công"}
+                    </button>
+                    <button onClick={() => setAssignConfirmOpen(false)} className="px-3 py-1.5 rounded-lg border border-border-default text-label-sm">
+                      Hủy
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1203,4 +1289,189 @@ function assignmentPayload(a: any) {
     validFrom: a.validFrom,
     validTo: a.validTo,
   };
+}
+
+/** Bỏ dấu tiếng Việt để tìm kiếm không phân biệt dấu. */
+function normalizeSearch(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d");
+}
+
+/**
+ * YC-27 — Ô chọn người có TÌM KIẾM theo mã hoặc tên (trước đây là <select> thường
+ * nên gõ "CB-014" không ra vì nhãn bắt đầu bằng họ tên). Hiển thị kèm bộ phận và
+ * cảnh báo "chưa có tài khoản".
+ */
+function PersonPicker({ people, value, onChange }: { people: any[]; value: string; onChange: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const selected = people.find((p) => p.id === value) || null;
+
+  const filtered = useMemo(() => {
+    const nq = normalizeSearch(q.trim());
+    const list = !nq ? people : people.filter((p) => normalizeSearch(`${p.code} ${p.fullName} ${p.unitName || ""}`).includes(nq));
+    return list.slice(0, 80);
+  }, [people, q]);
+
+  return (
+    <div className="relative" data-testid="assign-person-picker">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full px-2 py-1.5 rounded border border-border-default text-body-sm text-left flex items-center justify-between gap-2 bg-surface-container-lowest"
+        data-testid="assign-person-button"
+      >
+        <span className={selected ? "" : "text-on-surface-variant"}>
+          {selected ? `${selected.code} — ${selected.fullName}${selected.unitName ? ` (${selected.unitName})` : ""}` : "— chọn người —"}
+        </span>
+        <span className="material-symbols-outlined text-[16px] text-on-surface-variant">expand_more</span>
+      </button>
+      {open && (
+        <div className="absolute z-30 mt-1 w-full bg-surface-container-lowest border border-border-default rounded-lg shadow-lg p-2">
+          <input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Tìm theo mã hoặc tên (VD: CB-014)"
+            className="w-full px-2 py-1.5 rounded border border-border-default text-body-sm mb-1"
+            data-testid="assign-person-search"
+          />
+          <div className="max-h-56 overflow-y-auto flex flex-col">
+            {filtered.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  onChange(p.id);
+                  setOpen(false);
+                  setQ("");
+                }}
+                className={`text-left px-2 py-1.5 rounded text-body-sm hover:bg-surface-container flex items-center gap-1.5 ${
+                  p.id === value ? "bg-secondary/10" : ""
+                }`}
+                data-testid={`assign-person-option-${p.code}`}
+              >
+                <span className="font-medium">{p.code}</span>
+                <span>— {p.fullName}</span>
+                {p.unitName ? <span className="text-body-xs text-on-surface-variant">· {p.unitName}</span> : null}
+                {p.accountStatus !== "ACTIVE" ? (
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold">
+                    chưa có tài khoản
+                  </span>
+                ) : null}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <span className="text-body-xs text-on-surface-variant px-2 py-1.5 italic">
+                Không tìm thấy — thử tìm theo mã cán bộ (VD: CB-014)
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * YC-28 — Bộ chọn NHIỀU chỉ tiêu bằng checkbox: tìm theo tên/mã, lọc theo nhóm,
+ * chọn tất cả trong phạm vi đang lọc, bỏ chọn trong phạm vi đang lọc, đếm số đã chọn.
+ * Không mặc định chọn sẵn bất kỳ chỉ tiêu nào.
+ */
+function MetricMultiPicker({
+  groups,
+  selected,
+  onToggle,
+  onSelectAll,
+  onClearInScope,
+  alreadyAssigned,
+}: {
+  groups: any[];
+  selected: string[];
+  onToggle: (id: string) => void;
+  onSelectAll: (ids: string[]) => void;
+  onClearInScope: (ids: string[]) => void;
+  alreadyAssigned: Set<string>;
+}) {
+  const [q, setQ] = useState("");
+  const [groupId, setGroupId] = useState("__all");
+
+  const visibleGroups = useMemo(() => {
+    const nq = normalizeSearch(q.trim());
+    return groups
+      .filter((g) => groupId === "__all" || g.id === groupId)
+      .map((g) => ({
+        ...g,
+        metrics: (g.metrics || []).filter((m: any) => !nq || normalizeSearch(`${m.code} ${m.name}`).includes(nq)),
+      }))
+      .filter((g) => g.metrics.length > 0);
+  }, [groups, q, groupId]);
+
+  const visibleIds = useMemo(() => visibleGroups.flatMap((g) => g.metrics.map((m: any) => m.id)), [visibleGroups]);
+  const selSet = useMemo(() => new Set(selected), [selected]);
+
+  return (
+    <div className="border border-border-default rounded-lg p-2 flex flex-col gap-2" data-testid="assign-metric-picker">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Tìm chỉ tiêu theo tên hoặc mã…"
+          className="flex-1 min-w-[180px] px-2 py-1.5 rounded border border-border-default text-body-sm"
+          data-testid="assign-metric-search"
+        />
+        <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+          <option value="__all">Tất cả nhóm</option>
+          {groups.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => onSelectAll(visibleIds)}
+          className="px-2 py-1.5 rounded border border-primary text-primary text-body-xs font-semibold hover:bg-primary/5"
+          data-testid="assign-select-all"
+        >
+          Chọn tất cả đang lọc ({visibleIds.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => onClearInScope(visibleIds)}
+          className="px-2 py-1.5 rounded border border-border-default text-body-xs font-semibold hover:bg-surface-container"
+          data-testid="assign-clear-scope"
+        >
+          Bỏ chọn trong phạm vi lọc
+        </button>
+      </div>
+      <div className="text-body-xs text-on-surface-variant">
+        Đã chọn <b className="text-primary" data-testid="assign-selected-count">{selected.length}</b> chỉ tiêu.
+      </div>
+      <div className="max-h-64 overflow-y-auto flex flex-col gap-0.5" data-testid="assign-metric-list">
+        {visibleGroups.map((g) => (
+          <div key={g.id}>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-primary px-1 pt-1.5">{g.name}</div>
+            {g.metrics.map((m: any) => (
+              <label key={m.id} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-surface-container text-body-sm cursor-pointer">
+                <input type="checkbox" checked={selSet.has(m.id)} onChange={() => onToggle(m.id)} data-testid={`assign-metric-${m.code}`} />
+                <span className="text-on-surface-variant text-body-xs w-[110px] shrink-0">{m.code}</span>
+                <span>{m.name}</span>
+                {!m.active && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700 font-semibold">đã ẩn</span>
+                )}
+                {alreadyAssigned.has(m.id) && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700 font-semibold">đã có phân công</span>
+                )}
+              </label>
+            ))}
+          </div>
+        ))}
+        {visibleIds.length === 0 && <span className="text-body-xs text-on-surface-variant italic px-1 py-1.5">Không có chỉ tiêu phù hợp bộ lọc.</span>}
+      </div>
+    </div>
+  );
 }
