@@ -9,7 +9,8 @@
  *  S3  YC-26: bảng so sánh kết quả thu trên trang Số liệu giao ban (đủ 5 dòng, "Chưa có dữ liệu đối chiếu",
  *      không lộ nhãn [DEMO])
  *  S4  YC-29: bảng Dashboard (Trong ngày/Tuần/Lũy kế tháng/Lũy kế năm/Trạng thái), "—" ≠ 0,
- *      đối chiếu số với API, F5 + đăng nhập lại
+ *      đối chiếu số với API, F5 + đăng nhập lại; kiểm tra bảng "hiển thị THẬT" trên desktop
+ *      (fix 19/10/2026 — trước đây bảng chỉ nằm trong bố cục mobile nên desktop không thấy)
  *  S5  Mobile 390×844: trang không tràn ngang, bảng cuộn trong khung, ô chọn người/chỉ tiêu dùng được
  *  S6  Phân quyền: cán bộ thường không mở được Cấu hình số liệu; vẫn xem được Dashboard
  *  S7  P0: cảnh báo mềm khi nhập giá trị bất thường (banner trên trang nhập liệu, không chặn lưu)
@@ -114,6 +115,16 @@ async function shot(page: Page, name: string) {
 
 async function exists(page: Page, sel: string): Promise<boolean> {
   return (await page.$(sel)) !== null;
+}
+/** Kiểm tra phần tử có THỰC SỰ hiển thị trên màn hình (khắc phục lỗi chỉ kiểm tra DOM — phần tử bị ẩn bởi bố cục vẫn "exists"). */
+async function visible(page: Page, sel: string): Promise<boolean> {
+  return await page.evaluate((s) => {
+    return Array.from(document.querySelectorAll(s)).some((el) => {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      const st = getComputedStyle(el);
+      return st.display !== "none" && st.visibility !== "hidden" && r.width > 0 && r.height > 0;
+    });
+  }, sel);
 }
 /** Bấm bằng evaluate để tránh bị re-render/overlay chen ngang. */
 async function eClick(page: Page, sel: string): Promise<boolean> {
@@ -344,6 +355,7 @@ async function main() {
     const checkDashboard = async (page: Page, tag: string) => {
       await page.waitForSelector('[data-testid="dashboard-tax-table"]', { timeout: 30000 });
       await page.waitForSelector('[data-testid="dash-row-THU_NSNN"]', { timeout: 30000 });
+      check(`${tag} Bảng số liệu hiển thị THẬT trên màn hình (không bị bố cục ẩn)`, await visible(page, '[data-testid="dashboard-tax-table"]'));
       const head = norm(await textOf(page, '[data-testid="dashboard-tax-table"] thead'));
       for (const h of ["Chỉ tiêu", "Trong ngày", "Tuần", "Lũy kế tháng", "Lũy kế năm", "Trạng thái"]) {
         check(`${tag} Có cột "${h}"`, head.includes(h), head);
@@ -375,6 +387,7 @@ async function main() {
     const pm = await newPage(browser, leader, 390, 844, true);
     await pm.goto(`${BASE_URL}/dashboard`, { waitUntil: "networkidle0", timeout: 90000 });
     await pm.waitForSelector('[data-testid="dashboard-tax-table"]', { timeout: 30000 });
+    check("S5. Bảng số liệu hiển thị THẬT trên màn hình mobile", await visible(pm, '[data-testid="dashboard-tax-table"]'));
     const ov1 = await pageOverflowX(pm);
     check("S5a. Trang Dashboard mobile không tràn ngang", ov1.scrollWidth <= ov1.clientWidth + 2, `sw=${ov1.scrollWidth} cw=${ov1.clientWidth}`);
     const innerScroll = await pm.evaluate(() => {
@@ -420,7 +433,7 @@ async function main() {
     check("S6b. Không thấy ô chọn người phân công", !(await exists(ps, '[data-testid="assign-person-picker"]')));
     await ps.goto(`${BASE_URL}/dashboard`, { waitUntil: "networkidle0", timeout: 90000 });
     await ps.waitForSelector('[data-testid="dashboard-tax-table"]', { timeout: 30000 });
-    check("S6c. Cán bộ thường vẫn xem được bảng số liệu giao ban", true);
+    check("S6c. Cán bộ thường vẫn xem được bảng số liệu giao ban (hiển thị thật)", await visible(ps, '[data-testid="dashboard-tax-table"]'));
 
     // ============================================================
     // S7 — P0: cảnh báo mềm trên trang nhập liệu

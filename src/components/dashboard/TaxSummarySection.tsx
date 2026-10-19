@@ -54,8 +54,9 @@ const COLS = ["day", "week", "month", "year"] as const;
  * YC-17/YC-19 → YC-29 — Khu "Số liệu giao ban" trên Trang chủ:
  * bảng kẻ dòng/cột theo nhóm chỉ tiêu với các cột Trong ngày / Tuần / Lũy kế tháng / Lũy kế năm / Trạng thái.
  * Quy ước hiển thị: "—" = CHƯA NHẬP (null), "0" = đã nhập giá trị 0. Chỉ hiện chỉ tiêu bật "Hiện trên Trang chủ".
+ * className: cho phép trang gọi khối này với khoảng đệm theo từng bố cục (mobile mặc định / desktop không đệm).
  */
-export function TaxSummarySection() {
+export function TaxSummarySection({ className = "px-margin pt-space-md" }: { className?: string }) {
   const [groups, setGroups] = useState<DashGroup[] | null>(null);
   const [range, setRange] = useState<any>(null);
   const [quality, setQuality] = useState<MetricDataQuality | null>(null);
@@ -77,7 +78,7 @@ export function TaxSummarySection() {
   const totalMetrics = groups.reduce((a, g) => a + g.metrics.length, 0);
   if (totalMetrics === 0) {
     return (
-      <section className="px-margin pt-space-md">
+      <section className={className}>
         <div className="bg-surface-container-lowest rounded-xl border border-dashed border-border-default/60 p-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[20px] text-primary">monitoring</span>
@@ -96,7 +97,7 @@ export function TaxSummarySection() {
   const monthLabel = range?.month?.label ? `Lũy kế ${String(range.month.label).toLowerCase()}` : "Lũy kế tháng";
 
   return (
-    <section className="px-margin pt-space-md">
+    <section className={className}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[20px] text-primary">monitoring</span>

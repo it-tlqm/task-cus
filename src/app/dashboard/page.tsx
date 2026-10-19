@@ -512,6 +512,11 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Số liệu giao ban (YC-17/YC-19 → YC-29) — trên desktop đặt cùng vị trí như mobile:
+            ngay dưới khu lọc, phía trên các thẻ KPI. (Bổ sung 19/10/2026: trước đây khối này
+            chỉ nằm trong bố cục mobile nên màn hình máy tính không nhìn thấy.) */}
+        <TaxSummarySection className="" />
+
         {/* KPI SUMMARY: 6 STANDARDIZED EXECUTIVE CARDS WITH REAL METRICS */}
         <div data-tour="kpi-cards" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-space-md">
           {/* Card 1: Total Tasks */}
