@@ -1,10 +1,12 @@
-# BẢNG TRẠNG THÁI YÊU CẦU YC-01 → YC-25 (CẬP NHẬT 17/10/2026 — ĐỢT 2)
+# BẢNG TRẠNG THÁI YÊU CẦU YC-01 → YC-29 (CẬP NHẬT 19/10/2026 — ĐỢT 3)
 
-**Ngày cập nhật:** 17/10/2026 · **Nguồn đối chiếu:** lịch sử commit Git, `docs/GIAO_BAN_SO_LIEU_PHASE1_PHAN_TICH.md`, `docs/ANH_XA_BIEU_MAU_DANH_GIA.md`, các chốt ngày 17/10/2026 (đợt 2).
+**Ngày cập nhật:** 19/10/2026 · **Nguồn đối chiếu:** lịch sử commit Git, `docs/GIAO_BAN_SO_LIEU_PHASE1_PHAN_TICH.md`, `docs/ANH_XA_BIEU_MAU_DANH_GIA.md`, các chốt ngày 17/10/2026 (đợt 2) và gói YC-26→29 ngày 19/10/2026 (đợt 3, nhánh `feat/yc26-29-metrics-dashboard`).
 
 **Thang trạng thái:** ✅ Đã có đầy đủ · 🟡 Có một phần · ➖ Chưa có · ⏸ Chưa thể nghiệm thu do thiếu dữ liệu hoặc quy tắc.
 
 > 📌 **Đợt 2 (17/10/2026):** đơn vị đã cung cấp nội dung cho 6 mã trước đây thiếu nguồn — **YC-10, YC-15, YC-17, YC-23, YC-24, YC-25** — đã cập nhật bên dưới. Không còn mã "chưa xác định".
+
+> 📌 **Đợt 3 (19/10/2026):** bổ sung **YC-26 → YC-29** + kết quả rà soát P0 (14 bản ghi CB-014 nhập ngày 18/10). Gói này **chưa triển khai Production** — đang ở nhánh riêng, chờ nghiệm thu. Chi tiết: `HANDOVER_YC26_29_2026-10-19.md`.
 
 | Mã | Nội dung | Trạng thái | Bằng chứng / ghi chú |
 | :-- | :-- | :-- | :-- |
@@ -25,6 +27,21 @@
 | YC-23 | **Công việc thường xuyên + Danh mục sản phẩm theo QĐ: cùng tab, chọn ở cột riêng, nguồn dữ liệu độc lập** | 🟡 Có một phần | Hai nguồn **đã tách đúng & độc lập** ✔ (nhật ký/đầu việc mẫu ↔ danh mục QĐ1277); **CHƯA có màn "1 tab – 2 cột chọn"** (hiện chọn ở 2 nơi: lập kế hoạch chọn đầu việc mẫu; KQ tháng nhập mã sản phẩm) |
 | YC-24 | **Phân công nhiệm vụ theo ngày/vị trí trực** trong Lịch trực (căn cứ `so phan cong nhiem vu.xls`) | 🟡 Có một phần | Lịch trực có ngày + ca (Sáng/Chiều/Cả ngày) + **điểm trực (vị trí)** + người trực + lưu vết xếp/sửa/xóa; **đối chiếu từng mục với file gốc .xls chờ UAT** |
 | YC-25 | **Danh mục đầu việc riêng từng bộ phận** cho lập kế hoạch cá nhân (khác danh mục SP tính điểm) | 🟡 Có một phần | Lập kế hoạch chọn được từ 48 đầu việc mẫu (5 nhóm) hoặc tự nhập; **CHƯA có danh mục RIÊNG theo từng bộ phận**; đã tách khỏi danh mục sản phẩm tính điểm ✔ |
+| YC-26 | **Bảng so sánh kết quả thu NSNN**: Chỉ tiêu BTC (năm) · Chỉ tiêu UBND tỉnh (năm) · Kế hoạch tháng · So với tháng trước · So với cùng kỳ năm trước | ✅ Đã có đầy đủ (tính năng, đợt 3) · ⏸ quy tắc chờ xác nhận | 5 dòng đối chiếu gắn tại khu Số liệu giao ban; **nguồn BTC/UBND nhận diện theo nhãn chứa "BTC"/"UBND" (kỳ Năm), KH tháng theo kỳ Tháng**; chỉ hiện tỷ lệ khi đủ tử số + mẫu số, thiếu → "Chưa có dữ liệu đối chiếu"; **không dùng chỉ tiêu giao nhãn [DEMO] làm nguồn chính thức**; các số 1.685/1.700/200 tỷ chỉ là tham chiếu, KHÔNG nạp thành dữ liệu. Quy tắc đối chiếu (cùng kỳ năm trước) **chờ Hải quan xác nhận** |
+| YC-27 | **Sửa lỗi không tìm thấy cán bộ CB-014 khi phân công nhập số liệu** | ✅ Đã có đầy đủ (đợt 3) | Nguyên nhân gốc: ô chọn người là `<select>` thường, gõ "CB-014" không tự tìm (dữ liệu và quyền của CB-014 vẫn đúng). Đã thay bằng **ô chọn người có tìm kiếm (mã/tên không dấu/đơn vị)** + backend **chặn người không tồn tại/đã ngừng công tác** + **chống trùng phân công** (gửi lặp → cập nhật/báo đã tồn tại, không tạo dòng trùng). Quyền và vai trò CB-014 **giữ nguyên** (có kiểm chứng) |
+| YC-28 | **Phân công nhiều chỉ tiêu một lần** cho một cán bộ | ✅ Đã có đầy đủ (đợt 3) | Bộ chọn nhiều chỉ tiêu dạng checkbox: tìm theo tên/mã (không dấu), lọc theo nhóm, **Chọn tất cả đang lọc (N)** / **Bỏ chọn trong phạm vi lọc**, đếm số đã chọn; **mặc định KHÔNG chọn sẵn 49 chỉ tiêu**; **bước xác nhận riêng trước khi lưu**; lưu hàng loạt (≤100/lần) có chống trùng + ghi audit `METRIC_ADMIN_ASSIGNMENT_BULK_SAVED`; quyền "Được xác nhận" **mặc định TẮT** |
+| YC-29 | **Trang chủ: số liệu giao ban dạng BẢNG** (Chỉ tiêu · Trong ngày · Tuần · Lũy kế tháng · Lũy kế năm · Trạng thái) | ✅ Đã có đầy đủ (đợt 3) | Bảng có đường kẻ, dòng nhóm chỉ tiêu, định dạng số Việt Nam; **phân biệt rõ "chưa nhập" (—) với số 0 thực tế**; trạng thái tháng: Chưa nhập / Đã nhập / Đã xác nhận / **Đã chốt báo cáo**; giữ nguyên các thẻ KPI; khu so sánh YC-26 đặt tại trang Số liệu giao ban; desktop xem đủ, mobile **chỉ cuộn trong khung bảng** (trang không tràn ngang) |
+
+## Chốt trạng thái ngày 19/10/2026 (đợt 3) — gói YC-26→29 + P0
+
+1. **Chưa triển khai Production:** toàn bộ gói nằm trên nhánh `feat/yc26-29-metrics-dashboard`, chưa push, chưa deploy — chờ nghiệm thu trên môi trường riêng trước khi có lệnh triển khai.
+2. **KHÔNG migration, KHÔNG đổi cấu trúc dữ liệu** (schema giữ nguyên; gói chỉ thêm/sửa code ứng dụng).
+3. **P0 (đọc, không sửa):** trong 14 bản ghi CB-014 nhập ngày 18/10, **4 bản ghi có dấu hiệu nhập "số lũy kế" vào ô phát sinh ngày** (THU_NSNN/Ô tô; THU_NSNN/Hàng hóa khác; TRI_GIA_USD/Ô tô; OTO_XE). **Không xoá/không sửa** — đã lập báo cáo bằng chứng, đề xuất phương án hiệu chỉnh **chờ cấp có thẩm quyền quyết định**.
+4. **Cảnh báo mềm chống nhập nhầm lũy kế** (đợt 3): khi lưu số liệu, hệ thống có thể hiện cảnh báo "giá trị bất thường" nhưng **KHÔNG chặn lưu** — người nhập tự kiểm tra; có ghi vết.
+5. **YC-26:** quy tắc nhận diện nguồn đối chiếu (BTC/UBND theo nhãn; KH tháng theo kỳ Tháng; "cùng kỳ năm trước" dùng cột Lũy kế) **chờ Hải quan xác nhận** trước khi dùng chính thức — số 1.685/1.700/200 tỷ **không được nạp** như dữ liệu.
+6. **49 chỉ tiêu: tiếp tục CHƯA bật kiểm tra** (không thay đổi `requireConfirm`); quyền "Được xác nhận" khi phân công hàng loạt **mặc định TẮT**.
+7. **Bước này: KHÔNG seed dữ liệu thật, KHÔNG tạo chỉ tiêu giao ngoài môi trường test cục bộ**; mọi thao tác kiểm thử chỉ trên DB cục bộ (localhost:54329), có dọn sạch sau test.
+8. **Tài liệu bàn giao đợt 3:** `HANDOVER_YC26_29_2026-10-19.md` (kèm báo cáo P0, bằng chứng kiểm thử API/UI, ảnh chụp).
 
 ## Chốt trạng thái ngày 17/10/2026 (đợt 2) — đang giữ nguyên
 
@@ -42,4 +59,4 @@
 
 - Trạng thái "Đã có/hoàn thành" = đã triển khai & có bằng chứng commit — **không đồng nghĩa đã nghiệm thu** (nghiệm thu chờ UAT trên môi trường riêng, xem `DE_XUAT_MOI_TRUONG_UAT.md`).
 - Việc bật tính điểm chính thức / bật kiểm soát số liệu: chờ quyết định của đơn vị sau khi trả lời các câu hỏi ở `ANH_XA_BIEU_MAU_DANH_GIA.md` mục 9.
-- Các việc đang chờ đơn vị: YC-16.3 (nghĩa "số thuế phát sinh"), YC-14 (ngưỡng xếp loại), YC-19 (mốc/chỉ tiêu thật), YC-22 (quyết định bật mức nào — hiện chưa bật kể cả A), YC-23/24/25 (xác nhận mức đáp ứng khi UAT).
+- Các việc đang chờ đơn vị: YC-16.3 (nghĩa "số thuế phát sinh"), YC-14 (ngưỡng xếp loại), YC-19 (mốc/chỉ tiêu thật), YC-22 (quyết định bật mức nào — hiện chưa bật kể cả A), YC-23/24/25 (xác nhận mức đáp ứng khi UAT), **YC-26 (quy tắc đối chiếu "cùng kỳ năm trước" + nguồn BTC/UBND/KH tháng)**, **P0 đợt 3 (phương án xử lý 4 bản ghi CB-014 nhập nhầm lũy kế ngày 18/10)**.
