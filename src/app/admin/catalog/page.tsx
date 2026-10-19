@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
+import WorkCatalogTab from "./WorkCatalogTab";
 import Link from "next/link";
 import {
   Layers,
@@ -74,6 +75,7 @@ export default function CatalogAdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"legacy" | "tx">("legacy");
   const [approving, setApproving] = useState(false);
 
   // Modals state
@@ -396,14 +398,6 @@ export default function CatalogAdminPage() {
 
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-6 pb-20">
-      {!permLoading && !canManageCatalog && (
-        <div className="p-8 bg-white border border-amber-200 rounded-xl text-center space-y-2 shadow-sm">
-          <p className="text-lg font-bold text-slate-900">Khu vực quản trị danh mục</p>
-          <p className="text-sm text-slate-600">
-            Tài khoản của đồng chí chỉ được xem danh mục đầu việc mẫu. Thao tác thêm/sửa/phê duyệt do backend chặn 403 và ghi audit.
-          </p>
-        </div>
-      )}
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -422,6 +416,48 @@ export default function CatalogAdminPage() {
         </div>
       )}
 
+      {/* Chọn nhóm danh mục */}
+      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab("legacy")}
+          className={`px-4 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "legacy"
+              ? "border-purple-600 text-purple-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Hoạt động mẫu (48 mẫu)
+          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">
+            {templates.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab("tx")}
+          className={`px-4 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "tx"
+              ? "border-teal-600 text-teal-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Danh mục công việc thường xuyên
+          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px]">
+            YC-31
+          </span>
+        </button>
+      </div>
+
+      {activeTab === "tx" ? (
+        <WorkCatalogTab canManage={canManageCatalog} showToast={showToast} />
+      ) : (
+      <div className="space-y-6">
+      {!permLoading && !canManageCatalog && (
+        <div className="p-8 bg-white border border-amber-200 rounded-xl text-center space-y-2 shadow-sm">
+          <p className="text-lg font-bold text-slate-900">Khu vực quản trị danh mục</p>
+          <p className="text-sm text-slate-600">
+            Tài khoản của đồng chí chỉ được xem danh mục đầu việc mẫu. Thao tác thêm/sửa/phê duyệt do backend chặn 403 và ghi audit.
+          </p>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -1285,6 +1321,8 @@ export default function CatalogAdminPage() {
             </div>
           </div>
         </div>
+      )}
+      </div>
       )}
     </div>
   );
