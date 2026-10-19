@@ -56,4 +56,14 @@ Thumbs.db
 
 backup-real-run-*.json
 
+# Local ops & evidence (chỉ lưu cục bộ — không commit)
+demo-ops/
+
+# Script tạm theo ngày (local-only)
+scripts/_tmp-*
+
+# Dữ liệu nguồn do Hải quan gửi (không commit — chứa thông tin nghiệp vụ)
+docs/Dữ liệu-file-hai-quan-gui/
+docs/Dữ liệu.zip
+
 
