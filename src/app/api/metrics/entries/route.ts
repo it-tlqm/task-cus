@@ -15,6 +15,7 @@ import {
   todayVnDateOnly,
   defaultUnitLabel,
   parseDerivation,
+  detectSuspiciousEntryValues,
 } from "@/server/metrics";
 
 const D = Prisma.Decimal;
@@ -280,6 +281,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Có số liệu không hợp lệ — chưa lưu gì", errors }, { status: 400 });
     }
 
+    // ---- P0: cảnh báo mềm giá trị bất thường (khả năng nhập số lũy kế) — KHÔNG chặn lưu ----
+    const warnings = await detectSuspiciousEntryValues(
+      prepared.map((p) => ({
+        metric: p.metric,
+        classificationId: p.classificationId,
+        entryDate: p.entryDate,
+        valueBase: p.valueBase,
+      }))
+    );
+
     // ---- Lưu (một giao dịch: hoặc tất cả, hoặc không gì) ----
     const savedIds = await prisma.$transaction(async (tx) => {
       const out: { metricId: string; classificationId: string; entryId: string; status: string }[] = [];
@@ -367,10 +378,11 @@ export async function POST(req: NextRequest) {
         date: dateOnlyToStr(prepared[0].entryDate),
         count: savedIds.length,
         metrics: prepared.map((p) => p.metric.code),
+        warnings: warnings.length,
       },
     });
 
-    return NextResponse.json({ success: true, saved: savedIds.length, items: savedIds });
+    return NextResponse.json({ success: true, saved: savedIds.length, items: savedIds, warnings });
   } catch (error: any) {
     if (typeof error?.message === "string" && error.message.startsWith("ENTRY_LOCKED:")) {
       const name = error.message.slice("ENTRY_LOCKED:".length);

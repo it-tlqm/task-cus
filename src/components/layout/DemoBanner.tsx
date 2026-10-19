@@ -4,7 +4,10 @@ import { UNIT_OFFICIAL_NAME } from "@/lib/unit-info";
 
 export function DemoBanner() {
   return (
-    <div className="h-6 bg-emerald-50 border-b border-emerald-200/60 px-4 flex items-center justify-between text-xs text-emerald-800 z-50">
+    <div
+      title="Nhãn xác nhận HỆ THỐNG đang vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
+      className="h-6 bg-emerald-50 border-b border-emerald-200/60 px-4 flex items-center justify-between text-xs text-emerald-800 z-50"
+    >
       <div className="flex items-center gap-1.5 font-medium">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
         <span className="uppercase tracking-wide font-semibold text-[11px]">

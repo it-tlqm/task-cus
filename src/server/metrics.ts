@@ -208,6 +208,17 @@ interface BaselineRow {
   status: string;
 }
 
+export interface MetricCols {
+  day: number | null; // "Trong ngày" — tổng bản ghi đúng ngày hôm nay (null = chưa nhập, khác 0)
+  week: number | null;
+  month: number | null;
+  quarter: number | null;
+  year: number | null;
+}
+
+/** Trạng thái kỳ tháng của một chỉ tiêu trên bảng giao ban (YC-29). */
+export type MetricMonthState = "NONE" | "RECORDED" | "CONFIRMED" | "LOCKED";
+
 export interface MetricSummaryRow {
   id: string;
   code: string;
@@ -219,18 +230,21 @@ export interface MetricSummaryRow {
   valueKind: ValueKind;
   requireConfirm: boolean;
   expectDaily: boolean;
+  showOnDashboard: boolean;
   note: string | null;
-  cols: { week: number | null; month: number | null; quarter: number | null; year: number | null };
+  cols: MetricCols;
   classCols: {
     classificationId: string;
     label: string;
-    cols: { week: number | null; month: number | null; quarter: number | null; year: number | null };
+    cols: MetricCols;
     latestDate: string | null;
   }[];
   targets: { label: string; periodType: string; periodNo: number | null; targetValue: number; percent: number | null }[];
   latest: { date: string; value: number; status: string; byName: string | null } | null;
   missingDates: string[];
   latestDate: string | null;
+  /** YC-29: trạng thái theo kỳ tháng đang xem — Chưa nhập / Đã nhập / Đã xác nhận / Đã chốt báo cáo. */
+  status: { monthState: MetricMonthState; monthLocked: boolean; monthPeriodKey: string };
 }
 
 export interface MetricSummaryGroup {
@@ -241,6 +255,26 @@ export interface MetricSummaryGroup {
   metrics: MetricSummaryRow[];
 }
 
+/**
+ * YC-26 — cờ chất lượng dữ liệu: nhận diện dữ liệu DEMO (mô phỏng) đang trộn
+ * trong cùng kỳ với bản ghi do cán bộ nhập thật. Dùng để hiện cảnh báo rõ ràng
+ * tại khu vực số liệu, tránh hiển thị số liệu dùng thử như số liệu chính thức.
+ */
+export interface MetricDataQuality {
+  /** Số mốc lũy kế đã xác nhận có ghi chú [DEMO... */
+  demoBaselines: number;
+  /** Số bản ghi nhập trong kỳ do tài khoản DEMO nhập (mã người bắt đầu bằng "DEMO") */
+  demoEntries: number;
+  /** Số bản ghi nhập trong kỳ do người thật nhập */
+  realEntries: number;
+  /** Số chỉ tiêu giao gắn nhãn [DEMO... */
+  demoTargets: number;
+  /** Có thành phần DEMO trong nguồn số liệu đang hiển thị */
+  demoPresent: boolean;
+  /** Có trộn DEMO với bản ghi người thật trong cùng kỳ */
+  mixedWithReal: boolean;
+}
+
 export interface MetricSummaryResult {
   range: {
     week: { year: number; weekNumber: number; label: string; startDate: string; endDate: string };
@@ -249,6 +283,8 @@ export interface MetricSummaryResult {
     year: { year: number; label: string };
   };
   groups: MetricSummaryGroup[];
+  /** YC-26 — cờ chất lượng dữ liệu (DEMO lẫn số thật). */
+  dataQuality: MetricDataQuality;
 }
 
 interface RangePair {
@@ -343,14 +379,38 @@ export async function computeMetricSummary(
     baselinesByMetric.set(b.metricId, arr);
   }
 
-  // Tên người nhập cho "latest"
+  // Tên người nhập cho "latest" + mã người (YC-26: nhận diện DEMO)
   const personIds = Array.from(new Set(entries.map((e) => e.enteredById)));
   const persons = personIds.length
-    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true } })
+    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true, code: true } })
     : [];
   const personName = new Map(persons.map((p) => [p.id, p.fullName]));
+  const personCode = new Map(persons.map((p) => [p.id, p.code]));
+
+  // --- YC-26: cờ chất lượng dữ liệu — phát hiện DEMO lẫn trong nguồn số liệu ---
+  const demoBaselines = baselines.filter((b) => /\[DEMO/i.test(b.sourceNote || "")).length;
+  const demoEntries = entries.filter((e) => (personCode.get(e.enteredById) || "").toUpperCase().startsWith("DEMO")).length;
+  const realEntries = entries.length - demoEntries;
+  const demoTargets = targets.filter((t) => /^\s*\[DEMO/i.test(t.label)).length;
+  const dataQuality: MetricDataQuality = {
+    demoBaselines,
+    demoEntries,
+    realEntries,
+    demoTargets,
+    demoPresent: demoBaselines + demoEntries + demoTargets > 0,
+    mixedWithReal: (demoBaselines > 0 || demoEntries > 0) && realEntries > 0,
+  };
 
   const today = todayVnDateOnly();
+
+  // --- 2b. Trạng thái "Đã chốt báo cáo" theo kỳ tháng đang xem (YC-29) ---
+  const monthPeriodKey = `${year}-${String(month).padStart(2, "0")}`;
+  const monthLockVersions = await prisma.briefingReportVersion.findMany({
+    where: { periodType: "MONTH", periodKey: monthPeriodKey },
+    select: { id: true },
+    take: 1,
+  });
+  const monthLocked = monthLockVersions.length > 0;
 
   // --- 3. Hàm tính ---
   const sumBetween = (list: EntryRow[], from: Date, to: Date): Dec => {
@@ -473,20 +533,17 @@ export async function computeMetricSummary(
 
   const num = (d: Dec | null): number | null => (d === null ? null : Number(d));
 
-  const calcCols = (
-    metricId: string,
-    classificationId: string
-  ): { week: number | null; month: number | null; quarter: number | null; year: number | null } => ({
+  const dayRange: RangePair = { start: today, end: today };
+  const calcCols = (metricId: string, classificationId: string): MetricCols => ({
+    day: num(valueOf(metricId, classificationId, dayRange, "WEEK", 0)),
     week: num(valueOf(metricId, classificationId, weekRange, "WEEK", 0)),
     month: num(valueOf(metricId, classificationId, monthRange, "MONTH", 0)),
     quarter: num(valueOf(metricId, classificationId, quarterRange, "QUARTER", 0)),
     year: num(valueOf(metricId, classificationId, yearRange, "YEAR", 0)),
   });
 
-  const addCols = (
-    a: { week: number | null; month: number | null; quarter: number | null; year: number | null },
-    b: { week: number | null; month: number | null; quarter: number | null; year: number | null }
-  ) => ({
+  const addCols = (a: MetricCols, b: MetricCols): MetricCols => ({
+    day: sumNullable(a.day, b.day),
     week: sumNullable(a.week, b.week),
     month: sumNullable(a.month, b.month),
     quarter: sumNullable(a.quarter, b.quarter),
@@ -516,7 +573,7 @@ export async function computeMetricSummary(
       const classes = classesByMetric.get(m.id) || [];
       const list = entriesByMetric.get(m.id) || [];
 
-      let cols = { week: null, month: null, quarter: null, year: null } as MetricSummaryRow["cols"];
+      let cols = { day: null, week: null, month: null, quarter: null, year: null } as MetricSummaryRow["cols"];
       let classCols: MetricSummaryRow["classCols"] = [];
       if (classes.length > 0) {
         for (const c of classes) {
@@ -572,6 +629,13 @@ export async function computeMetricSummary(
         }
       }
 
+      // Trạng thái kỳ tháng (YC-29): Chưa nhập / Đã nhập / Đã xác nhận / Đã chốt báo cáo
+      const monthEntries = list.filter(
+        (e) => e.entryDate.getTime() >= monthRange.start.getTime() && e.entryDate.getTime() <= monthRange.end.getTime()
+      );
+      const monthState: MetricMonthState =
+        monthEntries.length === 0 ? "NONE" : monthLocked ? "LOCKED" : monthEntries.some((e) => e.status === "CONFIRMED") ? "CONFIRMED" : "RECORDED";
+
       rows.push({
         id: m.id,
         code: m.code,
@@ -583,6 +647,7 @@ export async function computeMetricSummary(
         valueKind: m.valueKind as ValueKind,
         requireConfirm: m.requireConfirm,
         expectDaily: m.expectDaily,
+        showOnDashboard: m.showOnDashboard,
         note: m.note,
         cols,
         classCols,
@@ -590,6 +655,7 @@ export async function computeMetricSummary(
         latest: latestMeta,
         missingDates,
         latestDate: latest ? dateOnlyToStr(latest.entryDate) : null,
+        status: { monthState, monthLocked, monthPeriodKey },
       });
     }
     resultGroups.push({ id: g.id, code: g.code, name: g.name, sortOrder: g.sortOrder, metrics: rows });
@@ -609,6 +675,7 @@ export async function computeMetricSummary(
       year: { year, label: `Năm ${year}` },
     },
     groups: resultGroups,
+    dataQuality,
   };
 }
 
@@ -641,4 +708,236 @@ export function parseNumberInput(input: string | number): string | null {
   } catch {
     return null;
   }
+}
+
+// ============================================================
+// YC-26 — Bảng so sánh kết quả thu:
+//   Chỉ tiêu BTC năm · Chỉ tiêu UBND năm · Kế hoạch tháng ·
+//   So với tháng trước · So với cùng kỳ năm trước
+//
+// Quy ước nguồn (chờ Hải quan xác nhận, hiển thị minh bạch tử số/mẫu số):
+//   - Chỉ tiêu Bộ Tài chính: chỉ tiêu giao YEAR có nhãn chứa "BTC" / "tài chính".
+//   - Chỉ tiêu UBND tỉnh:    chỉ tiêu giao YEAR có nhãn chứa "UBND" / "uỷ ban".
+//   - Kế hoạch tháng:        chỉ tiêu giao MONTH đúng tháng đang xem; nếu nhiều
+//                            bản ghi thì ưu tiên nhãn chứa "KH"/"kế hoạch", còn lại
+//                            coi là chưa đủ quy tắc (ambiguous).
+//   - Tháng trước / cùng kỳ: so cột "Lũy kế tháng" với cột "Lũy kế tháng" của
+//                            tháng trước / tháng cùng kỳ năm trước (cùng quy tắc
+//                            mốc lũy kế đang dùng cho mọi bảng số liệu).
+//   - Chỉ hiển thị tỷ lệ khi có ĐỦ tử số và mẫu số hợp lệ; thiếu dữ liệu -> null
+//     (UI hiển thị "Chưa có dữ liệu đối chiếu").
+// ============================================================
+
+export interface ComparisonTargetBlock {
+  label: string | null;
+  targetValue: number | null;
+  percent: number | null;
+  periodLabel: string;
+  ambiguous: boolean;
+}
+
+export interface MetricComparisonRow {
+  metricId: string;
+  code: string;
+  name: string;
+  unitType: string;
+  unitLabel: string;
+  displayScale: number;
+  decimals: number;
+  yearCum: number | null;
+  monthCum: number | null;
+  btc: ComparisonTargetBlock;
+  ubnd: ComparisonTargetBlock;
+  monthPlan: ComparisonTargetBlock;
+  prevMonth: { value: number | null; percent: number | null; label: string };
+  samePeriodLastYear: { value: number | null; percent: number | null; label: string };
+}
+
+export interface MetricComparisonResult {
+  anchors: { year: number; month: number; monthLabel: string; prevMonthLabel: string; lastYearLabel: string };
+  rows: MetricComparisonRow[];
+}
+
+const diffPercent = (num: number | null, den: number | null): number | null =>
+  num !== null && den !== null && den !== 0 ? Math.round(((num - den) / den) * 1000) / 10 : null;
+
+const ratioPercent = (num: number | null, den: number | null): number | null =>
+  num !== null && den !== null && den > 0 ? Math.round((num / den) * 1000) / 10 : null;
+
+export async function computeMetricComparison(
+  anchors: SummaryAnchors,
+  base?: MetricSummaryResult
+): Promise<MetricComparisonResult> {
+  const { year, month } = anchors;
+  const baseSummary = base || (await computeMetricSummary(anchors, "full"));
+
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevSummary = await computeMetricSummary(
+    { year: prevYear, weekNumber: anchors.weekNumber, month: prevMonth, quarter: Math.ceil(prevMonth / 3) },
+    "full"
+  );
+  const lastYearSummary = await computeMetricSummary({ ...anchors, year: year - 1 }, "full");
+  const prevById = new Map<string, MetricSummaryRow>();
+  for (const g of prevSummary.groups) for (const m of g.metrics) prevById.set(m.id, m);
+  const lyById = new Map<string, MetricSummaryRow>();
+  for (const g of lastYearSummary.groups) for (const m of g.metrics) lyById.set(m.id, m);
+
+  const block = (
+    t: { label: string; targetValue: number } | null,
+    num: number | null,
+    periodLabel: string
+  ): ComparisonTargetBlock => ({
+    label: t?.label ?? null,
+    targetValue: t?.targetValue ?? null,
+    percent: t ? ratioPercent(num, t.targetValue) : null,
+    periodLabel,
+    ambiguous: false,
+  });
+
+  const rows: MetricComparisonRow[] = [];
+  for (const g of baseSummary.groups) {
+    for (const m of g.metrics) {
+      // KHÔNG dùng chỉ tiêu giao gắn nhãn [DEMO...] làm nguồn đối chiếu chính thức
+      // (tránh hiển thị dữ liệu DEMO như số liệu thật — quy ước YC-24).
+      const officialTargets = m.targets.filter((t) => !/^\s*\[DEMO/i.test(t.label));
+      // Chỉ lấy chỉ tiêu có nguồn đối chiếu chính thức hoặc đang hiển thị trên Trang chủ.
+      if (officialTargets.length === 0 && !m.showOnDashboard) continue;
+
+      const yearTargets = officialTargets.filter((t) => t.periodType === "YEAR");
+      const btcT = yearTargets.find((t) => /btc|tài chính/i.test(t.label)) || null;
+      const ubndT = yearTargets.find((t) => /ubnd|uỷ ban|ủy ban/i.test(t.label)) || null;
+
+      const monthTargets = officialTargets.filter((t) => t.periodType === "MONTH" && t.periodNo === month);
+      let monthT: { label: string; targetValue: number } | null = null;
+      let monthAmbiguous = false;
+      if (monthTargets.length === 1) monthT = monthTargets[0];
+      else if (monthTargets.length > 1) {
+        const kh = monthTargets.find((t) => /kh|kế hoạch/i.test(t.label));
+        if (kh) monthT = kh;
+        else monthAmbiguous = true;
+      }
+
+      const prevM = prevById.get(m.id);
+      const lyM = lyById.get(m.id);
+      const prevValue = prevM?.cols.month ?? null;
+      const lyValue = lyM?.cols.month ?? null;
+
+      rows.push({
+        metricId: m.id,
+        code: m.code,
+        name: m.name,
+        unitType: m.unitType,
+        unitLabel: m.unitLabel,
+        displayScale: m.displayScale,
+        decimals: m.decimals,
+        yearCum: m.cols.year,
+        monthCum: m.cols.month,
+        btc: block(btcT, m.cols.year, `Năm ${year}`),
+        ubnd: block(ubndT, m.cols.year, `Năm ${year}`),
+        monthPlan: {
+          label: monthT?.label ?? null,
+          targetValue: monthT?.targetValue ?? null,
+          percent: monthT ? ratioPercent(m.cols.month, monthT.targetValue) : null,
+          periodLabel: `Tháng ${month}/${year}`,
+          ambiguous: monthAmbiguous,
+        },
+        prevMonth: { value: prevValue, percent: diffPercent(m.cols.month, prevValue), label: `Tháng ${prevMonth}/${prevYear}` },
+        samePeriodLastYear: { value: lyValue, percent: diffPercent(m.cols.month, lyValue), label: `Tháng ${month}/${year - 1}` },
+      });
+    }
+  }
+
+  return {
+    anchors: {
+      year,
+      month,
+      monthLabel: `Tháng ${month}/${year}`,
+      prevMonthLabel: `Tháng ${prevMonth}/${prevYear}`,
+      lastYearLabel: `Tháng ${month}/${year - 1}`,
+    },
+    rows,
+  };
+}
+
+// ============================================================
+// P0 (YC-26→29) — Cảnh báo mềm giá trị nhập bất thường:
+// phát hiện khả năng nhập SỐ LŨY KẾ vào ô số phát sinh trong ngày.
+// KHÔNG chặn lưu, KHÔNG sửa dữ liệu — chỉ trả cảnh báo cho giao diện.
+// ============================================================
+
+export interface SuspiciousEntryInput {
+  metric: { id: string; code: string; name: string; valueKind: string };
+  classificationId: string;
+  entryDate: Date;
+  valueBase: Prisma.Decimal;
+}
+
+export interface SuspiciousEntryWarning {
+  index: number;
+  metricCode: string;
+  metricName: string;
+  message: string;
+}
+
+const fmtNum = (v: number) => v.toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+
+export async function detectSuspiciousEntryValues(items: SuspiciousEntryInput[]): Promise<SuspiciousEntryWarning[]> {
+  const flowItems = items
+    .map((it, index) => ({ it, index }))
+    .filter(({ it }) => it.metric.valueKind === "FLOW" && Number(it.valueBase) > 0);
+  if (flowItems.length === 0) return [];
+
+  const metricIds = Array.from(new Set(flowItems.map(({ it }) => it.metric.id)));
+  const minYear = Math.min(...flowItems.map(({ it }) => it.entryDate.getUTCFullYear()));
+  const maxDate = new Date(Math.max(...flowItems.map(({ it }) => it.entryDate.getTime())));
+  const history = await prisma.metricDailyEntry.findMany({
+    where: {
+      metricId: { in: metricIds },
+      entryDate: { gte: dateOnly(minYear, 1, 1), lt: maxDate },
+    },
+    select: { metricId: true, classificationId: true, entryDate: true, valueNumeric: true },
+  });
+
+  const warnings: SuspiciousEntryWarning[] = [];
+  for (const { it, index } of flowItems) {
+    const value = Number(it.valueBase);
+    const yearStart = dateOnly(it.entryDate.getUTCFullYear(), 1, 1).getTime();
+    const prior = history.filter(
+      (h) =>
+        h.metricId === it.metric.id &&
+        h.classificationId === it.classificationId &&
+        h.entryDate.getTime() < it.entryDate.getTime()
+    );
+    const priorYear = prior.filter((h) => h.entryDate.getTime() >= yearStart);
+    const yearSum = priorYear.reduce((a, h) => a + Number(h.valueNumeric), 0);
+    const last30 = prior.filter((h) => h.entryDate.getTime() >= it.entryDate.getTime() - 30 * 86400000).map((h) => Number(h.valueNumeric));
+    if (last30.length < 3) continue;
+    const sorted = [...last30].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    if (!(median > 0)) continue;
+
+    const multiple = value / median;
+    const looksCumulative = yearSum > 0 && value >= yearSum * 0.3 && multiple > 5;
+    if (looksCumulative) {
+      warnings.push({
+        index,
+        metricCode: it.metric.code,
+        metricName: it.metric.name,
+        message: `Giá trị ${fmtNum(value)} lớn gấp ${Math.round(multiple)} lần trung vị 30 ngày (${fmtNum(
+          median
+        )}) và tương đương ${Math.round((value / yearSum) * 100)}% tổng lũy kế đã nhập từ đầu năm — có dấu hiệu bạn đang nhập SỐ LŨY KẾ thay vì số phát sinh trong ngày. Đề nghị kiểm tra lại.`,
+      });
+    } else if (multiple > 20) {
+      warnings.push({
+        index,
+        metricCode: it.metric.code,
+        metricName: it.metric.name,
+        message: `Giá trị ${fmtNum(value)} lớn bất thường so với 30 ngày gần đây (trung vị ${fmtNum(
+          median
+        )}, gấp ${Math.round(multiple)} lần). Đề nghị kiểm tra lại trước khi chốt số liệu.`,
+      });
+    }
+  }
+  return warnings;
 }

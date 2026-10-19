@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
-import { computeMetricSummary } from "@/server/metrics";
+import { computeMetricComparison, computeMetricSummary } from "@/server/metrics";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
 
 // ============================================================
@@ -28,7 +28,10 @@ export async function GET(req: NextRequest) {
     const scope = scopeParam === "dashboard" ? "dashboard" : "full";
 
     const result = await computeMetricSummary({ year, weekNumber, month, quarter }, scope);
-    return NextResponse.json({ success: true, ...result });
+    // YC-26: bảng so sánh kết quả thu (chỉ khi được yêu cầu — ?comparison=1, tái dùng kết quả vừa tính)
+    const withComparison = searchParams.get("comparison") === "1";
+    const comparison = withComparison ? await computeMetricComparison({ year, weekNumber, month, quarter }, result) : undefined;
+    return NextResponse.json({ success: true, ...result, ...(comparison ? { comparison } : {}) });
   } catch (error: any) {
     console.error("GET /api/metrics/summary error:", error);
     return jsonError("Lỗi hệ thống khi tổng hợp số liệu", 500);

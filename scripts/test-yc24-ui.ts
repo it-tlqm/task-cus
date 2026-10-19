@@ -326,7 +326,14 @@ async function main() {
     await waitLoaded(page);
     check("P1a. Trang lịch trực tải được, tiêu đề đúng", (await textOf(page, "h1")).includes("Phân công nhiệm vụ"));
     const week0 = norm(await weekLabelText(page));
-    check("P1b. Mặc định mở tuần hiện tại (12–18/10)", week0.includes("12/10") && week0.includes("18/10"), week0);
+    // Tuần hiện tại (Thứ 2 → Chủ nhật) tính động theo ngày chạy — không cứng ngày
+    const nowD = new Date();
+    const monD = new Date(nowD);
+    monD.setDate(nowD.getDate() - ((nowD.getDay() + 6) % 7));
+    const sunD = new Date(monD);
+    sunD.setDate(monD.getDate() + 6);
+    const ddmm = (x: Date) => `${String(x.getDate()).padStart(2, "0")}/${String(x.getMonth() + 1).padStart(2, "0")}`;
+    check(`P1b. Mặc định mở tuần hiện tại (${ddmm(monD)}–${ddmm(sunD)})`, week0.includes(ddmm(monD)) && week0.includes(ddmm(sunD)), week0);
     // Phương án B: Lãnh đạo đơn vị có dải chọn bộ phận + trạng thái đã/chưa lập bảng
     await waitUnitReady(page, "select");
     check(

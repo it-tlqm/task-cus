@@ -2,7 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { fmtMetric, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
+
+interface Cols {
+  day: number | null;
+  week: number | null;
+  month: number | null;
+  quarter: number | null;
+  year: number | null;
+}
 
 interface DashMetric {
   id: string;
@@ -11,35 +20,62 @@ interface DashMetric {
   unitLabel: string;
   displayScale: number;
   decimals: number;
-  cols: { week: number | null; month: number | null; quarter: number | null; year: number | null };
-  targets: { label: string; percent: number | null }[];
+  cols: Cols;
+  classCols: { classificationId: string; label: string; cols: Cols; latestDate: string | null }[];
   latest: { date: string; status: string; byName: string | null } | null;
+  status?: { monthState: "NONE" | "RECORDED" | "CONFIRMED" | "LOCKED"; monthLocked: boolean; monthPeriodKey: string };
 }
 
+interface DashGroup {
+  id: string;
+  code: string;
+  name: string;
+  metrics: DashMetric[];
+}
+
+/** YC-29 — nhãn trạng thái kỳ tháng (Đã nhập / Đã xác nhận / Đã chốt báo cáo). */
+const MONTH_STATE_LABELS: Record<string, string> = {
+  NONE: "Chưa nhập",
+  RECORDED: STATUS_LABELS.RECORDED || "Đã nhập",
+  CONFIRMED: STATUS_LABELS.CONFIRMED || "Đã xác nhận",
+  LOCKED: "Đã chốt báo cáo",
+};
+
+const MONTH_STATE_STYLES: Record<string, string> = {
+  NONE: "border-border-default text-on-surface-variant bg-surface-container-low",
+  RECORDED: STATUS_STYLES.RECORDED,
+  CONFIRMED: STATUS_STYLES.CONFIRMED,
+  LOCKED: "bg-violet-50 text-violet-700 border-violet-200",
+};
+
+const COLS = ["day", "week", "month", "year"] as const;
+
 /**
- * YC-17/YG-19 — Khu "Số liệu giao ban" trên Trang chủ:
- * chỉ hiện các chỉ tiêu được bật "Hiện trên Trang chủ" (mặc định: Thu NSNN).
- * Chưa có số liệu thì nói rõ "chưa có" — không hiển thị số 0 giả.
+ * YC-17/YC-19 → YC-29 — Khu "Số liệu giao ban" trên Trang chủ:
+ * bảng kẻ dòng/cột theo nhóm chỉ tiêu với các cột Trong ngày / Tuần / Lũy kế tháng / Lũy kế năm / Trạng thái.
+ * Quy ước hiển thị: "—" = CHƯA NHẬP (null), "0" = đã nhập giá trị 0. Chỉ hiện chỉ tiêu bật "Hiện trên Trang chủ".
  */
 export function TaxSummarySection() {
-  const [metrics, setMetrics] = useState<DashMetric[] | null>(null);
+  const [groups, setGroups] = useState<DashGroup[] | null>(null);
   const [range, setRange] = useState<any>(null);
+  const [quality, setQuality] = useState<MetricDataQuality | null>(null);
 
   useEffect(() => {
     fetch("/api/metrics/summary?scope=dashboard")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.success) {
-          const rows: DashMetric[] = (json.groups || []).flatMap((g: any) => g.metrics);
-          setMetrics(rows);
+          setGroups(json.groups || []);
           setRange(json.range);
+          setQuality(json.dataQuality || null);
         }
       })
-      .catch(() => setMetrics([]));
+      .catch(() => setGroups([]));
   }, []);
 
-  if (metrics === null) return null;
-  if (metrics.length === 0) {
+  if (groups === null) return null;
+  const totalMetrics = groups.reduce((a, g) => a + g.metrics.length, 0);
+  if (totalMetrics === 0) {
     return (
       <section className="px-margin pt-space-md">
         <div className="bg-surface-container-lowest rounded-xl border border-dashed border-border-default/60 p-4 flex items-center justify-between gap-3 flex-wrap">
@@ -57,6 +93,8 @@ export function TaxSummarySection() {
     );
   }
 
+  const monthLabel = range?.month?.label ? `Lũy kế ${String(range.month.label).toLowerCase()}` : "Lũy kế tháng";
+
   return (
     <section className="px-margin pt-space-md">
       <div className="flex items-center justify-between mb-2">
@@ -69,60 +107,98 @@ export function TaxSummarySection() {
           <span className="material-symbols-outlined text-[16px]">chevron_right</span>
         </Link>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-sm">
-        {metrics.map((m) => (
-          <div key={m.id} className="bg-surface-container-lowest p-3 rounded-lg shadow-sm border border-border-default/50 flex flex-col gap-1.5">
-            <span className="font-label-md text-label-md text-on-surface font-semibold">{m.name}</span>
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="font-headline-sm text-headline-sm text-primary font-bold tabular-nums">{fmtMetric(m.cols.month, m)}</span>
-              <span className="text-body-xs text-on-surface-variant">
-                {range?.month?.label ? `Lũy kế ${range.month.label.toLowerCase()}` : "Lũy kế tháng"}
-              </span>
-            </div>
-            <div className="text-body-xs text-on-surface-variant">
-              Năm: <span className="tabular-nums font-medium text-on-surface">{fmtMetric(m.cols.year, m)}</span>
-              {m.cols.week !== null && (
-                <>
-                  {" · "}Tuần: <span className="tabular-nums font-medium text-on-surface">{fmtMetric(m.cols.week, m)}</span>
-                </>
-              )}
-            </div>
-            {m.targets.length > 0 && (
-              <div className="flex items-center gap-1 flex-wrap">
-                {m.targets.map((t, i) => (
-                  <span
-                    key={i}
-                    className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${
-                      t.percent === null
-                        ? "border-border-default text-on-surface-variant"
-                        : t.percent >= 100
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                          : "border-amber-200 bg-amber-50 text-amber-700"
-                    }`}
-                  >
-                    {t.label.replace(/^Chỉ tiêu\s*/i, "")}: {t.percent === null ? "—" : `${t.percent}%`}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center gap-1.5 mt-0.5">
-              {m.latest ? (
-                <>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${STATUS_STYLES[m.latest.status] || "border-border-default"}`}>
-                    {STATUS_LABELS[m.latest.status] || m.latest.status}
-                  </span>
-                  <span className="text-body-xs text-on-surface-variant">
-                    {fmtDate(m.latest.date)}
-                    {m.latest.byName ? ` · ${m.latest.byName}` : ""}
-                  </span>
-                </>
-              ) : (
-                <span className="text-body-xs text-on-surface-variant italic">Chưa có số liệu — bấm Nhập số liệu</span>
-              )}
-            </div>
-          </div>
-        ))}
+
+      <DataQualityBanner q={quality} className="mb-2" />
+
+      <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-body-sm min-w-[820px] border-collapse" data-testid="dashboard-tax-table">
+            <thead>
+              <tr className="text-body-xs text-on-surface-variant bg-surface-container-low border-b border-border-default/40">
+                <th className="px-3 py-2 font-semibold text-left w-[32%] min-w-[220px]">Chỉ tiêu</th>
+                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[120px]">Trong ngày</th>
+                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[120px]">Tuần</th>
+                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[140px] bg-secondary/10 text-secondary">
+                  {monthLabel}
+                </th>
+                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[140px]">Lũy kế năm</th>
+                <th className="px-2 py-2 font-semibold text-center border-l border-border-default/30 min-w-[130px]">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((g) => (
+                <React.Fragment key={g.id}>
+                  <tr className="bg-surface-container-low/70 border-y border-border-default/30">
+                    <td colSpan={6} className="px-3 py-1.5 font-bold uppercase tracking-wide text-[11px] text-primary">
+                      {g.name}
+                    </td>
+                  </tr>
+                  {g.metrics.map((m) => {
+                    const state = m.status?.monthState || "NONE";
+                    return (
+                      <React.Fragment key={m.id}>
+                        <tr className="border-b border-border-default/20 align-top" data-testid={`dash-row-${m.code}`}>
+                          <td className="px-3 py-2">
+                            <span className="font-medium text-on-surface">{m.name}</span>
+                            {m.unitLabel ? <span className="text-body-xs text-on-surface-variant"> · {m.unitLabel}</span> : null}
+                          </td>
+                          {COLS.map((c) => (
+                            <td
+                              key={c}
+                              className={`px-2 py-2 text-right tabular-nums border-l border-border-default/20 ${
+                                c === "month" ? "bg-secondary/5 font-semibold" : ""
+                              }`}
+                            >
+                              {m.cols[c] === null ? (
+                                <span className="text-on-surface-variant" title="Chưa nhập">
+                                  —
+                                </span>
+                              ) : (
+                                fmtMetric(m.cols[c], m, { withUnit: false })
+                              )}
+                            </td>
+                          ))}
+                          <td className="px-2 py-2 text-center border-l border-border-default/20">
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold whitespace-nowrap ${
+                                MONTH_STATE_STYLES[state] || MONTH_STATE_STYLES.NONE
+                              }`}
+                              data-testid={`dash-status-${m.code}`}
+                            >
+                              {MONTH_STATE_LABELS[state] || state}
+                            </span>
+                          </td>
+                        </tr>
+                        {m.classCols.map((cc) => (
+                          <tr key={m.id + cc.classificationId} className="border-b border-border-default/20 bg-surface-container-lowest/60">
+                            <td className="px-3 py-1.5 pl-8 text-on-surface-variant">↳ {cc.label}</td>
+                            {COLS.map((c) => (
+                              <td key={c} className="px-2 py-1.5 text-right tabular-nums text-on-surface-variant border-l border-border-default/20">
+                                {cc.cols[c] === null ? (
+                                  <span className="text-on-surface-variant" title="Chưa nhập">
+                                    —
+                                  </span>
+                                ) : (
+                                  fmtMetric(cc.cols[c], m, { withUnit: false })
+                                )}
+                              </td>
+                            ))}
+                            <td className="px-2 py-1.5 text-center text-on-surface-variant border-l border-border-default/20">—</td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+      <p className="text-body-xs text-on-surface-variant mt-1.5">
+        “—” là <b>chưa nhập</b> (khác với số 0 đã nhập). Trạng thái theo tháng: Đã nhập → Đã xác nhận → Đã chốt báo cáo. Bảng cuộn ngang trên
+        điện thoại.
+      </p>
     </section>
   );
 }

@@ -221,7 +221,10 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
         {!collapsed ? (
           <>
             <div className="flex items-center justify-between mb-space-xs">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-emerald-500/20 text-emerald-100 border border-emerald-300/40">
+              <span
+                title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
+                className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-emerald-500/20 text-emerald-100 border border-emerald-300/40"
+              >
                 VẬN HÀNH CHÍNH THỨC
               </span>
               <span className="font-label-sm text-[11px] text-on-primary-container">v1.2.4</span>
