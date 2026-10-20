@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import SelfAssessmentPanel from "@/components/evaluation/SelfAssessmentPanel";
+import EvaluationExportPanel from "@/components/evaluation/EvaluationExportPanel";
 
 interface MonthlyItem {
   id: string;
@@ -65,6 +67,8 @@ export default function MonthlyResultsPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [personId, setPersonId] = useState("");
+  // Người đang đăng nhập (dùng khi chưa chọn cán bộ cụ thể)
+  const [mePersonId, setMePersonId] = useState("");
   const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
   const [items, setItems] = useState<MonthlyItem[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -131,6 +135,16 @@ export default function MonthlyResultsPage() {
     fetchData(year, month, personId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, month]);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((j) => {
+        const pid = j?.user?.personId;
+        if (pid) setMePersonId(pid);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!canPickPerson) return;
@@ -465,6 +479,26 @@ export default function MonthlyResultsPage() {
             </details>
           )}
         </div>
+      )}
+
+      {/* YC-34 — Xem trước & xuất biểu mẫu 01A/01B/02A/02B */}
+      {(personId || mePersonId) && (
+        <EvaluationExportPanel
+          personId={personId || mePersonId}
+          year={year}
+          month={month}
+        />
+      )}
+
+      {/* YC-36 — Tự đánh giá, nhận xét lãnh đạo, mức xếp loại đề xuất */}
+      {(personId || mePersonId) && (
+        <SelfAssessmentPanel
+          personId={personId || mePersonId}
+          periodType="MONTH"
+          year={year}
+          number={month}
+          taskResultScore={scorePreview?.averageD ?? null}
+        />
       )}
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">

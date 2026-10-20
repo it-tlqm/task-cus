@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Cấu hình điều hướng dùng chung cho sidebar desktop và drawer mobile.
  *
  * Nguyên tắc:
@@ -241,6 +241,14 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         access: { permission: "catalog.manage" },
       },
       {
+        id: "admin-supervisions",
+        label: "Quan hệ phụ trách",
+        href: "/admin/supervisions",
+        icon: "account_tree",
+        description: "Khai báo ai phụ trách cho ai theo kỳ (YC-35)",
+        access: { permission: "org.manage" },
+      },
+      {
         id: "admin-organization",
         label: "Tổ chức & nhân sự",
         href: "/admin/organization",
@@ -368,3 +376,4 @@ export function getBreadcrumbTrail(pathname: string): BreadcrumbEntry[] {
 export const NAVIGATION_HREFS = NAVIGATION_SECTIONS.flatMap((section) =>
   section.items.map((item) => item.href)
 );
+
