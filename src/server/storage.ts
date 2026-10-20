@@ -30,6 +30,30 @@ export interface IStorageProvider {
   getPublicUrl(key: string): string;
   /** Tải nội dung tệp về server (dùng cho route có kiểm tra quyền). */
   download(key: string): Promise<Buffer | null>;
+  /** Kiểm tra cấu hình kho lưu trữ trước khi dùng (fail-closed). */
+  assertReady?(): Promise<void>;
+}
+
+/** Cấu hình Storage chưa đạt yêu cầu an toàn → route trả 503, không ghi metadata. */
+export class EvidenceStorageConfigError extends Error {
+  statusCode = 503;
+  constructor(message: string) {
+    super(message);
+    this.name = "EvidenceStorageConfigError";
+  }
+}
+
+interface StorageProviderOptions {
+  /** Dùng cho minh chứng: bắt buộc khóa server, bucket private, không URL công khai. */
+  forEvidence?: boolean;
+}
+
+function getSupabaseServerKey(): string {
+  return (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    ""
+  ).trim();
 }
 
 function buildStorageKey(
@@ -55,20 +79,62 @@ class SupabaseStorageProvider implements IStorageProvider {
   private baseUrl: string;
   private apiKey: string;
   private bucket: string;
+  private forEvidence: boolean;
+  private bucketVerified = false;
 
-  constructor(bucket?: string) {
+  constructor(bucket?: string, options: StorageProviderOptions = {}) {
     this.baseUrl = (
       process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ekswvjbpqblssxcdwagi.supabase.co"
     ).replace(/\/$/, "");
-    this.apiKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-      "sb_publishable_bAl9A-fstt1SijvD8HrVmg_fEiY_4mf";
+    this.forEvidence = !!options.forEvidence;
+    const serverKey = getSupabaseServerKey();
+    if (this.forEvidence && !serverKey) {
+      // Không bao giờ fallback sang publishable key cho minh chứng:
+      // khóa công khai không đủ quyền và sẽ khiến bucket private không hoạt động.
+      throw new EvidenceStorageConfigError(
+        "Chưa cấu hình SUPABASE_SERVICE_ROLE_KEY (hoặc SUPABASE_SECRET_KEY) trên máy chủ — không thể dùng kho minh chứng riêng tư"
+      );
+    }
+    this.apiKey = this.forEvidence
+      ? serverKey
+      : serverKey ||
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        "sb_publishable_bAl9A-fstt1SijvD8HrVmg_fEiY_4mf";
     this.bucket = bucket || process.env.SUPABASE_STORAGE_BUCKET || "task-attachments";
   }
 
   getPublicUrl(key: string): string {
+    if (this.forEvidence) {
+      throw new Error("Minh chứng công việc không được phát URL công khai");
+    }
     return `${this.baseUrl}/storage/v1/object/public/${this.bucket}/${key}`;
+  }
+
+  async assertReady(): Promise<void> {
+    if (!this.forEvidence || this.bucketVerified) return;
+    const res = await fetch(
+      `${this.baseUrl}/storage/v1/bucket/${encodeURIComponent(this.bucket)}`,
+      {
+        headers: {
+          apikey: this.apiKey,
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        cache: "no-store",
+      }
+    );
+    if (!res.ok) {
+      throw new EvidenceStorageConfigError(
+        `Bucket minh chứng "${this.bucket}" chưa tồn tại hoặc khóa server không có quyền truy cập (HTTP ${res.status})`
+      );
+    }
+    const info: any = await res.json().catch(() => null);
+    if (!info || info.public !== false) {
+      throw new EvidenceStorageConfigError(
+        `Bucket "${this.bucket}" phải ở chế độ PRIVATE. Hệ thống từ chối dùng bucket public cho minh chứng.`
+      );
+    }
+    this.bucketVerified = true;
   }
 
   async upload(
@@ -99,7 +165,8 @@ class SupabaseStorageProvider implements IStorageProvider {
     }
 
     return {
-      url: this.getPublicUrl(storageKey),
+      // Kho minh chứng private: không tạo/không trả URL công khai.
+      url: this.forEvidence ? "" : this.getPublicUrl(storageKey),
       key: storageKey,
       size: buffer.length,
       mimeType,
@@ -266,15 +333,68 @@ class LocalFileStorageProvider implements IStorageProvider {
 let cachedStorageProvider: IStorageProvider | null = null;
 let cachedEvidenceProvider: IStorageProvider | null = null;
 
-function createStorageProvider(bucket?: string): IStorageProvider {
+function createStorageProvider(
+  bucket?: string,
+  options: StorageProviderOptions = {}
+): IStorageProvider {
   const driver = (process.env.STORAGE_DRIVER || "supabase").toLowerCase();
   if (driver === "r2" || driver === "cloudflare") {
+    if (options.forEvidence) {
+      throw new EvidenceStorageConfigError(
+        "Cloudflare R2 chưa được cấu hình cho kho minh chứng riêng tư — chưa thể bật tính năng minh chứng"
+      );
+    }
     return new CloudflareR2StorageProvider(bucket);
   }
   if (driver === "local") {
+    // Minh chứng chỉ được dùng kho private thật. Không cho driver local trong
+    // production trừ khi có cờ kiểm thử rõ ràng; tránh ghi tệp vào FS tạm của Vercel.
+    if (
+      options.forEvidence &&
+      process.env.NODE_ENV === "production" &&
+      process.env.ALLOW_LOCAL_EVIDENCE !== "1"
+    ) {
+      throw new EvidenceStorageConfigError(
+        "Không được dùng STORAGE_DRIVER=local cho minh chứng trong production — cần bucket private work-evidence"
+      );
+    }
     return new LocalFileStorageProvider(bucket);
   }
-  return new SupabaseStorageProvider(bucket);
+  return new SupabaseStorageProvider(bucket, options);
+}
+
+/**
+ * Bọc provider minh chứng để chặn tuyệt đối URL công khai, kể cả khi
+ * provider bên trong vô tình trả về URL.
+ */
+class PrivateEvidenceStorageProvider implements IStorageProvider {
+  constructor(private inner: IStorageProvider) {}
+
+  getPublicUrl(): string {
+    throw new Error("Minh chứng công việc không được phát URL công khai");
+  }
+
+  async upload(
+    buffer: Buffer,
+    originalName: string,
+    mimeType: string,
+    subfolder?: string
+  ): Promise<StorageUploadResult> {
+    const result = await this.inner.upload(buffer, originalName, mimeType, subfolder);
+    return { ...result, url: "" };
+  }
+
+  delete(key: string): Promise<boolean> {
+    return this.inner.delete(key);
+  }
+
+  download(key: string): Promise<Buffer | null> {
+    return this.inner.download(key);
+  }
+
+  assertReady(): Promise<void> {
+    return this.inner.assertReady ? this.inner.assertReady() : Promise.resolve();
+  }
 }
 
 export function getStorageProvider(): IStorageProvider {
@@ -291,6 +411,18 @@ export function getStorageProvider(): IStorageProvider {
 export function getEvidenceStorageProvider(): IStorageProvider {
   if (cachedEvidenceProvider) return cachedEvidenceProvider;
   const evidenceBucket = process.env.SUPABASE_EVIDENCE_BUCKET || "work-evidence";
-  cachedEvidenceProvider = createStorageProvider(evidenceBucket);
+  cachedEvidenceProvider = new PrivateEvidenceStorageProvider(
+    createStorageProvider(evidenceBucket, { forEvidence: true })
+  );
   return cachedEvidenceProvider;
+}
+
+/**
+ * Kiểm tra kho minh chứng sẵn sàng: có khóa server + bucket tồn tại + private.
+ * Route phải gọi hàm này TRƯỚC khi upload/download/delete; lỗi cấu hình → 503.
+ */
+export async function ensureEvidenceStorageReady(): Promise<IStorageProvider> {
+  const provider = getEvidenceStorageProvider();
+  if (provider.assertReady) await provider.assertReady();
+  return provider;
 }

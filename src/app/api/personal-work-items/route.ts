@@ -4,7 +4,10 @@ import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
-import { isLegacyTemplateSelectable } from "@/server/work-catalog";
+import {
+  getCatalogEntrySelectionError,
+  isLegacyTemplateSelectableForPerson,
+} from "@/server/work-catalog";
 import { parseDateOnly } from "@/server/work-dates";
 import { getEvidenceStorageProvider } from "@/server/storage";
 
@@ -178,9 +181,11 @@ export async function POST(req: NextRequest) {
     let resolvedPriority = priority || "Trung bình";
 
     if (templateId) {
-      if (!(await isLegacyTemplateSelectable())) {
+      // YC-31: chỉ chặn mẫu cũ khi BỘ PHẬN CỦA CÁN BỘ ĐƯỢC TẠO đã chuyển sang TX.
+      // Bộ phận chưa kích hoạt vẫn dùng mẫu cũ bình thường.
+      if (!(await isLegacyTemplateSelectableForPerson(targetPersonId))) {
         return jsonError(
-          "Mẫu công việc cũ đã ngừng cho chọn khi tạo mới — hãy chọn từ Danh mục công việc thường xuyên",
+          "Bộ phận của cán bộ đã chuyển sang Danh mục công việc thường xuyên — không chọn mẫu cũ khi tạo mới",
           403
         );
       }
@@ -267,6 +272,9 @@ export async function POST(req: NextRequest) {
           400
         );
       }
+      // Chỉ cho gắn đầu việc TX thuộc nhóm đã kích hoạt cho đúng bộ phận của cán bộ.
+      const selectionError = await getCatalogEntrySelectionError(targetPersonId, entry);
+      if (selectionError) return jsonError(selectionError, 403);
       resolvedCatalogEntryId = entry.id;
       if (!resolvedTitle?.trim()) resolvedTitle = entry.title;
     }
@@ -494,7 +502,33 @@ export async function PATCH(req: NextRequest) {
     // E1: đầu việc thuộc kế hoạch đã duyệt/có hiệu lực thì khóa phần nội dung.
     // YC-32: vẫn cho cập nhật ngày hoàn thành, trạng thái thực hiện và liên kết nhiệm vụ
     // (đây là dữ liệu thực hiện, không phải thay đổi cam kết của kế hoạch).
-    if (currentItem.planItem?.plan && (currentItem.planItem.plan.status === "APPROVED" || currentItem.planItem.plan.status === "IN_EFFECT")) {
+    const planLocked =
+      !!currentItem.planItem?.plan &&
+      (currentItem.planItem.plan.status === "APPROVED" ||
+        currentItem.planItem.plan.status === "IN_EFFECT");
+
+    // YC-32 (chốt 20/10/2026): hạn xử lý gốc KHÔNG được tự sửa sau khi kế hoạch đã duyệt.
+    // Chưa có quy trình gia hạn được phê duyệt → khóa hẳn, trả 403 và ghi nhật ký truy cập bị từ chối.
+    if (planLocked && dueDate !== undefined) {
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "PERSONAL_WORK_ITEM_DUE_DATE_DENIED",
+        resourceType: "PersonalWorkItem",
+        resourceId: currentItem.id,
+        oldData: {
+          dueDate: currentItem.dueDate,
+          planId: currentItem.planItem?.plan?.id || null,
+          planStatus: currentItem.planItem?.plan?.status || null,
+        },
+        newData: { requestedDueDate: dueDate },
+      });
+      return jsonError(
+        `Kế hoạch "${currentItem.planItem?.plan?.title}" đã phê duyệt — hạn xử lý đã khóa. Chưa có quy trình gia hạn được duyệt nên không thể tự chỉnh hạn gốc; vẫn có thể cập nhật tiến độ/ngày hoàn thành thực tế.`,
+        403
+      );
+    }
+
+    if (planLocked) {
       const contentFields = [
         ["title", title],
         ["groupId", groupId],
@@ -512,7 +546,7 @@ export async function PATCH(req: NextRequest) {
       ].filter(([, value]) => value !== undefined);
       if (contentFields.length > 0) {
         return jsonError(
-          `Kế hoạch "${currentItem.planItem.plan.title}" đã phê duyệt — chỉ được cập nhật ngày hoàn thành/trạng thái thực hiện; hãy dùng “Trình duyệt bổ sung” để sửa nội dung`,
+          `Kế hoạch "${currentItem.planItem?.plan?.title}" đã phê duyệt — chỉ được cập nhật ngày hoàn thành/trạng thái thực hiện; hãy dùng “Trình duyệt bổ sung” để sửa nội dung`,
           403
         );
       }
@@ -551,6 +585,16 @@ export async function PATCH(req: NextRequest) {
       }
     }
     if (templateId !== undefined && templateId) {
+      // Chỉ chặn khi ĐỔI SANG mẫu cũ. Giữ nguyên liên kết lịch sử thì vẫn cho phép.
+      if (
+        templateId !== currentItem.templateId &&
+        !(await isLegacyTemplateSelectableForPerson(currentItem.personId))
+      ) {
+        return jsonError(
+          "Bộ phận của cán bộ đã chuyển sang Danh mục công việc thường xuyên — không chọn mẫu cũ",
+          403
+        );
+      }
       const template = await prisma.activityTemplate.findUnique({ where: { id: templateId } });
       if (!template) return jsonError("Hoạt động mẫu không tồn tại trong danh mục", 400);
       if (template.reviewStatus === "RETIRED") {
@@ -562,7 +606,7 @@ export async function PATCH(req: NextRequest) {
     }
     // YC-31: đổi/thiết lập đầu việc TX (nguồn độc quyền với mẫu cũ và danh mục bộ phận)
     if (catalogEntryId !== undefined) {
-      if (catalogEntryId) {
+      if (catalogEntryId && catalogEntryId !== currentItem.catalogEntryId) {
         const entry = await prisma.workCatalogEntry.findUnique({
           where: { id: catalogEntryId },
           include: { version: { select: { status: true } } },
@@ -574,12 +618,16 @@ export async function PATCH(req: NextRequest) {
             400
           );
         }
+        const selectionError = await getCatalogEntrySelectionError(currentItem.personId, entry);
+        if (selectionError) return jsonError(selectionError, 403);
         linkUpdate.catalogEntryId = entry.id;
         linkUpdate.templateId = null;
         linkUpdate.deptWorkItemId = null;
-      } else {
+      } else if (!catalogEntryId) {
         linkUpdate.catalogEntryId = null;
       }
+      // catalogEntryId === currentItem.catalogEntryId: giữ nguyên liên kết lịch sử,
+      // kể cả khi nhóm đã bị ngừng kích hoạt hoặc phiên bản đã bị thay thế.
     }
     // YC-23: đổi/thiết lập sản phẩm đầu ra theo QĐ1277 (tuỳ chọn, độc lập với nguồn đầu việc)
     if (productItemId !== undefined) {

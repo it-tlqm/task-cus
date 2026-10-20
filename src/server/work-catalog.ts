@@ -215,17 +215,268 @@ export function buildCatalogDiff(
   };
 }
 
-/** Cờ cấu hình: có cho chọn mẫu cũ (48 mẫu) ở chức năng tạo mới hay không. */
-export async function isLegacyTemplateSelectable(): Promise<boolean> {
-  const [config, activeVersion] = await Promise.all([
-    prisma.systemConfig.findUnique({ where: { key: "catalog.legacyTemplatesSelectable" } }),
-    prisma.workCatalogVersion.findFirst({ where: { status: "ACTIVE" }, select: { id: true } }),
+// ----------------------------------------------------
+// YC-31 (bổ sung) — Kích hoạt danh mục TX THEO BỘ PHẬN
+// Không dùng trạng thái ACTIVE của phiên bản để ẩn mẫu cũ toàn hệ thống.
+// Chỉ bộ phận đã được ánh xạ + kích hoạt mới chuyển sang nguồn TX.
+// ----------------------------------------------------
+
+export interface ActivatedCatalogDepartment {
+  department: string;
+  unitId: string;
+  unitCode: string | null;
+  unitName: string | null;
+}
+
+export interface CatalogActivationForPerson {
+  activeVersionId: string | null;
+  unitIds: string[];
+  departments: ActivatedCatalogDepartment[];
+  /** true khi bộ phận của cán bộ đã chuyển sang TX và có ít nhất 1 đầu việc đang dùng. */
+  activated: boolean;
+}
+
+export interface CatalogDepartmentStatus {
+  department: string;
+  departmentOrder: number;
+  entryCount: number;
+  activeEntryCount: number;
+  unitId: string | null;
+  unitCode: string | null;
+  unitName: string | null;
+  isActive: boolean;
+  note: string | null;
+  confirmedAt: Date | null;
+  updatedAt: Date | null;
+}
+
+/** Đơn vị đang công tác (chỉ assignment còn hiệu lực). */
+export async function getPersonUnitIds(personId: string): Promise<string[]> {
+  if (!personId) return [];
+  const now = new Date();
+  const rows = await prisma.personAssignment.findMany({
+    where: {
+      personId,
+      effectiveFrom: { lte: now },
+      OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }],
+    },
+    select: { unitId: true },
+  });
+  return [...new Set(rows.map((r) => r.unitId))];
+}
+
+/**
+ * Trạng thái kích hoạt TX của một cán bộ, xác định theo đơn vị thực tế của cán bộ
+ * (không theo đơn vị của người thao tác). Lãnh đạo tạo hộ cán bộ nào thì áp dụng
+ * đúng bộ phận của cán bộ đó.
+ */
+export async function getCatalogActivationForPerson(
+  personId: string
+): Promise<CatalogActivationForPerson> {
+  const [activeVersion, unitIds] = await Promise.all([
+    prisma.workCatalogVersion.findFirst({
+      where: { status: "ACTIVE" },
+      orderBy: { importedAt: "desc" },
+      select: { id: true },
+    }),
+    getPersonUnitIds(personId),
   ]);
-  // Chưa có danh mục TX đang áp dụng → vẫn phải cho chọn mẫu cũ để không chặn nghiệp vụ.
-  if (!activeVersion) return true;
-  if (!config) return false; // đã có danh mục mới → mặc định ẩn mẫu cũ khi tạo mới
-  const value = String(config.value).trim().toLowerCase();
-  return !["false", "0", "off", "no"].includes(value);
+
+  const empty: CatalogActivationForPerson = {
+    activeVersionId: activeVersion?.id || null,
+    unitIds,
+    departments: [],
+    activated: false,
+  };
+  if (!activeVersion || unitIds.length === 0) return empty;
+
+  const mappings = await prisma.workCatalogDepartmentMapping.findMany({
+    where: { isActive: true, unitId: { in: unitIds } },
+    include: { unit: { select: { id: true, code: true, name: true } } },
+    orderBy: { department: "asc" },
+  });
+  if (mappings.length === 0) return empty;
+
+  // Chỉ coi là đã chuyển khi nhóm thực sự còn đầu việc ACTIVE trong phiên bản đang áp dụng.
+  // Tránh trường hợp khóa mẫu cũ nhưng không có lựa chọn thay thế.
+  const counts = await prisma.workCatalogEntry.groupBy({
+    by: ["department"],
+    where: {
+      versionId: activeVersion.id,
+      status: "ACTIVE",
+      department: { in: mappings.map((m) => m.department) },
+    },
+    _count: { _all: true },
+  });
+  const withEntries = new Set(counts.filter((c) => c._count._all > 0).map((c) => c.department));
+
+  const departments: ActivatedCatalogDepartment[] = mappings
+    .filter((m) => m.unitId && withEntries.has(m.department))
+    .map((m) => ({
+      department: m.department,
+      unitId: m.unitId as string,
+      unitCode: m.unit?.code || null,
+      unitName: m.unit?.name || null,
+    }));
+
+  return { ...empty, departments, activated: departments.length > 0 };
+}
+
+/**
+ * Mẫu cũ (48 mẫu) còn được chọn khi tạo mới?
+ * - Chưa có danh mục TX đang áp dụng → còn.
+ * - Bộ phận chưa được kích hoạt → còn.
+ * - Bộ phận đã kích hoạt và có đầu việc TX thay thế → không.
+ * Đầu việc lịch sử vẫn giữ liên kết, không phụ thuộc hàm này.
+ */
+export async function isLegacyTemplateSelectableForPerson(personId: string): Promise<boolean> {
+  const activation = await getCatalogActivationForPerson(personId);
+  return !activation.activated;
+}
+
+export interface SelectableCatalogResult {
+  activation: CatalogActivationForPerson;
+  entries: Array<{
+    id: string;
+    versionId: string;
+    code: string;
+    department: string;
+    departmentOrder: number;
+    title: string;
+    sortOrder: number;
+    sourceRow: number;
+    status: string;
+  }>;
+}
+
+/** Đầu việc TX mà một cán bộ được phép chọn (đã lọc theo ánh xạ + kích hoạt bộ phận). */
+export async function getSelectableCatalogEntriesForPerson(
+  personId: string,
+  filters: { department?: string | null; q?: string | null } = {}
+): Promise<SelectableCatalogResult> {
+  const activation = await getCatalogActivationForPerson(personId);
+  if (!activation.activeVersionId || activation.departments.length === 0) {
+    return { activation, entries: [] };
+  }
+
+  const departments = activation.departments.map((d) => d.department);
+  if (filters.department && !departments.includes(filters.department)) {
+    return { activation, entries: [] };
+  }
+  const q = (filters.q || "").trim();
+
+  const entries = await prisma.workCatalogEntry.findMany({
+    where: {
+      versionId: activation.activeVersionId,
+      status: "ACTIVE",
+      department: filters.department ? filters.department : { in: departments },
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q, mode: "insensitive" } },
+              { code: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: [{ departmentOrder: "asc" }, { sortOrder: "asc" }],
+  });
+
+  return { activation, entries };
+}
+
+/**
+ * Kiểm tra một đầu việc TX có được phép GẮN MỚI cho cán bộ hay không.
+ * Trả về null nếu hợp lệ; ngược lại là thông báo lỗi nghiệp vụ.
+ */
+export async function getCatalogEntrySelectionError(
+  personId: string,
+  entry: { id: string; department: string; status: string; version: { status: string } }
+): Promise<string | null> {
+  if (entry.status !== "ACTIVE" || entry.version.status !== "ACTIVE") {
+    return "Đầu việc này đã ngừng áp dụng hoặc thuộc phiên bản cũ — không thể chọn để tạo mới";
+  }
+  const activation = await getCatalogActivationForPerson(personId);
+  if (activation.unitIds.length === 0) {
+    return "Cán bộ chưa được gán bộ phận đang công tác — không thể chọn đầu việc TX";
+  }
+  const matched = activation.departments.some((d) => d.department === entry.department);
+  if (!matched) {
+    return `Nhóm "${entry.department}" chưa được kích hoạt cho bộ phận của cán bộ — không thể chọn`;
+  }
+  return null;
+}
+
+/**
+ * Bảng ánh xạ 6 nhóm nguồn → org_units thật, kèm trạng thái kích hoạt.
+ * Dùng cho màn hình quản trị và báo cáo đối chiếu với Hải quan.
+ */
+export async function getCatalogDepartmentStatuses(versionId?: string | null): Promise<{
+  version: { id: string; code: string; status: string; importedAt: Date } | null;
+  departments: CatalogDepartmentStatus[];
+}> {
+  const version = versionId
+    ? await prisma.workCatalogVersion.findUnique({
+        where: { id: versionId },
+        select: { id: true, code: true, status: true, importedAt: true },
+      })
+    : await prisma.workCatalogVersion.findFirst({
+        where: { status: "ACTIVE" },
+        orderBy: { importedAt: "desc" },
+        select: { id: true, code: true, status: true, importedAt: true },
+      });
+
+  if (!version) return { version: null, departments: [] };
+
+  const [entries, mappings] = await Promise.all([
+    prisma.workCatalogEntry.findMany({
+      where: { versionId: version.id },
+      select: { department: true, departmentOrder: true, status: true },
+      orderBy: { departmentOrder: "asc" },
+    }),
+    prisma.workCatalogDepartmentMapping.findMany({
+      include: { unit: { select: { code: true, name: true } } },
+    }),
+  ]);
+
+  const map = new Map<string, CatalogDepartmentStatus>();
+  for (const e of entries) {
+    const cur =
+      map.get(e.department) ||
+      ({
+        department: e.department,
+        departmentOrder: e.departmentOrder,
+        entryCount: 0,
+        activeEntryCount: 0,
+        unitId: null,
+        unitCode: null,
+        unitName: null,
+        isActive: false,
+        note: null,
+        confirmedAt: null,
+        updatedAt: null,
+      } satisfies CatalogDepartmentStatus);
+    cur.entryCount += 1;
+    if (e.status === "ACTIVE") cur.activeEntryCount += 1;
+    map.set(e.department, cur);
+  }
+
+  for (const m of mappings) {
+    const cur = map.get(m.department);
+    if (!cur) continue;
+    cur.unitId = m.unitId;
+    cur.unitCode = m.unit?.code || null;
+    cur.unitName = m.unit?.name || null;
+    cur.isActive = m.isActive;
+    cur.note = m.note;
+    cur.confirmedAt = m.confirmedAt;
+    cur.updatedAt = m.updatedAt;
+  }
+
+  return {
+    version,
+    departments: [...map.values()].sort((a, b) => a.departmentOrder - b.departmentOrder),
+  };
 }
 
 function buildVersionCode(sequence: number): string {

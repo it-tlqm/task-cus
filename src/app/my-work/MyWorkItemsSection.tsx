@@ -25,6 +25,10 @@ interface WorkItem {
   task?: { id: string; code: string; title: string; status: string; currentDeadline?: string } | null;
   _count?: { evidences: number };
   period?: { id: string; title?: string | null } | null;
+  planItem?: {
+    id: string;
+    plan?: { id: string; title: string; status: string } | null;
+  } | null;
 }
 
 interface Evidence {
@@ -428,7 +432,8 @@ export default function MyWorkItemsSection({ personId }: Props) {
           </span>
         )}
         <span className="ml-auto text-outline">
-          Hạn xử lý và ngày hoàn thành là hai mốc độc lập, đều lưu nhật ký điều chỉnh.
+          Hạn xử lý chỉ chỉnh được trước khi kế hoạch duyệt; sau duyệt bị khóa đến khi có quy trình
+          gia hạn. Ngày hoàn thành thực tế vẫn cập nhật và ghi nhật ký.
         </span>
       </div>
 
@@ -449,6 +454,9 @@ export default function MyWorkItemsSection({ personId }: Props) {
             const overdue = isOverdue(item);
             const done = !!item.completedDate;
             const expanded = expandedId === item.id;
+            const planLocked =
+              item.planItem?.plan?.status === "APPROVED" ||
+              item.planItem?.plan?.status === "IN_EFFECT";
             const list = evidences[item.id] || [];
             const meta = evidenceMeta[item.id];
             const evidenceCount = item._count?.evidences ?? list.length;
@@ -558,17 +566,28 @@ export default function MyWorkItemsSection({ personId }: Props) {
                       </span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDueEditId(dueEditId === item.id ? null : item.id);
-                        setDueDraft(item.dueDate ? toDateInput(new Date(item.dueDate)) : "");
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container-lowest hover:bg-surface-container active-press"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">edit_calendar</span>
-                      Sửa hạn
-                    </button>
+                    {planLocked ? (
+                      <span
+                        data-testid={`work-item-due-lock-${item.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container text-on-surface-variant"
+                        title={`Kế hoạch "${item.planItem?.plan?.title || ""}" đã duyệt — hạn xử lý gốc bị khóa. Chưa có quy trình gia hạn được duyệt; vẫn cập nhật được tiến độ/ngày hoàn thành thực tế.`}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">lock</span>
+                        Hạn đã khóa
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDueEditId(dueEditId === item.id ? null : item.id);
+                          setDueDraft(item.dueDate ? toDateInput(new Date(item.dueDate)) : "");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container-lowest hover:bg-surface-container active-press"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">edit_calendar</span>
+                        Sửa hạn
+                      </button>
+                    )}
 
                     {item.task ? (
                       <span className="inline-flex items-center gap-1 px-2 py-1 text-[11px] text-indigo-800 bg-indigo-50 border border-indigo-200 rounded">
@@ -630,7 +649,7 @@ export default function MyWorkItemsSection({ personId }: Props) {
                         </h3>
                         <span className="text-[10px] text-outline">
                           Tệp được tải qua máy chủ có kiểm tra quyền, không phát URL công khai. Tối đa{" "}
-                          {meta?.maxFileMb || 20} MB/tệp.
+                          {meta?.maxFileMb || 4} MB/tệp.
                         </span>
                       </div>
 

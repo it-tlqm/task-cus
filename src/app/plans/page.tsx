@@ -206,6 +206,9 @@ export default function PlansPage() {
   const [txEntries, setTxEntries] = useState<WorkCatalogEntryPicker[]>([]);
   const [txDepartments, setTxDepartments] = useState<WorkCatalogDepartment[]>([]);
   const [legacyTemplatesSelectable, setLegacyTemplatesSelectable] = useState(true);
+  const [catalogActivationStatus, setCatalogActivationStatus] = useState<
+    "NO_VERSION" | "NOT_ACTIVATED" | "ACTIVATED"
+  >("NO_VERSION");
   const [templateSearch, setTemplateSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [productResults, setProductResults] = useState<ProductPickerItem[]>([]);
@@ -294,6 +297,13 @@ export default function PlansPage() {
         setTxEntries(catData.entries || []);
         setTxDepartments(catData.departments || []);
         setLegacyTemplatesSelectable(catData.legacyTemplatesSelectable !== false);
+        setCatalogActivationStatus(
+          catData.activation?.status === "ACTIVATED"
+            ? "ACTIVATED"
+            : catData.version
+              ? "NOT_ACTIVATED"
+              : "NO_VERSION"
+        );
       }
     } catch {
       // fallback
@@ -1880,7 +1890,9 @@ export default function PlansPage() {
                     </div>
                   ) : (
                     <div className="text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5">
-                      Chưa có Danh mục TX đang áp dụng — tiếp tục dùng danh mục bộ phận hoặc 48 mẫu cũ bên dưới.
+                      {catalogActivationStatus === "NO_VERSION"
+                        ? "Chưa có Danh mục TX đang áp dụng — tiếp tục dùng danh mục bộ phận hoặc 48 mẫu cũ bên dưới."
+                        : "Bộ phận của bạn chưa được kích hoạt Danh mục TX — vẫn dùng danh mục bộ phận hoặc 48 mẫu cũ bên dưới."}
                     </div>
                   )}
 
@@ -1888,8 +1900,8 @@ export default function PlansPage() {
                     <div className="text-[11px] text-status-warning flex items-start gap-1">
                       <span className="material-symbols-outlined text-[14px]">info</span>
                       <span>
-                        48 mẫu cũ đã ngừng cho chọn khi tạo đầu việc mới. Đầu việc lịch sử vẫn giữ nguyên liên kết và
-                        hiển thị đầy đủ.
+                        Bộ phận của bạn đã chuyển sang Danh mục TX — 48 mẫu cũ không còn cho chọn khi tạo đầu việc mới.
+                        Đầu việc lịch sử vẫn giữ nguyên liên kết và hiển thị đầy đủ.
                       </span>
                     </div>
                   )}

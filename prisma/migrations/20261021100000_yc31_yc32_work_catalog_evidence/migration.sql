@@ -42,6 +42,21 @@ CREATE TABLE "work_catalog_entries" (
 );
 
 -- CreateTable
+CREATE TABLE "work_catalog_department_mappings" (
+    "id" TEXT NOT NULL,
+    "department" TEXT NOT NULL,
+    "unit_id" TEXT,
+    "is_active" BOOLEAN NOT NULL DEFAULT false,
+    "note" TEXT,
+    "confirmed_by" TEXT,
+    "confirmed_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "work_catalog_department_mappings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "work_evidences" (
     "id" TEXT NOT NULL,
     "work_item_id" TEXT NOT NULL,
@@ -75,6 +90,12 @@ CREATE UNIQUE INDEX "work_catalog_entries_version_id_department_title_key" ON "w
 CREATE UNIQUE INDEX "work_catalog_entries_version_id_code_key" ON "work_catalog_entries"("version_id", "code");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "work_catalog_department_mappings_department_key" ON "work_catalog_department_mappings"("department");
+
+-- CreateIndex
+CREATE INDEX "work_catalog_department_mappings_unit_id_is_active_idx" ON "work_catalog_department_mappings"("unit_id", "is_active");
+
+-- CreateIndex
 CREATE INDEX "work_evidences_work_item_id_created_at_idx" ON "work_evidences"("work_item_id", "created_at");
 
 -- CreateIndex
@@ -97,6 +118,12 @@ ALTER TABLE "work_catalog_entries" ADD CONSTRAINT "work_catalog_entries_version_
 
 -- AddForeignKey
 ALTER TABLE "work_catalog_entries" ADD CONSTRAINT "work_catalog_entries_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "org_units"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "work_catalog_department_mappings" ADD CONSTRAINT "work_catalog_department_mappings_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "org_units"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Kích hoạt nhóm TX bắt buộc phải có đơn vị thật (fail-closed ở tầng CSDL)
+ALTER TABLE "work_catalog_department_mappings" ADD CONSTRAINT "work_catalog_department_mappings_active_requires_unit" CHECK (NOT "is_active" OR "unit_id" IS NOT NULL);
 
 -- AddForeignKey
 ALTER TABLE "work_evidences" ADD CONSTRAINT "work_evidences_work_item_id_fkey" FOREIGN KEY ("work_item_id") REFERENCES "personal_work_items"("id") ON DELETE CASCADE ON UPDATE CASCADE;

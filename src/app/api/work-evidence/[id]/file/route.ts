@@ -3,7 +3,10 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
-import { getEvidenceStorageProvider } from "@/server/storage";
+import {
+  ensureEvidenceStorageReady,
+  EvidenceStorageConfigError,
+} from "@/server/storage";
 import { checkWorkItemAccess } from "@/server/work-access";
 import { contentDispositionAttachment, sanitizeEvidenceFileName } from "@/server/work-evidence";
 
@@ -46,7 +49,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return jsonError(access.reason || "Bạn không có quyền tải minh chứng này", 403);
     }
 
-    const storage = getEvidenceStorageProvider();
+    let storage: Awaited<ReturnType<typeof ensureEvidenceStorageReady>>;
+    try {
+      storage = await ensureEvidenceStorageReady();
+    } catch (err: any) {
+      if (err instanceof EvidenceStorageConfigError) {
+        console.error("[WorkEvidence] storage config:", err.message);
+        return jsonError("Kho minh chứng riêng tư chưa được cấu hình đúng trên máy chủ", 503);
+      }
+      throw err;
+    }
     const buffer = await storage.download(evidence.storageKey);
     if (!buffer) {
       return jsonError("Không tìm thấy tệp minh chứng trong kho lưu trữ", 404);

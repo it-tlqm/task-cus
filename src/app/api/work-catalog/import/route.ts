@@ -7,7 +7,7 @@ import {
   getActiveWorkCatalogVersion,
   importWorkCatalog,
   parseWorkCatalogWorkbook,
-  isLegacyTemplateSelectable,
+  getCatalogDepartmentStatuses,
 } from "@/server/work-catalog";
 
 export const runtime = "nodejs";
@@ -128,7 +128,9 @@ export async function POST(req: NextRequest) {
           entryCount: version.entryCount,
           importedAt: version.importedAt,
         },
-        legacyTemplatesSelectable: await isLegacyTemplateSelectable(),
+        // Nhập danh mục KHÔNG tự kích hoạt bộ phận nào. Quản trị phải ánh xạ
+        // nhóm → org_unit và bật kích hoạt theo từng bộ phận.
+        activation: await getCatalogDepartmentStatuses(version.id),
       },
       { status: 201 }
     );

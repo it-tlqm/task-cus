@@ -25,7 +25,8 @@ Kết luận: **không áp drift cũ** trong lượt deploy YC-31/32; giữ nguy
 ### 2.2. Phần YC-31/32 cần thêm (additive, nullable)
 
 - `personal_work_items`: `catalog_entry_id`, `due_date`, `completed_date`, `task_id` (đều nullable).
-- Bảng mới: `work_catalog_versions`, `work_catalog_entries`, `work_evidences`.
+- Bảng mới: `work_catalog_versions`, `work_catalog_entries`, `work_catalog_department_mappings`, `work_evidences`.
+- `work_catalog_department_mappings` (vòng 2): unique `department`; `unit_id` nullable; `is_active` mặc định `false`; CHECK `is_active = false OR unit_id IS NOT NULL`; FK tới `org_units`.
 - Index mới: 3 unique + các index tra cứu; FK mới tới `people`, `org_units`, `personal_work_items`, `monthly_work_results`, `tasks`.
 - Unique mới: `monthly_work_results(person_id, work_item_id)`.
 
@@ -42,18 +43,29 @@ Nguồn DDL: `prisma/migrations/20261021100000_yc31_yc32_work_catalog_evidence/m
 - Tạo clone `talung_prodclone` từ chính cấu trúc Production bằng
   `prisma migrate diff --from-empty --to-url <Prod> --script` → 212 câu lệnh, 61 bảng.
 - Thêm script **`scripts/apply-yc31-32-ddl.ts`** (idempotent, additive, không DROP/UPDATE dữ liệu).
-- Kết quả trên clone:
-  - Lần 1: `applied=22, skipped=0, checks_failed=0`.
-  - Lần 2: `applied=14, skipped=8, checks_failed=0` (chạy lại an toàn).
-  - Diff còn lại giữa clone và schema chỉ là drift cũ (mục 2.1), **không còn mục YC-31/32**.
+- Kết quả trên clone **sau khi bổ sung bảng mapping vòng 2**:
+
+| Lần chạy | `executed_statements` | `skipped_constraints` | `schema_changed` | Fingerprint schema |
+|---|---:|---:|---|---|
+| 1 | 19 | 8 | **true** | `648b5f3e4851` → `cd4cfb9eb26d` |
+| 2 | 17 | 10 | **false** | `cd4cfb9eb26d` (giữ nguyên) |
+
+- `executed_statements` chỉ là số câu lệnh đã chạy. Ở lần 2, 17 câu `IF NOT EXISTS` chạy nhưng **không tạo thay đổi nào**; 10 ràng buộc được kiểm tra rồi bỏ qua. Bằng chứng idempotent là **fingerprint trước = sau** và `schema_changed=false`, không dùng con số `executed` để kết luận.
+- `checks_failed=0` cả hai lần.
 - Kiểm thử ràng buộc unique trên clone: nhiều dòng cùng người với `work_item_id = NULL` chèn được; dòng thứ hai cùng `(person, work_item)` bị từ chối bằng `23505`; transaction đã rollback.
+- Diff còn lại giữa clone và schema chỉ là drift cũ (mục 2.1), **không còn mục YC-31/32**.
+- **Chưa chạy DDL này trên Production.**
 
-## 5. Storage Production — CHƯA ĐẠT
+## 5. Storage Production — CHƯA ĐẠT (mã đã fail-closed)
 
-- Bucket hiện có duy nhất: `task-attachments` — **PUBLIC**, policy cho phép `public` INSERT/SELECT/UPDATE/DELETE.
+- Bucket hiện có duy nhất: `task-attachments`.
+  - `public = true`; giới hạn 50 MB; MIME: PDF/JPEG/PNG/XLSX/DOCX/DOC/XLS; **2 object**.
+  - 4 policy role `public`: SELECT, INSERT, UPDATE, DELETE trên `bucket_id='task-attachments'`.
+  - Rủi ro cao: người có publishable key (nằm trong trình duyệt) có thể đọc/ghi đè/xóa object. Không thay đổi bucket này trong đợt hiện tại vì còn object/URL cũ; phải kiểm kê và chuyển URL trước.
 - **Không có bucket `work-evidence`** (GET bucket → NoSuchBucket).
-- Môi trường hiện tại **không có `SUPABASE_SERVICE_ROLE_KEY`/secret key**; code sẽ fallback sang publishable key (khóa công khai) → không thể tạo bucket riêng tư, không thể cấp quyền server đọc/ghi an toàn, không thể phát signed URL.
-- Kết luận: không được deploy tính năng minh chứng trong trạng thái này; nếu deploy, upload sẽ lỗi (hoặc tệ hơn là phải dùng bucket public — vi phạm yêu cầu).
+- Môi trường hiện tại **không có `SUPABASE_SERVICE_ROLE_KEY`/secret key**.
+- Mã vòng 2 đã **fail-closed**: thiếu khóa server, thiếu bucket, bucket public hoặc driver R2 chưa cấu hình → **503**, không fallback publishable key/URL công khai. `STORAGE_DRIVER=local` cũng bị từ chối cho minh chứng trong production (trừ cờ `ALLOW_LOCAL_EVIDENCE=1` chỉ dùng kiểm thử). Đã kiểm thử 7 tình huống, 7/7 PASS.
+- Kết luận: **không được deploy tính năng minh chứng** cho tới khi tạo bucket private + cấu hình khóa server-side trên Vercel.
 
 ## 6. Ánh xạ bộ phận của Danh mục TX — CHƯA ĐỦ ĐIỀU KIỆN IMPORT
 
@@ -65,22 +77,46 @@ Nguồn DDL: `prisma/migrations/20261021100000_yc31_yc32_work_catalog_evidence/m
   - `Bộ phân Phúc tập & KT STQ` (2): tên gần với mã đơn vị `BỘ PHẬN PHÚC TẬP _ KTSTQ` (name hiển thị "Tổng hợp") — cần xác nhận.
   - `Bộ phận CNTT` (5), `Bộ phân điều tra CBL` (13), `Công tác Đảng` (8): **không có đơn vị tương ứng** trong `org_units`.
 - Vì vậy **không import danh mục TX vào Production** cho tới khi Hải quan xác nhận (câu hỏi B2).
+- Vòng 2 đã thêm `WorkCatalogDepartmentMapping` để kích hoạt theo bộ phận, không sửa `unit_id` của 143 dòng nguồn:
+  - unique `department`;
+  - `unit_id` nullable;
+  - `is_active=false` mặc định;
+  - CHECK không cho active khi thiếu đơn vị;
+  - mọi thay đổi qua API quản trị có audit.
+- Bảng 3 cột để xác nhận: `docs/TX_DEPARTMENT_MAPPING_2026-10-20.md`.
+- Ba nhóm không có `org_units` tương ứng phải giữ **UNACTIVATED**; không tự tạo đơn vị, không phát cho toàn bộ cán bộ.
 
-## 7. Điểm lệch với yêu cầu nghiệm thu mới (cần xử lý trước khi mở lại deploy)
+## 7. Điểm lệch với yêu cầu nghiệm thu mới — ĐÃ XỬ LÝ TRONG MÃ (vòng 2)
 
-1. **Ẩn mẫu cũ is GLOBAL:** `isLegacyTemplateSelectable()` trong `src/server/work-catalog.ts` trả `false` cho mọi người dùng khi có bất kỳ phiên bản TX `ACTIVE` nào (và chưa có cấu hình ghi đè). Yêu cầu mới: bộ phận B chưa kích hoạt vẫn phải chọn được nguồn hợp lệ; không ẩn toàn hệ thống chỉ vì bộ phận A kích hoạt. Hiện chưa đủ dữ kiện ánh xạ để làm theo bộ phận; cần chọn giải pháp (per-department hoặc chỉ ẩn khi quản trị bật).
-2. **Hạn xử lý sau khi kế hoạch đã duyệt:** API PATCH hiện vẫn cho sửa `due_date` sau duyệt (chỉ ghi audit, không cần lý do/người xác nhận). Yêu cầu mới: tạm khóa thao tác sửa hạn sau duyệt nếu chưa có quy trình gia hạn đầy đủ.
+1. **Ẩn mẫu cũ toàn hệ thống** → đã chuyển sang **theo bộ phận**:
+   - mapping `WorkCatalogDepartmentMapping` + entry ACTIVE của phiên bản đang áp dụng;
+   - chỉ bộ phận đã kích hoạt mới ẩn 48 mẫu cũ;
+   - bộ phận chưa kích hoạt vẫn dùng 48 mẫu cũ/YC-25;
+   - kiểm tra theo phân công của **người nhận**, không theo phạm vi người tạo;
+   - đã kiểm thử A/B với hai trạng thái kích hoạt khác nhau (50/50 API, UI thật).
+2. **Hạn xử lý sau duyệt** → đã **khóa**:
+   - PATCH `dueDate` sau duyệt → **403**, audit `PERSONAL_WORK_ITEM_DUE_DATE_DENIED`;
+   - tiến độ/ngày hoàn thành thực tế vẫn cập nhật được;
+   - không ghi đè hạn lịch sử;
+   - chưa có quy trình gia hạn được duyệt.
+3. **Minh chứng** → đã tách kho private + fail-closed; chưa cấu hình bucket/khóa trên Production nên tính năng vẫn bị chặn deploy.
+
+Các điểm trên không còn là lý do chặn **mã nguồn**, nhưng vẫn là điều kiện **nghiệm thu/cấu hình** trước khi bật Production.
 
 ## 8. Kết luận
 
-- Lịch sử migration Production **không đáng tin cậy để dùng `prisma migrate deploy`**; đã thay bằng apply-script idempotent và kiểm thử trên clone cấu trúc Production (PASS).
-- **DỪNG triển khai** theo đúng điều kiện an toàn của yêu cầu: Storage chưa đạt + ánh xạ bộ phận chưa xác nhận.
-- Không merge `main`, không push, không DDL Production trong lượt này.
+- Lịch sử migration Production **không đáng tin cậy để dùng `prisma migrate deploy`**; đã thay bằng apply-script idempotent và kiểm thử trên clone cấu trúc Production (PASS, fingerprint không đổi ở lần 2).
+- Mã vòng 2 đã xử lý 3 điểm lệch: kích hoạt theo bộ phận, khóa hạn sau duyệt, kho minh chứng private/fail-closed.
+- **DỪNG triển khai Production** theo đúng điều kiện an toàn: Storage chưa đạt + ánh xạ bộ phận chưa xác nhận + chưa có backup/checksum/restore plan mới.
+- Không merge `main`, không push, không DDL/import/Storage Production trong lượt này.
 
 ## 9. Việc cần làm để mở lại deploy
 
-1. Cấp quyền/khóa bí mật để tạo bucket minh chứng **riêng tư** (`work-evidence`) + policy tối thiểu cho server; bật `SUPABASE_EVIDENCE_BUCKET` trên Vercel.
-2. Hải quan xác nhận ánh xạ 6 khối bộ phận → `org_units` (đặc biệt CNTT, Điều tra CBL, Công tác Đảng).
-3. Chốt phương án kích hoạt danh mục theo bộ phận (không ẩn mẫu cũ toàn hệ thống).
-4. Chốt chính sách hạn sau duyệt (khóa tạm hoặc quy trình gia hạn có lý do + người xác nhận).
-5. Sau đó: backup Production mới → áp `scripts/apply-yc31-32-ddl.ts` → deploy code → smoke test → mới import danh mục TX.
+1. Tạo bucket minh chứng **riêng tư** `work-evidence` + cấu hình `SUPABASE_SERVICE_ROLE_KEY`/secret key **server-side** trên Vercel; không thêm policy public; đặt `WORK_EVIDENCE_MAX_MB=4` (Vercel ~4,5 MB).
+2. Hải quan xác nhận ánh xạ 6 nhóm nguồn → `org_units` theo bảng 3 cột (đặc biệt CNTT, Điều tra CBL, Công tác Đảng).
+3. Chốt quy trình gia hạn hạn xử lý sau duyệt (hiện đang khóa 403; chưa có workflow gia hạn).
+4. Backup Production mới + checksum + kiểm tra restore.
+5. Review/merge nhánh; build/typecheck xanh.
+6. Áp `scripts/apply-yc31-32-ddl.ts` (KHÔNG `prisma migrate deploy`), chạy lại xác nhận `schema_changed=false`/fingerprint không đổi.
+7. Deploy code → `/api/health` đúng commit, `db=up`; smoke test.
+8. Chỉ sau đó mới import TX cho nhóm đã xác nhận, dry-run + đối chiếu 143 dòng, rồi bật mapping.

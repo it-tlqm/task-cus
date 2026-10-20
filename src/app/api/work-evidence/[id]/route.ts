@@ -3,7 +3,10 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
-import { getEvidenceStorageProvider } from "@/server/storage";
+import {
+  ensureEvidenceStorageReady,
+  EvidenceStorageConfigError,
+} from "@/server/storage";
 import { checkWorkItemAccess, isPeriodLocked } from "@/server/work-access";
 
 export const runtime = "nodejs";
@@ -54,7 +57,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return jsonError("Chỉ người tải lên hoặc lãnh đạo trong phạm vi được xóa minh chứng này", 403);
     }
 
-    const storage = getEvidenceStorageProvider();
+    let storage: Awaited<ReturnType<typeof ensureEvidenceStorageReady>>;
+    try {
+      storage = await ensureEvidenceStorageReady();
+    } catch (err: any) {
+      if (err instanceof EvidenceStorageConfigError) {
+        console.error("[WorkEvidence] storage config:", err.message);
+        return jsonError("Kho minh chứng riêng tư chưa được cấu hình đúng trên máy chủ", 503);
+      }
+      throw err;
+    }
     const storageDeleted = await storage.delete(evidence.storageKey);
 
     await prisma.workEvidence.delete({ where: { id } });

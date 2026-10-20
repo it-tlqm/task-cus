@@ -51,6 +51,7 @@ model OrgUnit {
   dutyDayInfos DutyDayInfo[]
   departmentWorkItems DepartmentWorkItem[]
   workCatalogEntries  WorkCatalogEntry[]
+  workCatalogDepartmentMappings WorkCatalogDepartmentMapping[]
 
   @@map("org_units")
 }
@@ -324,6 +325,26 @@ model WorkCatalogEntry {
   @@unique([versionId, code])
   @@index([versionId, status, departmentOrder, sortOrder])
   @@map("work_catalog_entries")
+}
+
+// YC-31 — Ánh xạ nhóm TX (tên bộ phận trong file nguồn) với đơn vị tổ chức thật.
+// Mặc định isActive=false: nhóm chưa được xác nhận KHÔNG phát cho người dùng.
+// Tên nhóm nguồn được giữ nguyên; không tự tạo org_units từ file Excel.
+model WorkCatalogDepartmentMapping {
+  id          String    @id @default(uuid())
+  department  String    @unique
+  unitId      String?   @map("unit_id")
+  isActive    Boolean   @default(false) @map("is_active")
+  note        String?
+  confirmedBy String?   @map("confirmed_by")
+  confirmedAt DateTime? @map("confirmed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  unit OrgUnit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
+
+  @@index([unitId, isActive])
+  @@map("work_catalog_department_mappings")
 }
 
 // ----------------------------------------------------

@@ -28,8 +28,64 @@ function maskedTarget(): string {
   }
 }
 
+const YC_TABLES = [
+  "work_catalog_versions",
+  "work_catalog_entries",
+  "work_catalog_department_mappings",
+  "work_evidences",
+];
+
+/**
+ * Vân tay schema của đúng các đối tượng YC-31/32 (cột, index, constraint).
+ * Dùng để chứng minh chạy lại không làm đổi schema — không chỉ dựa vào bộ đếm.
+ */
+async function schemaFingerprint(): Promise<string> {
+  const tableList = YC_TABLES.map((t) => `'${t}'`).join(",");
+  const rows: Array<{ fingerprint: string }> = await prisma.$queryRawUnsafe(`
+    SELECT md5(
+      (
+        SELECT coalesce(string_agg(
+          table_name || '.' || column_name || ':' || data_type || ':' || is_nullable || ':' || coalesce(column_default, ''),
+          '|' ORDER BY table_name, column_name
+        ), '')
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND (
+            table_name IN (${tableList})
+            OR (table_name = 'personal_work_items'
+                AND column_name IN ('catalog_entry_id','due_date','completed_date','task_id'))
+          )
+      )
+      ||
+      (
+        SELECT coalesce(string_agg(indexname || ':' || indexdef, '|' ORDER BY indexname), '')
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+          AND (
+            tablename IN (${tableList})
+            OR (tablename = 'personal_work_items'
+                AND indexname IN ('personal_work_items_catalog_entry_id_idx','personal_work_items_task_id_idx'))
+            OR indexname = 'monthly_work_results_person_id_work_item_id_key'
+          )
+      )
+      ||
+      (
+        SELECT coalesce(string_agg(conname || ':' || pg_get_constraintdef(oid), '|' ORDER BY conname), '')
+        FROM pg_constraint
+        WHERE connamespace = 'public'::regnamespace
+          AND conrelid IN (
+            SELECT oid FROM pg_class
+            WHERE relname IN (${tableList}, 'personal_work_items', 'monthly_work_results')
+          )
+      )
+    ) AS fingerprint
+  `);
+  return rows[0]?.fingerprint || "none";
+}
+
 async function main() {
   console.log(`DB dich: ${maskedTarget()}`);
+  const beforeFingerprint = await schemaFingerprint();
   const file = "prisma/migrations/20261021100000_yc31_yc32_work_catalog_evidence/migration.sql";
   let sql = fs.readFileSync(file, "utf8");
   // Idempotent: chỉ tạo khi chưa có
@@ -46,8 +102,8 @@ async function main() {
     .split(";")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
-  let applied = 0;
-  let skipped = 0;
+  let executed = 0;
+  let skippedConstraints = 0;
   for (const st of statements) {
     // Bỏ qua ADD CONSTRAINT trùng (chạy lại sẽ lỗi) — kiểm tra pg_constraint trước
     if (/ADD CONSTRAINT/.test(st)) {
@@ -58,19 +114,28 @@ async function main() {
       );
       if (Number(exists[0]?.c || 0) > 0) {
         console.log(`SKIP constraint ${name} (da ton tai)`);
-        skipped++;
+        skippedConstraints++;
         continue;
       }
     }
+    // Lưu ý: CREATE TABLE/INDEX/COLUMN IF NOT EXISTS vẫn được PostgreSQL THỰC THI
+    // dù đối tượng đã tồn tại (chỉ phát NOTICE, không đổi schema). Vì vậy bộ đếm
+    // "executed" không đồng nghĩa "đã thay đổi schema".
     await prisma.$executeRawUnsafe(st);
-    applied++;
+    executed++;
   }
+
+  const afterFingerprint = await schemaFingerprint();
+  const schemaChanged = beforeFingerprint !== afterFingerprint;
 
   // Hậu kiểm: object YC-31/32 phải tồn tại sau khi áp
   const checks: Array<{ label: string; sql: string }> = [
     { label: "table work_catalog_versions", sql: "SELECT count(*)::int AS c FROM information_schema.tables WHERE table_schema='public' AND table_name='work_catalog_versions'" },
     { label: "table work_catalog_entries", sql: "SELECT count(*)::int AS c FROM information_schema.tables WHERE table_schema='public' AND table_name='work_catalog_entries'" },
+    { label: "table work_catalog_department_mappings", sql: "SELECT count(*)::int AS c FROM information_schema.tables WHERE table_schema='public' AND table_name='work_catalog_department_mappings'" },
     { label: "table work_evidences", sql: "SELECT count(*)::int AS c FROM information_schema.tables WHERE table_schema='public' AND table_name='work_evidences'" },
+    { label: "mapping.department unique", sql: "SELECT count(*)::int AS c FROM pg_indexes WHERE schemaname='public' AND indexname='work_catalog_department_mappings_department_key'" },
+    { label: "mapping.active_requires_unit check", sql: "SELECT count(*)::int AS c FROM pg_constraint WHERE conname='work_catalog_department_mappings_active_requires_unit'" },
     { label: "personal_work_items.catalog_entry_id", sql: "SELECT count(*)::int AS c FROM information_schema.columns WHERE table_schema='public' AND table_name='personal_work_items' AND column_name='catalog_entry_id'" },
     { label: "personal_work_items.due_date", sql: "SELECT count(*)::int AS c FROM information_schema.columns WHERE table_schema='public' AND table_name='personal_work_items' AND column_name='due_date'" },
     { label: "personal_work_items.completed_date", sql: "SELECT count(*)::int AS c FROM information_schema.columns WHERE table_schema='public' AND table_name='personal_work_items' AND column_name='completed_date'" },
@@ -84,7 +149,16 @@ async function main() {
     console.log(`${ok ? "OK  " : "MISS"} ${ch.label}`);
     if (!ok) failed++;
   }
-  console.log(`DDL-OK (applied=${applied}, skipped=${skipped}, checks_failed=${failed})`);
+  console.log(
+    `DDL-DONE (executed_statements=${executed}, skipped_constraints=${skippedConstraints}, ` +
+      `schema_changed=${schemaChanged}, schema_before=${beforeFingerprint.slice(0, 12)}, ` +
+      `schema_after=${afterFingerprint.slice(0, 12)}, checks_failed=${failed})`
+  );
+  console.log(
+    schemaChanged
+      ? "SCHEMA-CHANGED: lan chay nay co thay doi doi tuong YC-31/32."
+      : "SCHEMA-UNCHANGED: lan chay nay chi thuc thi IF NOT EXISTS, khong thay doi schema."
+  );
   if (failed > 0) process.exitCode = 2;
 }
 

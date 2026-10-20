@@ -4,11 +4,16 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
-import { getEvidenceStorageProvider } from "@/server/storage";
+import {
+  ensureEvidenceStorageReady,
+  EvidenceStorageConfigError,
+} from "@/server/storage";
 import { checkWorkItemAccess, isPeriodLocked } from "@/server/work-access";
 import {
   contentDispositionAttachment,
+  getMaxEvidenceBytes,
   sanitizeEvidenceFileName,
+  validateEvidenceContent,
   validateEvidenceFile,
 } from "@/server/work-evidence";
 
@@ -63,7 +68,7 @@ export async function GET(req: NextRequest) {
         canUpload: !locked,
         periodLocked: locked,
         scope: access.scope,
-        maxFileMb: Math.round((Number(process.env.WORK_EVIDENCE_MAX_MB || 20) || 20)),
+        maxFileMb: Math.round((Number(process.env.WORK_EVIDENCE_MAX_MB || 4) || 4)),
       },
     });
   } catch (error: any) {
@@ -81,7 +86,26 @@ export async function POST(req: NextRequest) {
     const user = await authenticateRequest(req);
     if (!user) return jsonError("Yêu cầu đăng nhập", 401);
 
-    const form = await req.formData();
+    // Chặn sớm theo Content-Length trước khi đọc multipart: tránh 500 khó hiểu
+    // khi tệp vượt giới hạn và tránh tốn bộ nhớ. Biên 512 KB cho phần header multipart.
+    const maxEvidenceBytes = getMaxEvidenceBytes();
+    const contentLength = Number(req.headers.get("content-length") || 0);
+    if (contentLength > maxEvidenceBytes + 512 * 1024) {
+      return jsonError(
+        `Tệp vượt quá giới hạn ${Math.round(maxEvidenceBytes / 1024 / 1024)} MB`,
+        413
+      );
+    }
+
+    let form: FormData;
+    try {
+      form = await req.formData();
+    } catch {
+      return jsonError(
+        "Không đọc được dữ liệu tải lên (multipart lỗi hoặc tệp vượt giới hạn xử lý)",
+        413
+      );
+    }
     const workItemId = String(form.get("workItemId") || "");
     const file = form.get("file");
     const noteRaw = String(form.get("note") || "").trim();
@@ -111,6 +135,12 @@ export async function POST(req: NextRequest) {
     }
 
     const upload = file as File;
+    if (upload.size > maxEvidenceBytes) {
+      return jsonError(
+        `Tệp vượt quá giới hạn ${Math.round(maxEvidenceBytes / 1024 / 1024)} MB`,
+        413
+      );
+    }
     const check = validateEvidenceFile(upload.name, upload.size);
     if (!check.ok) return jsonError(check.message, 400);
     if (noteRaw.length > 500) return jsonError("Ghi chú tối đa 500 ký tự", 400);
@@ -129,15 +159,39 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await upload.arrayBuffer());
+    if (buffer.length > maxEvidenceBytes) {
+      return jsonError(
+        `Tệp vượt quá giới hạn ${Math.round(maxEvidenceBytes / 1024 / 1024)} MB`,
+        413
+      );
+    }
+    // Kiểm tra nội dung thực (magic bytes), không tin Content-Type/đuôi tệp.
+    const contentCheck = validateEvidenceContent(buffer, upload.name);
+    if (!contentCheck.ok) return jsonError(contentCheck.message, 400);
     const checksum = crypto.createHash("sha256").update(buffer).digest("hex");
-    const storage = getEvidenceStorageProvider();
+    const safeFileName = sanitizeEvidenceFileName(upload.name);
+
+    let storage: Awaited<ReturnType<typeof ensureEvidenceStorageReady>>;
+    try {
+      // Fail-closed: thiếu khóa server / bucket chưa private / chưa tồn tại → 503.
+      storage = await ensureEvidenceStorageReady();
+    } catch (err: any) {
+      if (err instanceof EvidenceStorageConfigError) {
+        console.error("[WorkEvidence] storage config:", err.message);
+        return jsonError(
+          "Kho minh chứng riêng tư chưa được cấu hình đúng trên máy chủ. Vui lòng báo quản trị hệ thống.",
+          503
+        );
+      }
+      throw err;
+    }
 
     let uploaded;
     try {
       uploaded = await storage.upload(
         buffer,
-        sanitizeEvidenceFileName(upload.name),
-        check.mimeType,
+        safeFileName,
+        contentCheck.mimeType,
         `evidence/${workItemId}`
       );
     } catch (err: any) {
@@ -148,21 +202,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const evidence = await prisma.workEvidence.create({
-      data: {
-        workItemId,
-        monthlyResultId,
-        fileName: sanitizeEvidenceFileName(upload.name),
-        fileSize: buffer.length,
-        mimeType: check.mimeType,
-        storageKey: uploaded.key,
-        fileUrl: null, // Không lưu/phát URL công khai
-        checksum,
-        note: noteRaw || null,
-        uploadedById: user.personId,
-      },
-      include: { uploadedBy: { select: { id: true, fullName: true, code: true } } },
-    });
+    const evidence = await prisma.workEvidence
+      .create({
+        data: {
+          workItemId,
+          monthlyResultId,
+          fileName: safeFileName,
+          fileSize: buffer.length,
+          mimeType: contentCheck.mimeType,
+          storageKey: uploaded.key,
+          fileUrl: null, // Không lưu/phát URL công khai
+          checksum,
+          note: noteRaw || null,
+          uploadedById: user.personId,
+        },
+        include: { uploadedBy: { select: { id: true, fullName: true, code: true } } },
+      })
+      .catch(async (err: any) => {
+        // Không để tệp mồ côi khi ghi metadata thất bại.
+        await storage.delete(uploaded.key).catch(() => false);
+        console.error("[WorkEvidence] metadata create error:", err?.message);
+        return null;
+      });
+    if (!evidence) {
+      return jsonError("Không ghi được thông tin minh chứng — tệp chưa được lưu", 500);
+    }
 
     await recordAuditEvent({
       actorId: user.id,

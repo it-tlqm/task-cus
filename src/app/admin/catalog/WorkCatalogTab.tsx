@@ -6,10 +6,12 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   History,
+  Link2,
   Loader2,
   Power,
   RefreshCw,
   Search,
+  ShieldCheck,
   Upload,
   X,
 } from "lucide-react";
@@ -46,6 +48,24 @@ interface DepartmentSummary {
   count: number;
 }
 
+interface DepartmentMappingRow {
+  department: string;
+  departmentOrder: number;
+  entryCount: number;
+  activeEntryCount: number;
+  unitId: string | null;
+  unitCode: string | null;
+  unitName: string | null;
+  isActive: boolean;
+}
+
+interface OrgUnitOption {
+  id: string;
+  code: string;
+  name: string;
+  level: number;
+}
+
 interface ImportReport {
   sheetName: string;
   totalRowsScanned: number;
@@ -73,7 +93,12 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
   const [activeVersion, setActiveVersion] = useState<CatalogVersion | null>(null);
   const [entries, setEntries] = useState<CatalogEntry[]>([]);
   const [departments, setDepartments] = useState<DepartmentSummary[]>([]);
-  const [legacySelectable, setLegacySelectable] = useState<boolean>(true);
+  const [mappingRows, setMappingRows] = useState<DepartmentMappingRow[]>([]);
+  const [orgUnits, setOrgUnits] = useState<OrgUnitOption[]>([]);
+  const [mappingDrafts, setMappingDrafts] = useState<
+    Record<string, { unitId: string; isActive: boolean }>
+  >({});
+  const [savingDept, setSavingDept] = useState<string | null>(null);
 
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
@@ -92,21 +117,33 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [resCatalog, resVersions] = await Promise.all([
+      const [resCatalog, resVersions, resMappings] = await Promise.all([
         fetch("/api/work-catalog?includeInactive=1", { cache: "no-store" }),
         fetch("/api/work-catalog/versions", { cache: "no-store" }),
+        fetch("/api/work-catalog/mappings", { cache: "no-store" }),
       ]);
       const catalogJson = await resCatalog.json();
       const versionsJson = await resVersions.json();
+      const mappingJson = await resMappings.json();
       if (!resCatalog.ok) throw new Error(catalogJson.error || "Không tải được danh mục TX");
       if (!resVersions.ok) throw new Error(versionsJson.error || "Không tải được lịch sử phiên bản");
+      if (!resMappings.ok) throw new Error(mappingJson.error || "Không tải được bảng ánh xạ bộ phận");
 
       const data = catalogJson.data || {};
       setActiveVersion(data.version || null);
       setEntries(data.entries || []);
       setDepartments(data.departments || []);
-      setLegacySelectable(data.legacyTemplatesSelectable !== false);
       setVersions(versionsJson.data || []);
+
+      const mappingData = mappingJson.data || {};
+      const rows: DepartmentMappingRow[] = mappingData.departments || [];
+      setMappingRows(rows);
+      setOrgUnits(mappingData.units || []);
+      setMappingDrafts(
+        Object.fromEntries(
+          rows.map((r) => [r.department, { unitId: r.unitId || "", isActive: r.isActive }])
+        )
+      );
     } catch (err: any) {
       showToast("error", err.message || "Không tải được danh mục TX");
     } finally {
@@ -213,6 +250,36 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
     }
   };
 
+  const saveMapping = async (row: DepartmentMappingRow) => {
+    if (!canManage) return;
+    const draft = mappingDrafts[row.department];
+    if (!draft) return;
+    if (draft.isActive && !draft.unitId) {
+      showToast("error", "Phải chọn bộ phận thật trong org_units trước khi kích hoạt nhóm TX");
+      return;
+    }
+    setSavingDept(row.department);
+    try {
+      const res = await fetch("/api/work-catalog/mappings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          department: row.department,
+          unitId: draft.unitId || null,
+          isActive: draft.isActive,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Không lưu được ánh xạ bộ phận");
+      showToast("success", json.message || "Đã lưu ánh xạ bộ phận");
+      await fetchAll();
+    } catch (err: any) {
+      showToast("error", err.message || "Không lưu được ánh xạ bộ phận");
+    } finally {
+      setSavingDept(null);
+    }
+  };
+
   const formatDate = (value: string | Date) => {
     try {
       return new Date(value).toLocaleString("vi-VN");
@@ -249,9 +316,9 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
               : "Khi chưa có danh mục TX, hệ thống vẫn cho chọn 48 mẫu cũ để không gián đoạn nghiệp vụ."}
           </p>
           <p className="text-[11px] text-slate-500">
-            {legacySelectable
-              ? "Mẫu cũ (48 mẫu) vẫn đang được phép chọn khi tạo mới."
-              : "Mẫu cũ (48 mẫu) đã ngừng cho chọn khi tạo mới; dữ liệu lịch sử vẫn giữ nguyên."}
+            {mappingRows.some((r) => r.isActive && r.unitId && r.activeEntryCount > 0)
+              ? `${mappingRows.filter((r) => r.isActive && r.unitId && r.activeEntryCount > 0).length}/${mappingRows.length} nhóm đã kích hoạt. Bộ phận chưa kích hoạt vẫn dùng 48 mẫu cũ bình thường.`
+              : "Chưa kích hoạt nhóm TX nào — tất cả bộ phận vẫn chọn được 48 mẫu cũ; dữ liệu lịch sử luôn giữ nguyên."}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -276,6 +343,132 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Ánh xạ nhóm TX → bộ phận thật + kích hoạt theo bộ phận */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-teal-700" />
+            <h3 className="text-sm font-bold text-slate-800">
+              Ánh xạ &amp; kích hoạt danh mục theo bộ phận
+            </h3>
+            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">
+              {mappingRows.filter((r) => r.isActive && r.unitId && r.activeEntryCount > 0).length}/
+              {mappingRows.length} nhóm
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-500">
+            Tên nhóm giữ nguyên từ file nguồn. Chỉ nhóm đã xác nhận mới được phát cho cán bộ thuộc
+            bộ phận tương ứng.
+          </p>
+        </div>
+
+        {!activeVersion ? (
+          <div className="p-6 text-center text-xs text-slate-500">
+            Cần nhập danh mục TX trước, sau đó ánh xạ từng nhóm với bộ phận thật trong org_units.
+          </div>
+        ) : mappingRows.length === 0 ? (
+          <div className="p-6 text-center text-xs text-slate-500">Chưa có nhóm bộ phận để ánh xạ.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] tracking-wide">
+                <tr>
+                  <th className="px-3 py-2.5 text-left font-semibold">Nhóm trong file nguồn</th>
+                  <th className="px-3 py-2.5 text-center font-semibold">Đầu việc</th>
+                  <th className="px-3 py-2.5 text-left font-semibold">Bộ phận thật (org_units)</th>
+                  <th className="px-3 py-2.5 text-center font-semibold">Kích hoạt</th>
+                  <th className="px-3 py-2.5 text-left font-semibold">Trạng thái phát</th>
+                  {canManage && <th className="px-3 py-2.5 text-right font-semibold">Lưu</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {mappingRows.map((row) => {
+                  const draft =
+                    mappingDrafts[row.department] || { unitId: row.unitId || "", isActive: row.isActive };
+                  const effectiveActive = draft.isActive && !!draft.unitId && row.activeEntryCount > 0;
+                  return (
+                    <tr key={row.department} className="hover:bg-slate-50/70">
+                      <td className="px-3 py-2 text-slate-800 font-medium min-w-[220px]">
+                        {row.department}
+                      </td>
+                      <td className="px-3 py-2 text-center text-slate-600">
+                        {row.activeEntryCount}/{row.entryCount}
+                      </td>
+                      <td className="px-3 py-2 min-w-[240px]">
+                        <select
+                          value={draft.unitId}
+                          disabled={!canManage}
+                          onChange={(e) =>
+                            setMappingDrafts((prev) => ({
+                              ...prev,
+                              [row.department]: { ...draft, unitId: e.target.value },
+                            }))
+                          }
+                          className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg bg-white text-slate-700 disabled:bg-slate-50"
+                        >
+                          <option value="">-- Chưa gán bộ phận --</option>
+                          {orgUnits.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              [{u.code}] {u.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={draft.isActive}
+                          disabled={!canManage}
+                          onChange={(e) =>
+                            setMappingDrafts((prev) => ({
+                              ...prev,
+                              [row.department]: { ...draft, isActive: e.target.checked },
+                            }))
+                          }
+                          className="h-4 w-4 rounded border-slate-300 text-teal-700"
+                          title="Bật để phát danh mục TX cho đúng bộ phận đã chọn"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        {effectiveActive ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                            <ShieldCheck className="w-3 h-3" /> Đang phát cho {row.unitName || "bộ phận"}
+                          </span>
+                        ) : draft.isActive && !draft.unitId ? (
+                          <span className="text-[11px] text-rose-700">Thiếu bộ phận thật</span>
+                        ) : (
+                          <span className="text-[11px] text-amber-800">
+                            Chưa kích hoạt — mẫu cũ vẫn dùng được
+                          </span>
+                        )}
+                      </td>
+                      {canManage && (
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            onClick={() => saveMapping(row)}
+                            disabled={savingDept === row.department}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white bg-teal-700 hover:bg-teal-800 rounded disabled:opacity-50"
+                          >
+                            {savingDept === row.department ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : null}
+                            Lưu
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="px-4 py-2 border-t border-slate-100 text-[11px] text-slate-500">
+          Quy tắc: chỉ áp dụng cho đúng bộ phận đã kích hoạt; bộ phận khác không bị ảnh hưởng.
+          Không tự tạo org_units từ file Excel. Nhóm chưa xác nhận để trống/không kích hoạt.
+        </p>
       </div>
 
       {/* Bộ lọc */}
