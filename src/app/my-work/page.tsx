@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -137,12 +137,18 @@ export default function MyWorkPage() {
     return all.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 2);
   }, [tasks]);
 
-  const todayLabel = React.useMemo(() => {
+  // Lưu ý hydration: nhãn ngày phụ thuộc múi giờ → tính SAU khi mount để
+  // HTML do server và client render ở lần đầu giống nhau (tránh React error #418).
+  const [todayLabel, setTodayLabel] = useState("");
+  const [periodLabels, setPeriodLabels] = useState<ReturnType<typeof getCurrentPeriodLabels>>({ weekNumber: 0, year: 0, month: 0, weekShort: "", monthShort: "" });
+  useEffect(() => {
     const d = new Date();
     const weekdays = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
-    return `${weekdays[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+    setTodayLabel(
+      `${weekdays[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`
+    );
+    setPeriodLabels(getCurrentPeriodLabels());
   }, []);
-  const periodLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
 
   // Drawer & Modal States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -2304,3 +2310,5 @@ export default function MyWorkPage() {
     </div>
   );
 }
+
+
