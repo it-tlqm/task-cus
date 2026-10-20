@@ -182,14 +182,18 @@ async function main() {
 
   // 8) Audit ghi lại lượt xem trước
   const audit = await api(leader, "/api/admin/audit?limit=50");
-  const auditRows = Array.isArray(audit.json) ? audit.json : audit.json?.data || [];
+  const auditRows = Array.isArray(audit.json?.events)
+    ? audit.json.events
+    : Array.isArray(audit.json)
+      ? audit.json
+      : audit.json?.data || [];
   const hasPreviewAudit = auditRows.some(
     (a: any) => a.action === "APPROVAL_PREVIEW_VIEW" && a.resourceId
   );
   check(
     "Ghi nhật ký lượt xem trước (APPROVAL_PREVIEW_VIEW)",
     hasPreviewAudit,
-    `${auditRows.length} sự kiện gần nhất`
+    `${auditRows.length} sự kiện gần nhất (HTTP ${audit.status})`
   );
 
   console.log("\n========================================");

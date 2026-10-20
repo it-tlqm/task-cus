@@ -5,6 +5,7 @@ import { verifyTaskAccess, jsonError } from "@/server/guard";
 import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
 import { isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
+import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
 import { createNotification } from "@/server/notifications";
 
 export async function GET(
@@ -467,6 +468,17 @@ export async function PATCH(
           notes: (actualResultText || (status === "COMPLETED" ? "Lãnh đạo đơn vị nghiệm thu hoàn thành 100%" : "Cập nhật trạng thái nhiệm vụ")) + deadlineNote,
         },
       });
+    }
+
+    // YC-37: nhiệm vụ được trình lại (chuyển về WAITING_REVIEW) sau khi bị trả lại
+    // hoặc được yêu cầu giải trình → mở lại vòng quyết định (không tạo hồ sơ trùng).
+    if (updatedTask.status === "WAITING_REVIEW") {
+      await reopenApprovalCaseOnResubmit(
+        "TASK_RESULT",
+        taskId,
+        user.id,
+        "Nhiệm vụ đã được trình lại sau khi bổ sung nội dung."
+      );
     }
 
     // YC-03: lưu vết ai sửa — trước/sau đầy đủ, không chỉ status

@@ -5,6 +5,7 @@ import { getAuthorizedUnitIds, verifyTaskAccess, jsonError, checkPermission } fr
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
+import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
 
 export async function POST(
   req: NextRequest,
@@ -82,6 +83,15 @@ export async function POST(
         });
       }
       const updated = await prisma.plan.findUnique({ where: { id: planId } });
+
+      // YC-37: kế hoạch được trình lại sau khi bị trả lại / yêu cầu giải trình
+      // → mở lại vòng quyết định (không tạo hồ sơ trùng).
+      await reopenApprovalCaseOnResubmit(
+        "PLAN",
+        planId,
+        user.id,
+        "Kế hoạch đã trình duyệt lại sau khi bổ sung nội dung."
+      );
 
       await recordAuditEvent({
         actorId: user.id,
