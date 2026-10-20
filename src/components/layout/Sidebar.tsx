@@ -1,241 +1,137 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { usePermissions } from "@/hooks/usePermissions";
+import { NavigationList } from "@/components/layout/NavigationList";
 
-const navigationItems = [
-  {
-    group: "Tổng Quan",
-    items: [
-      { name: "Bảng điều hành", href: "/dashboard", icon: "space_dashboard" },
-      { name: "Hướng dẫn 5 phút", href: "/huong-dan", icon: "help" },
-    ],
-  },
-  {
-    group: "Công Việc",
-    items: [
-      { name: "Việc của tôi", href: "/my-work", icon: "assignment_ind" },
-      { name: "Việc đơn vị", href: "/tasks", icon: "hub" },
-      { name: "Việc tháng của tôi", href: "/monthly-results", icon: "assessment" },
-      { name: "Kế hoạch tuần", href: "/plans", icon: "event_note" },
-      { name: "Phê duyệt", href: "/approvals", icon: "fact_check", leadersOnly: true },
-      { name: "Biên bản giao ban", href: "/meetings", icon: "forum" },
-      { name: "Sổ văn bản", href: "/docs", icon: "mail" },
-    ],
-  },
-  {
-    group: "Giao Ban",
-    items: [
-      { name: "Số liệu giao ban", href: "/giao-ban", icon: "monitoring" },
-      { name: "Nhập số liệu", href: "/giao-ban/nhap", icon: "edit_note" },
-      { name: "Báo cáo giao ban (Word)", href: "/giao-ban/bao-cao", icon: "article" },
-      { name: "Cấu hình số liệu", href: "/giao-ban/cau-hinh", icon: "tune", adminOnly: true },
-    ],
-  },
-  {
-    group: "Lịch & Nghỉ",
-    items: [
-      { name: "Nhật ký ca trực", href: "/routine", icon: "history_edu" },
-      { name: "Lịch công tác", href: "/calendar", icon: "calendar_month" },
-      { name: "Lịch trực ca", href: "/roster", icon: "schedule" },
-      { name: "Nghỉ phép & công tác", href: "/leaves", icon: "beach_access" },
-    ],
-  },
-  {
-    group: "Báo Cáo",
-    items: [
-      { name: "Báo cáo tuần", href: "/reports", icon: "query_stats" },
-      { name: "Xuất Excel", href: "/reports/excel", icon: "table_view", needExport: true },
-      { name: "Số liệu đã chốt", href: "/reports/snapshots", icon: "verified", needLock: true },
-    ],
-  },
-  {
-    group: "Danh Mục",
-    items: [
-      { name: "Mẫu công việc tuần", href: "/admin/catalog", icon: "list_alt", adminOnly: true },
-      { name: "Sản phẩm QĐ1277", href: "/products", icon: "inventory_2" },
-    ],
-  },
-  {
-    group: "Quản Trị",
-    adminOnly: true,
-    items: [
-      { name: "Tổ chức & Nhân sự", href: "/admin/organization", icon: "corporate_fare" },
-      { name: "Biểu mẫu & Quy trình", href: "/admin/forms", icon: "rule_folder" },
-      { name: "Cấu hình hệ thống", href: "/admin/system", icon: "settings" },
-      { name: "Nhật ký hệ thống", href: "/admin/audit", icon: "manage_history" },
-      { name: "Góp ý & Báo lỗi", href: "/admin/feedback", icon: "campaign" },
-    ],
-  },
-];
+interface Props {
+  collapsed?: boolean;
+  onToggle?: () => void;
+}
 
-export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
-  const pathname = usePathname();
-  const { canApprove, canExport, canLock, showAdminMenu } = usePermissions();
-  // Gấp/mở từng cụm menu (nhớ trên máy để sidebar luôn gọn)
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem("hqtl-nav-open") : null;
-      if (raw) return JSON.parse(raw);
-    } catch {}
-    return {};
-  });
-  const isOpen = (g: string) => openGroups[g] !== false;
-  // Tự mở cụm chứa trang đang xem (trường hợp vào link trực tiếp khi cụm đang gấp)
-  React.useEffect(() => {
-    const hit = navigationItems.find((g) =>
-      g.items.some((it) => pathname === it.href || (it.href !== "/dashboard" && pathname.startsWith(it.href)))
-    );
-    if (hit && openGroups[hit.group] === false) {
-      setOpenGroups((prev) => ({ ...prev, [hit.group]: true }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
-  const toggleGroup = (g: string) => {
-    setOpenGroups((prev) => {
-      const next = { ...prev, [g]: !isOpen(g) };
-      try {
-        localStorage.setItem("hqtl-nav-open", JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  };
-
-  // Ẩn mục không có quyền thay vì hiện ra rồi chặn 403 (backend vẫn chặn thật)
-  const visibleGroups = navigationItems
-    .filter((group) => {
-      if ((group as any).adminOnly && !showAdminMenu) return false;
-      return true;
-    })
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        const it = item as any;
-        if (it.adminOnly && !showAdminMenu) return false;
-        if (it.leadersOnly && !canApprove) return false;
-        if (it.needExport && !canExport) return false;
-        if (it.needLock && !canLock) return false;
-        return true;
-      }),
-    }))
-    .filter((group) => group.items.length > 0);
-
-  // Hide sidebar on login page
-  if (pathname === "/login") return null;
-
+export function Sidebar({ collapsed = false, onToggle }: Props) {
   return (
     <aside
-      className={`hidden lg:flex fixed left-0 top-0 h-full ${
+      aria-label="Thanh điều hướng chính"
+      data-testid="app-sidebar"
+      className={`fixed left-0 top-0 z-50 hidden h-full flex-col justify-between border-r border-border-default/20 bg-primary-container text-on-primary shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out lg:flex ${
         collapsed ? "w-[72px]" : "w-[260px]"
-      } bg-primary-container text-on-primary border-r border-border-default/20 z-50 flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out`}
+      }`}
     >
-      <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar">
-        {/* Brand Header */}
-        <div className="p-space-md border-b border-border-default/15 flex items-center justify-between gap-space-sm">
-          <Link href="/dashboard" className="flex items-center gap-space-sm min-w-0">
-            <img
-              src="/images/logo-haiquan.png"
-              alt="Logo Hải quan Việt Nam"
-              className="w-10 h-10 rounded-full object-cover bg-white shrink-0 shadow-sm"
-            />
-            {!collapsed && (
-              <div className="flex flex-col min-w-0">
-                <span className="font-headline-sm text-headline-sm uppercase tracking-wide truncate text-white leading-tight">
-                  HQCKQT TÀ LÙNG
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div
+          className={`flex items-center border-b border-white/10 ${
+            collapsed ? "justify-center gap-1 px-1 py-2" : "justify-between gap-2 px-3 py-3"
+          }`}
+        >
+          {collapsed ? (
+            <>
+              <Link
+                href="/dashboard"
+                aria-label="Về bảng điều hành"
+                title="Hải quan Tà Lùng — Quản lý Kế hoạch & Công việc"
+                className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+              >
+                <img
+                  src="/images/logo-haiquan.png"
+                  alt="Logo Hải quan Việt Nam"
+                  className="h-9 w-9 rounded-full bg-white object-cover shadow-sm"
+                />
+              </Link>
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label="Mở rộng thanh điều hướng"
+                title="Mở rộng menu"
+                className="focus-ring flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+              >
+                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+                  chevron_right
                 </span>
-                <span className="font-label-sm text-label-sm text-on-primary-container truncate">
-                  Quản lý Kế hoạch &amp; Công việc
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/dashboard"
+                className="focus-ring flex min-w-0 items-center gap-2.5 rounded-lg"
+                aria-label="Về bảng điều hành"
+              >
+                <img
+                  src="/images/logo-haiquan.png"
+                  alt="Logo Hải quan Việt Nam"
+                  className="h-10 w-10 shrink-0 rounded-full bg-white object-cover shadow-sm"
+                />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-[13px] font-bold uppercase leading-tight tracking-wide text-white">
+                    Hải quan Tà Lùng
+                  </span>
+                  <span className="truncate text-[10.5px] font-medium leading-tight text-on-primary-container">
+                    Quản lý Kế hoạch &amp; Công việc
+                  </span>
                 </span>
-              </div>
-            )}
-          </Link>
-          <button
-            onClick={onToggle}
-            title={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
-            className="text-on-primary-container hover:text-white p-1 rounded hover:bg-primary transition-colors text-xs"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {collapsed ? "chevron_right" : "chevron_left"}
-            </span>
-          </button>
+              </Link>
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label="Thu gọn thanh điều hướng"
+                title="Thu gọn menu"
+                className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+              >
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                  chevron_left
+                </span>
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Navigation Groups */}
-        <nav className="flex flex-col gap-space-xs p-space-sm">
-          {visibleGroups.map((group, groupIdx) => (
-            <div key={groupIdx} className="mb-1">
-              {!collapsed ? (
-                <button
-                  onClick={() => toggleGroup(group.group)}
-                  className="w-full flex items-center justify-between px-space-sm pt-space-sm pb-space-xs hover:opacity-80 transition-fast"
-                  title={isOpen(group.group) ? "Gấp cụm này lại" : "Mở cụm này ra"}
-                >
-                  <span className="font-label-sm text-label-sm text-on-primary-container uppercase tracking-wider font-semibold">
-                    {group.group}
-                  </span>
-                  <span className={`material-symbols-outlined text-[16px] text-on-primary-container transition-transform ${isOpen(group.group) ? "" : "-rotate-90"}`}>
-                    expand_more
-                  </span>
-                </button>
-              ) : null}
-              {collapsed && groupIdx > 0 && (
-                <div className="h-px bg-white/10 my-2 mx-2" />
-              )}
-              {(collapsed || isOpen(group.group)) && (
-              <div className="flex flex-col gap-0.5">
-                {group.items.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={collapsed ? item.name : undefined}
-                      className={`flex items-center gap-space-sm px-space-sm py-2 rounded-lg transition-fast active-press ${
-                        isActive
-                          ? "bg-secondary text-on-secondary font-body-semibold shadow-sm"
-                          : "text-on-primary-container hover:bg-primary hover:text-on-primary"
-                      } ${collapsed ? "justify-center" : ""}`}
-                    >
-                      <span className="material-symbols-outlined text-[20px] shrink-0">
-                        {item.icon}
-                      </span>
-                      {!collapsed && (
-                        <span className="font-body-md text-body-md truncate">{item.name}</span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-              )}
-            </div>
-          ))}
-        </nav>
+        <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar">
+          <NavigationList collapsed={collapsed} variant="desktop" />
+        </div>
       </div>
 
-      {/* Footer Info */}
-      <div className="p-space-md border-t border-border-default/15 bg-primary/40">
+      <div className="border-t border-white/10 bg-primary/40 px-3 py-3">
         {!collapsed ? (
           <>
-            <div className="flex items-center justify-between mb-space-xs">
+            <Link
+              href="/huong-dan"
+              className="focus-ring mb-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] font-medium text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                help
+              </span>
+              Hướng dẫn sử dụng
+            </Link>
+            <div className="mb-1 flex items-center justify-between gap-2">
               <span
                 title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
-                className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-emerald-500/20 text-emerald-100 border border-emerald-300/40"
+                className="inline-flex items-center rounded border border-emerald-300/40 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-100"
               >
                 VẬN HÀNH CHÍNH THỨC
               </span>
-              <span className="font-label-sm text-[11px] text-on-primary-container">v1.2.4</span>
+              <span className="text-[10px] text-on-primary-container">v1.2.4</span>
             </div>
-            <p className="font-label-sm text-[12px] text-on-primary-container leading-relaxed">
+            <p className="text-[10.5px] leading-relaxed text-on-primary-container">
               Hỗ trợ kỹ thuật: Bộ phận CNTT — Nội bộ Tà Lùng
             </p>
           </>
         ) : (
-          <div className="flex justify-center" title="Vận hành chính thức v1.2.4">
-            <span className="w-2.5 h-2.5 rounded-full bg-status-warning" />
+          <div className="flex flex-col items-center gap-2">
+            <Link
+              href="/huong-dan"
+              aria-label="Hướng dẫn sử dụng"
+              title="Hướng dẫn sử dụng"
+              className="focus-ring flex h-8 w-8 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                help
+              </span>
+            </Link>
+            <span
+              title="Vận hành chính thức v1.2.4"
+              className="h-2.5 w-2.5 rounded-full bg-status-warning"
+            />
           </div>
         )}
       </div>

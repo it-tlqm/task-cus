@@ -75,7 +75,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/routine": {
-    title: "Nhật ký ca trực",
+    title: "Nhật ký tác nghiệp",
     bullets: [
       "Ghi việc đã làm trong ca: nội dung, doanh nghiệp, số container thực tế.",
       "Hai chỉ tiêu hồ sơ không bắt buộc — để trống được.",
@@ -122,7 +122,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/monthly-results": {
-    title: "Việc tháng của tôi",
+    title: "Kết quả công tác tháng",
     bullets: [
       "Cuối tháng: bấm Ghi nhận kết quả, chọn mã SP (không có thì để trống, ghi chờ đối chiếu).",
       "Nhập số lượng, ngày xong, số văn bản minh chứng rồi Lưu.",
@@ -209,10 +209,11 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/admin/catalog": {
-    title: "Mẫu công việc tuần (quản trị)",
+    title: "Danh mục công việc (quản trị)",
     bullets: [
       "48 mẫu dùng chung khi lập kế hoạch. Ngừng mẫu nào thì kế hoạch cũ không ảnh hưởng.",
       "Duyệt chính thức toàn bộ khi danh mục đã chuẩn.",
+      "Tab Danh mục TX là danh mục đầu việc theo bộ phận, không phải danh mục sản phẩm QĐ1277.",
     ],
   },
   "/admin/forms": {
@@ -253,7 +254,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/my-work": {
-    title: "Việc của tôi",
+    title: "Việc cá nhân",
     bullets: [
       "Việc mới có nút Nhận việc — bấm để xác nhận đã nhận.",
       "Bấm Cập nhật tiến độ, kéo thanh theo mức 5%, ghi vài dòng kết quả.",
@@ -267,7 +268,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/tasks": {
-    title: "Việc đơn vị",
+    title: "Việc đột xuất",
     bullets: [
       "Danh sách việc toàn đơn vị trong phạm vi của bạn.",
       "Ô tìm kiếm tìm theo mã hoặc tên trên toàn hệ thống (không chỉ trang hiện tại).",
@@ -292,7 +293,7 @@ export function getPageHelp(pathname: string): PageHelp {
       "Nút nào bạn không được dùng thì không hiện — đúng thiết kế, không phải lỗi.",
       "Thao tác xong mà chưa thấy đổi, bấm Làm mới hoặc F5.",
       "Gặp vướng mắc: bấm nút Góp ý (góc phải dưới màn hình) để báo lỗi/góp ý — lãnh đạo và kỹ thuật nhận được ngay.",
-      "Cần giúp thêm: mở Hướng dẫn 5 phút ở menu Tổng quan.",
+      "Cần giúp thêm: mở Hướng dẫn sử dụng ở cuối thanh menu bên trái (trên điện thoại: bấm Menu).",
     ],
   };
 }

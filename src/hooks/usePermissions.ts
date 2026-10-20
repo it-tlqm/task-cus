@@ -7,7 +7,11 @@ export interface ClientSessionUser {
   personId: string;
   username: string;
   fullName: string;
+  personCode?: string;
   role: string;
+  positionTitle?: string;
+  unitId?: string;
+  unitName?: string;
   scopeType?: string;
   permissions: string[];
 }

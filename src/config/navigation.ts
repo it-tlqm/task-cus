@@ -1,0 +1,370 @@
+/**
+ * Cấu hình điều hướng dùng chung cho sidebar desktop và drawer mobile.
+ *
+ * Nguyên tắc:
+ * - Chỉ khai báo route đang tồn tại trong ứng dụng; không tạo menu cho trang giả.
+ * - Quyền hiển thị ở đây chỉ là lớp UI. API/backend vẫn là lớp kiểm soát cuối cùng.
+ * - Giữ nguyên href cũ để bookmark/deep-link không bị hỏng.
+ */
+
+export interface NavigationAccess {
+  /** Chỉ lãnh đạo đơn vị/bộ phận (canApprove). */
+  leadersOnly?: boolean;
+  /** Chỉ nhóm quản trị (lãnh đạo đơn vị hoặc SYSTEM_ADMIN). */
+  adminOnly?: boolean;
+  /** Một quyền cụ thể, ví dụ catalog.manage. */
+  permission?: string;
+  /** Có ít nhất một trong các quyền này. */
+  permissionsAny?: string[];
+  /** Cần quyền xuất báo cáo. */
+  requireExport?: boolean;
+  /** Cần quyền chốt kỳ. */
+  requireLock?: boolean;
+}
+
+export interface NavigationItem {
+  id: string;
+  label: string;
+  href: string;
+  icon: string;
+  description?: string;
+  access?: NavigationAccess;
+  /** Chỉ active khi đúng pathname, dùng cho route cha có route con riêng. */
+  exact?: boolean;
+}
+
+export interface NavigationSection {
+  id: string;
+  label: string;
+  icon: string;
+  /** Mặc định mở; nhóm quản trị mặc định đóng để sidebar gọn. */
+  defaultOpen?: boolean;
+  access?: NavigationAccess;
+  items: NavigationItem[];
+}
+
+export interface NavigationAccessContext {
+  role: string;
+  can: (permission: string) => boolean;
+  isLeader: boolean;
+  isAdmin: boolean;
+  canExport: boolean;
+  canLock: boolean;
+}
+
+export const NAVIGATION_SECTIONS: NavigationSection[] = [
+  {
+    id: "overview",
+    label: "Tổng quan & điều hành",
+    icon: "dashboard",
+    items: [
+      {
+        id: "dashboard",
+        label: "Bảng điều hành",
+        href: "/dashboard",
+        icon: "space_dashboard",
+        description: "Chỉ số điều hành, thuế, kim ngạch và tình hình đơn vị",
+      },
+      {
+        id: "giao-ban",
+        label: "Số liệu giao ban",
+        href: "/giao-ban",
+        icon: "monitoring",
+        description: "Số liệu nghiệp vụ theo ngày, tuần, tháng",
+        exact: true,
+      },
+      {
+        id: "giao-ban-nhap",
+        label: "Nhập số liệu giao ban",
+        href: "/giao-ban/nhap",
+        icon: "edit_note",
+      },
+      {
+        id: "giao-ban-bao-cao",
+        label: "Báo cáo giao ban",
+        href: "/giao-ban/bao-cao",
+        icon: "article",
+        description: "Tổng hợp và xuất báo cáo Word",
+      },
+      {
+        id: "meetings",
+        label: "Biên bản giao ban",
+        href: "/meetings",
+        icon: "forum",
+        description: "Biên bản họp và kết luận chỉ đạo",
+      },
+    ],
+  },
+  {
+    id: "personal",
+    label: "Công việc cá nhân",
+    icon: "person_check",
+    items: [
+      {
+        id: "my-work",
+        label: "Việc cá nhân",
+        href: "/my-work",
+        icon: "assignment_ind",
+        description: "Việc thường xuyên, tiến độ, hạn xử lý và minh chứng",
+      },
+    ],
+  },
+  {
+    id: "department",
+    label: "Công việc bộ phận",
+    icon: "account_tree",
+    items: [
+      {
+        id: "plans",
+        label: "Kế hoạch tuần",
+        href: "/plans",
+        icon: "event_note",
+        description: "Kế hoạch và đầu việc của bộ phận",
+      },
+      {
+        id: "tasks",
+        label: "Việc đột xuất",
+        href: "/tasks",
+        icon: "bolt",
+        description: "Nhiệm vụ chỉ đạo, giao việc và theo dõi tiến độ",
+      },
+      {
+        id: "approvals",
+        label: "Phê duyệt",
+        href: "/approvals",
+        icon: "fact_check",
+        description: "Hồ sơ, kế hoạch và kết quả chờ lãnh đạo xử lý",
+        access: { leadersOnly: true },
+      },
+    ],
+  },
+  {
+    id: "operations",
+    label: "Trực ca & nghiệp vụ",
+    icon: "badge",
+    items: [
+      {
+        id: "routine",
+        label: "Nhật ký tác nghiệp",
+        href: "/routine",
+        icon: "history_edu",
+        description: "Ghi nhận khối lượng công việc và biểu mẫu nghiệp vụ",
+      },
+      {
+        id: "roster",
+        label: "Lịch trực",
+        href: "/roster",
+        icon: "schedule",
+        description: "Phân công nhiệm vụ và lịch trực theo tuần",
+      },
+      {
+        id: "calendar",
+        label: "Lịch công tác",
+        href: "/calendar",
+        icon: "calendar_month",
+      },
+      {
+        id: "leaves",
+        label: "Nghỉ phép & công tác",
+        href: "/leaves",
+        icon: "beach_access",
+      },
+      {
+        id: "docs",
+        label: "Sổ văn bản",
+        href: "/docs",
+        icon: "mail",
+        description: "Văn bản đến, đi và theo dõi xử lý",
+      },
+    ],
+  },
+  {
+    id: "results",
+    label: "Kết quả & báo cáo",
+    icon: "query_stats",
+    items: [
+      {
+        id: "monthly-results",
+        label: "Kết quả công tác tháng",
+        href: "/monthly-results",
+        icon: "assessment",
+        description: "Sản phẩm thực tế, bảng 1, biểu 01A và kế hoạch 02C",
+      },
+      {
+        id: "reports",
+        label: "Báo cáo & tổng hợp",
+        href: "/reports",
+        icon: "table_view",
+        description: "Xem trước mẫu báo cáo theo kỳ",
+      },
+      {
+        id: "reports-excel",
+        label: "Xuất Excel",
+        href: "/reports/excel",
+        icon: "download",
+        description: "Tải báo cáo theo mẫu (mở đúng tab xuất)",
+        access: { requireExport: true },
+      },
+      {
+        id: "reports-snapshots",
+        label: "Số liệu đã chốt",
+        href: "/reports/snapshots",
+        icon: "verified",
+        description: "Kho bản chốt số liệu theo kỳ (mở đúng tab)",
+        access: { requireLock: true },
+      },
+    ],
+  },
+  {
+    id: "catalogs",
+    label: "Danh mục & quy định",
+    icon: "inventory_2",
+    items: [
+      {
+        id: "products",
+        label: "Sản phẩm QĐ1277",
+        href: "/products",
+        icon: "inventory_2",
+        description: "Tra cứu danh mục sản phẩm và hệ số quy đổi",
+      },
+    ],
+  },
+  {
+    id: "admin",
+    label: "Quản trị hệ thống",
+    icon: "admin_panel_settings",
+    defaultOpen: false,
+    access: { adminOnly: true },
+    items: [
+      {
+        id: "admin-catalog",
+        label: "Danh mục công việc",
+        href: "/admin/catalog",
+        icon: "list_alt",
+        description: "Danh mục TX, mẫu cũ và đầu việc mẫu",
+        access: { permission: "catalog.manage" },
+      },
+      {
+        id: "admin-organization",
+        label: "Tổ chức & nhân sự",
+        href: "/admin/organization",
+        icon: "corporate_fare",
+        access: { permissionsAny: ["org.manage", "users.manage"] },
+      },
+      {
+        id: "admin-forms",
+        label: "Biểu mẫu & quy trình",
+        href: "/admin/forms",
+        icon: "rule_folder",
+        access: { permission: "form.manage" },
+      },
+      {
+        id: "giao-ban-config",
+        label: "Cấu hình số liệu giao ban",
+        href: "/giao-ban/cau-hinh",
+        icon: "tune",
+        access: { adminOnly: true },
+      },
+      {
+        id: "admin-system",
+        label: "Cấu hình hệ thống",
+        href: "/admin/system",
+        icon: "settings",
+        access: { adminOnly: true },
+      },
+      {
+        id: "admin-audit",
+        label: "Nhật ký hệ thống",
+        href: "/admin/audit",
+        icon: "manage_history",
+        access: { permission: "audit.view" },
+      },
+      {
+        id: "admin-feedback",
+        label: "Góp ý & báo lỗi",
+        href: "/admin/feedback",
+        icon: "campaign",
+        access: { adminOnly: true },
+      },
+    ],
+  },
+];
+
+const EXTRA_TRAILS: Record<string, { label: string; section?: string }> = {
+  "/": { label: "Bảng điều hành" },
+  "/notifications": { label: "Thông báo" },
+  "/huong-dan": { label: "Hướng dẫn sử dụng" },
+  "/admin": { label: "Quản trị hệ thống" },
+  "/reports/excel": { label: "Xuất báo cáo Excel", section: "Kết quả & báo cáo" },
+  "/reports/snapshots": { label: "Bản chốt số liệu", section: "Kết quả & báo cáo" },
+};
+
+function allowed(access: NavigationAccess | undefined, ctx: NavigationAccessContext): boolean {
+  if (!access) return true;
+  if (access.adminOnly && !ctx.isAdmin) return false;
+  if (access.leadersOnly && !ctx.isLeader) return false;
+  if (access.permission && !ctx.can(access.permission)) return false;
+  if (access.permissionsAny?.length && !access.permissionsAny.some((p) => ctx.can(p))) return false;
+  if (access.requireExport && !ctx.canExport) return false;
+  if (access.requireLock && !ctx.canLock) return false;
+  return true;
+}
+
+export function filterNavigation(ctx: NavigationAccessContext): NavigationSection[] {
+  return NAVIGATION_SECTIONS.filter((section) => allowed(section.access, ctx))
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => allowed(item.access, ctx)),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
+export function isItemActive(pathname: string, item: NavigationItem): boolean {
+  if (item.href === "/dashboard") {
+    return pathname === "/dashboard" || pathname === "/";
+  }
+  if (item.exact) return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(item.href + "/");
+}
+
+export function findActiveNavigation(pathname: string) {
+  for (const section of NAVIGATION_SECTIONS) {
+    for (const item of section.items) {
+      if (isItemActive(pathname, item)) return { section, item };
+    }
+  }
+  return null;
+}
+
+export interface BreadcrumbEntry {
+  label: string;
+  href?: string;
+}
+
+export function getBreadcrumbTrail(pathname: string): BreadcrumbEntry[] {
+  const home: BreadcrumbEntry = { label: "Trang chủ", href: "/dashboard" };
+  const special = EXTRA_TRAILS[pathname];
+  const active = findActiveNavigation(pathname);
+
+  if (!active) {
+    return special ? [home, { label: special.label }] : [home, { label: "Không gian làm việc" }];
+  }
+
+  const { section, item } = active;
+  let current = item.label;
+
+  if (pathname.startsWith("/tasks/")) current = "Chi tiết nhiệm vụ";
+  else if (pathname.startsWith("/meetings/")) current = "Chi tiết biên bản";
+  else if (pathname === "/reports/excel") current = "Xuất báo cáo Excel";
+  else if (pathname === "/reports/snapshots") current = "Bản chốt số liệu";
+
+  if (item.href === "/dashboard") return [home, { label: current }];
+
+  const sectionLabel = special?.section || section.label;
+  return [home, { label: sectionLabel }, { label: current }];
+}
+
+/** Dùng cho kiểm thử tự động: toàn bộ href khai báo trong menu. */
+export const NAVIGATION_HREFS = NAVIGATION_SECTIONS.flatMap((section) =>
+  section.items.map((item) => item.href)
+);

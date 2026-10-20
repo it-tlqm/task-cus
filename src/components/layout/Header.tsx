@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChangePasswordModal } from "@/components/ui/ChangePasswordModal";
+import { Breadcrumb } from "@/components/layout/Breadcrumb";
+import { clearClientSession } from "@/lib/client-session";
 import {
   UNIT_OFFICIAL_NAME,
-  UNIT_SHORT_NAME,
   UNIT_ALL_LABEL,
   getRoleDisplayName,
 } from "@/lib/unit-info";
@@ -17,7 +18,13 @@ interface OrgUnitOption {
   code: string;
 }
 
-export function Header({ collapsed = false }: { collapsed?: boolean }) {
+interface Props {
+  collapsed?: boolean;
+  onOpenMobileMenu?: () => void;
+  mobileMenuOpen?: boolean;
+}
+
+export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = false }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [isChangePassOpen, setIsChangePassOpen] = useState(false);
@@ -29,30 +36,28 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
     positionTitle?: string;
     unitName?: string;
   }>({
-    fullName: "Nguyễn Văn An",
-    role: "TRUONG_BO_PHAN",
-    unitName: "Bộ phận Nghiệp vụ A",
+    fullName: "",
+    role: "STAFF",
+    unitName: "",
   });
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
-    // Attempt to load current user from API
     fetch("/api/auth/me")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.user) {
           setCurrentUser({
-            fullName: data.user.fullName || "Nguyễn Văn An",
-            role: data.user.role || "TRUONG_BO_PHAN",
+            fullName: data.user.fullName || "Cán bộ",
+            role: data.user.role || "STAFF",
             positionTitle: data.user.positionTitle || undefined,
-            unitName: data.user.unit?.name || "Bộ phận Nghiệp vụ A",
+            unitName: data.user.unitName || data.user.unit?.name || "",
           });
         }
       })
       .catch(() => {});
 
-    // Load live org units from PostgreSQL
     fetch("/api/org-units/tree")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
@@ -73,7 +78,6 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
       if (u) setSelectedUnit(u);
     }
 
-    // Load live unread notifications count from PostgreSQL
     const loadUnreadCount = () => {
       fetch("/api/notifications")
         .then((res) => (res.ok ? res.json() : null))
@@ -95,103 +99,88 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
   if (pathname === "/login") return null;
 
   const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
-    try {
-      const { clearPermissionsCache } = await import("@/hooks/usePermissions");
-      clearPermissionsCache();
-    } catch {}
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("currentUser");
-    }
+    await clearClientSession();
     router.push("/login");
+    router.refresh();
   };
 
   const getRoleBadgeLabel = (role: string) => {
-    // Mã vai trò cũ (tương thích) giữ nhãn cũ; mã chuẩn dùng tên chức danh chính thức
     switch (role) {
-      case "LANH_DAO":
+      case "UNIT_LEADER":
         return "Lãnh đạo đơn vị";
-      case "TRUONG_BO_PHAN":
+      case "DEPARTMENT_LEADER":
         return "Trưởng bộ phận";
-      case "CAN_BO":
-        return "Công chức";
-      case "ADMIN":
+      case "SYSTEM_ADMIN":
         return "Quản trị hệ thống";
+      case "STAFF":
+        return "Công chức";
       default:
         return getRoleDisplayName(role);
     }
   };
 
+  const displayName = currentUser.fullName || "Đang tải...";
+  const displayRole =
+    currentUser.positionTitle ||
+    (currentUser.role ? getRoleBadgeLabel(currentUser.role) : "Cán bộ công chức");
+
   return (
     <>
       {/* DESKTOP HEADER */}
       <header
-        className={`hidden lg:flex fixed top-0 right-0 h-24 bg-surface-container-lowest z-40 flex-col border-b border-border-default shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out ${
+        className={`fixed right-0 top-0 z-40 hidden h-24 flex-col border-b border-border-default bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out lg:flex ${
           collapsed ? "left-[72px]" : "left-[260px]"
         }`}
       >
-        {/* Banner Vận hành Chính thức */}
         <div
           title="Nhãn xác nhận HỆ THỐNG đang vận hành chính thức — không phải xác nhận cho số liệu hiển thị. Trạng thái số liệu xem tại từng khu vực số liệu."
-          className="h-6 bg-primary/10 border-b border-border-default/40 px-space-md flex items-center justify-between"
+          className="flex h-6 items-center justify-between border-b border-border-default/40 bg-primary/10 px-space-md"
         >
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[14px]">
+            <span aria-hidden="true" className="material-symbols-outlined text-[14px] text-primary">
               verified
             </span>
-            <span className="font-label-sm text-[11px] text-primary uppercase tracking-wide font-semibold">
+            <span className="font-label-sm text-[11px] font-semibold uppercase tracking-wide text-primary">
               HỆ THỐNG VẬN HÀNH CHÍNH THỨC — {UNIT_OFFICIAL_NAME.toUpperCase()}
             </span>
           </div>
-          <span className="font-label-sm text-[11px] text-on-surface-variant font-medium">
+          <span className="font-label-sm text-[11px] font-medium text-on-surface-variant">
             Cổng thông tin điều hành nội bộ · Trực tuyến 24/7
           </span>
         </div>
 
-        {/* Main Desktop Header Row */}
-        <div className="h-[72px] px-space-lg flex items-center justify-between gap-space-md">
-          {/* Left: Location Breadcrumb & Search */}
-          <div className="flex items-center gap-space-md flex-1 min-w-0">
-            <div className="hidden min-[1600px]:flex items-center gap-2 font-label-md text-label-md text-on-surface-variant min-w-0 max-w-[260px] min-[1800px]:max-w-[340px]">
-              <img
-                src="/images/logo-haiquan.png"
-                alt="Logo Hải quan Việt Nam"
-                className="w-9 h-9 rounded-full object-cover bg-white shrink-0"
-              />
-              <span
-                className="truncate min-w-0"
-                title={`Đơn vị: ${UNIT_SHORT_NAME}`}
+        <div className="flex h-[72px] items-center justify-between gap-space-md px-space-lg">
+          <div className="flex min-w-0 flex-1 items-center gap-space-md">
+            <div className="flex min-w-0 max-w-[560px] flex-1 flex-col gap-0.5">
+              <Breadcrumb className="hidden md:flex" />
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (searchKeyword.trim()) {
+                    router.push(`/tasks?q=${encodeURIComponent(searchKeyword.trim())}`);
+                  }
+                }}
+                className="relative w-full max-w-md"
+                role="search"
               >
-                Đơn vị: {UNIT_SHORT_NAME}
-              </span>
+                <span
+                  aria-hidden="true"
+                  className="material-symbols-outlined absolute left-3 top-2.5 text-[18px] text-outline"
+                >
+                  search
+                </span>
+                <input
+                  type="search"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  aria-label="Tìm kiếm nhiệm vụ, mã công việc, văn bản chỉ đạo"
+                  placeholder="Tìm nhiệm vụ, mã việc, văn bản..."
+                  className="h-9 w-full rounded border border-border-subtle bg-surface pl-9 pr-3 font-body-md text-body-md text-on-surface placeholder:text-outline transition-fast focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
+                />
+              </form>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (searchKeyword.trim()) {
-                  router.push(`/tasks?q=${encodeURIComponent(searchKeyword.trim())}`);
-                }
-              }}
-              className="relative flex-1 min-w-0 max-w-md"
-            >
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">
-                search
-              </span>
-              <input
-                type="text"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                aria-label="Tìm kiếm nhiệm vụ, mã công việc, văn bản chỉ đạo"
-                placeholder="Tìm kiếm nhiệm vụ, mã công việc, văn bản chỉ đạo... (Enter để tìm)"
-                className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-fast"
-              />
-            </form>
-
-            <div className="shrink-0 w-[180px] 2xl:w-[240px]">
+            <div className="w-[160px] shrink-0 2xl:w-[220px]">
               <select
                 value={selectedUnit}
                 aria-label="Chọn đơn vị công tác"
@@ -200,18 +189,12 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
                   const val = e.target.value;
                   setSelectedUnit(val);
                   if (pathname === "/tasks") {
-                    if (val === "all") {
-                      router.push("/tasks");
-                    } else {
-                      router.push(`/tasks?unitId=${encodeURIComponent(val)}`);
-                    }
-                  } else {
-                    if (val !== "all") {
-                      router.push(`/tasks?unitId=${encodeURIComponent(val)}`);
-                    }
+                    router.push(val === "all" ? "/tasks" : `/tasks?unitId=${encodeURIComponent(val)}`);
+                  } else if (val !== "all") {
+                    router.push(`/tasks?unitId=${encodeURIComponent(val)}`);
                   }
                 }}
-                className="w-full h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none focus:border-secondary transition-fast cursor-pointer truncate"
+                className="h-9 w-full cursor-pointer truncate rounded border border-border-subtle bg-surface px-3 font-body-md text-body-md text-on-surface transition-fast focus:border-secondary focus:outline-none"
               >
                 <option value="all">{UNIT_ALL_LABEL}</option>
                 {orgUnits.map((u) => (
@@ -223,19 +206,18 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
             </div>
           </div>
 
-          {/* Right: Notifications, User, Logout */}
-          <div className="flex items-center gap-space-md shrink-0">
+          <div className="flex shrink-0 items-center gap-space-md">
             <Link
               href="/notifications"
-              className="relative p-1.5 rounded hover:bg-surface-subtle transition-fast active-press"
+              className="focus-ring relative rounded p-1.5 transition-fast hover:bg-surface-subtle active-press"
               title="Thông báo điều hành"
               aria-label="Thông báo điều hành"
             >
-              <span className="material-symbols-outlined text-on-surface-variant text-[22px]">
+              <span aria-hidden="true" className="material-symbols-outlined text-[22px] text-on-surface-variant">
                 notifications
               </span>
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 px-1 py-0.2 min-w-[18px] text-center bg-status-danger text-white rounded-full text-[10px] font-bold ring-2 ring-surface-container-lowest shadow-sm leading-tight">
+                <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-status-danger px-1 py-0.2 text-center text-[10px] font-bold leading-tight text-white shadow-sm ring-2 ring-surface-container-lowest">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -244,103 +226,128 @@ export function Header({ collapsed = false }: { collapsed?: boolean }) {
             <div className="h-6 w-px bg-border-default" />
 
             <div className="flex items-center gap-space-sm">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-xs shadow-sm">
-                <span className="material-symbols-outlined text-[18px]">person</span>
-              </div>
-              <div className="hidden xl:flex flex-col text-left min-w-0">
-                <span
-                  className="font-body-semibold text-body-semibold text-primary leading-tight truncate max-w-[130px] 2xl:max-w-[200px]"
-                  title={currentUser.fullName}
-                >
-                  {currentUser.fullName}
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary shadow-sm">
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                  person
                 </span>
-                <span className="font-label-sm text-label-sm text-outline truncate max-w-[130px] 2xl:max-w-[200px]">
-                  {currentUser.positionTitle || getRoleBadgeLabel(currentUser.role)}
+              </div>
+              <div className="hidden min-w-0 flex-col text-left xl:flex">
+                <span
+                  className="max-w-[130px] truncate font-body-semibold text-body-semibold leading-tight text-primary 2xl:max-w-[200px]"
+                  title={currentUser.unitName ? `${displayName} — ${currentUser.unitName}` : displayName}
+                >
+                  {displayName}
+                </span>
+                <span
+                  className="max-w-[130px] truncate font-label-sm text-label-sm text-outline 2xl:max-w-[200px]"
+                  title={displayRole}
+                >
+                  {displayRole}
+                  {currentUser.unitName ? ` • ${currentUser.unitName}` : ""}
                 </span>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={() => setIsChangePassOpen(true)}
               title="Thay đổi mật khẩu cá nhân"
               aria-label="Thay đổi mật khẩu cá nhân"
-              className="flex items-center gap-1 px-space-sm py-1.5 rounded border border-border-subtle hover:bg-surface-subtle transition-fast font-label-md text-label-md text-on-surface-variant active-press"
+              className="focus-ring flex items-center gap-1 rounded border border-border-subtle px-space-sm py-1.5 font-label-md text-label-md text-on-surface-variant transition-fast hover:bg-surface-subtle active-press"
             >
-              <span className="material-symbols-outlined text-[16px] text-secondary">key</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-secondary">
+                key
+              </span>
               <span className="hidden xl:inline">Đổi MK</span>
             </button>
 
             <button
+              type="button"
               onClick={handleLogout}
               title="Đăng xuất khỏi hệ thống"
               aria-label="Đăng xuất khỏi hệ thống"
-              className="flex items-center gap-1 px-space-sm py-1.5 rounded border border-border-subtle hover:bg-status-danger-bg hover:text-status-danger transition-fast font-label-md text-label-md text-on-surface-variant active-press"
+              className="focus-ring flex items-center gap-1 rounded border border-border-subtle px-space-sm py-1.5 font-label-md text-label-md text-on-surface-variant transition-fast hover:bg-status-danger-bg hover:text-status-danger active-press"
             >
-              <span className="material-symbols-outlined text-[16px]">logout</span>
-              <span className="hidden md:inline">Đăng xuất</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+                logout
+              </span>
+              <span className="hidden xl:inline">Đăng xuất</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* MOBILE TOPBAR */}
-      <header className="lg:hidden fixed top-0 w-full z-50 pt-safe bg-surface/95 backdrop-blur-xl border-b border-border-default/60 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="h-14 px-margin flex items-center justify-between">
-          <div className="flex items-center gap-space-sm">
-            <img
-              src="/images/logo-haiquan.png"
-              alt="Logo Hải quan Việt Nam"
-              className="w-9 h-9 rounded-full object-cover bg-white shrink-0"
-            />
-            <div className="flex flex-col">
-              <div className="flex items-center gap-space-xs">
-                <span className="font-headline-sm text-headline-sm text-primary-container tracking-tight font-bold">
-                  TALUNG-CUS-WORK
-                </span>
-                <span
-                  title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
-                  className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-label-sm text-[10px] leading-none uppercase tracking-wide font-bold"
-                >
-                  CHÍNH THỨC
-                </span>
-              </div>
-              <span className="font-label-sm text-[11px] text-on-surface-variant line-clamp-1">
-                {currentUser.unitName || "Hải quan CKQT Tà Lùng"}
+      <header className="fixed top-0 z-50 w-full border-b border-border-default/60 bg-surface/95 pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl lg:hidden">
+        <div className="flex h-14 items-center justify-between px-margin">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onOpenMobileMenu}
+              aria-label="Mở menu điều hướng"
+              aria-controls="mobile-navigation-drawer"
+              aria-expanded={mobileMenuOpen}
+              data-testid="mobile-menu-button"
+              className="focus-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-primary-container transition-fast hover:bg-surface-subtle active-press"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[23px]">
+                menu
               </span>
-            </div>
+            </button>
+
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-2" aria-label="Về bảng điều hành">
+              <img
+                src="/images/logo-haiquan.png"
+                alt="Logo Hải quan Việt Nam"
+                className="h-9 w-9 shrink-0 rounded-full bg-white object-cover"
+              />
+              <span className="flex min-w-0 flex-col">
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate text-[13px] font-bold leading-tight tracking-tight text-primary-container">
+                    HẢI QUAN TÀ LÙNG
+                  </span>
+                  <span
+                    title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
+                    className="hidden rounded border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-emerald-700 min-[390px]:inline"
+                  >
+                    CHÍNH THỨC
+                  </span>
+                </span>
+                <span className="max-w-[150px] truncate text-[10.5px] leading-tight text-on-surface-variant">
+                  {currentUser.unitName || "Quản lý Kế hoạch & Công việc"}
+                </span>
+              </span>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-space-xs">
-            <button
-              onClick={() => setIsChangePassOpen(true)}
-              title="Đổi mật khẩu"
-              aria-label="Đổi mật khẩu"
-              className="w-9 h-9 flex items-center justify-center text-primary-container rounded-lg hover:bg-surface-subtle transition-fast active-press"
-            >
-              <span className="material-symbols-outlined text-[20px]">key</span>
-            </button>
+          <div className="flex shrink-0 items-center gap-1">
             <Link
               href="/notifications"
               aria-label="Thông báo hệ thống"
-              className="w-10 h-10 flex items-center justify-center relative text-primary-container rounded-lg hover:bg-surface-subtle transition-fast active-press"
+              className="focus-ring relative flex h-10 w-10 items-center justify-center rounded-lg text-primary-container transition-fast hover:bg-surface-subtle active-press"
             >
-              <span className="material-symbols-outlined text-[22px]">notifications</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-[22px]">
+                notifications
+              </span>
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-status-danger ring-2 ring-surface" />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-status-danger ring-2 ring-surface" />
               )}
             </Link>
-            <div
-              onClick={handleLogout}
-              title="Đăng xuất"
-              className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary cursor-pointer active-press shadow-sm"
+            <button
+              type="button"
+              onClick={onOpenMobileMenu}
+              aria-label="Mở menu tài khoản và điều hướng"
+              aria-expanded={mobileMenuOpen}
+              className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary shadow-sm transition-fast active-press"
             >
-              <span className="material-symbols-outlined text-[18px]">person</span>
-            </div>
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                person
+              </span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Modal Đổi mật khẩu cá nhân */}
       <ChangePasswordModal
         isOpen={isChangePassOpen}
         onClose={() => setIsChangePassOpen(false)}

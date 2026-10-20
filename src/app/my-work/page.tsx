@@ -654,7 +654,7 @@ export default function MyWorkPage() {
                 </span>
               </div>
               <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight">
-                Công Việc Của Tôi — Không Gian Tác Nghiệp Cán Bộ
+                Việc cá nhân — Không Gian Tác Nghiệp Cán Bộ
               </h1>
               <div className="flex items-center gap-space-md mt-1 flex-wrap">
                 <div className="inline-flex items-center gap-2 bg-surface-subtle px-3 py-1 rounded-lg">

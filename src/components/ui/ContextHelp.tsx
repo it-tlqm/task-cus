@@ -53,7 +53,7 @@ export function ContextHelp() {
         onClick={() => setOpen(true)}
         title="Hướng dẫn màn hình này"
         aria-label="Hướng dẫn màn hình này"
-        className="fixed bottom-20 lg:bottom-6 left-4 lg:left-[276px] z-40 w-11 h-11 rounded-full bg-white border border-border-default shadow-lg flex items-center justify-center text-primary hover:bg-surface-container active:scale-95 transition-transform"
+        className="focus-ring fixed bottom-20 left-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-border-default bg-white text-primary shadow-lg transition-transform hover:bg-surface-container active:scale-95 lg:bottom-6 lg:left-[calc(var(--sidebar-width,260px)+16px)]"
       >
         <span className="material-symbols-outlined text-[22px]">help</span>
       </button>

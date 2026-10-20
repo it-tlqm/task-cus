@@ -3,34 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { usePermissions } from "@/hooks/usePermissions";
 
-const MORE_LINKS = [
-  { name: "Hướng dẫn", href: "/huong-dan", icon: "help" },
-  { name: "Tổng quan", href: "/dashboard", icon: "space_dashboard" },
-  { name: "Việc đơn vị", href: "/tasks", icon: "hub" },
-  { name: "Phê duyệt", href: "/approvals", icon: "fact_check", leadersOnly: true },
-  { name: "Báo cáo tuần", href: "/reports", icon: "query_stats" },
-  { name: "Sản phẩm QĐ", href: "/products", icon: "inventory_2" },
-  { name: "Việc tháng", href: "/monthly-results", icon: "assessment" },
-  { name: "Nghỉ phép", href: "/leaves", icon: "beach_access" },
-  { name: "Lịch công tác", href: "/calendar", icon: "calendar_month" },
-  { name: "Lịch trực", href: "/roster", icon: "schedule" },
-  { name: "Giao ban", href: "/meetings", icon: "forum" },
-  { name: "Số liệu giao ban", href: "/giao-ban", icon: "monitoring" },
-  { name: "Nhập số liệu", href: "/giao-ban/nhap", icon: "edit_note" },
-  { name: "Báo cáo giao ban (Word)", href: "/giao-ban/bao-cao", icon: "article" },
-  { name: "Cấu hình số liệu", href: "/giao-ban/cau-hinh", icon: "tune", adminOnly: true },
-  { name: "Sổ văn bản", href: "/docs", icon: "mail" },
-  { name: "Tổ chức", href: "/admin/organization", icon: "corporate_fare", adminOnly: true },
-  { name: "Cấu hình", href: "/admin/system", icon: "settings", adminOnly: true },
-];
+interface Props {
+  onOpenMenu: () => void;
+  mobileMenuOpen?: boolean;
+}
 
-export function BottomNav() {
+export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = React.useState<number>(0);
-  const [showMore, setShowMore] = React.useState(false);
-  const { canApprove, showAdminMenu } = usePermissions();
 
   React.useEffect(() => {
     const loadUnreadCount = () => {
@@ -54,90 +35,72 @@ export function BottomNav() {
   if (pathname === "/login") return null;
 
   const navItems = [
-    { name: "Việc của tôi", href: "/my-work", icon: "assignment" },
-    { name: "Kế hoạch", href: "/plans", icon: "calendar_month" },
-    { name: "Nhật ký ca", href: "/routine", icon: "history_edu" },
-    { name: "Thông báo", href: "/notifications", icon: "notifications", hasBadge: unreadCount > 0 },
-    { name: "Thêm", href: "__more__", icon: "apps" },
+    { name: "Việc cá nhân", href: "/my-work", icon: "assignment", testId: "bottom-my-work" },
+    { name: "Kế hoạch", href: "/plans", icon: "calendar_month", testId: "bottom-plans" },
+    { name: "Nhật ký", href: "/routine", icon: "history_edu", testId: "bottom-routine" },
+    {
+      name: "Thông báo",
+      href: "/notifications",
+      icon: "notifications",
+      hasBadge: unreadCount > 0,
+      testId: "bottom-notifications",
+    },
   ];
-  const moreVisible = MORE_LINKS.filter(
-    (l) => (!(l as any).leadersOnly || canApprove) && (!(l as any).adminOnly || showAdminMenu)
-  );
+
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"));
 
   return (
-    <>
-    {showMore && (
-      <div className="lg:hidden fixed inset-0 z-[60] flex items-end" onClick={() => setShowMore(false)}>
-        <div className="absolute inset-0 bg-black/40" />
-        <div
-          className="relative w-full bg-surface-container-lowest rounded-t-2xl p-4 pb-8 shadow-2xl max-h-[70vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="w-10 h-1 rounded-full bg-border-default mx-auto mb-3" />
-          <div className="grid grid-cols-4 gap-2">
-            {moreVisible.map((l) => {
-              const isActive = pathname === l.href || pathname.startsWith(l.href + "/");
-              return (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setShowMore(false)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${
-                    isActive ? "border-secondary bg-secondary/10 text-secondary" : "border-border-default text-on-surface-variant"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[24px]">{l.icon}</span>
-                  <span className="text-[11px] font-semibold text-center leading-tight">{l.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    )}
-    <nav className="lg:hidden fixed bottom-0 w-full z-50 pb-safe bg-surface/95 backdrop-blur-xl border-t border-border-default/70 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
-      <div className="h-16 px-space-xs flex items-center justify-around">
+    <nav
+      aria-label="Điều hướng nhanh trên điện thoại"
+      className="fixed bottom-0 z-50 w-full border-t border-border-default/70 bg-surface/95 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.04)] backdrop-blur-xl lg:hidden"
+    >
+      <div className="flex h-16 items-center justify-around px-space-xs">
         {navItems.map((item) => {
-          const isMore = item.href === "__more__";
-          const isActive = isMore
-            ? showMore
-            : pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href));
-          const cls = `relative flex flex-col items-center justify-center min-w-[56px] h-12 transition-fast active-press rounded-xl ${
-            isActive ? "text-secondary font-body-semibold" : "text-on-surface-variant hover:text-secondary"
-          }`;
-          const inner = (
-            <>
-              {isActive && !isMore && (
-                <span className="absolute top-1 w-6 h-0.5 rounded-full bg-secondary" />
-              )}
-              <div className="relative flex items-center justify-center">
-                <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-                {(item as any).hasBadge && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-status-danger ring-2 ring-surface" />
-                )}
-              </div>
-              <span className="font-label-sm text-[11px] mt-0.5 tracking-tight">{item.name}</span>
-            </>
-          );
-          return isMore ? (
-            <button key={item.href} onClick={() => setShowMore((v) => !v)} aria-label={item.name} className={cls}>
-              {inner}
-            </button>
-          ) : (
+          const active = isActive(item.href);
+          return (
             <Link
               key={item.href}
               href={item.href}
               aria-label={item.name}
-              aria-current={isActive ? "page" : undefined}
-              className={cls}
+              aria-current={active ? "page" : undefined}
+              data-testid={item.testId}
+              className={`focus-ring relative flex h-12 min-w-[56px] flex-col items-center justify-center rounded-xl transition-fast active-press ${
+                active ? "font-body-semibold text-secondary" : "text-on-surface-variant hover:text-secondary"
+              }`}
             >
-              {inner}
+              {active && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}
+              <span className="relative flex items-center justify-center">
+                <span aria-hidden="true" className="material-symbols-outlined text-[22px]">
+                  {item.icon}
+                </span>
+                {item.hasBadge && (
+                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-status-danger ring-2 ring-surface" />
+                )}
+              </span>
+              <span className="mt-0.5 text-[11px] tracking-tight">{item.name}</span>
             </Link>
           );
         })}
+
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          aria-label="Mở toàn bộ menu"
+          aria-controls="mobile-navigation-drawer"
+          aria-expanded={mobileMenuOpen}
+          data-testid="bottom-menu"
+          className={`focus-ring relative flex h-12 min-w-[56px] flex-col items-center justify-center rounded-xl transition-fast active-press ${
+            mobileMenuOpen ? "font-body-semibold text-secondary" : "text-on-surface-variant hover:text-secondary"
+          }`}
+        >
+          {mobileMenuOpen && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}
+          <span aria-hidden="true" className="material-symbols-outlined text-[22px]">
+            apps
+          </span>
+          <span className="mt-0.5 text-[11px] tracking-tight">Menu</span>
+        </button>
       </div>
     </nav>
-    </>
   );
 }

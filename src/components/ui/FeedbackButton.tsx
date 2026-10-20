@@ -59,7 +59,7 @@ export function FeedbackButton() {
         onClick={() => setOpen(true)}
         title="Gửi góp ý / báo lỗi cho lãnh đạo & kỹ thuật"
         aria-label="Gửi góp ý hoặc báo lỗi"
-        className="fixed bottom-36 lg:bottom-24 left-4 lg:left-[276px] z-40 h-11 pl-3 pr-4 rounded-full bg-secondary text-on-secondary shadow-lg flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-transform"
+        className="focus-ring fixed bottom-36 left-4 z-40 flex h-11 items-center gap-1.5 rounded-full bg-secondary pl-3 pr-4 text-on-secondary shadow-lg transition-transform hover:opacity-90 active:scale-95 lg:bottom-24 lg:left-[calc(var(--sidebar-width,260px)+16px)]"
       >
         <span className="material-symbols-outlined text-[20px]">campaign</span>
         <span className="text-xs font-bold">Góp ý</span>
