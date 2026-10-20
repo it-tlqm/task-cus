@@ -140,6 +140,7 @@ export default function MyWorkPage() {
   // Lưu ý hydration: nhãn ngày phụ thuộc múi giờ → tính SAU khi mount để
   // HTML do server và client render ở lần đầu giống nhau (tránh React error #418).
   const [todayLabel, setTodayLabel] = useState("");
+  const [todayShort, setTodayShort] = useState("");
   const [periodLabels, setPeriodLabels] = useState<ReturnType<typeof getCurrentPeriodLabels>>({ weekNumber: 0, year: 0, month: 0, weekShort: "", monthShort: "" });
   useEffect(() => {
     const d = new Date();
@@ -148,6 +149,9 @@ export default function MyWorkPage() {
       `${weekdays[d.getDay()]}, ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`
     );
     setPeriodLabels(getCurrentPeriodLabels());
+    setTodayShort(
+      new Date().toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
+    );
   }, []);
 
   // Drawer & Modal States
@@ -1302,7 +1306,7 @@ export default function MyWorkPage() {
               className={`flex-1 py-1.5 px-2 rounded-md font-body-semibold text-label-md text-center shadow-sm flex items-center justify-center gap-1 transition-fast ${timeFilter === "DAY" ? "bg-secondary text-on-secondary" : "text-on-surface-variant"}`}
             >
               <span className="material-symbols-outlined text-[15px]">event</span>
-              <span>Hôm nay ({new Date().toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })})</span>
+              <span>Hôm nay ({todayShort || "..."})</span>
             </button>
             <button
               onClick={() => setTimeFilter("WEEK")}
