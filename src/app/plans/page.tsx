@@ -2259,7 +2259,7 @@ export default function PlansPage() {
                     </div>
                   ) : (
                     <div className="flex items-center text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5">
-                      Ngày hoàn thành thực tế được ghi nhận khi thực hiện tại mục “Việc cá nhân”, tách biệt với hạn
+                      Ngày hoàn thành thực tế được ghi nhận khi thực hiện tại mục “Nhật ký công việc”, tách biệt với hạn
                       xử lý.
                     </div>
                   )}

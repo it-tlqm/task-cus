@@ -35,7 +35,7 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
   if (pathname === "/login") return null;
 
   const navItems = [
-    { name: "Việc cá nhân", href: "/my-work", icon: "assignment", testId: "bottom-my-work" },
+    { name: "Nhật ký", href: "/my-work", icon: "assignment", testId: "bottom-my-work" },
     { name: "Kế hoạch", href: "/plans", icon: "calendar_month", testId: "bottom-plans" },
     { name: "Nhật ký", href: "/routine", icon: "history_edu", testId: "bottom-routine" },
     {

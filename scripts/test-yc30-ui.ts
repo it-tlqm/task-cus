@@ -30,7 +30,14 @@ fs.mkdirSync(OUT_DIR, { recursive: true });
  * (nằm ngoài Git). KHÔNG hardcode mật khẩu trong mã nguồn.
  */
 function resolvePassword(username: string): string {
-  const fromEnv = process.env[`TEST_${username.toUpperCase()}_PASS`] || process.env.TEST_PASSWORD;
+  const upper = username.toUpperCase();
+  const fromEnv =
+    process.env[`TEST_${upper}_PASS`] ||
+    process.env.TEST_PASSWORD ||
+    // Theo vai trò (dùng cho tài khoản local có tên khác).
+    (ACCOUNTS.leader.username === username ? process.env.TEST_LEADER_PASS : undefined) ||
+    (ACCOUNTS.staff.username === username ? process.env.TEST_STAFF_PASS : undefined) ||
+    (ACCOUNTS.dept.username === username ? process.env.TEST_DEPT_PASS : undefined);
   if (fromEnv) return fromEnv;
   try {
     const p = path.resolve("demo-ops/demo-secrets.json");
@@ -196,7 +203,12 @@ async function main() {
         el.getAttribute("data-testid")
       )
     );
-    check("Sidebar có 7 nhóm điều hướng", sections.length === 7, sections.join(", "));
+    check("Sidebar có 6 nhóm điều hướng", sections.length === 6, sections.join(", "));
+    check(
+      "Có nhóm 'Nhật ký công việc' (YC-30 bổ sung)",
+      sections.includes("nav-section-journal"),
+      sections.join(", ")
+    );
 
     await expandSection(page, "admin");
     const leaderHrefs = await navItems(page);
@@ -272,7 +284,7 @@ async function main() {
     });
     check(
       "Mục thu gọn có tooltip (title)",
-      !!titleOnCollapsed && titleOnCollapsed.includes("Việc cá nhân"),
+      !!titleOnCollapsed && titleOnCollapsed.includes("Nhật ký công việc"),
       String(titleOnCollapsed)
     );
 
@@ -423,8 +435,9 @@ async function main() {
       const el = document.querySelector('nav[aria-label*="nhanh"]');
       return el ? el.innerText.replace(/\n/g, "|") : "";
     });
-    check("Mobile: nhãn 'Việc cá nhân' hiển thị đúng", bottomLabels.includes("Việc cá nhân"), bottomLabels);
+    check("Mobile: nhãn 'Nhật ký' hiển thị đúng", bottomLabels.includes("Nhật ký"), bottomLabels);
     check("Mobile: không còn nhãn 'Việc của tôi'", !bottomLabels.includes("Việc của tôi"));
+    check("Mobile: không còn nhãn 'Việc cá nhân'", !bottomLabels.includes("Việc cá nhân"));
 
     // Drawer mở
     await mobile.click('[data-testid="mobile-menu-button"]');
@@ -448,12 +461,13 @@ async function main() {
       return el ? el.innerText : "";
     });
     const drawerLower = drawerText.toLowerCase();
-    check("Mobile: drawer có nhóm 'Công việc bộ phận'", drawerLower.includes("công việc bộ phận"));
+    check("Mobile: drawer có nhóm 'Nhật ký công việc'", drawerLower.includes("nhật ký công việc"));
     check("Mobile: drawer có nhóm 'Trực ca & nghiệp vụ'", drawerLower.includes("trực ca & nghiệp vụ"));
     check("Mobile: drawer có nhóm 'Quản trị hệ thống'", drawerLower.includes("quản trị hệ thống"));
     check("Mobile: drawer có nhóm 'Kết quả & báo cáo'", drawerLower.includes("kết quả & báo cáo"));
     check("Mobile: drawer không trùng 'Việc của tôi'", !drawerLower.includes("việc của tôi"));
-    check("Mobile: drawer có nhãn 'Việc cá nhân'", drawerLower.includes("việc cá nhân"));
+    check("Mobile: drawer không còn 'Việc cá nhân'", !drawerLower.includes("việc cá nhân"));
+    check("Mobile: drawer có nhãn 'Nhật ký công việc'", drawerLower.includes("nhật ký công việc"));
     check(
       "Mobile: drawer có thông tin vai trò người dùng",
       /lãnh đạo đơn vị|trưởng bộ phận|công chức|quản trị hệ thống/i.test(drawerText),
@@ -490,7 +504,7 @@ async function main() {
       const el = document.querySelector('[data-testid="page-breadcrumb"]');
       return el ? (el as HTMLElement).innerText.replace(/\n/g, " ") : "";
     });
-    check("Mobile: breadcrumb hiển thị", mobileBreadcrumb.includes("Kế hoạch tuần"), mobileBreadcrumb);
+    check("Mobile: breadcrumb hiển thị", mobileBreadcrumb.includes("Lập kế hoạch"), mobileBreadcrumb);
 
     const bodyOverflow = await mobile.evaluate(() => document.body.style.overflow);
     check("Mobile: khoá cuộn trang khi mở drawer", bodyOverflow === "" || bodyOverflow === "hidden");
@@ -503,10 +517,63 @@ async function main() {
       () => document.querySelector('[data-testid="app-navigation"] a[aria-current="page"]')?.getAttribute("href") || null
     );
     check("Mobile: active state đúng /tasks", mobileActive === "/tasks", String(mobileActive));
-
     await mobile.reload({ waitUntil: "networkidle2" });
     const afterReloadOk = await mobile.evaluate(() => document.body.innerText.length > 200);
     check("Mobile: refresh /tasks vẫn tải được", afterReloadOk);
+
+    // ============================================================ NHẬT KÝ CÔNG VIỆC (YC-30 bổ sung)
+    await page.goto(`${BASE}/my-work`, { waitUntil: "networkidle2" });
+    await page.waitForSelector('[data-testid="journal-filter-bar"]', { timeout: 20000 });
+    check("Nhật ký công việc: có thanh bộ lọc", true);
+
+    const filterText = await visibleText(page, '[data-testid="journal-filter-bar"]');
+    check(
+      "Bộ lọc có các cách nhìn: Hôm nay / Tuần / Tháng",
+      filterText.includes("Hôm nay") && filterText.includes("Tuần này") && filterText.includes("Tháng này"),
+      filterText.replace(/\n/g, " | ").slice(0, 160)
+    );
+    check(
+      "Bộ lọc có nguồn: Từ kế hoạch / Phát sinh",
+      filterText.includes("Từ kế hoạch") && filterText.includes("Phát sinh"),
+      filterText.replace(/\n/g, " | ").slice(0, 160)
+    );
+    check(
+      "Bộ lọc có trạng thái: Đang thực hiện / Chậm hạn / Đã hoàn thành",
+      filterText.includes("Đang thực hiện") && filterText.includes("Chậm hạn") && filterText.includes("Đã hoàn thành"),
+      filterText.replace(/\n/g, " | ").slice(0, 160)
+    );
+
+    // Bấm "Tất cả thời gian" → danh sách không bị trống
+    await page.evaluate(() => {
+      const btns = Array.from(
+        document.querySelectorAll('[data-testid="journal-filter-bar"] button')
+      ) as HTMLButtonElement[];
+      btns.find((b) => b.textContent?.includes("Tất cả thời gian"))?.click();
+    });
+    await new Promise((r) => setTimeout(r, 800));
+    const journalListVisible = await page.evaluate(() => {
+      const el = document.querySelector('[data-tour="task-list"]');
+      return !!el && el.getBoundingClientRect().height > 0;
+    });
+    check("Bộ lọc 'Tất cả thời gian' vẫn hiện danh sách công việc", journalListVisible);
+
+    // Bấm "Từ kế hoạch" → phần đầu việc kế hoạch hiện, phần nhiệm vụ giao ẩn
+    await page.evaluate(() => {
+      const btns = Array.from(
+        document.querySelectorAll('[data-testid="journal-filter-bar"] button')
+      ) as HTMLButtonElement[];
+      btns.find((b) => b.textContent?.trim() === "Từ kế hoạch")?.click();
+    });
+    await new Promise((r) => setTimeout(r, 800));
+    const adhocHidden = await page.evaluate(() => {
+      const el = document.querySelector('[data-tour="task-list"]');
+      if (!el) return true;
+      const text = el.innerText || "";
+      return /Chưa có công việc nào|Đã tải 0/i.test(text);
+    });
+    check("Bộ lọc 'Từ kế hoạch' ẩn phần công việc phát sinh", adhocHidden);
+
+    await page.screenshot({ path: path.join(OUT_DIR, "desktop-journal.png"), fullPage: false });
 
     await page.close();
     await mobile.close();

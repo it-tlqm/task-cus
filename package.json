@@ -23,6 +23,7 @@
     ]
   },
   "dependencies": {
+    "@e965/xlsx": "0.20.3",
     "@prisma/client": "^6.4.1",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",

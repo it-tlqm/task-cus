@@ -120,6 +120,11 @@ export async function GET(req: NextRequest) {
         planItem: {
           include: { plan: true },
         },
+        // Liên thông YC-32 → kết quả đánh giá: công việc đã đưa vào bảng kết quả tháng hay chưa.
+        monthlyResults: {
+          select: { id: true, periodYear: true, periodMonth: true, needsReview: true },
+          orderBy: { periodYear: "desc" },
+        },
       },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     });
@@ -128,6 +133,13 @@ export async function GET(req: NextRequest) {
       ...it,
       isCustom: !it.templateId && !it.deptWorkItemId && !it.catalogEntryId,
       customTitle: it.title,
+      // Đã đưa vào kết quả đánh giá chưa (hiển thị trạng thái trong Nhật ký công việc).
+      inEvaluation: it.monthlyResults.length > 0,
+      evaluationPeriods: it.monthlyResults.map((m) => ({
+        year: m.periodYear,
+        month: m.periodMonth,
+        needsReview: m.needsReview,
+      })),
     }));
 
     return NextResponse.json({ success: true, data: enrichedItems });

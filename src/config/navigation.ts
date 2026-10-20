@@ -96,34 +96,30 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
     ],
   },
   {
-    id: "personal",
-    label: "Công việc cá nhân",
-    icon: "person_check",
+    // YC-30 (bổ sung 20/10) — "Nhật ký công việc" là đầu mối ghi nhận & theo dõi
+    // công việc thực tế. "Lập kế hoạch" ở đây là THÀNH PHẦN LẬP KẾ HOẠCH/TỔNG HỢP
+    // trong luồng nhật ký (route /plans giữ nguyên, không xoá kế hoạch đã lập).
+    id: "journal",
+    label: "Nhật ký công việc",
+    icon: "menu_book",
     items: [
       {
         id: "my-work",
-        label: "Việc cá nhân",
+        label: "Nhật ký công việc",
         href: "/my-work",
         icon: "assignment_ind",
-        description: "Việc thường xuyên, tiến độ, hạn xử lý và minh chứng",
+        description: "Hôm nay, theo kỳ, từ kế hoạch hoặc phát sinh — kèm hạn, kết quả và minh chứng",
       },
-    ],
-  },
-  {
-    id: "department",
-    label: "Công việc bộ phận",
-    icon: "account_tree",
-    items: [
       {
         id: "plans",
-        label: "Kế hoạch tuần",
+        label: "Lập kế hoạch",
         href: "/plans",
         icon: "event_note",
-        description: "Kế hoạch và đầu việc của bộ phận",
+        description: "Lập và tổng hợp kế hoạch tuần của bộ phận",
       },
       {
         id: "tasks",
-        label: "Việc đột xuất",
+        label: "Công việc phát sinh",
         href: "/tasks",
         icon: "bolt",
         description: "Nhiệm vụ chỉ đạo, giao việc và theo dõi tiến độ",
@@ -361,6 +357,10 @@ export function getBreadcrumbTrail(pathname: string): BreadcrumbEntry[] {
   if (item.href === "/dashboard") return [home, { label: current }];
 
   const sectionLabel = special?.section || section.label;
+  // Nhóm và mục trùng tên (vd nhóm "Nhật ký công việc" / mục "Nhật ký công việc") → chỉ hiện 1 cấp.
+  if (sectionLabel.trim().toLowerCase() === current.trim().toLowerCase()) {
+    return [home, { label: current }];
+  }
   return [home, { label: sectionLabel }, { label: current }];
 }
 

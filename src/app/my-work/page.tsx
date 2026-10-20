@@ -7,6 +7,14 @@ import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 import MyWorkItemsSection from "./MyWorkItemsSection";
+import {
+  DEFAULT_JOURNAL_FILTER,
+  JournalFilterBar,
+  journalDateInRange,
+  journalPeriodRange,
+  journalTextMatches,
+  type JournalFilterState,
+} from "@/components/work/JournalFilterBar";
 
 interface TaskUpdateItem {
   id: string;
@@ -80,6 +88,10 @@ export default function MyWorkPage() {
     "ALL" | "IN_PROGRESS" | "WAITING_REVIEW" | "OVERDUE" | "COMPLETED"
   >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  // YC-30 (bổ sung) — bộ lọc "Nhật ký công việc" dùng chung cho nhiệm vụ giao + đầu việc kế hoạch.
+  const [journalFilter, setJournalFilter] = useState<JournalFilterState>(
+    DEFAULT_JOURNAL_FILTER
+  );
   // UX: tìm kiếm + phân trang server (API giới hạn 50/trang)
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -575,11 +587,34 @@ export default function MyWorkPage() {
     return dl >= start && dl < end;
   };
   const filteredTasks = tasks.filter((task) => {
+    // Ô tìm kiếm cũ (giữ nguyên) + bộ lọc Nhật ký công việc (thời gian / nguồn / trạng thái)
     const matchesSearch =
       task.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.title.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
     if (!inTimeRange(task)) return false;
+
+    // Bộ lọc Nhật ký công việc
+    const range = journalPeriodRange(journalFilter.period);
+    if (!journalDateInRange(task.currentDeadline, null, range)) return false;
+    if (
+      !journalTextMatches(
+        journalFilter.query,
+        task.code,
+        task.title,
+        task.description
+      )
+    ) {
+      return false;
+    }
+    // Nguồn: "Công việc phát sinh" = nhiệm vụ được giao (Task);
+    //        "Công việc từ kế hoạch" = đầu việc kế hoạch (PersonalWorkItem, hiển thị ở MyWorkItemsSection).
+    if (journalFilter.source === "plan") return false;
+    if (journalFilter.status === "active") {
+      return task.status !== "COMPLETED" && task.status !== "CANCELED" && !task.isOverdue;
+    }
+    if (journalFilter.status === "overdue") return !!task.isOverdue || !!task.hasIssue;
+    if (journalFilter.status === "done") return task.status === "COMPLETED";
 
     if (activeTab === "ALL") return true;
     if (activeTab === "IN_PROGRESS") return task.status === "IN_PROGRESS" || task.status === "NOT_STARTED";
@@ -654,7 +689,7 @@ export default function MyWorkPage() {
                 </span>
               </div>
               <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight">
-                Việc cá nhân — Không Gian Tác Nghiệp Cán Bộ
+                Nhật ký công việc — Không Gian Tác Nghiệp Cán Bộ
               </h1>
               <div className="flex items-center gap-space-md mt-1 flex-wrap">
                 <div className="inline-flex items-center gap-2 bg-surface-subtle px-3 py-1 rounded-lg">
@@ -833,8 +868,15 @@ export default function MyWorkPage() {
           </div>
         </section>
 
+        {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung cho cả 2 nguồn dữ liệu */}
+        <JournalFilterBar
+          value={journalFilter}
+          onChange={setJournalFilter}
+          counts={{ total: tasks.length }}
+        />
+
         {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng */}
-        <MyWorkItemsSection personId={currentUser.personId} />
+        <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
 
         {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP */}
         <section data-tour="task-list" className="bg-surface-container-lowest rounded-xl shadow-sm flex flex-col overflow-hidden border border-border-default/50">
@@ -1350,9 +1392,18 @@ export default function MyWorkPage() {
           </div>
         </div>
 
+        {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung (mobile) */}
+        <div className="px-margin py-2">
+          <JournalFilterBar
+            value={journalFilter}
+            onChange={setJournalFilter}
+            counts={{ total: tasks.length }}
+          />
+        </div>
+
         {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng (bản mobile) */}
         <div className="px-margin py-2">
-          <MyWorkItemsSection personId={currentUser.personId} />
+          <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
         </div>
 
         {/* TAB TRẠNG THÁI CÔNG VIỆC (HORIZONTAL SCROLL CHIPS) */}

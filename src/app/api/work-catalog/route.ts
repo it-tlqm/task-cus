@@ -85,6 +85,14 @@ export async function GET(req: NextRequest) {
         getCatalogDepartmentStatuses(version.id),
       ]);
 
+      const entriesWithFactor = entries.map((e) => ({
+        ...e,
+        convertFactor:
+          e.convertFactor === null || e.convertFactor === undefined
+            ? null
+            : Number(e.convertFactor),
+      }));
+
       const deptMap = new Map<string, { name: string; order: number; count: number }>();
       for (const e of allForDepartments) {
         const cur = deptMap.get(e.department) || {
@@ -100,7 +108,7 @@ export async function GET(req: NextRequest) {
         success: true,
         data: {
           version,
-          entries,
+          entries: entriesWithFactor,
           departments: [...deptMap.values()].sort((a, b) => a.order - b.order),
           totalEntries: allForDepartments.length,
           legacyTemplatesSelectable: await isLegacyTemplateSelectableForPerson(user.personId),
@@ -156,9 +164,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // scope=all: tra cứu toàn bộ danh mục 6 nhóm (dùng để xem/tìm kiếm danh mục chung).
+    // KHÔNG mở rộng quyền xem dữ liệu công việc cá nhân của người khác.
+    const scopeParam = searchParams.get("scope");
+    const scope: "dept" | "all" = scopeParam === "all" ? "all" : "dept";
+
     const selectable = await getSelectableCatalogEntriesForPerson(targetPersonId, {
       department,
       q,
+      scope,
     });
 
     const deptMap = new Map<string, { name: string; order: number; count: number }>();
@@ -191,6 +205,7 @@ export async function GET(req: NextRequest) {
         departments: [...deptMap.values()].sort((a, b) => a.order - b.order),
         totalEntries: selectable.entries.length,
         legacyTemplatesSelectable: !selectable.activation.activated,
+        scope,
         activation: {
           status: selectable.activation.activated ? "ACTIVATED" : "NOT_ACTIVATED",
           unitIds: selectable.activation.unitIds,

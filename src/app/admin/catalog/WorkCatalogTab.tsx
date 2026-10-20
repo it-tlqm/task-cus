@@ -21,7 +21,9 @@ interface CatalogEntry {
   code: string;
   department: string;
   departmentOrder: number;
+  groupCode: string;
   title: string;
+  convertFactor: number | null;
   sortOrder: number;
   sourceRow: number;
   status: string;
@@ -36,6 +38,7 @@ interface CatalogVersion {
   sourceFileName: string | null;
   sourceSheet: string | null;
   note: string | null;
+  selectionMode?: "MAPPED" | "ALL";
   importedAt: string;
   importedBy: { id: string; fullName: string; code: string } | null;
   activeEntries?: number;
@@ -113,6 +116,9 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
   const [canImport, setCanImport] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [savingSelectionMode, setSavingSelectionMode] = useState(false);
+  const [factorDrafts, setFactorDrafts] = useState<Record<string, string>>({});
+  const [savingFactorId, setSavingFactorId] = useState<string | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -130,7 +136,17 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
       if (!resMappings.ok) throw new Error(mappingJson.error || "Không tải được bảng ánh xạ bộ phận");
 
       const data = catalogJson.data || {};
-      setActiveVersion(data.version || null);
+      const versionFromApi = data.version || null;
+      setActiveVersion(
+        versionFromApi
+          ? {
+              ...versionFromApi,
+              selectionMode:
+                (versionsJson.data || []).find((v: any) => v.id === versionFromApi.id)
+                  ?.selectionMode || "MAPPED",
+            }
+          : null
+      );
       setEntries(data.entries || []);
       setDepartments(data.departments || []);
       setVersions(versionsJson.data || []);
@@ -250,6 +266,70 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
     }
   };
 
+  const saveFactor = async (entry: CatalogEntry) => {
+    if (!canManage) return;
+    const raw = (factorDrafts[entry.id] ?? (entry.convertFactor ?? "")).toString().trim();
+    const current = entry.convertFactor === null || entry.convertFactor === undefined
+      ? ""
+      : String(entry.convertFactor);
+    if (raw === current) return; // không đổi
+
+    const payload = raw === "" ? { convertFactor: null } : { convertFactor: Number(raw) };
+    if (raw !== "" && !Number.isFinite(Number(raw))) {
+      showToast("error", "Hệ số quy đổi phải là số");
+      return;
+    }
+
+    setSavingFactorId(entry.id);
+    try {
+      const res = await fetch(`/api/work-catalog/entries/${entry.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Không lưu được hệ số quy đổi");
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === entry.id
+            ? { ...e, convertFactor: json.data?.convertFactor ?? e.convertFactor }
+            : e
+        )
+      );
+      setFactorDrafts((prev) => {
+        const next = { ...prev };
+        delete next[entry.id];
+        return next;
+      });
+      showToast("success", `Đã cập nhật hệ số cho ${entry.code}`);
+    } catch (err: any) {
+      showToast("error", err.message || "Không lưu được hệ số quy đổi");
+    } finally {
+      setSavingFactorId(null);
+    }
+  };
+
+  const toggleSelectionMode = async () => {
+    if (!canManage || !activeVersion) return;
+    const next = activeVersion.selectionMode === "ALL" ? "MAPPED" : "ALL";
+    setSavingSelectionMode(true);
+    try {
+      const res = await fetch("/api/work-catalog/versions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ versionId: activeVersion.id, selectionMode: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Không đổi được phạm vi chọn đầu việc");
+      showToast("success", json.message || "Đã cập nhật phạm vi chọn đầu việc");
+      await fetchAll();
+    } catch (err: any) {
+      showToast("error", err.message || "Không đổi được phạm vi chọn đầu việc");
+    } finally {
+      setSavingSelectionMode(false);
+    }
+  };
+
   const saveMapping = async (row: DepartmentMappingRow) => {
     if (!canManage) return;
     const draft = mappingDrafts[row.department];
@@ -344,6 +424,37 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
           )}
         </div>
       </div>
+
+      {/* Chế độ chọn đầu việc — khi Hải quan chưa xác nhận ánh xạ bộ phận */}
+      {activeVersion && canManage && (
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-teal-700 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">Phạm vi cán bộ được chọn đầu việc</h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {activeVersion.selectionMode === "ALL"
+                  ? "Đang mở: mọi cán bộ chọn được đầu việc của cả 6 nhóm. Áp dụng khi Hải quan chưa xác nhận ánh xạ bộ phận."
+                  : "Đang giới hạn: cán bộ chỉ chọn được nhóm đã ánh xạ và kích hoạt cho bộ phận của mình."}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => toggleSelectionMode()}
+            disabled={savingSelectionMode}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 rounded-lg disabled:opacity-50"
+          >
+            {savingSelectionMode ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Power className="w-3.5 h-3.5" />
+            )}
+            {activeVersion.selectionMode === "ALL"
+              ? "Giới hạn theo bộ phận"
+              : "Cho phép chọn tất cả nhóm"}
+          </button>
+        </div>
+      )}
 
       {/* Ánh xạ nhóm TX → bộ phận thật + kích hoạt theo bộ phận */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -535,6 +646,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                   <th className="px-3 py-2.5 text-left font-semibold">Mã</th>
                   <th className="px-3 py-2.5 text-left font-semibold">Bộ phận</th>
                   <th className="px-3 py-2.5 text-left font-semibold">Tên đầu việc thường xuyên</th>
+                  <th className="px-3 py-2.5 text-center font-semibold">Hệ số quy đổi</th>
                   <th className="px-3 py-2.5 text-center font-semibold">Dòng Excel</th>
                   <th className="px-3 py-2.5 text-center font-semibold">Trạng thái</th>
                   {canManage && <th className="px-3 py-2.5 text-right font-semibold">Thao tác</th>}
@@ -546,8 +658,41 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                     <td className="px-3 py-2 font-mono text-[11px] text-slate-500 whitespace-nowrap">
                       {e.code}
                     </td>
-                    <td className="px-3 py-2 text-slate-700 min-w-[160px]">{e.department}</td>
+                    <td className="px-3 py-2 text-slate-700 min-w-[160px]">
+                      <span className="block">{e.department}</span>
+                      <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-600">
+                        {e.groupCode}
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-slate-900 font-medium min-w-[280px]">{e.title}</td>
+                    <td className="px-3 py-2 text-center whitespace-nowrap">
+                      {canManage ? (
+                        <input
+                          type="number"
+                          step="0.0001"
+                          min="0"
+                          value={factorDrafts[e.id] ?? (e.convertFactor ?? "")}
+                          placeholder="Chưa có"
+                          onChange={(ev) =>
+                            setFactorDrafts((prev) => ({ ...prev, [e.id]: ev.target.value }))
+                          }
+                          onBlur={() => saveFactor(e)}
+                          onKeyDown={(ev) => {
+                            if (ev.key === "Enter") (ev.target as HTMLInputElement).blur();
+                          }}
+                          className="w-24 px-2 py-1 text-center font-mono text-[11px] border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                          title="Bổ sung / chỉnh sửa hệ số quy đổi (để trống = chưa có hệ số)"
+                        />
+                      ) : e.convertFactor === null || e.convertFactor === undefined ? (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-semibold">
+                          Chưa có
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[11px] font-semibold text-teal-800">
+                          {e.convertFactor}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-center text-slate-500">{e.sourceRow || "—"}</td>
                     <td className="px-3 py-2 text-center">
                       {e.status === "ACTIVE" ? (

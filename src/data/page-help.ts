@@ -51,7 +51,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/plans": {
-    title: "Kế hoạch tuần",
+    title: "Lập kế hoạch",
     bullets: [
       "Trình tự: Dự thảo → Trình duyệt → Phê duyệt → Ban hành hiệu lực.",
       "Kế hoạch đã duyệt chỉ sửa qua nút Trình duyệt bổ sung.",
@@ -254,7 +254,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/my-work": {
-    title: "Việc cá nhân",
+    title: "Nhật ký công việc",
     bullets: [
       "Việc mới có nút Nhận việc — bấm để xác nhận đã nhận.",
       "Bấm Cập nhật tiến độ, kéo thanh theo mức 5%, ghi vài dòng kết quả.",
@@ -268,7 +268,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/tasks": {
-    title: "Việc đột xuất",
+    title: "Công việc phát sinh",
     bullets: [
       "Danh sách việc toàn đơn vị trong phạm vi của bạn.",
       "Ô tìm kiếm tìm theo mã hoặc tên trên toàn hệ thống (không chỉ trang hiện tại).",

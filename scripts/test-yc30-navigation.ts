@@ -176,9 +176,9 @@ const adminHrefs = hrefsOf(admin);
 check("STAFF không thấy Phê duyệt", !staffHrefs.includes("/approvals"));
 check("STAFF không thấy nhóm Quản trị hệ thống", !staffHrefs.some((h) => h.startsWith("/admin")));
 check("STAFF không thấy Cấu hình số liệu giao ban", !staffHrefs.includes("/giao-ban/cau-hinh"));
-check("STAFF vẫn thấy Việc cá nhân", staffHrefs.includes("/my-work"));
-check("STAFF vẫn thấy Kế hoạch tuần", staffHrefs.includes("/plans"));
-check("STAFF vẫn thấy Việc đột xuất", staffHrefs.includes("/tasks"));
+check("STAFF vẫn thấy Nhật ký công việc", staffHrefs.includes("/my-work"));
+check("STAFF vẫn thấy Lập kế hoạch", staffHrefs.includes("/plans"));
+check("STAFF vẫn thấy Công việc phát sinh", staffHrefs.includes("/tasks"));
 check("STAFF vẫn thấy Nhật ký tác nghiệp", staffHrefs.includes("/routine"));
 check("STAFF vẫn thấy Sản phẩm QĐ1277", staffHrefs.includes("/products"));
 
@@ -219,7 +219,7 @@ check("/giao-ban/nhap active khi ở /giao-ban/nhap", isItemActive("/giao-ban/nh
   ? isItemActive("/giao-ban/nhap", NAVIGATION_SECTIONS.find((s) => s.id === "overview")!.items.find((i) => i.href === "/giao-ban/nhap")!)
   : false);
 
-const tasksItem = NAVIGATION_SECTIONS.find((s) => s.id === "department")!.items.find((i) => i.href === "/tasks")!;
+const tasksItem = NAVIGATION_SECTIONS.find((s) => s.id === "journal")!.items.find((i) => i.href === "/tasks")!;
 check("/tasks active khi ở /tasks/abc", isItemActive("/tasks/abc", tasksItem));
 check("/tasks không active khi ở /plans", !isItemActive("/plans", tasksItem));
 
@@ -232,22 +232,22 @@ const reportsItem = NAVIGATION_SECTIONS.find((s) => s.id === "results")!.items.f
 check("/reports active khi ở /reports/excel (route cũ)", isItemActive("/reports/excel", reportsItem));
 
 const activeTasks = findActiveNavigation("/tasks/123");
-check("findActiveNavigation(/tasks/123) → Việc đột xuất", activeTasks?.item.label === "Việc đột xuất");
+check("findActiveNavigation(/tasks/123) → Công việc phát sinh", activeTasks?.item.label === "Công việc phát sinh");
 const activeGiaoBan = findActiveNavigation("/giao-ban/nhap");
 check("findActiveNavigation(/giao-ban/nhap) → Nhập số liệu giao ban", activeGiaoBan?.item.label === "Nhập số liệu giao ban");
 
 // ---------------------------------------------------------------- 6. breadcrumb
 const bc = (p: string) => getBreadcrumbTrail(p).map((e) => e.label).join(" / ");
 check("Breadcrumb /dashboard", bc("/dashboard") === "Trang chủ / Bảng điều hành", bc("/dashboard"));
-check("Breadcrumb /my-work", bc("/my-work") === "Trang chủ / Công việc cá nhân / Việc cá nhân", bc("/my-work"));
+check("Breadcrumb /my-work", bc("/my-work") === "Trang chủ / Nhật ký công việc", bc("/my-work"));
 check(
   "Breadcrumb /plans",
-  bc("/plans") === "Trang chủ / Công việc bộ phận / Kế hoạch tuần",
+  bc("/plans") === "Trang chủ / Nhật ký công việc / Lập kế hoạch",
   bc("/plans")
 );
 check(
   "Breadcrumb /tasks/123 có mục chi tiết",
-  bc("/tasks/123") === "Trang chủ / Công việc bộ phận / Chi tiết nhiệm vụ",
+  bc("/tasks/123") === "Trang chủ / Nhật ký công việc / Chi tiết nhiệm vụ",
   bc("/tasks/123")
 );
 check("Breadcrumb /admin/catalog", bc("/admin/catalog") === "Trang chủ / Quản trị hệ thống / Danh mục công việc", bc("/admin/catalog"));
@@ -268,9 +268,24 @@ for (const section of NAVIGATION_SECTIONS) {
   }
 }
 
-// ---------------------------------------------------------------- 8. nhãn "Việc cá nhân" thống nhất
-check("Không còn nhãn 'Việc của tôi' trong menu", !menuHrefs.some(() => false) && !NAVIGATION_SECTIONS.some((s) => s.items.some((i) => /việc của tôi/i.test(i.label))));
-check("Có mục 'Việc cá nhân'", NAVIGATION_SECTIONS.some((s) => s.items.some((i) => i.label === "Việc cá nhân")));
+// ---------------------------------------------------------------- 8. nhãn thống nhất (YC-30 + bổ sung 20/10)
+check("Không còn nhãn 'Việc của tôi' trong menu", !NAVIGATION_SECTIONS.some((s) => s.items.some((i) => /việc của tôi/i.test(i.label))));
+check("Không còn nhãn 'Việc cá nhân' trong menu (đổi thành Nhật ký công việc)", !NAVIGATION_SECTIONS.some((s) => s.items.some((i) => /việc cá nhân/i.test(i.label))));
+check("Có mục 'Nhật ký công việc'", NAVIGATION_SECTIONS.some((s) => s.items.some((i) => i.label === "Nhật ký công việc")));
+check("Có nhóm 'Nhật ký công việc'", NAVIGATION_SECTIONS.some((s) => s.label === "Nhật ký công việc"));
+check(
+  "Có mục 'Lập kế hoạch' (kế hoạch tuần ở dạng thành phần trong luồng nhật ký)",
+  NAVIGATION_SECTIONS.some((s) => s.items.some((i) => i.href === "/plans" && i.label === "Lập kế hoạch"))
+);
+check(
+  "Route /plans và /my-work vẫn tồn tại trong menu (không mất đường vào)",
+  menuHrefs.includes("/plans") && menuHrefs.includes("/my-work")
+);
+check(
+  "Số nhóm điều hướng = 6 (gộp Công việc cá nhân + Công việc bộ phận thành Nhật ký công việc)",
+  NAVIGATION_SECTIONS.length === 6,
+  String(NAVIGATION_SECTIONS.length)
+);
 
 console.log("\n========================================");
 console.log(`KẾT QUẢ: ${passed} pass / ${failed} fail`);

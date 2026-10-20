@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
+import {
+  journalDateInRange,
+  journalPeriodRange,
+  journalTextMatches,
+  type JournalFilterState,
+} from "@/components/work/JournalFilterBar";
 
 interface WorkItem {
   id: string;
@@ -25,6 +31,10 @@ interface WorkItem {
   task?: { id: string; code: string; title: string; status: string; currentDeadline?: string } | null;
   _count?: { evidences: number };
   period?: { id: string; title?: string | null } | null;
+  planItemId?: string | null;
+  /** YC-32 liên thông: công việc đã đưa vào kết quả đánh giá tháng hay chưa. */
+  inEvaluation?: boolean;
+  evaluationPeriods?: Array<{ year: number; month: number; needsReview: boolean }>;
   planItem?: {
     id: string;
     plan?: { id: string; title: string; status: string } | null;
@@ -51,6 +61,8 @@ interface EvidenceMeta {
 
 interface Props {
   personId?: string;
+  /** YC-30 (bổ sung) — bộ lọc Nhật ký công việc dùng chung (thời gian / nguồn / trạng thái). */
+  journalFilter?: JournalFilterState;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -115,7 +127,7 @@ const isOverdue = (item: WorkItem) => {
   return due.getTime() < today.getTime();
 };
 
-export default function MyWorkItemsSection({ personId }: Props) {
+export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
   const now = useMemo(() => new Date(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -169,10 +181,35 @@ export default function MyWorkItemsSection({ personId }: Props) {
     });
   }, [items]);
 
-  const visibleItems = useMemo(
-    () => (showCompleted ? sortedItems : sortedItems.filter((it) => !it.completedDate)),
-    [sortedItems, showCompleted]
-  );
+  const visibleItems = useMemo(() => {
+    const base = showCompleted ? sortedItems : sortedItems.filter((it) => !it.completedDate);
+    if (!journalFilter) return base;
+
+    // Bộ lọc Nhật ký công việc (YC-30 bổ sung) — áp dụng cho đầu việc kế hoạch.
+    const range = journalPeriodRange(journalFilter.period);
+    return base.filter((it) => {
+      if (!journalDateInRange(it.dueDate, it.completedDate, range)) return false;
+      if (
+        !journalTextMatches(
+          journalFilter.query,
+          it.title,
+          it.catalogEntry?.code,
+          it.deptWorkItem?.title,
+          it.template?.code
+        )
+      ) {
+        return false;
+      }
+      // Nguồn: "Từ kế hoạch" = đầu việc có liên kết kế hoạch; "Phát sinh" = tự nhập.
+      if (journalFilter.source === "plan" && !it.planItemId) return false;
+      if (journalFilter.source === "adhoc" && it.planItemId) return false;
+      // Trạng thái
+      if (journalFilter.status === "active" && it.completedDate) return false;
+      if (journalFilter.status === "overdue" && !isOverdue(it)) return false;
+      if (journalFilter.status === "done" && !it.completedDate) return false;
+      return true;
+    });
+  }, [sortedItems, showCompleted, journalFilter]);
 
   const stats = useMemo(() => {
     const total = items.length;

@@ -290,6 +290,9 @@ model WorkCatalogVersion {
   entryCount     Int      @map("entry_count")
   importHash     String   @map("import_hash") // SHA-256 nội dung chuẩn hóa — chống nhập lại cùng file
   status         String   @default("ACTIVE") // ACTIVE, SUPERSEDED
+  // MAPPED: chỉ chọn được nhóm đã ánh xạ + kích hoạt cho bộ phận của cán bộ.
+  // ALL: mọi cán bộ chọn được mọi nhóm (khi Hải quan chưa xác nhận ánh xạ bộ phận).
+  selectionMode  String   @default("MAPPED") @map("selection_mode")
   note           String?
   importedById   String?  @map("imported_by_id")
   importedAt     DateTime @default(now()) @map("imported_at")
@@ -306,11 +309,13 @@ model WorkCatalogVersion {
 model WorkCatalogEntry {
   id              String   @id @default(uuid())
   versionId       String   @map("version_id")
-  code            String // TX-XXXXXXXX: sinh ổn định từ (bộ phận + tên chuẩn hóa), giữ nguyên qua các phiên bản
+  code            String // Mã đầu việc ổn định theo nhóm: NV-01, CNTT-01, CBL-01, PT-01, TH-01, DANG-01
   department      String // Tên bộ phận đúng như file nguồn (6 bộ phận)
   departmentOrder Int      @default(0) @map("department_order")
+  groupCode       String   @map("group_code") // Mã nhóm nguồn: NV, CNTT, CBL, PT, TH, DANG
   unitId          String?  @map("unit_id") // Gắn đơn vị thật sau khi Hải quan xác nhận (B2 phiếu 04)
   title           String
+  convertFactor   Decimal? @map("convert_factor") @db.Decimal(12, 4) // Hệ số quy đổi trong file nguồn: NULL = chưa có, 0 = hệ số bằng 0
   sortOrder       Int      @default(0) @map("sort_order")
   sourceRow       Int      @default(0) @map("source_row") // Dòng Excel gốc để đối soát
   status          String   @default("ACTIVE") // ACTIVE, INACTIVE (ngừng dùng riêng lẻ)
@@ -321,9 +326,11 @@ model WorkCatalogEntry {
   unit      OrgUnit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
   workItems PersonalWorkItem[]
 
-  @@unique([versionId, department, title])
+  // Mã đầu việc là khoá duy nhất: file nguồn TX1 có tên trùng trong CÙNG nhóm,
+  // nên không thể để (versionId, department, title) là unique.
   @@unique([versionId, code])
   @@index([versionId, status, departmentOrder, sortOrder])
+  @@index([versionId, department, title])
   @@map("work_catalog_entries")
 }
 

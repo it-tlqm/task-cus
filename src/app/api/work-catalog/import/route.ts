@@ -38,9 +38,10 @@ export async function POST(req: NextRequest) {
       return jsonError("Vui lòng chọn tệp Excel (.xlsx) cần nhập", 400);
     }
     const upload = file as File;
-    if (!upload.name.toLowerCase().endsWith(".xlsx")) {
+    const lowerName = upload.name.toLowerCase();
+    if (!lowerName.endsWith(".xls") && !lowerName.endsWith(".xlsx")) {
       return jsonError(
-        "Hệ thống chỉ nhận tệp .xlsx. Hãy mở file .xls bằng Excel và lưu lại dưới dạng .xlsx (một lần).",
+        "Hệ thống nhận tệp danh mục dạng .xls (Excel 97-2003) hoặc .xlsx. Hãy chọn đúng file nguồn.",
         400
       );
     }
@@ -80,8 +81,8 @@ export async function POST(req: NextRequest) {
       importHash: parsed.importHash,
     };
 
-    const canImport =
-      parsed.errors.length === 0 && parsed.duplicates.length === 0 && !diff.unchangedHash;
+    // Tên trùng trong CÙNG nhóm là hợp lệ (mã đầu việc khác nhau) → chỉ cảnh báo, không chặn.
+    const canImport = parsed.errors.length === 0 && !diff.unchangedHash;
 
     if (dryRun) {
       return NextResponse.json({
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
           ? "Danh mục không thay đổi so với phiên bản đang áp dụng"
           : canImport
             ? "Đọc tệp thành công — kiểm tra báo cáo trước khi xác nhận nhập"
-            : "Tệp còn lỗi/trùng — cần sửa file trước khi nhập",
+            : "Tệp còn lỗi — cần sửa file nguồn trước khi nhập",
       });
     }
 
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Không thể nhập: tệp còn lỗi, trùng trong bộ phận hoặc không có thay đổi",
+          error: "Không thể nhập: tệp còn lỗi hoặc không có thay đổi so với phiên bản đang áp dụng",
           report,
         },
         { status: 422 }

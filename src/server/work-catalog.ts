@@ -4,12 +4,15 @@
  *
  * Nguyên tắc:
  * - Mỗi lần nhập = 1 phiên bản bất biến; phiên bản cũ chuyển SUPERSEDED (không xóa).
- * - Chống trùng 3 lớp: importHash, unique (version, department, title), mã ổn định.
+ * - Chống trùng 2 lớp: importHash + mã đầu việc ổn định theo nhóm.
  * - Không đoán "đổi tên": tên cũ biến mất = ngừng dùng, tên mới = dòng mới.
+ * - Hệ số quy đổi: NULL = ô trống trong file; 0 = hệ số bằng 0 (giữ nguyên, không đổi thành NULL).
+ * - Tên trùng trong CÙNG nhóm vẫn được giữ (mã khác nhau) — không bỏ dòng nào.
  */
 
 import crypto from "node:crypto";
-import ExcelJS from "exceljs";
+import { Prisma } from "@prisma/client";
+import * as XLSX from "@e965/xlsx";
 import { prisma } from "./db";
 import { advisoryLock } from "./idempotency";
 import { recordAuditEvent } from "./audit";
@@ -17,11 +20,36 @@ import { recordAuditEvent } from "./audit";
 export const WORK_CATALOG_SHEET_HINT = "DM CV";
 export const WORK_CATALOG_TITLE = "Danh mục công việc thường xuyên";
 
+/** Tên sheet mới (file TX1 ngày 20/10/2026) — có khoảng trắng ở cuối. */
+export const WORK_CATALOG_SHEET_V2 = "Danh mục công việc";
+
+/**
+ * Mã nhóm theo tên bộ phận trong file nguồn.
+ * Nhóm trong Excel là CẤU TRÚC PHÂN LOẠI của file — KHÔNG tự động kết luận
+ * tương ứng 1:1 với bộ phận nhân sự. Ánh xạ → org_units do quản trị xác nhận.
+ */
+export const DEPARTMENT_GROUP_CODES: Array<{ match: RegExp; code: string; label: string }> = [
+  { match: /nghiệp vụ hải quan/i, code: "NV", label: "Nghiệp vụ Hải quan" },
+  { match: /cntt/i, code: "CNTT", label: "CNTT" },
+  { match: /điều tra cbl|cbl/i, code: "CBL", label: "Điều tra, chống buôn lậu" },
+  { match: /phúc tập/i, code: "PT", label: "Phúc tập & KT STQ" },
+  { match: /th\s*&\s*báo cáo|tổng hợp\s*&\s*báo cáo/i, code: "TH", label: "Tổng hợp & Báo cáo" },
+  { match: /công tác đảng/i, code: "DANG", label: "Công tác Đảng" },
+];
+
+export function resolveGroupCode(department: string): { code: string; label: string } | null {
+  const found = DEPARTMENT_GROUP_CODES.find((g) => g.match.test(department));
+  return found ? { code: found.code, label: found.label } : null;
+}
+
 export interface ParsedCatalogEntry {
   code: string;
   department: string;
   departmentOrder: number;
+  groupCode: string;
   title: string;
+  /** Hệ số quy đổi trong file: null = ô trống; 0 = hệ số bằng 0. */
+  convertFactor: number | null;
   sortOrder: number;
   sourceRow: number;
 }
@@ -29,8 +57,9 @@ export interface ParsedCatalogEntry {
 export interface ParsedCatalog {
   sheetName: string;
   entries: ParsedCatalogEntry[];
-  departments: Array<{ name: string; order: number; count: number }>;
+  departments: Array<{ name: string; order: number; count: number; groupCode: string; groupLabel: string }>;
   errors: Array<{ row: number; message: string }>;
+  /** Tên trùng trong CÙNG nhóm — vẫn được giữ, chỉ cảnh báo. */
   duplicates: Array<{ department: string; title: string; rows: number[] }>;
   crossDepartmentDuplicates: Array<{ title: string; departments: string[] }>;
   totalRowsScanned: number;
@@ -55,104 +84,230 @@ export function normalizeCatalogText(value: unknown): string {
     .trim();
 }
 
-/** Mã đầu việc ổn định: băm (bộ phận + tên đã chuẩn hóa) — giữ nguyên qua các phiên bản. */
-export function computeEntryCode(department: string, title: string): string {
+export function computeImportHash(entries: ParsedCatalogEntry[]): string {
+  const lines = entries.map(
+    (e) => `${e.departmentOrder}\t${e.department}\t${e.groupCode}\t${e.sortOrder}\t${e.title}\t${
+      e.convertFactor === null ? "" : String(e.convertFactor)
+    }`
+  );
+  return crypto.createHash("sha256").update(lines.join("\n")).digest("hex");
+}
+
+/**
+ * Mã đầu việc ổn định theo nhóm: `<GROUP>-<số thứ tự 2 chữ số>`.
+ * NV-01 … NV-174 · CNTT-01 … CNTT-05 · CBL-01 … CBL-57 · PT-01 … PT-02
+ * TH-01 … TH-102 · DANG-01 … DANG-08.
+ * Mã không đổi khi đầu việc đã được liên kết với công việc.
+ */
+export function computeEntryCode(groupCode: string, ordinal: number): string {
+  return `${groupCode}-${String(ordinal).padStart(2, "0")}`;
+}
+
+/** Mã cũ (hash) — giữ để đọc được phiên bản đã nhập trước khi chuyển sang mã theo nhóm. */
+export function computeLegacyEntryCode(department: string, title: string): string {
   const base = `${normalizeCatalogText(department)}\u0000${normalizeCatalogText(title)}`;
   return `TX-${crypto.createHash("sha256").update(base, "utf8").digest("hex").slice(0, 8).toUpperCase()}`;
 }
 
-export function computeImportHash(entries: ParsedCatalogEntry[]): string {
-  const lines = entries.map(
-    (e) => `${e.departmentOrder}\t${e.department}\t${e.sortOrder}\t${e.title}`
-  );
-  return crypto.createHash("sha256").update(lines.join("\n"), "utf8").digest("hex");
+interface RawRow {
+  row: number;
+  a: string;
+  b: string;
+  c: string;
+  cNumeric: number | null;
+  cHasValue: boolean;
+}
+
+/** Đọc sheet dữ liệu từ buffer .xls (OLE2/BIFF) hoặc .xlsx (zip). */
+function readSheetRows(buffer: Buffer, sheetFilter?: (name: string) => boolean): {
+  sheetName: string;
+  rows: RawRow[];
+} {
+  // .xlsx bắt đầu bằng chữ ký "PK"; .xls cũ bắt đầu bằng 0xD0CF11E0.
+  const isZip = buffer.length > 3 && buffer[0] === 0x50 && buffer[1] === 0x4b;
+  const isOle2 =
+    buffer.length > 4 &&
+    buffer[0] === 0xd0 &&
+    buffer[1] === 0xcf &&
+    buffer[2] === 0x11 &&
+    buffer[3] === 0xe0;
+
+  if (!isZip && !isOle2) {
+    throw Object.assign(new Error("Tệp không phải Excel hợp lệ (.xls hoặc .xlsx)"), {
+      statusCode: 400,
+    });
+  }
+
+  if (isZip) {
+    throw Object.assign(
+      new Error("Tệp .xlsx phải được xử lý bằng luồng chuẩn — hãy dùng tệp .xls gốc"),
+      { statusCode: 400 }
+    );
+  }
+
+  // SheetJS đọc được cả BIFF8 (.xls) và zip (.xlsx); dùng nhánh .xls cho file gốc.
+  const wb = XLSX.read(buffer, { type: "buffer", cellDates: false, cellNF: false, cellText: true });
+  const sheetName =
+    (sheetFilter && wb.SheetNames.find(sheetFilter)) || wb.SheetNames[0];
+  if (!sheetName) {
+    throw Object.assign(new Error("File Excel không có sheet dữ liệu"), { statusCode: 400 });
+  }
+  const ws = wb.Sheets[sheetName];
+  const matrix = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    raw: false,
+    defval: "",
+    blankrows: true,
+  }) as string[][];
+
+  const rows: RawRow[] = matrix.map((r, idx) => {
+    const cell = ws[XLSX.utils.encode_cell({ r: idx, c: 2 })];
+    const rawText = normalizeCatalogText(r?.[2]);
+    const cHasValue = !!cell && !(cell.t === "s" && String(cell.v).trim() === "");
+    const cNumeric =
+      cell && cell.t === "n" && typeof cell.v === "number" ? cell.v : null;
+    return {
+      row: idx + 1,
+      a: normalizeCatalogText(r?.[0]),
+      b: normalizeCatalogText(r?.[1]),
+      c: rawText,
+      cNumeric,
+      cHasValue,
+    };
+  });
+
+  return { sheetName, rows };
 }
 
 /**
- * Đọc sheet "DM CV thường xuyên": cột A = bộ phận (chỉ ghi 1 lần đầu khối),
- * cột B = tên đầu việc. Bỏ dòng trống; giữ nguyên dấu tiếng Việt.
+ * Đọc sheet "Danh mục công việc" của file TX:
+ *  - Cột A: tên bộ phận (chỉ ghi ở dòng đầu của khối, hoặc dòng tiêu đề nhóm).
+ *  - Cột B: nội dung nhiệm vụ.
+ *  - Cột C: hệ số quy đổi (trống = NULL; 0 = giữ 0).
+ *
+ * Bỏ dòng trống; giữ nguyên dấu tiếng Việt; giữ TÊN TRÙNG trong cùng nhóm
+ * (mỗi dòng là một đầu việc riêng với mã riêng).
  */
 export async function parseWorkCatalogWorkbook(buffer: Buffer): Promise<ParsedCatalog> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer);
-
-  const sheet =
-    workbook.worksheets.find((ws) => ws.name.toUpperCase().includes(WORK_CATALOG_SHEET_HINT)) ||
-    workbook.worksheets[0];
-  if (!sheet) {
-    throw Object.assign(new Error("File Excel không có sheet dữ liệu"), { statusCode: 400 });
-  }
+  const { sheetName, rows } = readSheetRows(
+    buffer,
+    (n) => n.trim().toUpperCase().includes(WORK_CATALOG_SHEET_V2.toUpperCase())
+  );
 
   const entries: ParsedCatalogEntry[] = [];
   const errors: Array<{ row: number; message: string }> = [];
   const duplicatesMap = new Map<string, number[]>();
-  const departments: Array<{ name: string; order: number; count: number }> = [];
+  const departments: Array<{
+    name: string;
+    order: number;
+    count: number;
+    groupCode: string;
+    groupLabel: string;
+  }> = [];
 
   let currentDepartment = "";
+  let currentGroup: { code: string; label: string } | null = null;
   let departmentOrder = -1;
-  let sortOrder = 0;
+  const groupOrdinal = new Map<string, number>();
   let scanned = 0;
 
-  const maxRow = Math.min(sheet.rowCount, 5000);
-  for (let r = 1; r <= maxRow; r++) {
-    const row = sheet.getRow(r);
-    const rawA = row.getCell(1).value as any;
-    const rawB = row.getCell(2).value as any;
-    const departmentCell = normalizeCatalogText(
-      rawA && typeof rawA === "object" ? rawA.text ?? rawA.result ?? "" : rawA
-    );
-    const titleCell = normalizeCatalogText(
-      rawB && typeof rawB === "object" ? rawB.text ?? rawB.result ?? "" : rawB
-    );
+  for (const r of rows) {
+    const titleCell = r.b;
 
-    if (!departmentCell && !titleCell) continue;
-    scanned++;
+    // Dòng tiêu đề CỘT (dòng 1 của file nguồn): cột A mang tên bộ phận đầu tiên,
+    // cột B/C là nhãn cột — KHÔNG phải đầu việc.
+    const isColumnHeader =
+      r.row === 1 && /hệ số|nội dung nhiệm vụ|bộ phận/i.test(`${r.b} ${r.c}`);
 
-    if (departmentCell && departmentCell !== currentDepartment) {
-      currentDepartment = departmentCell;
+    // 1) Nhận diện nhóm TRƯỚC — dòng tiêu đề nhóm (cột A có tên, cột B trống) vẫn mở nhóm mới.
+    if (r.a && r.a !== currentDepartment) {
+      const group = resolveGroupCode(r.a);
+      if (!group) {
+        errors.push({
+          row: r.row,
+          message: `Không xác định được mã nhóm cho bộ phận "${r.a}" — cần Hải quan xác nhận`,
+        });
+        currentDepartment = r.a;
+        currentGroup = null;
+        continue;
+      }
+      currentDepartment = r.a;
+      currentGroup = group;
       departmentOrder += 1;
-      sortOrder = 0;
-      departments.push({ name: currentDepartment, order: departmentOrder, count: 0 });
+      groupOrdinal.set(group.code, 0);
+      departments.push({
+        name: currentDepartment,
+        order: departmentOrder,
+        count: 0,
+        groupCode: group.code,
+        groupLabel: group.label,
+      });
     }
 
-    if (!titleCell) continue; // dòng tiêu đề khối bộ phận
+    if (isColumnHeader) continue; // dòng tiêu đề cột — không phải đầu việc
+    if (!titleCell) continue; // dòng tiêu đề khối bộ phận (không phải đầu việc)
 
-    if (!currentDepartment) {
-      errors.push({ row: r, message: "Đầu việc chưa xác định được bộ phận (cột A trống)" });
+    if (!currentGroup) {
+      errors.push({
+        row: r.row,
+        message: "Đầu việc chưa xác định được nhóm bộ phận (cột A trống)",
+      });
       continue;
     }
+    scanned++;
     if (titleCell.length > MAX_TITLE_LENGTH) {
-      errors.push({ row: r, message: `Tên đầu việc vượt quá ${MAX_TITLE_LENGTH} ký tự` });
+      errors.push({ row: r.row, message: `Tên đầu việc vượt quá ${MAX_TITLE_LENGTH} ký tự` });
       continue;
     }
 
-    sortOrder += 1;
-    const code = computeEntryCode(currentDepartment, titleCell);
+    // Hệ số: ô trống → null; ô có 0 → 0 (không chuyển thành null).
+    let convertFactor: number | null = null;
+    if (r.cHasValue) {
+      if (r.cNumeric !== null) {
+        convertFactor = r.cNumeric;
+      } else {
+        const n = Number(r.c.replace(/\s/g, "").replace(",", "."));
+        if (!Number.isNaN(n)) convertFactor = n;
+        else
+          errors.push({
+            row: r.row,
+            message: `Hệ số quy đổi không phải số: "${r.c}"`,
+          });
+      }
+    }
+
+    const nextOrdinal = (groupOrdinal.get(currentGroup.code) || 0) + 1;
+    groupOrdinal.set(currentGroup.code, nextOrdinal);
+    const code = computeEntryCode(currentGroup.code, nextOrdinal);
+
     entries.push({
       code,
       department: currentDepartment,
       departmentOrder,
+      groupCode: currentGroup.code,
       title: titleCell,
-      sortOrder,
-      sourceRow: r,
+      convertFactor,
+      sortOrder: nextOrdinal,
+      sourceRow: r.row,
     });
     const dept = departments[departments.length - 1];
     if (dept) dept.count += 1;
 
     const dupKey = `${currentDepartment}\u0000${titleCell}`;
-    const rows = duplicatesMap.get(dupKey) || [];
-    rows.push(r);
-    duplicatesMap.set(dupKey, rows);
+    const dupRows = duplicatesMap.get(dupKey) || [];
+    dupRows.push(r.row);
+    duplicatesMap.set(dupKey, dupRows);
   }
 
+  // Tên trùng trong cùng nhóm: hợp lệ (mã khác nhau) — chỉ cảnh báo, KHÔNG chặn import.
   const duplicates = [...duplicatesMap.entries()]
-    .filter(([, rows]) => rows.length > 1)
-    .map(([key, rows]) => {
+    .filter(([, dupRows]) => dupRows.length > 1)
+    .map(([key, dupRows]) => {
       const [department, title] = key.split("\u0000");
-      return { department, title, rows };
+      return { department, title, rows: dupRows };
     });
 
-  // Trùng tên giữa các bộ phận khác nhau: được phép (nghiệp vụ riêng), chỉ báo cáo.
+  // Trùng tên giữa các nhóm khác nhau: được phép (nghiệp vụ riêng), chỉ báo cáo.
   const byTitle = new Map<string, Set<string>>();
   for (const e of entries) {
     const set = byTitle.get(e.title) || new Set<string>();
@@ -171,7 +326,7 @@ export async function parseWorkCatalogWorkbook(buffer: Buffer): Promise<ParsedCa
   }
 
   return {
-    sheetName: sheet.name,
+    sheetName,
     entries,
     departments,
     errors,
@@ -188,6 +343,31 @@ export async function getActiveWorkCatalogVersion() {
     orderBy: { importedAt: "desc" },
     include: { importedBy: { select: { id: true, fullName: true, code: true } } },
   });
+}
+
+/**
+ * Chuyển chế độ chọn đầu việc của phiên bản đang áp dụng.
+ * MAPPED: chỉ nhóm đã ánh xạ + kích hoạt cho bộ phận.
+ * ALL: mọi cán bộ chọn được mọi nhóm (dùng khi Hải quan chưa xác nhận ánh xạ bộ phận).
+ */
+export async function setCatalogSelectionMode(
+  versionId: string,
+  selectionMode: "MAPPED" | "ALL",
+  actorAccountId: string
+) {
+  const version = await prisma.workCatalogVersion.update({
+    where: { id: versionId },
+    data: { selectionMode },
+    select: { id: true, code: true, selectionMode: true },
+  });
+  await recordAuditEvent({
+    actorId: actorAccountId,
+    action: "WORK_CATALOG_SELECTION_MODE_UPDATE",
+    resourceType: "WorkCatalogVersion",
+    resourceId: version.id,
+    newData: { selectionMode: version.selectionMode, versionCode: version.code },
+  });
+  return version;
 }
 
 export function buildCatalogDiff(
@@ -234,6 +414,8 @@ export interface CatalogActivationForPerson {
   departments: ActivatedCatalogDepartment[];
   /** true khi bộ phận của cán bộ đã chuyển sang TX và có ít nhất 1 đầu việc đang dùng. */
   activated: boolean;
+  /** Chế độ chọn của phiên bản đang áp dụng: MAPPED (theo bộ phận) | ALL (mọi nhóm). */
+  selectionMode: "MAPPED" | "ALL";
 }
 
 export interface CatalogDepartmentStatus {
@@ -248,6 +430,10 @@ export interface CatalogDepartmentStatus {
   note: string | null;
   confirmedAt: Date | null;
   updatedAt: Date | null;
+  groupCode: string;
+  groupLabel: string;
+  /** Nhóm chưa được gán đơn vị → trạng thái "chưa xác định", không chặn import/kiểm tra. */
+  mappingState: "MAPPED" | "UNMAPPED";
 }
 
 /** Đơn vị đang công tác (chỉ assignment còn hiệu lực). */
@@ -277,18 +463,22 @@ export async function getCatalogActivationForPerson(
     prisma.workCatalogVersion.findFirst({
       where: { status: "ACTIVE" },
       orderBy: { importedAt: "desc" },
-      select: { id: true },
+      select: { id: true, selectionMode: true },
     }),
     getPersonUnitIds(personId),
   ]);
+
+  const selectionMode: "MAPPED" | "ALL" =
+    activeVersion?.selectionMode === "ALL" ? "ALL" : "MAPPED";
 
   const empty: CatalogActivationForPerson = {
     activeVersionId: activeVersion?.id || null,
     unitIds,
     departments: [],
     activated: false,
+    selectionMode,
   };
-  if (!activeVersion || unitIds.length === 0) return empty;
+  if (!activeVersion) return empty;
 
   const mappings = await prisma.workCatalogDepartmentMapping.findMany({
     where: { isActive: true, unitId: { in: unitIds } },
@@ -296,6 +486,7 @@ export async function getCatalogActivationForPerson(
     orderBy: { department: "asc" },
   });
   if (mappings.length === 0) return empty;
+  if (unitIds.length === 0) return empty;
 
   // Chỉ coi là đã chuyển khi nhóm thực sự còn đầu việc ACTIVE trong phiên bản đang áp dụng.
   // Tránh trường hợp khóa mẫu cũ nhưng không có lựa chọn thay thế.
@@ -342,25 +533,52 @@ export interface SelectableCatalogResult {
     code: string;
     department: string;
     departmentOrder: number;
+    groupCode: string;
     title: string;
+    convertFactor: number | null;
     sortOrder: number;
     sourceRow: number;
     status: string;
   }>;
 }
 
-/** Đầu việc TX mà một cán bộ được phép chọn (đã lọc theo ánh xạ + kích hoạt bộ phận). */
+/** Chuyển Decimal của Prisma về number cho API (hệ số nguồn là số thập phân đơn giản). */
+function toNumberOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number") return v;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * Đầu việc TX mà một cán bộ được phép chọn.
+ *
+ * - `scope="dept"` (mặc định): chỉ nhóm đã ánh xạ + kích hoạt cho đơn vị của cán bộ.
+ * - `scope="all"`: xem/tìm kiếm TOÀN BỘ danh mục 6 nhóm (dùng để tra cứu chung);
+ *   KHÔNG mở rộng quyền xem dữ liệu công việc cá nhân của người khác.
+ */
 export async function getSelectableCatalogEntriesForPerson(
   personId: string,
-  filters: { department?: string | null; q?: string | null } = {}
+  filters: { department?: string | null; q?: string | null; scope?: "dept" | "all" } = {}
 ): Promise<SelectableCatalogResult> {
   const activation = await getCatalogActivationForPerson(personId);
-  if (!activation.activeVersionId || activation.departments.length === 0) {
+  if (!activation.activeVersionId) {
     return { activation, entries: [] };
   }
 
+  // scope=all: tra cứu TOÀN BỘ danh mục 6 nhóm (dùng để xem/tìm kiếm danh mục chung).
+  // scope=dept: chỉ nhóm đã ánh xạ + kích hoạt cho bộ phận của cán bộ.
+  // Khi phiên bản đang ở chế độ ALL, mặc định cho phép chọn mọi nhóm
+  // (Hải quan chưa xác nhận ánh xạ bộ phận → không đình trệ việc dùng danh mục).
+  const scope: "dept" | "all" =
+    filters.scope === "all" || activation.selectionMode === "ALL" ? "all" : "dept";
+
   const departments = activation.departments.map((d) => d.department);
-  if (filters.department && !departments.includes(filters.department)) {
+
+  if (scope === "dept" && departments.length === 0) {
+    return { activation, entries: [] };
+  }
+  if (filters.department && scope === "dept" && !departments.includes(filters.department)) {
     return { activation, entries: [] };
   }
   const q = (filters.q || "").trim();
@@ -369,7 +587,11 @@ export async function getSelectableCatalogEntriesForPerson(
     where: {
       versionId: activation.activeVersionId,
       status: "ACTIVE",
-      department: filters.department ? filters.department : { in: departments },
+      ...(scope === "dept"
+        ? { department: filters.department ? filters.department : { in: departments } }
+        : filters.department
+          ? { department: filters.department }
+          : {}),
       ...(q
         ? {
             OR: [
@@ -382,7 +604,22 @@ export async function getSelectableCatalogEntriesForPerson(
     orderBy: [{ departmentOrder: "asc" }, { sortOrder: "asc" }],
   });
 
-  return { activation, entries };
+  return {
+    activation,
+    entries: entries.map((e) => ({
+      id: e.id,
+      versionId: e.versionId,
+      code: e.code,
+      department: e.department,
+      departmentOrder: e.departmentOrder,
+      groupCode: e.groupCode,
+      title: e.title,
+      convertFactor: toNumberOrNull(e.convertFactor),
+      sortOrder: e.sortOrder,
+      sourceRow: e.sourceRow,
+      status: e.status,
+    })),
+  };
 }
 
 /**
@@ -397,6 +634,8 @@ export async function getCatalogEntrySelectionError(
     return "Đầu việc này đã ngừng áp dụng hoặc thuộc phiên bản cũ — không thể chọn để tạo mới";
   }
   const activation = await getCatalogActivationForPerson(personId);
+  // Chế độ ALL: mọi cán bộ chọn được mọi nhóm (ánh xạ bộ phận chưa được Hải quan xác nhận).
+  if (activation.selectionMode === "ALL") return null;
   if (activation.unitIds.length === 0) {
     return "Cán bộ chưa được gán bộ phận đang công tác — không thể chọn đầu việc TX";
   }
@@ -431,7 +670,7 @@ export async function getCatalogDepartmentStatuses(versionId?: string | null): P
   const [entries, mappings] = await Promise.all([
     prisma.workCatalogEntry.findMany({
       where: { versionId: version.id },
-      select: { department: true, departmentOrder: true, status: true },
+      select: { department: true, departmentOrder: true, status: true, groupCode: true },
       orderBy: { departmentOrder: "asc" },
     }),
     prisma.workCatalogDepartmentMapping.findMany({
@@ -455,6 +694,9 @@ export async function getCatalogDepartmentStatuses(versionId?: string | null): P
         note: null,
         confirmedAt: null,
         updatedAt: null,
+        groupCode: e.groupCode,
+        groupLabel: resolveGroupCode(e.department)?.label || e.groupCode,
+        mappingState: "UNMAPPED",
       } satisfies CatalogDepartmentStatus);
     cur.entryCount += 1;
     if (e.status === "ACTIVE") cur.activeEntryCount += 1;
@@ -471,6 +713,7 @@ export async function getCatalogDepartmentStatuses(versionId?: string | null): P
     cur.note = m.note;
     cur.confirmedAt = m.confirmedAt;
     cur.updatedAt = m.updatedAt;
+    cur.mappingState = m.unitId ? "MAPPED" : "UNMAPPED";
   }
 
   return {
@@ -499,9 +742,9 @@ export interface ImportCatalogParams {
 export async function importWorkCatalog(params: ImportCatalogParams) {
   const { parsed, sourceFileName, note, userId, actorAccountId, expectedHash } = params;
 
-  if (parsed.errors.length > 0 || parsed.duplicates.length > 0) {
+  if (parsed.errors.length > 0) {
     throw Object.assign(
-      new Error("File còn lỗi hoặc đầu việc trùng trong cùng bộ phận — không thể nhập"),
+      new Error("File còn lỗi — không thể nhập. Xem báo cáo chi tiết để sửa file nguồn."),
       { statusCode: 422 }
     );
   }
@@ -561,7 +804,9 @@ export async function importWorkCatalog(params: ImportCatalogParams) {
             code: e.code,
             department: e.department,
             departmentOrder: e.departmentOrder,
+            groupCode: e.groupCode,
             title: e.title,
+            convertFactor: e.convertFactor === null ? null : new Prisma.Decimal(e.convertFactor),
             sortOrder: e.sortOrder,
             sourceRow: e.sourceRow,
           })),

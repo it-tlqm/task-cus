@@ -14,9 +14,9 @@ const MAP: Array<{ hub: string; icon: string; routes: string[] }> = [
     icon: "dashboard",
     routes: ["/dashboard", "/giao-ban", "/giao-ban/nhap", "/giao-ban/bao-cao", "/meetings"],
   },
-  { hub: "Công việc cá nhân", icon: "person_check", routes: ["/my-work", "/notifications"] },
+  { hub: "Nhật ký công việc", icon: "menu_book", routes: ["/my-work", "/notifications"] },
   {
-    hub: "Công việc bộ phận",
+    hub: "Lập kế hoạch & công việc",
     icon: "account_tree",
     routes: ["/plans", "/tasks", "/approvals"],
   },
@@ -47,10 +47,10 @@ const MAP: Array<{ hub: string; icon: string; routes: string[] }> = [
 ];
 
 const FLOW_LABEL: Record<string, string> = {
-  "/my-work": "Việc cá nhân",
-  "/tasks": "Việc đột xuất",
+  "/my-work": "Nhật ký công việc",
+  "/tasks": "Công việc phát sinh",
   "/monthly-results": "Kết quả công tác tháng",
-  "/plans": "Kế hoạch tuần",
+  "/plans": "Lập kế hoạch",
   "/approvals": "Phê duyệt",
   "/meetings": "Biên bản giao ban",
   "/docs": "Sổ văn bản",
