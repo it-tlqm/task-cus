@@ -1444,3 +1444,206 @@ model BriefingReportVersion {
   @@map("briefing_report_versions")
 }
 
+
+// ----------------------------------------------------
+// 23. YC-33 - KET QUA TINH DIEM (snapshot ky + phien ban cong thuc)
+// Khong luu FK sang bang khac de DDL additive an toan; moi lien he doc bang truy van.
+// ----------------------------------------------------
+
+/// Mot lan tinh diem cho mot ky cua mot nguoi. Luu snapshot cong thuc + phien ban
+/// danh muc/san pham de doi chieu lai duoc sau nay.
+model ScoreRun {
+  id                String   @id @default(uuid())
+  personId          String   @map("person_id")
+  periodType        String   @map("period_type") // MONTH | QUARTER
+  periodYear        Int      @map("period_year")
+  periodNumber      Int      @map("period_number") // thang 1-12 hoac quy 1-4
+  formulaVersion    String   @map("formula_version") // ban cong thuc da xac nhan
+  productVersionId  String?  @map("product_version_id") // phien ban QD1277 dung khi tinh
+  catalogVersionId  String?  @map("catalog_version_id") // phien ban danh muc TX dung khi tinh
+  status            String   @default("DRAFT") // DRAFT | CONFIRMED | STALE
+  overallScore      Float?   @map("overall_score")
+  summaryJson       Json?    @map("summary_json")
+  reasonsJson       Json?   @map("reasons_json")
+  computedById      String?  @map("computed_by_id")
+  computedAt        DateTime @default(now()) @map("computed_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  items ScoreRunItem[]
+
+  @@unique([personId, periodType, periodYear, periodNumber, formulaVersion])
+  @@index([periodType, periodYear, periodNumber])
+  @@index([personId, periodType])
+  @@map("score_runs")
+}
+
+/// Chi tiet tung dong cong viec trong mot lan tinh diem.
+model ScoreRunItem {
+  id                String   @id @default(uuid())
+  scoreRunId        String   @map("score_run_id")
+  workItemId        String?  @map("work_item_id")
+  taskId            String?  @map("task_id")
+  monthlyResultId   String?  @map("monthly_result_id")
+  sequence          Int      @default(0)
+  title             String
+  /// Nguon he so: TX_CATALOG | QD1277_PRODUCT | MANUAL | MISSING
+  /// (YC-33: KHONG coi he so TX la he so QD1277 khi chua co mapping hop le)
+  factorSource      String   @map("factor_source")
+  factor            Float?
+  factorSnapshot    Json?    @map("factor_snapshot")
+  assignedQty       Float?   @map("assigned_qty")
+  completedQty      Float?   @map("completed_qty")
+  lateDays          Int      @default(0) @map("late_days")
+  reworkCount       Int      @default(0) @map("rework_count")
+  gAssignedConverted Float?  @map("g_assigned_converted")
+  iCompletedConverted Float? @map("i_completed_converted")
+  lProgressConverted  Float? @map("l_progress_converted")
+  nQualityConverted   Float? @map("n_quality_converted")
+  /// KNOWN | INSUFFICIENT_DATA | PENDING_RULE | NOT_APPLICABLE | ERROR
+  status            String   @default("KNOWN")
+  reasons           Json?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  scoreRun ScoreRun @relation(fields: [scoreRunId], references: [id], onDelete: Cascade)
+
+  @@index([scoreRunId, sequence])
+  @@map("score_run_items")
+}
+
+// ----------------------------------------------------
+// 24. YC-36 - TU DANH GIA, NHAN XET, XEP LOAI DE XUAT
+// ----------------------------------------------------
+
+/// Phieu tu danh gia cua mot can bo trong mot ky. Luu rieng:
+///
+/// - gia tri goi y cua he thong (chi khi co du cong thuc da xac nhan)
+/// - gia tri ca nhan sua
+/// - goi y muc xep loai + muc ca nhan chon
+/// - uu diem / han che
+/// - nhan xet cua nguoi danh gia (mac dinh de trong)
+model EvaluationAssessment {
+  id                      String   @id @default(uuid())
+  subjectPersonId         String   @map("subject_person_id")
+  periodType              String   @map("period_type") // MONTH | QUARTER
+  periodYear              Int      @map("period_year")
+  periodNumber            Int      @map("period_number")
+  periodStart             DateTime @map("period_start")
+  periodEnd               DateTime @map("period_end")
+  roleAtPeriod            String?  @map("role_at_period") // STAFF | UNIT_LEADER | DEPARTMENT_LEADER
+  isLeaderSubject         Boolean  @default(false) @map("is_leader_subject")
+  /// Diem tieu chi chung GOI Y (NULL = chua co quy tac du dieu kien)
+  commonCriteriaSuggested Float?   @map("common_criteria_suggested")
+  /// Diem tieu chi chung do ca nhan tu cham (sau khi sua)
+  commonCriteriaScore     Float?   @map("common_criteria_score")
+  /// Diem ket qua thuc hien nhiem vu (tu YC-33)
+  taskResultScore         Float?   @map("task_result_score")
+  /// Muc xep loai GOI Y cua he thong (chi khi co quy tac du dieu kien)
+  selfGradeSuggestion     String?  @map("self_grade_suggestion")
+  /// Muc xep loai ca nhan chon
+  selfGradeChoice         String?  @map("self_grade_choice")
+  /// Uu diem
+  strengths               String?
+  /// Han che / khuyet diem
+  weaknesses              String?
+  /// Y kien nhan xet cua cap co tham quyen (mac dinh de trong - co the nhap hoac de trong tren ban in)
+  reviewerComment         String?  @map("reviewer_comment")
+  reviewerId              String?  @map("reviewer_id")
+  reviewTimestamp         DateTime? @map("review_timestamp")
+  /// DRAFT | SUBMITTED | REVIEWED | CONFIRMED
+  evaluationStatus        String   @default("DRAFT") @map("evaluation_status")
+  formulaVersion          String?  @map("formula_version")
+  createdById             String?  @map("created_by_id")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  @@unique([subjectPersonId, periodType, periodYear, periodNumber])
+  @@index([periodType, periodYear, periodNumber])
+  @@index([evaluationStatus])
+  @@map("evaluation_assessments")
+}
+
+// ----------------------------------------------------
+// 25. YC-35 - QUAN HE PHU TRACH THEO KY
+// Khong suy dien tu role ky thuat; chi ghi khi Hai quan xac nhan.
+// ----------------------------------------------------
+
+/// Quan he "nguoi phu truc cho nguoi nay" trong mot khoang thoi gian.
+model PersonSupervision {
+  id                   String   @id @default(uuid())
+  managerPersonId      String   @map("manager_person_id")
+  subordinatePersonId  String   @map("subordinate_person_id")
+  /// Don vi cong tac cua nguoi duoi quyen
+  scopeType            String   @default("UNIT") @map("scope_type") // UNIT | WORK_AREA
+  scopeNote            String?  @map("scope_note")
+  effectiveFrom        DateTime @default(now()) @map("effective_from")
+  effectiveTo          DateTime? @map("effective_to")
+  /// DRAFT | CONFIRMED | REVOKED
+  status               String   @default("CONFIRMED")
+  confirmedById        String?  @map("confirmed_by_id")
+  confirmedAt          DateTime? @map("confirmed_at")
+  note                 String?
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@unique([managerPersonId, subordinatePersonId, effectiveFrom])
+  @@index([subordinatePersonId, status])
+  @@index([managerPersonId, status])
+  @@map("person_supervisions")
+}
+
+// ----------------------------------------------------
+// 26. YC-37 - HO SO CHAP THUAN / TU CHOI / YEU CAU GIAI TRINH
+// Mot "case" = mot ho so xin quyet dinh. Moi luot quyet dinh = mot ApprovalDecision
+// => giu toan bo lich su chap thuan / tu choi / giai trinh / phan hoi.
+// ----------------------------------------------------
+
+model ApprovalCase {
+  id             String    @id @default(uuid())
+  /// TASK_RESULT | PLAN | DEADLINE_REQUEST | PERSONAL_EVALUATION
+  caseType       String    @map("case_type")
+  /// id doi tuong nghiep vu (Task.id / Plan.id / DeadlineRequest.id / ...)
+  resourceId     String    @map("resource_id")
+  resourceCode   String?   @map("resource_code")
+  title          String
+  unitId         String?   @map("unit_id")
+  /// personId nguoi trinh ho so
+  submittedById  String?   @map("submitted_by_id")
+  /// OPEN | AGREED | REJECTED | CLARIFY_REQUESTED | CLOSED
+  status         String    @default("OPEN")
+  currentRound   Int       @default(1) @map("current_round")
+  decidedById    String?   @map("decided_by_id")
+  decidedAt      DateTime? @map("decided_at")
+  deadlineAt     DateTime? @map("deadline_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  decisions ApprovalDecision[]
+
+  @@unique([caseType, resourceId])
+  @@index([status, createdAt])
+  @@index([submittedById, status])
+  @@map("approval_cases")
+}
+
+model ApprovalDecision {
+  id            String   @id @default(uuid())
+  caseId        String   @map("case_id")
+  round         Int      @default(1)
+  /// AGREE | REJECT | CLARIFY | RESPOND
+  action        String
+  /// Ly do (bat buoc khi REJECT)
+  reason        String?
+  /// Noi dung can giai trinh (CLARIFY) hoac noi dung phan hoi (RESPOND)
+  content       String?
+  /// accountId nguoi thuc hien quyet dinh
+  actorId       String   @map("actor_id")
+  actorPersonId String?  @map("actor_person_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  case ApprovalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, round])
+  @@index([actorId, createdAt])
+  @@map("approval_decisions")
+}

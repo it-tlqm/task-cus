@@ -4,6 +4,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
+import ApprovalPreviewModal, {
+  type ApprovalCaseType,
+  type ApprovalDecisionAction,
+} from "./ApprovalPreviewModal";
 
 interface ApprovalAttachment {
   id: string;
@@ -34,13 +38,6 @@ interface ApprovalItem {
   documentUrl?: string;
   reqId?: string;
   attachments?: ApprovalAttachment[];
-}
-
-interface ReviewModalState {
-  isOpen: boolean;
-  item: ApprovalItem | null;
-  action: "APPROVE" | "CLARIFY";
-  notes: string;
 }
 
 function formatFileSize(bytes: number) {
@@ -88,13 +85,56 @@ export default function ApprovalsPage() {
     mimeType: string;
   } | null>(null);
 
-  // Modal giải trình / ý kiến phê duyệt
-  const [reviewModal, setReviewModal] = useState<ReviewModalState>({
-    isOpen: false,
-    item: null,
-    action: "CLARIFY",
-    notes: "",
-  });
+  // YC-37 — Bước XEM TRƯỚC bắt buộc trước khi quyết định
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewCaseType, setPreviewCaseType] = useState<ApprovalCaseType | null>(null);
+  const [previewResourceId, setPreviewResourceId] = useState<string | null>(null);
+  const [previewAction, setPreviewAction] = useState<ApprovalDecisionAction>("AGREE");
+
+  // YC-37 — "Hồ sơ của tôi": theo dõi + gửi giải trình lại
+  const [myCases, setMyCases] = useState<
+    Array<{
+      id: string;
+      caseType: string;
+      resourceId: string;
+      code: string | null;
+      title: string;
+      status: string;
+      currentRound: number;
+      updatedAt: string;
+      latestDecision: {
+        action: string;
+        reason: string | null;
+        content: string | null;
+        at: string;
+      } | null;
+    }>
+  >([]);
+  const [myCasesLoading, setMyCasesLoading] = useState(false);
+  const [respondCase, setRespondCase] = useState<{
+    caseType: ApprovalCaseType;
+    resourceId: string;
+    title: string;
+  } | null>(null);
+  const [respondContent, setRespondContent] = useState("");
+  const [responding, setResponding] = useState(false);
+
+  const fetchMyCases = useCallback(async () => {
+    setMyCasesLoading(true);
+    try {
+      const res = await fetch("/api/approvals/cases", { cache: "no-store" });
+      const json = await res.json().catch(() => null);
+      if (res.ok) setMyCases(json.data || []);
+    } catch {
+      // im lặng — phần này chỉ là thông tin phụ
+    } finally {
+      setMyCasesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMyCases();
+  }, [fetchMyCases]);
 
   // Tải danh sách hồ sơ thực tế từ PostgreSQL
   const fetchLiveApprovals = useCallback(async () => {
@@ -206,170 +246,58 @@ export default function ApprovalsPage() {
     fetchLiveApprovals();
   }, [fetchLiveApprovals]);
 
-  // Thực hiện thao tác phê duyệt hoặc trả lại kết nối trực tiếp Backend
-  const executeApprovalAction = async (
-    item: ApprovalItem,
-    actionType: "APPROVE" | "CLARIFY",
-    customNotes?: string
-  ): Promise<boolean> => {
-    setProcessingId(item.id);
-    const note = customNotes?.trim();
-
-    try {
-      let res: Response;
-
-      if (item.type === "result") {
-        if (actionType === "APPROVE") {
-          res = await fetch(`/api/tasks/${item.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: "COMPLETED",
-              actualResultText: note || "Lãnh đạo đơn vị đã nghiệm thu kết quả hoàn thành 100%",
-            }),
-          });
-        } else {
-          res = await fetch(`/api/tasks/${item.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: "IN_PROGRESS",
-              actualResultText: note || "Lãnh đạo yêu cầu giải trình và hoàn thiện lại kết quả thực hiện.",
-            }),
-          });
-        }
-      } else if (item.type === "plan") {
-        if (actionType === "APPROVE") {
-          res = await fetch(`/api/plans/${item.id}/workflow`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "APPROVE",
-              reviewNotes: note || "Đồng ý phê duyệt kế hoạch công tác",
-            }),
-          });
-        } else {
-          res = await fetch(`/api/plans/${item.id}/workflow`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "RETURN",
-              reviewNotes: note || "Lãnh đạo yêu cầu bổ sung, chỉnh sửa nội dung kế hoạch.",
-            }),
-          });
-        }
-      } else if (item.type === "delay" && item.reqId) {
-        if (actionType === "APPROVE") {
-          res = await fetch(`/api/tasks/${item.id}/deadline-request/${item.reqId}/review`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "APPROVE",
-              reviewNotes: note || "Đồng ý gia hạn thời hạn nhiệm vụ",
-            }),
-          });
-        } else {
-          res = await fetch(`/api/tasks/${item.id}/deadline-request/${item.reqId}/review`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "REJECT",
-              reviewNotes: note || "Không chấp thuận đề nghị gia hạn thời hạn",
-            }),
-          });
-        }
-      } else {
-        toast.error("Không xác định được loại hồ sơ phê duyệt hợp lệ");
-        return false;
-      }
-
-      // Xử lý phản hồi từ Server
-      if (res.ok) {
-        const resJson = await res.json().catch(() => ({}));
-        const successMsg =
-          resJson.message ||
-          (actionType === "APPROVE"
-            ? `Đã phê duyệt thành công: [${item.code}] ${item.title}`
-            : `Đã trả lại yêu cầu giải trình cho: [${item.code}] ${item.title}`);
-        
-        toast.success(successMsg);
-
-        // Chỉ xóa khỏi danh sách trên client khi server đã xác nhận 2xx
-        setApprovals((prev) =>
-          prev.filter((i) => {
-            if (item.type === "delay" && item.reqId) {
-              return i.reqId !== item.reqId;
-            }
-            return i.id !== item.id;
-          })
-        );
-
-        // Tải lại dữ liệu từ server để đồng bộ hoàn toàn
-        fetchLiveApprovals();
-        return true;
-      } else {
-        // Server trả lỗi 400, 401, 403, 409, 500
-        const errJson = await res.json().catch(() => ({}));
-        const errorMsg =
-          errJson.error ||
-          errJson.message ||
-          `Máy chủ từ chối thao tác (Mã lỗi HTTP ${res.status})`;
-
-        toast.error(errorMsg);
-        // GIỮ NGUYÊN PHẦN TỬ TRÊN GIAO DIỆN KHI THẤT BẠI
-        return false;
-      }
-    } catch (err: any) {
-      // Lỗi mất kết nối mạng hoặc timeout
-      toast.error(
-        err.message || "Lỗi mất kết nối mạng tới máy chủ. Vui lòng kiểm tra đường truyền và thử lại."
-      );
-      // GIỮ NGUYÊN PHẦN TỬ TRÊN GIAO DIỆN KHI MẤT MẠNG
-      return false;
-    } finally {
-      setProcessingId(null);
-    }
+  // YC-37 — Ánh xạ hồ sơ giao diện → loại hồ sơ server-side
+  const resolveCaseRef = (item: ApprovalItem): { caseType: ApprovalCaseType; resourceId: string } | null => {
+    if (item.type === "result") return { caseType: "TASK_RESULT", resourceId: item.id };
+    if (item.type === "plan") return { caseType: "PLAN", resourceId: item.id };
+    if (item.type === "delay" && item.reqId)
+      return { caseType: "DEADLINE_REQUEST", resourceId: item.reqId };
+    return null;
   };
 
-  // Mở modal yêu cầu giải trình
-  const handleOpenClarifyModal = (item: ApprovalItem) => {
-    setReviewModal({
-      isOpen: true,
-      item,
-      action: "CLARIFY",
-      notes:
-        item.type === "plan"
-          ? "Lãnh đạo yêu cầu bổ sung, làm rõ các chỉ tiêu công tác trong kế hoạch."
-          : item.type === "delay"
-          ? "Lý do đề xuất lùi hạn chưa thuyết phục, yêu cầu tập trung hoàn thành đúng hạn gốc."
-          : "Yêu cầu giải trình rõ kết quả thực hiện và bổ sung hồ sơ chứng minh nghiệm thu.",
-    });
-  };
-
-  // Nộp form từ modal
-  const handleModalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reviewModal.item) return;
-
-    if (!reviewModal.notes.trim()) {
-      toast.error("Vui lòng nhập nội dung chỉ đạo hoặc lý do yêu cầu giải trình");
+  // YC-37 — Bấm "Chấp thuận" chỉ MỞ xem trước, KHÔNG ghi quyết định
+  const openPreview = (item: ApprovalItem, initialAction: ApprovalDecisionAction) => {
+    const ref = resolveCaseRef(item);
+    if (!ref) {
+      toast.error("Không xác định được loại hồ sơ để xem trước");
       return;
     }
+    setPreviewCaseType(ref.caseType);
+    setPreviewResourceId(ref.resourceId);
+    setPreviewAction(initialAction);
+    setPreviewOpen(true);
+  };
 
-    const success = await executeApprovalAction(
-      reviewModal.item,
-      reviewModal.action,
-      reviewModal.notes
-    );
-
-    // Chỉ đóng modal khi thành công; nếu thất bại thì giữ nguyên modal và nội dung đã nhập để người dùng sửa lại
-    if (success) {
-      setReviewModal({
-        isOpen: false,
-        item: null,
-        action: "CLARIFY",
-        notes: "",
-      });
+  const submitRespond = async () => {
+    if (!respondCase) return;
+    if (!respondContent.trim()) {
+      toast.error("Vui lòng nhập nội dung giải trình.");
+      return;
+    }
+    setResponding(true);
+    try {
+      const res = await fetch(
+        `/api/approvals/${respondCase.caseType}/${respondCase.resourceId}/response`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: respondContent }),
+        }
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(json?.error || "Không gửi được nội dung giải trình.");
+        return;
+      }
+      toast.success(json.message || "Đã gửi nội dung giải trình.");
+      setRespondCase(null);
+      setRespondContent("");
+      fetchMyCases();
+      fetchLiveApprovals();
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi khi gửi nội dung giải trình.");
+    } finally {
+      setResponding(false);
     }
   };
 
@@ -667,12 +595,12 @@ export default function ApprovalsPage() {
                     </div>
                   )}
 
-                  {/* Action Buttons */}
+                  {/* Action Buttons — YC-37: mọi quyết định đều qua bước XEM TRƯỚC */}
                   <div className="grid grid-cols-2 gap-space-xs">
                     <button
                       type="button"
                       disabled={isItemBusy}
-                      onClick={() => handleOpenClarifyModal(item)}
+                      onClick={() => openPreview(item, "CLARIFY")}
                       className={`h-11 px-space-xs rounded-lg bg-surface-subtle text-primary font-body-semibold text-body-semibold transition-fast flex items-center justify-center gap-1 text-xs border border-border-default/50 ${
                         isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-surface-container active-press"
                       }`}
@@ -683,17 +611,7 @@ export default function ApprovalsPage() {
                     <button
                       type="button"
                       disabled={isItemBusy}
-                      onClick={() =>
-                        executeApprovalAction(
-                          item,
-                          "APPROVE",
-                          item.type === "plan"
-                            ? "Đồng ý phê duyệt kế hoạch công tác"
-                            : item.type === "delay"
-                            ? "Đồng ý gia hạn thời hạn nhiệm vụ"
-                            : "Lãnh đạo đơn vị chấp thuận nghiệm thu kết quả"
-                        )
-                      }
+                      onClick={() => openPreview(item, "AGREE")}
                       className={`h-11 px-space-xs rounded-lg bg-primary text-on-primary font-body-semibold text-body-semibold shadow-sm transition-fast flex items-center justify-center gap-1 text-xs font-bold ${
                         isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90 active-press"
                       }`}
@@ -719,88 +637,6 @@ export default function ApprovalsPage() {
           )}
         </div>
       </div>
-
-      {/* Modal chỉ đạo / yêu cầu giải trình */}
-      {reviewModal.isOpen && reviewModal.item && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-border-default flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-surface-container pb-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-status-warning text-[24px]">
-                  edit_note
-                </span>
-                <h3 className="font-headline-sm text-primary font-bold">
-                  {reviewModal.action === "CLARIFY"
-                    ? "Yêu Cầu Giải Trình / Trả Lại Hồ Sơ"
-                    : "Ý Kiến Chỉ Đạo Phê Duyệt"}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReviewModal({ ...reviewModal, isOpen: false })}
-                className="text-on-surface-variant hover:text-on-surface text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="bg-surface-subtle p-3 rounded-lg text-xs space-y-1">
-              <p className="font-semibold text-primary">
-                Hồ sơ: [{reviewModal.item.code}] {reviewModal.item.title}
-              </p>
-              <p className="text-on-surface-variant">
-                Người trình: {reviewModal.item.submitter} ({reviewModal.item.unit})
-              </p>
-            </div>
-
-            <form onSubmit={handleModalSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-on-surface">
-                  Nội dung chỉ đạo / Lý do giải trình: <span className="text-status-danger">*</span>
-                </label>
-                <textarea
-                  rows={4}
-                  value={reviewModal.notes}
-                  onChange={(e) => setReviewModal({ ...reviewModal, notes: e.target.value })}
-                  placeholder="Nhập chi tiết ý kiến chỉ đạo của Lãnh đạo đơn vị..."
-                  className="w-full p-3 rounded-lg border border-border-default bg-surface-container-lowest text-on-surface text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-container">
-                <button
-                  type="button"
-                  disabled={processingId !== null}
-                  onClick={() => setReviewModal({ ...reviewModal, isOpen: false })}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container transition-fast"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={processingId !== null}
-                  className="px-4 py-2 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 shadow-sm transition-fast flex items-center gap-1.5"
-                >
-                  {processingId !== null ? (
-                    <>
-                      <span className="material-symbols-outlined text-[16px] animate-spin">
-                        progress_activity
-                      </span>
-                      <span>Đang gửi...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-[16px]">send</span>
-                      <span>Xác nhận gửi ý kiến</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Modal xem trước tệp tài liệu / hình ảnh (Lightbox & PDF viewer) */}
       {previewFile && (
@@ -858,6 +694,175 @@ export default function ApprovalsPage() {
                   className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-sm"
                 />
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          YC-37 — "HỒ SƠ CỦA TÔI": theo dõi hồ sơ đã trình + gửi giải trình lại
+          ===================================================================== */}
+      <section className="max-w-2xl mx-auto px-margin pt-4">
+        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-[20px]">
+                inbox
+              </span>
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-primary font-bold">
+                  Hồ sơ của tôi
+                </h3>
+                <p className="text-[11px] text-on-surface-variant">
+                  Theo dõi hồ sơ đã trình, lý do bị trả lại và gửi giải trình lại.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={fetchMyCases}
+              className="text-[11px] font-semibold text-secondary inline-flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[15px]">refresh</span>
+              Làm mới
+            </button>
+          </div>
+
+          {myCasesLoading ? (
+            <div className="p-4 text-[11px] text-on-surface-variant">Đang tải hồ sơ...</div>
+          ) : myCases.length === 0 ? (
+            <div className="p-4 text-[11px] text-on-surface-variant">
+              Chưa có hồ sơ nào được trình duyệt.
+            </div>
+          ) : (
+            <ul className="divide-y divide-border-default">
+              {myCases.map((mc) => (
+                <li key={mc.id} className="px-4 py-3 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[12px] font-semibold text-primary min-w-0">
+                      <span className="font-mono text-[11px] text-on-surface-variant">
+                        [{mc.code ?? ""}]
+                      </span>{" "}
+                      {mc.title}
+                    </p>
+                    <span className="shrink-0 text-[10px] px-2 py-0.5 rounded border border-border-default bg-surface-container text-on-surface-variant font-semibold whitespace-nowrap">
+                      {mc.status === "OPEN"
+                        ? "Chờ quyết định"
+                        : mc.status === "AGREED"
+                          ? "Đã chấp thuận"
+                          : mc.status === "REJECTED"
+                            ? "Đã từ chối"
+                            : mc.status === "CLARIFY_REQUESTED"
+                              ? "Chờ giải trình"
+                              : mc.status}
+                    </span>
+                  </div>
+                  {mc.latestDecision?.reason && (
+                    <p className="text-[11px] text-on-surface-variant">
+                      Lý do: {mc.latestDecision.reason}
+                    </p>
+                  )}
+                  {mc.latestDecision?.content &&
+                    mc.status !== "CLARIFY_REQUESTED" && (
+                      <p className="text-[11px] text-on-surface-variant">
+                        Nội dung: {mc.latestDecision.content}
+                      </p>
+                    )}
+                  {mc.status === "CLARIFY_REQUESTED" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRespondCase({
+                          caseType: mc.caseType as ApprovalCaseType,
+                          resourceId: mc.resourceId,
+                          title: mc.title,
+                        });
+                        setRespondContent("");
+                      }}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[11px] font-semibold"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">reply</span>
+                      Gửi giải trình
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {/* Modal YC-37 — bước XEM TRƯỚC bắt buộc trước khi quyết định */}
+      <ApprovalPreviewModal
+        open={previewOpen}
+        caseType={previewCaseType}
+        resourceId={previewResourceId}
+        initialAction={previewAction}
+        onClose={() => setPreviewOpen(false)}
+        onDecided={() => {
+          fetchLiveApprovals();
+          fetchMyCases();
+        }}
+      />
+
+      {/* Modal gửi giải trình lại */}
+      {respondCase && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-border-default flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-surface-container pb-3">
+              <h3 className="font-headline-sm text-primary font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined text-status-warning text-[24px]">
+                  reply
+                </span>
+                Gửi nội dung giải trình
+              </h3>
+              <button
+                type="button"
+                onClick={() => setRespondCase(null)}
+                className="text-on-surface-variant hover:text-on-surface text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              Hồ sơ: <strong className="text-on-surface">{respondCase.title}</strong>
+            </p>
+            <textarea
+              rows={5}
+              value={respondContent}
+              onChange={(e) => setRespondContent(e.target.value)}
+              placeholder="Bổ sung nội dung giải trình để hồ sơ được xem trước lại..."
+              className="w-full p-3 rounded-lg border border-border-default bg-surface-container-lowest text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-container">
+              <button
+                type="button"
+                onClick={() => setRespondCase(null)}
+                disabled={responding}
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={submitRespond}
+                disabled={responding}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {responding ? (
+                  <>
+                    <span className="material-symbols-outlined text-[16px] animate-spin">
+                      progress_activity
+                    </span>
+                    Đang gửi...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">send</span>
+                    Gửi lại
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
