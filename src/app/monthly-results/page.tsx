@@ -44,6 +44,16 @@ interface Summary {
 interface ScorePreview {
   qtyRatio: number | null; progressRatio: number | null; qualityRatio: number | null;
   averageD: number | null; score70: number | null; official: false; note: string;
+  /** YC-33: trạng thái + lý do + chi tiết từng dòng */
+  status?: string;
+  reasons?: string[];
+  rows?: Array<{
+    id: string; title: string; factor: number | null; factorSource: string;
+    assignedQty: number | null; completedQty: number | null; lateDays: number;
+    reworkCount: number; g: number | null; i: number | null; l: number | null;
+    n: number | null; status: string; reasons: string[];
+  }>;
+  formulaVersion?: string;
 }
 
 /**
@@ -345,9 +355,39 @@ export default function MonthlyResultsPage() {
       )}
 
       {scorePreview && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 text-[11px] font-bold uppercase">Điểm tính thử — chưa chính thức</span>
+        <div
+          data-testid="yc33-score-preview"
+          className={`border rounded-xl p-4 shadow-sm ${
+            scorePreview.status === "KNOWN"
+              ? "bg-amber-50 border-amber-200"
+              : "bg-slate-50 border-slate-300"
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 text-[11px] font-bold uppercase">
+              Điểm tính thử — chưa chính thức
+            </span>
+            {/* YC-33: trạng thái tính điểm */}
+            <span
+              data-testid="yc33-score-status"
+              className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
+                scorePreview.status === "KNOWN"
+                  ? "bg-emerald-200 text-emerald-900"
+                  : scorePreview.status === "PENDING_RULE"
+                    ? "bg-amber-300 text-amber-950"
+                    : "bg-slate-300 text-slate-800"
+              }`}
+            >
+              {scorePreview.status === "KNOWN"
+                ? "Đủ căn cứ"
+                : scorePreview.status === "INSUFFICIENT_DATA"
+                  ? "Chưa đủ dữ liệu"
+                  : scorePreview.status === "PENDING_RULE"
+                    ? "Chờ quy tắc"
+                    : scorePreview.status === "NOT_APPLICABLE"
+                      ? "Chưa áp dụng"
+                      : "Lỗi"}
+            </span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
             <div><div className="text-[11px] text-slate-500">Số lượng (a)</div><div className="text-xl font-bold">{scorePreview.qtyRatio ?? "—"}{scorePreview.qtyRatio !== null && "%"}</div></div>
@@ -356,7 +396,74 @@ export default function MonthlyResultsPage() {
             <div><div className="text-[11px] text-slate-500">d = (a+b+c)/3</div><div className="text-xl font-bold">{scorePreview.averageD ?? "—"}</div></div>
             <div><div className="text-[11px] text-slate-500">Điểm KQ ×70%</div><div className="text-xl font-bold text-amber-800">{scorePreview.score70 ?? "—"}</div></div>
           </div>
-          <p className="text-[11px] text-slate-500 mt-2">Tính đúng công thức mẫu Bảng 1/01A từ số liệu đã ghi. {scorePreview.note}</p>
+          <p className="text-[11px] text-slate-500 mt-2">
+            Tính đúng công thức mẫu Bảng 1/01A từ số liệu đã ghi. {scorePreview.note}
+          </p>
+
+          {/* YC-33: lý do và chi tiết từng dòng */}
+          {scorePreview.reasons && scorePreview.reasons.length > 0 && (
+            <ul className="mt-2 space-y-0.5">
+              {scorePreview.reasons.map((r: string, i: number) => (
+                <li key={i} className="text-[11px] text-amber-900 flex items-start gap-1">
+                  <span className="material-symbols-outlined text-[14px] shrink-0">info</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {scorePreview.rows && scorePreview.rows.length > 0 && (
+            <details className="mt-2">
+              <summary className="text-[11px] font-semibold text-slate-600 cursor-pointer">
+                Chi tiết {scorePreview.rows.length} dòng công việc (nguồn hệ số, trạng thái)
+              </summary>
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="text-slate-500 text-left">
+                      <th className="py-1 pr-2">Công việc</th>
+                      <th className="py-1 pr-2">Nguồn hệ số</th>
+                      <th className="py-1 pr-2 text-right">Hệ số</th>
+                      <th className="py-1 pr-2 text-right">G</th>
+                      <th className="py-1 pr-2 text-right">I</th>
+                      <th className="py-1 pr-2 text-right">L</th>
+                      <th className="py-1 pr-2 text-right">N</th>
+                      <th className="py-1">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scorePreview.rows.map((r: any) => (
+                      <tr key={r.id} className="border-t border-slate-200">
+                        <td className="py-1 pr-2 text-slate-700 max-w-[260px] truncate">
+                          {r.title}
+                        </td>
+                        <td className="py-1 pr-2 text-slate-500">
+                          {r.factorSource === "QD1277_PRODUCT"
+                            ? "QĐ1277"
+                            : r.factorSource === "TX_CATALOG"
+                              ? "Danh mục TX"
+                              : r.factorSource === "MANUAL"
+                                ? "Đã chốt"
+                                : r.factorSource === "PENDING_RULE"
+                                  ? "Chờ quy tắc"
+                                  : "Chưa có"}
+                        </td>
+                        <td className="py-1 pr-2 text-right font-mono">
+                          {r.factor ?? "—"}
+                        </td>
+                        <td className="py-1 pr-2 text-right font-mono">{r.g ?? "—"}</td>
+                        <td className="py-1 pr-2 text-right font-mono">{r.i ?? "—"}</td>
+                        <td className="py-1 pr-2 text-right font-mono">{r.l ?? "—"}</td>
+                        <td className="py-1 pr-2 text-right font-mono">{r.n ?? "—"}</td>
+                        <td className="py-1 text-slate-500">
+                          {r.status === "KNOWN" ? "OK" : r.status}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          )}
         </div>
       )}
 

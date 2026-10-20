@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { advisoryLock } from "@/server/idempotency";
-import { computeScorePreview } from "@/server/monthly-score";
+import { buildMonthlyScorePreview } from "@/server/scoring/monthly-preview";
 import { recordAuditEvent } from "@/server/audit";
 
 // YC-12: kết quả sản phẩm thực tế theo tháng. Chưa chấm điểm (YC-14) — chỉ số liệu thô.
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     const items = await prisma.monthlyWorkResult.findMany({
       where: { personId: target.personId, periodYear: year, periodMonth: month },
       include: {
-        productItem: { select: { id: true, code: true, sourceStt: true, taskName: true, outputProduct: true, convertFactor: true } },
+        productItem: { select: { id: true, code: true, sourceStt: true, taskName: true, outputProduct: true, convertFactor: true, version: { select: { status: true } } } },
         person: { select: { id: true, fullName: true } },
         workItem: {
           select: {
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
             catalogEntryId: true,
             dueDate: true,
             completedDate: true,
-            catalogEntry: { select: { id: true, code: true, title: true, department: true } },
+            catalogEntry: { select: { id: true, code: true, title: true, department: true, convertFactor: true, version: { select: { status: true } } } },
             _count: { select: { evidences: true } },
           },
         },
@@ -89,23 +89,10 @@ export async function GET(req: NextRequest) {
         missingFieldsCount: missingFields,
         lateTotal, reworkTotal,
       },
-      // GĐ4-tham-khảo: tính thử đúng công thức mẫu, KHÔNG phải điểm chính thức,
-      // không dùng xếp loại/khóa số khi chưa xác nhận quy tắc
-      scorePreview: {
-        ...computeScorePreview(
-          items.map((it) => ({
-            factor: it.factorSnapshot ?? it.productItem?.convertFactor ?? null,
-            assignedQty: it.assignedQty,
-            completedQty: it.completedQty,
-            lateDays:
-              it.dueDate && it.completedDate
-                ? Math.max(0, Math.floor((new Date(it.completedDate).getTime() - new Date(it.dueDate).getTime()) / 86400000))
-                : it.lateCount || 0,
-            reworkCount: it.reworkCount || 0,
-          }))
-        ),
-        note: "Điểm tính thử theo công thức mẫu Bảng 1/01A — chỉ tham khảo, chưa phải kết quả đánh giá chính thức",
-      },
+      // YC-33 — tính điểm BẢNG 1 bằng bộ máy tính thuần (decimal-safe, có trạng thái).
+      // Hệ số lấy đúng nguồn: sản phẩm QĐ1277 → productItem; đầu việc TX → catalogEntry;
+      // đã chốt → factorSnapshot. Thiếu căn cứ → KHÔNG ra điểm (INSUFFICIENT_DATA).
+      scorePreview: (await buildMonthlyScorePreview(items as any, target.personId, year, month)),
     });
   } catch (error: any) {
     return jsonError("Lỗi khi tải kết quả tháng: " + error.message, 500);
