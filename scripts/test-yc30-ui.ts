@@ -450,9 +450,15 @@ async function main() {
     });
     check("Mobile: drawer mở, không tràn màn hình", drawerVisible);
 
-    const focusInDrawer = await mobile.evaluate(() => {
+    const focusInDrawer = await mobile.evaluate(async () => {
       const el = document.querySelector('[data-testid="mobile-nav-close"]');
-      return el ? document.activeElement === el : false;
+      if (!el) return false;
+      // Cho trình duyệt chạy nốt vòng focus (mạng chậm có thể cần thêm nhịp).
+      for (let i = 0; i < 20; i++) {
+        if (document.activeElement === el) return true;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      return document.activeElement === el;
     });
     check("Mobile: focus vào nút đóng khi mở drawer", focusInDrawer);
 

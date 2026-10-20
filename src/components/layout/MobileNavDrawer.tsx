@@ -35,7 +35,16 @@ export function MobileNavDrawer({ open, onClose }: Props) {
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const focusTimer = window.setTimeout(() => closeRef.current?.focus(), 30);
+
+    // Đưa focus vào nút đóng ngay khi mở (điều hướng bằng bàn phím).
+    // Dùng cả vòng lặp animation frame lẫn hẹn giờ dự phòng để ổn định khi mạng chậm.
+    const focusClose = () => {
+      if (document.activeElement === closeRef.current) return;
+      closeRef.current?.focus();
+    };
+    focusClose();
+    const focusFrame = window.requestAnimationFrame(focusClose);
+    const focusTimer = window.setTimeout(focusClose, 120);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -68,6 +77,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
     return () => {
       document.body.style.overflow = previousOverflow;
       window.clearTimeout(focusTimer);
+      window.cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open, onClose]);
