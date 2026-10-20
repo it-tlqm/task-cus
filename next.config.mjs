@@ -3,6 +3,10 @@ const nextConfig = {
   output: process.env.DOCKER_BUILD === "1" ? "standalone" : undefined,
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: {
+    // Cho phép minh chứng tối đa 20 MB khi tự vận hành; Vercel vẫn giới hạn request ~4,5 MB.
+    middlewareClientMaxBodySize: "25mb",
+  },
   // Vá lỗi xuất Excel 500 trên Vercel: hàm /api/monthly-export đọc template từ
   // public/templates/*.xlsx bằng fs (process.cwd()). Trên serverless, file trong
   // public/ không tự được đóng gói vào bundle hàm → fs.existsSync trả false.

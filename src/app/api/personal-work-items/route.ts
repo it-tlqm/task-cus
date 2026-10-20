@@ -4,6 +4,12 @@ import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
+import {
+  getCatalogEntrySelectionError,
+  isLegacyTemplateSelectableForPerson,
+} from "@/server/work-catalog";
+import { parseDateOnly } from "@/server/work-dates";
+import { getEvidenceStorageProvider } from "@/server/storage";
 
 export async function GET(req: NextRequest) {
   try {
@@ -86,6 +92,7 @@ export async function GET(req: NextRequest) {
         where.OR = [
           { period: { startAt: { lt: monthEnd }, endAt: { gte: monthStart } } },
           { workDate: { gte: monthStart, lt: monthEnd } },
+          { dueDate: { gte: monthStart, lt: monthEnd } },
         ];
       }
     }
@@ -103,6 +110,13 @@ export async function GET(req: NextRequest) {
           include: { unit: { select: { id: true, code: true, name: true } } },
         },
         product: true,
+        catalogEntry: {
+          include: { version: { select: { id: true, code: true, status: true } } },
+        },
+        task: {
+          select: { id: true, code: true, title: true, status: true, currentDeadline: true },
+        },
+        _count: { select: { evidences: true } },
         planItem: {
           include: { plan: true },
         },
@@ -112,7 +126,7 @@ export async function GET(req: NextRequest) {
 
     const enrichedItems = items.map((it) => ({
       ...it,
-      isCustom: !it.templateId,
+      isCustom: !it.templateId && !it.deptWorkItemId && !it.catalogEntryId,
       customTitle: it.title,
     }));
 
@@ -141,6 +155,10 @@ export async function POST(req: NextRequest) {
       templateId,
       deptWorkItemId,
       productItemId,
+      catalogEntryId,
+      dueDate,
+      completedDate,
+      taskId,
       groupId,
       title,
       customTitle,
@@ -163,6 +181,14 @@ export async function POST(req: NextRequest) {
     let resolvedPriority = priority || "Trung bình";
 
     if (templateId) {
+      // YC-31: chỉ chặn mẫu cũ khi BỘ PHẬN CỦA CÁN BỘ ĐƯỢC TẠO đã chuyển sang TX.
+      // Bộ phận chưa kích hoạt vẫn dùng mẫu cũ bình thường.
+      if (!(await isLegacyTemplateSelectableForPerson(targetPersonId))) {
+        return jsonError(
+          "Bộ phận của cán bộ đã chuyển sang Danh mục công việc thường xuyên — không chọn mẫu cũ khi tạo mới",
+          403
+        );
+      }
       const template = await prisma.activityTemplate.findUnique({
         where: { id: templateId },
         include: { group: true },
@@ -224,6 +250,58 @@ export async function POST(req: NextRequest) {
       if (!resolvedTitle?.trim()) {
         resolvedTitle = product.taskName;
       }
+    }
+
+    // YC-31: chọn từ Danh mục công việc thường xuyên (phiên bản đang áp dụng)
+    let resolvedCatalogEntryId: string | null = null;
+    if (catalogEntryId) {
+      if (templateId || deptWorkItemId) {
+        return jsonError(
+          "Chỉ chọn một nguồn đầu việc: Danh mục TX, mẫu thường xuyên hoặc danh mục của bộ phận",
+          400
+        );
+      }
+      const entry = await prisma.workCatalogEntry.findUnique({
+        where: { id: catalogEntryId },
+        include: { version: { select: { status: true, code: true } } },
+      });
+      if (!entry) return jsonError("Đầu việc không tồn tại trong Danh mục TX", 400);
+      if (entry.status !== "ACTIVE" || entry.version.status !== "ACTIVE") {
+        return jsonError(
+          "Đầu việc này đã ngừng áp dụng hoặc thuộc phiên bản cũ — không thể chọn để tạo mới",
+          400
+        );
+      }
+      // Chỉ cho gắn đầu việc TX thuộc nhóm đã kích hoạt cho đúng bộ phận của cán bộ.
+      const selectionError = await getCatalogEntrySelectionError(targetPersonId, entry);
+      if (selectionError) return jsonError(selectionError, 403);
+      resolvedCatalogEntryId = entry.id;
+      if (!resolvedTitle?.trim()) resolvedTitle = entry.title;
+    }
+
+    // YC-32: hạn xử lý và ngày hoàn thành thực tế (tách biệt nhau)
+    const dueParsed = parseDateOnly(dueDate);
+    if (!dueParsed.ok) return jsonError(`Hạn xử lý: ${dueParsed.message}`, 400);
+    const completedParsed = parseDateOnly(completedDate);
+    if (!completedParsed.ok) return jsonError(`Ngày hoàn thành: ${completedParsed.message}`, 400);
+
+    // YC-32: liên kết nhiệm vụ (nếu có) — kiểm tra tồn tại + quyền
+    let resolvedTaskId: string | null = null;
+    if (taskId) {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: { assignees: { select: { personId: true } } },
+      });
+      if (!task) return jsonError("Nhiệm vụ liên kết không tồn tại", 400);
+      const authorizedUnits = await getAuthorizedUnitIds(user);
+      const canLink =
+        task.ownerId === user.personId ||
+        task.assignees.some((a) => a.personId === user.personId) ||
+        user.role === "UNIT_LEADER" ||
+        authorizedUnits === "ALL" ||
+        authorizedUnits.includes(task.unitId);
+      if (!canLink) return jsonError("Bạn không có quyền liên kết nhiệm vụ này", 403);
+      resolvedTaskId = task.id;
     }
 
     // Tự động phân giải hoặc tạo ReportingPeriod nếu truyền periodType, periodYear, periodNumber
@@ -313,6 +391,10 @@ export async function POST(req: NextRequest) {
         templateId: templateId || null, // null nếu là đầu việc tự thêm ngoài danh mục 48 mẫu
         deptWorkItemId: resolvedDeptWorkItemId, // YC-25: nguồn danh mục đầu việc riêng của bộ phận
         productItemId: resolvedProductItemId, // YC-23: sản phẩm đầu ra theo QĐ1277 (tuỳ chọn)
+        catalogEntryId: resolvedCatalogEntryId, // YC-31: đầu việc TX (tuỳ chọn)
+        dueDate: dueParsed.value ?? null, // YC-32
+        completedDate: completedParsed.value ?? null, // YC-32
+        taskId: resolvedTaskId, // YC-32
         groupId: resolvedGroupId,
         title: resolvedTitle.trim(),
         workDate: workDate ? new Date(workDate) : null,
@@ -321,13 +403,16 @@ export async function POST(req: NextRequest) {
         priority: resolvedPriority,
         expectedResult: expectedResult?.trim() || null,
         sortOrder: (maxSort._max.sortOrder || 0) + 1,
-        status: status || "ACTIVE",
+        status: completedParsed.value ? "COMPLETED" : status || "ACTIVE",
       },
       include: {
         person: true,
         template: { include: { group: true } },
         deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
         product: true,
+        catalogEntry: { include: { version: { select: { id: true, code: true, status: true } } } },
+        task: { select: { id: true, code: true, title: true, status: true, currentDeadline: true } },
+        _count: { select: { evidences: true } },
         group: true,
         period: true,
       },
@@ -346,9 +431,13 @@ export async function POST(req: NextRequest) {
         priority: newItem.priority,
         coordinationUnit: newItem.coordinationUnit,
         expectedResult: newItem.expectedResult,
-        isCustom: !newItem.templateId && !newItem.deptWorkItemId,
+        isCustom: !newItem.templateId && !newItem.deptWorkItemId && !newItem.catalogEntryId,
         deptWorkItemId: newItem.deptWorkItemId,
         productItemId: newItem.productItemId,
+        catalogEntryId: newItem.catalogEntryId,
+        dueDate: newItem.dueDate,
+        completedDate: newItem.completedDate,
+        taskId: newItem.taskId,
       },
     });
 
@@ -381,6 +470,10 @@ export async function PATCH(req: NextRequest) {
       templateId,
       deptWorkItemId,
       productItemId,
+      catalogEntryId,
+      dueDate,
+      completedDate,
+      taskId,
     } = body;
 
     if (!id) {
@@ -406,12 +499,57 @@ export async function PATCH(req: NextRequest) {
       return jsonError(err.message, err.statusCode || 423);
     }
 
-    // E1: đầu việc thuộc kế hoạch đã duyệt/có hiệu lực thì khóa (đi luồng bổ sung)
-    if (currentItem.planItem?.plan && (currentItem.planItem.plan.status === "APPROVED" || currentItem.planItem.plan.status === "IN_EFFECT")) {
+    // E1: đầu việc thuộc kế hoạch đã duyệt/có hiệu lực thì khóa phần nội dung.
+    // YC-32: vẫn cho cập nhật ngày hoàn thành, trạng thái thực hiện và liên kết nhiệm vụ
+    // (đây là dữ liệu thực hiện, không phải thay đổi cam kết của kế hoạch).
+    const planLocked =
+      !!currentItem.planItem?.plan &&
+      (currentItem.planItem.plan.status === "APPROVED" ||
+        currentItem.planItem.plan.status === "IN_EFFECT");
+
+    // YC-32 (chốt 20/10/2026): hạn xử lý gốc KHÔNG được tự sửa sau khi kế hoạch đã duyệt.
+    // Chưa có quy trình gia hạn được phê duyệt → khóa hẳn, trả 403 và ghi nhật ký truy cập bị từ chối.
+    if (planLocked && dueDate !== undefined) {
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "PERSONAL_WORK_ITEM_DUE_DATE_DENIED",
+        resourceType: "PersonalWorkItem",
+        resourceId: currentItem.id,
+        oldData: {
+          dueDate: currentItem.dueDate,
+          planId: currentItem.planItem?.plan?.id || null,
+          planStatus: currentItem.planItem?.plan?.status || null,
+        },
+        newData: { requestedDueDate: dueDate },
+      });
       return jsonError(
-        `Kế hoạch "${currentItem.planItem.plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì sửa trực tiếp`,
+        `Kế hoạch "${currentItem.planItem?.plan?.title}" đã phê duyệt — hạn xử lý đã khóa. Chưa có quy trình gia hạn được duyệt nên không thể tự chỉnh hạn gốc; vẫn có thể cập nhật tiến độ/ngày hoàn thành thực tế.`,
         403
       );
+    }
+
+    if (planLocked) {
+      const contentFields = [
+        ["title", title],
+        ["groupId", groupId],
+        ["workDate", workDate],
+        ["dateText", dateText],
+        ["coordinationUnit", coordinationUnit],
+        ["priority", priority],
+        ["expectedResult", expectedResult],
+        ["sortOrder", sortOrder],
+        ["planItemId", planItemId],
+        ["templateId", templateId],
+        ["deptWorkItemId", deptWorkItemId],
+        ["productItemId", productItemId],
+        ["catalogEntryId", catalogEntryId],
+      ].filter(([, value]) => value !== undefined);
+      if (contentFields.length > 0) {
+        return jsonError(
+          `Kế hoạch "${currentItem.planItem?.plan?.title}" đã phê duyệt — chỉ được cập nhật ngày hoàn thành/trạng thái thực hiện; hãy dùng “Trình duyệt bổ sung” để sửa nội dung`,
+          403
+        );
+      }
     }
 
     // Kiểm tra quyền chỉnh sửa
@@ -441,11 +579,22 @@ export async function PATCH(req: NextRequest) {
         }
         linkUpdate.deptWorkItemId = deptItem.id;
         linkUpdate.templateId = null;
+        linkUpdate.catalogEntryId = null;
       } else {
         linkUpdate.deptWorkItemId = null;
       }
     }
     if (templateId !== undefined && templateId) {
+      // Chỉ chặn khi ĐỔI SANG mẫu cũ. Giữ nguyên liên kết lịch sử thì vẫn cho phép.
+      if (
+        templateId !== currentItem.templateId &&
+        !(await isLegacyTemplateSelectableForPerson(currentItem.personId))
+      ) {
+        return jsonError(
+          "Bộ phận của cán bộ đã chuyển sang Danh mục công việc thường xuyên — không chọn mẫu cũ",
+          403
+        );
+      }
       const template = await prisma.activityTemplate.findUnique({ where: { id: templateId } });
       if (!template) return jsonError("Hoạt động mẫu không tồn tại trong danh mục", 400);
       if (template.reviewStatus === "RETIRED") {
@@ -453,6 +602,32 @@ export async function PATCH(req: NextRequest) {
       }
       linkUpdate.templateId = templateId;
       linkUpdate.deptWorkItemId = null;
+      linkUpdate.catalogEntryId = null;
+    }
+    // YC-31: đổi/thiết lập đầu việc TX (nguồn độc quyền với mẫu cũ và danh mục bộ phận)
+    if (catalogEntryId !== undefined) {
+      if (catalogEntryId && catalogEntryId !== currentItem.catalogEntryId) {
+        const entry = await prisma.workCatalogEntry.findUnique({
+          where: { id: catalogEntryId },
+          include: { version: { select: { status: true } } },
+        });
+        if (!entry) return jsonError("Đầu việc không tồn tại trong Danh mục TX", 400);
+        if (entry.status !== "ACTIVE" || entry.version.status !== "ACTIVE") {
+          return jsonError(
+            "Đầu việc này đã ngừng áp dụng hoặc thuộc phiên bản cũ — không thể chọn",
+            400
+          );
+        }
+        const selectionError = await getCatalogEntrySelectionError(currentItem.personId, entry);
+        if (selectionError) return jsonError(selectionError, 403);
+        linkUpdate.catalogEntryId = entry.id;
+        linkUpdate.templateId = null;
+        linkUpdate.deptWorkItemId = null;
+      } else if (!catalogEntryId) {
+        linkUpdate.catalogEntryId = null;
+      }
+      // catalogEntryId === currentItem.catalogEntryId: giữ nguyên liên kết lịch sử,
+      // kể cả khi nhóm đã bị ngừng kích hoạt hoặc phiên bản đã bị thay thế.
     }
     // YC-23: đổi/thiết lập sản phẩm đầu ra theo QĐ1277 (tuỳ chọn, độc lập với nguồn đầu việc)
     if (productItemId !== undefined) {
@@ -481,6 +656,46 @@ export async function PATCH(req: NextRequest) {
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
     if (status) updateData.status = status; // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
     if (planItemId !== undefined) updateData.planItemId = planItemId;
+
+    // YC-32: hạn xử lý (độc lập với ngày hoàn thành)
+    if (dueDate !== undefined) {
+      const parsed = parseDateOnly(dueDate);
+      if (!parsed.ok) return jsonError(`Hạn xử lý: ${parsed.message}`, 400);
+      updateData.dueDate = parsed.value ?? null;
+    }
+    // YC-32: ngày hoàn thành thực tế quyết định trạng thái; xóa ngày → trả về đang thực hiện
+    if (completedDate !== undefined) {
+      const parsed = parseDateOnly(completedDate);
+      if (!parsed.ok) return jsonError(`Ngày hoàn thành: ${parsed.message}`, 400);
+      updateData.completedDate = parsed.value ?? null;
+      if (parsed.value) {
+        updateData.status = "COMPLETED";
+      } else if (status === undefined) {
+        updateData.status = "IN_PROGRESS";
+      }
+    }
+    // YC-32: liên kết nhiệm vụ (kiểm tra tồn tại + quyền)
+    if (taskId !== undefined) {
+      if (taskId) {
+        const task = await prisma.task.findUnique({
+          where: { id: taskId },
+          include: { assignees: { select: { personId: true } } },
+        });
+        if (!task) return jsonError("Nhiệm vụ liên kết không tồn tại", 400);
+        const authorizedUnits = await getAuthorizedUnitIds(user);
+        const canLink =
+          task.ownerId === user.personId ||
+          task.assignees.some((a) => a.personId === user.personId) ||
+          user.role === "UNIT_LEADER" ||
+          authorizedUnits === "ALL" ||
+          authorizedUnits.includes(task.unitId);
+        if (!canLink) return jsonError("Bạn không có quyền liên kết nhiệm vụ này", 403);
+        updateData.taskId = task.id;
+      } else {
+        updateData.taskId = null;
+      }
+    }
+
     Object.assign(updateData, linkUpdate);
 
     const updated = await prisma.personalWorkItem.update({
@@ -491,6 +706,9 @@ export async function PATCH(req: NextRequest) {
         template: { include: { group: true } },
         deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
         product: true,
+        catalogEntry: { include: { version: { select: { id: true, code: true, status: true } } } },
+        task: { select: { id: true, code: true, title: true, status: true, currentDeadline: true } },
+        _count: { select: { evidences: true } },
         group: true,
       },
     });
@@ -500,7 +718,16 @@ export async function PATCH(req: NextRequest) {
       action: "PERSONAL_WORK_ITEM_UPDATE",
       resourceType: "PersonalWorkItem",
       resourceId: updated.id,
-      oldData: { title: currentItem.title, status: currentItem.status, deptWorkItemId: currentItem.deptWorkItemId, productItemId: currentItem.productItemId },
+      oldData: {
+        title: currentItem.title,
+        status: currentItem.status,
+        deptWorkItemId: currentItem.deptWorkItemId,
+        productItemId: currentItem.productItemId,
+        catalogEntryId: currentItem.catalogEntryId,
+        dueDate: currentItem.dueDate,
+        completedDate: currentItem.completedDate,
+        taskId: currentItem.taskId,
+      },
       newData: updateData,
     });
 
@@ -530,6 +757,7 @@ export async function DELETE(req: NextRequest) {
         person: { include: { assignments: true } },
         planItem: { include: { plan: { select: { id: true, status: true, title: true } } } },
         routines: true,
+        evidences: { select: { id: true, storageKey: true } },
       },
     });
 
@@ -577,6 +805,14 @@ export async function DELETE(req: NextRequest) {
       });
     }
 
+    // YC-32: xóa tệp minh chứng khỏi kho lưu trữ trước khi xóa bản ghi (best-effort)
+    if (currentItem.evidences.length > 0) {
+      const storage = getEvidenceStorageProvider();
+      for (const e of currentItem.evidences) {
+        await storage.delete(e.storageKey).catch(() => false);
+      }
+    }
+
     // Ngược lại nếu chưa có ràng buộc, xóa bản ghi
     await prisma.personalWorkItem.delete({ where: { id } });
 
@@ -585,7 +821,11 @@ export async function DELETE(req: NextRequest) {
       action: "PERSONAL_WORK_ITEM_DELETE",
       resourceType: "PersonalWorkItem",
       resourceId: id,
-      oldData: { title: currentItem.title, personId: currentItem.personId },
+      oldData: {
+        title: currentItem.title,
+        personId: currentItem.personId,
+        evidenceCount: currentItem.evidences.length,
+      },
     });
 
     return NextResponse.json({ success: true, message: "Đã xóa đầu việc cá nhân thành công" });

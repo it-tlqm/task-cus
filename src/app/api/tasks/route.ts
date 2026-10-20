@@ -7,6 +7,7 @@ import { advisoryLock, normalizeTitle } from "@/server/idempotency";
 import { nextTaskCode } from "@/server/task-code";
 import { unaccentSearchIds } from "@/server/search";
 import { recordAuditEvent } from "@/server/audit";
+import { checkWorkItemAccess } from "@/server/work-access";
 import { createNotification } from "@/server/notifications";
 
 // YC-04: cửa sổ chống bấm trùng khi giao việc (giây)
@@ -176,10 +177,41 @@ export async function POST(req: NextRequest) {
       deadline,
       expectedResultText,
       assigneeIds, // Danh sách ID cán bộ phối hợp
+      workItemId, // YC-32: giao nhiệm vụ từ đầu việc (liên kết 2 chiều)
     } = body;
 
-    const effectiveOwnerId = ownerId || user.personId;
-    const effectiveDeadline = deadline || body.currentDeadline;
+    // YC-32: kiểm tra quyền trên đầu việc + chống tạo Task trùng cho cùng đầu việc
+    let linkedWorkItem: any = null;
+    if (workItemId) {
+      const access = await checkWorkItemAccess(user, String(workItemId));
+      if (!access.allowed || !access.item) {
+        return jsonError(
+          access.reason || "Bạn không có quyền giao nhiệm vụ từ đầu việc này",
+          403
+        );
+      }
+      linkedWorkItem = access.item;
+      if (linkedWorkItem.taskId) {
+        const existing = await prisma.task.findUnique({
+          where: { id: linkedWorkItem.taskId },
+          include: { owner: true, unit: true, assignees: { include: { person: true } } },
+        });
+        if (existing) {
+          return NextResponse.json(
+            {
+              success: true,
+              data: existing,
+              linkedExisting: true,
+              message: "Đầu việc đã được giao nhiệm vụ — không tạo thêm nhiệm vụ mới",
+            },
+            { status: 200 }
+          );
+        }
+      }
+    }
+
+    const effectiveOwnerId = ownerId || linkedWorkItem?.personId || user.personId;
+    const effectiveDeadline = deadline || body.currentDeadline || linkedWorkItem?.dueDate || null;
 
     if (!title || !effectiveOwnerId || !effectiveDeadline) {
       return jsonError("Tiêu đề, Người chủ trì và Hạn hoàn thành là bắt buộc", 400);
@@ -266,20 +298,36 @@ export async function POST(req: NextRequest) {
     });
 
     // YC-04: request trùng trong cửa sổ 120s → trả về bản ghi đã tạo, không spam thông báo
+    const createdTask = newTask.task;
+
+    // YC-32: gắn nhiệm vụ vào đầu việc (nếu chưa có) — liên kết 2 chiều, không tạo thêm Task
+    if (linkedWorkItem) {
+      await prisma.personalWorkItem.updateMany({
+        where: { id: linkedWorkItem.id, taskId: null },
+        data: { taskId: createdTask.id },
+      });
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "WORK_ITEM_TASK_LINK",
+        resourceType: "PersonalWorkItem",
+        resourceId: linkedWorkItem.id,
+        newData: { taskId: createdTask.id, taskCode: createdTask.code, deduplicated: newTask.deduplicated },
+      });
+    }
+
     if (newTask.deduplicated) {
       return NextResponse.json(
         { success: true, data: newTask.task, deduplicated: true, message: "Nhiệm vụ này vừa được tạo (chặn bấm trùng)" },
         { status: 200 }
       );
     }
-    const createdTask = newTask.task;
 
     await recordAuditEvent({
       actorId: user.id,
       action: "TASK_CREATE",
       resourceType: "Task",
       resourceId: createdTask.id,
-      newData: { code: createdTask.code, title: createdTask.title, unitId: createdTask.unitId, ownerId, assignees: uniqueAssignees },
+      newData: { code: createdTask.code, title: createdTask.title, unitId: createdTask.unitId, ownerId, assignees: uniqueAssignees, workItemId: linkedWorkItem?.id || null },
     });
 
     // 1. Tạo thông báo giao việc đến người chủ trì thực hiện
