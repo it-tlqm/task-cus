@@ -173,7 +173,8 @@ Số liệu đối chiếu: DB trước = 24 người / 24 tài khoản → sau 
 | `test-yc30-navigation.ts` (cấu trúc menu) | 192/192 | 192/192 |
 | `test-yc30-ui.ts` (giao diện desktop + mobile) | 55/55 | 55/55 (sau bản sửa focus `606f703`) |
 | `test-yc30-regression.ts` (hồi quy YC-23→32) | 60/60 | 56/56 (bỏ 2 nhóm kiểm tra quản trị hệ thống — Production không có tài khoản SYSTEM_ADMIN demo) |
-| `test-yc30-tx1-import.ts` (import TX1) | 47/47 | 47/47 (đối chiếu trực tiếp Production sau import) |
+| `test-yc30-tx1-import.ts` (đọc + import TX1, đối chiếu file gốc) | 47/47 | 47/47 (đối chiếu trực tiếp Production sau import) |
+| `test-yc30-tx1-e2e.ts` (E2E: tạo công việc từ TX1 → minh chứng → kết quả đánh giá) | 21/21 | **21/21** |
 | TypeScript `tsc --noEmit` | ✅ 0 lỗi | ✅ |
 | Build `next build` | ✅ thành công | ✅ (qua Vercel) |
 | DDL idempotent | lần 1 đổi, lần 2 không đổi | lần 1 `schema_changed=true`, lần 2 `schema_changed=false` cùng fingerprint, `checks_failed=0` |
@@ -186,8 +187,8 @@ Số liệu đối chiếu: DB trước = 24 người / 24 tài khoản → sau 
 4. ✅ Đọc/import đúng 348 đầu việc.
 5. ✅ Mã duy nhất, ổn định; import lặp không nhân đôi (API trả 409).
 6. ✅ 207 hệ số (10 giá trị 0) + 141 ô trống.
-7. ✅ Tạo công việc từ danh mục mới — đã mở phạm vi chọn cho toàn bộ cán bộ.
-8. ✅ Một công việc liên thông sang kết quả đánh giá, không nhân đôi (`inEvaluation`).
+7. ✅ **Tạo công việc từ danh mục mới** — E2E trên Production: tạo đầu việc từ mã `NV-01`, cập nhật tiến độ, đính kèm minh chứng, ghi kết quả đánh giá, dọn sạch dữ liệu test.
+8. ✅ **Một công việc liên thông sang kết quả đánh giá, không nhân đôi** — E2E đếm thực tế: 1 đầu việc = 1 bản ghi kết quả; `inEvaluation` chuyển `false → true` sau khi ghi kết quả.
 9. ✅ Người không có quyền bị từ chối ở API và file minh chứng (hồi quy YC-32 PASS).
 10. ⏳ Chấp thuận/giải trình — thuộc YC-37 (Giai đoạn 2).
 11. ✅ Các biểu mẫu Excel hiện có không bị lỗi (hồi quy xuất Bảng 1 + 02C PASS).
@@ -204,9 +205,11 @@ Số liệu đối chiếu: DB trước = 24 người / 24 tài khoản → sau 
 | Branch | `main` |
 | Commit YC-30 bổ sung + YC-31 + nhân sự | `9633a43` |
 | Commit sửa focus drawer | `606f703` |
+| Commit báo cáo Giai đoạn 1 | `64ae8af` |
+| Commit bộ test E2E TX1 | `3e00e3f` |
 | DDL Production | `apply-yc30-tx1-ddl.ts` — additive, idempotent, `checks_failed=0` |
 | Import danh mục | Phiên bản `TX-20261020-01` (348 đầu việc) |
-| Health Production | `db=up`, `commit=606f703` |
+| Health Production | `db=up`, `commit=3e00e3f` |
 
 **Không chạy** `prisma migrate deploy` (Production không có `_prisma_migrations` — đúng quy ước dự án).
 
@@ -270,6 +273,10 @@ npx tsx scripts/test-yc30-regression.ts
 
 # 4) Import TX1 (chạy trên DB local/sandbox)
 npx tsx scripts/test-yc30-tx1-import.ts
+
+# 5) E2E danh mục TX1 trên Production (tự dọn dữ liệu test)
+$env:TEST_BASE_URL="https://task-cus.vercel.app"
+npx tsx scripts/test-yc30-tx1-e2e.ts
 ```
 
 Mật khẩu đọc từ `demo-ops/demo-secrets.json` (ngoài Git) hoặc biến môi trường `TEST_*_PASS` — **không ghi mật khẩu vào mã nguồn hay tài liệu**.
