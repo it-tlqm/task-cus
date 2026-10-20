@@ -122,3 +122,54 @@ Xem `docs/TALUNG_CUS_WORK_OVERNIGHT_20261020/OPEN_QUESTIONS.md` (9 mục). Tóm 
 - **Bảng 1** — công thức lấy trực tiếp từ sheet gốc (đối chiếu 1:1 ở bảng mục 4).
 - **QĐ1277** — danh mục sản phẩm có cột *Hệ số quy đổi*; hệ số này **không** bị trộn với hệ số TX.
 - **Biểu 01A/01B/02A/02B** — bố cục lấy từ workbook gốc; phần quý nhập tay a/b/c, phần 01B có cột bình quân chia theo số công chức thực tế.
+
+---
+
+## 8. CHECKLIST UAT BUỔI SÁNG (chi tiết)
+
+> Chi kiểm thử được những mục báo `DEPLOYED_AUTO_VERIFIED` hoặc `DRAFT_PREVIEW_ONLY`.
+> Không mặc định mọi YC đều hoàn thành.
+
+### A. YC-37 — Chấp thuận / không đồng ý / giải trình
+- [ ] Đăng nhập lãnh đạo demo → **Phê duyệt** → bấm **Chấp thuận** → **phải mở modal xem trước** (mã, người trình, hạn, tiến độ, kết quả, tệp đính kèm). **Chưa được duyệt ngay.**
+- [ ] **Đồng ý** → hồ sơ khỏi danh sách, nhiệm vụ `COMPLETED`.
+- [ ] **Không đồng ý** → bắt buộc có lý do; nhiệm vụ `IN_PROGRESS`; **kết quả đã ghi của cán bộ không bị ghi đè**.
+- [ ] **Yêu cầu giải trình** → bắt buộc có nội dung; người trình thấy *Hồ sơ của tôi* → gửi giải trình → hồ sơ quay lại vòng 2, nhiệm vụ về `WAITING_REVIEW`.
+- [ ] Bấm lại **Chấp thuận** lần 2 → bị chặn (409).
+- [ ] Cán bộ không thấy nút quyết định, không sửa được nhận xét lãnh đạo.
+- [ ] *Nhật ký hệ thống* có `APPROVAL_PREVIEW_VIEW / APPROVE / REJECT / CLARIFY / RESPOND`.
+
+### B. YC-33 — Điểm Bảng 1
+- [ ] *Kết quả công tác tháng* → khối *Điểm tính thử* hiện **trạng thái** (Đủ căn cứ / Chưa đủ dữ liệu / Chờ quy tắc / Chưa áp dụng).
+- [ ] Mở *Chi tiết từng dòng* → thấy **nguồn hệ số** (QĐ1277 / Danh mục TX / Đã chốt) và G / I / L / N.
+- [ ] Công việc chưa có hệ số → `Chưa đủ dữ liệu`, **không** ra điểm giả.
+- [ ] Đối chiếu mẫu: G19=1719.16 · I20=100 · L20=81.203029 · N20=100 · 01A D37=93.734343 · D38=65.61404 · D39=94.11404.
+
+### C. YC-34 — Biểu mẫu
+- [ ] *Kết quả công tác tháng* → khối *Biểu mẫu 01A/01B/02A/02B* → chọn mẫu → **Xem trước** → đọc cảnh báo DỰ THẢO → **Tải Excel** → mở file, kiểm tra sheet + định dạng + vùng in.
+- [ ] Nhận xét cấp có thẩm quyền và chữ ký **để trống**.
+- [ ] 02A/02B có mục *Cá nhân tự đề xuất mức xếp loại*; 01A/01B **không** có (đúng mẫu gốc).
+
+### D. YC-36 — Tự đánh giá
+- [ ] Ô *Gợi ý của hệ thống* phải hiện **"Chưa có gợi ý"** + lý do — **không** hiện số bịa.
+- [ ] Cán bộ nhập điểm tiêu chí chung (0…30), ưu điểm, hạn chế, mức xếp loại → lưu được.
+- [ ] Cán bộ **không** sửa được nhận xét lãnh đạo; lãnh đạo sửa được.
+- [ ] Nhận xét lãnh đạo **mặc định để trống**.
+
+### E. YC-35 — Quan hệ phụ trách
+- [ ] *Quản trị hệ thống → Quan hệ phụ trách* → thêm quan hệ → lưu → hiện trong bảng.
+- [ ] Thử tạo quan hệ ngược (vòng) → bị chặn.
+- [ ] Chưa có quan hệ → điểm bình quân lãnh đạo báo **Chưa áp dụng** (không bịa điểm).
+
+### F. Hồi quy YC-01→32
+- [ ] Danh mục TX1 348 đầu việc, mã NV/CBL/TH…, hệ số 0 khác ô trống — còn nguyên.
+- [ ] 48 mẫu cũ không mất lịch sử; 18 task / 5 plan / 26 đầu việc / 15 kết quả tháng — không đổi.
+- [ ] *Nhật ký công việc* mở lên không lỗi console (đã sửa lỗi hydration #418).
+
+### G. Việc Hải quan cần xác nhận (chặn UAT một số mục)
+- [ ] Bảng ngưỡng điểm → mức xếp loại (đang `BLOCKED_BUSINESS_RULE`).
+- [ ] Quy tắc gợi ý điểm tiêu chí chung (đang `BLOCKED_BUSINESS_RULE`).
+- [ ] Công thức tổng hợp tháng → quý (đang `BLOCKED_BUSINESS_RULE`).
+- [ ] Cơ cấu phụ trách thực tế (Đội trưởng / Đội phó / công chức) để điền bảng `person_supervisions`.
+- [ ] Ánh xạ 6 nhóm danh mục TX → bộ phận.
+- [ ] Hai tên ngắn nhiều ứng viên trong phân công bộ phận.
