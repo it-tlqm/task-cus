@@ -5,7 +5,7 @@ Không chạy DDL, không ghi dữ liệu, không merge/push trong lượt này.
 
 ## 1. Lịch sử migration Production
 
-- `_prisma_migrations`: **KHÔNG tồn tại** (kiểm tra `to_regclass('public._prisma_migrations')` → NULL).
+- `_prisma_migrations`: **KHÔNG tồn tại** (kiểm tra `to_regclass('public._prisma_migrations')` → NULL; kiểm tra lại read-only ngày 20/10/2026 vẫn NULL).
 - Vì vậy **cấm chạy `prisma migrate deploy`** trên Production theo đúng yêu cầu.
 - Dự án đang dùng quy ước apply-script idempotent (xem `scripts/apply-*-ddl.ts`, ghi nhận tại `docs/DEPLOYMENT_GUIDE.md`).
 
@@ -61,7 +61,9 @@ Nguồn DDL: `prisma/migrations/20261021100000_yc31_yc32_work_catalog_evidence/m
 - Bucket hiện có duy nhất: `task-attachments`.
   - `public = true`; giới hạn 50 MB; MIME: PDF/JPEG/PNG/XLSX/DOCX/DOC/XLS; **2 object**.
   - 4 policy role `public`: SELECT, INSERT, UPDATE, DELETE trên `bucket_id='task-attachments'`.
+  - Tên policy: `Allow public select on task-attachments`, `Allow public insert on task-attachments`, `Allow public update on task-attachments`, `Allow public delete on task-attachments`.
   - Rủi ro cao: người có publishable key (nằm trong trình duyệt) có thể đọc/ghi đè/xóa object. Không thay đổi bucket này trong đợt hiện tại vì còn object/URL cũ; phải kiểm kê và chuyển URL trước.
+  - Kế hoạch khắc phục riêng: `docs/TASK_ATTACHMENTS_PRIVATE_PLAN_2026-10-20.md`.
 - **Không có bucket `work-evidence`** (GET bucket → NoSuchBucket).
 - Môi trường hiện tại **không có `SUPABASE_SERVICE_ROLE_KEY`/secret key**.
 - Mã vòng 2 đã **fail-closed**: thiếu khóa server, thiếu bucket, bucket public hoặc driver R2 chưa cấu hình → **503**, không fallback publishable key/URL công khai. `STORAGE_DRIVER=local` cũng bị từ chối cho minh chứng trong production (trừ cờ `ALLOW_LOCAL_EVIDENCE=1` chỉ dùng kiểm thử). Đã kiểm thử 7 tình huống, 7/7 PASS.
@@ -107,13 +109,14 @@ Các điểm trên không còn là lý do chặn **mã nguồn**, nhưng vẫn l
 
 - Lịch sử migration Production **không đáng tin cậy để dùng `prisma migrate deploy`**; đã thay bằng apply-script idempotent và kiểm thử trên clone cấu trúc Production (PASS, fingerprint không đổi ở lần 2).
 - Mã vòng 2 đã xử lý 3 điểm lệch: kích hoạt theo bộ phận, khóa hạn sau duyệt, kho minh chứng private/fail-closed.
-- **DỪNG triển khai Production** theo đúng điều kiện an toàn: Storage chưa đạt + ánh xạ bộ phận chưa xác nhận + chưa có backup/checksum/restore plan mới.
+- **DỪNG triển khai Production** theo đúng điều kiện an toàn: Storage chưa đạt (chặn tính năng minh chứng) + chưa có backup/checksum/restore plan mới + chưa có phê duyệt (chặn DDL/deploy).
+- Ánh xạ bộ phận chưa xác nhận **chặn import/kích hoạt danh mục TX**, không chặn deploy code nền tảng; nhóm chưa xác nhận phải giữ inactive.
 - Không merge `main`, không push, không DDL/import/Storage Production trong lượt này.
 
 ## 9. Việc cần làm để mở lại deploy
 
 1. Tạo bucket minh chứng **riêng tư** `work-evidence` + cấu hình `SUPABASE_SERVICE_ROLE_KEY`/secret key **server-side** trên Vercel; không thêm policy public; đặt `WORK_EVIDENCE_MAX_MB=4` (Vercel ~4,5 MB).
-2. Hải quan xác nhận ánh xạ 6 nhóm nguồn → `org_units` theo bảng 3 cột (đặc biệt CNTT, Điều tra CBL, Công tác Đảng).
+2. Hải quan xác nhận ánh xạ 6 nhóm nguồn → `org_units` theo bảng 3 cột (đặc biệt CNTT, Điều tra CBL, Công tác Đảng). Đây là điều kiện **import/kích hoạt danh mục**, không phải điều kiện deploy code nền tảng; nhóm chưa xác nhận giữ inactive.
 3. Chốt quy trình gia hạn hạn xử lý sau duyệt (hiện đang khóa 403; chưa có workflow gia hạn).
 4. Backup Production mới + checksum + kiểm tra restore.
 5. Review/merge nhánh; build/typecheck xanh.
