@@ -12,12 +12,12 @@
 | Restore kiểm chứng | `talung_restore_yc31_32`; 61/61 bảng và hash bảng chính khớp |
 | DDL lần 1 | `executed_statements=27`, `schema_changed=true`, `f7964d26aa6e → cd4cfb9eb26d`, `checks_failed=0` |
 | DDL lần 2 | `schema_changed=false`, cùng fingerprint, 11 constraint bỏ qua, `checks_failed=0` |
-| Deploy | `main` tại `eee6321` → deployment `task-ed2wh92xn-tlqm.vercel.app`; `/api/health` `db=up`, commit `eee6321` |
+| Deploy | code `eee6321` → deployment `task-ed2wh92xn-tlqm.vercel.app`; các commit docs sau đó auto-deploy nhưng không đổi mã; `/api/health` `db=up` |
 | Smoke API | `YC3132PROD-20261020061922`: **55/55 PASS**, `cleanupErrors=[]` |
 | UI | Desktop + mobile: **14/14 PASS**, không console/page error |
 | Storage | `work-evidence` private/4 MB/0 object/0 policy; `task-attachments` public/2 object/4 policy — **không sửa** |
 | Dữ liệu nền | 24 người, 24 tài khoản, 26 đầu việc, 15 kết quả tháng, 18 nhiệm vụ, 48 mẫu, 3 YC-25, 3.386 sản phẩm, 8 đơn vị |
-| Audit | 1.013 bản ghi; tăng do smoke/UI, không xóa |
+| Audit | 1.016 bản ghi tại thời điểm chốt; tăng do smoke/UI/login, không xóa |
 | TX | 0 version/0 entry/0 mapping; **chưa kích hoạt nhóm nào** |
 
 **Chưa thực hiện (có chủ đích):** import/kích hoạt TX; sửa `task-attachments`; tạo `org_units` cho 3 nhóm chưa khớp; mở quy trình gia hạn hạn sau duyệt.
@@ -42,7 +42,7 @@
 - [ ] `to_regclass('public._prisma_migrations')` = **NULL**.
 - [ ] Chạy lại script DDL trên clone lần cuối: `checks_failed=0`, `schema_changed=false`, fingerprint không đổi.
 - [ ] Kiểm tra chưa kích hoạt: cán bộ A/B thấy 0 TX, mẫu cũ vẫn chọn được, trạng thái `NOT_ACTIVATED`.
-- [x] Ghi lại baseline trước smoke: 24 người, 24 tài khoản, 26 đầu việc, 15 kết quả tháng, 18 nhiệm vụ, 48 mẫu, 3 YC-25, 3.386 sản phẩm, 8 đơn vị, 954 audit. Sau smoke/UI là 1.013 audit (tăng dự kiến, không xóa).
+- [x] Ghi lại baseline trước smoke: 24 người, 24 tài khoản, 26 đầu việc, 15 kết quả tháng, 18 nhiệm vụ, 48 mẫu, 3 YC-25, 3.386 sản phẩm, 8 đơn vị, 954 audit. Sau smoke/UI/hậu kiểm là 1.016 audit (tăng dự kiến, không xóa).
 
 ## 2. Sau khi người dùng báo đã cấu hình Storage
 

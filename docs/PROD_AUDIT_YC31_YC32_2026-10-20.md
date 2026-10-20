@@ -1,8 +1,8 @@
 # KIỂM TRA PRODUCTION TRƯỚC TRIỂN KHAI YC-31 + YC-32 (20/10/2026)
 
-> **CẬP NHẬT CUỐI NGÀY:** báo cáo dưới đây là audit **trước** triển khai. Sau đó đã backup/restore, áp DDL additive, merge `eee6321`, deploy Production và smoke **55/55 API + 14/14 UI**. Production hiện `db=up`, `commit=eee6321`; dữ liệu nền không đổi; TX vẫn **chưa import/kích hoạt** (0 version/0 entry/0 mapping).
+> **CẬP NHẬT CUỐI NGÀY:** báo cáo dưới đây là audit **trước** triển khai. Sau đó đã backup/restore, áp DDL additive, merge `eee6321`, deploy code Production và smoke **55/55 API + 14/14 UI**. Production hiện `db=up`; code release `eee6321`, các commit tài liệu sau đó không đổi mã; dữ liệu nền không đổi; TX vẫn **chưa import/kích hoạt** (0 version/0 entry/0 mapping).
 >
-> Kết quả cuối: `work-evidence` private/4 MB/0 object/0 policy; `task-attachments` public/2 object/4 policy — **không sửa**. Audit 1.013 bản ghi (tăng do test, không xóa). Không có 5xx/runtime error trong cửa sổ kiểm tra.
+> Kết quả cuối: `work-evidence` private/4 MB/0 object/0 policy; `task-attachments` public/2 object/4 policy — **không sửa**. Audit 1.016 bản ghi tại thời điểm chốt (tăng do test/login, không xóa). Không có 5xx/runtime error trong cửa sổ kiểm tra.
 
 Phạm vi: chỉ ĐỌC Production (Supabase `ekswvjbpqblssxcdwagi` + Vercel `task-cus.vercel.app`) trong lượt audit ban đầu.
 Không chạy DDL, không ghi dữ liệu, không merge/push trong lượt audit này; các thao tác triển khai được thực hiện sau đó theo checklist.

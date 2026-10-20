@@ -3,8 +3,8 @@
 - **Trạng thái: ĐÃ DEPLOY CODE — SMOKE PASS 55/55 — TX CHƯA KÍCH HOẠT.**
 - Phạm vi: YC-31 (Danh mục công việc thường xuyên — TX) và YC-32 (đầu việc cá nhân, hạn xử lý, ngày hoàn thành, minh chứng).
 - Nhánh: `feat/yc31-32-work-catalog-evidence` đã merge vào `main` tại `eee6321`; push `origin/main` thành công.
-- Production: `https://task-cus.vercel.app`; deployment `task-ed2wh92xn-tlqm.vercel.app`; `/api/health` trả `db=up`, `commit=eee6321`.
-- Kết quả: backup + restore kiểm chứng; DDL additive PASS; smoke API **55/55 PASS**; UI desktop/mobile **14/14 PASS**.
+- Production: `https://task-cus.vercel.app`; code release `eee6321` tại deployment `task-ed2wh92xn-tlqm.vercel.app`; các commit tài liệu sau đó được auto-deploy nhưng **không đổi mã**; `/api/health` `db=up`.
+- Kết quả: backup + restore kiểm chứng; DDL additive PASS; smoke API **55/55 PASS**; UI desktop/mobile **14/14 PASS** (chạy trên code `eee6321`).
 - Giới hạn có chủ đích: **chưa import danh mục TX**, chưa bật mapping nhóm nào; 48 mẫu cũ vẫn hoạt động; `task-attachments` không thay đổi.
 
 > Báo cáo giữ bối cảnh kiểm tra trước deploy ở mục 1-3 để đối chiếu; trạng thái cuối nằm ở mục 0 và mục 4-8.
@@ -13,13 +13,13 @@
 
 | Hạng mục | Kết quả |
 |---|---|
-| Commit deploy | `eee6321` (merge YC-31/32) |
-| Health | `status=ok`, `db=up`, `commit=eee6321`, `env=production` |
+| Commit deploy | `eee6321` (code YC-31/32); commit tài liệu sau đó chỉ thay docs, không đổi mã |
+| Health | `status=ok`, `db=up`, `env=production`; commit trả về là deployment hiện tại (gồm commit docs) |
 | Backup | `prod-full.dump`, 960.851 bytes, SHA-256 `30BB27BC...B2482`; restore `talung_restore_yc31_32` khớp 61/61 bảng |
 | DDL Production | lần 1 `executed_statements=27`, `schema_changed=true`, `f7964d26aa6e → cd4cfb9eb26d`, `checks_failed=0`; lần 2 `schema_changed=false`, cùng fingerprint, 11 constraint bỏ qua, `checks_failed=0` |
 | Bảng sau DDL | 65 bảng public; 4 bảng mới đều rỗng (`work_catalog_versions`, `work_catalog_entries`, `work_catalog_department_mappings`, `work_evidences`) |
 | Dữ liệu nền | 24 người, 24 tài khoản, 26 đầu việc cá nhân, 15 kết quả tháng, 18 nhiệm vụ, 48 mẫu, 3 đầu việc bộ phận, 3.386 sản phẩm, 8 đơn vị |
-| Audit | 1.013 bản ghi; tăng từ 954 do smoke/UI, **không xóa** |
+| Audit | 1.016 bản ghi tại thời điểm chốt hậu kiểm; tăng từ 954 do smoke/UI/login, **không xóa** |
 | Smoke API | `YC3132PROD-20261020061922`: 55/55 PASS, `cleanupErrors=[]` |
 | UI | 14/14 PASS trên desktop + mobile; không console error/pageerror |
 | Storage | `work-evidence`: private, 4 MB, 0 object, 0 policy; `task-attachments`: public, 2 object, 4 policy public — **không sửa** |
@@ -95,7 +95,7 @@ Các chỉ số dưới đây được đọc lại sau deploy/DDL, không thay 
 
 | Hạng mục | Kết quả |
 |---|---|
-| `https://task-cus.vercel.app/api/health` | `status=ok`, `db=up`, `commit=eee6321`, `env=production` (sau deploy) |
+| `https://task-cus.vercel.app/api/health` | `status=ok`, `db=up`, `env=production`; code release `eee6321` (các commit docs sau đó không đổi mã) |
 | Supabase project | `ekswvjbpqblssxcdwagi.supabase.co` |
 | `public._prisma_migrations` | **NULL — vẫn không tồn tại** |
 | Bucket `work-evidence` | `public=false`, giới hạn 4.194.304 bytes, **0 object, 0 policy** |

@@ -1,6 +1,6 @@
 # SMOKE TEST SAU CẤU HÌNH STORAGE — YC-31/32 (20/10/2026)
 
-> **Đã thực hiện trên Production ngày 20/10/2026:** API **55/55 PASS**, `cleanupErrors=[]`; UI desktop/mobile **14/14 PASS**, không console/page error. Mã run: `YC3132PROD-20261020061922`.
+> **Đã thực hiện trên Production ngày 20/10/2026 (code `eee6321`):** API **55/55 PASS**, `cleanupErrors=[]`; UI desktop/mobile **14/14 PASS**, không console/page error. Mã run: `YC3132PROD-20261020061922`. Các commit tài liệu sau đó được auto-deploy nhưng không đổi mã.
 > Các mục S-20→S-25 và S-80→S-84 **không chạy** vì chưa import/kích hoạt TX (có chủ đích). S-65 được kiểm tra bằng kỳ test cô lập rồi xóa.
 
 Mục đích: kiểm tra thực tế sau khi bucket private `work-evidence` và biến môi trường server-side đã được cấu hình.
@@ -150,6 +150,6 @@ Quy ước: **P0 = bắt buộc dừng nếu fail**; P1 = phải báo cáo nhưn
 | UI desktop/mobile | PASS 14/14; admin catalog hiện 48 mẫu + TX chưa nhập; `/my-work` hiện panel minh chứng; mobile 390 px không tràn ngang |
 | Log/5xx | 0 runtime error và 0 HTTP 5xx trong cửa sổ kiểm tra Vercel |
 | Dọn dữ liệu | `cleanupErrors=[]`; không còn `[SMOKE]`/`[SMOKE-UI]`; `work_evidences=0`; object `work-evidence=0` |
-| Audit | Tăng từ 954 lên 1.013 do smoke/UI; giữ nguyên để truy vết |
+| Audit | Tăng từ 954 lên 1.016 tại thời điểm chốt do smoke/UI/login; giữ nguyên để truy vết |
 
 **Không chạy có chủ đích:** S-20→S-25 (kích hoạt bộ phận) và S-80→S-84 (lịch sử sau tắt mapping) vì Production chưa import/kích hoạt TX. Khi Hải quan chốt mapping, phải chạy lại các mục này trước khi phát danh mục cho cán bộ.
