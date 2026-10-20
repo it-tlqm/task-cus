@@ -263,7 +263,10 @@ export default function NotificationsPage() {
               <span className="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">
                 Cập nhật mới nhất
               </span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant capitalize">
+              <span
+                className="font-label-sm text-label-sm text-on-surface-variant capitalize"
+                suppressHydrationWarning
+              >
                 {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric", year: "numeric" })}
               </span>
             </div>

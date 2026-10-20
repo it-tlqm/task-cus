@@ -163,7 +163,7 @@ export default function CalendarPage() {
 
       {selDate && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2">
-          <h2 className="font-bold text-slate-900">
+          <h2 className="font-bold text-slate-900" suppressHydrationWarning>
             {selDate.toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" })}
           </h2>
           {selLeaves.map((l) => (
