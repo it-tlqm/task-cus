@@ -373,14 +373,24 @@ async function main() {
     check("Công chức thấy Sản phẩm QĐ1277", staffHrefs.includes("/products"));
     await page.screenshot({ path: path.join(OUT_DIR, "desktop-staff-dashboard.png") });
 
-    // 9. Vai trò trưởng bộ phận
-    await page.evaluate(() => localStorage.clear());
-    await login(page, ACCOUNTS.dept.username, resolvePassword(ACCOUNTS.dept.username));
-    await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle2" });
-    await page.waitForSelector('[data-testid="app-navigation"]', { timeout: 20000 });
-    const deptHrefs = await navItems(page);
-    check("Trưởng bộ phận thấy Phê duyệt", deptHrefs.includes("/approvals"));
-    check("Trưởng bộ phận không thấy nhóm quản trị", !deptHrefs.some((h) => h.startsWith("/admin")));
+    // 9. Vai trò trưởng bộ phận (bỏ qua nếu môi trường không có tài khoản test)
+    let deptPassword: string | null = null;
+    try {
+      deptPassword = resolvePassword(ACCOUNTS.dept.username);
+    } catch {
+      deptPassword = null;
+    }
+    if (deptPassword) {
+      await page.evaluate(() => localStorage.clear());
+      await login(page, ACCOUNTS.dept.username, deptPassword);
+      await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle2" });
+      await page.waitForSelector('[data-testid="app-navigation"]', { timeout: 20000 });
+      const deptHrefs = await navItems(page);
+      check("Trưởng bộ phận thấy Phê duyệt", deptHrefs.includes("/approvals"));
+      check("Trưởng bộ phận không thấy nhóm quản trị", !deptHrefs.some((h) => h.startsWith("/admin")));
+    } else {
+      console.log(`• Bỏ qua kiểm thử trưởng bộ phận (không có tài khoản test "${ACCOUNTS.dept.username}")`);
+    }
 
     // ============================================================ MOBILE
     const mobile = await browser.newPage();

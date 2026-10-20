@@ -186,7 +186,7 @@ Nguồn quyền hiển thị: `usePermissions` (đọc `/api/auth/me`) — **dis
 
 ### 6.2. Kiểm thử giao diện thật (Chrome/Brave, 1600×1000 và 390×844)
 
-`scripts/test-yc30-ui.ts` → **48 pass / 0 fail** (chạy ổn định 2 lần liên tiếp)
+`scripts/test-yc30-ui.ts` → **48 pass / 0 fail** trên môi trường local (chạy ổn định 2 lần liên tiếp); trên Production: **46 pass / 0 fail** (2 nhóm kiểm tra trưởng bộ phận bị bỏ sung vì Production không có tài khoản trưởng bộ phận demo)
 
 **Desktop**
 - 7 nhóm điều hướng render đúng; lãnh đạo thấy đủ 25 mục nghiệp vụ + quản trị.
@@ -215,7 +215,7 @@ Nguồn quyền hiển thị: `usePermissions` (đọc `/api/auth/me`) — **dis
 
 ## 7. Kết quả kiểm thử hồi quy YC-23 → YC-32
 
-`scripts/test-yc30-regression.ts` → **60 pass / 0 fail** (chạy trên dev server + PostgreSQL local)
+`scripts/test-yc30-regression.ts` → **60 pass / 0 fail** trên dev server + PostgreSQL local; **56 pass / 0 fail** trên Production (bỏ qua 2 nhóm kiểm tra quản trị hệ thống do Production không có tài khoản SYSTEM_ADMIN demo)
 
 | Nhóm | Nội dung | KQ |
 |---|---|---|
@@ -236,11 +236,35 @@ Nguồn quyền hiển thị: `usePermissions` (đọc `/api/auth/me`) — **dis
 | Mục | Giá trị |
 |---|---|
 | Branch | `main` |
-| Commit YC-30 | *(điền sau khi push)* |
+| Commit YC-30 | `170a398` — `feat(yc30): tai cau truc sidebar va he thong dieu huong` |
+| Base (YC-31/32) | `22309bb` |
 | Production | `https://task-cus.vercel.app` |
-| Kiểm tra sau deploy | `/api/health` (`db=up`, `commit=<sha YC-30>`), mở menu desktop/mobile bằng tài khoản DEMO, chạy lại `test-yc30-navigation.ts` + `test-yc30-regression.ts` trên Production |
+| Health sau deploy | `{"success":true,"status":"ok","db":"up","commit":"170a398","env":"production"}` |
 
-**Không thực hiện:** `prisma migrate deploy`, DDL/DML, thay đổi danh mục TX hoặc trạng thái kích hoạt, xoá/reset dữ liệu Production.
+### 8.1. Kết quả xác minh trên Production
+
+| Bộ kiểm thử | Kết quả |
+|---|---|
+| `test-yc30-navigation.ts` (cấu trúc menu) | **189 / 189** |
+| `test-yc30-regression.ts` (hồi quy YC-23 → YC-32) | **56 / 56** (2 nhóm kiểm tra quản trị hệ thống bị bỏ qua: Production không có tài khoản SYSTEM_ADMIN demo) |
+| `test-yc30-ui.ts` (giao diện desktop + mobile) | **46 / 46** (2 nhóm kiểm tra trưởng bộ phận bị bỏ qua: Production không có tài khoản trưởng bộ phận demo) |
+| Smoke API YC-31/32 (bộ có sẵn) | **54 / 55** — mục fail duy nhất là điều kiện so sánh commit hardcode `eee6321`; health thực tế là `commit=170a398`, `db=up` |
+| Smoke UI YC-31/32 (bộ có sẵn) | **14 / 14** — upload minh chứng qua UI, API xác nhận minh chứng, danh mục TX (chưa nhập/chưa kích hoạt), không lỗi console, không lỗi trang |
+
+### 8.2. Kiểm tra dữ liệu Production sau triển khai
+
+| Bảng | Số bản ghi | Kết luận |
+|---|---|---|
+| `work_catalog_versions` | 0 | TX vẫn **chưa nhập/kích hoạt** — giữ nguyên như trước YC-30 |
+| `work_catalog_entries` | 0 | Không đồng nhất TX với danh mục sản phẩm QĐ1277 |
+| `work_catalog_department_mappings` | 0 | Ánh xạ bộ phận vẫn chờ xác nhận (YC-31) |
+| `activity_templates` | 48 | 48 mẫu công việc cũ vẫn dùng bình thường |
+| `personal_work_items` | 26 | Không phát sinh dữ liệu nghiệp vụ từ YC-30 |
+| `work_evidences` | 0 | Không đính kèm minh chứng rác |
+| `tasks` / `plans` / `accounts` | 18 / 5 / 24 | Không đổi |
+| Dữ liệu test sót lại (`[SMOKE…]`, `DBG-…`) | 0 | Đã dọn sạch |
+
+**Không thực hiện:** `prisma migrate deploy`, DDL/DML, thay đổi danh mục TX hoặc trạng thái kích hoạt, xoá/reset dữ liệu Production. Ba bản ghi `DBG-*` do chính phiên kiểm thử tạo ra đã được xoá bằng API chính của ứng dụng (`DELETE /api/personal-work-items?id=…`) ngay sau khi phát hiện.
 
 ---
 
