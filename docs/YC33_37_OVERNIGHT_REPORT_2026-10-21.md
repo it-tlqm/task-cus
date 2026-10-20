@@ -1,4 +1,4 @@
-# BÁO CÁO GIAI ĐOẠN 2 — YC-33 → YC-37 (đêm 20→21/10/2026)
+﻿# BÁO CÁO GIAI ĐOẠN 2 — YC-33 → YC-37 (đêm 20→21/10/2026)
 
 **Base:** `efe2bde` (Giai đoạn 1) · **Production:** `https://task-cus.vercel.app`
 **Commit triển khai:** `9633a43` (YC-37) · `91bd9f8` (YC-33) · `2f6f6f5` (YC-34/35/36) · `f6fb85e` (sửa hydration)
@@ -51,10 +51,10 @@ Xem `docs/TALUNG_CUS_WORK_OVERNIGHT_20261020/OPEN_QUESTIONS.md` (9 mục). Tóm 
 
 | Bộ kiểm thử | Nơi chạy | Kết quả |
 |---|---|---|
-| `test-yc30-navigation.ts` | local | 192/192 |
+| `test-yc30-navigation.ts` | local | 197/197 |
 | `test-yc30-ui.ts` (desktop + mobile) | local | 55/55 |
 | `test-yc30-regression.ts` (YC-23→32) | **Production** | **56/56** |
-| `test-yc30-ui.ts` | **Production** | **55/55** (sau khi sửa lỗi hydration #418 ở `/my-work`) |
+| `test-yc30-ui.ts` | **Production** | **55/55** (sau khi sửa 3 lỗi hydration React #418 ở `/my-work`, `/notifications`, `/calendar` — nhãn ngày phụ thuộc múi giờ UTC/ICT) |
 | `test-yc37-approval-preview.ts` (chỉ đọc) | **Production** | **18/18** |
 | `test-yc37-approval-flow.ts` (đầy đủ, có fixture) | DB local | **25/25** |
 | `test-yc33-scoring-parity.ts` (đối chiếu workbook gốc) | local | **38/38** |
@@ -173,3 +173,4 @@ Xem `docs/TALUNG_CUS_WORK_OVERNIGHT_20261020/OPEN_QUESTIONS.md` (9 mục). Tóm 
 - [ ] Cơ cấu phụ trách thực tế (Đội trưởng / Đội phó / công chức) để điền bảng `person_supervisions`.
 - [ ] Ánh xạ 6 nhóm danh mục TX → bộ phận.
 - [ ] Hai tên ngắn nhiều ứng viên trong phân công bộ phận.
+
