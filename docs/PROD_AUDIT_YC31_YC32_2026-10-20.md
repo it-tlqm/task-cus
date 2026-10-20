@@ -1,7 +1,11 @@
 # KIỂM TRA PRODUCTION TRƯỚC TRIỂN KHAI YC-31 + YC-32 (20/10/2026)
 
-Phạm vi: chỉ ĐỌC Production (Supabase `ekswvjbpqblssxcdwagi` + Vercel `task-cus.vercel.app`).
-Không chạy DDL, không ghi dữ liệu, không merge/push trong lượt này.
+> **CẬP NHẬT CUỐI NGÀY:** báo cáo dưới đây là audit **trước** triển khai. Sau đó đã backup/restore, áp DDL additive, merge `eee6321`, deploy Production và smoke **55/55 API + 14/14 UI**. Production hiện `db=up`, `commit=eee6321`; dữ liệu nền không đổi; TX vẫn **chưa import/kích hoạt** (0 version/0 entry/0 mapping).
+>
+> Kết quả cuối: `work-evidence` private/4 MB/0 object/0 policy; `task-attachments` public/2 object/4 policy — **không sửa**. Audit 1.013 bản ghi (tăng do test, không xóa). Không có 5xx/runtime error trong cửa sổ kiểm tra.
+
+Phạm vi: chỉ ĐỌC Production (Supabase `ekswvjbpqblssxcdwagi` + Vercel `task-cus.vercel.app`) trong lượt audit ban đầu.
+Không chạy DDL, không ghi dữ liệu, không merge/push trong lượt audit này; các thao tác triển khai được thực hiện sau đó theo checklist.
 
 ## 1. Lịch sử migration Production
 
@@ -54,9 +58,9 @@ Nguồn DDL: `prisma/migrations/20261021100000_yc31_yc32_work_catalog_evidence/m
 - `checks_failed=0` cả hai lần.
 - Kiểm thử ràng buộc unique trên clone: nhiều dòng cùng người với `work_item_id = NULL` chèn được; dòng thứ hai cùng `(person, work_item)` bị từ chối bằng `23505`; transaction đã rollback.
 - Diff còn lại giữa clone và schema chỉ là drift cũ (mục 2.1), **không còn mục YC-31/32**.
-- **Chưa chạy DDL này trên Production.**
+- **Đã chạy trên Production sau audit:** lần 1 `executed_statements=27`, `schema_changed=true`, fingerprint `f7964d26aa6e → cd4cfb9eb26d`; lần 2 `schema_changed=false`, cùng fingerprint, 11 constraint bỏ qua; `checks_failed=0` cả hai lần. Sau DDL có 65 bảng public; 4 bảng mới rỗng; baseline không đổi.
 
-## 5. Storage Production — CHƯA ĐẠT (mã đã fail-closed)
+## 5. Storage Production — ĐÃ ĐẠT SAU CẤU HÌNH (mã fail-closed)
 
 - Bucket hiện có duy nhất: `task-attachments`.
   - `public = true`; giới hạn 50 MB; MIME: PDF/JPEG/PNG/XLSX/DOCX/DOC/XLS; **2 object**.
@@ -64,10 +68,10 @@ Nguồn DDL: `prisma/migrations/20261021100000_yc31_yc32_work_catalog_evidence/m
   - Tên policy: `Allow public select on task-attachments`, `Allow public insert on task-attachments`, `Allow public update on task-attachments`, `Allow public delete on task-attachments`.
   - Rủi ro cao: người có publishable key (nằm trong trình duyệt) có thể đọc/ghi đè/xóa object. Không thay đổi bucket này trong đợt hiện tại vì còn object/URL cũ; phải kiểm kê và chuyển URL trước.
   - Kế hoạch khắc phục riêng: `docs/TASK_ATTACHMENTS_PRIVATE_PLAN_2026-10-20.md`.
-- **Không có bucket `work-evidence`** (GET bucket → NoSuchBucket).
-- Môi trường hiện tại **không có `SUPABASE_SERVICE_ROLE_KEY`/secret key**.
-- Mã vòng 2 đã **fail-closed**: thiếu khóa server, thiếu bucket, bucket public hoặc driver R2 chưa cấu hình → **503**, không fallback publishable key/URL công khai. `STORAGE_DRIVER=local` cũng bị từ chối cho minh chứng trong production (trừ cờ `ALLOW_LOCAL_EVIDENCE=1` chỉ dùng kiểm thử). Đã kiểm thử 7 tình huống, 7/7 PASS.
-- Kết luận: **không được deploy tính năng minh chứng** cho tới khi tạo bucket private + cấu hình khóa server-side trên Vercel.
+- **Bucket `work-evidence` đã tạo trên Production:** `public=false`, giới hạn 4.194.304 bytes, **0 object, 0 policy**; anonymous upload 403, public read 404.
+- **Đã cấu hình server-side trên Vercel Production:** `SUPABASE_SECRET_KEY`, `STORAGE_DRIVER`, `SUPABASE_EVIDENCE_BUCKET`, `WORK_EVIDENCE_MAX_MB` (type `sensitive`; không đọc/in giá trị). `NEXT_PUBLIC_SUPABASE_URL`/publishable key không có trong env, code dùng fallback hiện hữu; upload/download thực tế đã PASS.
+- Mã vòng 2 đã **fail-closed**: thiếu khóa server, thiếu bucket, bucket public hoặc driver R2 chưa cấu hình → **503**, không fallback publishable key/URL công khai. `STORAGE_DRIVER=local` cũng bị từ chối cho minh chứng trong production (trừ cờ `ALLOW_LOCAL_EVIDENCE=1` chỉ dùng kiểm thử). Đã kiểm thử 7 tình huống, 7/7 PASS; smoke Production xác nhận 401/403/404/413/423.
+- Kết luận: **tính năng minh chứng đã được bật an toàn**; không thay đổi bucket `task-attachments`.
 
 ## 6. Ánh xạ bộ phận của Danh mục TX — CHƯA ĐỦ ĐIỀU KIỆN IMPORT
 
@@ -101,25 +105,22 @@ Nguồn DDL: `prisma/migrations/20261021100000_yc31_yc32_work_catalog_evidence/m
    - tiến độ/ngày hoàn thành thực tế vẫn cập nhật được;
    - không ghi đè hạn lịch sử;
    - chưa có quy trình gia hạn được duyệt.
-3. **Minh chứng** → đã tách kho private + fail-closed; chưa cấu hình bucket/khóa trên Production nên tính năng vẫn bị chặn deploy.
+3. **Minh chứng** → đã tách kho private + fail-closed; bucket `work-evidence` và khóa server-side đã cấu hình; smoke upload/download/delete/403/401/404/413/423 PASS.
 
-Các điểm trên không còn là lý do chặn **mã nguồn**, nhưng vẫn là điều kiện **nghiệm thu/cấu hình** trước khi bật Production.
+Các điểm trên đã được xử lý và nghiệm thu trên Production; TX vẫn chờ mapping để import/kích hoạt.
 
 ## 8. Kết luận
 
-- Lịch sử migration Production **không đáng tin cậy để dùng `prisma migrate deploy`**; đã thay bằng apply-script idempotent và kiểm thử trên clone cấu trúc Production (PASS, fingerprint không đổi ở lần 2).
+- Lịch sử migration Production **không đáng tin cậy để dùng `prisma migrate deploy`**; đã thay bằng apply-script idempotent và kiểm thử trên clone + Production (PASS, fingerprint không đổi ở lần 2).
 - Mã vòng 2 đã xử lý 3 điểm lệch: kích hoạt theo bộ phận, khóa hạn sau duyệt, kho minh chứng private/fail-closed.
-- **DỪNG triển khai Production** theo đúng điều kiện an toàn: Storage chưa đạt (chặn tính năng minh chứng) + chưa có backup/checksum/restore plan mới + chưa có phê duyệt (chặn DDL/deploy).
-- Ánh xạ bộ phận chưa xác nhận **chặn import/kích hoạt danh mục TX**, không chặn deploy code nền tảng; nhóm chưa xác nhận phải giữ inactive.
-- Không merge `main`, không push, không DDL/import/Storage Production trong lượt này.
+- **Đã triển khai code Production** sau khi Storage, backup/restore và DDL đạt: commit `eee6321`, health `db=up`; smoke API 55/55, UI 14/14.
+- Dữ liệu nền không mất; 48 mẫu cũ/YC-25/QĐ1277 giữ nguyên; 4 bảng mới rỗng.
+- Ánh xạ bộ phận chưa xác nhận **chặn import/kích hoạt danh mục TX**, không chặn code nền tảng; nhóm chưa xác nhận phải giữ inactive.
 
-## 9. Việc cần làm để mở lại deploy
+## 9. Việc cần làm tiếp
 
-1. Tạo bucket minh chứng **riêng tư** `work-evidence` + cấu hình `SUPABASE_SERVICE_ROLE_KEY`/secret key **server-side** trên Vercel; không thêm policy public; đặt `WORK_EVIDENCE_MAX_MB=4` (Vercel ~4,5 MB).
-2. Hải quan xác nhận ánh xạ 6 nhóm nguồn → `org_units` theo bảng 3 cột (đặc biệt CNTT, Điều tra CBL, Công tác Đảng). Đây là điều kiện **import/kích hoạt danh mục**, không phải điều kiện deploy code nền tảng; nhóm chưa xác nhận giữ inactive.
-3. Chốt quy trình gia hạn hạn xử lý sau duyệt (hiện đang khóa 403; chưa có workflow gia hạn).
-4. Backup Production mới + checksum + kiểm tra restore.
-5. Review/merge nhánh; build/typecheck xanh.
-6. Áp `scripts/apply-yc31-32-ddl.ts` (KHÔNG `prisma migrate deploy`), chạy lại xác nhận `schema_changed=false`/fingerprint không đổi.
-7. Deploy code → `/api/health` đúng commit, `db=up`; smoke test.
-8. Chỉ sau đó mới import TX cho nhóm đã xác nhận, dry-run + đối chiếu 143 dòng, rồi bật mapping.
+1. Hải quan xác nhận ánh xạ 3 nhóm còn chờ: Nghiệp vụ Hải quan (73), TH & Báo cáo (42), Phúc tập & KT STQ (2). Ba nhóm CNTT (5), điều tra CBL (13), Công tác Đảng (8) không có `org_units` — giữ UNACTIVATED, không tự tạo đơn vị.
+2. Import dry-run, đối chiếu 143 dòng, bật mapping đúng đơn vị; chạy lại S-20→S-25 và S-80→S-84 trước khi phát danh mục.
+3. Chốt quy trình gia hạn hạn xử lý sau duyệt (hiện khóa 403; chưa có workflow).
+4. Xử lý `task-attachments` theo kế hoạch riêng; không trộn vào đợt này.
+5. Theo dõi log/5xx và kiểm tra định kỳ object `work-evidence` không bị public/policy phát sinh.

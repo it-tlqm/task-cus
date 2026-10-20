@@ -1,5 +1,8 @@
 # SMOKE TEST SAU CẤU HÌNH STORAGE — YC-31/32 (20/10/2026)
 
+> **Đã thực hiện trên Production ngày 20/10/2026:** API **55/55 PASS**, `cleanupErrors=[]`; UI desktop/mobile **14/14 PASS**, không console/page error. Mã run: `YC3132PROD-20261020061922`.
+> Các mục S-20→S-25 và S-80→S-84 **không chạy** vì chưa import/kích hoạt TX (có chủ đích). S-65 được kiểm tra bằng kỳ test cô lập rồi xóa.
+
 Mục đích: kiểm tra thực tế sau khi bucket private `work-evidence` và biến môi trường server-side đã được cấu hình.
 Chỉ dùng **tài khoản DEMO** và dữ liệu test có tiền tố `[SMOKE]`; không dùng dữ liệu nghiệp vụ thật.
 
@@ -27,9 +30,9 @@ Quy ước: **P0 = bắt buộc dừng nếu fail**; P1 = phải báo cáo nhưn
 
 | ID | Ưu tiên | Thao tác | Kết quả mong đợi |
 |---|---|---|---|
-| S-10 | P0 | A gọi `GET /api/work-catalog` | 200; `entries=[]`; `legacyTemplatesSelectable=true`; `activation.status=NOT_ACTIVATED` |
+| S-10 | P0 | A gọi `GET /api/work-catalog` | 200; `entries=[]`; `legacyTemplatesSelectable=true`; `activation.status=NO_VERSION` khi chưa import, hoặc `NOT_ACTIVATED` khi có version nhưng chưa bật mapping |
 | S-11 | P0 | B gọi `GET /api/work-catalog` | Như A; không thấy TX của bộ phận khác |
-| S-12 | P0 | Quản trị gọi `GET /api/work-catalog/mappings` | Đủ 6 nhóm nguồn; **0 nhóm active** trước khi import/kích hoạt |
+| S-12 | P0 | Quản trị gọi `GET /api/work-catalog/mappings` | Có version: đủ 6 nhóm nguồn, **0 nhóm active**; chưa import: 0 nhóm, 0 active (Production hiện 0) |
 | S-13 | P0 | Tạo đầu việc mới bằng mẫu cũ | 201; không bị chặn bởi danh mục TX |
 
 ## 3. Kích hoạt một bộ phận (chỉ nhóm đã xác nhận)
@@ -132,3 +135,21 @@ Quy ước: **P0 = bắt buộc dừng nếu fail**; P1 = phải báo cáo nhưn
 - Không xóa audit; audit test được giữ để truy vết.
 - Đưa mapping về trạng thái đã được duyệt; không để nhóm chưa xác nhận ở trạng thái active.
 - Ghi lại số lượng trước/sau dọn để chứng minh không ảnh hưởng dữ liệu thật.
+
+## 13. Kết quả thực tế trên Production (20/10/2026)
+
+| Nhóm kiểm tra | Kết quả |
+|---|---|
+| Health, Storage, env server-side | PASS; `work-evidence` private/4 MB/0 object/0 policy; anonymous upload 403, public read 404 |
+| Chưa kích hoạt TX | PASS; 48 mẫu cũ; staff `NO_VERSION`/0 entry; TX không hiển thị; mapping chỉ cho lãnh đạo |
+| Hạn xử lý sau duyệt | PASS; PATCH `dueDate` 403 + audit `PERSONAL_WORK_ITEM_DUE_DATE_DENIED`; tiến độ và ngày hoàn thành vẫn sửa được |
+| Minh chứng upload/list | PASS; private upload, metadata đúng, không lộ storage key/file URL; cross-user 403; anonymous 401 |
+| Minh chứng download/delete | PASS; SHA-256 khớp, `Content-Disposition: attachment`, `Cache-Control: private, no-store`; xóa 200; object còn lại 0 |
+| Loại tệp/dung lượng/kỳ khóa | PASS; PDF giả và `.exe` 400; 5 MB 413; kỳ khóa 423 (kỳ test cô lập đã xóa) |
+| Excel/hồi quy nền | PASS; `legacy` và `detailed` trả XLSX hợp lệ; personal-work/plan list tải được; local regression YC-23→29 18/18 |
+| UI desktop/mobile | PASS 14/14; admin catalog hiện 48 mẫu + TX chưa nhập; `/my-work` hiện panel minh chứng; mobile 390 px không tràn ngang |
+| Log/5xx | 0 runtime error và 0 HTTP 5xx trong cửa sổ kiểm tra Vercel |
+| Dọn dữ liệu | `cleanupErrors=[]`; không còn `[SMOKE]`/`[SMOKE-UI]`; `work_evidences=0`; object `work-evidence=0` |
+| Audit | Tăng từ 954 lên 1.013 do smoke/UI; giữ nguyên để truy vết |
+
+**Không chạy có chủ đích:** S-20→S-25 (kích hoạt bộ phận) và S-80→S-84 (lịch sử sau tắt mapping) vì Production chưa import/kích hoạt TX. Khi Hải quan chốt mapping, phải chạy lại các mục này trước khi phát danh mục cho cán bộ.

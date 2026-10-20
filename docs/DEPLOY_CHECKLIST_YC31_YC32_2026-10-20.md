@@ -1,7 +1,26 @@
 # CHECKLIST DEPLOY NGẮN — YC-31/32 (20/10/2026)
 
-> **Trạng thái: HOLD.** Chưa DDL, chưa merge/push, chưa deploy.
-> Chỉ mở cổng sau khi người dùng xác nhận đã cấu hình xong Storage private + biến môi trường server-side.
+> **Trạng thái: ĐÃ THỰC HIỆN — CODE DEPLOYED — TX CHƯA KÍCH HOẠT.**
+> Backup/restore, DDL additive, deploy `eee6321`, smoke API 55/55 và UI 14/14 đã PASS.
+> Các ô `[ ]` bên dưới là checklist gốc để đối chiếu; kết quả thực tế ở bảng ngay sau đây.
+
+## KẾT QUẢ THỰC HIỆN (20/10/2026)
+
+| Bước | Kết quả |
+|---|---|
+| Backup Production | `prod-full.dump`, 960.851 bytes, SHA-256 `30BB27BC...B2482` |
+| Restore kiểm chứng | `talung_restore_yc31_32`; 61/61 bảng và hash bảng chính khớp |
+| DDL lần 1 | `executed_statements=27`, `schema_changed=true`, `f7964d26aa6e → cd4cfb9eb26d`, `checks_failed=0` |
+| DDL lần 2 | `schema_changed=false`, cùng fingerprint, 11 constraint bỏ qua, `checks_failed=0` |
+| Deploy | `main` tại `eee6321` → deployment `task-ed2wh92xn-tlqm.vercel.app`; `/api/health` `db=up`, commit `eee6321` |
+| Smoke API | `YC3132PROD-20261020061922`: **55/55 PASS**, `cleanupErrors=[]` |
+| UI | Desktop + mobile: **14/14 PASS**, không console/page error |
+| Storage | `work-evidence` private/4 MB/0 object/0 policy; `task-attachments` public/2 object/4 policy — **không sửa** |
+| Dữ liệu nền | 24 người, 24 tài khoản, 26 đầu việc, 15 kết quả tháng, 18 nhiệm vụ, 48 mẫu, 3 YC-25, 3.386 sản phẩm, 8 đơn vị |
+| Audit | 1.013 bản ghi; tăng do smoke/UI, không xóa |
+| TX | 0 version/0 entry/0 mapping; **chưa kích hoạt nhóm nào** |
+
+**Chưa thực hiện (có chủ đích):** import/kích hoạt TX; sửa `task-attachments`; tạo `org_units` cho 3 nhóm chưa khớp; mở quy trình gia hạn hạn sau duyệt.
 
 ## 0. Cổng bắt buộc trước khi bắt đầu
 
@@ -23,7 +42,7 @@
 - [ ] `to_regclass('public._prisma_migrations')` = **NULL**.
 - [ ] Chạy lại script DDL trên clone lần cuối: `checks_failed=0`, `schema_changed=false`, fingerprint không đổi.
 - [ ] Kiểm tra chưa kích hoạt: cán bộ A/B thấy 0 TX, mẫu cũ vẫn chọn được, trạng thái `NOT_ACTIVATED`.
-- [ ] Ghi lại baseline: 24 người, 24 tài khoản, 26 đầu việc, 15 kết quả tháng, 18 nhiệm vụ, 48 mẫu, 3 YC-25, 3.386 sản phẩm, 8 đơn vị, 943 audit.
+- [x] Ghi lại baseline trước smoke: 24 người, 24 tài khoản, 26 đầu việc, 15 kết quả tháng, 18 nhiệm vụ, 48 mẫu, 3 YC-25, 3.386 sản phẩm, 8 đơn vị, 954 audit. Sau smoke/UI là 1.013 audit (tăng dự kiến, không xóa).
 
 ## 2. Sau khi người dùng báo đã cấu hình Storage
 
@@ -78,6 +97,8 @@
 - [ ] Có lỗi P0/P1 → **DỪNG**, không import TX, báo cáo ngay.
 
 ### 2.7. Kích hoạt/import danh mục TX (sau smoke test)
+
+> **CHƯA THỰC HIỆN — có chủ đích.** Production hiện 0 version/0 entry/0 mapping; không import 143 dòng, không bật nhóm nào cho tới khi Hải quan xác nhận mapping.
 
 - [ ] Chỉ import nhóm đã được Hải quan xác nhận; dry-run và đối chiếu 143 dòng nguồn.
 - [ ] Bật mapping cho đúng `org_units` đã xác nhận; không tự tạo đơn vị.

@@ -1,7 +1,7 @@
 # MỤC LỤC TÀI LIỆU DỰ ÁN (docs/) — cập nhật 20/10/2026
 
 > **Đọc nhanh:** bàn giao mới nhất là [HANDOVER_YC31_YC32_2026-10-19.md](HANDOVER_YC31_YC32_2026-10-19.md) (vòng 2, 20/10);
-> trạng thái sẵn sàng tại [RELEASE_READINESS_YC31_YC32_2026-10-20.md](RELEASE_READINESS_YC31_YC32_2026-10-20.md);
+> trạng thái phát hành tại [RELEASE_READINESS_YC31_YC32_2026-10-20.md](RELEASE_READINESS_YC31_YC32_2026-10-20.md) — **đã deploy `eee6321`, smoke 55/55, TX chưa kích hoạt**;
 > trạng thái yêu cầu tại [TRANG_THAI_YC_01_29.md](TRANG_THAI_YC_01_29.md);
 > vận hành tại [HUONG_DAN_VAN_HANH_HAI_QUAN.md](HUONG_DAN_VAN_HANH_HAI_QUAN.md).
 
@@ -9,13 +9,13 @@
 
 | Tài liệu | Nội dung chính |
 | --- | --- |
-| [HANDOVER_YC31_YC32_2026-10-19.md](HANDOVER_YC31_YC32_2026-10-19.md) | Giai đoạn 1 — YC-31/32 vòng 2 (20/10): kích hoạt TX theo bộ phận, khóa hạn sau duyệt, minh chứng private/fail-closed, DDL idempotent |
-| [RELEASE_READINESS_YC31_YC32_2026-10-20.md](RELEASE_READINESS_YC31_YC32_2026-10-20.md) | Đối chiếu nhánh `b56ed48` với `origin/main`, phạm vi 31 tệp, DDL additive, Production read-only, kiểm tra chưa kích hoạt |
-| [DEPLOY_CHECKLIST_YC31_YC32_2026-10-20.md](DEPLOY_CHECKLIST_YC31_YC32_2026-10-20.md) | Checklist deploy ngắn: xác minh Storage, backup/checksum/restore, DDL, thứ tự merge/push, smoke test, rollback |
-| [SMOKE_TEST_YC31_YC32_2026-10-20.md](SMOKE_TEST_YC31_YC32_2026-10-20.md) | Smoke test sau cấu hình Storage: upload/download, 401/403/404/413, phân quyền, khóa hạn, dữ liệu lịch sử, hồi quy |
+| [HANDOVER_YC31_YC32_2026-10-19.md](HANDOVER_YC31_YC32_2026-10-19.md) | Bàn giao YC-31/32: kích hoạt TX theo bộ phận, khóa hạn sau duyệt, minh chứng private/fail-closed, DDL idempotent; đã deploy `eee6321`, TX chưa kích hoạt |
+| [RELEASE_READINESS_YC31_YC32_2026-10-20.md](RELEASE_READINESS_YC31_YC32_2026-10-20.md) | Báo cáo phát hành cuối: deploy `eee6321`, backup/restore, DDL Production, smoke 55/55, UI 14/14, điều kiện còn lại |
+| [DEPLOY_CHECKLIST_YC31_YC32_2026-10-20.md](DEPLOY_CHECKLIST_YC31_YC32_2026-10-20.md) | Checklist deploy đã thực hiện: Storage, backup/checksum/restore, DDL, merge/push, smoke, rollback; kèm kết quả cuối |
+| [SMOKE_TEST_YC31_YC32_2026-10-20.md](SMOKE_TEST_YC31_YC32_2026-10-20.md) | Smoke Production: 55/55 API + 14/14 UI; upload/download, 401/403/404/413/423, khóa hạn, dữ liệu lịch sử, hồi quy |
 | [TASK_ATTACHMENTS_PRIVATE_PLAN_2026-10-20.md](TASK_ATTACHMENTS_PRIVATE_PLAN_2026-10-20.md) | Kế hoạch riêng khắc phục bucket public `task-attachments` (chưa thực hiện, không đổi policy trong đợt này) |
 | [TX_DEPARTMENT_MAPPING_2026-10-20.md](TX_DEPARTMENT_MAPPING_2026-10-20.md) | Bảng 3 cột đối chiếu 6 nhóm nguồn TX với `org_units` Production — chờ Hải quan xác nhận (B2) |
-| [PROD_AUDIT_YC31_YC32_2026-10-20.md](PROD_AUDIT_YC31_YC32_2026-10-20.md) | Kiểm tra Production read-only trước triển khai YC-31/32: drift, clone, Storage, điều kiện mở lại deploy |
+| [PROD_AUDIT_YC31_YC32_2026-10-20.md](PROD_AUDIT_YC31_YC32_2026-10-20.md) | Audit Production trước triển khai + cập nhật kết quả cuối: drift, clone, Storage, DDL, điều kiện còn lại |
 | [HANDOVER_YC26_29_2026-10-19.md](HANDOVER_YC26_29_2026-10-19.md) | Gói YC-26→29 (số liệu giao ban, bảng đối chiếu thuế, chọn CB-014) + rà soát P0 14 bản ghi + sửa hiển thị khối số liệu trên Bảng điều hành desktop (19/10) |
 | [HANDOVER_YC24_2026-10-18.md](HANDOVER_YC24_2026-10-18.md) | YC-24 — phân công nhiệm vụ & sổ trực theo mẫu hải quan |
 | [HANDOVER_YC23_YC25_2026-10-18.md](HANDOVER_YC23_YC25_2026-10-18.md) | YC-23 + YC-25 — danh mục chọn đầu việc cho kế hoạch cá nhân |
