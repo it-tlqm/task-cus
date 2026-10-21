@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
@@ -147,6 +147,7 @@ export async function GET(req: NextRequest) {
     });
 
     const tasks: ExportTaskRow[] = results.map((r) => ({
+      resultId: r.id,
       title: r.title,
       dueDate: r.dueDate ? new Date(r.dueDate).toLocaleDateString("vi-VN") : null,
       product: r.productItem?.outputProduct || r.productItem?.taskName || r.outputText || null,
@@ -249,3 +250,4 @@ export async function GET(req: NextRequest) {
     return jsonError("Lỗi khi xuất biểu mẫu: " + error.message, 500);
   }
 }
+

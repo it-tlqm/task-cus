@@ -1,4 +1,4 @@
-import { prisma } from "./db";
+﻿import { prisma } from "./db";
 import { recordAuditEvent } from "./audit";
 
 export interface SystemConfigItem {
@@ -73,9 +73,78 @@ export const DEFAULT_CONFIGS: Array<{
 /**
  * Đảm bảo các tham số cấu hình mặc định được khởi tạo trong PostgreSQL
  */
+/**
+ * NGƯỠNG XẾP LOẠI THAM CHIẾU — nguồn: Công văn 2431/HQKV16-TCCB ngày 25/9/2026
+ * của Chi cục Hải quan khu vực XVI, mục II.5 (Đánh giá, xếp loại chất lượng
+ * đối với CÔNG CHỨC) và mục V.1.2 (Tiêu chí xét "Hoàn thành xuất sắc nhiệm vụ").
+ *
+ * LƯU Ý QUAN TRỌNG:
+ * - Ngưỡng gốc áp dụng cho "điểm đánh giá KPI theo quy định"
+ *   (Quy định 366-QĐ/TW, Nghị định 335/2025/NĐ-CP).
+ * - CHƯA có xác nhận rằng "điểm KPI" chính là tổng điểm Bảng 1
+ *   (tiêu chí chung tối đa 30 + kết quả thực hiện nhiệm vụ tối đa 70).
+ * → Hệ thống CHỈ hiển thị ngưỡng này làm THAM CHIẾU; KHÔNG tự suy ra mức xếp loại.
+ * → Cấp thẩm quyền vẫn quyết định mức xếp loại cuối cùng.
+ */
+const GRADE_REFERENCE_VALUE = JSON.stringify({
+  source: "Công văn 2431/HQKV16-TCCB ngày 25/9/2026 của Chi cục Hải quan khu vực XVI (mục II.5, mục V.1.2)",
+  note: "Ngưỡng áp dụng cho điểm đánh giá KPI theo quy định. Chưa xác nhận cách ánh xạ điểm KPI với tổng điểm Bảng 1 (30 + 70) — hệ thống KHÔNG tự áp dụng.",
+  levels: [
+    {
+      grade: "Hoàn thành xuất sắc",
+      minScore: 90,
+      maxScore: null,
+      extra: "Hoàn thành 100% nhiệm vụ được giao, đúng thời hạn; ít nhất 30% nhiệm vụ hoàn thành vượt mức yêu cầu; kết quả nổi trội, sản phẩm chất lượng.",
+    },
+    {
+      grade: "Hoàn thành tốt",
+      minScore: 70,
+      maxScore: 89.999999,
+      extra: "Không có nhiệm vụ chậm, muộn; không có nhiệm vụ bị xếp loại không hoàn thành nhiệm vụ.",
+    },
+    {
+      grade: "Hoàn thành",
+      minScore: 50,
+      maxScore: 69.999999,
+      extra: "Hoặc thuộc trường hợp nhiệm vụ chậm, muộn nhưng đã có giải pháp, biện pháp khả thi và cam kết hoàn thành trong quý liền kề.",
+    },
+    {
+      grade: "Không hoàn thành",
+      minScore: null,
+      maxScore: 49.999999,
+      extra: "Hoặc thuộc trường hợp nhiệm vụ chưa hoàn thành và không có giải pháp, biện pháp khả thi.",
+    },
+  ],
+});
+
+const EXTRA_CONFIGS: Array<{
+  key: string;
+  value: string;
+  dataType: "NUMBER" | "BOOLEAN" | "STRING" | "JSON";
+  category: "TASK_MANAGEMENT" | "NOTIFICATION" | "DISPLAY" | "SECURITY" | "REPORT";
+  description: string;
+}> = [
+  {
+    key: "evaluation.grade.reference",
+    value: GRADE_REFERENCE_VALUE,
+    dataType: "JSON",
+    category: "REPORT",
+    description:
+      "Ngưỡng xếp loại tham chiếu theo CV 2431 (chỉ hiển thị, KHÔNG tự áp dụng — cần Hải quan xác nhận cách ánh xạ điểm KPI).",
+  },
+  {
+    key: "evaluation.grade.autoApply",
+    value: "false",
+    dataType: "BOOLEAN",
+    category: "REPORT",
+    description:
+      "Bật = hệ thống tự gợi ý mức xếp loại từ ngưỡng tham chiếu. Mặc định TẮT cho tới khi Hải quan xác nhận.",
+  },
+];
+
 export async function ensureDefaultSystemConfigs(): Promise<void> {
   try {
-    for (const def of DEFAULT_CONFIGS) {
+    for (const def of [...DEFAULT_CONFIGS, ...EXTRA_CONFIGS]) {
       const existing = await prisma.systemConfig.findUnique({
         where: { key: def.key },
       });
@@ -235,3 +304,4 @@ export async function updateSystemConfig(
 
   return { success: true, config: updated as SystemConfigItem };
 }
+

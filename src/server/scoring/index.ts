@@ -1,4 +1,4 @@
-/**
+﻿/**
  * YC-33 — Lớp đọc dữ liệu + tổng hợp điểm theo kỳ.
  *
  * NGUYÊN TẮC:
@@ -13,6 +13,7 @@
  */
 
 import { prisma } from "../db";
+import { vnCalendarDayDiff } from "./date-util";
 import {
   computeBang1,
   BANG1_FORMULA_VERSION,
@@ -39,11 +40,6 @@ export interface ScoreComputation extends ScoreResult {
 function monthsOfQuarter(quarter: number): number[] {
   const start = (quarter - 1) * 3 + 1;
   return [start, start + 1, start + 2];
-}
-
-function daysBetween(a: Date, b: Date): number {
-  const ms = b.getTime() - a.getTime();
-  return Math.floor(ms / 86400000);
 }
 
 /**
@@ -161,16 +157,14 @@ export async function computeScoreForPeriod(params: {
       }
     } else if (r.workItem?.catalogEntry) {
       // Đầu việc Danh mục TX — hệ số RIÊNG, không dùng hệ số QĐ1277.
+      // Lấy đúng hệ số của đầu việc đang tham chiếu (kể cả khi phiên bản danh mục
+      // đã bị thay thế) → giữ lịch sử ổn định, không tự tính lại kết quả đã chốt.
       factorSource = "TX_CATALOG";
       const ce = r.workItem.catalogEntry;
       factor =
         ce.convertFactor === null || ce.convertFactor === undefined
           ? null
           : Number(ce.convertFactor);
-      if (ce.version?.status !== "ACTIVE") {
-        factorSource = "PENDING_RULE";
-        factor = null;
-      }
     } else if (r.factorSnapshot !== null && r.factorSnapshot !== undefined) {
       // Hệ số đã chốt tại thời điểm ghi kết quả — giữ nguyên lịch sử.
       factorSource = "MANUAL";
@@ -180,7 +174,7 @@ export async function computeScoreForPeriod(params: {
     // Số ngày chậm tiến độ — theo công thức gốc K = J − C (ngày hoàn thành − ngày hết hạn).
     let lateDays = r.lateCount || 0;
     if (r.dueDate && r.completedDate) {
-      const diff = daysBetween(r.dueDate, r.completedDate);
+      const diff = vnCalendarDayDiff(r.completedDate, r.dueDate);
       lateDays = diff > 0 ? diff : 0;
     }
 
@@ -310,3 +304,4 @@ export async function saveScoreRun(params: {
 
   return { id: run.id, deduplicated: false as const };
 }
+

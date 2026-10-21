@@ -1,4 +1,4 @@
-/**
+﻿/**
  * YC-36 — Tự đánh giá, nhận xét lãnh đạo, mức xếp loại đề xuất.
  *
  * NGUYÊN TẮC (theo phản hồi Hải quan):
@@ -57,6 +57,38 @@ function periodBounds(
   };
 }
 
+/** Ngưỡng xếp loại tham chiếu lấy từ cấu hình hệ thống (nguồn CV 2431). */
+export interface GradeLevelReference {
+  grade: string;
+  minScore: number | null;
+  maxScore: number | null;
+  extra: string | null;
+}
+
+export interface GradeReference {
+  source: string;
+  note: string;
+  autoApply: boolean;
+  levels: GradeLevelReference[];
+}
+
+export const GRADE_REFERENCE_CONFIG_KEY = "evaluation.grade.reference";
+export const GRADE_AUTO_APPLY_CONFIG_KEY = "evaluation.grade.autoApply";
+
+/** Đọc ngưỡng tham chiếu từ system_configs; không tự áp dụng. */
+export async function loadGradeReference(): Promise<GradeReference | null> {
+  try {
+    const { getSystemConfig } = await import("../system-config");
+    const raw = await getSystemConfig(GRADE_REFERENCE_CONFIG_KEY, "");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GradeReference;
+    const autoRaw = await getSystemConfig(GRADE_AUTO_APPLY_CONFIG_KEY, "false");
+    return { ...parsed, autoApply: autoRaw === "true" };
+  } catch {
+    return null;
+  }
+}
+
 export interface AssessmentInput {
   subjectPersonId: string;
   periodType: EvaluationPeriodType;
@@ -70,6 +102,9 @@ export interface AssessmentInput {
   strengths?: string | null;
   weaknesses?: string | null;
   reviewerComment?: string | null;
+  /** Kết quả xếp loại cuối cùng (chỉ cấp có thẩm quyền mới ghi được). */
+  finalGrade?: string | null;
+  finalGradeNote?: string | null;
   evaluationStatus?: EvaluationStatus;
 }
 
@@ -87,6 +122,11 @@ export interface AssessmentView {
   taskResultScore: number | null;
   selfGradeSuggestion: string | null;
   selfGradeChoice: string | null;
+  /** Kết quả xếp loại CUỐI CÙNG do cấp có thẩm quyền quyết định (CV 2431). */
+  finalGrade: string | null;
+  finalGradeById: string | null;
+  finalGradeAt: string | null;
+  finalGradeNote: string | null;
   strengths: string | null;
   weaknesses: string | null;
   reviewerComment: string | null;
@@ -101,6 +141,8 @@ export interface AssessmentView {
     commonCriteria: { value: number | null; reason: string | null };
     selfGrade: { value: string | null; reason: string | null };
   };
+  /** Nguong xep loai THAM CHIEU (nguon: CV 2431) - CHUA tu ap dung. */
+  gradeReference: GradeReference | null;
   /** Quyền của người đang thao tác. */
   permissions: {
     canEditSelf: boolean;
@@ -198,7 +240,9 @@ export async function getAssessment(
     where: { id: subjectPersonId },
     select: { fullName: true },
   });
-  return toView(rec, person?.fullName ?? "", actorAccountId);
+  const view = toView(rec, person?.fullName ?? "", actorAccountId);
+  view.gradeReference = await loadGradeReference();
+  return view;
 }
 
 function toView(rec: any, subjectName: string, actorAccountId: string): AssessmentView {
@@ -220,6 +264,10 @@ function toView(rec: any, subjectName: string, actorAccountId: string): Assessme
     taskResultScore: rec.taskResultScore,
     selfGradeSuggestion: rec.selfGradeSuggestion,
     selfGradeChoice: rec.selfGradeChoice,
+    finalGrade: rec.finalGrade ?? null,
+    finalGradeById: rec.finalGradeById ?? null,
+    finalGradeAt: rec.finalGradeAt ? rec.finalGradeAt.toISOString() : null,
+    finalGradeNote: rec.finalGradeNote ?? null,
     strengths: rec.strengths,
     weaknesses: rec.weaknesses,
     reviewerComment: rec.reviewerComment,
@@ -230,6 +278,7 @@ function toView(rec: any, subjectName: string, actorAccountId: string): Assessme
     createdAt: rec.createdAt.toISOString(),
     updatedAt: rec.updatedAt.toISOString(),
     suggestions,
+    gradeReference: null,
     permissions: {
       canEditSelf: true, // quyền cụ thể được kiểm tra ở tầng API
       canEditReviewerComment: false,
@@ -349,6 +398,34 @@ export async function saveAssessment(
     }
   }
   if (input.strengths !== undefined) data.strengths = input.strengths || null;
+  // Kết quả xếp loại CUỐI CÙNG — chỉ cấp có thẩm quyền trong phạm vi mới quyết định.
+  if (input.finalGrade !== undefined) {
+    if (!isReviewer) {
+      return {
+        success: false,
+        status: 403,
+        error: "Chỉ lãnh đạo trong phạm vi mới được quyết định mức xếp loại cuối cùng",
+      };
+    }
+    if (input.finalGrade === null || input.finalGrade === "") {
+      data.finalGrade = null;
+      data.finalGradeAt = null;
+      data.finalGradeById = null;
+      data.finalGradeNote = null;
+    } else {
+      if (!(SELF_GRADE_OPTIONS as readonly string[]).includes(input.finalGrade)) {
+        return {
+          success: false,
+          status: 400,
+          error: "Mức xếp loại không hợp lệ (theo mẫu 02A có 4 mức)",
+        };
+      }
+      data.finalGrade = input.finalGrade;
+      data.finalGradeById = user.personId ?? null;
+      data.finalGradeAt = new Date();
+      data.finalGradeNote = input.finalGradeNote || null;
+    }
+  }
   if (input.weaknesses !== undefined) data.weaknesses = input.weaknesses || null;
   if (input.reviewerComment !== undefined) {
     data.reviewerComment = input.reviewerComment || null;
@@ -424,9 +501,13 @@ export async function saveAssessment(
     where: { id: subjectPersonId },
     select: { fullName: true },
   });
+  const view = toView(rec, person?.fullName ?? "", user.id);
+  view.gradeReference = await loadGradeReference();
   return {
     success: true,
     message: "Đã lưu phiếu đánh giá",
-    data: toView(rec, person?.fullName ?? "", user.id),
+    data: view,
   };
 }
+
+

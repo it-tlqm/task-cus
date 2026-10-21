@@ -96,6 +96,28 @@ async function main() {
     if (!ok) failed++;
   }
 
+  // Kiểm tra các cột thêm mới (YC-36 Giai đoạn 3 — kết quả xếp loại cuối cùng)
+  const NEW_COLUMNS = [
+    ["evaluation_assessments", "final_grade"],
+    ["evaluation_assessments", "final_grade_by_id"],
+    ["evaluation_assessments", "final_grade_at"],
+    ["evaluation_assessments", "final_grade_note"],
+    ["work_catalog_entries", "group_code"],
+    ["work_catalog_entries", "convert_factor"],
+    ["work_catalog_versions", "selection_mode"],
+  ];
+  for (const [table, column] of NEW_COLUMNS) {
+    const rows: Array<{ c: bigint }> = await prisma.$queryRawUnsafe(
+      `SELECT count(*)::int AS c FROM information_schema.columns
+       WHERE table_schema='public' AND table_name=$1 AND column_name=$2`,
+      table,
+      column
+    );
+    const ok = Number(rows[0]?.c || 0) === 1;
+    console.log(`${ok ? "OK  " : "MISS"} column ${table}.${column}`);
+    if (!ok) failed++;
+  }
+
   // Bảo toàn dữ liệu: đếm bản ghi các bảng nghiệp vụ cốt lõi (trước/sau phải bằng nhau).
   const counts = await prisma.$queryRawUnsafe(`
     SELECT

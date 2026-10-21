@@ -26,6 +26,10 @@ interface EvalView {
   taskResultScore: number | null;
   selfGradeSuggestion: string | null;
   selfGradeChoice: string | null;
+  finalGrade: string | null;
+  finalGradeById: string | null;
+  finalGradeAt: string | null;
+  finalGradeNote: string | null;
   strengths: string | null;
   weaknesses: string | null;
   reviewerComment: string | null;
@@ -34,6 +38,17 @@ interface EvalView {
     commonCriteria: { value: number | null; reason: string | null };
     selfGrade: { value: string | null; reason: string | null };
   };
+  gradeReference?: {
+    source: string;
+    note: string;
+    autoApply: boolean;
+    levels: Array<{
+      grade: string;
+      minScore: number | null;
+      maxScore: number | null;
+      extra: string | null;
+    }>;
+  } | null;
   permissions: {
     canEditSelf: boolean;
     canEditReviewerComment: boolean;
@@ -76,6 +91,8 @@ export default function SelfAssessmentPanel({
   const [weaknesses, setWeaknesses] = useState("");
   const [selfGrade, setSelfGrade] = useState("");
   const [reviewerComment, setReviewerComment] = useState("");
+  const [finalGrade, setFinalGrade] = useState("");
+  const [finalGradeNote, setFinalGradeNote] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,6 +118,8 @@ export default function SelfAssessmentPanel({
       setWeaknesses(d.weaknesses || "");
       setSelfGrade(d.selfGradeChoice || "");
       setReviewerComment(d.reviewerComment || "");
+      setFinalGrade(d.finalGrade || "");
+      setFinalGradeNote(d.finalGradeNote || "");
     } catch (e: any) {
       toast.error(e.message || "Lỗi khi tải phiếu đánh giá");
     } finally {
@@ -157,6 +176,7 @@ export default function SelfAssessmentPanel({
           year,
           number,
           reviewerComment,
+          ...(finalGrade ? { finalGrade, finalGradeNote } : {}),
         }),
       });
       const json = await res.json().catch(() => null);
@@ -280,6 +300,25 @@ export default function SelfAssessmentPanel({
                 {data.suggestions.selfGrade.reason}
               </p>
             )}
+            {data.gradeReference && (
+              <div className="mt-2 pt-2 border-t border-slate-200">
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
+                  Ngưỡng THAM CHIẾU (chưa tự áp dụng)
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {data.gradeReference.levels.map((l) => (
+                    <li key={l.grade} className="text-[11px] text-on-surface">
+                      <strong>{l.grade}</strong>:{" "}
+                      {l.minScore !== null ? `từ ${l.minScore} điểm` : ""}
+                      {l.maxScore !== null ? ` đến <${l.maxScore + 0.001} điểm` : ""}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Nguồn: {data.gradeReference.source}. {data.gradeReference.note}
+                </p>
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-semibold text-slate-600">
@@ -302,6 +341,39 @@ export default function SelfAssessmentPanel({
               4 mức theo mẫu 02A. Tự đề xuất KHÔNG phải kết quả đánh giá chính thức.
             </p>
           </div>
+
+          {/* Kết quả xếp loại CUỐI CÙNG — do cấp có thẩm quyền quyết định */}
+          {canEditReviewer && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-semibold text-slate-600">
+                Kết quả xếp loại cuối cùng (quyết định của cấp thẩm quyền)
+              </label>
+              <select
+                value={finalGrade}
+                onChange={(e) => setFinalGrade(e.target.value)}
+                className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+              >
+                <option value="">— Chưa quyết định —</option>
+                {options.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={finalGradeNote}
+                onChange={(e) => setFinalGradeNote(e.target.value)}
+                placeholder="Ghi chú kèm theo quyết định (không bắt buộc)"
+                className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs"
+              />
+              {data.finalGrade && (
+                <p className="text-[10px] text-emerald-700">
+                  Đã quyết định: <strong>{data.finalGrade}</strong>
+                  {data.finalGradeAt ? " · " + new Date(data.finalGradeAt).toLocaleString("vi-VN") : ""}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ---------------- Ưu điểm / hạn chế ---------------- */}

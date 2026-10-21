@@ -105,6 +105,9 @@ export async function POST(req: NextRequest) {
       strengths: body.strengths === undefined ? undefined : body.strengths,
       weaknesses: body.weaknesses === undefined ? undefined : body.weaknesses,
       reviewerComment: body.reviewerComment === undefined ? undefined : body.reviewerComment,
+      finalGrade: body.finalGrade === undefined ? undefined : body.finalGrade,
+      finalGradeNote:
+        body.finalGradeNote === undefined ? undefined : body.finalGradeNote,
       evaluationStatus: body.evaluationStatus,
     });
 

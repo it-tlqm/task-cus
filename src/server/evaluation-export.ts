@@ -21,6 +21,8 @@ import { computeForm01A } from "./scoring/bang1";
 export type EvaluationTemplate = "01A" | "01B" | "02A" | "02B";
 
 export interface ExportTaskRow {
+  /** id bản ghi kết quả tháng (khớp với id dòng của engine) — để ghép dữ liệu theo id. */
+  resultId: string;
   title: string;
   dueDate: string | null;
   product: string | null;
@@ -169,11 +171,14 @@ function buildBang1Sheet(wb: ExcelJS.Workbook, p: ExportParams): void {
 
   const first = headRow + 1;
   const rows = p.score?.rows || [];
+  // GHÉP THEO ID (không theo thứ tự chỉ số) — tránh lệch dữ liệu khi số dòng
+  // của engine khác số dòng nguồn (thiếu hệ số, bị loại trùng...).
+  const taskByResultId = new Map(p.tasks.map((t) => [t.resultId, t]));
   rows.forEach((r, i) => {
     const rw = first + i;
     ws.getCell(rw, 1).value = i + 1;
     ws.getCell(rw, 2).value = r.title;
-    const src = p.tasks[i];
+    const src = taskByResultId.get(r.id);
     ws.getCell(rw, 3).value = src?.dueDate || null;
     ws.getCell(rw, 4).value = src?.product || null;
     ws.getCell(rw, 5).value = r.factor;

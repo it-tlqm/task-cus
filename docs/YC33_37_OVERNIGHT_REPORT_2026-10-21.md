@@ -1,7 +1,7 @@
 ﻿# BÁO CÁO GIAI ĐOẠN 2 — YC-33 → YC-37 (đêm 20→21/10/2026)
 
 **Base:** `efe2bde` (Giai đoạn 1) · **Production:** `https://task-cus.vercel.app`
-**Commit triển khai:** `9633a43` (YC-37) · `91bd9f8` (YC-33) · `2f6f6f5` (YC-34/35/36) · `f6fb85e` (sửa hydration)
+**Commit triển khai:** `446b4d6` (YC-37) · `91bd9f8` (YC-33) · `2f6f6f5` (YC-34/35/36) · `f6fb85e` (sửa hydration)
 
 > Báo cáo này mô tả **kết quả kiểm thử tự động**. UAT nghiệp vụ do người phụ trách thực hiện sau; **không** tuyên bố UAT đã được phê duyệt.
 
@@ -86,7 +86,7 @@ Xem `docs/TALUNG_CUS_WORK_OVERNIGHT_20261020/OPEN_QUESTIONS.md` (9 mục). Tóm 
 
 | Commit | Nội dung |
 |---|---|
-| `9633a43` | YC-37 — bước xem trước, 3 quyết định, vòng lặp giải trình, RBAC, audit |
+| `446b4d6` | YC-37 — bước xem trước, 3 quyết định, vòng lặp giải trình, RBAC, audit |
 | `91bd9f8` | YC-33 — engine Bảng 1 decimal-safe, API, UI trạng thái |
 | `2f6f6f5` | YC-34/35/36 — biểu mẫu, quan hệ phụ trách, tự đánh giá, màn quản trị |
 | `f6fb85e` | Sửa lỗi hydration React #418 trên `/my-work` (nhãn ngày phụ thuộc múi giờ) |
@@ -173,4 +173,6 @@ Xem `docs/TALUNG_CUS_WORK_OVERNIGHT_20261020/OPEN_QUESTIONS.md` (9 mục). Tóm 
 - [ ] Cơ cấu phụ trách thực tế (Đội trưởng / Đội phó / công chức) để điền bảng `person_supervisions`.
 - [ ] Ánh xạ 6 nhóm danh mục TX → bộ phận.
 - [ ] Hai tên ngắn nhiều ứng viên trong phân công bộ phận.
+
+
 

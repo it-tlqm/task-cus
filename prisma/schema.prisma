@@ -1540,8 +1540,14 @@ model EvaluationAssessment {
   taskResultScore         Float?   @map("task_result_score")
   /// Muc xep loai GOI Y cua he thong (chi khi co quy tac du dieu kien)
   selfGradeSuggestion     String?  @map("self_grade_suggestion")
-  /// Muc xep loai ca nhan chon
+  /// Muc xep loai ca nhan chon (de xuat tu ban than)
   selfGradeChoice         String?  @map("self_grade_choice")
+  /// KET QUA XEP LOAI CUOI CUNG do cap co tham quyen quyet dinh
+  /// (theo CV 2431: Truong don vi DE XUAT, Chi cuc truong QUYET DINH, phe duyet)
+  finalGrade              String?  @map("final_grade")
+  finalGradeById          String?  @map("final_grade_by_id")
+  finalGradeAt            DateTime? @map("final_grade_at")
+  finalGradeNote          String?  @map("final_grade_note")
   /// Uu diem
   strengths               String?
   /// Han che / khuyet diem

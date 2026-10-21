@@ -1,4 +1,4 @@
-/**
+﻿/**
  * YC-33 — Tạo khối "điểm tính thử" cho màn hình Kết quả công tác tháng.
  *
  * Dùng bộ máy tính BẢNG 1 (decimal-safe) với trạng thái rõ ràng:
@@ -9,6 +9,7 @@
  */
 
 import { computeBang1, type FactorSource, type ScoreRowInput } from "./bang1";
+import { vnCalendarDayDiff } from "./date-util";
 
 export interface MonthlyScoreItemLike {
   id: string;
@@ -64,12 +65,6 @@ export interface MonthlyScorePreview {
   formulaVersion: string;
 }
 
-function daysBetween(a: Date | string, b: Date | string): number {
-  const da = a instanceof Date ? a : new Date(a);
-  const db = b instanceof Date ? b : new Date(b);
-  return Math.floor((db.getTime() - da.getTime()) / 86400000);
-}
-
 export function buildMonthlyScorePreview(
   items: MonthlyScoreItemLike[],
   _personId: string,
@@ -111,14 +106,12 @@ export function buildMonthlyScorePreview(
         factor = null;
       }
     } else if (it.workItem?.catalogEntry) {
+      // Lấy đúng hệ số của đầu việc đang tham chiếu (giữ ổn định kể cả khi
+      // phiên bản danh mục đã bị thay thế) — không vứt bỏ hệ số hợp lệ.
       factorSource = "TX_CATALOG";
       const ce = it.workItem.catalogEntry;
       factor =
         ce.convertFactor === null || ce.convertFactor === undefined ? null : Number(ce.convertFactor);
-      if (ce.version?.status && ce.version.status !== "ACTIVE") {
-        factorSource = "PENDING_RULE";
-        factor = null;
-      }
     } else if (it.factorSnapshot !== null && it.factorSnapshot !== undefined) {
       factorSource = "MANUAL";
       factor = Number(it.factorSnapshot);
@@ -126,7 +119,7 @@ export function buildMonthlyScorePreview(
 
     let lateDays = it.lateCount || 0;
     if (it.dueDate && it.completedDate) {
-      const diff = daysBetween(it.dueDate, it.completedDate);
+      const diff = vnCalendarDayDiff(new Date(it.completedDate), new Date(it.dueDate));
       lateDays = diff > 0 ? diff : 0;
     }
 
@@ -170,3 +163,4 @@ export function buildMonthlyScorePreview(
     formulaVersion: res.formulaVersion,
   };
 }
+

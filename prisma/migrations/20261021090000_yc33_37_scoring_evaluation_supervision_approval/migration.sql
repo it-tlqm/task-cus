@@ -2,17 +2,15 @@
 --
 -- BẢN CHẤT:
 --  1. score_runs / score_run_items      — snapshot kỳ tính điểm (YC-33)
---  2. evaluation_assessments            — tự đánh giá / nhận xét / xếp loại (YC-36)
+--  2. evaluation_assessments            — tự đánh giá, nhận xét lãnh đạo, xếp loại (YC-36)
 --  3. person_supervisions               — quan hệ phụ trách theo kỳ (YC-35)
---  4. approval_cases / approval_decisions — hồ sơ chấp thuận / từ chối / giải trình (YC-37)
+--  4. approval_cases / approval_decisions — hồ sơ chấp thuận / giải trình (YC-37)
+--  5. evaluation_assessments: cột KẾT QUẢ XẾP LOẠI CUỐI CÙNG (bổ sung Giai đoạn 3)
 --
 -- AN TOÀN DỮ LIỆU:
---  - CHỈ CREATE TABLE + CREATE INDEX (IF NOT EXISTS). KHÔNG DROP, KHÔNG ALTER bảng cũ,
---    KHÔNG UPDATE/DELETE dữ liệu nghiệp vụ.
---  - Không khai báo FOREIGN KEY sang bảng khác → an toàn khi bảng đích đã có dữ liệu.
---  - Tất cả cột nullable/default → tương thích ngược với code cũ.
---
--- Idempotent: chạy lại nhiều lần đều an toàn.
+--  - CHỈ CREATE TABLE/INDEX + ADD COLUMN (nullable). KHÔNG DROP, KHÔNG UPDATE/DELETE.
+--  - Không khai báo FOREIGN KEY sang bảng nghiệp vụ.
+--  - Idempotent: chạy lại nhiều lần đều an toàn.
 
 -- ---------------------------------------------------------------- YC-33
 CREATE TABLE IF NOT EXISTS "score_runs" (
@@ -105,6 +103,13 @@ CREATE INDEX IF NOT EXISTS "evaluation_assessments_period_type_period_year_perio
   ON "evaluation_assessments" ("period_type", "period_year", "period_number");
 CREATE INDEX IF NOT EXISTS "evaluation_assessments_evaluation_status_idx"
   ON "evaluation_assessments" ("evaluation_status");
+
+-- Giai đoạn 3: kết quả xếp loại CUỐI CÙNG do cấp có thẩm quyền quyết định
+-- (theo CV 2431: Trưởng đơn vị ĐỀ XUẤT, Chi cục trưởng QUYẾT ĐỊNH, phê duyệt)
+ALTER TABLE "evaluation_assessments" ADD COLUMN IF NOT EXISTS "final_grade" TEXT;
+ALTER TABLE "evaluation_assessments" ADD COLUMN IF NOT EXISTS "final_grade_by_id" TEXT;
+ALTER TABLE "evaluation_assessments" ADD COLUMN IF NOT EXISTS "final_grade_at" TIMESTAMP;
+ALTER TABLE "evaluation_assessments" ADD COLUMN IF NOT EXISTS "final_grade_note" TEXT;
 
 -- ---------------------------------------------------------------- YC-35
 CREATE TABLE IF NOT EXISTS "person_supervisions" (

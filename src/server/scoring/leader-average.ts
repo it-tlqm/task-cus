@@ -94,15 +94,26 @@ export async function getActiveSupervisions(
   number: number
 ) {
   const { start, end } = periodRange(periodType, year, number);
-  return prisma.personSupervision.findMany({
+  const rows = await prisma.personSupervision.findMany({
     where: {
       managerPersonId,
       status: "CONFIRMED",
       effectiveFrom: { lte: end },
       OR: [{ effectiveTo: null }, { effectiveTo: { gte: start } }],
     },
-    orderBy: { effectiveFrom: "desc" },
+    orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }],
   });
+  // Khử trùng: cùng một cấp dưới có thể có nhiều quan hệ chồng lấn theo kỳ
+  // (người dùng thêm nhiều lần với effectiveFrom khác nhau) → chỉ giữ quan hệ
+  // MỚI NHẤT cho mỗi người để không tính trùng khi bình quân.
+  const seen = new Set<string>();
+  const unique: typeof rows = [];
+  for (const r of rows) {
+    if (seen.has(r.subordinatePersonId)) continue;
+    seen.add(r.subordinatePersonId);
+    unique.push(r);
+  }
+  return unique;
 }
 
 /** Kiểm tra vòng quản lý khi thêm quan hệ manager → subordinate. */
@@ -222,7 +233,10 @@ export async function computeLeaderDimensions(
       fullName: string;
       personId: string;
     }> = [];
+    const seenInBranch = new Set<string>();
     for (const s of subs) {
+      if (seenInBranch.has(s.subordinatePersonId)) continue;
+      seenInBranch.add(s.subordinatePersonId);
       const person = await prisma.person.findUnique({
         where: { id: s.subordinatePersonId },
         select: { fullName: true },
