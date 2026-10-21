@@ -79,37 +79,67 @@ async function main() {
   const existing = await prisma.personalWorkItem.findFirst({
     where: { personId: staff.id, title: { startsWith: TAG } },
   });
+  let item = existing;
   if (existing) {
     console.log(`  [OK] Đầu việc demo đã có (reviewState=${existing.reviewState})`);
-    return;
+  } else {
+    item = await prisma.personalWorkItem.create({
+      data: {
+        personId: staff.id,
+        periodId: period.id,
+        primaryOwnerPersonId: staff.id,
+        title: `${TAG} Kiểm tra hồ sơ thu nghiệm V3.0.1`,
+        sourceKind: "CUSTOM",
+        status: "IN_PROGRESS",
+        priority: "Trung bình",
+        expectedResult: "Rà soát hồ sơ và gửi lãnh đạo trực tiếp xác nhận",
+        dueDate: new Date("2026-10-21T00:00:00.000Z"),
+        workDate: new Date("2026-10-21T00:00:00.000Z"),
+        reviewState: "DRAFT",
+      },
+    });
+    await prisma.workItemAssignment.create({
+      data: {
+        workItemId: item.id,
+        personId: staff.id,
+        periodId: period.id,
+        role: "PRIMARY_OWNER",
+        status: "IN_PROGRESS",
+        assignedById: staff.id,
+      },
+    });
+    console.log(`  [OK] Tạo đầu việc demo: ${item.title}`);
+    console.log(`       id=${item.id}`);
   }
-  const item = await prisma.personalWorkItem.create({
-    data: {
-      personId: staff.id,
-      periodId: period.id,
-      primaryOwnerPersonId: staff.id,
-      title: `${TAG} Kiểm tra hồ sơ thu nghiệm V3.0.1`,
-      sourceKind: "CUSTOM",
-      status: "IN_PROGRESS",
-      priority: "Trung bình",
-      expectedResult: "Rà soát hồ sơ và gửi lãnh đạo trực tiếp xác nhận",
-      dueDate: new Date("2026-10-21T00:00:00.000Z"),
-      workDate: new Date("2026-10-21T00:00:00.000Z"),
-      reviewState: "DRAFT",
-    },
-  });
-  await prisma.workItemAssignment.create({
-    data: {
-      workItemId: item.id,
-      personId: staff.id,
-      periodId: period.id,
-      role: "PRIMARY_OWNER",
-      status: "IN_PROGRESS",
-      assignedById: staff.id,
-    },
-  });
-  console.log(`  [OK] Tạo đầu việc demo: ${item.title}`);
-  console.log(`       id=${item.id}`);
+
+  // ---- 4. Gắn 3 mã SP QĐ1277 (để thử luồng nhiều SP + xác nhận từng SP) ----
+  const version = await prisma.productCatalogVersion.findFirst({ where: { status: "ACTIVE" } });
+  const products = version
+    ? await prisma.productItem.findMany({
+        where: { versionId: version.id, status: "ACTIVE" },
+        take: 3,
+        orderBy: { code: "asc" },
+      })
+    : [];
+  for (const p of products) {
+    const exists = await prisma.workItemProduct.findFirst({
+      where: { workItemId: item.id, productItemId: p.id },
+    });
+    if (exists) continue;
+    await prisma.workItemProduct.create({
+      data: {
+        workItemId: item.id,
+        productItemId: p.id,
+        reviewState: "PROPOSED",
+        proposedById: staff.id,
+        proposedAt: new Date(),
+        quantity: 10,
+        quantityUnit: "bộ",
+        note: "Đề xuất mẫu cho phiên thử nghiệm V3",
+      },
+    });
+    console.log(`  [OK] Gắn mã SP đề xuất: ${p.code}`);
+  }
 }
 
 main()
