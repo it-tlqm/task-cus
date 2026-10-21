@@ -377,15 +377,54 @@ model WorkEvidence {
   checksum        String?
   note            String?
   uploadedById    String   @map("uploaded_by_id")
+  status          String   @default("ACTIVE") // ACTIVE | SUPERSEDED | WITHDRAWN (R3-C: giu ban cu, khong xoa)
+  supersededById  String?  @map("superseded_by_id") // bang chung moi thay the
+  withdrawnNote   String?  @map("withdrawn_note")
   createdAt       DateTime @default(now()) @map("created_at")
 
   workItem      PersonalWorkItem   @relation(fields: [workItemId], references: [id], onDelete: Cascade)
   monthlyResult MonthlyWorkResult? @relation(fields: [monthlyResultId], references: [id], onDelete: SetNull)
+  adjustments   WorkEvidenceAdjustment[]
   uploadedBy    Person             @relation("EvidenceUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@index([workItemId, createdAt])
   @@index([monthlyResultId])
   @@map("work_evidences")
+}
+
+// V3.0.3 — Quy trinh dieu chinh minh chung sau khi da xac nhan (R3-C, 2 cap)
+// 1) Nguoi phu trách lap de nghi · 2) Lanh dao truc tiep da xac nhan xem xet ·
+// 3) Truong bo phan phe duyet cuoi cung · 4) Ghi vet + giu ban minh chung cu
+model WorkEvidenceAdjustment {
+  id            String   @id @default(uuid())
+  workItemId    String   @map("work_item_id")
+  evidenceId    String?  @map("evidence_id") // bang chung can dieu chinh (null = de nghi bo sung moi)
+  kind          String   // ADD | REPLACE | REMOVE
+  reason        String   // ly do de nghi
+  description   String?
+  proposedFileName   String? @map("proposed_file_name")
+  proposedStorageKey String? @map("proposed_storage_key")
+  proposedSize       Int?    @map("proposed_size")
+  proposedMime       String? @map("proposed_mime")
+  state         String   @default("PROPOSED") // PROPOSED | LEADER_REVIEWED | APPROVED | REJECTED | BLOCKED
+  proposedById String   @map("proposed_by_id")
+  proposedAt   DateTime @default(now()) @map("proposed_at")
+  leaderReviewedById String? @map("leader_reviewed_by_id")
+  leaderReviewedAt   DateTime? @map("leader_reviewed_at")
+  leaderNote   String?  @map("leader_note")
+  approvedById String?  @map("approved_by_id")
+  approvedAt   DateTime? @map("approved_at")
+  approvalNote String?  @map("approval_note")
+  appliedAt    DateTime? @map("applied_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workItem PersonalWorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  evidence WorkEvidence?   @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+
+  @@index([workItemId, createdAt])
+  @@index([state])
+  @@map("work_evidence_adjustments")
 }
 
 // ----------------------------------------------------
@@ -571,6 +610,7 @@ model PersonalWorkItem {
   routines      RoutineEntry[]
   monthlyResults MonthlyWorkResult[]
   evidences     WorkEvidence[]
+  evidenceAdjustments WorkEvidenceAdjustment[]
 
   primaryOwnerPerson Person?      @relation("WorkItemPrimaryOwner", fields: [primaryOwnerPersonId], references: [id], onDelete: SetNull)
   primaryOwnerUnit   OrgUnit?     @relation("WorkItemPrimaryOwnerUnit", fields: [primaryOwnerUnitId], references: [id], onDelete: SetNull)

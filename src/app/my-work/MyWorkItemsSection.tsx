@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 import WorkItemReviewBox from "./WorkItemReviewBox";
 import WorkItemProductsPanel from "./WorkItemProductsPanel";
+import EvidenceAdjustmentsPanel from "./EvidenceAdjustmentsPanel";
 import {
   journalDateInRange,
   journalPeriodRange,
@@ -600,6 +601,15 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       </span>
                       {done ? "Bỏ hoàn thành" : "Đánh dấu hoàn thành"}
                     </button>
+
+                    <EvidenceAdjustmentsPanel
+                      mode="staff"
+                      workItemId={item.id}
+                      canPropose={item.reviewState === "CONFIRMED"}
+                      onChanged={async () => {
+                        await fetchItems();
+                      }}
+                    />
 
                     <WorkItemProductsPanel
                       workItemId={item.id}

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import WorkItemProductsPanel from "@/app/my-work/WorkItemProductsPanel";
+import EvidenceAdjustmentsPanel from "@/app/my-work/EvidenceAdjustmentsPanel";
 
 interface QueueItem {
   id: string;
@@ -211,6 +212,9 @@ export default function WorkItemReviewsPage() {
           ))}
         </div>
       )}
+
+      {/* Đề nghị điều chỉnh minh chứng chờ xử lý (R3-C) */}
+      <EvidenceAdjustmentsPanel mode="leader" />
 
       {/* Hộp thoại trả lại — bắt buộc ghi rõ lý do */}
       {returning && (

@@ -32,6 +32,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         fileSize: true,
         storageKey: true,
         uploadedById: true,
+        status: true,
       },
     });
     if (!evidence) return jsonError("Minh chứng không tồn tại hoặc đã bị xóa", 404);
@@ -59,6 +60,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         access.item.reviewState === "CONFIRMED"
           ? "Công việc đã được lãnh đạo xác nhận — không thể xóa minh chứng. Vui lòng gửi đề nghị điều chỉnh."
           : "Công việc đang chờ lãnh đạo xác nhận — không thể xóa minh chứng lúc này.",
+        409
+      );
+    }
+    // R3-C: minh chứng đã bị thay thế hoặc rút phải được GIỮ để có thể khôi phục
+    if (evidence.status !== "ACTIVE") {
+      return jsonError(
+        evidence.status === "SUPERSEDED"
+          ? "Minh chứng này đã được thay thế bằng bản mới — không thể xoá (giữ để khôi phục khi cần)."
+          : "Minh chứng này đã được rút theo quy trình điều chỉnh — không thể xoá (giữ để khôi phục khi cần).",
         409
       );
     }
