@@ -185,10 +185,29 @@ export async function getAccountWithPermissions(username: string) {
   if (!account) return null;
 
   const primaryAssignment = account.person.assignments[0];
-  const primaryGrant = account.roleGrants[0];
+
+  // V3 — Role hết hạn phải MẤT hiệu lực: chỉ tính các grant đang có hiệu lực
+  // (validFrom <= now <= validTo hoặc validTo = null). Trước đây mọi grant
+  // đều được cộng quyền kể cả grant đã quá hạn.
+  const now = new Date();
+  const activeGrants = account.roleGrants.filter(
+    (g) => g.validFrom <= now && (!g.validTo || g.validTo >= now)
+  );
+
+  // Vai trò chính = vai trò đang hiệu lực có phạm vi rộng nhất (xác định tất định,
+  // không phụ thuộc thứ tự trả về của CSDL).
+  const ROLE_PRIORITY: Record<string, number> = {
+    SYSTEM_ADMIN: 4,
+    UNIT_LEADER: 3,
+    DEPARTMENT_LEADER: 2,
+    STAFF: 1,
+  };
+  const primaryGrant = [...activeGrants].sort(
+    (a, b) => (ROLE_PRIORITY[b.role.code] || 0) - (ROLE_PRIORITY[a.role.code] || 0)
+  )[0];
 
   const permissions = new Set<string>();
-  for (const grant of account.roleGrants) {
+  for (const grant of activeGrants) {
     for (const rp of grant.role.rolePermissions) {
       permissions.add(rp.permission.code);
     }

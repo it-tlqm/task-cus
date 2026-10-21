@@ -249,6 +249,14 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         access: { permission: "catalog.manage" },
       },
       {
+        id: "admin-permissions",
+        label: "Phân quyền",
+        href: "/admin/permissions",
+        icon: "manage_accounts",
+        description: "Vai trò, quyền, phạm vi quản lý và nhật ký cấp quyền",
+        access: { permission: "org.manage" },
+      },
+      {
         id: "admin-supervisions",
         label: "Quan hệ phụ trách",
         href: "/admin/supervisions",
