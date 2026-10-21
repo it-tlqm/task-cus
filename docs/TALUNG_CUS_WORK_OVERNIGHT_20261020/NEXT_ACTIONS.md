@@ -106,3 +106,19 @@ npx tsx scripts/test-yc34-36-eval.ts               # DB LOCAL
 - [ ] Dọn 2 phiếu `evaluation_assessments` DRAFT rỗng + 2 `approval_cases` do test tạo (cần duyệt trước khi xoá)
 - [ ] UI phân công tiếp (bảng `work_item_assignments` đã sẵn sàng, chưa có màn hình) — chốt phạm vi
 - [ ] Backfill `work_item_id` cho 15 kết quả tháng DEMO — **không** tự làm, cần Hải quan quyết từng dòng
+
+---
+
+## 21/10/2026 — Sau khi sửa 3 lỗi UAT (`59adb01`)
+
+- [x] Sửa hiển thị mã TX (API + UI, bỏ nhãn hard-code `TTHQ-ĐT`)
+- [x] Sửa lệch +7 giờ (helper chung `src/lib/datetime.ts`, pin Asia/Ho_Chi_Minh)
+- [x] Thêm `tasks.origin_kind` (nullable, additive, không backfill) + chặn hành động sai ở backend
+- [x] Backup + restore-test PASS trước khi đổi schema; DDL idempotent; 0 mất dữ liệu
+- [x] Test mới 42 assertion + hồi quy YC-01→38 xanh; build OK; đã deploy
+
+### Chờ duyệt
+- [ ] Duyệt hiệu chỉnh 6 nhiệm vụ lệch 7h (mục 4 báo cáo) — **khuyến nghị: không sửa**
+- [ ] Duyệt gán `origin_kind=SELF_INITIATED` cho đúng 2 bản ghi UAT (0016/0017)
+- [ ] Q-B4 — hệ số TX vs QĐ1277 (vẫn PENDING_RULE, không tự chọn)
+- [ ] Xác nhận có hiện hệ số ở bảng danh sách hay chỉ ở chi tiết

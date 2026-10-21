@@ -126,3 +126,19 @@ Apply-script: `scripts/apply-yc33-37-ddl.ts` (idempotent, không FK sang bảng 
 | UAT nghiệp vụ | ⛔ **CHỜ xác nhận** — xem checklist trong `docs/YC38B_C_BAO_CAO_BAN_GIAO_2026-10-21.md` |
 
 Báo cáo bàn giao + checklist UAT: `docs/YC38B_C_BAO_CAO_BAN_GIAO_2026-10-21.md`
+
+---
+
+## CẬP NHẬT 21/10/2026 (sau UAT) — SỬA 3 LỖI YC-38 → `59adb01` (đã deploy, db=up)
+
+| Vấn đề | Nguyên nhân | Trạng thái |
+|---|---|---|
+| Mã TX không hiển thị | **UI**: API không trả TX + hard-code nhãn `TTHQ-ĐT` | ✅ Đã sửa (txSource + TxSourceBadge) |
+| Lệch +7 giờ | **Lưu dữ liệu**: form gắn `Z` vào giờ địa phương | ✅ Đã sửa (helper Asia/Ho_Chi_Minh, không phụ thuộc TZ thiết bị) |
+| "Tự khởi tạo" nhưng gọi "Nhiệm vụ chỉ đạo" | **Nghiệp vụ**: thiếu trường có cấu trúc + UI nhãn cố định | ✅ Đã sửa (`tasks.origin_kind` nullable, server quyết định) |
+
+Test mới: datetime-tz 19/19 · uat-origin-tx 23/23 · E2E local OK ·
+Hồi quy: parity 38 · flow 20 · eval 32 · approval 25 · linkage 28 · hồi quy 56 · smoke 23 (đều xanh)
+
+**Chưa sửa (chờ duyệt):** 6 nhiệm vụ lệch 7h (0011–0014, 0016, 0017) · `origin_kind` cho 2 bản ghi UAT.
+Báo cáo: `docs/YC38_UAT_FIX_BAO_CAO_BAN_GIAO_2026-10-21.md`

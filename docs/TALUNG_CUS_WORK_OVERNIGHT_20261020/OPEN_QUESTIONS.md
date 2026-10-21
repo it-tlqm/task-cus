@@ -96,3 +96,16 @@ File gốc có 12 cặp tên **trùng hoàn toàn** trong cùng nhóm (vd dòng 
 | Q-M3 | 2 `approval_cases` do bộ test YC-37 tạo | ⚠️ Chờ rà/dọn | Xác nhận rồi dọn |
 | Q-M4 | Có làm UI phân công tiếp trong đợt này? | ⛔ Chưa có UI | Chốt phạm vi đợt sau |
 | Q-M5 | Backfill `work_item_id` cho 15 kết quả tháng DEMO? | ⛔ **Không** tự làm | Cần Hải quan quyết từng dòng |
+
+---
+
+## 21/10/2026 — Câu hỏi còn mở (sau khi sửa lỗi UAT)
+
+| # | Câu hỏi | Trạng thái | Khuyến nghị |
+|---|---|---|---|
+| Q-B4 | Hệ số TX hay QĐ1277 khi việc có cả hai? | ⛔ PENDING_RULE — không tự chọn | TX cho công việc; SP khi không có TX |
+| Q-U1 | Hiệu chỉnh 6 nhiệm vụ lệch 7h? | ⛔ Chưa sửa, chờ duyệt từng dòng | Không sửa — điểm dùng date-only nên không ảnh hưởng |
+| Q-U2 | Gán `origin_kind` cho 2 bản ghi UAT đã xác minh tự khởi tạo? | ⛔ Chưa UPDATE | Duyệt thì cập nhật đúng 2 dòng, có backup |
+| Q-U3 | Hiện hệ số ở bảng danh sách? | ⚠️ Đang hiện rút gọn | Nếu nhiễu → chỉ hiện ở chi tiết |
+| Q-B5/Q-B6 | Mẫu 2C/2D/2E · ca trực | ⛔ Ngoài phạm vi | — |
+| Q-M1..M5 | 48 mẫu · dọn phiếu DRAFT · UI phân công tiếp · backfill work_item_id DEMO | ⛔ Chưa làm | Xem báo cáo bàn giao YC-38B/38C |
