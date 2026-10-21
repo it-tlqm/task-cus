@@ -156,3 +156,18 @@ Báo cáo: `docs/YC38_UAT_FIX_BAO_CAO_BAN_GIAO_2026-10-21.md`
 - KHÔNG đổi schema, KHÔNG sửa dữ liệu: `NV-2026-0019` giữ nguyên IN_PROGRESS + 4 task_updates, 0 approval_case.
 - Test: B4 36/36 · hồi quy 38/20/32/25/28/23/19/56/23 · typecheck + build OK.
 - Báo cáo: `docs/YC38B4_BAO_CAO_BAN_GIAO_2026-10-21.md` — **đang chờ UAT**.
+
+---
+
+## CẬP NHẬT 21/10/2026 — AUDIT quyền cán bộ phối hợp sau nghiệm thu (CHỈ ĐỌC, chưa sửa)
+
+- Phát hiện: `/my-work` mở được modal "Tác nghiệp một chạm" cho nhiệm vụ `COMPLETED` (**lỗi UI**:
+  `openDrawerForTask` không kiểm tra trạng thái; trang chi tiết `/tasks/[id]` thì ĐÃ khoá).
+- **Lỗ hổng thật ở API**: guard `assertTaskStatusTransition` chặn `COMPLETED→COMPLETED` nhưng **KHÔNG** chặn
+  `COMPLETED→IN_PROGRESS` / `COMPLETED→WAITING_REVIEW`; `PATCH /api/tasks` action `SUBMIT_COMPLETION` cũng không
+  kiểm tra trạng thái ⇒ người phối hợp (có quyền WRITE) có thể **mở lại nhiệm vụ đã nghiệm thu** và tạo
+  sự kiện `submit` giả. "Lưu nháp" thì đã bị chặn 400.
+- `NV-2026-0019`: status=COMPLETED, 5 task_update (accept/progress×3/submit), 6 audit, 1 approval_case
+  (TASK_RESULT) ⇒ **nghiệm thu lưu đầy đủ, audit đầy đủ**. Trang chi tiết 6 sự kiện = 1 (giao việc) +
+  4 (task_update) + 1 audit không trùng ⇒ **không mất sự kiện**.
+- Đề xuất F1..F5 (guard + API + UI), **chờ duyệt**. Báo cáo: `docs/UAT_YC38_AUDIT_QUYEN_PHOI_HOP_SAU_NGHIEM_THU_2026-10-21.md`

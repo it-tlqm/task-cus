@@ -121,3 +121,13 @@ File gốc có 12 cặp tên **trùng hoàn toàn** trong cùng nhóm (vd dòng 
 | Q-B4-3 | Tạo hồ sơ approval_case ngay khi nộp duyệt? | ⚠️ Hiện chỉ tạo khi lãnh đạo mở xem trước (YC-37) | Chốt theo quy trình |
 | Q-B4-4 | Quy tắc 100% ⇒ tự trình duyệt | ✅ Đã áp dụng theo hướng dẫn cũ | Xác nhận để chốt |
 | Q-U1/Q-U2 | 6 nhiệm vụ lệch 7h · gán origin_kind cho 2 bản ghi UAT | ⛔ Chưa sửa | Không sửa (khuyến nghị) |
+
+---
+
+## 21/10/2026 — Câu hỏi còn mở (audit quyền phối hợp)
+
+| # | Câu hỏi | Trạng thái | Khuyến nghị |
+|---|---|---|---|
+| Q-P1 | Khoá nhiệm vụ đã nghiệm thu ở guard + API + UI | ⛔ Đề xuất F1–F5, chờ duyệt | Khoá tập trung (guard) là đủ cho mọi route |
+| Q-P2 | Có quy trình mở lại nhiệm vụ đã nghiệm thu không? | ⛔ Chưa có quy trình | Chỉ lãnh đạo yêu cầu; ghi `kind='return'` + audit; task → WAITING_REVIEW; mở lại vòng duyệt; không ghi đè kết quả cũ |
+| Q-P3 | Rà soát 9 task COMPLETED hiện có xem đã bị mở lại chưa? | ⛔ Chưa rà (audit NV-2026-0019 sạch) | Nên rà khi triển khai F1 |
