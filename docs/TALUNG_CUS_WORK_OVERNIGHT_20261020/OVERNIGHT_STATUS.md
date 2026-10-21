@@ -142,3 +142,17 @@ Hồi quy: parity 38 · flow 20 · eval 32 · approval 25 · linkage 28 · hồi
 
 **Chưa sửa (chờ duyệt):** 6 nhiệm vụ lệch 7h (0011–0014, 0016, 0017) · `origin_kind` cho 2 bản ghi UAT.
 Báo cáo: `docs/YC38_UAT_FIX_BAO_CAO_BAN_GIAO_2026-10-21.md`
+
+---
+
+## CẬP NHẬT 21/10/2026 — SỬA LỖI B4 (trình duyệt kết quả) → `96be5e4` (đã deploy, db=up)
+
+- Root cause: form `/tasks/[id]` gửi `submitForReview` nhưng API `/api/tasks/[id]/updates` không đọc field này
+  ⇒ không chuyển WAITING_REVIEW, không tạo sự kiện `kind='submit'`. (`/my-work` gửi `newStatus/statusAfter` nên vẫn đúng.)
+- Đã sửa: API chuẩn hóa contract (nhận cả hai dạng), ghi sự kiện + đổi trạng thái trong CÙNG transaction,
+  chống nộp trùng 3 lớp ở server (khoá 2 tầng + đọc lại trạng thái + 409), guard chặn lặp WAITING_REVIEW→WAITING_REVIEW;
+  modal bỏ state lệch hiển thị, reset mỗi lần mở, hướng dẫn phản ánh đúng quy tắc.
+- Quy tắc: **100% ⇒ tự trình duyệt**; <100% ⇒ chỉ cập nhật nhật ký (trình duyệt sớm **chưa** triển khai, đề xuất nghiệp vụ chờ xác nhận).
+- KHÔNG đổi schema, KHÔNG sửa dữ liệu: `NV-2026-0019` giữ nguyên IN_PROGRESS + 4 task_updates, 0 approval_case.
+- Test: B4 36/36 · hồi quy 38/20/32/25/28/23/19/56/23 · typecheck + build OK.
+- Báo cáo: `docs/YC38B4_BAO_CAO_BAN_GIAO_2026-10-21.md` — **đang chờ UAT**.

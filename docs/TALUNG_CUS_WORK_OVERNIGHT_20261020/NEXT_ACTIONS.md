@@ -122,3 +122,13 @@ npx tsx scripts/test-yc34-36-eval.ts               # DB LOCAL
 - [ ] Duyệt gán `origin_kind=SELF_INITIATED` cho đúng 2 bản ghi UAT (0016/0017)
 - [ ] Q-B4 — hệ số TX vs QĐ1277 (vẫn PENDING_RULE, không tự chọn)
 - [ ] Xác nhận có hiện hệ số ở bảng danh sách hay chỉ ở chi tiết
+
+---
+
+## 21/10/2026 — Sau khi sửa lỗi B4 (`96be5e4`)
+
+- [x] Sửa API + guard + UX modal (không đổi schema)
+- [x] Test mới 36 assertion E2E + hồi quy YC-01→38 xanh; đã deploy
+- [ ] **UAT lại trên NV-2026-0019** (người kiểm thử thao tác trên giao diện — mình không tự nộp duyệt)
+- [ ] Chốt quy tắc "trình duyệt sớm khi <100%" (đề xuất nghiệp vụ đang chờ Hải quan xác nhận)
+- [ ] Cân nhắc tạo hồ sơ approval_case ngay khi nộp duyệt (hiện chỉ tạo khi lãnh đạo mở xem trước)

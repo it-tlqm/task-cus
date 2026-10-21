@@ -109,3 +109,15 @@ File gốc có 12 cặp tên **trùng hoàn toàn** trong cùng nhóm (vd dòng 
 | Q-U3 | Hiện hệ số ở bảng danh sách? | ⚠️ Đang hiện rút gọn | Nếu nhiễu → chỉ hiện ở chi tiết |
 | Q-B5/Q-B6 | Mẫu 2C/2D/2E · ca trực | ⛔ Ngoài phạm vi | — |
 | Q-M1..M5 | 48 mẫu · dọn phiếu DRAFT · UI phân công tiếp · backfill work_item_id DEMO | ⛔ Chưa làm | Xem báo cáo bàn giao YC-38B/38C |
+
+---
+
+## 21/10/2026 — Câu hỏi còn mở (sau B4)
+
+| # | Câu hỏi | Trạng thái | Khuyến nghị |
+|---|---|---|---|
+| Q-B4-1 | Trình duyệt sớm khi tiến độ <100%? | ⛔ Chưa triển khai (checkbox khoá, API bỏ qua, trả ghi chú) | Chốt quy tắc rồi mới làm |
+| Q-B4-2 | Cán bộ tự kết luận "đạt kết quả" ở <100% rồi nộp duyệt? | ⛔ Chưa có nút riêng | Nếu cần → thêm nút "Nộp duyệt kết quả hiện tại" |
+| Q-B4-3 | Tạo hồ sơ approval_case ngay khi nộp duyệt? | ⚠️ Hiện chỉ tạo khi lãnh đạo mở xem trước (YC-37) | Chốt theo quy trình |
+| Q-B4-4 | Quy tắc 100% ⇒ tự trình duyệt | ✅ Đã áp dụng theo hướng dẫn cũ | Xác nhận để chốt |
+| Q-U1/Q-U2 | 6 nhiệm vụ lệch 7h · gán origin_kind cho 2 bản ghi UAT | ⛔ Chưa sửa | Không sửa (khuyến nghị) |
