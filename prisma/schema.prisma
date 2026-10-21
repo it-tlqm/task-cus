@@ -53,6 +53,7 @@ model OrgUnit {
   workCatalogEntries  WorkCatalogEntry[]
   workCatalogDepartmentMappings WorkCatalogDepartmentMapping[]
 
+  primaryOwnedWorkItems PersonalWorkItem[] @relation("WorkItemPrimaryOwnerUnit")
   @@map("org_units")
 }
 
@@ -106,6 +107,9 @@ model Person {
   feedbacks        Feedback[]
   createdDeptWorkItems DepartmentWorkItem[] @relation("DeptWorkItemCreator")
 
+  primaryOwnedWorkItems PersonalWorkItem[] @relation("WorkItemPrimaryOwner")
+  workItemAssignments   WorkItemAssignment[]
+  createdWorkItemSeries WorkItemSeries[]    @relation("WorkItemSeriesCreator")
   @@map("people")
 }
 
@@ -437,6 +441,7 @@ model ReportingPeriod {
   snapshots ReportSnapshot[]
 
   @@unique([type, title])
+  workItemAssignments WorkItemAssignment[]
   @@map("reporting_periods")
 }
 
@@ -498,6 +503,10 @@ model PlanItem {
 
   plan      Plan               @relation(fields: [planId], references: [id], onDelete: Cascade)
   group     ActivityGroup?     @relation(fields: [groupId], references: [id])
+  // --- YC-38C: lien thong du lieu (additive) ---
+  workItemId       String?  @map("work_item_id") // cong viec goc tuong ung voi hang muc ke hoach
+  linkedWorkItem   PersonalWorkItem? @relation("PlanItemWorkItem", fields: [workItemId], references: [id], onDelete: SetNull)
+  @@index([workItemId])
   workItems PersonalWorkItem[]
   taskLinks PlanTaskLink[]
 
@@ -514,6 +523,14 @@ model PersonalWorkItem {
   deptWorkItemId   String?           @map("dept_work_item_id") // YC-25: chọn từ danh mục đầu việc riêng của bộ phận
   productItemId    String?           @map("product_item_id") // YC-23: liên kết sản phẩm đầu ra theo QĐ1277 (tuỳ chọn)
   catalogEntryId   String?           @map("catalog_entry_id") // YC-31: đầu việc TX đã chọn (tuỳ chọn)
+  // --- YC-38C: lien thong du lieu (additive) ---
+  primaryOwnerPersonId String?       @map("primary_owner_person_id") // dau moi chu tri la CA NHAN (1 trong 2, khong ca ca nhan lan bo phan)
+  primaryOwnerUnitId   String?       @map("primary_owner_unit_id")   // dau moi chu tri la BO PHAN (1 trong 2)
+  sourceKind           String?       @map("source_kind")            // TX_CATALOG|QD1277_PRODUCT|PLAN|DEPT|LEGACY_TEMPLATE|DOCUMENT|MEETING|TASK|CUSTOM
+  sourceRefId          String?       @map("source_ref_id")          // id tham chieu toi nguon
+  sourceCodeSnapshot   String?       @map("source_code_snapshot")   // ma danh muc tai thoi diem tao (bat bien)
+  seriesId             String?       @map("series_id")              // chuoi cong viec goc (ma goc on dinh qua nhieu ky)
+  lineNo               Int           @default(1) @map("line_no")    // thu tu lut trong ky
   dueDate          DateTime?         @map("due_date") @db.Date // YC-32: hạn xử lý đầu việc (khác hạn chính thức của Task)
   completedDate    DateTime?         @map("completed_date") @db.Date // YC-32: ngày hoàn thành thực tế
   taskId           String?           @map("task_id") // YC-32: nhiệm vụ liên quan (lãnh đạo giao từ đầu việc)
@@ -543,6 +560,15 @@ model PersonalWorkItem {
   monthlyResults MonthlyWorkResult[]
   evidences     WorkEvidence[]
 
+  primaryOwnerPerson Person?      @relation("WorkItemPrimaryOwner", fields: [primaryOwnerPersonId], references: [id], onDelete: SetNull)
+  primaryOwnerUnit   OrgUnit?     @relation("WorkItemPrimaryOwnerUnit", fields: [primaryOwnerUnitId], references: [id], onDelete: SetNull)
+  series             WorkItemSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  workItemAssignments WorkItemAssignment[]
+  linkedProducts     WorkItemProduct[]
+  planItemWorkLinks  PlanItem[]   @relation("PlanItemWorkItem")
+  workItemTasks      Task[]       @relation("TaskWorkItem")
+  @@index([primaryOwnerPersonId])
+  @@index([seriesId])
   @@index([catalogEntryId])
   @@index([taskId])
   @@map("personal_work_items")
@@ -570,6 +596,13 @@ model Task {
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
+  // --- YC-38C: lien thong du lieu (additive) ---
+  workItemId            String?  @map("work_item_id")         // cong viec goc (personal_work_items) ma nhiem vu nay thuoc ve
+  createdById           String?  @map("created_by_id")        // nguoi tao (KHAC nguoi giao va nguoi chu tri)
+  assignedById          String?  @map("assigned_by_id")       // nguoi giao viec
+  sourceKind            String?  @map("source_kind")         // TX_CATALOG|QD1277_PRODUCT|PLAN|DEPT|LEGACY_TEMPLATE|DOCUMENT|MEETING|TASK|CUSTOM
+  sourceRefId           String?  @map("source_ref_id")
+  sourceCodeSnapshot    String?  @map("source_code_snapshot")
   owner            Person            @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   unit             OrgUnit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
   planLinks        PlanTaskLink[]
@@ -579,6 +612,8 @@ model Task {
   submissions      ResultSubmission[]
   attachments      TaskAttachment[]
   comments         TaskComment[]
+  workItem         PersonalWorkItem? @relation("TaskWorkItem", fields: [workItemId], references: [id], onDelete: SetNull)
+  @@index([workItemId])
   workItems        PersonalWorkItem[] @relation("WorkItemTask")
 
   @@map("tasks")
@@ -1108,6 +1143,7 @@ model ProductItem {
   version ProductCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   group   ProductGroup?         @relation(fields: [groupId], references: [id])
   results MonthlyWorkResult[]
+  linkedWorkItems WorkItemProduct[]
   personalWorkItems PersonalWorkItem[]
 
   @@index([versionId, groupId])
@@ -1118,6 +1154,76 @@ model ProductItem {
 // 13. KẾT QUẢ SẢN PHẨM THỰC TẾ THEO THÁNG (YC-12)
 // productItemId null + needsReview = chờ đối chiếu danh mục (không tự gán sai).
 // ----------------------------------------------------
+
+// ----------------------------------------------------
+// 21b. YC-38C - LIEN THONG DU LIEU CONG VIEC (additive)
+// - Mot cong viec goc, nhieu nguoi tham gia (bang phan cong)
+// - Mot dau moi chu tri: CA NHAN hoac BO PHAN
+// - Cong viec nhieu ky giu mot ma goc (chuoi cong viec)
+// - TX (danh muc cong viec) va QD1277 (danh muc san pham) la HAI KHAI NIEM DOC LAP
+// ----------------------------------------------------
+
+// Chuoi cong viec goc: ma on dinh xuyen nhieu ky danh gia
+model WorkItemSeries {
+  id          String   @id @default(uuid())
+  seriesCode  String   @unique @map("series_code") // ma cong viec goc on dinh, vi du CV-2026-000123
+  title       String
+  ownerType   String   @default("PERSON") @map("owner_type") // PERSON | UNIT
+  ownerId     String?  @map("owner_id")
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy Person?          @relation("WorkItemSeriesCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  workItems PersonalWorkItem[]
+
+  @@map("work_item_series")
+}
+
+// Phan cong: 1 cong viec goc - nhieu nguoi (KHONG nhan ban cong viec goc)
+model WorkItemAssignment {
+  id               String    @id @default(uuid())
+  workItemId       String    @map("work_item_id")
+  personId         String    @map("person_id")
+  periodId         String    @map("period_id")
+  role             String    @default("COLLABORATOR") // PRIMARY_OWNER | COLLABORATOR | REVIEWER
+  status           String    @default("ASSIGNED") // ASSIGNED | ACCEPTED | IN_PROGRESS | DONE | REJECTED
+  progressPercent  Int       @default(0) @map("progress_percent")
+  completedDate    DateTime? @map("completed_date") @db.Date
+  actualResultText String?   @map("actual_result_text")
+  note             String?
+  assignedById     String?   @map("assigned_by_id")
+  assignedAt       DateTime  @default(now()) @map("assigned_at")
+  respondedAt      DateTime? @map("responded_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  workItem PersonalWorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  person   Person           @relation(fields: [personId], references: [id], onDelete: Cascade)
+  period   ReportingPeriod  @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@unique([workItemId, personId, periodId])
+  @@index([personId, periodId])
+  @@map("work_item_assignments")
+}
+
+// Lien ket 0..n san pham QD1277 voi 1 cong viec (KHONG cong diem, KHONG tinh trung)
+model WorkItemProduct {
+  id            String   @id @default(uuid())
+  workItemId    String   @map("work_item_id")
+  productItemId String   @map("product_item_id")
+  quantity      Float?
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  workItem    PersonalWorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  productItem ProductItem      @relation(fields: [productItemId], references: [id], onDelete: Cascade)
+
+  @@unique([workItemId, productItemId])
+  @@index([productItemId])
+  @@map("work_item_products")
+}
 
 model MonthlyWorkResult {
   id                String    @id @default(uuid())
@@ -1143,12 +1249,18 @@ model MonthlyWorkResult {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
+  // --- YC-38C: chong ghi trung (additive) ---
+  idempotencyKey   String? @map("idempotency_key") // khoa idempotency: nguoi|cong viec|ky (NULL = ban ghi cu)
+  subjectKind      String? @map("subject_kind")    // WORK_ITEM | PRODUCT_ITEM | TASK
+  subjectId        String? @map("subject_id")
+  lineNo           Int     @default(1) @map("line_no")
   person      Person       @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   productItem ProductItem? @relation(fields: [productItemId], references: [id])
   workItem    PersonalWorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
 
   evidences WorkEvidence[]
 
+  @@unique([idempotencyKey])
   @@unique([personId, workItemId])
   @@index([personId, periodYear, periodMonth])
   @@map("monthly_work_results")
