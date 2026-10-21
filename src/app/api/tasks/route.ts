@@ -309,8 +309,9 @@ export async function POST(req: NextRequest) {
           currentDeadline: parsedDeadline,
           expectedResultText,
           // YC-38C: người tạo ≠ người giao ≠ người chủ trì (chủ trì = ownerId)
-          createdById: user.id,
-          assignedById: user.id,
+          // LƯU Ý: cột này tham chiếu `people(id)` → dùng personId (user.id là accountId)
+          createdById: user.personId,
+          assignedById: user.personId,
           sourceKind: resolvedSource?.sourceKind ?? null,
           sourceRefId: resolvedSource?.sourceRefId ?? null,
           sourceCodeSnapshot: resolvedSource?.sourceCodeSnapshot ?? null,
@@ -341,7 +342,7 @@ export async function POST(req: NextRequest) {
               dueDate: parsedDeadline,
               source: resolvedSource,
               collaboratorIds: uniqueAssignees,
-              assignedById: user.id,
+              assignedById: user.personId,
               taskId: created.id,
               idempotencyKey: idempotencyKey ? `task:${idempotencyKey}` : null,
             },

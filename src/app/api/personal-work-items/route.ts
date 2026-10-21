@@ -489,7 +489,7 @@ export async function POST(req: NextRequest) {
           periodId,
           role: "PRIMARY_OWNER",
           status: "ASSIGNED",
-          assignedById: user.id,
+          assignedById: user.personId,
         },
       ],
       skipDuplicates: true,
