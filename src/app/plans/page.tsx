@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import WorkSourcePicker from "@/components/work/WorkSourcePicker";
 import { getDaysOfWeekFromStart, formatPeriodRangeFromDates, getCurrentPeriodLabels } from "@/lib/period-helper";
 
 interface ActivityGroup {
@@ -201,9 +202,49 @@ export default function PlansPage() {
   const [modalProductLabel, setModalProductLabel] = useState("");
   // YC-31/YC-32: nguồn TX, hạn xử lý, ngày hoàn thành thực tế
   const [modalCatalogEntryId, setModalCatalogEntryId] = useState("");
+  // YC-38C: hạng mục kế hoạch được chọn — liên kết ĐÚNG việc (không mặc định items[0])
+  const [modalPlanItemId, setModalPlanItemId] = useState("");
+  // YC-38B: đối tượng nguồn đã chọn (hiển thị trong bộ chọn thông minh)
+  const [pickedCatalogLocal, setPickedCatalogLocal] = useState<{
+    id: string;
+    code: string;
+    title: string;
+    department?: string | null;
+    convertFactor?: number | null;
+  } | null>(null);
+  const [pickedProductLocal, setPickedProductLocal] = useState<{
+    id: string;
+    code: string;
+    taskName: string;
+    convertFactor?: number | null;
+  } | null>(null);
+
+
   const [modalDueDate, setModalDueDate] = useState("");
   const [modalCompletedDate, setModalCompletedDate] = useState("");
   const [txEntries, setTxEntries] = useState<WorkCatalogEntryPicker[]>([]);
+
+  // Đồng bộ với danh mục TX đã tải (kể cả khi chọn qua select cũ)
+  const pickedCatalogEntry = useMemo(() => {
+    if (!modalCatalogEntryId) return null;
+    const e = txEntries.find((x) => x.id === modalCatalogEntryId);
+    if (!e) return pickedCatalogLocal;
+    return {
+      id: e.id,
+      code: e.code,
+      title: e.title,
+      department: e.department,
+      convertFactor: null,
+    };
+  }, [modalCatalogEntryId, txEntries, pickedCatalogLocal]);
+
+  const pickedProduct = useMemo(() => {
+    if (!modalProductItemId) return null;
+    if (pickedProductLocal && pickedProductLocal.id === modalProductItemId) return pickedProductLocal;
+    const code = modalProductLabel.split(" — ")[0] || "";
+    const taskName = modalProductLabel.split(" — ").slice(1).join(" — ");
+    return { id: modalProductItemId, code, taskName };
+  }, [modalProductItemId, modalProductLabel, pickedProductLocal]);
   const [txDepartments, setTxDepartments] = useState<WorkCatalogDepartment[]>([]);
   const [legacyTemplatesSelectable, setLegacyTemplatesSelectable] = useState(true);
   const [catalogActivationStatus, setCatalogActivationStatus] = useState<
@@ -379,6 +420,9 @@ export default function PlansPage() {
     setModalProductItemId("");
     setModalProductLabel("");
     setModalCatalogEntryId("");
+    // YC-38C: mặc định hạng mục CHƯA có đầu việc — không trỏ mặc định vào items[0]
+    const firstFreeItem = (activePlan?.items || []).find((it) => (it.workItems || []).length === 0);
+    setModalPlanItemId(firstFreeItem?.id || activePlan?.items?.[0]?.id || "");
     setModalDueDate("");
     setModalCompletedDate("");
     setDeptCatalogMsg(null);
@@ -474,7 +518,7 @@ export default function PlansPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             periodId: activePlan.period?.id,
-            planItemId: activePlan.items?.[0]?.id || undefined,
+            planItemId: modalPlanItemId || undefined,
             templateId: modalTemplateId || undefined,
             deptWorkItemId: modalDeptWorkItemId || undefined,
             productItemId: modalProductItemId || undefined,
@@ -2162,6 +2206,64 @@ export default function PlansPage() {
                     onChange={(e) => setModalTitle(e.target.value)}
                     placeholder="Nhập tên nhiệm vụ trong kỳ kế hoạch..."
                     className="p-2.5 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                  />
+                </div>
+
+                {/* YC-38C: hạng mục kế hoạch — liên kết ĐÚNG đầu việc với đúng hạng mục */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Hạng mục kế hoạch *
+                  </label>
+                  <select
+                    data-testid="modal-plan-item-select"
+                    value={modalPlanItemId}
+                    onChange={(e) => setModalPlanItemId(e.target.value)}
+                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  >
+                    {(activePlan?.items || []).map((it, idx) => (
+                      <option key={it.id} value={it.id}>
+                        {idx + 1}. {it.title}
+                        {(it.workItems || []).length > 0
+                          ? ` — đã có ${it.workItems.length} đầu việc`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* YC-38B: bộ chọn nguồn thông minh — nhập tên trước, gợi ý TX, chọn từ danh mục */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Nguồn công việc (tuỳ chọn)
+                  </label>
+                  <WorkSourcePicker
+                    title={modalTitle}
+                    catalogEntry={pickedCatalogEntry}
+                    product={pickedProduct}
+                    onCatalogChange={(entry) => {
+                      if (!entry) {
+                        setModalCatalogEntryId("");
+                        setPickedCatalogLocal(null);
+                        return;
+                      }
+                      setModalCatalogEntryId(entry.id);
+                      setPickedCatalogLocal(entry);
+                      setModalTemplateId("");
+                      setModalDeptWorkItemId("");
+                      if (!modalTitle.trim()) setModalTitle(entry.title);
+                    }}
+                    onProductChange={(p) => {
+                      if (!p) {
+                        setModalProductItemId("");
+                        setModalProductLabel("");
+                        setPickedProductLocal(null);
+                        return;
+                      }
+                      setModalProductItemId(p.id);
+                      setModalProductLabel(`${p.code} — ${p.taskName}`);
+                      setPickedProductLocal(p);
+                    }}
+                    storageKey="yc38b:plans"
                   />
                 </div>
 

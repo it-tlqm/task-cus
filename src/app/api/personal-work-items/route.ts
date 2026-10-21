@@ -183,6 +183,7 @@ export async function POST(req: NextRequest) {
       periodType,
       periodYear,
       periodNumber,
+      idempotencyKey, // YC-38C: khoá idempotency cap request (token do client sinh)
     } = body;
 
     const targetPersonId = personId || user.personId;
@@ -291,9 +292,9 @@ export async function POST(req: NextRequest) {
       if (!resolvedTitle?.trim()) resolvedTitle = entry.title;
     }
 
+
     // YC-32: hạn xử lý và ngày hoàn thành thực tế (tách biệt nhau)
-    const dueParsed = parseDateOnly(dueDate);
-    if (!dueParsed.ok) return jsonError(`Hạn xử lý: ${dueParsed.message}`, 400);
+    const dueParsed = parseDateOnly(dueDate);    if (!dueParsed.ok) return jsonError(`Hạn xử lý: ${dueParsed.message}`, 400);
     const completedParsed = parseDateOnly(completedDate);
     if (!completedParsed.ok) return jsonError(`Ngày hoàn thành: ${completedParsed.message}`, 400);
 
@@ -314,6 +315,49 @@ export async function POST(req: NextRequest) {
         authorizedUnits.includes(task.unitId);
       if (!canLink) return jsonError("Bạn không có quyền liên kết nhiệm vụ này", 403);
       resolvedTaskId = task.id;
+    }
+
+    // --- YC-38C: provenance bất biến (nguồn + mã tham chiếu + mã danh mục tại thời điểm tạo) ---
+    // TX (danh mục công việc) và QĐ1277 (danh mục sản phẩm) là HAI trục ĐỘC LẬP:
+    // một việc có thể có cả đầu việc TX lẫn sản phẩm QĐ1277; nguồn chính ghi 1 trục.
+    let resolvedSourceKind: string | null = null;
+    let resolvedSourceRefId: string | null = null;
+    let resolvedSourceCodeSnapshot: string | null = null;
+    if (resolvedCatalogEntryId) {
+      const entry = await prisma.workCatalogEntry.findUnique({
+        where: { id: resolvedCatalogEntryId },
+        select: { code: true },
+      });
+      resolvedSourceKind = "TX_CATALOG";
+      resolvedSourceRefId = resolvedCatalogEntryId;
+      resolvedSourceCodeSnapshot = entry?.code ?? null;
+    } else if (resolvedProductItemId) {
+      const prod = await prisma.productItem.findUnique({
+        where: { id: resolvedProductItemId },
+        select: { code: true },
+      });
+      resolvedSourceKind = "QD1277_PRODUCT";
+      resolvedSourceRefId = resolvedProductItemId;
+      resolvedSourceCodeSnapshot = prod?.code ?? null;
+    } else if (templateId) {
+      const tpl = await prisma.activityTemplate.findUnique({
+        where: { id: templateId },
+        select: { code: true },
+      });
+      resolvedSourceKind = "LEGACY_TEMPLATE";
+      resolvedSourceRefId = templateId;
+      resolvedSourceCodeSnapshot = tpl?.code ?? null;
+    } else if (resolvedDeptWorkItemId) {
+      resolvedSourceKind = "DEPT";
+      resolvedSourceRefId = resolvedDeptWorkItemId;
+    } else if (planItemId) {
+      resolvedSourceKind = "PLAN";
+      resolvedSourceRefId = planItemId;
+    } else if (resolvedTaskId) {
+      resolvedSourceKind = "TASK";
+      resolvedSourceRefId = resolvedTaskId;
+    } else {
+      resolvedSourceKind = "CUSTOM";
     }
 
     // Tự động phân giải hoặc tạo ReportingPeriod nếu truyền periodType, periodYear, periodNumber
@@ -416,6 +460,12 @@ export async function POST(req: NextRequest) {
         expectedResult: expectedResult?.trim() || null,
         sortOrder: (maxSort._max.sortOrder || 0) + 1,
         status: completedParsed.value ? "COMPLETED" : status || "ACTIVE",
+        // --- YC-38C: provenance bất biến + đầu mối chủ trì ---
+        sourceKind: resolvedSourceKind,
+        sourceRefId: resolvedSourceRefId,
+        sourceCodeSnapshot: resolvedSourceCodeSnapshot,
+        primaryOwnerPersonId: targetPersonId,
+        idempotencyKey: idempotencyKey || null,
       },
       include: {
         person: true,
@@ -429,6 +479,34 @@ export async function POST(req: NextRequest) {
         period: true,
       },
     });
+
+    // --- YC-38C: bảng phân công (1 việc gốc, nhiều người) + liên kết sản phẩm QĐ1277 ---
+    await prisma.workItemAssignment.createMany({
+      data: [
+        {
+          workItemId: newItem.id,
+          personId: targetPersonId,
+          periodId,
+          role: "PRIMARY_OWNER",
+          status: "ASSIGNED",
+          assignedById: user.id,
+        },
+      ],
+      skipDuplicates: true,
+    });
+    if (resolvedProductItemId) {
+      await prisma.workItemProduct.createMany({
+        data: [{ workItemId: newItem.id, productItemId: resolvedProductItemId, isPrimary: true }],
+        skipDuplicates: true,
+      });
+    }
+    // --- YC-38C: liên kết NGƯỢC hạng mục kế hoạch → đúng công việc (không trỏ items[0]) ---
+    if (planItemId) {
+      await prisma.planItem.updateMany({
+        where: { id: planItemId, workItemId: null },
+        data: { workItemId: newItem.id },
+      });
+    }
 
     await recordAuditEvent({
       actorId: user.id,

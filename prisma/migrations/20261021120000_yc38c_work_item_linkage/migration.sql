@@ -88,6 +88,10 @@ ALTER TABLE "personal_work_items" ADD COLUMN IF NOT EXISTS "source_ref_id" TEXT;
 ALTER TABLE "personal_work_items" ADD COLUMN IF NOT EXISTS "source_code_snapshot" TEXT;
 ALTER TABLE "personal_work_items" ADD COLUMN IF NOT EXISTS "series_id" TEXT;
 ALTER TABLE "personal_work_items" ADD COLUMN IF NOT EXISTS "line_no" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "personal_work_items" ADD COLUMN IF NOT EXISTS "idempotency_key" TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "personal_work_items_idempotency_key_key"
+    ON "personal_work_items"("idempotency_key");
 
 CREATE INDEX IF NOT EXISTS "personal_work_items_primary_owner_person_id_idx"
     ON "personal_work_items"("primary_owner_person_id");

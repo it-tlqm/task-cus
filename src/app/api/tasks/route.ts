@@ -9,6 +9,12 @@ import { unaccentSearchIds } from "@/server/search";
 import { recordAuditEvent } from "@/server/audit";
 import { checkWorkItemAccess } from "@/server/work-access";
 import { createNotification } from "@/server/notifications";
+import {
+  createLinkedWorkItem,
+  resolveMonthlyPeriod,
+  resolveWorkSource,
+  type ResolvedSource,
+} from "@/server/work-item-linkage";
 
 // YC-04: cửa sổ chống bấm trùng khi giao việc (giây)
 const CREATE_DEDUP_WINDOW_SEC = 120;
@@ -178,6 +184,13 @@ export async function POST(req: NextRequest) {
       expectedResultText,
       assigneeIds, // Danh sách ID cán bộ phối hợp
       workItemId, // YC-32: giao nhiệm vụ từ đầu việc (liên kết 2 chiều)
+      // YC-38B/YC-38C: nguồn công việc (TX / QĐ1277 / văn bản / giao ban)
+      catalogEntryId,
+      productItemId,
+      sourceKind,
+      sourceRefId,
+      sourceCodeSnapshot,
+      idempotencyKey,
     } = body;
 
     // YC-32: kiểm tra quyền trên đầu việc + chống tạo Task trùng cho cùng đầu việc
@@ -247,6 +260,20 @@ export async function POST(req: NextRequest) {
 
     const parsedDeadline = new Date(effectiveDeadline);
 
+    // YC-38C: phân giải nguồn công việc (TX / QĐ1277 / văn bản / giao ban).
+    // TX và QĐ1277 là hai trục ĐỘC LẬP — không gộp, không tự gắn sản phẩm.
+    let resolvedSource: ResolvedSource | null = null;
+    const hasSourceInput =
+      !!catalogEntryId || !!productItemId || (!!sourceKind && !!sourceRefId);
+    if (hasSourceInput && !linkedWorkItem) {
+      const src = await resolveWorkSource(
+        { catalogEntryId, productItemId, sourceKind, sourceRefId, sourceCodeSnapshot },
+        effectiveOwnerId
+      );
+      if (!src.ok) return jsonError(src.error, src.status || 400);
+      resolvedSource = src.source || null;
+    }
+
     // YC-04: chống giao việc trùng — khóa tư vấn theo (chủ trì + tiêu đề) rồi kiểm tra
     // cửa sổ 120s. Hai request đồng thời/bấm liên tiếp chỉ tạo đúng 1 Task.
     // E1: mã NV serial theo năm (NV-YYYY-NNNN), cấp phát nguyên tử trong cùng transaction.
@@ -266,7 +293,7 @@ export async function POST(req: NextRequest) {
         },
         orderBy: { createdAt: "desc" },
       });
-      if (recent) return { task: recent, deduplicated: true };
+      if (recent) return { task: recent, deduplicated: true, workItemId: null };
 
       const taskCode = await nextTaskCode(tx);
       const created = await tx.task.create({
@@ -281,6 +308,12 @@ export async function POST(req: NextRequest) {
           originalDeadline: parsedDeadline,
           currentDeadline: parsedDeadline,
           expectedResultText,
+          // YC-38C: người tạo ≠ người giao ≠ người chủ trì (chủ trì = ownerId)
+          createdById: user.id,
+          assignedById: user.id,
+          sourceKind: resolvedSource?.sourceKind ?? null,
+          sourceRefId: resolvedSource?.sourceRefId ?? null,
+          sourceCodeSnapshot: resolvedSource?.sourceCodeSnapshot ?? null,
           assignees: uniqueAssignees.length > 0 ? {
             create: uniqueAssignees.map((pId: string) => ({
               personId: pId,
@@ -294,7 +327,34 @@ export async function POST(req: NextRequest) {
           assignees: { include: { person: true } },
         },
       });
-      return { task: created, deduplicated: false };
+
+      // YC-38C: sinh công việc gốc + bảng phân công (1 việc gốc, nhiều người)
+      let linkedWorkItemId: string | null = null;
+      if (resolvedSource) {
+        const periodId = await resolveMonthlyPeriod(parsedDeadline);
+        if (periodId) {
+          const wi = await createLinkedWorkItem(
+            {
+              personId: effectiveOwnerId,
+              periodId,
+              title: title.trim(),
+              dueDate: parsedDeadline,
+              source: resolvedSource,
+              collaboratorIds: uniqueAssignees,
+              assignedById: user.id,
+              taskId: created.id,
+              idempotencyKey: idempotencyKey ? `task:${idempotencyKey}` : null,
+            },
+            tx
+          );
+          linkedWorkItemId = wi.id;
+          await tx.task.update({
+            where: { id: created.id },
+            data: { workItemId: wi.id },
+          });
+        }
+      }
+      return { task: created, deduplicated: false, workItemId: linkedWorkItemId };
     });
 
     // YC-04: request trùng trong cửa sổ 120s → trả về bản ghi đã tạo, không spam thông báo

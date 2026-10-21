@@ -559,7 +559,13 @@ function toNumberOrNull(v: unknown): number | null {
  */
 export async function getSelectableCatalogEntriesForPerson(
   personId: string,
-  filters: { department?: string | null; q?: string | null; scope?: "dept" | "all" } = {}
+  filters: {
+    department?: string | null;
+    q?: string | null;
+    scope?: "dept" | "all";
+    /** YC-38B: lọc theo danh sách id cụ thể (gần đây / ghim yêu thích). */
+    ids?: string[] | null;
+  } = {}
 ): Promise<SelectableCatalogResult> {
   const activation = await getCatalogActivationForPerson(personId);
   if (!activation.activeVersionId) {
@@ -582,11 +588,13 @@ export async function getSelectableCatalogEntriesForPerson(
     return { activation, entries: [] };
   }
   const q = (filters.q || "").trim();
+  const ids = filters.ids === undefined ? null : (filters.ids || []).filter((x) => typeof x === "string" && x.length > 0);
 
   const entries = await prisma.workCatalogEntry.findMany({
     where: {
       versionId: activation.activeVersionId,
       status: "ACTIVE",
+      ...(ids !== null ? { id: { in: ids } } : {}),
       ...(scope === "dept"
         ? { department: filters.department ? filters.department : { in: departments } }
         : filters.department

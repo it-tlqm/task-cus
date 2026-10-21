@@ -9,6 +9,7 @@ import {
   getSelectableCatalogEntriesForPerson,
   isLegacyTemplateSelectableForPerson,
 } from "@/server/work-catalog";
+import { unaccentSearchIds } from "@/server/search";
 
 /**
  * GET /api/work-catalog
@@ -169,10 +170,26 @@ export async function GET(req: NextRequest) {
     const scopeParam = searchParams.get("scope");
     const scope: "dept" | "all" = scopeParam === "all" ? "all" : "dept";
 
+    // YC-38B: tìm KHÔNG DẤU (unaccent + ILIKE) và tra cứu theo danh sách id
+    // (gần đây / ghim yêu thích). Không tải toàn bộ 348 đầu việc về trình duyệt.
+    const idsParam = (searchParams.get("ids") || "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .slice(0, 50);
+    let idsFilter: string[] | null = null;
+    if (idsParam.length) {
+      idsFilter = idsParam;
+    } else if (q) {
+      const found = await unaccentSearchIds("work_catalog_entries", ["title", "code"], q, 500);
+      idsFilter = found ?? [];
+    }
+
     const selectable = await getSelectableCatalogEntriesForPerson(targetPersonId, {
       department,
-      q,
+      q: null,
       scope,
+      ids: idsFilter,
     });
 
     const deptMap = new Map<string, { name: string; order: number; count: number }>();

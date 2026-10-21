@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
+import WorkSourcePicker from "@/components/work/WorkSourcePicker";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getRoleDisplayName } from "@/lib/unit-info";
 
@@ -101,6 +102,25 @@ export default function TasksPage() {
   const [newSource, setNewSource] = useState("Chỉ đạo đột xuất Lãnh đạo");
   const [selectedUnitId, setSelectedUnitId] = useState("");
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
+  // YC-38B: nguồn công việc (TX / QĐ1277) + khoá idempotency
+  const [newCatalogEntry, setNewCatalogEntry] = useState<{
+    id: string;
+    code: string;
+    title: string;
+    department?: string | null;
+    convertFactor?: number | null;
+  } | null>(null);
+  const [newProduct, setNewProduct] = useState<{
+    id: string;
+    code: string;
+    taskName: string;
+    convertFactor?: number | null;
+  } | null>(null);
+  const [newIdempotencyKey, setNewIdempotencyKey] = useState(() =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `k-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  );
   const [newExpectedResult, setNewExpectedResult] = useState("");
   // YC-01: cán bộ phối hợp (mỗi người một hàng, không trùng, không trùng chủ trì)
   const [collabIds, setCollabIds] = useState<string[]>([]);
@@ -256,6 +276,10 @@ export default function TasksPage() {
           assigneeIds: collabIds,
           status: "IN_PROGRESS",
           progressPercent: 0,
+          // YC-38B/YC-38C: nguồn công việc + khoá idempotency (chống bấm trùng)
+          catalogEntryId: newCatalogEntry?.id || undefined,
+          productItemId: newProduct?.id || undefined,
+          idempotencyKey: newIdempotencyKey,
         }),
       });
 
@@ -274,6 +298,13 @@ export default function TasksPage() {
         setNewAttachFiles([]);
         setNewDeadline(defaultDeadline());
         setAiIdea("");
+        setNewCatalogEntry(null);
+        setNewProduct(null);
+        setNewIdempotencyKey(
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `k-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+        );
         fetchTasks();
         toast.success(
           json.deduplicated
@@ -824,6 +855,21 @@ export default function TasksPage() {
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="Nhập nội dung công việc chỉ đạo..."
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                </div>
+
+                {/* YC-38B: bộ chọn nguồn thông minh — gợi ý TX theo tên vừa nhập */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Nguồn công việc (tuỳ chọn)
+                  </label>
+                  <WorkSourcePicker
+                    title={newTitle}
+                    catalogEntry={newCatalogEntry}
+                    product={newProduct}
+                    onCatalogChange={setNewCatalogEntry}
+                    onProductChange={setNewProduct}
+                    storageKey="yc38b:tasks"
                   />
                 </div>
 

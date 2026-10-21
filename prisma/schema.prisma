@@ -531,6 +531,7 @@ model PersonalWorkItem {
   sourceCodeSnapshot   String?       @map("source_code_snapshot")   // ma danh muc tai thoi diem tao (bat bien)
   seriesId             String?       @map("series_id")              // chuoi cong viec goc (ma goc on dinh qua nhieu ky)
   lineNo               Int           @default(1) @map("line_no")    // thu tu lut trong ky
+  idempotencyKey       String?       @map("idempotency_key") // YC-38C: khoa idempotency cap request (token do client sinh)
   dueDate          DateTime?         @map("due_date") @db.Date // YC-32: hạn xử lý đầu việc (khác hạn chính thức của Task)
   completedDate    DateTime?         @map("completed_date") @db.Date // YC-32: ngày hoàn thành thực tế
   taskId           String?           @map("task_id") // YC-32: nhiệm vụ liên quan (lãnh đạo giao từ đầu việc)

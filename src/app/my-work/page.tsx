@@ -6,6 +6,7 @@ import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
+import WorkSourcePicker from "@/components/work/WorkSourcePicker";
 import MyWorkItemsSection from "./MyWorkItemsSection";
 import {
   DEFAULT_JOURNAL_FILTER,
@@ -201,6 +202,26 @@ export default function MyWorkPage() {
   });
   const [newTaskTime, setNewTaskTime] = useState("17:00");
   const [newTaskSource, setNewTaskSource] = useState("Tự khởi tạo phát sinh");
+  // YC-38B: nguồn công việc đã chọn (TX / QĐ1277) — gửi kèm khi tạo
+  const [newTaskCatalogEntry, setNewTaskCatalogEntry] = useState<{
+    id: string;
+    code: string;
+    title: string;
+    department?: string | null;
+    convertFactor?: number | null;
+  } | null>(null);
+  const [newTaskProduct, setNewTaskProduct] = useState<{
+    id: string;
+    code: string;
+    taskName: string;
+    convertFactor?: number | null;
+  } | null>(null);
+  // Khoá idempotency cấp form: sinh 1 lần khi mở modal, dùng lại khi bấm lưu
+  const [newTaskIdempotencyKey, setNewTaskIdempotencyKey] = useState(() =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `k-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  );
 
   const [currentUser, setCurrentUser] = useState<{
     personId?: string;
@@ -452,12 +473,23 @@ export default function MyWorkPage() {
           description: `Nguồn: ${newTaskSource}`,
           status: "IN_PROGRESS",
           progressPercent: 0,
+          // YC-38B/YC-38C: nguồn công việc + khoá idempotency (chống bấm trùng)
+          catalogEntryId: newTaskCatalogEntry?.id || undefined,
+          productItemId: newTaskProduct?.id || undefined,
+          idempotencyKey: newTaskIdempotencyKey,
         }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
         setIsNewTaskModalOpen(false);
         setNewTaskTitle("");
+        setNewTaskCatalogEntry(null);
+        setNewTaskProduct(null);
+        setNewTaskIdempotencyKey(
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `k-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+        );
         await fetchTasks();
         toast.success(
           json.deduplicated
@@ -2174,12 +2206,26 @@ export default function MyWorkPage() {
                   />
                 </div>
 
+                {/* YC-38B: bộ chọn nguồn thông minh — gợi ý TX theo tên vừa nhập */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Nguồn công việc (tuỳ chọn)
+                  </label>
+                  <WorkSourcePicker
+                    title={newTaskTitle}
+                    catalogEntry={newTaskCatalogEntry}
+                    product={newTaskProduct}
+                    onCatalogChange={setNewTaskCatalogEntry}
+                    onProductChange={setNewTaskProduct}
+                    storageKey="yc38b:my-work"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">
                     <label className="font-label-md text-label-md text-primary font-semibold">
                       Phân loại nguồn
-                    </label>
-                    <select
+                    </label>                    <select
                       value={newTaskSource}
                       onChange={(e) => setNewTaskSource(e.target.value)}
                       className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
