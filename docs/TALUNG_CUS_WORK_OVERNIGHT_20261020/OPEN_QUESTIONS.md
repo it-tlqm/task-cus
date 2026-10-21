@@ -78,3 +78,21 @@ File gốc có 12 cặp tên **trùng hoàn toàn** trong cùng nhóm (vd dòng 
 ## 9. Số lượng nhân sự: 32 dòng file vs 35 trong sheet "Cơ cấu tổ chức"
 
 `danh.xlsx` có **32** dòng; sheet *"Cơ cấu tổ chức"* trong `Danh mục TX1.xls` ghi tổng **35** (Lãnh đạo đơn vị **3**). Hai tên được bổ sung (`Phạm Linh Thuận`, `Tô Văn Thụ`) **đã có sẵn** trong Production (CB-015, CB-011) nhưng **không** có trong `danh.xlsx`. Cần Hải quan xác nhận danh sách đầy đủ 35 người và cơ cấu 3 lãnh đạo đơn vị (DB hiện có 4 người ở `BAN_LANH_DAO`, gồm 1 tài khoản DEMO).
+
+---
+
+## 21/10/2026 — Câu hỏi còn mở sau YC-38B/38C
+
+| # | Câu hỏi | Trạng thái | Khuyến nghị |
+|---|---|---|---|
+| Q-B1 | 1 việc giao nhiều người → 1 việc gốc + bảng phân công? | ⛔ Chờ xác nhận (đã triển khai theo khuyến nghị) | 1 work_item + `work_item_assignments` |
+| Q-B2 | Đầu mối chủ trì: cá nhân hay bộ phận, có cả hai không? | ⛔ Chờ xác nhận (đã triển khai: 1 trong 2) | 1 trong 2, không cả hai, không rỗng |
+| Q-B3 | 1 việc gắn nhiều sản phẩm QĐ1277? | ⛔ Chờ xác nhận (đã triển khai 0..n) | Có, không cộng điểm |
+| **Q-B4** | **Hệ số TX hay QĐ1277 khi việc có cả hai?** | ⛔ **PENDING_RULE — hệ thống KHÔNG tự chọn** | Hệ số công việc = TX; SP chỉ dùng khi không có TX |
+| Q-B5 | Mẫu 2C/2D/2E | ⛔ Ngoài phạm vi đợt này | — |
+| Q-B6 | Ca trực có tính điểm không? | ⛔ Ngoài phạm vi đợt này | — |
+| Q-M1 | 48 mẫu cũ — ẩn khỏi form tạo mới? | ⛔ Chưa ẩn, cần rà phụ thuộc | Ẩn sau khi rà 8 bản ghi dùng mẫu cũ |
+| Q-M2 | 2 phiếu `evaluation_assessments` DRAFT rỗng | ⛔ Chờ duyệt để dọn | Xác nhận rồi xoá |
+| Q-M3 | 2 `approval_cases` do bộ test YC-37 tạo | ⚠️ Chờ rà/dọn | Xác nhận rồi dọn |
+| Q-M4 | Có làm UI phân công tiếp trong đợt này? | ⛔ Chưa có UI | Chốt phạm vi đợt sau |
+| Q-M5 | Backfill `work_item_id` cho 15 kết quả tháng DEMO? | ⛔ **Không** tự làm | Cần Hải quan quyết từng dòng |

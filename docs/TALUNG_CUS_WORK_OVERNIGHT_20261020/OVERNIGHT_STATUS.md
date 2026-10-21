@@ -110,3 +110,19 @@ Apply-script: `scripts/apply-yc33-37-ddl.ts` (idempotent, không FK sang bảng 
 - Không tạo bản ghi nghiệp vụ mới ngoài dữ liệu test đã dọn sạch.
 - Không commit workbook gốc, dữ liệu nhân sự, hồ sơ đánh giá, token hay mật khẩu.
 - Không chạy `prisma migrate deploy` trên Production.
+
+---
+
+## CẬP NHẬT 21/10/2026 — YC-38B / YC-38C (ĐÃ DEPLOY)
+
+| Mục | Trạng thái |
+|---|---|
+| YC-38A (đặc tả kiến trúc v2) | ✅ `a69311b` — đã duyệt Phương án A |
+| YC-38B (bộ chọn nguồn thông minh) | ✅ **đã deploy** `d905a1d` — /plans, /my-work, /tasks |
+| YC-38C (liên thông dữ liệu) | ✅ **đã deploy** — schema additive + write path + bảng phân công |
+| Backup + restore-test | ✅ PASS (71 model, 7.391 bản ghi, 0 tham chiếu mồ côi) |
+| Hồi quy YC-01→37 | ✅ 56/56 · 23/23 · 38/38 · 20/20 · 32/32 · 25/25 · **YC-38C 28/28** |
+| Dữ liệu Production | ✅ Không đổi: tasks 18 · work_items 26 · monthly 15 · TX 348 · SP 3.386 · 48 mẫu |
+| UAT nghiệp vụ | ⛔ **CHỜ xác nhận** — xem checklist trong `docs/YC38B_C_BAO_CAO_BAN_GIAO_2026-10-21.md` |
+
+Báo cáo bàn giao + checklist UAT: `docs/YC38B_C_BAO_CAO_BAN_GIAO_2026-10-21.md`

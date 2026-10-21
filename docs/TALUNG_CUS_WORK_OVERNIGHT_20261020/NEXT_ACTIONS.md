@@ -86,3 +86,23 @@ npx tsx scripts/test-yc34-36-eval.ts               # DB LOCAL
 | 6 nhóm TX chưa ánh xạ bộ phận | Thấp | Đang ở chế độ mở (`ALL`), không chặn sử dụng |
 | Bản in chưa khớp tuyệt đối giấy in thực tế | Thấp | Đã đặt A4 + print area; UAT sẽ xác nhận |
 | Số liệu file gốc có 12 cặp tên trùng | Thấp | Giữ đủ 12 dòng, mỗi dòng một mã; chờ Hải quan xác nhận |
+
+---
+
+## 21/10/2026 — Sau YC-38B/38C (đã deploy `d905a1d`)
+
+### Đã xong
+- [x] C0 backup toàn bộ DB + restore-test PASS
+- [x] C1 schema additive (3 bảng + 20 cột) — local + Production, 0 mất dữ liệu
+- [x] C2 bộ chọn nguồn dùng chung (/plans, /my-work, /tasks)
+- [x] C3/C4 write path liên thông (task/việc gốc/provenance/phân công)
+- [x] C6 kiểm thử: YC-38C 28/28 + hồi quy YC-01→37 xanh
+- [x] C7 deploy + smoke Production (gợi ý TX, tìm không dấu, E2E tạo việc có nguồn)
+
+### Còn lại (chờ quyết định)
+- [ ] **Q-B4** — chốt thứ tự ưu tiên hệ số TX vs QĐ1277 (hiện hệ thống hiển thị cả hai, **không** tự chọn)
+- [ ] Q-B1/Q-B2/Q-B3 — xác nhận 3 quyết định nghiệp vụ đã triển khai theo khuyến nghị
+- [ ] 48 mẫu cũ: rà phụ thuộc rồi mới ẩn khỏi form tạo mới
+- [ ] Dọn 2 phiếu `evaluation_assessments` DRAFT rỗng + 2 `approval_cases` do test tạo (cần duyệt trước khi xoá)
+- [ ] UI phân công tiếp (bảng `work_item_assignments` đã sẵn sàng, chưa có màn hình) — chốt phạm vi
+- [ ] Backfill `work_item_id` cho 15 kết quả tháng DEMO — **không** tự làm, cần Hải quan quyết từng dòng
