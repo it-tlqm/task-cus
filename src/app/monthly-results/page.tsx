@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "@/components/ui/Toast";
+import { calendarDateToIso, toCalendarDate } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/usePermissions";
 import SelfAssessmentPanel from "@/components/evaluation/SelfAssessmentPanel";
 import EvaluationExportPanel from "@/components/evaluation/EvaluationExportPanel";
@@ -198,7 +199,8 @@ export default function MonthlyResultsPage() {
     setEditing(it);
     setFTitle(it.title); setFOutput(it.outputText || "");
     setFAssigned(it.assignedQty?.toString() || ""); setFCompleted(it.completedQty?.toString() || "");
-    setFDue(it.dueDate ? it.dueDate.slice(0, 16) : ""); setFDoneDate(it.completedDate ? it.completedDate.slice(0, 10) : "");
+    // YC-38 D6-F12: lấy NGÀY LỊCH (10 ký tự) — cắt 16 ký tự làm <input type="date"> hiển thị trống
+    setFDue(toCalendarDate(it.dueDate)); setFDoneDate(toCalendarDate(it.completedDate));
     setFEvidence(it.evidenceRef || "");
     setFLate(String(it.lateCount || 0)); setFRework(String(it.reworkCount || 0));
     setFNotes(it.notes || "");
@@ -216,8 +218,10 @@ export default function MonthlyResultsPage() {
       const payload: any = {
         title: fTitle.trim(),
         outputText: fOutput, assignedQty: fAssigned, completedQty: fCompleted,
-        dueDate: fDue ? new Date(fDue).toISOString() : null,
-        completedDate: fDoneDate ? new Date(fDoneDate).toISOString() : null,
+        // YC-38 D6-F12: chi gui khi có giá trị. Nếu gui null, server se GHI NULL
+        // (khong ke thua han tu dau viec) ⇒ mat han trong tong hop.
+        ...(fDue ? { dueDate: calendarDateToIso(fDue) } : {}),
+        ...(fDoneDate ? { completedDate: calendarDateToIso(fDoneDate) } : {}),
         evidenceRef: fEvidence, lateCount: fLate, reworkCount: fRework, notes: fNotes,
         productItemId: fProductId || null,
         workItemId: fWorkItemId || null,
@@ -598,8 +602,9 @@ export default function MonthlyResultsPage() {
                         if (wi) {
                           // Đầu việc là nguồn chính: tên, hạn và ngày hoàn thành thực tế đi theo đầu việc
                           setFTitle(wi.title);
-                          if (wi.dueDate) setFDue(wi.dueDate.slice(0, 16));
-                          if (wi.completedDate) setFDoneDate(wi.completedDate.slice(0, 10));
+                          // YC-38 D6-F12: lấy NGÀY LỊCH (10 ký tự) — cắt 16 ký tự làm <input type="date"> hiển thị trống
+                          if (wi.dueDate) setFDue(toCalendarDate(wi.dueDate));
+                          if (wi.completedDate) setFDoneDate(toCalendarDate(wi.completedDate));
                           // Kế thừa sản phẩm đã gắn ở kế hoạch nếu chưa chọn sản phẩm
                           if (!fProductId && wi.product) {
                             setFProductId(wi.product.id);

@@ -136,7 +136,40 @@ export function vnDateOnly(value: Date | string | number = new Date()): string {
   return parts ? parts.date : "";
 }
 
-/** Ngày/giờ hiện tại theo giờ Việt Nam (dùng làm giá trị mặc định của form). */
+/**
+ * Lấy NGÀY LỊCH (YYYY-MM-DD) từ một giá trị ngày / ngày-giờ mà **không dịch múi giờ**.
+ *
+ * Vì sao cần (YC-38 D6-F12):
+ *  - API trả các cột DATE-ONLY dưới dạng chuỗi ISO đầy đủ (VD "2026-10-23T00:00:00.000Z").
+ *  - `<input type="date">` **bắt buộc** đúng 10 ký tự "YYYY-MM-DD"; nếu đưa chuỗi 16 ký tự
+ *    ("2026-10-23T00:00") thì trình duyệt hiển thị ô TRỐNG (giá trị không hợp lệ).
+ *  - Lấy **10 ký tự đầu** ⇒ giữ đúng ngày lịch đã khai, không lệch theo múi giờ máy/trình duyệt.
+ */
+export function toCalendarDate(value?: string | Date | null): string {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "string") {
+    const m = value.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  }
+  const d = value;
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+}
+
+/**
+ * Chuyển ngày lịch ("YYYY-MM-DD") thành ISO **UTC nửa đêm** — không phụ thuộc múi giờ.
+ * Dùng khi gửi giá trị của `<input type="date">` lên API.
+ */
+export function calendarDateToIso(dateOnly: string): string {
+  const clean = toCalendarDate(dateOnly);
+  if (!clean) return "";
+  return new Date(`${clean}T00:00:00.000Z`).toISOString();
+}
+
+/**
+ * Ngày/giờ hiện tại theo giờ Việt Nam (dùng làm giá trị mặc định của form).
+ */
 export function vnNowLocalParts(now: Date = new Date()): { date: string; time: string } {
   const parts = formatVnDateTimeParts(now);
   return parts ? { date: parts.date, time: parts.time } : { date: "", time: "" };
