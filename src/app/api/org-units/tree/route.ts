@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { jsonError } from "@/server/guard";
+import { checkPermission, getAuthorizedUnitIds, jsonError } from "@/server/guard";
 
 export async function GET(req: NextRequest) {
   try {
@@ -59,6 +59,56 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await authenticateRequest(req);
+    // P1 (YC-39): bắt buộc xác thực trước khi xử lý.
+    if (!user) {
+      return jsonError("Yêu cầu đăng nhập", 401);
+    }
+
+    // =====================================================================
+    // P1 (YC-39) — KIỂM TRA THẨM QUYỀN TẠO ĐƠN VỊ/BỘ PHẬN
+    //
+    // LƯU Ý QUAN TRỌNG (an toàn):
+    //  - Hai kiểm tra dưới đây KHÔNG có feature flag tắt được.
+    //    Tắt cờ RBAC_HARDEN_ORGUNIT_CREATE_SCOPE chỉ bỏ kiểm tra PHẠM VI,
+    //    vẫn giữ kiểm tra thẩm quyền tối thiểu (org.manage) ⇒ rollback an toàn.
+    //  - Không thay đổi quyền hệ thống (guard.ts) — chỉ kiểm tra tại route.
+    // =====================================================================
+    // (1) Quản trị hệ thống (SYSTEM_ADMIN): quyền quản trị KỸ THUẬT "mặc nhiên" KHÔNG
+    //     đủ để tạo đơn vị nghiệp vụ. Điều kiện: quyền 'org.manage' phải đến từ MỘT VAI TRÒ
+    //     NGHIỆP VỤ (không phải role kỹ thuật SYSTEM_ADMIN). Không thay đổi quyền hệ thống.
+    const accountId = (user as any).accountId || (user as any).id;
+    const orgManageFromBusinessRole = await prisma.roleGrant.findFirst({
+      where: {
+        accountId,
+        role: {
+          code: { not: "SYSTEM_ADMIN" },
+          rolePermissions: { some: { permission: { code: "org.manage" } } },
+        },
+      },
+      select: { id: true },
+    });
+    const orgManageFromTechRole = await prisma.roleGrant.findFirst({
+      where: {
+        accountId,
+        role: {
+          code: "SYSTEM_ADMIN",
+          rolePermissions: { some: { permission: { code: "org.manage" } } },
+        },
+      },
+      select: { id: true },
+    });
+    if (orgManageFromTechRole && !orgManageFromBusinessRole) {
+      return jsonError(
+        "Quản trị kỹ thuật (SYSTEM_ADMIN) không có thẩm quyền tạo đơn vị nghiệp vụ. Cần được cấp quyền 'org.manage' tường minh từ một vai trò nghiệp vụ.",
+        403
+      );
+    }
+    // (2) Mọi vai trò khác: phải có quyền 'org.manage'
+    //     (Công chức / Trưởng bộ phận không có quyền này ⇒ bị chặn 403).
+    if (!checkPermission(user, "org.manage")) {
+      return jsonError("Bạn không có quyền tạo đơn vị/bộ phận mới.", 403);
+    }
+
     const body = await req.json();
     const { code, name, parentId } = body;
 
@@ -69,6 +119,19 @@ export async function POST(req: NextRequest) {
     const org = await prisma.organization.findFirst();
     if (!org) {
       return jsonError("Không tìm thấy tổ chức gốc trong hệ thống", 404);
+    }
+
+    // (3) Phạm vi: đơn vị cha phải nằm trong phạm vi được phép.
+    //     Cờ RBAC_HARDEN_ORGUNIT_CREATE_SCOPE (mặc định BẬT). Tắt cờ chỉ bỏ kiểm tra này,
+    //     không ảnh hưởng (1) và (2) ⇒ không mở lại đường tạo đơn vị trái quyền.
+    if (process.env.RBAC_HARDEN_ORGUNIT_CREATE_SCOPE !== "0" && parentId) {
+      const authorizedUnits = await getAuthorizedUnitIds(user);
+      if (authorizedUnits !== "ALL" && !authorizedUnits.includes(parentId)) {
+        return jsonError(
+          "Bạn không có quyền tạo đơn vị ngoài phạm vi bộ phận được giao.",
+          403
+        );
+      }
     }
 
     // Check duplicate code
