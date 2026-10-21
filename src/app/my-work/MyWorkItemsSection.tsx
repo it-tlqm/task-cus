@@ -4,6 +4,7 @@ import { vnDateOnly } from "@/lib/datetime";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 import WorkItemReviewBox from "./WorkItemReviewBox";
+import WorkItemProductsPanel from "./WorkItemProductsPanel";
 import {
   journalDateInRange,
   journalPeriodRange,
@@ -599,6 +600,14 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       </span>
                       {done ? "Bỏ hoàn thành" : "Đánh dấu hoàn thành"}
                     </button>
+
+                    <WorkItemProductsPanel
+                      workItemId={item.id}
+                      canPropose
+                      onChanged={async () => {
+                        await fetchItems();
+                      }}
+                    />
 
                     <WorkItemReviewBox
                       item={{

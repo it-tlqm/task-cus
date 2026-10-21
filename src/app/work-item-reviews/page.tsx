@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import WorkItemProductsPanel from "@/app/my-work/WorkItemProductsPanel";
 
 interface QueueItem {
   id: string;
@@ -178,6 +179,8 @@ export default function WorkItemReviewsPage() {
                   <b>{it.evidenceCount}</b> tệp
                 </p>
               </div>
+
+              <WorkItemProductsPanel workItemId={it.id} canPropose={false} />
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <button

@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
@@ -52,8 +52,20 @@ export async function GET(req: NextRequest) {
             catalogEntryId: true,
             dueDate: true,
             completedDate: true,
+            reviewState: true,
             catalogEntry: { select: { id: true, code: true, title: true, department: true, convertFactor: true, version: { select: { status: true } } } },
             _count: { select: { evidences: true } },
+            linkedProducts: {
+              select: {
+                id: true,
+                productItemId: true,
+                reviewState: true,
+                quantity: true,
+                quantityUnit: true,
+                factorSnapshot: true,
+                productItem: { select: { id: true, code: true, taskName: true, convertFactor: true } },
+              },
+            },
           },
         },
       },
@@ -77,11 +89,92 @@ export async function GET(req: NextRequest) {
       reworkTotal += it.reworkCount || 0;
     }
 
+    // --- V3.0.2/0.3: phan biet DU THAO (chua du dieu kien) va DIEM CHINH THUC ---
+    // Khong sua bo may tinh diem (bang1.ts) — chi gan nhan tren lop ket qua thang.
+    const itemsWithState = items.map((it: any) => {
+      const sps = it.workItem?.linkedProducts || [];
+      const spsPending = sps.filter((p: any) => p.reviewState !== "CONFIRMED");
+      const reviewState = it.workItem?.reviewState || "DRAFT";
+      let officialState: string;
+      if (!it.workItem) officialState = "NO_WORKITEM";
+      else if (reviewState === "CONFIRMED" && spsPending.length > 0) officialState = "SP_PENDING";
+      else if (reviewState === "CONFIRMED") officialState = "OFFICIAL";
+      else if (reviewState === "SUBMITTED") officialState = "WAITING";
+      else if (reviewState === "RETURNED") officialState = "RETURNED";
+      else officialState = "DRAFT";
+      const missingData = it.completedQty === null || it.completedQty === undefined || !it.completedDate;
+      return {
+        ...it,
+        officialState,
+        officialReady: officialState === "OFFICIAL" && !missingData,
+        reviewState,
+        spTotal: sps.length,
+        spConfirmed: sps.length - spsPending.length,
+      };
+    });
+
+    // Ban nhap: cong viec trong ky CHUA co ket qua thang (khong tao ban ghi trung)
+    const period = await prisma.reportingPeriod.findFirst({
+      where: { type: "MONTH", title: { contains: `Tháng ${month}/${year}` } },
+    });
+    const draftItems = period
+      ? await prisma.personalWorkItem.findMany({
+          where: {
+            personId: target.personId,
+            periodId: period.id,
+            monthlyResults: { none: { periodYear: year, periodMonth: month } },
+          },
+          include: {
+            product: { select: { id: true, code: true, taskName: true, convertFactor: true } },
+            catalogEntry: { select: { id: true, code: true, title: true, convertFactor: true } },
+            linkedProducts: {
+              select: {
+                id: true,
+                reviewState: true,
+                quantity: true,
+                quantityUnit: true,
+                productItem: { select: { code: true, taskName: true, convertFactor: true } },
+              },
+            },
+            _count: { select: { evidences: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        })
+      : [];
+    const drafts = draftItems.map((d: any) => {
+      const sps = d.linkedProducts || [];
+      const spsPending = sps.filter((p: any) => p.reviewState !== "CONFIRMED");
+      const reviewState = d.reviewState || "DRAFT";
+      let officialState: string;
+      if (reviewState === "CONFIRMED" && spsPending.length > 0) officialState = "SP_PENDING";
+      else if (reviewState === "CONFIRMED") officialState = "OFFICIAL";
+      else if (reviewState === "SUBMITTED") officialState = "WAITING";
+      else if (reviewState === "RETURNED") officialState = "RETURNED";
+      else officialState = "DRAFT";
+      return {
+        id: d.id,
+        title: d.title,
+        reviewState,
+        officialState,
+        dueDate: d.dueDate,
+        completedDate: d.completedDate,
+        resultText: d.resultText,
+        evidenceCount: d._count?.evidences ?? 0,
+        spTotal: sps.length,
+        spConfirmed: sps.length - spsPending.length,
+        product: d.product,
+        catalogEntry: d.catalogEntry,
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      data: items,
+      data: itemsWithState,
+      drafts,
       summary: {
         year, month, totalItems: items.length,
+        officialCount: itemsWithState.filter((i: any) => i.officialReady).length,
+        draftCount: drafts.length,
         assignedRaw, completedRaw,
         assignedConverted: Math.round(assignedConv * 100) / 100,
         completedConverted: Math.round(completedConv * 100) / 100,

@@ -1251,6 +1251,15 @@ model WorkItemProduct {
   isPrimary     Boolean  @default(false) @map("is_primary")
   note          String?
   createdAt     DateTime @default(now()) @map("created_at")
+  // --- V3.0.2: xac nhan tung san pham QD1277 doc lap (Q-B4/A-1, A-3, A-4) ---
+  reviewState   String?  @map("review_state") // PROPOSED | CONFIRMED | REJECTED (null = chua dua vao luong V3)
+  proposedById  String?  @map("proposed_by_id")
+  proposedAt    DateTime? @map("proposed_at")
+  confirmedById String?  @map("confirmed_by_id")
+  confirmedAt   DateTime? @map("confirmed_at")
+  quantityUnit  String?  @map("quantity_unit") // don vi tinh — can doi chieu, khong tu suy
+  factorSnapshot Float?  @map("factor_snapshot") // he so tai thoi diem xac nhan (khong sua danh muc)
+  factorSource  String?  @map("factor_source") // QD1277_PRODUCT
 
   workItem    PersonalWorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
   productItem ProductItem      @relation(fields: [productItemId], references: [id], onDelete: Cascade)

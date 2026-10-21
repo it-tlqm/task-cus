@@ -32,7 +32,14 @@ interface MonthlyItem {
     catalogEntryId?: string | null;
     catalogEntry?: { id: string; code: string; title: string; department: string } | null;
     _count?: { evidences: number };
+    reviewState?: string | null;
+    products?: { id: string; reviewState: string | null; quantity: number | null; quantityUnit: string | null; factorSnapshot: number | null; productItem: { id: string; code: string; taskName: string; convertFactor: number | null } }[];
   } | null;
+  /** V3: trang thai du dieu kien tinh diem chinh thuc (officialState) */
+  officialState?: string;
+  officialReady?: boolean;
+  spTotal?: number;
+  spConfirmed?: number;
   person: { id: string; fullName: string };
 }
 
@@ -522,6 +529,17 @@ export default function MonthlyResultsPage() {
               <tr key={it.id} className="hover:bg-slate-50">
                 <td className="py-2.5 px-3">
                   <div className="font-semibold text-slate-900">{it.title}</div>
+                  {it.officialReady ? (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-emerald-100 text-emerald-800 text-[11px] font-semibold" data-testid={`mr-official-${it.id}`}>
+                      <span className="material-symbols-outlined text-[13px]">verified</span>
+                      Đủ điều kiện tổng hợp chính thức
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-amber-100 text-amber-800 text-[11px] font-semibold" data-testid={`mr-draft-${it.id}`}>
+                      <span className="material-symbols-outlined text-[13px]">edit_note</span>
+                      DỰ THẢO — chưa đủ điều kiện tổng hợp chính thức
+                    </span>
+                  )}
                   {it.outputText && <div className="text-slate-600 text-xs">{it.outputText}</div>}
                   {it.workItem && (
                     <div className="mt-1 flex flex-wrap items-center gap-1">
