@@ -1,12 +1,15 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { isSelfInitiated, originLabel } from "@/lib/task-origin";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
+import { formatVnDateTime, vnLocalToUtcIso, utcIsoToVnInputValue } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 import WorkSourcePicker from "@/components/work/WorkSourcePicker";
+import TxSourceBadge from "@/components/work/TxSourceBadge";
 import MyWorkItemsSection from "./MyWorkItemsSection";
 import {
   DEFAULT_JOURNAL_FILTER,
@@ -80,6 +83,15 @@ interface TaskItem {
   }>;
   updates?: TaskUpdateItem[];
   deadlineRequests?: DeadlineRequestItem[];
+  // YC-38: nguon danh muc TX + nguon phat sinh (null = du lieu lich su chua xac dinh)
+  txSource?: {
+    code: string;
+    title?: string | null;
+    department?: string | null;
+    groupCode?: string | null;
+    convertFactor?: number | null;
+  } | null;
+  originKind?: string | null;
 }
 
 export default function MyWorkPage() {
@@ -201,7 +213,9 @@ export default function MyWorkPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
   const [newTaskTime, setNewTaskTime] = useState("17:00");
-  const [newTaskSource, setNewTaskSource] = useState("Tự khởi tạo phát sinh");
+  // YC-38: nguon phat sinh — chi giu nguon DANH MUC trong source_kind,
+  // nguon PHAT SINH nam rieng trong origin_kind (server quyet dinh lai)
+  const [newTaskSource, setNewTaskSource] = useState("SELF_INITIATED");
   // YC-38B: nguồn công việc đã chọn (TX / QĐ1277) — gửi kèm khi tạo
   const [newTaskCatalogEntry, setNewTaskCatalogEntry] = useState<{
     id: string;
@@ -236,19 +250,8 @@ export default function MyWorkPage() {
     unitName: "Hải quan cửa khẩu Quốc tế Tà Lùng",
   });
 
-  const formatDateTime = (iso?: string) => {
-    if (!iso) return "--";
-    try {
-      const d = new Date(iso);
-      const hours = String(d.getHours()).padStart(2, "0");
-      const minutes = String(d.getMinutes()).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      return `${hours}:${minutes} ${day}/${month}`;
-    } catch {
-      return iso;
-    }
-  };
+  // YC-38 UAT fix: hiển thị thời hạn theo giờ Việt Nam, KHÔNG phụ thuộc múi giờ thiết bị
+  const formatDateTime = (iso?: string) => (iso ? formatVnDateTime(iso) : "--");
 
   const fetchTasks = async (opts?: { page?: number; append?: boolean; search?: string }) => {
     const p = opts?.page ?? 1;
@@ -469,8 +472,9 @@ export default function MyWorkPage() {
         body: JSON.stringify({
           title: newTaskTitle.trim(),
           priority: newTaskPriority,
-          currentDeadline: `${newTaskDeadline}T${newTaskTime}:00Z`,
-          description: `Nguồn: ${newTaskSource}`,
+          currentDeadline: vnLocalToUtcIso(newTaskDeadline, newTaskTime),
+          description: `Nguồn: ${originLabel(newTaskSource)}`,
+          originKind: newTaskSource,
           status: "IN_PROGRESS",
           progressPercent: 0,
           // YC-38B/YC-38C: nguồn công việc + khoá idempotency (chống bấm trùng)
@@ -536,14 +540,8 @@ export default function MyWorkPage() {
     setEditTitle(task.title || "");
     setEditOwnerId(task.owner?.id || "");
     setEditCollabs((task.assignees || []).map((a) => a.person.id));
-    try {
-      const d = new Date(task.currentDeadline);
-      const p = (n: number) => String(n).padStart(2, "0");
-      setEditDeadline(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`);
-    } catch {
-      setEditDeadline("");
-    }
-    setEditPriority(task.priority || "Cao");
+    // YC-38 UAT fix: nạp giờ Việt Nam vào ô datetime-local (không theo múi giờ thiết bị)
+    setEditDeadline(utcIsoToVnInputValue(task.currentDeadline));    setEditPriority(task.priority || "Cao");
   };
 
   // Lãnh đạo/Trưởng nhóm: lưu sửa giao việc (backend phân quyền + lưu vết)
@@ -560,7 +558,7 @@ export default function MyWorkPage() {
           title: editTitle.trim(),
           ownerId: editOwnerId || undefined,
           assigneeIds: editCollabs,
-          currentDeadline: editDeadline ? new Date(editDeadline).toISOString() : undefined,
+          currentDeadline: editDeadline ? vnLocalToUtcIso(editDeadline) : undefined,
           priority: editPriority,
         }),
       });
@@ -1057,14 +1055,13 @@ export default function MyWorkPage() {
 
                         <td className="py-3 px-space-sm align-top">
                           <div className="flex flex-col">
-                            <span className="font-label-sm text-label-sm text-primary font-semibold">
-                              {task.code.startsWith("NV-") ? "TTHQ-ĐT" : task.code}
+                            {/* YC-38 UAT fix: hien thi ma TX thuoc (bo nhan "TTHQ-ĐT" hard-code) */}
+                            <TxSourceBadge source={task.txSource} />
+                            <span className="font-label-sm text-[11px] text-outline">
+                              {originLabel(task.originKind)}
                             </span>
                             <span className="text-on-surface-variant font-label-sm text-[12px] truncate max-w-[150px]">
                               {task.expectedResultText || "Theo quy trình hải quan"}
-                            </span>
-                            <span className="font-label-sm text-[11px] text-outline">
-                              Hệ thống số hóa HQ
                             </span>
                           </div>
                         </td>
@@ -1639,7 +1636,13 @@ export default function MyWorkPage() {
                   </h3>
                   <div className="mt-2 flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
                     <span className="material-symbols-outlined text-[16px] text-secondary">assignment_ind</span>
-                    <span className="truncate">Người giao: <strong className="text-on-surface font-body-semibold">{task.owner?.fullName || "Lãnh đạo bộ phận"}</strong> ({task.owner?.position || "Phụ trách"})</span>
+                    <span className="truncate">
+                      {isSelfInitiated(task.originKind) ? (
+                        <>Nguồn: <strong className="text-on-surface font-body-semibold">Công việc tự khởi tạo</strong></>
+                      ) : (
+                        <>Người giao: <strong className="text-on-surface font-body-semibold">{task.owner?.fullName || "Lãnh đạo bộ phận"}</strong> ({task.owner?.position || "Phụ trách"})</>
+                      )}
+                    </span>
                   </div>
                 </div>
                 <div className="bg-surface-container-low p-2 rounded-lg flex items-center justify-between text-[12px] text-on-surface-variant">
@@ -1649,7 +1652,17 @@ export default function MyWorkPage() {
                   </span>
                   <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
                 </div>
-                {task.status === "NOT_STARTED" ? (
+                {/* YC-38 UAT fix: khoi "Nguon cong viec" — ma TX + nguon phat sinh */}
+                <div className="bg-surface-container-lowest border border-border-default/50 rounded-lg p-2 flex flex-col gap-1">
+                  <span className="text-[10px] uppercase tracking-wide text-on-surface-variant font-semibold">
+                    Nguồn công việc
+                  </span>
+                  <TxSourceBadge source={task.txSource} />
+                  <span className="text-[11px] text-on-surface-variant">
+                    {originLabel(task.originKind)}
+                  </span>
+                </div>
+                {task.status === "NOT_STARTED" && !isSelfInitiated(task.originKind) ? (
                   <div className="grid grid-cols-1 gap-2 pt-1">
                     <button
                       onClick={() => handleAcceptTask(task)}
@@ -2230,9 +2243,11 @@ export default function MyWorkPage() {
                       onChange={(e) => setNewTaskSource(e.target.value)}
                       className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
-                      <option>Kế hoạch công tác tuần</option>
-                      <option>Tự khởi tạo phát sinh</option>
-                      <option>Việc đột xuất Lãnh đạo giao</option>
+                      <option value="PLAN">Kế hoạch công tác tuần</option>
+                      <option value="SELF_INITIATED">Tự khởi tạo phát sinh</option>
+                      <option value="OUTSIDE_DIRECTIVE">
+                        Tự ghi nhận theo chỉ đạo ngoài hệ thống (không phải lệnh giao chính thức)
+                      </option>
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">

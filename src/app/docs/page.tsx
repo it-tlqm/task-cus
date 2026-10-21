@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { vnDateToDeadlineIso } from "@/lib/datetime";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -86,7 +87,7 @@ export default function DocsPage() {
         body: JSON.stringify({
           direction: fDirection, number: fNumber, title: fTitle, fromTo: fFromTo,
           docDate: fDocDate || undefined, handlerId: fHandlerId || undefined,
-          deadline: fDeadline || undefined, notes: fNotes,
+          deadline: fDeadline ? vnDateToDeadlineIso(fDeadline) : undefined, notes: fNotes,
         }),
       });
       const json = await res.json().catch(() => ({}));

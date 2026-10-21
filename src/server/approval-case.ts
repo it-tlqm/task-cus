@@ -15,6 +15,7 @@
  */
 
 import { prisma } from "./db";
+import { formatVnDateTime } from "@/lib/datetime";
 import { SessionUser } from "./auth";
 import { getAuthorizedUnitIds, verifyTaskAccess } from "./guard";
 import { recordAuditEvent } from "./audit";
@@ -58,12 +59,10 @@ function diffDays(a: Date, b: Date) {
   return Math.round((startOfDay(a).getTime() - startOfDay(b).getTime()) / 86400000);
 }
 
+// YC-38 UAT fix: hiển thị thời hạn theo giờ Việt Nam, KHÔNG phụ thuộc múi giờ máy chủ
 function formatDateTime(v: Date | string | null | undefined) {
   if (!v) return null;
-  const d = v instanceof Date ? v : new Date(v);
-  if (Number.isNaN(d.getTime())) return null;
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getHours())}:${p(d.getMinutes())} ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+  return formatVnDateTime(v);
 }
 
 /** Người có quyền quyết định hồ sơ này không? */

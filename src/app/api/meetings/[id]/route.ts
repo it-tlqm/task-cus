@@ -170,6 +170,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             status: "NOT_STARTED",
             originalDeadline: deadline,
             currentDeadline: deadline,
+            // YC-38: nguon phat sinh = giao ban (server quyet dinh, khong phai client khai)
+        originKind: "DOCUMENT_MEETING",
             assignees: assignees.length > 0 ? { create: assignees.map((pId: string) => ({ personId: pId, role: "COLLABORATOR" })) } : undefined,
           },
           include: { owner: true, unit: true },

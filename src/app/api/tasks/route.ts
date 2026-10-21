@@ -15,6 +15,7 @@ import {
   resolveWorkSource,
   type ResolvedSource,
 } from "@/server/work-item-linkage";
+import { isSelfInitiated, resolveOriginKind } from "@/server/task-origin";
 
 // YC-04: cửa sổ chống bấm trùng khi giao việc (giây)
 const CREATE_DEDUP_WINDOW_SEC = 120;
@@ -130,6 +131,21 @@ export async function GET(req: NextRequest) {
             },
           },
         },
+        workItem: {
+          include: {
+            catalogEntry: {
+              select: {
+                id: true,
+                code: true,
+                title: true,
+                department: true,
+                groupCode: true,
+                convertFactor: true,
+              },
+            },
+            product: { select: { id: true, code: true, taskName: true } },
+          },
+        },
       },
       orderBy: [{ currentDeadline: "asc" }, { createdAt: "desc" }],
       skip: (page - 1) * pageSize,
@@ -145,10 +161,25 @@ export async function GET(req: NextRequest) {
       const isFinished = t.status === "COMPLETED" || t.status === "DONE" || t.status === "CANCELED";
       const isOverdue = !isFinished && new Date(t.currentDeadline) < now;
       const latestProgress = (t.updates as any[])?.[0]?.progressPercent;
+      // YC-38 UAT fix: thong tin danh muc TX kem theo (ma, ten, he so) cho giao dien
+      const ce = (t as any).workItem?.catalogEntry;
+      const txSource = ce
+        ? {
+            code: ce.code,
+            title: ce.title,
+            department: ce.department,
+            groupCode: ce.groupCode,
+            convertFactor:
+              ce.convertFactor === null || ce.convertFactor === undefined
+                ? null
+                : Number(ce.convertFactor),
+          }
+        : null;
       return {
         ...t,
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
+        txSource,
       };
     });
 
@@ -191,6 +222,7 @@ export async function POST(req: NextRequest) {
       sourceRefId,
       sourceCodeSnapshot,
       idempotencyKey,
+      originKind, // YC-38: nguon phat sinh (client chi duoc TU KHAI; server quyet dinh lai)
     } = body;
 
     // YC-32: kiểm tra quyền trên đầu việc + chống tạo Task trùng cho cùng đầu việc
@@ -274,6 +306,14 @@ export async function POST(req: NextRequest) {
       resolvedSource = src.source || null;
     }
 
+    // YC-38: nguon phat sinh — quyet dinh o SERVER (khong tin client khai "lãnh đạo giao")
+    const resolvedOrigin = resolveOriginKind({
+      actorRole: user.role,
+      actorPersonId: user.personId,
+      ownerPersonId: effectiveOwnerId,
+      requested: originKind,
+    });
+
     // YC-04: chống giao việc trùng — khóa tư vấn theo (chủ trì + tiêu đề) rồi kiểm tra
     // cửa sổ 120s. Hai request đồng thời/bấm liên tiếp chỉ tạo đúng 1 Task.
     // E1: mã NV serial theo năm (NV-YYYY-NNNN), cấp phát nguyên tử trong cùng transaction.
@@ -312,6 +352,8 @@ export async function POST(req: NextRequest) {
           // LƯU Ý: cột này tham chiếu `people(id)` → dùng personId (user.id là accountId)
           createdById: user.personId,
           assignedById: user.personId,
+          // YC-38: nguon phat sinh (KHONG thay the source_kind = nguon danh muc)
+          originKind: resolvedOrigin.originKind,
           sourceKind: resolvedSource?.sourceKind ?? null,
           sourceRefId: resolvedSource?.sourceRefId ?? null,
           sourceCodeSnapshot: resolvedSource?.sourceCodeSnapshot ?? null,
@@ -468,6 +510,14 @@ export async function PATCH(req: NextRequest) {
     if (action === "ACCEPT_TASK") {
       // Đợt A: người được giao xác nhận đã nhận việc (chủ trì/phối hợp).
       // Chuyển NOT_STARTED → IN_PROGRESS, báo lại người giao việc.
+      // YC-38: cong viec TU KHOI TAO khong co buoc "xac nhan nhan viec"
+      // (chi ap dung khi origin_kind da duoc ghi ro; du lieu lich su NULL giu nguyen hanh vi cu)
+      if (isSelfInitiated(currentTask.originKind)) {
+        return jsonError(
+          "Công việc tự khởi tạo không có bước xác nhận nhận việc — hãy bắt đầu triển khai trực tiếp",
+          400
+        );
+      }
       const isOwner = currentTask.ownerId === user.personId;
       const isAssignee = (currentTask.assignees || []).some((a: any) => a.personId === user.personId);
       if (!isOwner && !isAssignee) {

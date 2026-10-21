@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { vnDateToDeadlineIso } from "@/lib/datetime";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
@@ -94,7 +95,7 @@ export default function MeetingDetailPage() {
           content,
           ownerId: cOwner || undefined,
           assigneeIds: cCollabs,
-          deadline: cDeadline ? new Date(cDeadline).toISOString() : undefined,
+          deadline: cDeadline ? vnDateToDeadlineIso(cDeadline) : undefined,
         }),
       });
       const json = await res.json().catch(() => ({}));

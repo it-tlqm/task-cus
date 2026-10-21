@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { vnLocalToUtcIso, vnNowLocalParts } from "@/lib/datetime";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
@@ -105,10 +106,10 @@ export default function DashboardPage() {
   const [assignTitle, setAssignTitle] = useState("");
   const [assignUnit, setAssignUnit] = useState("");
   const [assignPriority, setAssignPriority] = useState("Cao");
+  // YC-38 UAT fix: mặc định theo giờ Việt Nam (không theo múi giờ thiết bị)
   const [assignDeadline, setAssignDeadline] = useState(() => {
-    const d = new Date(Date.now() + 24 * 3600 * 1000);
-    const p = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T17:00`;
+    const now = vnNowLocalParts(new Date(Date.now() + 24 * 3600 * 1000));
+    return `${now.date}T17:00`;
   });
   // AI tóm tắt giao ban (tự ẩn khi máy chủ chưa cấu hình key)
   const [aiEnabled, setAiEnabled] = useState(false);
@@ -240,7 +241,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           title: assignTitle.trim(),
           priority: assignPriority,
-          currentDeadline: new Date(assignDeadline).toISOString(),
+          currentDeadline: vnLocalToUtcIso(assignDeadline),
           description: "Chỉ đạo trực ban lãnh đạo giao khẩn",
           unitId: assignUnit && assignUnit !== "ALL" ? assignUnit : undefined,
           ownerId: assignOwner || undefined,

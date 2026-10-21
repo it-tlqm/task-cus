@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { originLabel } from "@/lib/task-origin";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 import WorkSourcePicker from "@/components/work/WorkSourcePicker";
+import TxSourceBadge from "@/components/work/TxSourceBadge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getRoleDisplayName } from "@/lib/unit-info";
+import { formatVnDateTime, vnLocalToUtcIso } from "@/lib/datetime";
 
 interface TaskItem {
   id: string;
@@ -32,6 +35,15 @@ interface TaskItem {
     reason: string;
     status: "PENDING" | "APPROVED" | "REJECTED";
   }>;
+  // YC-38: nguon danh muc TX + nguon phat sinh
+  txSource?: {
+    code: string;
+    title?: string | null;
+    department?: string | null;
+    groupCode?: string | null;
+    convertFactor?: number | null;
+  } | null;
+  originKind?: string | null;
   planLinks?: Array<{
     planItem?: {
       title?: string;
@@ -40,19 +52,9 @@ interface TaskItem {
   }>;
 }
 
+// YC-38 UAT fix: hiển thị thời hạn theo giờ Việt Nam, KHÔNG phụ thuộc múi giờ thiết bị
 function formatDateTime(isoStr?: string) {
-  if (!isoStr) return "--";
-  try {
-    const d = new Date(isoStr);
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${hours}:${minutes} ${day}/${month}/${year}`;
-  } catch {
-    return isoStr;
-  }
+  return isoStr ? formatVnDateTime(isoStr) : "--";
 }
 
 function getOverdueText(isoStr: string) {
@@ -268,7 +270,7 @@ export default function TasksPage() {
         body: JSON.stringify({
           title: newTitle.trim(),
           priority: newPriority,
-          currentDeadline: new Date(newDeadline).toISOString(),
+          currentDeadline: vnLocalToUtcIso(newDeadline),
           description: newSource,
           expectedResultText: newExpectedResult || undefined,
           unitId: selectedUnitId || undefined,
@@ -677,7 +679,12 @@ export default function TasksPage() {
                         </td>
 
                         <td className="py-3 px-space-sm align-top">
-                          <div className="flex flex-col">
+                          <div className="flex flex-col gap-1">
+                            {/* YC-38 UAT fix: ma TX + nguon phat sinh thay cho nhan hard-code */}
+                            <TxSourceBadge source={task.txSource} />
+                            <span className="text-[11px] text-outline">
+                              {originLabel(task.originKind)}
+                            </span>
                             <span className="text-xs font-semibold text-primary">
                               {planTitle || "Chỉ đạo Chi cục"}
                             </span>

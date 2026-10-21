@@ -84,6 +84,7 @@ const NEW_COLUMNS: Record<string, string[]> = {
     "source_kind",
     "source_ref_id",
     "source_code_snapshot",
+    "origin_kind",
   ],
   plan_items: ["work_item_id"],
   monthly_work_results: ["idempotency_key", "subject_kind", "subject_id", "line_no"],

@@ -110,6 +110,10 @@ ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "source_code_snapshot" TEXT;
 
 CREATE INDEX IF NOT EXISTS "tasks_work_item_id_idx" ON "tasks"("work_item_id");
 
+-- YC-38 (UAT fix): nguon phat sinh cua nhiem vu (nullable, du lieu cu giu NULL)
+ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "origin_kind" TEXT;
+CREATE INDEX IF NOT EXISTS "tasks_origin_kind_idx" ON "tasks"("origin_kind");
+
 ALTER TABLE "plan_items" ADD COLUMN IF NOT EXISTS "work_item_id" TEXT;
 CREATE INDEX IF NOT EXISTS "plan_items_work_item_id_idx" ON "plan_items"("work_item_id");
 

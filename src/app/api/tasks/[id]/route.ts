@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isSelfInitiated } from "@/server/task-origin";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
@@ -50,6 +51,21 @@ export async function GET(
             uploadedBy: {
               select: { fullName: true },
             },
+          },
+        },
+        workItem: {
+          include: {
+            catalogEntry: {
+              select: {
+                id: true,
+                code: true,
+                title: true,
+                department: true,
+                groupCode: true,
+                convertFactor: true,
+              },
+            },
+            product: { select: { id: true, code: true, taskName: true } },
           },
         },
       },
@@ -107,7 +123,7 @@ export async function GET(
         at: createAudit?.timestamp || task.createdAt,
         actor: createAudit ? actorName(createAudit) : "Lãnh đạo đơn vị",
         kind: "create",
-        title: "Giao nhiệm vụ",
+        title: isSelfInitiated(task.originKind) ? "Khởi tạo công việc" : "Giao nhiệm vụ",
         detail: ownerName ? `Phân công chủ trì: ${ownerName}${assigneesText}` : null,
         progress: null,
         statusFrom: null,
@@ -251,6 +267,21 @@ export async function GET(
         ...task,
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
+    // YC-38 UAT fix: thong tin danh muc TX kem theo (ma, ten, he so)
+    txSource: (() => {
+      const ce = (task as any).workItem?.catalogEntry;
+      if (!ce) return null;
+      return {
+        code: ce.code,
+        title: ce.title,
+        department: ce.department,
+        groupCode: ce.groupCode,
+        convertFactor:
+          ce.convertFactor === null || ce.convertFactor === undefined
+            ? null
+            : Number(ce.convertFactor),
+      };
+    })(),
         timeline,
       },
     });

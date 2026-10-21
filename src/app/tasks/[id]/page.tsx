@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { isSelfInitiated, originLabel } from "@/lib/task-origin";
+import TxSourceBadge from "@/components/work/TxSourceBadge";
+import { formatVnDateTime, utcIsoToVnInputValue, vnLocalToUtcIso } from "@/lib/datetime";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
@@ -55,6 +58,15 @@ interface TaskDetail {
     status: "PENDING" | "APPROVED" | "REJECTED";
     createdAt: string;
   }>;
+  // YC-38: nguon danh muc TX + nguon phat sinh
+  txSource?: {
+    code: string;
+    title?: string | null;
+    department?: string | null;
+    groupCode?: string | null;
+    convertFactor?: number | null;
+  } | null;
+  originKind?: string | null;
   updates?: Array<{
     id: string;
     progressPercent: number;
@@ -423,13 +435,8 @@ export default function TaskDetailPage() {
     setEditTitle(task.title || "");
     setEditDescription(task.description || "");
     setEditPriority(task.priority || "Cao");
-    try {
-      const d = new Date(task.currentDeadline);
-      const p = (n: number) => String(n).padStart(2, "0");
-      setEditDeadline(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`);
-    } catch {
-      setEditDeadline("");
-    }
+    // YC-38 UAT fix: nạp giờ Việt Nam vào ô datetime-local (không theo múi giờ thiết bị)
+    setEditDeadline(utcIsoToVnInputValue(task.currentDeadline));
     setEditExpectedResult(task.expectedResultText || "");
     setEditOwnerId(task.owner?.id || "");
     setEditCollabs((task.assignees || []).map((a) => a.person.id));
@@ -449,7 +456,7 @@ export default function TaskDetailPage() {
           title: editTitle.trim(),
           description: editDescription,
           priority: editPriority,
-          currentDeadline: editDeadline ? new Date(editDeadline).toISOString() : undefined,
+          currentDeadline: editDeadline ? vnLocalToUtcIso(editDeadline) : undefined,
           expectedResultText: editExpectedResult,
           ownerId: editOwnerId || undefined,
           assigneeIds: editCollabs,
@@ -575,7 +582,7 @@ export default function TaskDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          requestedDeadline: new Date(extDeadline).toISOString(),
+          requestedDeadline: vnLocalToUtcIso(extDeadline),
           reason: extReason,
         }),
       });
@@ -620,20 +627,8 @@ export default function TaskDetailPage() {
     }
   };
 
-  const formatDateTime = (iso?: string) => {
-    if (!iso) return "--";
-    try {
-      const d = new Date(iso);
-      const hours = String(d.getHours()).padStart(2, "0");
-      const minutes = String(d.getMinutes()).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const year = d.getFullYear();
-      return `${hours}:${minutes} ${day}/${month}/${year}`;
-    } catch {
-      return iso;
-    }
-  };
+  // YC-38 UAT fix: hiển thị thời hạn theo giờ Việt Nam, KHÔNG phụ thuộc múi giờ thiết bị
+  const formatDateTime = (iso?: string) => (iso ? formatVnDateTime(iso) : "--");
 
   if (loading) {
     return (
@@ -747,7 +742,7 @@ export default function TaskDetailPage() {
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-space-sm shrink-0">
             {/* Đợt A: nhận việc khi chưa bắt đầu (chủ trì/phối hợp) */}
-            {task?.status === "NOT_STARTED" && isMyTask && (
+            {task?.status === "NOT_STARTED" && isMyTask && !isSelfInitiated(task?.originKind) && (
               <button
                 onClick={handleAcceptTask}
                 disabled={accepting}
@@ -1202,6 +1197,15 @@ export default function TaskDetailPage() {
                     <span className="text-outline">{formatDateTime(task.originalDeadline)}</span>
                   </div>
                 )}
+
+                {/* YC-38 UAT fix: khoi "Nguon cong viec" — ma TX + nguon phat sinh */}
+                <div className="pt-2 border-t border-border-default">
+                  <span className="text-outline block mb-0.5">Nguồn công việc:</span>
+                  <TxSourceBadge source={task.txSource} />
+                  <span className="text-[11px] text-outline block mt-0.5">
+                    {originLabel(task.originKind)}
+                  </span>
+                </div>
 
                 {task.planLinks && task.planLinks.length > 0 && (
                   <div className="pt-2 border-t border-border-default">

@@ -184,6 +184,8 @@ export async function PATCH(req: NextRequest) {
             status: "NOT_STARTED",
             originalDeadline: deadline ? new Date(deadline) : current.deadline || new Date(Date.now() + 3 * 86400000),
             currentDeadline: deadline ? new Date(deadline) : current.deadline || new Date(Date.now() + 3 * 86400000),
+            // YC-38: nguon phat sinh = van ban (server quyet dinh, khong phai client khai)
+        originKind: "DOCUMENT_MEETING",
           },
           include: { owner: true, unit: true },
         });
