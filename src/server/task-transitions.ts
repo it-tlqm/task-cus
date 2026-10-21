@@ -27,6 +27,14 @@ export function assertTaskStatusTransition(input: StatusTransitionInput): void {
     );
   }
 
+  // YC-38 B4: chống nộp duyệt lặp — không lặp lại chuyển trạng thái WAITING_REVIEW → WAITING_REVIEW
+  if (currentStatus === "WAITING_REVIEW" && target === "WAITING_REVIEW") {
+    throw new AuthorizationError(
+      "Nhiệm vụ này đã được trình Lãnh đạo phê duyệt — không thể trình lặp lại.",
+      409
+    );
+  }
+
   // Nghiệm thu hoàn thành: chỉ lãnh đạo
   if (target === "COMPLETED" || target === "DONE") {
     if (!isLeader) {

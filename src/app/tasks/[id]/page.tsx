@@ -100,7 +100,8 @@ export default function TaskDetailPage() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [newProgress, setNewProgress] = useState(50);
   const [updateNotes, setUpdateNotes] = useState("");
-  const [isSubmitReview, setIsSubmitReview] = useState(false);
+  // YC-38 B4: KHONG dung state rieng cho "trinh duyet" — suy ra tu newProgress === 100
+  // (truoc day checked={isSubmitReview || newProgress === 100} => hien da tick nhung state chua dong bo)
   const [updating, setUpdating] = useState(false);
 
   // Extension request modal state
@@ -545,14 +546,15 @@ export default function TaskDetailPage() {
           progressPercent: newProgress,
           notes: updateNotes,
           actualResultText: updateNotes,
-          submitForReview: isSubmitReview || newProgress === 100,
+          // YC-38 B4: 100% => tu dong trinh duyet; <100% => chi cap nhat nhat ky
+          submitForReview: newProgress === 100,
         }),
       });
 
       if (res.ok) {
         toast.success(
-          isSubmitReview || newProgress === 100
-            ? "Đã nộp báo cáo kết quả và trình lãnh đạo phê duyệt!"
+          newProgress === 100
+            ? "Đã nộp kết quả và trình Lãnh đạo phê duyệt!"
             : "Đã cập nhật tiến độ công việc thành công!"
         );
         setShowUpdateModal(false);
@@ -774,7 +776,12 @@ export default function TaskDetailPage() {
             )}
             {!isCompleted && (
               <button
-                onClick={() => setShowUpdateModal(true)}
+                onClick={() => {
+                  // YC-38 B4: reset trạng thái modal mỗi lần mở (không giữ checkbox/tiến độ cũ)
+                  setNewProgress(task?.progressPercent ?? 0);
+                  setUpdateNotes("");
+                  setShowUpdateModal(true);
+                }}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-semibold text-sm shadow-sm active-press"
               >
                 <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
@@ -1411,18 +1418,37 @@ export default function TaskDetailPage() {
                 />
               </div>
 
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-primary font-medium">
+              {/* YC-38 B4: quy tắc nộp duyệt — 100% tự động trình duyệt; dưới 100% chỉ cập nhật nhật ký.
+                  Ô tick là trạng thái SUY RA từ tiến độ (không có state riêp) => không thể lệch hiển thị. */}
+              <label
+                className={`flex items-center gap-2 text-xs font-medium ${
+                  newProgress === 100 ? "text-primary cursor-pointer" : "text-outline"
+                }`}
+              >
                 <input
                   type="checkbox"
-                  checked={isSubmitReview || newProgress === 100}
-                  onChange={(e) => setIsSubmitReview(e.target.checked)}
+                  checked={newProgress === 100}
+                  disabled={newProgress !== 100 || task?.status === "WAITING_REVIEW"}
+                  onChange={() => undefined}
                   className="rounded text-secondary"
                 />
-                <span>Trình Lãnh đạo đơn vị ký phê duyệt kết quả hoàn thành</span>
+                <span>
+                  {newProgress === 100
+                    ? "Nộp kết quả chờ Lãnh đạo đơn vị ký phê duyệt"
+                    : "Nộp kết quả chờ Lãnh đạo đơn vị ký phê duyệt (đạt 100% tiến độ)"}
+                </span>
               </label>
               <p className="text-[11px] text-outline">
-                Kéo thanh theo mức 5%. Tick ô trên (hoặc chọn 100%) thì việc chuyển sang Chờ duyệt — lãnh đạo duyệt mới xong hẳn.
+                Kéo thanh theo mức 5%.{" "}
+                {newProgress === 100
+                  ? "Đạt 100% — khi bấm \"Xác nhận cập nhật\", hệ thống sẽ NỘP KẾT QUẢ chờ Lãnh đạo đơn vị phê duyệt. Cán bộ không tự kết luận hoàn thành."
+                  : "Dưới 100% — khi lưu chỉ cập nhật nhật ký, nhiệm vụ tiếp tục \"Đang thực hiện\". Trình duyệt sớm chưa triển khai (đề xuất nghiệp vụ đang chờ xác nhận)."}
               </p>
+              {task?.status === "WAITING_REVIEW" && (
+                <p className="text-[11px] font-semibold text-status-warning">
+                  Nhiệm vụ đang chờ Lãnh đạo phê duyệt — không thể trình lặp lại.
+                </p>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-default">
                 <button
