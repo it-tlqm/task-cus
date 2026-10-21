@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
+import { isTerminalTaskStatus } from "@/server/task-transitions";
 import { advisoryLock } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 
@@ -45,6 +46,14 @@ export async function POST(
     const access = await verifyTaskAccess(user, taskId, "WRITE");
     if (!access.allowed) {
       return jsonError(access.reason || "Truy cập bị từ chối", 403);
+    }
+
+    // F4 (YC-38): nhiệm vụ đã nghiệm thu/kết thúc ⇒ không được xin gia hạn thông thường.
+    if (isTerminalTaskStatus(access.task?.status)) {
+      return jsonError(
+        `Nhiệm vụ ${access.task.status === "CANCELED" ? "đã bị loại" : "đã được nghiệm thu hoàn thành"} — không thể xin gia hạn.`,
+        409
+      );
     }
 
     const body = await req.json();

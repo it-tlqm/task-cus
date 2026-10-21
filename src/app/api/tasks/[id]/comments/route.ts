@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
+import { isTerminalTaskStatus } from "@/server/task-transitions";
 import { isTaskLeader } from "@/server/task-transitions";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
@@ -39,6 +40,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id: taskId } = await params;
     const access = await verifyTaskAccess(user, taskId, "WRITE");
     if (!access.allowed) return jsonError(access.reason || "Truy cập bị từ chối", 403);
+
+    // F5/đường phụ (YC-38): nhiệm vụ đã nghiệm thu ⇒ không bình luận/ghi chú thêm
+    // (chưa có chính sách bình luận bổ sung cho nhiệm vụ đã nghiệm thu ⇒ chặn, fail-closed).
+    if (isTerminalTaskStatus((access as any).task?.status)) {
+      return jsonError(
+        `Nhiệm vụ ${(access as any).task.status === "CANCELED" ? "đã bị loại" : "đã được nghiệm thu hoàn thành"} — không thể bình luận thêm.`,
+        409
+      );
+    }
     const body = await req.json();
     const content = String(body.content || "").trim();
     if (!content) return jsonError("Nội dung bình luận là bắt buộc", 400);

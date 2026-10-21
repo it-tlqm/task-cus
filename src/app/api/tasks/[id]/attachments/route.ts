@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
+import { isTerminalTaskStatus } from "@/server/task-transitions";
 import { recordAuditEvent } from "@/server/audit";
 import { getStorageProvider } from "@/server/storage";
 
@@ -25,11 +26,20 @@ export async function GET(
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { id: true, code: true, title: true, unitId: true, ownerId: true },
+      select: { id: true, code: true, title: true, unitId: true, ownerId: true, status: true },
     });
 
     if (!task) {
       return jsonError("Nhiệm vụ không tồn tại", 404);
+    }
+
+    // F5/đường phụ (YC-38): nhiệm vụ đã nghiệm thu ⇒ không đính kèm thêm
+    // (chưa có chính sách minh chứng bổ sung cho nhiệm vụ đã nghiệm thu ⇒ chặn, fail-closed).
+    if (isTerminalTaskStatus(task.status)) {
+      return jsonError(
+        `Nhiệm vụ ${task.status === "CANCELED" ? "đã bị loại" : "đã được nghiệm thu hoàn thành"} — không thể đính kèm thêm tài liệu.`,
+        409
+      );
     }
 
     const readAccess = await verifyTaskAccess(user, taskId, "READ");

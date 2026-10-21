@@ -663,6 +663,9 @@ export default function TasksPage() {
                   filteredTasks.map((task) => {
                     const isWaiting = task.status === "WAITING_REVIEW";
                     const isCompleted = task.status === "COMPLETED";
+                    // F5 (YC-38): nhiệm vụ đã nghiệm thu/kết thúc ⇒ không mở hành động ghi
+                    const isTaskTerminal =
+                      (task.status as string) === "COMPLETED" || (task.status as string) === "DONE" || (task.status as string) === "CANCELED";
                     const isOverdue = task.isOverdue || task.hasIssue;
                     const overdueText = isOverdue ? getOverdueText(task.currentDeadline) : null;
                     const planTitle = task.planLinks?.[0]?.planItem?.plan?.title;
@@ -760,7 +763,7 @@ export default function TasksPage() {
                                 Duyệt kết quả
                               </button>
                             )}
-                            {task.deadlineRequests && task.deadlineRequests.some((r) => r.status === "PENDING") && canApprove && (
+                            {!isTaskTerminal && task.deadlineRequests && task.deadlineRequests.some((r) => r.status === "PENDING") && canApprove && (
                               <button
                                 onClick={() => {
                                   setSelectedTask(task);
@@ -771,7 +774,7 @@ export default function TasksPage() {
                                 Duyệt hạn
                               </button>
                             )}
-                            {isOverdue && !isWaiting && canApprove && (
+                            {isOverdue && !isWaiting && !isTaskTerminal && canApprove && (
                               <button
                                 onClick={() => {
                                   setSelectedTask(task);

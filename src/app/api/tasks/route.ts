@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { buildScopedWhereClause, verifyTaskAccess, jsonError } from "@/server/guard";
-import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
+import {
+  assertTaskStatusTransition,
+  isTaskLeader,
+  isTerminalTaskStatus,
+} from "@/server/task-transitions";
 import { advisoryLock, normalizeTitle } from "@/server/idempotency";
 import { nextTaskCode } from "@/server/task-code";
 import { unaccentSearchIds } from "@/server/search";
@@ -504,6 +508,15 @@ export async function PATCH(req: NextRequest) {
     }
 
     const currentTask = accessCheck.task;
+
+    // F1/F2/F3 (YC-38 — vá lỗ hổng quyền ghi sau nghiệm thu): nhiệm vụ đã nghiệm thu/kết thúc
+    // ⇒ chặn mọi thao tác ghi (currentTask). Chặn ở SERVER, không phụ thuộc giao diện.
+    if (isTerminalTaskStatus(currentTask.status)) {
+      return jsonError(
+        `Nhiệm vụ ${currentTask.status === "CANCELED" ? "đã bị loại" : "đã được nghiệm thu hoàn thành"} — không thể cập nhật tiến độ, thay đổi trạng thái, ghi đè kết quả hoặc nộp lại.`,
+        409
+      );
+    }
     const updateData: any = {};
 
     // Xử lý các action chuyên biệt

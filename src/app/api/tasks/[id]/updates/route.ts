@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
-import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
+import {
+  assertTaskNotTerminal,
+  assertTaskStatusTransition,
+  isTaskLeader,
+  isTerminalTaskStatus,
+} from "@/server/task-transitions";
 import { advisoryLock, isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
@@ -113,9 +118,15 @@ export async function POST(
       // Đọc lại trạng thái SAU khi khoá (chống TOCTOU)
       const fresh = await tx.task.findUnique({
         where: { id: taskId },
-        select: { id: true, status: true, title: true, unitId: true },
+        select: { id: true, status: true, title: true, unitId: true, ownerId: true },
       });
       if (!fresh) return { kind: "notfound" as const };
+
+      // F2: nhiệm vụ đã nghiệm thu/kết thúc ⇒ KHÔNG cập nhật tiến độ, trạng thái,
+      // ghi đè kết quả hay nộp lại. Chặn ở server, trả 409, KHÔNG ghi bản ghi nào.
+      if (isTerminalTaskStatus(fresh.status)) {
+        return { kind: "terminal" as const, status: fresh.status };
+      }
 
       // Chống nộp trùng: đang chờ duyệt thì KHÔNG tạo thêm sự kiện submit
       if (targetStatus === "WAITING_REVIEW" && fresh.status === "WAITING_REVIEW") {
@@ -177,7 +188,16 @@ export async function POST(
         updateData.hasIssue = Boolean(hasIssue);
         updateData.issueNotes = issueNotes || null;
       }
-      if (actualResultText) updateData.actualResultText = actualResultText;
+      // YC-38 (F2/III): kết quả CHUNG của nhiệm vụ thuộc về người chủ trì.
+      // Người phối hợp được ghi nhận phần việc của mình (notes/progress) nhưng KHÔNG
+      // được ghi đè kết quả đã được người chủ trì/lãnh đạo xác nhận.
+      const isOwner = fresh.ownerId === user.personId;
+      const canWriteSharedResult = isOwner || (await isTaskLeader(user, fresh.unitId));
+      const sharedResultIgnored =
+        !!actualResultText && !canWriteSharedResult;
+      if (actualResultText && canWriteSharedResult) {
+        updateData.actualResultText = actualResultText;
+      }
 
       const updatedTask = await tx.task.update({
         where: { id: taskId },
@@ -195,6 +215,7 @@ export async function POST(
         task: updatedTask,
         statusBefore: fresh.status,
         submitted: targetStatus === "WAITING_REVIEW",
+        sharedResultIgnored,
       };
     });
 
@@ -204,6 +225,13 @@ export async function POST(
 
     if (result.kind === "guard") {
       return jsonError(result.message, result.statusCode);
+    }
+
+    if (result.kind === "terminal") {
+      return jsonError(
+        `Nhiệm vụ ${result.status === "CANCELED" ? "đã bị loại" : "đã được nghiệm thu hoàn thành"} — không thể cập nhật tiến độ, thay đổi trạng thái, ghi đè kết quả hoặc nộp lại.`,
+        409
+      );
     }
 
     if (result.kind === "already_submitted") {
@@ -272,6 +300,10 @@ export async function POST(
           task: updatedTask,
         },
         submitted: result.submitted,
+        sharedResultIgnored: result.sharedResultIgnored,
+        sharedResultNote: result.sharedResultIgnored
+          ? "Bạn là cán bộ phối hợp: phần việc của bạn đã được ghi nhận, nhưng kết quả chung của nhiệm vụ do người chủ trì xác nhận nên không bị ghi đè."
+          : undefined,
         earlySubmitIgnored,
         earlySubmitNote: earlySubmitIgnored
           ? "Chưa triển khai luồng trình duyệt sớm khi tiến độ dưới 100% (đề xuất nghiệp vụ đang chờ xác nhận) — chỉ cập nhật nhật ký."

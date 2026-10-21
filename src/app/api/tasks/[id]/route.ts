@@ -3,7 +3,12 @@ import { isSelfInitiated } from "@/server/task-origin";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
-import { assertTaskStatusTransition, isTaskLeader } from "@/server/task-transitions";
+import {
+  assertTaskNotTerminal,
+  assertTaskStatusTransition,
+  isTaskLeader,
+  isTerminalTaskStatus,
+} from "@/server/task-transitions";
 import { isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
@@ -323,6 +328,15 @@ export async function PATCH(
     } = body;
 
     const currentTask = access.task;
+
+    // F1/F2/F3 (YC-38 — vá lỗ hổng quyền ghi sau nghiệm thu): nhiệm vụ đã nghiệm thu/kết thúc
+    // ⇒ chặn mọi thao tác ghi (currentTask). Chặn ở SERVER, không phụ thuộc giao diện.
+    if (isTerminalTaskStatus(currentTask.status)) {
+      return jsonError(
+        `Nhiệm vụ ${currentTask.status === "CANCELED" ? "đã bị loại" : "đã được nghiệm thu hoàn thành"} — không thể cập nhật tiến độ, thay đổi trạng thái, ghi đè kết quả hoặc nộp lại.`,
+        409
+      );
+    }
     const isLeader = await isTaskLeader(user, currentTask.unitId);
 
     // YC-08: lãnh đạo loại nhiệm vụ trùng khỏi danh sách thực hiện (xóa mềm CANCELED,

@@ -395,11 +395,23 @@ export default function MyWorkPage() {
     }
   };
 
+  // F5 (YC-38): nhiệm vụ đã nghiệm thu/kết thúc ⇒ khóa mọi thao tác cập nhật ở giao diện
+  // (server vẫn chặn là lớp bảo vệ chính — xem src/server/task-transitions.ts)
+  const isTaskTerminal = (status?: string | null) =>
+    status === "COMPLETED" || status === "DONE" || status === "CANCELED";
+
   const openDrawerForTask = (task: TaskItem) => {
+    if (isTaskTerminal(task.status)) {
+      toast.warning(
+        "Nhiệm vụ đã được nghiệm thu — không thể cập nhật tiến độ hoặc nộp lại."
+      );
+      return;
+    }
     setSelectedTask(task);
     // Tiến độ thật: 0/chưa ghi nhận mở đúng 0% (khớp cột Tiến độ); chỉ nhiệm vụ đã hoàn thành mới mặc định 100%
-    setDrawerProgress(task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0));
-    setDrawerStatus(task.status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS");
+    // (nhiệm vụ kết thúc đã bị chặn ở trên ⇒ các nhánh "COMPLETED" không còn khả dụng)
+    setDrawerProgress(task.progressPercent ?? 0);
+    setDrawerStatus("IN_PROGRESS");
     setDrawerNotes(task.actualResultText || "");
     setActionSuccess(null);
     setActionError(null);
@@ -1165,7 +1177,7 @@ export default function MyWorkPage() {
                                 </span>
                                 <span>{remindingTaskId === task.id ? "Đang gửi..." : "Nhắc duyệt"}</span>
                               </button>
-                            ) : (
+                            ) : !isTaskTerminal(task.status) ? (
                               <button
                                 onClick={() => openDrawerForTask(task)}
                                 className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-label-sm text-label-sm hover:bg-secondary/90 shadow-sm flex items-center gap-1 active-press font-semibold"
@@ -1173,7 +1185,7 @@ export default function MyWorkPage() {
                                 <span className="material-symbols-outlined text-[14px]">fact_check</span>
                                 <span>Tác nghiệp 1 chạm</span>
                               </button>
-                            )}
+                            ) : null}
 
                             <Link
                               href={`/tasks/${task.id}`}
@@ -1662,7 +1674,11 @@ export default function MyWorkPage() {
                     {originLabel(task.originKind)}
                   </span>
                 </div>
-                {task.status === "NOT_STARTED" && !isSelfInitiated(task.originKind) ? (
+                {isTaskTerminal(task.status) ? (
+                  <div className="rounded-lg bg-surface-container px-3 py-2 text-[12px] text-on-surface-variant">
+                    Nhiệm vụ đã được nghiệm thu — bạn có thể xem kết quả và lịch sử, nhưng không thể cập nhật hoặc nộp lại.
+                  </div>
+                ) : task.status === "NOT_STARTED" && !isSelfInitiated(task.originKind) ? (
                   <div className="grid grid-cols-1 gap-2 pt-1">
                     <button
                       onClick={() => handleAcceptTask(task)}

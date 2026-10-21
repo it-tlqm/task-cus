@@ -32,7 +32,9 @@ const prisma = new PrismaClient({ datasources: { db: { url: DB } } });
 const secrets = JSON.parse(
   fs.readFileSync("D:/thanhnx/OpenCode/talung-cus-work/demo-ops/demo-secrets.json", "utf8")
 );
-const pw = Object.fromEntries(secrets.accounts.map((a: any) => [a.username, a.password]));
+const pw = Object.fromEntries(
+  secrets.accounts.map((a: any) => [a.username, process.env.TEST_PASSWORD || a.password])
+);
 
 let passed = 0;
 let failed = 0;

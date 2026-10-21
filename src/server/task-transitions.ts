@@ -9,12 +9,54 @@ export interface StatusTransitionInput {
 }
 
 /**
+ * F1 (YC-38 — vá lỗ hổng quyền ghi sau nghiệm thu)
+ *
+ * Các trạng thái KẾT THÚC của nhiệm vụ: đã nghiệm thu (COMPLETED/DONE) hoặc đã loại (CANCELED).
+ * Từ các trạng thái này KHÔNG được quay lại trạng thái khác.
+ * Chưa xây dựng quy trình mở lại (ngoại lệ) ⇒ chặn tuyệt đối, kể cả với lãnh đạo.
+ */
+export const TERMINAL_TASK_STATUSES = ["COMPLETED", "DONE", "CANCELED"] as const;
+
+export function isTerminalTaskStatus(status?: string | null): boolean {
+  return !!status && (TERMINAL_TASK_STATUSES as readonly string[]).includes(status);
+}
+
+/** Nhãn trạng thái kết thúc để hiển thị thông báo. */
+export function terminalStatusLabel(status?: string | null): string {
+  if (status === "CANCELED") return "đã bị loại";
+  return "đã được nghiệm thu hoàn thành";
+}
+
+/**
+ * Chặn MỌI thao tác ghi nghiệp vụ trên nhiệm vụ đã kết thúc:
+ * cập nhật tiến độ, ghi chú, thay đổi trạng thái, ghi đè kết quả thực hiện, nộp lại.
+ * Dùng ở mọi đường ghi (không phụ thuộc giao diện).
+ */
+export function assertTaskNotTerminal(input: { currentStatus: string }): void {
+  if (isTerminalTaskStatus(input.currentStatus)) {
+    throw new AuthorizationError(
+      `Nhiệm vụ ${terminalStatusLabel(input.currentStatus)} — không thể cập nhật tiến độ, thay đổi trạng thái, ghi đè kết quả hoặc nộp lại.`,
+      409
+    );
+  }
+}
+
+/**
  * Guard tập trung cho mọi thay đổi status/deadline của Task (Slice 1).
  * Mọi route (tasks/[id] PATCH, tasks PATCH, updates/progress POST) phải đi qua đây.
  */
 export function assertTaskStatusTransition(input: StatusTransitionInput): void {
   const { currentStatus, targetStatus, deadlineChanged, isLeader } = input;
   const target = targetStatus || null;
+
+  // F1: nguồn là trạng thái KẾT THÚC ⇒ không được chuyển sang trạng thái khác.
+  // (Chưa có quy trình mở lại được phê duyệt.)
+  if (isTerminalTaskStatus(currentStatus) && target && target !== currentStatus) {
+    throw new AuthorizationError(
+      `Nhiệm vụ ${terminalStatusLabel(currentStatus)} — không thể mở lại bằng thao tác thông thường.`,
+      409
+    );
+  }
 
   // Chống phê duyệt lặp lại
   if (
