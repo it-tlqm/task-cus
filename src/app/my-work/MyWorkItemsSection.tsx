@@ -1,5 +1,6 @@
 "use client";
 
+import { vnDateOnly } from "@/lib/datetime";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 import {
@@ -67,7 +68,9 @@ interface Props {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-const toDateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  // V2 (YC-38 UAT-D5.1): ngày theo giờ Việt Nam — KHÔNG phụ thuộc múi giờ thiết bị.
+  // (trước đây dùng getFullYear/getMonth/getDate của máy ⇒ lệch 1 ngày ở TZ khác UTC+7)
+  const toDateInput = (d: Date) => vnDateOnly(d);
 
 const formatDate = (value?: string | null) => {
   if (!value) return "—";

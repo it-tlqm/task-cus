@@ -126,6 +126,16 @@ export function utcIsoToVnInputValue(value: string | number | Date | null | unde
   return parts ? `${parts.date}T${parts.time}` : "";
 }
 
+/**
+ * Ngày (YYYY-MM-DD) của một thời điểm bất kỳ, theo giờ Việt Nam.
+ * Dùng cho các trường DATE-ONLY nghiệp vụ (ngày hoàn thành, hạn xử lý) để
+ * KHÔNG phụ thuộc múi giờ của thiết bị.
+ */
+export function vnDateOnly(value: Date | string | number = new Date()): string {
+  const parts = formatVnDateTimeParts(value);
+  return parts ? parts.date : "";
+}
+
 /** Ngày/giờ hiện tại theo giờ Việt Nam (dùng làm giá trị mặc định của form). */
 export function vnNowLocalParts(now: Date = new Date()): { date: string; time: string } {
   const parts = formatVnDateTimeParts(now);

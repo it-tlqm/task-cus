@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
+import { assertWorkItemNotLinkedToClosedTask } from "@/server/work-item-linkage";
+import { isTerminalTaskStatus } from "@/server/task-transitions";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { assertPeriodWritable } from "@/server/period-guard";
@@ -780,6 +782,13 @@ export async function PATCH(req: NextRequest) {
           authorizedUnits === "ALL" ||
           authorizedUnits.includes(task.unitId);
         if (!canLink) return jsonError("Bạn không có quyền liên kết nhiệm vụ này", 403);
+        // V1 (YC-38 UAT-D5.1): không cho liên kết đầu việc vào nhiệm vụ đã nghiệm thu/kết thúc
+        if (isTerminalTaskStatus(task.status)) {
+          return jsonError(
+            `Nhiệm vụ ${task.code} đã được nghiệm thu/kết thúc — không thể liên kết đầu việc vào nhiệm vụ đã đóng.`,
+            409
+          );
+        }
         updateData.taskId = task.id;
       } else {
         updateData.taskId = null;
@@ -788,20 +797,33 @@ export async function PATCH(req: NextRequest) {
 
     Object.assign(updateData, linkUpdate);
 
-    const updated = await prisma.personalWorkItem.update({
-      where: { id },
-      data: updateData,
-      include: {
-        person: true,
-        template: { include: { group: true } },
-        deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
-        product: true,
-        catalogEntry: { include: { version: { select: { id: true, code: true, status: true } } } },
-        task: { select: { id: true, code: true, title: true, status: true, currentDeadline: true } },
-        _count: { select: { evidences: true } },
-        group: true,
-      },
-    });
+    // V1 (YC-38 UAT-D5.1): khoá đầu việc gắn với nhiệm vụ đã nghiệm thu.
+    // Kiểm tra trong transaction, đọc lại liên kết từ SERVER (không tin client gửi) và
+    // khoá dòng task (FOR UPDATE) để không tranh chấp với luồng nghiệm thu.
+    let updated: any;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        await assertWorkItemNotLinkedToClosedTask(id, tx);
+        return tx.personalWorkItem.update({
+          where: { id },
+          data: updateData,
+          include: {
+            person: true,
+            template: { include: { group: true } },
+            deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
+            product: true,
+            catalogEntry: { include: { version: { select: { id: true, code: true, status: true } } } },
+            task: { select: { id: true, code: true, title: true, status: true, currentDeadline: true } },
+            _count: { select: { evidences: true } },
+            group: true,
+          },
+      });
+      });
+    } catch (err: any) {
+      // V1: lỗi khoá nghiệp vụ trả đúng mã (409) thay vì 500
+      if (err?.statusCode) return jsonError(err.message, err.statusCode);
+      throw err;
+    }
 
     await recordAuditEvent({
       actorId: user.id,
@@ -882,12 +904,30 @@ export async function DELETE(req: NextRequest) {
       return jsonError("Bạn không có quyền xóa đầu việc này", 403);
     }
 
+    // V1 (YC-38 UAT-D5.1): đầu việc gắn với nhiệm vụ đã nghiệm thu ⇒ không cho xoá/đổi trạng thái.
+    // Đọc lại liên kết từ SERVER + khoá dòng task trong transaction.
+    try {
+      await assertWorkItemNotLinkedToClosedTask(id);
+    } catch (err: any) {
+      if (err?.statusCode) return jsonError(err.message, err.statusCode);
+      throw err;
+    }
+
     // Nếu đầu việc đã có nhật ký hoặc liên kết ràng buộc, chuyển sang DISCONTINUED để bảo toàn dữ liệu
     if (currentItem.routines.length > 0) {
-      const discontinued = await prisma.personalWorkItem.update({
-        where: { id },
-        data: { status: "DISCONTINUED" },
-      });
+      let discontinued: any;
+      try {
+        discontinued = await prisma.$transaction(async (tx) => {
+          await assertWorkItemNotLinkedToClosedTask(id, tx);
+          return tx.personalWorkItem.update({
+            where: { id },
+            data: { status: "DISCONTINUED" },
+          });
+        });
+      } catch (err: any) {
+        if (err?.statusCode) return jsonError(err.message, err.statusCode);
+        throw err;
+      }
       return NextResponse.json({
         success: true,
         message: "Đầu việc đã có dữ liệu tác nghiệp nên được chuyển sang trạng thái NGỪNG ÁP DỤNG",
@@ -903,8 +943,16 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    // Ngược lại nếu chưa có ràng buộc, xóa bản ghi
-    await prisma.personalWorkItem.delete({ where: { id } });
+    // Ngược lại nếu chưa có ràng buộc, xóa bản ghi (trong transaction + khoá theo nhiệm vụ)
+    try {
+      await prisma.$transaction(async (tx) => {
+        await assertWorkItemNotLinkedToClosedTask(id, tx);
+        await tx.personalWorkItem.delete({ where: { id } });
+      });
+    } catch (err: any) {
+      if (err?.statusCode) return jsonError(err.message, err.statusCode);
+      throw err;
+    }
 
     await recordAuditEvent({
       actorId: user.id,

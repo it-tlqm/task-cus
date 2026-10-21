@@ -11,6 +11,8 @@
  */
 import { prisma } from "./db";
 import { getCatalogEntrySelectionError } from "./work-catalog";
+import { AuthorizationError } from "./guard";
+import { isTerminalTaskStatus } from "./task-transitions";
 import type { PrismaClient, Prisma } from "@prisma/client";
 
 export type SourceKind =
@@ -306,4 +308,40 @@ export async function createLinkedWorkItem(
   }
 
   return { id: workItem.id, created: true, sourceKind: source?.sourceKind ?? null };
+}
+
+/**
+ * V1 (YC-38 · UAT-D5.1) — KHOÁ ĐẦU VIỆC GẮN VỚI NHIỆM VỤ ĐÃ NGHIỆM THU.
+ *
+ * - Kiểm tra bằng DỮ LIỆU SERVER: đọc lại `personal_work_items.task_id` (không tin
+ *   `taskId`/`status` do client gửi) ⇒ chặn được thao tác "vượt khóa" bằng cách
+ *   đổi ID liên kết.
+ * - Dùng `SELECT ... FOR UPDATE` để khoá dòng nhiệm vụ trong transaction ⇒ tránh
+ *   tranh chấp với luồng lãnh đạo nghiệm thu (đang ghi trạng thái cùng dòng).
+ * - Đầu việc KHÔNG gắn nhiệm vụ (độc lập) ⇒ không khoá, hành vi giữ nguyên.
+ * - Không mở rộng quyền của bất kỳ vai trò nào (chỉ chặn thao tác trên bản ghi đã nghiệm thu).
+ */
+export async function assertWorkItemNotLinkedToClosedTask(
+  workItemId: string,
+  client: PrismaClient | Prisma.TransactionClient = prisma
+): Promise<void> {
+  const wi = await client.personalWorkItem.findUnique({
+    where: { id: workItemId },
+    select: { taskId: true },
+  });
+  if (!wi?.taskId) return; // đầu việc độc lập → không khoá
+
+  // Khoá dòng task (FOR UPDATE) để không đọc trạng thái cũ khi lãnh đạo đang nghiệm thu
+  const rows = await client.$queryRawUnsafe<Array<{ id: string; code: string; status: string }>>(
+    `SELECT id, code, status FROM "tasks" WHERE id = $1 FOR UPDATE`,
+    wi.taskId
+  );
+  const task = rows?.[0];
+  if (!task) return; // liên kết không còn tồn tại → không khoá
+  if (isTerminalTaskStatus(task.status)) {
+    throw new AuthorizationError(
+      `Nhiệm vụ ${task.code} đã được nghiệm thu/kết thúc — đầu việc liên kết được khoá, không thể sửa hoặc xoá.`,
+      409
+    );
+  }
 }
