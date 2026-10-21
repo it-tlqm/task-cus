@@ -9,6 +9,7 @@ import {
   EvidenceStorageConfigError,
 } from "@/server/storage";
 import { checkWorkItemAccess, isPeriodLocked } from "@/server/work-access";
+import { isWorkItemReviewLocked } from "@/server/work-item-review";
 import {
   contentDispositionAttachment,
   getMaxEvidenceBytes,
@@ -128,6 +129,15 @@ export async function POST(req: NextRequest) {
       return jsonError(
         `Kỳ "${access.item.period?.title || ""}" đã chốt số liệu — không thể thêm minh chứng`,
         423
+      );
+    }
+    // V3.0.1 — R3-C: đã gửi lãnh đạo / đã xác nhận ⇒ khoá bộ minh chứng.
+    if (isWorkItemReviewLocked(access.item)) {
+      return jsonError(
+        access.item.reviewState === "CONFIRMED"
+          ? "Công việc đã được lãnh đạo xác nhận — không thể thêm minh chứng. Vui lòng gửi đề nghị điều chỉnh."
+          : "Công việc đang chờ lãnh đạo xác nhận — không thể thêm minh chứng lúc này.",
+        409
       );
     }
     if (!file || typeof (file as any).arrayBuffer !== "function") {

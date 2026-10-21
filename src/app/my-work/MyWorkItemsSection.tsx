@@ -3,6 +3,7 @@
 import { vnDateOnly } from "@/lib/datetime";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
+import WorkItemReviewBox from "./WorkItemReviewBox";
 import {
   journalDateInRange,
   journalPeriodRange,
@@ -33,6 +34,12 @@ interface WorkItem {
   _count?: { evidences: number };
   period?: { id: string; title?: string | null } | null;
   planItemId?: string | null;
+  /** V3.0.1: trạng thái hồ sơ xác nhận của công việc tự ghi nhận. */
+  reviewState?: string | null;
+  resultText?: string | null;
+  reviewNote?: string | null;
+  submitCount?: number | null;
+  submittedAt?: string | null;
   /** YC-32 liên thông: công việc đã đưa vào kết quả đánh giá tháng hay chưa. */
   inEvaluation?: boolean;
   evaluationPeriods?: Array<{ year: number; month: number; needsReview: boolean }>;
@@ -592,6 +599,23 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       </span>
                       {done ? "Bỏ hoàn thành" : "Đánh dấu hoàn thành"}
                     </button>
+
+                    <WorkItemReviewBox
+                      item={{
+                        id: item.id,
+                        title: item.title,
+                        taskId: item.taskId,
+                        reviewState: item.reviewState,
+                        resultText: item.resultText,
+                        reviewNote: item.reviewNote,
+                        submitCount: item.submitCount,
+                        submittedAt: item.submittedAt,
+                        completedDate: item.completedDate,
+                      }}
+                      onChanged={async () => {
+                        await fetchItems();
+                      }}
+                    />
 
                     <button
                       type="button"

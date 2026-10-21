@@ -6,6 +6,7 @@ import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
+import { isWorkItemReviewLocked } from "@/server/work-item-review";
 import {
   getCatalogEntrySelectionError,
   isLegacyTemplateSelectableForPerson,
@@ -589,6 +590,16 @@ export async function PATCH(req: NextRequest) {
       await assertPeriodWritable(currentItem.periodId);
     } catch (err: any) {
       return jsonError(err.message, err.statusCode || 423);
+    }
+
+    // V3.0.1 — D1-A + R3-C: hồ sơ đang chờ xác nhận hoặc đã xác nhận ⇒ KHOÁ chỉnh sửa.
+    if (isWorkItemReviewLocked(currentItem)) {
+      return jsonError(
+        currentItem.reviewState === "CONFIRMED"
+          ? "Công việc đã được lãnh đạo xác nhận — không thể chỉnh sửa. Nếu cần điều chỉnh, vui lòng gửi đề nghị điều chỉnh."
+          : "Công việc đang chờ lãnh đạo xác nhận — không thể chỉnh sửa. Khi lãnh đạo trả lại, bạn sẽ sửa và gửi lại được.",
+        409
+      );
     }
 
     // E1: đầu việc thuộc kế hoạch đã duyệt/có hiệu lực thì khóa phần nội dung.

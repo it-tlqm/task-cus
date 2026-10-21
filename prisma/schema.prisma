@@ -109,6 +109,7 @@ model Person {
 
   primaryOwnedWorkItems PersonalWorkItem[] @relation("WorkItemPrimaryOwner")
   workItemAssignments   WorkItemAssignment[]
+  workItemReviews        WorkItemReview[]
   createdWorkItemSeries WorkItemSeries[]    @relation("WorkItemSeriesCreator")
   @@map("people")
 }
@@ -544,6 +545,16 @@ model PersonalWorkItem {
   expectedResult   String?           @map("expected_result") // Kết quả dự kiến
   sortOrder        Int               @default(0) @map("sort_order")
   status           String            @default("ACTIVE") // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
+  // --- V3.0.1: vong doi duyet cong viec tu ghi nhan (additive) ---
+  reviewState      String            @default("DRAFT") @map("review_state") // DRAFT | SUBMITTED | RETURNED | CONFIRMED
+  resultText       String?           @map("result_text") // noi dung ket qua (B2: bat buoc khi bao hoan thanh)
+  completedAt      DateTime?         @map("completed_at") // C1: thoi diem thao tac hoan thanh
+  submittedAt      DateTime?         @map("submitted_at")
+  submittedById    String?           @map("submitted_by_id")
+  reviewedAt       DateTime?         @map("reviewed_at")
+  reviewedById     String?           @map("reviewed_by_id")
+  reviewNote       String?           @map("review_note") // ly do lanh dao tra lai
+  submitCount      Int               @default(0) @map("submit_count")
   version          Int               @default(1)
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
@@ -565,6 +576,7 @@ model PersonalWorkItem {
   primaryOwnerUnit   OrgUnit?     @relation("WorkItemPrimaryOwnerUnit", fields: [primaryOwnerUnitId], references: [id], onDelete: SetNull)
   series             WorkItemSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   workItemAssignments WorkItemAssignment[]
+  reviews             WorkItemReview[]
   linkedProducts     WorkItemProduct[]
   planItemWorkLinks  PlanItem[]   @relation("PlanItemWorkItem")
   workItemTasks      Task[]       @relation("TaskWorkItem")
@@ -1209,6 +1221,25 @@ model WorkItemAssignment {
   @@unique([workItemId, personId, periodId])
   @@index([personId, periodId])
   @@map("work_item_assignments")
+}
+
+// V3.0.1 — Lich su xac nhan cong viec tu ghi nhan (A, A1, B2, C1, D1-A, R3-C)
+model WorkItemReview {
+  id          String           @id @default(uuid())
+  workItemId  String           @map("work_item_id")
+  action      String           // SUBMITTED | RETURNED | CONFIRMED
+  note        String?
+  resultText  String?          @map("result_text")
+  completedOn DateTime?        @map("completed_on") @db.Date
+  actorId     String           @map("actor_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  workItem PersonalWorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  actor    Person           @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([workItemId, createdAt])
+  @@index([actorId])
+  @@map("work_item_reviews")
 }
 
 // Lien ket 0..n san pham QD1277 voi 1 cong viec (KHONG cong diem, KHONG tinh trung)

@@ -125,6 +125,14 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         description: "Nhiệm vụ chỉ đạo, giao việc và theo dõi tiến độ",
       },
       {
+        id: "work-item-reviews",
+        label: "Xác nhận công việc",
+        href: "/work-item-reviews",
+        icon: "verified",
+        description: "Công việc cán bộ gửi lên chờ bạn xác nhận hoặc trả lại",
+        access: { leadersOnly: true },
+      },
+      {
         id: "approvals",
         label: "Phê duyệt",
         href: "/approvals",
