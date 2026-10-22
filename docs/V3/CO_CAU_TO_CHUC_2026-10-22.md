@@ -4,7 +4,7 @@
 
 **Bổ sung 22/10/2026 (chủ dự án):** **bỏ đơn vị cấp trên "Chi cục hải quan khu vực XVI"** — hệ thống chỉ quản lý Hải quan cửa khẩu Quốc tế Tà Lùng; đồng thời **sửa lệch số đếm** giữa cây đơn vị và danh sách cán bộ.
 
-**Mã triển khai:** `5e673f3` (cây cơ cấu + mapping) → `a8f9cfe` (bỏ Chi cục + đồng bộ số đếm) · **Production:** `https://task-cus.vercel.app`
+**Mã triển khai:** `5e673f3` (cây cơ cấu + mapping) → `a8f9cfe` (bỏ Chi cục + đồng bộ số đếm) → `492a6e1` (chức vụ Trưởng/Phó + bộ đếm mobile) · **Production:** `https://task-cus.vercel.app`
 
 ---
 
@@ -80,7 +80,40 @@ C1  Hải quan cửa khẩu Quốc tế Tà Lùng                [HQCB-HAI-QUAN-
 | 348 đầu công việc thường xuyên | File Excel “Danh mục công việc” (348 dòng) | Hệ thống đang lưu **320 mã** đã đối chiếu (348 − 28 dòng trùng) — con số 348 là của file nguồn chính thức |
 | 35 cán bộ | File “Danh sách” | 29 công chức + 6 HĐLĐ (đã cấp tài khoản 22/10/2026) |
 
-## 6. Việc còn lại
+## 6. Chức vụ Trưởng / Phó Trưởng hải quan cửa khẩu (22/10/2026)
+
+**Yêu cầu (đồng chí Nguyên Đán):** “Thiếu e ơi. Trưởng và phó trưởng hải quan cửa khẩu” · “Nếu phân được thì e phân ra nhé”.
+
+**Nguyên nhân:** cả 3 đồng chí Lãnh đạo đơn vị đều để trống `position_id` → giao diện chỉ hiện nhãn vai trò chung “Lãnh đạo đơn vị”/“Trưởng hải quan cửa khẩu”, không phân biệt được Trưởng và Phó.
+
+**Cách làm (giữ nguyên vai trò RBAC, chỉ gán chức vụ):**
+
+| Tài khoản | Họ tên | Chức vụ (position) | Quyền |
+|---|---|---|---|
+| `hqtl001` | Hoàng Văn Bằng | **Trưởng hải quan cửa khẩu** (`CHI_CUC_TRUONG`) | `UNIT_LEADER` |
+| `hqtl002` | Trần Nguyên Đán | **Phó Trưởng hải quan cửa khẩu** (`DEPUTY_CHIEF`) | `UNIT_LEADER` |
+| `hqtl003` | Nông Xuân Ánh | **Phó Trưởng hải quan cửa khẩu** (`DEPUTY_CHIEF`) | `UNIT_LEADER` |
+
+* Thiết kế: **Role = quyền hạn**, **Position = chức danh hiển thị**. Trưởng và Phó cùng quyền `UNIT_LEADER`; chức danh lấy từ `position.title` nên hiển thị đúng ở Header, sơ đồ tổ chức, danh sách cán bộ và `GET /api/auth/me` (tự làm mới từ DB khi đổi, không cần đăng nhập lại).
+* Nhãn vai trò dự phòng đổi về trung tính: `UNIT_LEADER` → “Lãnh đạo đơn vị”, `DEPARTMENT_LEADER` → “Lãnh đạo bộ phận” (tránh gọi sai Phó là Trưởng khi chưa gán chức vụ).
+* Ngừng dùng 2 chức vụ trùng lặp trong danh mục: `CHIEF` (trùng `CHI_CUC_TRUONG`) và `DEPT_LEADER` (trùng `TRUONG_BO_PHAN`).
+* Script: `scripts/assign-leadership-positions.mjs` (dry-run mặc định; `--confirm=ASSIGN-POSITIONS-2026-10-22`), có kiểm tra họ tên trước khi gán và ghi `audit_events`.
+* Sửa mã chức vụ trong `POST /api/tasks/[id]/remind` cho khớp danh mục thật (`CHI_CUC_TRUONG`, `DEPUTY_CHIEF`, `TRUONG_BO_PHAN`, `DEPT_DEPUTY`).
+* **Còn lại:** 5 đồng chí `DEPARTMENT_LEADER` chưa gán chức vụ Trưởng/Phó bộ phận (chưa có dữ liệu phân biệt) — chờ chủ dự án xác nhận.
+
+## 7. Bộ đếm trang Nhật ký công việc (mobile) — bỏ số “ảo”
+
+**Phản ánh (đồng chí Nguyễn Xuân Thành):** “bộ đếm ở mobile bị ảo” — 4 thẻ hiện `05 / 03 / 01 / 02`, “2 việc Gấp”, “TSK-1038”, “Cần xử lý luồng vàng” trong khi danh sách `0 đầu việc`.
+
+**Nguyên nhân:** bản desktop dùng `myStats` (tính từ dữ liệu thật) nhưng bản mobile là **markup demo hardcode** (kể cả mã `TSK-1038`, tên tệp `BBBG-TL-…xlsx`, giờ “09:15 hôm nay”, “Quá hạn 1 ngày”, “Kỳ báo cáo 10 ngày”).
+
+**Đã sửa:**
+* 4 thẻ KPI + 3 chip trạng thái mobile lấy từ `myStats`: Cần xử lý hôm nay = số việc đang làm; Sắp đến hạn = hạn trong 24 giờ; Quá hạn = quá hạn/có vướng mắc; Chờ xác nhận = `WAITING_REVIEW`.
+* Thẻ quá hạn dùng `task.currentDeadline`, `task.issueNotes`, `task.owner` thật; thẻ chờ duyệt dùng tên kế hoạch thật (nếu có) + hạn thật, bỏ tên tệp/giờ giả.
+* `GET /api/tasks` trả thêm `stats` tính trên **toàn bộ phạm vi** (không phụ thuộc trang đang tải) → bộ đếm không lệch khi phân trang; giao diện ưu tiên `stats` của server, fallback tính từ trang đã tải.
+* Kiểm chứng Production: tài khoản `hqtl002` → `/api/auth/me` trả `Phó Trưởng hải quan cửa khẩu`; `/api/tasks` trả `stats` toàn 0; HTML `/my-work` không còn `TSK-1038`, `2 việc Gấp`, `BBBG-TL`, `09:15`.
+
+## 8. Việc còn lại
 
 | # | Việc | Ghi chú |
 |---|---|---|

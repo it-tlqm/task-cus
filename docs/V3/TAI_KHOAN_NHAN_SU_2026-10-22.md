@@ -16,6 +16,8 @@
 
 > Đổi mật khẩu lần đầu: hệ thống chặn **mọi API** (HTTP 403 `PHẢI ĐỔI MẬT KHẨU`) cho tới khi người dùng đặt mật khẩu mới → phiên cũ bị vô hiệu, phải đăng nhập lại.
 
+> **Cập nhật 22/10/2026 (sau bàn giao):** chủ dự án đã tự đặt lại mật khẩu cho các tài khoản qua giao diện quản trị (audit ghi 50 sự kiện `ACCOUNT_PASSWORD_RESET` lúc ~15:50; `hqtl001` có thêm `PASSWORD_CHANGED` lúc 09:48). Vì vậy **`Talung@2026` không còn là mật khẩu hiện hành** — không dùng CSV cũ để đăng nhập; chủ dự án cấp mật khẩu mới cho từng người. Tài liệu này chỉ giữ quy tắc cấp ban đầu, không lưu mật khẩu thực tế.
+
 ## 2. Vai trò & phạm vi
 
 | Vai trò | Ai được gán | Quyền chính | Phạm vi dữ liệu |
@@ -23,6 +25,16 @@
 | `UNIT_LEADER` (3) | Lãnh đạo đơn vị | duyệt kế hoạch, phân công, xem toàn đơn vị | `ORGANIZATION` (xem tất cả) |
 | `DEPARTMENT_LEADER` (5) | Nguyễn Hải Yên, Nguyễn Đình Giang, Hoàng Văn Huynh, Lã Trần Minh, Trần Minh Hoàng | duyệt kế hoạch, tạo kế hoạch trong bộ phận | `DEPARTMENT` (đơn vị của bộ phận) |
 | `STAFF` (26) | 20 công chức + 6 HĐLĐ | cập nhật việc của mình, xem kế hoạch/báo cáo | `DEPARTMENT` (đơn vị) — 6 HĐLĐ: `OWN` (chưa có đơn vị) |
+
+**Chức danh Lãnh đạo đơn vị** (gán 22/10/2026 bằng `scripts/assign-leadership-positions.mjs`, role giữ nguyên `UNIT_LEADER`):
+
+| Tài khoản | Họ tên | Chức vụ |
+|---|---|---|
+| `hqtl001` | Hoàng Văn Bằng | Trưởng hải quan cửa khẩu (`CHI_CUC_TRUONG`) |
+| `hqtl002` | Trần Nguyên Đán | Phó Trưởng hải quan cửa khẩu (`DEPUTY_CHIEF`) |
+| `hqtl003` | Nông Xuân Ánh | Phó Trưởng hải quan cửa khẩu (`DEPUTY_CHIEF`) |
+
+> 5 tài khoản `DEPARTMENT_LEADER` chưa gán chức danh Trưởng/Phó bộ phận (chưa có dữ liệu phân biệt) — xem `CO_CAU_TO_CHUC_2026-10-22.md` §6.
 
 ## 3. Kiểm chứng sau khi cấp (Production)
 
