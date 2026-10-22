@@ -1,12 +1,12 @@
 /**
  * CHUẨN HOÁ CƠ CẤU TỔ CHỨC (sau reset Production — 22/10/2026)
  *
- * Mục tiêu (chủ dự án yêu cầu 22/10/2026):
- *   1. Cây đơn vị 3 cấp đúng theo tổ chức thực tế:
- *        C1  Chi cục hải quan khu vực XVI
- *         └─ C2  Hải quan cửa khẩu Quốc tế Tà Lùng
- *              ├─ C3  Lãnh đạo đơn vị
- *              └─ C3  6 bộ phận nghiệp vụ
+ * Mục tiêu (chủ dự án yêu cầu 22/10/2026, cập nhật cùng ngày: BỎ đơn vị cấp trên):
+ *   1. Cây đơn vị 2 cấp đúng theo tổ chức thực tế:
+ *        C1  Hải quan cửa khẩu Quốc tế Tà Lùng
+ *         ├─ C2  Lãnh đạo đơn vị
+ *         └─ C2  6 bộ phận nghiệp vụ
+ *      (đơn vị "Chi cục hải quan khu vực XVI" bị xoá nếu còn)
  *   2. Chuẩn hoá tên nhóm công việc TX về đúng tên bộ phận (bỏ lỗi "Bộ phân…").
  *   3. Bật mapping 6 nhóm nguồn TX → 6 bộ phận (1:1 theo tên) — bỏ blocker B-2.
  *

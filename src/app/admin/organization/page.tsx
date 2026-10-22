@@ -145,7 +145,7 @@ export default function OrganizationAdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Add Unit Form
-  const [newUnitData, setNewUnitData] = useState({ code: "", name: "", type: "TEAM" });
+  const [newUnitData, setNewUnitData] = useState({ code: "", name: "" });
 
   // Add Person Form
   const [newPersonData, setNewPersonData] = useState({
@@ -284,7 +284,7 @@ export default function OrganizationAdminPage() {
       }
 
       setShowAddUnitModal(false);
-      setNewUnitData({ code: "", name: "", type: "TEAM" });
+      setNewUnitData({ code: "", name: "" });
       showNotification(`Đã thêm bộ phận "${newUnitData.name}" thành công`);
       fetchData();
     } catch (err: any) {
@@ -1850,17 +1850,9 @@ export default function OrganizationAdminPage() {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Loại bộ phận</label>
-                <select
-                  value={newUnitData.type}
-                  onChange={(e) => setNewUnitData({ ...newUnitData, type: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="TEAM">Tổ công tác (TEAM)</option>
-                  <option value="DEPARTMENT">Bộ phận / Đội nghiệp vụ (DEPARTMENT)</option>
-                  <option value="BRANCH">Chi cục (BRANCH)</option>
-                </select>
+              <div className="rounded-lg bg-slate-50 border border-slate-200 p-2.5 text-[11px] text-slate-600">
+                Cấp của đơn vị được tính tự động theo đơn vị cha đang chọn trong cây
+                {selectedUnit ? ` (“${selectedUnit.name}”)` : " (cấp 1 nếu không chọn đơn vị cha)"}.
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

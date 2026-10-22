@@ -59,7 +59,7 @@ export const DEFAULT_CONFIGS: Array<{
     value: "Hải quan cửa khẩu Quốc tế Tà Lùng",
     dataType: "STRING",
     category: "DISPLAY",
-    description: "Tên chính thức của Chi cục hiển thị trên tiêu đề báo cáo và giao diện",
+    description: "Tên chính thức của đơn vị hiển thị trên tiêu đề báo cáo và giao diện",
   },
   {
     key: "reportBuilderConfig",
