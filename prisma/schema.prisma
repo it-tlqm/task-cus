@@ -330,6 +330,7 @@ model WorkCatalogEntry {
   version   WorkCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   unit      OrgUnit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
   workItems PersonalWorkItem[]
+  routineEntries RoutineEntry[]
 
   // Mã đầu việc là khoá duy nhất: file nguồn TX1 có tên trùng trong CÙNG nhóm,
   // nên không thể để (versionId, department, title) là unique.
@@ -802,6 +803,15 @@ model RoutineEntry {
   unitId           String   @map("unit_id")
   templateId       String?  @map("template_id")
   workItemId       String?  @map("work_item_id")
+  // --- V3.0.4 (F18): lien thong nhat ky tac nghiep voi danh muc TX / QD1277 ---
+  catalogEntryId   String?  @map("catalog_entry_id")  // cong viec thuong xuyen (danh muc TX)
+  productItemId    String?  @map("product_item_id")   // san pham QD1277 chinh
+  proposedProducts String?  @map("proposed_products") // JSON: danh sach SP de xuat (ma, so luong, don vi, he so, trang thai)
+  sourceKind       String?  @map("source_kind")        // TX_CATALOG | QD1277_PRODUCT | ADHOC | LEGACY_TEMPLATE
+  sourceRefId      String?  @map("source_ref_id")
+  sourceCodeSnapshot String? @map("source_code_snapshot")
+  reviewState      String?  @map("review_state")      // vong doi xac nhan V3 cua cong viec
+  dataOrigin       String?  @map("data_origin")       // REAL | DEMO (phan biet du lieu mau)
   occurrenceStatus String   @default("OCCURRED") @map("occurrence_status") // OCCURRED, NOT_OCCURRED
   notes            String?
   createdAt        DateTime @default(now()) @map("created_at")
@@ -811,8 +821,16 @@ model RoutineEntry {
   unit        OrgUnit           @relation(fields: [unitId], references: [id], onDelete: Cascade)
   template    ActivityTemplate? @relation(fields: [templateId], references: [id])
   workItem    PersonalWorkItem? @relation(fields: [workItemId], references: [id])
+  catalogEntry WorkCatalogEntry? @relation(fields: [catalogEntryId], references: [id], onDelete: SetNull)
+  productItem  ProductItem?      @relation(fields: [productItemId], references: [id], onDelete: SetNull)
   submissions ResultSubmission[]
 
+  @@index([periodId])
+  @@index([personId])
+  @@index([unitId])
+  @@index([occurrenceStatus])
+  @@index([catalogEntryId])
+  @@index([productItemId])
   @@map("routine_entries")
 }
 
@@ -1200,6 +1218,7 @@ model ProductItem {
   group   ProductGroup?         @relation(fields: [groupId], references: [id])
   results MonthlyWorkResult[]
   linkedWorkItems WorkItemProduct[]
+  routineEntries RoutineEntry[]
   personalWorkItems PersonalWorkItem[]
 
   @@index([versionId, groupId])

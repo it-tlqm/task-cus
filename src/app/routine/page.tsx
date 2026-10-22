@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import RoutineCatalogPicker, { type ProposedProduct } from "./RoutineCatalogPicker";
 
 interface WorkLogEntry {
   id: string;
@@ -26,6 +27,14 @@ interface WorkLogEntry {
     name: string;
   };
   formValues?: Record<string, any>;
+  // --- F18 ---
+  catalogEntry?: { id: string; code: string; title: string } | null;
+  productItem?: { id: string; code: string; taskName: string } | null;
+  proposedProducts?: Array<{ productItemId: string; code: string; taskName: string; factor: number | null; quantity: number | null; unit: string | null; reviewState: string }>;
+  sourceKind?: string | null;
+  reviewState?: string;
+  dataOrigin?: string | null;
+  workItemId?: string | null;
   formVersion?: {
     id: string;
     version: number;
@@ -46,6 +55,8 @@ interface FormFieldDef {
   required?: boolean;
   min?: number;
   max?: number;
+  /** F18: danh muc tuy chon do Form Builder dinh nghia */
+  options?: string[];
 }
 
 interface ActiveFormVersion {
@@ -84,6 +95,10 @@ export default function RoutinePage() {
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  // --- F18: danh muc TX + san pham QD1277 + loc du lieu mau ---
+  const [selectedTx, setSelectedTx] = useState<any>(null);
+  const [proposedProducts, setProposedProducts] = useState<ProposedProduct[]>([]);
+  const [hideDemo, setHideDemo] = useState(true);
   const [newCompany, setNewCompany] = useState("");
   // YC-07: để trống — không điền sẵn số lượng giả định
   const [newConts, setNewConts] = useState<number | string>("");
@@ -112,17 +127,26 @@ export default function RoutinePage() {
   const fetchRoutineData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/routine");
+      const res = await fetch("/api/routine?hideDemo=" + (hideDemo ? "1" : "0"));
       if (!res.ok) throw new Error("Không thể tải danh sách nhật ký tác nghiệp");
       const data = await res.json();
 
       if (data.success && Array.isArray(data.entries)) {
         const loaded: WorkLogEntry[] = data.entries.map((item: any) => ({
           id: item.id,
+          // F18: khong hien ma nghiep vu gia (KPS-01/TTHQ-01) khi khong co ma that
           code:
+            item.catalogEntry?.code ||
             item.template?.code ||
-            item.workItem?.code ||
-            (item.occurrenceStatus === "NOT_OCCURRED" ? "KPS-01" : "TTHQ-01"),
+            item.sourceCodeSnapshot ||
+            "—",
+          catalogEntry: item.catalogEntry || null,
+          productItem: item.productItem || null,
+          proposedProducts: item.proposedProducts || [],
+          sourceKind: item.sourceKind || null,
+          reviewState: item.reviewState || "DRAFT",
+          dataOrigin: item.dataOrigin || null,
+          workItemId: item.workItemId || null,
           title: item.workItem?.title || item.template?.title || item.notes || "Nhật ký tác nghiệp",
           category:
             item.template?.group?.name ||
@@ -233,6 +257,10 @@ export default function RoutinePage() {
           templateId: selectedTemplateId || null,
           formVersionId: activeFormVersion?.id,
           formValues: dynamicFormValues,
+          // F18: danh muc TX + danh sach SP QD1277 de xuat
+          catalogEntryId: selectedTx?.id || null,
+          productItemId: proposedProducts[0]?.productItemId || null,
+          proposedProducts,
         }),
       });
 
@@ -259,9 +287,18 @@ export default function RoutinePage() {
     }
   };
 
-  // Handle 1-Touch Confirm Not Occurred
-  const handleConfirmNotOccurred = async (activityTitle: string) => {
-    const finalTitle = activityTitle.trim() || "Xác nhận không phát sinh vụ việc trong ca trực";
+  // F18 (E): phan biet 2 truong hop "khong phat sinh" — KHONG tu gan ma nghiep vu gia
+  //  1) Ca khong phat sinh VU VIE vi pham / ton dong
+  //  2) Ca khong co hoat dong tac nghiep nao
+  const handleConfirmNotOccurred = async (kind: "NO_VIOLATION" | "NO_ACTIVITY") => {
+    const isNoActivity = kind === "NO_ACTIVITY";
+    const defaultTitle = isNoActivity
+      ? "Xác nhận: ca trực không có hoạt động tác nghiệp"
+      : "Xác nhận: ca trực không phát sinh vụ việc vi phạm hoặc tồn đọng";
+    const finalTitle = (kind === "NO_ACTIVITY" ? "" : newTitle.trim()) || defaultTitle;
+    const defaultNotes = isNoActivity
+      ? "Xác nhận 1-chạm: ca trực không có hoạt động tác nghiệp nào để ghi nhận."
+      : "Xác nhận 1-chạm: ca trực không phát sinh vụ việc vi phạm hoặc tồn đọng.";
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/routine", {
@@ -269,16 +306,20 @@ export default function RoutinePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: finalTitle,
-          notes: newNotes.trim() || "Xác nhận 1-chạm: Ca trực hôm nay không phát sinh vụ việc vi phạm hoặc tồn đọng",
+          notes: newNotes.trim() || defaultNotes,
           occurrenceStatus: "NOT_OCCURRED",
-          templateId: selectedTemplateId || null,
+          notOccurredKind: kind,
+          templateId: null,
+          catalogEntryId: null,
+          productItemId: null,
+          proposedProducts: [],
         }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
-        toast.success(`Đã ghi nhận 1-chạm: Ca hôm nay KHÔNG PHÁT SINH '${finalTitle}'!`);
+        toast.success(`Đã ghi nhận: ${isNoActivity ? "Ca không có hoạt động tác nghiệp" : "Ca không phát sinh vụ việc vi phạm/tồn đọng"}!`);
         await fetchRoutineData();
       } else {
         toast.error(data.error || "Không thể ghi nhận xác nhận không phát sinh");
@@ -507,10 +548,22 @@ export default function RoutinePage() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Danh mục nghiệp vụ liên quan
-                  </label>
+                {/* F18: danh muc TX (348 muc) + san pham QD1277.
+                    Ban goc "Danh muc nghiep vu lien quan" (48 mau TTHQ/GSHQ) duoc giu o
+                    phan "mau cu" de khong pha vong mau cua cac ban ghi lich su. */}
+                <RoutineCatalogPicker
+                  selectedTxId={selectedTx?.id || ""}
+                  onTxChange={(tx: any) => {
+                    setSelectedTx(tx);
+                    if (tx && !newTitle) setNewTitle(tx.title);
+                  }}
+                  products={proposedProducts}
+                  onProductsChange={setProposedProducts}
+                />
+                <details className="rounded-lg border border-border-subtle bg-surface-container-lowest px-3 py-2">
+                  <summary className="text-[11px] font-semibold text-primary cursor-pointer">
+                    Dùng mẫu nghiệp vụ cũ (mã TTHQ/GSHQ) — chỉ để tra cứu dữ liệu cũ
+                  </summary>
                   <select
                     value={newCategory}
                     onChange={(e) => {
@@ -523,19 +576,16 @@ export default function RoutinePage() {
                         setSelectedTemplateId("");
                       }
                     }}
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary cursor-pointer"
+                    className="mt-2 h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary cursor-pointer w-full"
                   >
-                    <option value="">-- Chọn danh mục nghiệp vụ thường xuyên --</option>
+                    <option value="">-- Chọn mẫu cũ --</option>
                     {catalogTemplates.map((tpl) => (
                       <option key={tpl.id} value={`[${tpl.code}] ${tpl.title}`}>
                         [{tpl.code}] — {tpl.title}
                       </option>
                     ))}
-                    <option value="[PS-KH] Việc phát sinh ngoài kế hoạch">
-                      [PS-KH] — Việc phát sinh ngoài kế hoạch
-                    </option>
                   </select>
-                </div>
+                </details>
 
                 <div className="flex flex-col gap-1">
                   <label className="font-label-md text-label-md text-primary font-semibold">
@@ -616,9 +666,16 @@ export default function RoutinePage() {
                                 className="h-9 px-2.5 rounded bg-surface-container-lowest text-body-sm text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                               >
                                 <option value="">-- Chọn trạng thái --</option>
-                                <option value="Nguyên seal chì">Nguyên seal chì hải quan</option>
-                                <option value="Sai khác niêm phong">Sai khác niêm phong</option>
-                                <option value="Đã kiểm tra thực tế">Đã kiểm tra thực tế</option>
+                                {/* F18 (D): dung dung danh muc tuy chon tu Form Builder; giu
+                                    cac lua chon mac dinh cua he thong neu builder khong dinh nghia */}
+                                {(field.options && field.options.length
+                                  ? field.options
+                                  : ["Nguyên seal chì", "Sai khác niêm phong", "Đã kiểm tra thực tế"]
+                                ).map((opt: string) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
                               </select>
                             ) : (
                               <input
@@ -671,12 +728,23 @@ export default function RoutinePage() {
                 <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-space-sm pt-2">
                   <button
                     type="button"
+                    data-testid="routine-no-violation"
                     disabled={isSubmitting}
-                    onClick={() => handleConfirmNotOccurred(newTitle || "Xác nhận công tác ca trực")}
+                    onClick={() => handleConfirmNotOccurred("NO_VIOLATION")}
                     className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[18px] text-status-warning">check_circle</span>
-                    <span>Xác nhận 1-chạm: Ca hôm nay không phát sinh</span>
+                    <span>Ca không phát sinh vụ việc vi phạm/tồn đọng</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="routine-no-activity"
+                    disabled={isSubmitting}
+                    onClick={() => handleConfirmNotOccurred("NO_ACTIVITY")}
+                    className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-outline">bedtime</span>
+                    <span>Ca không có hoạt động tác nghiệp</span>
                   </button>
                   <button
                     type="submit"
@@ -739,6 +807,32 @@ export default function RoutinePage() {
                               <span className="text-xs text-outline">
                                 {entry.notes || (entry.occurrenceStatus === "NOT_OCCURRED" ? "Xác nhận không phát sinh" : "Đã hoàn thành")}
                               </span>
+                              {/* F18: danh muc TX + san pham QD1277 da de xuat */}
+                              {entry.catalogEntry && (
+                                <span className="text-[11px] text-outline">
+                                  Công việc thường xuyên: <span className="font-mono">{entry.catalogEntry.code}</span> — {entry.catalogEntry.title}
+                                </span>
+                              )}
+                              {(entry.proposedProducts || []).length > 0 && (
+                                <span className="text-[11px] text-outline">
+                                  Sản phẩm QĐ1277 đề xuất:{" "}
+                                  {(entry.proposedProducts || []).map((p) => p.code).join(", ")}
+                                  {" "}(chờ lãnh đạo xác nhận)
+                                </span>
+                              )}
+                              {/* F18: trang thai V3 — KHONG coi la da nghiem thu */}
+                              {entry.workItemId && (
+                                <span className="text-[11px] text-outline">
+                                  Trạng thái hồ sơ công việc:{" "}
+                                  {entry.reviewState === "CONFIRMED"
+                                    ? "đã được lãnh đạo xác nhận"
+                                    : entry.reviewState === "SUBMITTED"
+                                      ? "đang chờ lãnh đạo xác nhận"
+                                      : entry.reviewState === "RETURNED"
+                                        ? "lãnh đạo trả lại — cần chỉnh sửa"
+                                        : "chưa gửi lãnh đạo"}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="py-3 px-space-sm">
