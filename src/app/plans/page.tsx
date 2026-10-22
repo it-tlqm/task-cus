@@ -2149,7 +2149,10 @@ export default function PlansPage() {
                                 <span className="text-xs font-semibold text-primary">{p.taskName}</span>
                                 <span className="text-[10px] text-outline font-mono">
                                   {p.code}
-                                  {typeof p.convertFactor === "number" ? ` · Hệ số: ${p.convertFactor}` : " · Chưa rõ hệ số"}
+                                  {p.outputProduct ? ` · ${p.outputProduct}` : ""}
+                                  {typeof p.convertFactor === "number"
+                                    ? ` · Hệ số: ${p.convertFactor}`
+                                    : " · CHƯA CÓ HỆ SỐ (chờ đối chiếu)"}
                                   {p.groupName ? ` · ${p.groupName}` : ""}
                                 </span>
                               </button>

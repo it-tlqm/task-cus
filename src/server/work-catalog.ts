@@ -403,7 +403,8 @@ export function buildCatalogDiff(
 
 export interface ActivatedCatalogDepartment {
   department: string;
-  unitId: string;
+  /** Đơn vị được ánh xạ (có thể null khi bản danh mục ở chế độ ALL cho mọi bộ phận). */
+  unitId: string | null;
   unitCode: string | null;
   unitName: string | null;
 }
@@ -479,6 +480,25 @@ export async function getCatalogActivationForPerson(
     selectionMode,
   };
   if (!activeVersion) return empty;
+
+  // F17: khi phiên ban danh muc o che do ALL, MOI bo phan deu duoc chon duoc nhom
+  // (Hai quan chua xac nhan anh xa bo phan) => phai kich hoat, khong de "chua kich hoat".
+  if (selectionMode === "ALL") {
+    const deptCounts = await prisma.workCatalogEntry.groupBy({
+      by: ["department"],
+      where: { versionId: activeVersion.id, status: "ACTIVE" },
+      _count: { _all: true },
+    });
+    const allDepartments = deptCounts
+      .filter((c) => c._count._all > 0)
+      .map((c) => ({
+        department: c.department,
+        unitId: unitIds[0] || null,
+        unitCode: null,
+        unitName: null,
+      }));
+    return { ...empty, departments: allDepartments, activated: allDepartments.length > 0 };
+  }
 
   const mappings = await prisma.workCatalogDepartmentMapping.findMany({
     where: { isActive: true, unitId: { in: unitIds } },
@@ -588,7 +608,12 @@ export async function getSelectableCatalogEntriesForPerson(
     return { activation, entries: [] };
   }
   const q = (filters.q || "").trim();
-  const ids = filters.ids === undefined ? null : (filters.ids || []).filter((x) => typeof x === "string" && x.length > 0);
+  // F17: ids rỗng hoặc null => KHÔNG lọc theo id.
+  // Trước đây ids=null biến thành mảng rỗng => điều kiện "id IN ()" => danh mục rỗng.
+  const ids =
+    filters.ids == null
+      ? null
+      : (filters.ids || []).filter((x) => typeof x === "string" && x.length > 0);
 
   const entries = await prisma.workCatalogEntry.findMany({
     where: {

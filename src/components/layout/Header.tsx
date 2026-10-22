@@ -11,6 +11,7 @@ import {
   UNIT_ALL_LABEL,
   getRoleDisplayName,
 } from "@/lib/unit-info";
+import { ENV_BADGE_LABEL, ENV_HEADER_TITLE, ENV_SIDEBAR_LABEL } from "@/config/app-env";
 
 interface OrgUnitOption {
   id: string;
@@ -141,7 +142,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               verified
             </span>
             <span className="font-label-sm text-[11px] font-semibold uppercase tracking-wide text-primary">
-              HỆ THỐNG VẬN HÀNH CHÍNH THỨC — {UNIT_OFFICIAL_NAME.toUpperCase()}
+              {ENV_HEADER_TITLE} — {UNIT_OFFICIAL_NAME.toUpperCase()}
             </span>
           </div>
           <span className="font-label-sm text-[11px] font-medium text-on-surface-variant">
@@ -310,7 +311,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
                     title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
                     className="hidden rounded border border-emerald-200/80 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wide text-emerald-700 min-[390px]:inline"
                   >
-                    CHÍNH THỨC
+                    {ENV_BADGE_LABEL}
                   </span>
                 </span>
                 <span className="max-w-[150px] truncate text-[10.5px] leading-tight text-on-surface-variant">

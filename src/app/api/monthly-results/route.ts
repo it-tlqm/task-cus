@@ -103,10 +103,14 @@ export async function GET(req: NextRequest) {
       else if (reviewState === "RETURNED") officialState = "RETURNED";
       else officialState = "DRAFT";
       const missingData = it.completedQty === null || it.completedQty === undefined || !it.completedDate;
+      // Đủ điều kiện chính thức = công việc đã xác nhận + mọi SP đã xác nhận + CÓ hệ số + đủ số liệu.
+      // SP thiếu hệ số / chưa xác minh đủ dữ liệu KHÔNG tham gia điểm chính thức.
+      const factor = it.factorSnapshot ?? it.productItem?.convertFactor ?? null;
+      const hasFactor = factor !== null && factor !== undefined;
       return {
         ...it,
         officialState,
-        officialReady: officialState === "OFFICIAL" && !missingData,
+        officialReady: officialState === "OFFICIAL" && !missingData && hasFactor,
         reviewState,
         spTotal: sps.length,
         spConfirmed: sps.length - spsPending.length,
@@ -122,6 +126,9 @@ export async function GET(req: NextRequest) {
           where: {
             personId: target.personId,
             periodId: period.id,
+            // F11/F12: chỉ công việc ĐÃ được lãnh đạo xác nhận mới sẵn sàng ghi nhận
+            // kết quả tháng. Công việc còn đang thực hiện / đang chờ duyệt chưa đủ điều kiện.
+            reviewState: "CONFIRMED",
             monthlyResults: { none: { periodYear: year, periodMonth: month } },
           },
           include: {

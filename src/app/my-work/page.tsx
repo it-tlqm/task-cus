@@ -19,6 +19,7 @@ import {
   journalTextMatches,
   type JournalFilterState,
 } from "@/components/work/JournalFilterBar";
+import { ENV_BADGE_LABEL } from "@/config/app-env";
 
 interface TaskUpdateItem {
   id: string;
@@ -1313,7 +1314,7 @@ export default function MyWorkPage() {
             title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
             className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-label-sm text-[10px] shrink-0 font-bold"
           >
-            CHÍNH THỨC
+            {ENV_BADGE_LABEL}
           </span>
         </div>
 

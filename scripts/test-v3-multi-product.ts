@@ -146,10 +146,21 @@ async function main() {
   const mrRes = await fetch(`${BASE}/api/monthly-results?year=2026&month=10`, { headers: H(staffToken) });
   const mrJson = await mrRes.json().catch(() => ({}));
   const drafts = mrJson.drafts || [];
-  const myDraft = drafts.find((d: any) => d.id === itemId);
-  check("5. Công việc chưa có kết quả tháng xuất hiện ở mục BẢN NHÁP", !!myDraft, `${drafts.length} bản nháp`);
+  // F11/F12: bản nháp CHỈ gồm công việc ĐÃ được lãnh đạo xác nhận (sẵn sàng ghi kết quả tháng).
+  check(
+    "5. Công việc CHƯA xác nhận KHÔNG có trong mục Bản nháp",
+    !drafts.some((d: any) => d.id === itemId),
+    `${drafts.length} bản nháp`
+  );
   check("5. Bản nháp không tạo bản ghi kết quả tháng (chống trùng)", (mrJson.data || []).filter((r: any) => r.workItemId === itemId).length === 0);
-  check("5. Bản nháp được đánh dấu trạng thái", myDraft?.officialState === "DRAFT", myDraft?.officialState);
+
+  // Xác nhận công việc (sau khi đã gửi) ⇒ phải xuất hiện trong bản nháp
+  const confEarly = await fetch(`${BASE}/api/personal-work-items/${itemId}/review`, {
+    method: "POST",
+    headers: H(leaderToken),
+    body: JSON.stringify({ action: "CONFIRM" }),
+  });
+  check("5. Chưa gửi thì chưa xác nhận được ⇒ 409", confEarly.status === 409, `HTTP ${confEarly.status}`);
 
   // Gửi duyệt công việc → trạng thái chờ
   const submitRes = await fetch(`${BASE}/api/personal-work-items/${itemId}/review`, {
@@ -158,6 +169,9 @@ async function main() {
     body: JSON.stringify({ action: "SUBMIT", resultText: "Đã rà soát và đề xuất 3 mã sản phẩm.", completedOn: "2026-10-21" }),
   });
   check("5. Gửi công việc lên lãnh đạo ⇒ 200", submitRes.status === 200, `HTTP ${submitRes.status}`);
+
+  // Đã gửi + lãnh đạo xác nhận ⇒ công việc xuất hiện ở BẢN NHÁP kết quả tháng
+  // (xác nhận SP ở bước 7, sau khi bước này — đúng thứ tự nghiệp vụ)
 
   // ---------------------------------------------------------------- 6. Khoá khi đã gửi
   const addLocked = await fetch(`${BASE}/api/work-item-products`, {
@@ -196,6 +210,23 @@ async function main() {
     body: JSON.stringify({ action: "CONFIRM" }),
   });
   check("8. Lãnh đạo xác nhận công việc ⇒ 200", confirmItem.status === 200, `HTTP ${confirmItem.status}`);
+
+  // F11/F12: công việc đã xác nhận xuất hiện ở BẢN NHÁP kết quả tháng (chưa có hồ sơ kết quả)
+  const mrRes2 = await fetch(`${BASE}/api/monthly-results?year=2026&month=10`, { headers: H(staffToken) });
+  const mrJson2 = await mrRes2.json().catch(() => ({}));
+  const draft2 = (mrJson2.drafts || []).find((d: any) => d.id === itemId);
+  check("8. Công việc đã xác nhận xuất hiện ở mục Bản nháp kết quả tháng", !!draft2, `${(mrJson2.drafts || []).length} bản nháp`);
+  check(
+    "8. Bản nháp ghi rõ số SP đã xác nhận / tổng số SP",
+    draft2?.spTotal === 3 && draft2?.spConfirmed === 2,
+    `${draft2?.spConfirmed}/${draft2?.spTotal}`
+  );
+  const confirmAgain = await fetch(`${BASE}/api/personal-work-items/${itemId}/review`, {
+    method: "POST",
+    headers: H(leaderToken),
+    body: JSON.stringify({ action: "CONFIRM" }),
+  });
+  check("8. Xác nhận lần hai ⇒ 409 (không mở lại hồ sơ đã nghiệm thu)", confirmAgain.status === 409, `HTTP ${confirmAgain.status}`);
 
   const mr2 = await fetch(`${BASE}/api/monthly-results?year=2026&month=10`, { headers: H(staffToken) });
   const mr2Json = await mr2.json().catch(() => ({}));

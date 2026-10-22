@@ -107,6 +107,19 @@ export default function MonthlyResultsPage() {
   const [pSearching, setPSearching] = useState(false);
   // YC-23: liên kết đầu việc thực tế trong kế hoạch cá nhân (chặn ghi trùng theo đầu việc + sản phẩm)
   const [fWorkItemId, setFWorkItemId] = useState("");
+  // V3 (F11/F12): công việc trong kỳ đã được lãnh đạo xác nhận nhưng CHƯA có hồ sơ
+  // kết quả tháng => hiển thị thành "bản nháp" để cán bộ ghi nhận (không ghi trùng).
+  const [drafts, setDrafts] = useState<Array<{
+    id: string; title: string; reviewState: string; officialState: string;
+    dueDate?: string | null; completedDate?: string | null; resultText?: string | null;
+    evidenceCount: number; spTotal: number; spConfirmed: number;
+    product?: { id: string; code: string; taskName: string; convertFactor: number | null } | null;
+    catalogEntry?: { id: string; code: string; title: string; convertFactor: number | null } | null;
+  }>>([]);
+  const [spList, setSpList] = useState<Array<{
+    id: string; code: string; taskName: string; factor: number | null; factorSnapshot: number | null;
+    quantity: number | null; quantityUnit: string | null; reviewState: string | null;
+  }>>([]);
   const [planWorkItems, setPlanWorkItems] = useState<Array<{
     id: string;
     title: string;
@@ -129,6 +142,8 @@ export default function MonthlyResultsPage() {
         setItems(json.data || []);
         setSummary(json.summary || null);
         setScorePreview(json.scorePreview || null);
+        // V3 (F11/F12): công việc đã xác nhận nhưng chưa có hồ sơ kết quả tháng.
+        setDrafts(json.drafts || []);
       } else {
         toast.error(json.error || "Không thể tải kết quả tháng");
       }
@@ -190,6 +205,62 @@ export default function MonthlyResultsPage() {
       if (res.ok) setPlanWorkItems(json.data || []);
     } catch {}
     finally { setWorkItemsLoading(false); }
+  };
+
+  // V3 (F11/F12): nạp danh sách sản phẩm QĐ1277 của đầu việc đang chọn (nhiều SP).
+  useEffect(() => {
+    if (!fWorkItemId) {
+      setSpList([]);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/work-item-products?workItemId=${fWorkItemId}`);
+        const json = await res.json().catch(() => ({}));
+        if (!alive) return;
+        const list = (json.data || []).map((x: any) => ({
+          id: x.id,
+          code: x.code,
+          taskName: x.taskName,
+          factor: x.factor,
+          factorSnapshot: x.factorSnapshot,
+          quantity: x.quantity,
+          quantityUnit: x.quantityUnit,
+          reviewState: x.reviewState,
+        }));
+        setSpList(list);
+        // Chọn sẵn SP đã được lãnh đạo xác nhận (có hệ số) làm sản phẩm chính.
+        const confirmed = list.find((x: any) => x.reviewState === "CONFIRMED" && x.factorSnapshot != null);
+        if (confirmed) {
+          setFProductId(confirmed.id);
+          setFProductLabel(`${confirmed.code} — ${confirmed.taskName}`);
+        }
+      } catch {
+        setSpList([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [fWorkItemId]);
+
+  // V3 (F11/F12): mở form ghi nhận kết quả cho một công việc đã xác nhận.
+  const openAddForDraft = (d: { id: string; title: string; product?: { id: string; code: string; taskName: string } | null }) => {
+    setEditing(null);
+    setFWorkItemId(d.id);
+    setFTitle(d.title);
+    setFProductId("");
+    setFProductLabel("");
+    setFDue("");
+    setFDoneDate("");
+    setFAssigned("");
+    setFCompleted("");
+    setFEvidence("");
+    setFLate("0");
+    setFRework("0");
+    setFNotes("");
+    setShowModal(true);
   };
 
   const openAdd = () => {
@@ -512,6 +583,52 @@ export default function MonthlyResultsPage() {
         />
       )}
 
+      {/* V3 (F11/F12): công việc đã được lãnh đạo xác nhận nhưng chưa có hồ sơ kết quả tháng.
+          Hiển thị như BẢN NHÁP — cán bộ bấm "Ghi nhận kết quả" để tạo hồ sơ (1 hồ sơ / 1 công việc). */}
+      {!loading && drafts.length > 0 && (
+        <div
+          data-testid="monthly-drafts"
+          className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-amber-900">
+              Công việc đã được lãnh đạo xác nhận — chờ ghi nhận kết quả tháng ({drafts.length})
+            </p>
+            <span className="text-[11px] text-amber-800">Đây là bản nháp, chưa tính vào điểm chính thức</span>
+          </div>
+          {drafts.map((d) => (
+            <div
+              key={d.id}
+              data-testid={`monthly-draft-${d.id}`}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">{d.title}</p>
+                <p className="text-[11px] text-slate-600">
+                  {d.officialState === "OFFICIAL" ? "Đã xác nhận" : "Chờ xác nhận"} ·{" "}
+                  {d.completedDate ? `hoàn thành ${toCalendarDate(d.completedDate)}` : "chưa có ngày hoàn thành"} ·{" "}
+                  {d.spTotal > 0
+                    ? `sản phẩm: ${d.spConfirmed}/${d.spTotal} đã xác nhận`
+                    : "chưa gắn sản phẩm QĐ1277"}
+                  {d.evidenceCount > 0 ? ` · ${d.evidenceCount} minh chứng` : ""}
+                </p>
+                {d.resultText && (
+                  <p className="text-[11px] text-slate-500 truncate">Kết quả: {d.resultText}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                data-testid={`monthly-draft-open-${d.id}`}
+                onClick={() => openAddForDraft(d)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-amber-500 bg-amber-500 text-white hover:opacity-90"
+              >
+                Ghi nhận kết quả
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[1000px]">
           <thead>
@@ -653,6 +770,49 @@ export default function MonthlyResultsPage() {
                       kế thừa từ đầu việc, có thể sửa trực tiếp bên dưới.
                     </p>
                   )}
+                  {/* V3 (F11/F12): nhiều sản phẩm QĐ1277 trên một công việc — hiển thị trạng thái
+                      xác nhận của từng SP; SP chưa xác nhận hoặc thiếu hệ số KHÔNG đủ điều kiện
+                      tính điểm chính thức. */}
+                  {fWorkItemId && spList.length > 0 && (
+                    <div
+                      data-testid="work-item-sp-list"
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 space-y-1"
+                    >
+                      <p className="text-[11px] font-semibold text-slate-700">
+                        Sản phẩm QĐ1277 của công việc ({spList.length})
+                      </p>
+                      {spList.map((sp) => (
+                        <div key={sp.id} className="flex items-center justify-between gap-2 text-[11px]">
+                          <span className="font-mono text-slate-700 truncate">
+                            {sp.code} — {sp.taskName}
+                          </span>
+                          <span className="flex items-center gap-2 shrink-0">
+                            <span className="text-slate-500">
+                              hệ số {sp.factorSnapshot ?? sp.factor ?? "chưa có"}
+                            </span>
+                            <span
+                              className={`px-1.5 py-0.5 rounded font-semibold ${
+                                sp.reviewState === "CONFIRMED"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : sp.reviewState === "REJECTED"
+                                    ? "bg-rose-100 text-rose-700"
+                                    : "bg-amber-100 text-amber-800"
+                              }`}
+                            >
+                              {sp.reviewState === "CONFIRMED"
+                                ? "Đã xác nhận"
+                                : sp.reviewState === "REJECTED"
+                                  ? "Không duyệt"
+                                  : "Chờ xác nhận"}
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                      <p className="text-[10px] text-slate-500">
+                        Sản phẩm chưa được lãnh đạo xác nhận hoặc chưa có hệ số sẽ không tham gia điểm chính thức.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-slate-700">Mã sản phẩm QĐ1277 (để trống = chờ đối chiếu)</label>
@@ -673,8 +833,16 @@ export default function MonthlyResultsPage() {
                               onClick={() => { setFProductId(p.id); setFProductLabel(`${p.code} — ${p.taskName}`); setPResults([]); setPSearch(""); }}
                               className="w-full text-left p-2 hover:bg-teal-50 text-xs">
                               <span className="font-mono font-bold text-teal-900">{p.code}</span>
-                              <span className="text-slate-500"> · hệ số {p.convertFactor ?? "—"}</span>
+                              <span className="text-slate-500">
+                                {" · hệ số "}
+                                {p.convertFactor !== null && p.convertFactor !== undefined
+                                  ? p.convertFactor
+                                  : "CHƯA CÓ (chờ đối chiếu)"}
+                              </span>
                               <span className="block text-slate-700">{p.taskName}</span>
+                              {p.outputProduct ? (
+                                <span className="block text-slate-500">Sản phẩm đầu ra: {p.outputProduct}</span>
+                              ) : null}
                             </button>
                           ))}
                         </div>

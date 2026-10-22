@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { NavigationList } from "@/components/layout/NavigationList";
+import { ENV_BADGE_LABEL, ENV_HEADER_TITLE, ENV_SIDEBAR_LABEL } from "@/config/app-env";
 
 interface Props {
   collapsed?: boolean;
@@ -108,7 +109,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                 title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
                 className="inline-flex items-center rounded border border-emerald-300/40 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-100"
               >
-                VẬN HÀNH CHÍNH THỨC
+                {ENV_SIDEBAR_LABEL}
               </span>
               <span className="text-[10px] text-on-primary-container">v1.2.4</span>
             </div>

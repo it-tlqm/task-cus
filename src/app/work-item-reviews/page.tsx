@@ -24,6 +24,10 @@ interface QueueItem {
   product?: { id: string; code: string; taskName: string } | null;
   catalogEntry?: { id: string; code: string; title: string } | null;
   evidenceCount: number;
+  reviewNote?: string | null;
+  reviewedAt?: string | null;
+  products?: Array<{ id: string; code: string; taskName: string; factor: number | null; factorSnapshot: number | null; quantity: number | null; quantityUnit: string | null; reviewState: string | null }>;
+  history?: Array<{ id: string; action: string; note: string | null; actor: { fullName: string }; createdAt: string }>;
 }
 
 function fmtDate(v?: string | null) {
@@ -56,6 +60,12 @@ export default function WorkItemReviewsPage() {
   const router = useRouter();
   const { user, loading: permLoading } = usePermissions();
   const [items, setItems] = useState<QueueItem[]>([]);
+  // P1: lịch sử phê duyệt — lãnh đạo tìm lại được hồ sơ đã xử lý.
+  const [tab, setTab] = useState<"pending" | "confirmed" | "returned" | "all">("pending");
+  const [staffFilter, setStaffFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [lastDecided, setLastDecided] = useState<{ id: string; title: string; action: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [returning, setReturning] = useState<QueueItem | null>(null);
@@ -64,7 +74,10 @@ export default function WorkItemReviewsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/personal-work-items/review-queue");
+      const params = new URLSearchParams({ status: tab });
+      if (staffFilter) params.set("personId", staffFilter);
+      if (monthFilter) params.set("month", monthFilter);
+      const res = await fetch("/api/personal-work-items/review-queue?" + params.toString());
       if (res.status === 401) {
         router.push("/login");
         return;
@@ -76,7 +89,7 @@ export default function WorkItemReviewsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, tab, staffFilter, monthFilter]);
 
   useEffect(() => {
     load();
@@ -100,6 +113,7 @@ export default function WorkItemReviewsPage() {
           ? "Đã xác nhận công việc và khóa kết quả."
           : "Đã trả lại công việc để cán bộ chỉnh sửa."
       );
+      setLastDecided({ id: item.id, title: item.title, action });
       setReturning(null);
       setReturnNote("");
       await load();
@@ -130,6 +144,70 @@ export default function WorkItemReviewsPage() {
         </button>
       </header>
 
+      {/* P1: các tab lịch sử phê duyệt */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-border-subtle">
+        {([
+          ["pending", "Chờ xác nhận"],
+          ["confirmed", "Đã xác nhận"],
+          ["returned", "Đã trả lại"],
+          ["all", "Tất cả / Lịch sử"],
+        ] as const).map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            data-testid={"review-tab-" + k}
+            onClick={() => setTab(k)}
+            className={"px-3 py-2 text-xs font-semibold rounded-t-lg " + (tab === k
+              ? "bg-surface-container text-on-surface border border-b-0 border-border-subtle"
+              : "text-on-surface-variant hover:bg-surface-container-low")}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          data-testid="review-staff-filter"
+          value={staffFilter}
+          onChange={(e) => setStaffFilter(e.target.value)}
+          placeholder="Mã hoặc tên cán bộ (lọc)"
+          className="h-9 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+        />
+        <input
+          data-testid="review-month-filter"
+          value={monthFilter}
+          onChange={(e) => setMonthFilter(e.target.value.replace(/\D/g, "").slice(0, 2))}
+          placeholder="Tháng (1-12)"
+          className="h-9 w-28 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+        />
+        {(staffFilter || monthFilter) && (
+          <button
+            type="button"
+            onClick={() => {
+              setStaffFilter("");
+              setMonthFilter("");
+            }}
+            className="text-[11px] font-semibold text-status-primary hover:underline"
+          >
+            Xoá lọc
+          </button>
+        )}
+      </div>
+      {lastDecided && (
+        <div
+          data-testid="review-last-decided"
+          className="rounded-lg border border-status-success/30 bg-status-success-bg px-3 py-2 text-xs text-on-surface"
+        >
+          <b>{lastDecided.action === "CONFIRM" ? "Đã xác nhận" : "Đã trả lại"}</b> hồ sơ “{lastDecided.title}”.{" "}
+          <button
+            type="button"
+            onClick={() => setExpanded(lastDecided.id)}
+            className="font-semibold text-status-primary hover:underline"
+          >
+            Xem hồ sơ vừa xử lý
+          </button>
+        </div>
+      )}
       {loading || permLoading ? (
         <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-6 text-sm text-on-surface-variant">
           Đang tải danh sách công việc…
@@ -180,6 +258,45 @@ export default function WorkItemReviewsPage() {
                   <b>{it.evidenceCount}</b> tệp
                 </p>
               </div>
+
+              {/* P1: lịch sử gửi → trả lại → gửi lại → xác nhận */}
+              <button
+                type="button"
+                data-testid={"review-history-toggle-" + it.id}
+                onClick={() => setExpanded(expanded === it.id ? null : it.id)}
+                className="text-[11px] font-semibold text-status-primary hover:underline"
+              >
+                {expanded === it.id ? "Ẩn lịch sử xử lý" : "Xem lịch sử xử lý"}
+              </button>
+              {expanded === it.id && (
+                <div
+                  data-testid={"review-history-" + it.id}
+                  className="mt-1 rounded-lg border border-border-subtle bg-surface-container p-2 space-y-1"
+                >
+                  {(it.history || []).map((h) => (
+                    <div key={h.id} className="text-[11px] text-on-surface">
+                      <b>
+                        {h.action === "SUBMITTED"
+                          ? "Gửi lãnh đạo"
+                          : h.action === "RETURNED"
+                            ? "Bị trả lại"
+                            : h.action === "CONFIRMED"
+                              ? "Đã xác nhận"
+                              : h.action === "SP_CONFIRMED"
+                                ? "Xác nhận sản phẩm"
+                                : h.action === "SP_REJECTED"
+                                  ? "Từ chối sản phẩm"
+                                  : h.action}
+                      </b>{" "}
+                      — {h.actor?.fullName || "—"}
+                      {h.note ? " · " + h.note : ""}
+                    </div>
+                  ))}
+                  {(it.history || []).length === 0 && (
+                    <div className="text-[11px] text-on-surface-variant">Chưa có thao tác xử lý nào.</div>
+                  )}
+                </div>
+              )}
 
               <WorkItemProductsPanel workItemId={it.id} canPropose={false} />
 

@@ -310,7 +310,9 @@ export default function SelfAssessmentPanel({
                     <li key={l.grade} className="text-[11px] text-on-surface">
                       <strong>{l.grade}</strong>:{" "}
                       {l.minScore !== null ? `từ ${l.minScore} điểm` : ""}
-                      {l.maxScore !== null ? ` đến <${l.maxScore + 0.001} điểm` : ""}
+                      {l.maxScore !== null
+                        ? ` đến <${(l.maxScore + 0.001).toFixed(2)} điểm`
+                        : ""}
                     </li>
                   ))}
                 </ul>
