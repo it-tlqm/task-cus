@@ -199,6 +199,8 @@ export async function POST(req: NextRequest) {
       scopeType: account.scopeType,
       scopeUnitId: account.scopeUnitId,
       permissions: account.permissions,
+      // Claim trong JWT ⇒ middleware chặn các API/trang khác cho tới khi đổi mật khẩu.
+      mustChangePassword: !!account.mustChangePassword,
     };
 
     const token = signToken(sessionUser, remember !== false);
@@ -219,6 +221,8 @@ export async function POST(req: NextRequest) {
       success: true,
       user: sessionUser,
       token,
+      // Tài khoản quản trị khởi tạo: bắt buộc đổi mật khẩu ở lần đăng nhập kế tiếp.
+      mustChangePassword: !!account.mustChangePassword,
     });
 
     // Set cookie (không "ghi nhớ" thì cookie theo phiên trình duyệt + token 8h)

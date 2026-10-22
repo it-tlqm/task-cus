@@ -6,6 +6,7 @@ import { isTerminalTaskStatus } from "@/server/task-transitions";
 import { isTaskLeader } from "@/server/task-transitions";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
+import { toClientAttachments } from "@/server/attachments";
 
 /**
  * Trao đổi trong nhiệm vụ: bình luận phẳng (không thread/sửa), xóa của mình,
@@ -27,7 +28,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       },
       orderBy: { createdAt: "asc" },
     });
-    return NextResponse.json({ success: true, data: rows });
+    return NextResponse.json({
+      success: true,
+      // KHÔNG phát URL công khai của kho lưu trữ.
+      data: rows.map((r) => ({
+        ...r,
+        attachments: toClientAttachments((r as any).attachments || [], taskId),
+      })),
+    });
   } catch (error: any) {
     return jsonError("Lỗi khi tải trao đổi: " + error.message, 500);
   }

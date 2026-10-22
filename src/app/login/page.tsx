@@ -48,6 +48,12 @@ export default function LoginPage() {
       }
 
       toast.success("Đăng nhập thành công! Đang chuyển hướng...");
+      // Tài khoản khởi tạo: bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
+      if (data.mustChangePassword) {
+        router.push("/change-password");
+        router.refresh();
+        return;
+      }
       // Quay lại đúng trang đã yêu cầu trước khi bị chặn (middleware ?redirect=), chống open-redirect
       let dest = "/dashboard";
       try {

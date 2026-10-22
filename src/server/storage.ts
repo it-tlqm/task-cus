@@ -35,8 +35,16 @@ export interface IStorageProvider {
 }
 
 /** Cấu hình Storage chưa đạt yêu cầu an toàn → route trả 503, không ghi metadata. */
-export class EvidenceStorageConfigError extends Error {
+export class StorageConfigError extends Error {
   statusCode = 503;
+  constructor(message: string) {
+    super(message);
+    this.name = "StorageConfigError";
+  }
+}
+
+/** Lỗi cấu hình riêng cho kho minh chứng (giữ tên cũ để không phá nơi đang dùng). */
+export class EvidenceStorageConfigError extends StorageConfigError {
   constructor(message: string) {
     super(message);
     this.name = "EvidenceStorageConfigError";
@@ -46,6 +54,15 @@ export class EvidenceStorageConfigError extends Error {
 interface StorageProviderOptions {
   /** Dùng cho minh chứng: bắt buộc khóa server, bucket private, không URL công khai. */
   forEvidence?: boolean;
+}
+
+/**
+ * Chế độ kho tệp đính kèm PRIVATE (bucket `task-attachments`).
+ * Bật bằng biến môi trường `SUPABASE_STORAGE_PRIVATE=1` trên máy chủ.
+ * Khi bật: bắt buộc có khóa service-role và bucket phải PRIVATE (fail-closed).
+ */
+export function isPrivateStorageMode(): boolean {
+  return String(process.env.SUPABASE_STORAGE_PRIVATE || "").trim() === "1";
 }
 
 function getSupabaseServerKey(): string {
@@ -81,13 +98,17 @@ class SupabaseStorageProvider implements IStorageProvider {
   private bucket: string;
   private forEvidence: boolean;
   private bucketVerified = false;
+  private privateMode: boolean;
+  private serverKey: string;
 
   constructor(bucket?: string, options: StorageProviderOptions = {}) {
     this.baseUrl = (
       process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ekswvjbpqblssxcdwagi.supabase.co"
     ).replace(/\/$/, "");
     this.forEvidence = !!options.forEvidence;
-    const serverKey = getSupabaseServerKey();
+    this.privateMode = isPrivateStorageMode();
+    this.serverKey = getSupabaseServerKey();
+    const serverKey = this.serverKey;
     if (this.forEvidence && !serverKey) {
       // Không bao giờ fallback sang publishable key cho minh chứng:
       // khóa công khai không đủ quyền và sẽ khiến bucket private không hoạt động.
@@ -104,15 +125,27 @@ class SupabaseStorageProvider implements IStorageProvider {
     this.bucket = bucket || process.env.SUPABASE_STORAGE_BUCKET || "task-attachments";
   }
 
+  /**
+   * KHÔNG phát URL công khai cho bất kỳ tệp nào (đính kèm hay minh chứng).
+   * Mọi lượt xem/tải đều đi qua route có xác thực + kiểm tra quyền.
+   */
   getPublicUrl(key: string): string {
-    if (this.forEvidence) {
-      throw new Error("Minh chứng công việc không được phát URL công khai");
-    }
-    return `${this.baseUrl}/storage/v1/object/public/${this.bucket}/${key}`;
+    throw new StorageConfigError(
+      "Tệp lưu trữ không được phát URL công khai — phải tải qua route có xác thực."
+    );
   }
 
   async assertReady(): Promise<void> {
-    if (!this.forEvidence || this.bucketVerified) return;
+    if (this.bucketVerified) return;
+    // - Minh chứng: LUÔN bắt buộc bucket private + khóa server.
+    // - Tệp đính kèm: kiểm tra khi bật chế độ PRIVATE (SUPABASE_STORAGE_PRIVATE=1).
+    if (!this.forEvidence && !this.privateMode) return;
+    const what = this.forEvidence ? "minh chứng" : "tệp đính kèm";
+    if (!this.serverKey) {
+      throw new StorageConfigError(
+        `Chưa cấu hình SUPABASE_SERVICE_ROLE_KEY (hoặc SUPABASE_SECRET_KEY) trên máy chủ — không thể dùng kho ${what} ở chế độ private.`
+      );
+    }
     const res = await fetch(
       `${this.baseUrl}/storage/v1/bucket/${encodeURIComponent(this.bucket)}`,
       {
@@ -124,14 +157,14 @@ class SupabaseStorageProvider implements IStorageProvider {
       }
     );
     if (!res.ok) {
-      throw new EvidenceStorageConfigError(
-        `Bucket minh chứng "${this.bucket}" chưa tồn tại hoặc khóa server không có quyền truy cập (HTTP ${res.status})`
+      throw new StorageConfigError(
+        `Bucket ${what} "${this.bucket}" chưa tồn tại hoặc khóa server không có quyền truy cập (HTTP ${res.status})`
       );
     }
     const info: any = await res.json().catch(() => null);
     if (!info || info.public !== false) {
-      throw new EvidenceStorageConfigError(
-        `Bucket "${this.bucket}" phải ở chế độ PRIVATE. Hệ thống từ chối dùng bucket public cho minh chứng.`
+      throw new StorageConfigError(
+        `Bucket "${this.bucket}" phải ở chế độ PRIVATE. Hệ thống từ chối dùng bucket public cho ${what}.`
       );
     }
     this.bucketVerified = true;
@@ -143,6 +176,7 @@ class SupabaseStorageProvider implements IStorageProvider {
     mimeType: string,
     subfolder: string = "tasks"
   ): Promise<StorageUploadResult> {
+    await this.assertReady();
     const { storageKey } = buildStorageKey(originalName, subfolder);
 
     const endpoint = `${this.baseUrl}/storage/v1/object/${this.bucket}/${storageKey}`;
@@ -165,8 +199,9 @@ class SupabaseStorageProvider implements IStorageProvider {
     }
 
     return {
-      // Kho minh chứng private: không tạo/không trả URL công khai.
-      url: this.forEvidence ? "" : this.getPublicUrl(storageKey),
+      // Kho private: KHÔNG tạo / KHÔNG trả URL công khai.
+      // Giao diện tải qua route có xác thực: /api/tasks/{taskId}/attachments/{id}/file
+      url: "",
       key: storageKey,
       size: buffer.length,
       mimeType,
@@ -192,6 +227,12 @@ class SupabaseStorageProvider implements IStorageProvider {
   }
 
   async download(key: string): Promise<Buffer | null> {
+    try {
+      await this.assertReady();
+    } catch (err) {
+      if (err instanceof StorageConfigError) throw err;
+      throw err;
+    }
     try {
       const endpoint = `${this.baseUrl}/storage/v1/object/${this.bucket}/${key}`;
       const response = await fetch(endpoint, {
@@ -423,6 +464,19 @@ export function getEvidenceStorageProvider(): IStorageProvider {
  */
 export async function ensureEvidenceStorageReady(): Promise<IStorageProvider> {
   const provider = getEvidenceStorageProvider();
+  if (provider.assertReady) await provider.assertReady();
+  return provider;
+}
+
+/**
+ * Kiểm tra kho TỆP ĐÍNH KÈM sẵn sàng trước khi đọc/ghi (fail-closed).
+ * - Chế độ private (`SUPABASE_STORAGE_PRIVATE=1`): bắt buộc có khóa service-role
+ *   trên máy chủ và bucket phải PRIVATE ⇒ nếu chưa cấu hình thì route trả 503
+ *   thay vì đọc/ghi bằng khoá công khai.
+ * - Ngoài ra: không phát URL công khai (xem `SupabaseStorageProvider.getPublicUrl`).
+ */
+export async function ensureAttachmentStorageReady(): Promise<IStorageProvider> {
+  const provider = getStorageProvider();
   if (provider.assertReady) await provider.assertReady();
   return provider;
 }

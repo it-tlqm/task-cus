@@ -143,6 +143,8 @@ model Account {
   passwordHash String    @map("password_hash")
   status       String    @default("ACTIVE") // ACTIVE, LOCKED, DISABLED
   mfaEnabled   Boolean   @default(false) @map("mfa_enabled")
+  /// Bắt buộc đổi mật khẩu ở lần đăng nhập kế tiếp (tài khoản quản trị khởi tạo)
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")

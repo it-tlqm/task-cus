@@ -20,6 +20,7 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 const creq = createRequire("D:/thanhnx/OpenCode/talung-cus-work/package.json");
 const ExcelJS = creq("exceljs");
@@ -54,7 +55,8 @@ const src = SOURCE ? new PrismaClient({ datasources: { db: { url: SOURCE } } }) 
 // Nhom 1: du lieu nghiep vu (XOA toan bo)
 const DELETE_TABLES = [
   // --- ho so phe duyet / de nghi ---
-  "approval_decisions", "approval_cases", "evaluation_assessments", "evidence_adjustments",
+  "approval_decisions", "approval_cases", "evaluation_assessments",
+  "work_evidence_adjustments", "work_evidences",
   "work_item_reviews", "score_run_items", "score_runs", "feedback", "official_docs",
   // --- bang diem / tong hop ---
   "metric_daily_entries", "metric_entry_revisions", "metric_baselines", "metric_plan_targets",
@@ -72,10 +74,14 @@ const DELETE_TABLES = [
   // --- thong bao ---
   "notifications", "push_subscriptions",
   // --- linh tuc / nghi p vu khac ---
-  "deadline_requests", "leave_requests", "meetings", "department_work_items",
-  "duty_day_infos", "duty_rosters",
+  "deadline_requests", "leave_requests", "meetings", "meeting_conclusions", "department_work_items",
+  "duty_day_infos", "duty_rosters", "duty_positions",
+  // --- tuyen phe duyet (khong chuyen sang he thong moi) ---
+  "person_supervisions",
   // --- mau nghiep vu cu (khong dung lam danh muc chinh thuc) ---
   "activity_templates",
+  // --- audit cua he thong VET (da luu trong kho luu tru; DB van hanh moi bat dau tu 0) ---
+  "audit_events",
 ];
 // Nhom 2: danh muc TX (XOA roi nhap lai tu file Excel chinh thuc)
 const REBUILD_TX = ["work_catalog_entries"];
@@ -87,8 +93,40 @@ const KEEP_TABLES = [
   "activity_groups", "form_templates", "form_template_versions", "system_configs",
   "metric_groups", "metric_definitions", "metric_classifications",
   "product_catalog_versions", "product_groups", "product_items",
-  "work_catalog_versions", "work_catalog_department_mappings", "audit_events",
+  "work_catalog_versions", "work_catalog_department_mappings",
 ];
+
+// Nguon danh muc TX da doi chieu (348 dong Excel -> 320 ma giu, 28 dong loai)
+const RECON_DIR = path.join(OUT_DIR, "reconciliation");
+const TX_CSV = path.join(RECON_DIR, "tx-348-dong-320-ma.csv");
+const TX_EXCLUDED_CSV = path.join(RECON_DIR, "tx-28-dong-bi-loai.csv");
+const QD1277_SNAPSHOT = path.join(RECON_DIR, "qd1277-snapshot-manifest.json");
+const FILES_MANIFEST = path.join(RECON_DIR, "prod-files-manifest.json");
+
+/** Doc CSV RFC4180 (ho tro truong nhieu dong, dau nhay). */
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+      } else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  const head = rows.shift().map((h) => h.trim());
+  return rows
+    .filter((r) => r.some((x) => String(x).trim() !== ""))
+    .map((r) => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ""])));
+}
+
+const sha256File = (p) =>
+  fs.existsSync(p) ? crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex") : null;
 
 const norm = (v) => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const cellv = (v) => {
@@ -180,6 +218,113 @@ async function deleteRows(table, where = {}) {
 
 async function main() {
   const stamp = new Date().toISOString();
+
+  /* ---------- PREFLIGHT: kiem tra dieu kien an toan (khong ghi, khong xoa) ---------- */
+  if (arg("preflight") === "1") {
+    const checks = [];
+    let backupInfo = null;
+    const add = (name, ok, detail = "") => checks.push({ name, ok, detail });
+
+    // 1) Ket noi DB dich — phai la Production dung (hoac DB tap dien)
+    const dbName = (() => {
+      try {
+        const u = new URL(TARGET);
+        return { host: u.hostname, db: u.pathname.replace(/^\//, "") };
+      } catch {
+        return { host: "?", db: "?" };
+      }
+    })();
+    const expectHost = String(arg("expect-host", "")).toLowerCase();
+    const expectDb = String(arg("expect-db", "")).toLowerCase();
+    if (expectHost) {
+      add(
+        "Ket noi dung DB Production",
+        dbName.host.toLowerCase().includes(expectHost) &&
+          (!expectDb || dbName.db.toLowerCase() === expectDb),
+        `${dbName.host}/${dbName.db}`
+      );
+    } else {
+      add("Tham so --expect-host/--expect-db", false, "chua xac nhan dung DB dich");
+    }
+
+    // 2) Backup moi nhat + checksum
+    const backupDir = path.join(REPO, "demo-ops", "yc38c-backup");
+    const backups = fs.existsSync(backupDir)
+      ? fs.readdirSync(backupDir).filter((f) => f.endsWith(".json")).map((f) => path.join(backupDir, f))
+      : [];
+    backups.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+    const latest = backups[0];
+    add("Co backup moi nhat", !!latest, latest ? path.basename(latest) : "KHONG CO");
+    if (latest) {
+      const st = fs.statSync(latest);
+      add("Backup kich thuoc > 1MB", st.size > 1024 * 1024, `${st.size} bytes`);
+      backupInfo = { file: path.relative(REPO, latest), bytes: st.size, sha256: sha256File(latest) };
+    }
+
+    // 3) Restore-test: DB khoi phuc duoc tren moi truong rieng
+    const restoreTest = path.join(REPO, "demo-ops", "reset", "restore-test-result.json");
+    add("Co ket qua restore-test", fs.existsSync(restoreTest), fs.existsSync(restoreTest) ? path.basename(restoreTest) : "THIEU");
+
+    // 4) Nguon danh muc: TX 320 + QD1277 + don vi/nhan su
+    const txRows = fs.existsSync(TX_CSV) ? parseCsv(fs.readFileSync(TX_CSV, "utf8")) : [];
+    add("Danh muc TX = 320 ma", txRows.length === 320, `${txRows.length} dong`);
+    add("Co danh sach 28 dong TX bi loai", fs.existsSync(TX_EXCLUDED_CSV));
+    add("Co snapshot QD1277 (nguon + trang thai)", fs.existsSync(QD1277_SNAPSHOT));
+    if (src) {
+      const units = (await src.$queryRawUnsafe(`SELECT count(*)::int n FROM org_units`))[0].n;
+      const people = (await src.$queryRawUnsafe(`SELECT count(*)::int n FROM people`))[0].n;
+      const items = (await src.$queryRawUnsafe(`SELECT count(*)::int n FROM product_items`))[0].n;
+      const groups = (await src.$queryRawUnsafe(`SELECT count(*)::int n FROM product_groups`))[0].n;
+      add("Nguon: co don vi + nhan su + QD1277", units > 0 && people > 0 && items > 0 && groups > 0,
+        `units=${units} people=${people} SP=${items} nhom=${groups}`);
+    } else {
+      add("Co --source-db", false, "khong co DB nguon de lay danh muc");
+    }
+
+    // 5) Role SYSTEM_ADMIN + quyen ky thuat
+    const adminRole = await prisma.role.findFirst({
+      where: { code: "SYSTEM_ADMIN" },
+      include: { rolePermissions: { include: { permission: true } } },
+    });
+    add("Co role SYSTEM_ADMIN", !!adminRole);
+    if (adminRole) {
+      const codes = adminRole.rolePermissions.map((rp) => rp.permission.code);
+      const need = ["org.manage", "users.manage", "catalog.manage", "system.config"];
+      const missing = need.filter((c) => !codes.includes(c));
+      add("Quyen ky thuat day du", missing.length === 0, missing.length ? "thieu: " + missing.join(",") : codes.length + " quyen");
+      // KHONG duyet nghiep vu
+      const approve = codes.filter((c) => /approve|confirm|review|duyet/i.test(c));
+      add("SYSTEM_ADMIN khong co quyet duyet nghiep vu", approve.length === 0, approve.join(","));
+    }
+
+    // 6) Kho luu tru tep (truoc khi xoa)
+    const fm = fs.existsSync(FILES_MANIFEST) ? JSON.parse(fs.readFileSync(FILES_MANIFEST, "utf8")) : null;
+    const files = fm?.files || [];
+    add("Manifest tep da co", !!fm, `${files.length} tep`);
+    for (const f of files) {
+      const p = path.join(REPO, "demo-ops", "reset", "reconciliation", "prod-files", f.archivedFile || "");
+      const ok = fs.existsSync(p);
+      add(`Tep da luu tru: ${f.archivedFile || f.fileName}`, ok, ok ? `${fs.statSync(p).size} bytes` : "THIEU");
+    }
+
+    // 7) Kehoa tep trong Storage (can xoa sau khi luu tru)
+    const att = await prisma.$queryRawUnsafe(`SELECT count(*)::int n FROM task_attachments`).catch(() => ({ n: -1 }));
+    const ev = await prisma.$queryRawUnsafe(`SELECT count(*)::int n FROM work_evidences`).catch(() => ({ n: -1 }));
+    add("Can don sach tep trong Storage", true, `task_attachments=${att.n} work_evidences=${ev.n} (xoa sau khi luu tru)`);
+
+    const go = checks.every((c) => c.ok);
+    console.log("\n=== PREFLIGHT RESET PRODUCTION ===");
+    for (const c of checks) console.log(`  [${c.ok ? "OK " : "NO "}] ${c.name}${c.detail ? " — " + c.detail : ""}`);
+    console.log(go ? "\nKET QUA: GO (co the lenh EXECUTE)" : "\nKET QUA: NO-GO (chua du dieu kien)");
+    const pf = path.join(REPO, "demo-ops", "reset", `preflight-${stamp.slice(0, 19).replace(/[:T]/g, "-")}.json`);
+    fs.mkdirSync(path.dirname(pf), { recursive: true });
+    fs.writeFileSync(pf, JSON.stringify({ stamp, go, checks, backup: backupInfo }, null, 2));
+    console.log("PREFLIGHT FILE:", path.relative(REPO, pf));
+    await prisma.$disconnect();
+    if (src) await src.$disconnect();
+    process.exit(go ? 0 : 1);
+  }
+
   const manifest = {
     tool: "reset-and-init.mjs", mode: MODE, startedAt: stamp,
     target: String(TARGET).replace(/:[^:@/]*@/, ":***@"),
@@ -334,7 +479,19 @@ async function main() {
   }
   console.log(`  nhan su: ${personByName.size} (khong tao tai khoan)`);
 
-  /* ---------- 4. DANH MUC TX (348) ---------- */
+  /* ---------- 4. DANH MUC TX (320 ma — da doi chieu 348 dong Excel -> 320 giu / 28 loai) ---------- */
+  if (!fs.existsSync(TX_CSV)) {
+    throw new Error(`THIEU file danh muc TX da doi chieu: ${TX_CSV}`);
+  }
+  const txCsvRows = parseCsv(fs.readFileSync(TX_CSV, "utf8"));
+  const txExcluded = fs.existsSync(TX_EXCLUDED_CSV)
+    ? parseCsv(fs.readFileSync(TX_EXCLUDED_CSV, "utf8")).length
+    : null;
+  if (txCsvRows.length !== 320) {
+    throw new Error(`Danh muc TX phai co 320 ma, thuc te ${txCsvRows.length} — dung file doi chieu khac`);
+  }
+  console.log(`  TX (file doi chieu): ${txCsvRows.length} ma giu / ${txExcluded ?? "?"} dong bi loai`);
+
   // Lay ma/group/thu tu cua danh muc cu (nguon da kiem chung) de giu dung dinh danh
   const oldTx = src ? await src.workCatalogEntry.findMany() : [];
   const oldByKey = new Map(oldTx.map((t) => [norm(t.department) + "||" + norm(t.title), t]));
@@ -345,35 +502,47 @@ async function main() {
     });
     console.log("  tao phien ban danh muc moi:", version.code);
   }
-  let txCreated = 0, txFactorChanged = 0;
-  const seenTx = new Set();
-  for (const r of txRows) {
-    const key = norm(r.dept) + "||" + norm(r.title);
-    if (seenTx.has(key)) { manifest.notes.push(`TX trung trong file Excel: ${r.title}`); continue; }
-    seenTx.add(key);
+  let txCreated = 0, txFactorChanged = 0, txNullFactor = 0;
+  for (const r of txCsvRows) {
+    const dept = r.department || "Bộ phận Nghiệp vụ Hải quan";
+    const key = norm(dept) + "||" + norm(r.title);
     const old = oldByKey.get(key);
+    const rawFactor = String(r.factorExcel ?? "").trim();
+    const factor = rawFactor === "" ? null : Number(rawFactor);
+    if (factor === null) txNullFactor++;
     const data = {
       versionId: version.id,
-      code: old?.code || "IMP-" + String(txCreated + 1).padStart(3, "0"),
+      code: r.sourceCode || old?.code || "IMP-" + String(txCreated + 1).padStart(3, "0"),
       title: r.title,
-      department: r.dept || "Bộ phân Nghiệp vụ Hải quan",
+      department: dept,
       departmentOrder: old?.departmentOrder ?? 0,
-      groupCode: old?.groupCode || "IMP",
+      groupCode: r.groupCode || old?.groupCode || "IMP",
       sortOrder: old?.sortOrder ?? txCreated + 1,
-      sourceRow: old?.sourceRow ?? 0,
+      sourceRow: Number(r.excelRow) || old?.sourceRow || 0,
       status: "ACTIVE",
       // He so: Excel la nguon chinh thuc. 0 khac NULL (Excel de trong => NULL).
-      convertFactor: r.factor,
+      convertFactor: Number.isFinite(factor) ? factor : null,
     };
     await prisma.workCatalogEntry.create({ data });
     txCreated++;
-    if (old && old.convertFactor !== null && r.factor !== null && Number(old.convertFactor) !== r.factor) {
+    if (old && old.convertFactor !== null && factor !== null && Number(old.convertFactor) !== factor) {
       txFactorChanged++;
-      manifest.notes.push(`he so TX ${data.code} doi: cu ${old.convertFactor} -> Excel ${r.factor}`);
+      manifest.notes.push(`he so TX ${data.code} doi: cu ${old.convertFactor} -> Excel ${factor}`);
     }
   }
   manifest.created["work_catalog_entries"] = txCreated;
-  console.log(`  TX: ${txCreated} muc (${txFactorChanged} doi he so so voi he thong cu)`);
+  manifest.tx = {
+    source: "demo-ops/reset/reconciliation/tx-348-dong-320-ma.csv (da doi chieu voi file Excel goc)",
+    file: path.relative(REPO, TX_CSV),
+    sha256: sha256File(TX_CSV),
+    kept: txCsvRows.length,
+    excluded: txExcluded,
+    excludedFile: txExcluded !== null ? path.relative(REPO, TX_EXCLUDED_CSV) : null,
+    excludedSha256: sha256File(TX_EXCLUDED_CSV),
+    nullFactor: txNullFactor,
+    factorChangedVsOld: txFactorChanged,
+  };
+  console.log(`  TX: ${txCreated} muc (${txNullFactor} he so NULL, ${txFactorChanged} doi he so so voi he thong cu)`);
 
   /* ---------- 5. DANH MUC QD1277 (trich xuat tu DB nguon da kiem chung) ---------- */
   if (src) {
@@ -381,7 +550,27 @@ async function main() {
     const groups = await src.productGroup.findMany();
     const items = await src.productItem.findMany();
     console.log(`  QD1277 nguon: ${groups.length} nhom / ${items.length} san pham (version ${v?.code})`);
-    manifest.qd1277 = { source: "db nguon", version: v?.code, groups: groups.length, items: items.length };
+    const withFactor = items.filter((i) => i.convertFactor !== null && i.convertFactor !== undefined).length;
+    const snap = fs.existsSync(QD1277_SNAPSHOT)
+      ? JSON.parse(fs.readFileSync(QD1277_SNAPSHOT, "utf8"))
+      : null;
+    manifest.qd1277 = {
+      source: "DB nguon da kiem chung (khong co file Excel QD1277 goc trong workspace)",
+      officialSourceFile: null,
+      pendingVerification: true,
+      note:
+        snap?.note ||
+        "Hinh thuc chinh thuc CHUA CO. He so giu NGUYEN TU DANH MUC, khong suy luan. Can ban giao file goc de doi chieu lan cuoi.",
+      version: v?.code || null,
+      groups: groups.length,
+      items: items.length,
+      withFactor,
+      nullFactor: items.length - withFactor,
+      snapshotFile: path.relative(REPO, QD1277_SNAPSHOT),
+      snapshotSha256: sha256File(QD1277_SNAPSHOT),
+      productsCsvSha256: sha256File(path.join(RECON_DIR, "qd1277-3386-san-pham.csv")),
+      groupsCsvSha256: sha256File(path.join(RECON_DIR, "qd1277-80-nhom.csv")),
+    };
   } else {
     manifest.notes.push("KHONG co --source-db: danh muc QD1277 phai trich xuat tu DB nguon truoc khi reset Production");
   }
@@ -389,6 +578,11 @@ async function main() {
   /* ---------- 6. SUPER ADMIN KY THUAT (duy nhat) ---------- */
   const adminRole = await prisma.role.findFirst({ where: { code: "SYSTEM_ADMIN" } });
   if (!adminRole) throw new Error("Khong tim thay role SYSTEM_ADMIN");
+  const existingAdmin = await prisma.account.findFirst({ where: { username: "admin.tk" } });
+  if (existingAdmin) {
+    manifest.notes.push("admin.tk da ton tai - giu nguyen (khong tao lai, khong doi mat khau)");
+    console.log("  Super Admin: admin.tk da ton tai (giu nguyen)");
+  } else {
   const adminPerson = await prisma.person.create({
     data: {
       code: "ADMIN-TK", fullName: "Quản trị hệ thống (kỹ thuật)", status: "ACTIVE",
@@ -396,12 +590,14 @@ async function main() {
     },
   });
   const pwd = crypto.randomBytes(18).toString("base64url");
-  const adminAcc = await prisma.account.create({
+  await prisma.account.create({
     data: {
       username: "admin.tk",
       passwordHash: await bcrypt.hash(pwd, 12),
       personId: adminPerson.id,
       status: "ACTIVE",
+      // Bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
+      mustChangePassword: true,
       roleGrants: { create: [{ roleId: adminRole.id, scopeType: "ORGANIZATION" }] },
     },
   });
@@ -412,25 +608,112 @@ async function main() {
     `TALUNG-CUS-WORK — TAI KHOAN SUPER ADMIN KY THUAT (khoi tao moi)\n` +
     `Sinh luc: ${stamp}\nUsername: admin.tk\nMat khau: ${pwd}\n\n` +
     `LUU Y: file nay KHONG duoc commit va KHONG duoc gui qua email/chat.\n` +
-    `Doi mat khau ngay sau lan dang nhap dau tien.\n`
+    `BAT BUOC doi mat khau o lan dang nhap dau tien.\n`,
+    { encoding: "utf8", mode: 0o600 }
   );
   manifest.created["accounts:admin.tk"] = 1;
-  manifest.superAdmin = { username: "admin.tk", personCode: "ADMIN-TK", credentialFile: path.relative(REPO, secretFile) };
+  manifest.superAdmin = {
+    username: "admin.tk",
+    personCode: "ADMIN-TK",
+    mustChangePassword: true,
+    credentialFile: path.relative(REPO, secretFile),
+  };
   console.log("  Super Admin: admin.tk (mat khau: xem file credential, KHONG in ra log)");
+  }
 
   /* ---------- 7. DOI CHIEU ---------- */
   const counts = {};
-  for (const t of [...KEEP_TABLES, ...DELETE_TABLES]) {
+  for (const t of [...KEEP_TABLES, ...DELETE_TABLES, ...REBUILD_TX, ...REBUILD_ORG]) {
     if (await tableExists(t)) {
       const r = await prisma.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "${t}"`);
       counts[t] = r[0].n;
     }
   }
   manifest.after = counts;
-  const mustBeZero = ["plans", "plan_items", "tasks", "task_updates", "personal_work_items", "routine_entries", "monthly_work_results", "result_submissions", "submission_values", "work_item_products", "notifications", "approval_cases", "activity_templates", "metric_daily_entries"];
+
+  // --- NGHIEM THU: 0 nghiep vu + du lieu nen duoc nhap day du ---
+  const mustBeZero = [
+    "plans", "plan_items", "plan_task_links", "plan_item_work_links", "task_counters",
+    "tasks", "task_updates", "task_assignees", "task_attachments", "task_comments", "comment_reactions",
+    "personal_work_items", "work_item_products", "work_item_reviews", "work_item_assignments",
+    "routine_entries", "result_submissions", "submission_values", "monthly_work_results",
+    "approval_cases", "approval_decisions", "evidence_adjustments", "work_evidence_adjustments",
+    "notifications", "push_subscriptions", "activity_templates", "metric_daily_entries",
+    "score_runs", "score_run_items", "report_snapshots", "report_blocks",
+    "deadline_requests", "leave_requests", "meetings", "department_work_items",
+    "duty_rosters", "duty_day_infos", "feedback", "official_docs",
+    "person_supervisions", "audit_events",
+  ];
   const notClean = mustBeZero.filter((t) => (counts[t] || 0) > 0);
-  manifest.cleanCheck = { mustBeZero, notClean, ok: notClean.length === 0 };
-  console.log(`  doi chieu: ${notClean.length === 0 ? "SACH" : "CON " + notClean.join(", ")}`);
+
+  // Tai khoan: chi 1 SUPER ADMIN, khong con tai khoan cu (can bo that/DEMO/UAT).
+  const accCount = (await prisma.$queryRawUnsafe(`SELECT count(*)::int AS n FROM accounts`))[0].n;
+  const adminAcc = await prisma.account.findFirst({
+    where: { username: "admin.tk" },
+    include: { roleGrants: { include: { role: true } }, person: { include: { assignments: true } } },
+  });
+  const adminOk =
+    !!adminAcc &&
+    accCount === 1 &&
+    adminAcc.roleGrants.length === 1 &&
+    adminAcc.roleGrants[0].role.code === "SYSTEM_ADMIN" &&
+    adminAcc.person.assignments.length === 0;
+
+  // Du lieu nen phai day du (35 nhan su ngoai tai khoan quan tri ky thuat ADMIN-TK)
+  const peopleStaff = (await prisma.$queryRawUnsafe(
+    `SELECT count(*)::int AS n FROM people WHERE code <> 'ADMIN-TK'`
+  ))[0].n;
+  const expect = {
+    org_units: 8,
+    people: 35,
+    work_catalog_entries: 320,
+    product_items: 3386,
+    product_groups: 80,
+    accounts: 1,
+  };
+  const actual = { ...counts, people: peopleStaff };
+  const baselineIssues = Object.entries(expect)
+    .filter(([t, n]) => (actual[t] ?? 0) !== n)
+    .map(([t, n]) => `${t}: ${actual[t] ?? 0} (can co ${n})`);
+
+  manifest.acceptance = {
+    mustBeZero,
+    notClean,
+    cleanOk: notClean.length === 0,
+    accounts: accCount,
+    superAdmin: adminOk
+      ? { username: "admin.tk", role: "SYSTEM_ADMIN", unitAssignments: 0 }
+      : { ok: false },
+    expectedBaseline: expect,
+    baselineIssues,
+    baselineOk: baselineIssues.length === 0,
+  };
+  manifest.cleanCheck = {
+    mustBeZero,
+    notClean,
+    ok: notClean.length === 0 && adminOk && baselineIssues.length === 0,
+  };
+
+  // Thong tin phien ban + kho luu tru tep
+  manifest.app = {
+    commit: (() => {
+      try {
+        return execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO }).toString().trim();
+      } catch {
+        return null;
+      }
+    })(),
+    schemaSha256: sha256File(path.join(REPO, "prisma", "schema.prisma")),
+  };
+  manifest.files = fs.existsSync(FILES_MANIFEST)
+    ? JSON.parse(fs.readFileSync(FILES_MANIFEST, "utf8"))
+    : { files: [], note: "chua co manifest tep" };
+
+  console.log(`  doi chieu 0 nghiep vu: ${notClean.length === 0 ? "SACH" : "CON " + notClean.join(", ")}`);
+  console.log(`  tai khoan: ${accCount} (muc tieu 1) | super admin: ${adminOk ? "OK" : "KHONG DUNG"}`);
+  console.log(
+    `  du lieu nen: ${baselineIssues.length === 0 ? "DAY DU" : "THIEU " + baselineIssues.join("; ")}`
+  );
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const mf = path.join(OUT_DIR, `reset-manifest-${MODE}-${stamp.slice(0, 19).replace(/[:T]/g, "-")}.json`);

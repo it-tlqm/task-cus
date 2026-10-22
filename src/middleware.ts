@@ -53,16 +53,44 @@ export async function middleware(req: NextRequest) {
   }
 
   let isAuthenticated = false;
+  let mustChangePassword = false;
 
   if (token) {
     // Fail-fast khi thiếu JWT_SECRET ở production (throw ra ngoài try để không bị nuốt)
     const secretKey = requireJwtSecret();
     try {
-      await jwtVerify(token, secretKey);
+      const { payload } = await jwtVerify(token, secretKey);
       isAuthenticated = true;
+      // Tài khoản khởi tạo: bắt buộc đổi mật khẩu trước khi dùng hệ thống.
+      mustChangePassword = payload?.mustChangePassword === true;
     } catch {
       isAuthenticated = false;
     }
+  }
+
+  // 3.1 Bắt buộc đổi mật khẩu (tài khoản quản trị khởi tạo) — chỉ mở trang/API đổi mật khẩu
+  if (isAuthenticated && mustChangePassword) {
+    const allowed =
+      pathname.startsWith("/api/auth/change-password") ||
+      pathname.startsWith("/api/auth/logout") ||
+      pathname.startsWith("/api/auth/me") ||
+      pathname === "/change-password" ||
+      pathname.startsWith("/_next");
+    if (!allowed) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "PHẢI ĐỔI MẬT KHẨU",
+            message: "Tài khoản này phải đổi mật khẩu ở lần đăng nhập đầu tiên.",
+          },
+          { status: 403 }
+        );
+      }
+      const cpUrl = new URL("/change-password", req.url);
+      return NextResponse.redirect(cpUrl);
+    }
+    return NextResponse.next();
   }
 
   // 3. Nếu chưa xác thực

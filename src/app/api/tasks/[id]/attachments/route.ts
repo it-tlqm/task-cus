@@ -4,7 +4,8 @@ import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
 import { isTerminalTaskStatus } from "@/server/task-transitions";
 import { recordAuditEvent } from "@/server/audit";
-import { getStorageProvider } from "@/server/storage";
+import { getStorageProvider, ensureAttachmentStorageReady, StorageConfigError } from "@/server/storage";
+import { toClientAttachments, toClientAttachment } from "@/server/attachments";
 
 export const dynamic = "force-dynamic";
 
@@ -61,9 +62,10 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
+    // Luôn trả về đường dẫn có xác thực — KHÔNG phát URL công khai của kho lưu trữ.
     return NextResponse.json({
       success: true,
-      data: attachments,
+      data: toClientAttachments(attachments as any, taskId),
     });
   } catch (err: any) {
     console.error("[Attachments GET Error]", err);
@@ -132,7 +134,7 @@ export async function POST(
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const storage = getStorageProvider();
+    const storage = await ensureAttachmentStorageReady();
     const uploadResult = await storage.upload(
       buffer,
       file.name,
@@ -174,16 +176,19 @@ export async function POST(
         taskCode: task.code,
         fileName: file.name,
         fileSize: file.size,
-        url: uploadResult.url,
       },
     });
 
     return NextResponse.json({
       success: true,
       message: "Tải tệp đính kèm lên hệ thống thành công",
-      data: attachment,
+      data: toClientAttachment(attachment as any, task.id),
     });
   } catch (err: any) {
+    if (err instanceof StorageConfigError) {
+      console.error("[Attachments POST] cấu hình kho tệp:", err.message);
+      return jsonError(err.message, 503);
+    }
     console.error("[Attachments POST Error]", err);
     return jsonError(err.message || "Lỗi trong quá trình tải tệp tin lên", 500);
   }
@@ -233,7 +238,7 @@ export async function DELETE(
     }
 
     // Xóa trên Storage
-    const storage = getStorageProvider();
+    const storage = await ensureAttachmentStorageReady();
     await storage.delete(attachment.storageKey);
 
     // Xóa trong DB

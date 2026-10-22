@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const newHash = await hashPassword(newPassword);
     await prisma.account.update({
       where: { id: account.id },
-      data: { passwordHash: newHash },
+      data: { passwordHash: newHash, mustChangePassword: false },
     });
 
     // Ghi vết kiểm toán
@@ -58,10 +58,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
-      message: "Đổi mật khẩu thành công. Vui lòng ghi nhớ mật khẩu mới của đồng chí.",
+      message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại bằng mật khẩu mới.",
+      reauthRequired: true,
     });
+    // Vô hiệu phiên cũ (token đã kèm cờ bắt buộc đổi mật khẩu) → buộc đăng nhập lại.
+    res.cookies.delete("token");
+    return res;
   } catch (error: any) {
     return jsonError("Lỗi hệ thống khi đổi mật khẩu: " + error.message, 500);
   }

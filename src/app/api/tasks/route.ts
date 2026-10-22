@@ -12,6 +12,7 @@ import { nextTaskCode } from "@/server/task-code";
 import { unaccentSearchIds } from "@/server/search";
 import { recordAuditEvent } from "@/server/audit";
 import { checkWorkItemAccess } from "@/server/work-access";
+import { toClientAttachments } from "@/server/attachments";
 import { createNotification } from "@/server/notifications";
 import {
   createLinkedWorkItem,
@@ -184,6 +185,8 @@ export async function GET(req: NextRequest) {
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
         txSource,
+        // KHÔNG phát URL công khai của kho lưu trữ.
+        attachments: toClientAttachments((t as any).attachments || [], t.id),
       };
     });
 

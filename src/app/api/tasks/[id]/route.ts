@@ -12,6 +12,7 @@ import {
 import { isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
+import { toClientAttachments } from "@/server/attachments";
 import { createNotification } from "@/server/notifications";
 
 export async function GET(
@@ -270,6 +271,8 @@ export async function GET(
       success: true,
       data: {
         ...task,
+        // KHÔNG phát URL công khai của kho lưu trữ.
+        attachments: toClientAttachments((task as any).attachments || [], task.id),
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
     // YC-38 UAT fix: thong tin danh muc TX kem theo (ma, ten, he so)

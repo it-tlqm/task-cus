@@ -29,6 +29,8 @@ export interface SessionUser {
   scopeType: "OWN" | "ASSIGNED" | "DEPARTMENT" | "SUBTREE" | "ORGANIZATION";
   scopeUnitId?: string | null;
   permissions: string[];
+  /** Tài khoản còn phải đổi mật khẩu (tài khoản quản trị khởi tạo) — buộc đổi ở lần đăng nhập kế tiếp. */
+  mustChangePassword?: boolean;
 }
 
 export async function hashPassword(plain: string): Promise<string> {
@@ -256,6 +258,7 @@ export async function getAccountWithPermissions(username: string) {
     passwordHash: account.passwordHash,
     status: account.status,
     personStatus: account.person.status,
+    mustChangePassword: account.mustChangePassword,
   };
 }
 
