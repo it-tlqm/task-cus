@@ -3,8 +3,10 @@
 **Ngày:** 22/10/2026 · **Nhánh:** `feature/v3-demo` · **Production:** `d524576` — **CHƯA chạy EXECUTE**
 **Kết luận: 🔴 NO-GO cho EXECUTE Production** — còn 5 blocker cần chủ dự án xác nhận/xử lý (mục 8).
 
-> **Cập nhật 23/10/2026:** Production đã nâng cấp `/roster` (tiếp nối `1e6a070`).
-> Rollback riêng bản nâng cấp giao diện: về **`25f9de6`**; rollback toàn bộ V3: vẫn theo mốc **`d524576`** trong tài liệu triển khai.
+> **Cập nhật 23/10/2026:** Bản nâng cấp `/roster` đã deploy (code `19d5b31`).
+> - Rollback riêng bản polish mobile: về **`1e6a070`**.
+> - Rollback toàn bộ nâng cấp `/roster`: về **`25f9de6`**.
+> - Rollback toàn bộ V3: vẫn theo mốc **`d524576`** trong tài liệu triển khai.
 
 ---
 

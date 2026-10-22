@@ -3,9 +3,10 @@
 **Ngày:** 22/10/2026 · **Production:** https://task-cus.vercel.app
 **Commit đã deploy:** **`6b0fa94`** (main, fast-forward từ `d524576`) · **Schema:** đã áp additive
 
-> **Cập nhật 23/10/2026:** Production đã nâng cấp trang `/roster` (bản `1e6a070` + polish mobile).
-> Nếu chỉ cần rollback bản nâng cấp giao diện, trả về **`25f9de6`** (bản Production ngay trước đó — code tương đương `492a6e1`, chỉ thêm tài liệu).
-> Quy trình rollback **toàn bộ V3** ở §6 vẫn giữ nguyên mốc `d524576`; không thay đổi lịch sử triển khai V3.
+> **Cập nhật 23/10/2026:** Bản nâng cấp `/roster` đã deploy (code `19d5b31`).
+> - Rollback riêng bản polish mobile: về **`1e6a070`**.
+> - Rollback toàn bộ nâng cấp `/roster`: về **`25f9de6`** (bản Production ngay trước đó — code tương đương `492a6e1`, chỉ thêm tài liệu).
+> - Rollback **toàn bộ V3**: quy trình ở §6 vẫn giữ nguyên mốc `d524576`; không thay đổi lịch sử triển khai V3.
 
 ---
 
