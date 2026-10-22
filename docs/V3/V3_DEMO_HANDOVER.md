@@ -5,6 +5,22 @@
 
 ---
 
+## 0. CẬP NHẬT MỚI NHẤT (đợt sửa lỗi UAT 2 — commit `496ffbf`)
+
+| Vấn đề | Nguyên nhân | Đã sửa |
+|---|---|---|
+| **F16** Tìm SP lỗi `unaccent` | DB demo **không có extension `unaccent`** ⇒ `unaccent(col::text)` lỗi 42883 (8 API dùng chung) | Sửa **tại helper dùng chung** `src/server/search.ts`: có extension thì dùng SQL, **không có thì tự lùi về so khớp bỏ dấu ở tầng ứng dụng** (tối đa 5.000 dòng ứng viên). Dữ liệu tìm kiếm luôn truyền **tham số**; tên bảng/cột được kiểm tra dạng. Tìm được theo mã/tên **có dấu và không dấu** (đã kiểm chứng trên 3.386 SP) |
+| **F17** Không chọn được 348 mã TX | (1) `ids=null` bị hiểu thành danh sách rỗng ⇒ `id IN ()` ⇒ danh mục rỗng khi **không tìm kiếm**; (2) bản danh mục `selectionMode=ALL` nhưng hàm kích hoạt bỏ qua ⇒ "chưa được kích hoạt", 48 mẫu cũ vẫn được chọn | Sửa cả hai: `ids` null ⇒ không lọc id; `selectionMode=ALL` ⇒ kích hoạt mọi nhóm có dữ liệu. **Không phụ thuộc mã bộ phận DEMO**; vẫn cho tự nhập công việc phát sinh; **không** tự ánh xạ TX↔SP, **không** lấy hệ số SP thay hệ số TX |
+| **F11/F12** Công việc đã xác nhận không vào kết quả tháng | API đã trả `drafts` nhưng **UI chưa hiển thị** | Thêm khối **"Công việc đã được lãnh đạo xác nhận — chờ ghi nhận kết quả tháng"** (bản nháp, không ghi trùng) + nút **"Ghi nhận kết quả"**; form hiện **danh sách SP của công việc** (nhiều SP, trạng thái xác nhận, hệ số) + cảnh báo SP chưa xác nhận/chưa có hệ số **không tham gia điểm chính thức**. Bộ máy tính điểm **không sửa** (parity 38/38) |
+| **Lịch sử phê duyệt** | Hồ sơ xử lý xong biến mất khỏi danh sách | `/work-item-reviews` có **4 tab** (Chờ xác nhận / Đã xác nhận / Đã trả lại / Tất cả–Lịch sử), lọc theo cán bộ & tháng, xem chuỗi *gửi → trả lại → gửi lại → xác nhận*, thông báo thành công + đường dẫn xem hồ sơ vừa duyệt. **Phân quyền kiểm tại API**; hồ sơ đã duyệt chỉ cho xem |
+| **Môi trường DEMO** | Vẫn hiện "VẬN HÀNH CHÍNH THỨC" | Nhãn dùng chung `src/config/app-env.ts`; bản demo hiện **"BẢN DEMO"** (biến `NEXT_PUBLIC_ENV_LABEL=DEMO` — Production **không** đặt ⇒ vẫn "CHÍNH THỨC") |
+| **Mã SP trùng tên** | Không phân biệt được | Picker SP hiện **hệ số + sản phẩm đầu ra**; SP thiếu hệ số ghi rõ *"CHƯA CÓ (chờ đối chiếu)"* |
+| **Ngưỡng điểm** `90.00099900000001` | `89.999999 + 0.001` (lỗi số thập phân) | Làm tròn 2 chữ số khi hiển thị |
+
+**Kiểm thử:** E2E **40/0** (đủ 10 mục bắt buộc) · tổng hồi quy **426 pass / 0 fail** (14 bộ, **parity 38/38**).
+
+---
+
 ## 1. MÔI TRƯỜNG DEMO
 
 | Hạng mục | Giá trị |
