@@ -412,7 +412,18 @@ async function main() {
   console.log(`  Excel: ${txRows.length} dong TX | ${orgRows.length} don vi | ${peopleMap.size} nguoi (${staffRows.length} luot)`);
 
   /* ---------- 0. COPY CAU HINH NEN TANG tu DB nguon (da kiem chung) ---------- */
-  if (src) {
+  const sameDb = (() => {
+    try {
+      const norm = (u) => String(u).replace(/:[^:@/]*@/, ":***@").replace(/\?.*$/, "").replace(/\/$/, "");
+      return SOURCE && TARGET && norm(SOURCE) === norm(TARGET);
+    } catch {
+      return false;
+    }
+  })();
+  if (sameDb) {
+    manifest.notes.push("DB nguon = DB dich: bo qua sao chep cau hinh nen (du lieu da co san trong DB dich)");
+    console.log("  DB nguon = DB dich -> bo qua COPY cau hinh nen");
+  } else if (src) {
     const nullCols = await columnsToNull();
     for (const t of KEEP_TABLES) {
       if (t === "audit_events") continue;                 // giu audit cua DB dich
