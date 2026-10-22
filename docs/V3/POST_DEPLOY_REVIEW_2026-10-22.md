@@ -77,7 +77,25 @@ Phạm vi ảnh hưởng (đã xác minh bằng grep, tất cả đều đi qua 
 | `tsc --noEmit` | ✅ exit 0 |
 | `npm run build` | ✅ exit 0 (`Compiled successfully`) |
 | 15 bộ regression (DB fixture) | ✅ **452 pass / 0 fail** (fixture có đúng 2 quan hệ `DEMO-LD-01 → DEMO-CB-01/02` nên lãnh đạo vẫn xác nhận hợp lệ) |
-| Smoke Production sau khi triển khai bản vá | ✅ xác nhận ở `docs/V3/POST_DEPLOY_REVIEW_2026-10-22.md` §7 |
+| **Deploy Production** | commit bản vá **`aa9abe0`** → live lúc **13:05:58** (`/api/health` → `commit=aa9abe0`, `status=ok`, `db=up`) |
+| **Smoke ghi trên Production sau bản vá** | ✅ **11/11** — xem bảng dưới |
+
+**Smoke sau bản vá (11/11 PASS, dữ liệu thử dọn sạch 0/0):**
+
+| # | Kiểm tra | Kết quả |
+|---|---|---|
+| 1 | Tạo đầu việc (cán bộ) | HTTP 201 · `reviewState = DRAFT` (không tự duyệt) |
+| 2 | Cán bộ gửi lên lãnh đạo | HTTP 200 |
+| 3 | Cán bộ **tự duyệt** việc của mình | **HTTP 403** (giữ nguyên) |
+| 4 | **Lãnh đạo `UNIT_LEADER/ORGANIZATION` (`demold01`) xác nhận hồ sơ không có tuyến** | **HTTP 403 — đã chặn** (trước bản vá: 200) |
+| 5 | Thông điệp trả về | *"Cán bộ này chưa có tuyến phê duyệt hợp lệ — hồ sơ đang chờ phân tuyến, chưa thể xác nhận."* |
+| 6 | **Trưởng bộ phận cùng đơn vị (`cb001`) xác nhận** | **HTTP 403 — không mở rộng theo đơn vị** (trước bản vá: 200) |
+| 7 | Hàng đợi chờ duyệt của lãnh đạo | `n=0` (không còn thấy hồ sơ của người không có tuyến) |
+| 8 | Trạng thái hồ sơ sau khi bị chặn | vẫn `SUBMITTED` — **chờ phân tuyến**, không mất dữ liệu |
+| 9 | API thêm SP QĐ1277 | HTTP 400 (thiếu tham số) — **không lỗi 500**, không sập |
+| 10 | Dọn dữ liệu thử | `workItem left=0`, `work_items 33/33`, `work_item_reviews 0/0` ✔ |
+
+> Ghi chú: `personal_work_items` = **33** (không phải 32 như lúc deploy) do tài khoản `dantn` tự tạo 1 đầu việc lúc 12:xx trong khi bạn thử trên Production — **không** phải dữ liệu thử còn sót (0 bản ghi có tiền tố `[PROD-V3-TEST]`).
 
 ### 3.4. Hệ quả cần chủ dự án quyết định (⚠️ không tự quyết)
 
@@ -167,15 +185,25 @@ Xem tài liệu riêng: **`docs/V3/UAT_CHECKLIST_PRODUCTION_2026-10-22.md`** (6 
 
 | # | Phát hiện | Mức | Trạng thái | Đề xuất |
 |---|---|---|---|---|
-| 1 | **Fallback phạm vi đơn vị cấp quyền duyệt** khi `person_supervisions = 0` (mọi UNIT_LEADER/DEPARTMENT_LEADER duyệt được mọi hồ sơ) | 🔴 Cao | **Đã sửa + deploy** | Giữ nguyên bản vá; gán tuyến thật qua `/admin/supervisions` |
+| 1 | **Fallback phạm vi đơn vị cấp quyền duyệt** khi `person_supervisions = 0` (mọi UNIT_LEADER/DEPARTMENT_LEADER duyệt được mọi hồ sơ) | 🔴 Cao | **Đã sửa + deploy `aa9abe0`** (smoke 11/11) | Giữ nguyên bản vá; gán tuyến thật qua `/admin/supervisions` |
 | 2 | **Bucket tệp đính kèm PUBLIC** — đọc không cần khoá, liệt kê được | 🔴 Cao | **Chưa sửa** (cần quyết định + service-role key) | Phương án 1 ở §5.3 |
-| 3 | Vai trò lúc gọi API có thể lệch vai trò lúc đăng nhập (khi nhiều grant) | 🟡 Trung bình (tiềm ẩn) | **Đã sửa + deploy** | Không cần làm thêm |
+| 3 | Vai trò lúc gọi API có thể lệch vai trò lúc đăng nhập (khi nhiều grant) | 🟡 Trung bình (tiềm ẩn) | **Đã sửa + deploy `aa9abe0`** | Không cần làm thêm |
 | 4 | Không có tài khoản `SYSTEM_ADMIN` trên Production | 🟡 Trung bình | **Chưa làm** (không tự tạo) | Bạn quyết định có cấp hay không |
 | 5 | `person_supervisions = 0` ⇒ **không ai duyệt được** hồ sơ (đúng nghiệp vụ, nhưng chặn UAT luồng duyệt) | 🟡 Trung bình | **Chờ quyết định** | Duyệt 2 dòng tuyến cho cặp DEMO để UAT |
 | 6 | Tài liệu rollback chỉ revert 1 commit cuối (không về được `d524576`) | 🟡 Trung bình | **Đã sửa + kiểm chứng** | Dùng phương án A |
 | 7 | 3 bộ test chạy bằng mật khẩu không vào được Production | 🟢 Thấp | Ghi nhận | Cấp 1 tài khoản kiểm thử riêng cho UAT |
 | 8 | `routine_entries.review_state` dữ liệu cũ = NULL ⇒ hiện *"chưa gửi lãnh đạo"* | 🟢 Thấp | Đúng yêu cầu | Khi chạy reset dữ liệu sạch sẽ rõ |
 | 9 | Kho minh chứng private — chưa có bản ghi thật để kiểm chứng end-to-end | 🟢 Thấp | Ghi nhận | Kiểm thử 1 minh chứng thật khi UAT |
+
+### Nhật ký thay đổi trong đợt rà soát này
+
+| Commit | Nội dung | Đã deploy Production? |
+|---|---|---|
+| `b6b8cd8` | Bản báo cáo triển khai V3 (đưa từ nhánh V3 lên `main`) | ✅ (tài liệu) |
+| **`aa9abe0`** | **Bản vá bảo mật: bỏ fallback cấp quyền duyệt theo phạm vi đơn vị + thống nhất cách xác định vai trò + sửa tài liệu rollback + báo cáo rà soát + checklist UAT** | ✅ **live 13:05:58** |
+| (commit tài liệu) | Bổ sung kết quả smoke 11/11 vào báo cáo rà soát | ✅ (tài liệu) |
+
+> **Không có** thay đổi nào lên schema/dữ liệu Production trong đợt này (chỉ mã + tài liệu). Backup trước bản vá: `demo-ops/yc38c-backup/prod-pre-fix-20261022-130254.json` (74 bảng / 7.598 bản ghi / sha256 `…`).
 
 ### Đề xuất thứ tự ưu tiên
 
