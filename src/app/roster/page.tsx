@@ -88,6 +88,8 @@ interface BoardStatusRow {
   unitId: string;
   assignments: number;
   dayInfos: number;
+  /** Số vị trí/nhiệm vụ đang hoạt động của bộ phận (0 = chưa thiết lập danh mục). */
+  catalog?: number;
 }
 
 /** Bản ghi lịch trực cũ chưa xác định được bộ phận — chỉ Lãnh đạo đơn vị thấy, để đối chiếu (không tự gán). */
@@ -253,8 +255,16 @@ export default function RosterPage() {
   const [fPositionId, setFPositionId] = useState("");
   const [loading, setLoading] = useState(true);
   const [editorDate, setEditorDate] = useState<string | null>(null);
+  const [editorFocus, setEditorFocus] = useState<string | null>(null);
   const [showCatalog, setShowCatalog] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showTools, setShowTools] = useState(false);
+
+  const todayISO = toISODate(new Date());
+  const openEditor = useCallback((iso: string, groupCode?: string) => {
+    setEditorFocus(groupCode || null);
+    setEditorDate(iso);
+  }, []);
 
   const rangeFrom = view === "week" ? toISODate(weekStart) : selDay;
   const rangeTo = view === "week" ? toISODate(addDays(weekStart, 6)) : selDay;
@@ -318,6 +328,21 @@ export default function RosterPage() {
   );
 
   const selUnit = useMemo(() => units.find((u) => u.id === selUnitId) || null, [units, selUnitId]);
+  const boardFor = useCallback((unitId: string) => boardStatus.find((b) => b.unitId === unitId), [boardStatus]);
+  /** Bộ phận đã thiết lập danh mục vị trí — dùng cho empty-state và dải trạng thái. */
+  const unitsWithCatalog = useMemo(
+    () => units.filter((u) => (boardFor(u.id)?.catalog || 0) > 0),
+    [units, boardFor]
+  );
+  /** Bộ phận có dữ liệu trong kỳ hoặc đã có danh mục — chỉ hiện các chip này để đỡ rối. */
+  const unitsWithBoard = useMemo(
+    () =>
+      units.filter((u) => {
+        const b = boardFor(u.id);
+        return (b?.catalog || 0) > 0 || (b?.assignments || 0) > 0 || (b?.dayInfos || 0) > 0;
+      }),
+    [units, boardFor]
+  );
 
   const groups = useMemo(() => buildMatrixGroups(displayRows, positions), [displayRows, positions]);
 
@@ -382,103 +407,157 @@ export default function RosterPage() {
 
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-24" data-testid="roster-page">
-      {/* Tiêu đề */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-lg lg:text-xl font-bold text-slate-800">Phân công nhiệm vụ &amp; lịch trực</h1>
-        <p className="text-xs text-slate-500">
-          Bám biểu mẫu “Sổ phân công nhiệm vụ công tác giám sát quản lý” — Hải quan cửa khẩu Quốc tế Tà Lùng
-        </p>
+      {/* Tiêu đề + hành động chính */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-teal-50/80 via-white to-white p-3 lg:flex-row lg:items-center lg:justify-between lg:p-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm lg:h-10 lg:w-10">
+            <span className="material-symbols-outlined text-[20px] lg:text-[22px]">assignment</span>
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-base font-bold text-slate-800 lg:text-xl">Phân công nhiệm vụ &amp; lịch trực</h1>
+            <p className="hidden text-xs text-slate-500 sm:block">
+              Bám biểu mẫu “Sổ phân công nhiệm vụ công tác giám sát quản lý” — Hải quan cửa khẩu Quốc tế Tà Lùng
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+              <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-teal-50 px-2 py-0.5 font-semibold text-teal-800">
+                <span className="material-symbols-outlined text-[13px]">apartment</span>
+                {selUnit?.name || "Chưa chọn bộ phận"}
+              </span>
+              <span className="hidden items-center gap-1 sm:inline-flex">
+                <span className="material-symbols-outlined text-[13px]">event</span>
+                {view === "week" ? "Bảng tuần" : fmtDMY(selDay)}
+              </span>
+            </div>
+          </div>
+        </div>
+        {canApprove && (
+          <button
+            data-testid="roster-btn-assign"
+            onClick={() => openEditor(view === "day" ? selDay : todayISO)}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 lg:w-auto lg:py-2.5"
+          >
+            <span className="material-symbols-outlined text-[18px]">add_task</span>
+            Phân công
+          </button>
+        )}
       </div>
 
       {/* Thanh điều khiển */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5" data-tour="roster-toolbar">
-        <div className="inline-flex rounded-lg border border-slate-200 overflow-hidden">
-          <button
-            data-testid="roster-view-week"
-            onClick={() => setView("week")}
-            className={`px-3 py-1.5 text-xs font-semibold ${view === "week" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-          >
-            Theo tuần
-          </button>
-          <button
-            data-testid="roster-view-day"
-            onClick={() => setView("day")}
-            className={`px-3 py-1.5 text-xs font-semibold border-l border-slate-200 ${view === "day" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
-          >
-            Theo ngày
-          </button>
-        </div>
-
-        <div className="inline-flex items-center gap-1">
-          <button
-            data-testid="roster-prev"
-            onClick={prevPeriod}
-            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"
-            aria-label="Kỳ trước"
-          >
-            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          </button>
-          {view === "week" ? (
-            <span className="px-2 text-xs font-semibold text-slate-700 min-w-[150px] text-center">
-              Tuần {fmtDM(weekStart)} – {fmtDM(addDays(weekStart, 6))}/{addDays(weekStart, 6).getFullYear()}
-            </span>
-          ) : (
-            <input
-              data-testid="roster-day-input"
-              type="date"
-              value={selDay}
-              onChange={(e) => e.target.value && setSelDay(e.target.value)}
-              className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
-            />
-          )}
-          <button
-            data-testid="roster-next"
-            onClick={nextPeriod}
-            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"
-            aria-label="Kỳ sau"
-          >
-            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
-          <button
-            data-testid="roster-today"
-            onClick={goToday}
-            className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
-          >
-            Hôm nay
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {units.length > 1 ? (
-            <select
-              data-testid="roster-unit-select"
-              value={selUnitId}
-              onChange={(e) => setSelUnitId(e.target.value)}
-              className="rounded-lg border border-teal-300 bg-teal-50/60 px-2 py-1.5 text-xs font-semibold text-teal-900 max-w-[230px]"
-              title="Chọn bộ phận để xem/lập bảng phân công (mỗi bộ phận có bảng riêng)"
+      <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-2.5" data-tour="roster-toolbar">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex overflow-hidden rounded-lg border border-slate-200">
+            <button
+              data-testid="roster-view-week"
+              onClick={() => setView("week")}
+              className={`px-3 py-1.5 text-xs font-semibold ${view === "week" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
             >
-              {units.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            selUnit && (
-              <span
-                data-testid="roster-unit-static"
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-semibold text-slate-700 max-w-[230px] truncate"
-                title="Bộ phận đang xem"
-              >
-                {selUnit.name}
+              Theo tuần
+            </button>
+            <button
+              data-testid="roster-view-day"
+              onClick={() => setView("day")}
+              className={`border-l border-slate-200 px-3 py-1.5 text-xs font-semibold ${view === "day" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+            >
+              Theo ngày
+            </button>
+          </div>
+
+          <div className="inline-flex items-center gap-1">
+            <button
+              data-testid="roster-prev"
+              onClick={prevPeriod}
+              className="rounded-lg border border-slate-200 p-1.5 hover:bg-slate-50"
+              aria-label="Kỳ trước"
+            >
+              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+            </button>
+            {view === "week" ? (
+              <span className="min-w-[150px] px-2 text-center text-xs font-semibold text-slate-700">
+                Tuần {fmtDM(weekStart)} – {fmtDM(addDays(weekStart, 6))}/{addDays(weekStart, 6).getFullYear()}
               </span>
-            )
-          )}
+            ) : (
+              <input
+                data-testid="roster-day-input"
+                type="date"
+                value={selDay}
+                onChange={(e) => e.target.value && setSelDay(e.target.value)}
+                className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+              />
+            )}
+            <button
+              data-testid="roster-next"
+              onClick={nextPeriod}
+              className="rounded-lg border border-slate-200 p-1.5 hover:bg-slate-50"
+              aria-label="Kỳ sau"
+            >
+              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+            </button>
+            <button
+              data-testid="roster-today"
+              onClick={goToday}
+              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold hover:bg-slate-50"
+            >
+              Hôm nay
+            </button>
+          </div>
+
+          <div className="flex-1" />
+
+          <div className="w-full sm:w-auto">
+            {units.length > 1 ? (
+              <select
+                data-testid="roster-unit-select"
+                value={selUnitId}
+                onChange={(e) => setSelUnitId(e.target.value)}
+                className="w-full max-w-full rounded-lg border border-teal-300 bg-teal-50/60 px-2 py-1.5 text-xs font-semibold text-teal-900 sm:max-w-[270px]"
+                title="Chọn bộ phận để xem/lập bảng phân công (mỗi bộ phận có bảng riêng)"
+              >
+                {units.map((u) => {
+                  const st = boardFor(u.id);
+                  const ready = (st?.catalog || 0) > 0;
+                  return (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                      {ready ? "" : " — chưa thiết lập"}
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              selUnit && (
+                <span
+                  data-testid="roster-unit-static"
+                  className="block max-w-full truncate rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-semibold text-slate-700 sm:max-w-[270px]"
+                  title="Bộ phận đang xem"
+                >
+                  {selUnit.name}
+                </span>
+              )
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowTools((v) => !v)}
+          className="flex w-full items-center justify-between border-t border-slate-100 pt-2 text-[11px] font-semibold text-slate-600 lg:hidden"
+          aria-expanded={showTools}
+        >
+          <span className="inline-flex items-center gap-1">
+            <span className="material-symbols-outlined text-[15px]">tune</span>
+            Bộ lọc &amp; công cụ
+          </span>
+          <span className="material-symbols-outlined text-[16px]">{showTools ? "expand_less" : "expand_more"}</span>
+        </button>
+        <div
+          className={`${showTools ? "flex" : "hidden"} flex-wrap items-center gap-2 lg:flex lg:border-t lg:border-slate-100 lg:pt-2`}
+        >
+          <span className="hidden text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:inline">Lọc</span>
           <select
             data-testid="roster-filter-person"
             value={fPersonId}
             onChange={(e) => setFPersonId(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs max-w-[170px]"
+            className="max-w-[170px] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
             title="Lọc theo cán bộ"
           >
             <option value="">Tất cả cán bộ</option>
@@ -492,7 +571,7 @@ export default function RosterPage() {
             data-testid="roster-filter-position"
             value={fPositionId}
             onChange={(e) => setFPositionId(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs max-w-[210px]"
+            className="max-w-[210px] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
             title="Lọc theo vị trí/nhiệm vụ"
           >
             <option value="">Tất cả vị trí</option>
@@ -502,42 +581,32 @@ export default function RosterPage() {
               </option>
             ))}
           </select>
-        </div>
 
-        <div className="flex-1" />
+          <div className="flex-1" />
 
-        <div className="flex flex-wrap items-center gap-2">
-          {canExport && (
-            <button
-              data-testid="roster-btn-export"
-              onClick={() => setShowExport(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
-            >
-              <span className="material-symbols-outlined text-[16px]">download</span>
-              Xuất Excel
-            </button>
-          )}
-          {canApprove && (
-            <button
-              data-testid="roster-btn-catalog"
-              onClick={() => setShowCatalog(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
-              title="Danh mục vị trí/nhiệm vụ của bộ phận đang xem"
-            >
-              <span className="material-symbols-outlined text-[16px]">list_alt</span>
-              Danh mục vị trí
-            </button>
-          )}
-          {canApprove && (
-            <button
-              data-testid="roster-btn-assign"
-              onClick={() => setEditorDate(view === "day" ? selDay : toISODate(new Date()))}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Phân công
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {canExport && (
+              <button
+                data-testid="roster-btn-export"
+                onClick={() => setShowExport(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50"
+              >
+                <span className="material-symbols-outlined text-[16px]">download</span>
+                Xuất Excel
+              </button>
+            )}
+            {canApprove && (
+              <button
+                data-testid="roster-btn-catalog"
+                onClick={() => setShowCatalog(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50"
+                title="Danh mục vị trí/nhiệm vụ của bộ phận đang xem"
+              >
+                <span className="material-symbols-outlined text-[16px]">list_alt</span>
+                Danh mục vị trí
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -561,39 +630,56 @@ export default function RosterPage() {
         </div>
       )}
 
-      {/* Bộ phận đang xem + trạng thái đã/chưa lập bảng của các bộ phận trong phạm vi (Lãnh đạo chuyển nhanh) */}
+      {/* Bộ phận đang xem + trạng thái thiết lập của các bộ phận trong phạm vi (Lãnh đạo chuyển nhanh) */}
       <div className="flex flex-wrap items-center gap-1.5" data-testid="roster-unit-strip">
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Bộ phận đang xem:</span>
+        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Đang xem</span>
         <span
           data-testid="roster-unit-label"
-          className="rounded-full bg-teal-700 text-white px-2.5 py-0.5 text-[11px] font-semibold max-w-[260px] truncate"
+          className="max-w-[280px] truncate rounded-full bg-teal-700 px-2.5 py-0.5 text-[11px] font-semibold text-white"
         >
           {selUnit?.name || "—"}
         </span>
         {units.length > 1 && (
-          <div className="hidden lg:flex flex-wrap items-center gap-1" data-testid="roster-unit-status">
-            {units.map((u) => {
-              const st = boardStatus.find((b) => b.unitId === u.id);
-              const active = selUnitId === u.id;
-              const has = (st?.assignments || 0) > 0 || (st?.dayInfos || 0) > 0;
-              return (
-                <button
-                  key={u.id}
-                  data-testid={`roster-unit-chip-${u.code}`}
-                  onClick={() => setSelUnitId(u.id)}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
-                    active
-                      ? "border-teal-300 bg-teal-50 text-teal-800 font-semibold"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
-                  title={`${u.name} — ${has ? "đã có phân công trong kỳ đang xem" : "chưa lập bảng phân công trong kỳ đang xem"}`}
-                >
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${has ? "bg-emerald-500" : "bg-slate-300"}`} />
-                  {u.name}
-                  <span className="text-[10px] text-slate-400">{has ? `đã lập (${st?.assignments || 0})` : "chưa lập"}</span>
-                </button>
-              );
-            })}
+          <div className="hidden flex-wrap items-center gap-1 lg:flex" data-testid="roster-unit-status">
+            {unitsWithBoard.length === 0 ? (
+              <span className="text-[11px] italic text-slate-400">Chưa bộ phận nào thiết lập danh mục trong kỳ này.</span>
+            ) : (
+              unitsWithBoard.map((u) => {
+                const st = boardFor(u.id);
+                const active = selUnitId === u.id;
+                const assignments = st?.assignments || 0;
+                const catalog = st?.catalog || 0;
+                const has = assignments > 0 || (st?.dayInfos || 0) > 0;
+                const stateText = has ? `đã phân công ${assignments}` : catalog > 0 ? `danh mục ${catalog}` : "chưa thiết lập";
+                return (
+                  <button
+                    key={u.id}
+                    data-testid={`roster-unit-chip-${u.code}`}
+                    onClick={() => setSelUnitId(u.id)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
+                      active
+                        ? "border-teal-300 bg-teal-50 font-semibold text-teal-800"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                    title={`${u.name} — ${stateText}`}
+                  >
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${has ? "bg-emerald-500" : catalog > 0 ? "bg-sky-400" : "bg-slate-300"}`} />
+                    {/* Bộ phận đang xem đã có nhãn riêng phía trên — chỉ hiện trạng thái để không lặp tên. */}
+                    {active ? (
+                      <span className="text-[10px]">{catalog > 0 ? `đã có ${catalog} vị trí` : "chưa thiết lập"}</span>
+                    ) : (
+                      <>
+                        {u.name}
+                        <span className="text-[10px] text-slate-400">{stateText}</span>
+                      </>
+                    )}
+                  </button>
+                );
+              })
+            )}
+            {unitsWithBoard.length < units.length && (
+              <span className="text-[11px] text-slate-400">· {units.length - unitsWithBoard.length} bộ phận chưa thiết lập</span>
+            )}
           </div>
         )}
       </div>
@@ -628,161 +714,245 @@ export default function RosterPage() {
       ) : view === "week" ? (
         <>
           {/* Desktop: ma trận Vị trí × Ngày */}
-          <div className="hidden lg:block rounded-xl border border-slate-200 bg-white overflow-hidden" data-testid="roster-matrix" data-tour="roster-week">
-            {positions.length === 0 && (
-              <div className="px-4 py-3 text-sm text-slate-500 border-b border-dashed border-slate-200" data-testid="roster-empty-catalog">
-                Bộ phận đang chọn chưa có danh mục vị trí/nhiệm vụ — Trưởng bộ phận hoặc Lãnh đạo đơn vị vào “Danh mục vị trí” (khôi phục 8 vị trí mẫu nếu cần) để thiết lập.
+          <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white lg:block" data-testid="roster-matrix" data-tour="roster-week">
+            {positions.length === 0 ? (
+              <div className="px-6 py-10 text-center" data-testid="roster-empty-catalog">
+                <span className="material-symbols-outlined text-[40px] text-slate-300">assignment_late</span>
+                <div className="mt-2 text-base font-semibold text-slate-700">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
+                <p className="mx-auto mt-1 max-w-xl text-sm text-slate-500">
+                  Mỗi bộ phận có bảng phân công riêng. Trưởng bộ phận hoặc Lãnh đạo đơn vị vào “Danh mục vị trí” để thiết lập
+                  (có thể khôi phục 8 vị trí mẫu của biểu mẫu).
+                </p>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {canApprove && (
+                    <button
+                      onClick={() => setShowCatalog(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-teal-800"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">list_alt</span>
+                      Thiết lập danh mục
+                    </button>
+                  )}
+                  {unitsWithCatalog.some((u) => u.id !== selUnitId) && (
+                    <select
+                      value=""
+                      onChange={(e) => e.target.value && setSelUnitId(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                      title="Chuyển sang bộ phận đã có danh mục"
+                    >
+                      <option value="" disabled>
+                        Chuyển sang bộ phận đã có danh mục…
+                      </option>
+                      {unitsWithCatalog
+                        .filter((u) => u.id !== selUnitId)
+                        .map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                          </option>
+                        ))}
+                    </select>
+                  )}
+                </div>
               </div>
-            )}
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50">
-                    <th className="sticky left-0 bg-slate-50 z-10 text-left px-3 py-2 font-bold text-slate-700 border-b border-slate-200 min-w-[240px]">
-                      Nhiệm vụ được phân công
-                    </th>
-                    {days.map((d, i) => {
-                      const iso = toISODate(d);
-                      const info = infoByDay.get(iso);
-                      return (
-                        <th key={iso} className="px-2 py-2 border-b border-l border-slate-200 text-center min-w-[132px]">
-                          <div className="font-bold text-slate-700">{WEEKDAYS[i]}</div>
-                          <div className="text-[11px] text-slate-500">{fmtDM(d)}</div>
-                          {info && (info.presentStaff !== null || info.absentCount !== null) && (
-                            <div className="text-[10px] text-teal-700 mt-0.5">
-                              Có mặt {info.presentStaff ?? "…"} / Vắng {info.absentCount ?? "…"}
-                            </div>
-                          )}
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {groups.map((g) => (
-                    <tr key={`${g.kind}-${g.code}`} className="align-top">
-                      <td className="sticky left-0 bg-white z-10 px-3 py-2 border-b border-slate-100">
-                        <div className="font-semibold text-slate-700">
-                          {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
-                        </div>
-                        {g.detail && <div className="text-[11px] text-slate-500">{g.detail}</div>}
-                        {g.kind === "orphan" && <div className="text-[10px] text-amber-600 italic">Ngoài danh mục hiện hành</div>}
-                      </td>
-                      {days.map((d) => {
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-[13px]">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 z-10 min-w-[210px] border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-left font-bold text-slate-700">
+                        Nhiệm vụ được phân công
+                      </th>
+                      {days.map((d, i) => {
                         const iso = toISODate(d);
-                        const dayRows = rowsOnDay(iso);
-                        const lines = slotLinesFor(g, dayRows);
+                        const info = infoByDay.get(iso);
+                        const isToday = iso === todayISO;
+                        const isWeekend = i >= 5;
                         return (
-                          <td
+                          <th
                             key={iso}
-                            data-testid={`roster-cell-${iso}-${g.code}`}
-                            onClick={canApprove ? () => setEditorDate(iso) : undefined}
-                            className={`px-2 py-1.5 border-b border-l border-slate-100 ${canApprove ? "cursor-pointer hover:bg-teal-50/40" : ""}`}
+                            className={`min-w-[124px] border-b border-l border-slate-200 px-2 py-2 text-center ${
+                              isToday ? "bg-teal-50" : isWeekend ? "bg-slate-100/80" : "bg-slate-50"
+                            }`}
                           >
-                            {lines.length === 0 ? (
-                              <span className="text-slate-300">—</span>
-                            ) : (
-                              <div className="space-y-0.5">
-                                {lines.map((ln) => (
-                                  <div key={ln.key} className="flex items-start gap-1">
-                                    <span className={ln.row ? "text-slate-700" : "text-slate-300"}>
-                                      {ln.label && (ln.label.length <= 3 || g.kind === "legacy") ? `${ln.label}: ` : ""}
-                                      {ln.row ? ln.row.person.fullName : "—"}
-                                    </span>
-                                    {ln.row?.leaveClash && (
-                                      <span
-                                        className="material-symbols-outlined text-[13px] text-amber-500"
-                                        title={`Trùng đơn nghỉ đã duyệt (${ln.row.leaveClash.type})`}
-                                      >
-                                        warning
-                                      </span>
-                                    )}
-                                    {ln.row && ln.row.overlapCount > 1 && (
-                                      <span className="material-symbols-outlined text-[13px] text-rose-500" title="Cán bộ được phân công nhiều vị trí trong ngày">
-                                        error
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
+                            <div className={`font-bold ${isToday ? "text-teal-800" : "text-slate-700"}`}>{WEEKDAYS[i]}</div>
+                            <div className="text-[11px] text-slate-500">
+                              {fmtDM(d)}
+                              {isToday && (
+                                <span className="ml-1 rounded bg-teal-600 px-1 py-0.5 text-[9px] font-semibold uppercase text-white">
+                                  hôm nay
+                                </span>
+                              )}
+                            </div>
+                            {info && (info.presentStaff !== null || info.absentCount !== null) && (
+                              <div className="mt-0.5 text-[10px] text-teal-700">
+                                Có mặt {info.presentStaff ?? "…"} / Vắng {info.absentCount ?? "…"}
                               </div>
                             )}
-                          </td>
+                          </th>
                         );
                       })}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {groups.map((g) => (
+                      <tr key={`${g.kind}-${g.code}`} className="align-top">
+                        <td className="sticky left-0 z-10 border-b border-slate-100 bg-white px-3 py-2.5">
+                          <div className="font-semibold leading-snug text-slate-800">
+                            {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
+                          </div>
+                          {g.detail && <div className="mt-0.5 text-[11px] leading-snug text-slate-500">{g.detail}</div>}
+                          {g.kind === "orphan" && <div className="text-[10px] italic text-amber-600">Ngoài danh mục hiện hành</div>}
+                        </td>
+                        {days.map((d) => {
+                          const iso = toISODate(d);
+                          const dayRows = rowsOnDay(iso);
+                          const lines = slotLinesFor(g, dayRows);
+                          const isToday = iso === todayISO;
+                          return (
+                            <td
+                              key={iso}
+                              data-testid={`roster-cell-${iso}-${g.code}`}
+                              onClick={canApprove ? () => openEditor(iso, g.code) : undefined}
+                              title={canApprove ? `Bấm để phân công ngày ${fmtDMY(iso)}` : undefined}
+                              className={`border-b border-l border-slate-100 px-2 py-2 align-top ${
+                                isToday ? "bg-teal-50/40" : ""
+                              } ${canApprove ? "cursor-pointer hover:bg-teal-100/40" : ""}`}
+                            >
+                              {(() => {
+                                const filled = lines.filter((l) => l.row);
+                                if (filled.length === 0) {
+                                  return <span className="block text-center text-slate-200">—</span>;
+                                }
+                                return (
+                                  <div className="space-y-1">
+                                    {lines.map((ln) => (
+                                      <div key={ln.key} className="flex items-start gap-1">
+                                        <span className={ln.row ? "font-medium leading-snug text-slate-800" : "text-slate-300"}>
+                                          {ln.label && (ln.label.length <= 3 || g.kind === "legacy") ? `${ln.label}: ` : ""}
+                                          {ln.row ? ln.row.person.fullName : "—"}
+                                        </span>
+                                        {ln.row?.leaveClash && (
+                                          <span
+                                            className="material-symbols-outlined text-[13px] text-amber-500"
+                                            title={`Trùng đơn nghỉ đã duyệt (${ln.row.leaveClash.type})`}
+                                          >
+                                            warning
+                                          </span>
+                                        )}
+                                        {ln.row && ln.row.overlapCount > 1 && (
+                                          <span className="material-symbols-outlined text-[13px] text-rose-500" title="Cán bộ được phân công nhiều vị trí trong ngày">
+                                            error
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Mobile: thẻ theo ngày */}
-          <div className="lg:hidden space-y-3" data-testid="roster-mobile" data-tour="roster-week">
+          <div className="space-y-3 lg:hidden" data-testid="roster-mobile" data-tour="roster-week">
             {days.map((d, i) => {
               const iso = toISODate(d);
               const dayRows = rowsOnDay(iso, rows);
+              const isToday = iso === todayISO;
+              const dayGroups = positions.length > 0 ? buildMatrixGroups(dayRows, positions) : [];
+              const filledGroups = dayGroups
+                .map((g) => ({ g, filled: slotLinesFor(g, dayRows).filter((l) => l.row) }))
+                .filter((x) => x.filled.length > 0);
+              const assignmentCount = filledGroups.reduce((n, x) => n + x.filled.length, 0);
+              const personCount = new Set(filledGroups.flatMap((x) => x.filled.map((l) => l.row!.person.id))).size;
               return (
-                <div key={iso} className="rounded-xl border border-slate-200 bg-white overflow-hidden" data-testid={`roster-day-card-${iso}`}>
-                  <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+                <div
+                  key={iso}
+                  className={`overflow-hidden rounded-xl border bg-white ${isToday ? "border-teal-300 ring-1 ring-teal-100" : "border-slate-200"}`}
+                  data-testid={`roster-day-card-${iso}`}
+                >
+                  <div className={`flex items-center justify-between gap-2 border-b px-3 py-2 ${isToday ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-slate-50"}`}>
                     <button
-                      className="text-left"
+                      className="min-w-0 text-left"
                       onClick={() => {
                         setSelDay(iso);
                         setView("day");
                       }}
                     >
-                      <span className="text-xs font-bold text-slate-700">{WEEKDAYS[i]} </span>
-                      <span className="text-xs text-slate-500">{fmtDM(d)}</span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`text-sm font-bold ${isToday ? "text-teal-800" : "text-slate-700"}`}>{WEEKDAYS[i]}</span>
+                        <span className="text-xs text-slate-500">{fmtDM(d)}</span>
+                        {isToday && <span className="rounded-full bg-teal-700 px-1.5 py-0.5 text-[10px] font-semibold text-white">Hôm nay</span>}
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-slate-500">
+                        {positions.length === 0
+                          ? "Chưa có danh mục vị trí"
+                          : assignmentCount > 0
+                            ? `${assignmentCount} lượt phân công · ${personCount} cán bộ`
+                            : "Chưa phân công"}
+                      </div>
                     </button>
-                    {canApprove && (
+                    {canApprove && positions.length > 0 && (
                       <button
                         data-testid={`roster-day-assign-${iso}`}
-                        onClick={() => setEditorDate(iso)}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700"
+                        onClick={() => openEditor(iso)}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-teal-200 bg-white px-2 py-1 text-[11px] font-semibold text-teal-700"
                       >
                         <span className="material-symbols-outlined text-[14px]">add</span>
                         Phân công
                       </button>
                     )}
                   </div>
-                  <div className="px-3 py-2 space-y-2">
-                    {dayRows.length === 0 ? (
-                      <div className="text-xs text-slate-400 italic">Chưa phân công nhiệm vụ cho ngày này.</div>
+                  <div className="space-y-2 px-3 py-2">
+                    {positions.length === 0 ? (
+                      <div className="py-3 text-center">
+                        <div className="text-xs text-slate-500">Bộ phận chưa có danh mục vị trí/nhiệm vụ.</div>
+                        {canApprove && (
+                          <button
+                            onClick={() => setShowCatalog(true)}
+                            className="mt-2 inline-flex items-center gap-1 rounded-lg bg-teal-700 px-3 py-1.5 text-[11px] font-semibold text-white"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">list_alt</span>
+                            Thiết lập danh mục
+                          </button>
+                        )}
+                      </div>
+                    ) : filledGroups.length === 0 ? (
+                      <div className="text-xs italic text-slate-400">Chưa phân công nhiệm vụ cho ngày này.</div>
                     ) : (
-                      (() => {
-                        const dayGroups = buildMatrixGroups(dayRows, positions);
-                        return dayGroups.map((g) => {
-                          const lines = slotLinesFor(g, dayRows);
-                          const filled = lines.filter((l) => l.row);
-                          if (filled.length === 0) return null;
-                          return (
-                            <div key={g.code}>
-                              <div className="text-[11px] font-semibold text-slate-600">
-                                {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
+                      filledGroups.map(({ g, filled }) => (
+                        <div key={g.code}>
+                          <div className="text-[11px] font-semibold text-slate-600">
+                            {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
+                          </div>
+                          <div className="mt-0.5 space-y-0.5">
+                            {filled.map((ln) => (
+                              <div key={ln.key} className="flex items-center gap-1 text-xs text-slate-700">
+                                <span className="truncate">
+                                  {(ln.label && ln.label.length <= 3 ? `${ln.label}: ` : "") + (ln.row?.person.fullName || "")}
+                                </span>
+                                {ln.row?.leaveClash && (
+                                  <span className="material-symbols-outlined text-[13px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
+                                    warning
+                                  </span>
+                                )}
+                                {ln.row && ln.row.overlapCount > 1 && (
+                                  <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công trong ngày">
+                                    error
+                                  </span>
+                                )}
                               </div>
-                              <div className="mt-0.5 space-y-0.5">
-                                {filled.map((ln) => (
-                                  <div key={ln.key} className="flex items-center gap-1 text-xs text-slate-700">
-                                    <span className="truncate">
-                                      {(ln.label && ln.label.length <= 3 ? `${ln.label}: ` : "") + (ln.row?.person.fullName || "")}
-                                    </span>
-                                    {ln.row?.leaveClash && (
-                                      <span className="material-symbols-outlined text-[13px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
-                                        warning
-                                      </span>
-                                    )}
-                                    {ln.row && ln.row.overlapCount > 1 && (
-                                      <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công trong ngày">
-                                        error
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()
+                            ))}
+                          </div>
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>
@@ -821,14 +991,21 @@ export default function RosterPage() {
           dateISO={editorDate}
           unitId={selUnitId}
           unitName={selUnit?.name || ""}
-          onDateChange={setEditorDate}
+          onDateChange={(d) => {
+            setEditorFocus(null);
+            setEditorDate(d);
+          }}
+          focusCode={editorFocus}
           rows={rows}
           groups={buildMatrixGroups(rows, positions)}
           info={infoByDay.get(editorDate)}
           people={people}
           leaves={leaves}
           canAssign={canApprove}
-          onClose={() => setEditorDate(null)}
+          onClose={() => {
+            setEditorDate(null);
+            setEditorFocus(null);
+          }}
           onChanged={fetchData}
         />
       )}
@@ -1181,6 +1358,7 @@ function DayEditorModal({
   unitId,
   unitName,
   onDateChange,
+  focusCode,
   rows,
   groups,
   info,
@@ -1194,6 +1372,7 @@ function DayEditorModal({
   unitId: string;
   unitName: string;
   onDateChange: (d: string) => void;
+  focusCode?: string | null;
   rows: DutyRow[];
   groups: MatrixGroup[];
   info: DayInfoRow | undefined;
@@ -1209,6 +1388,16 @@ function DayEditorModal({
 
   const dayRows = rows.filter((r) => dateKey(r.date) === dateISO);
   const activeGroups = groups.filter((g) => g.kind !== "legacy" || dayRows.some((r) => !r.positionId));
+
+  // Bấm một ô trên ma trận → mở phiếu và cuộn tới đúng nhóm nhiệm vụ vừa chọn.
+  useEffect(() => {
+    if (!focusCode) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(`[data-testid="editor-pos-${focusCode}"]`);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [focusCode, dateISO]);
 
   const handleAssign = async (g: MatrixGroup, idx: number, key: string) => {
     const personId = sel[key];
@@ -1347,7 +1536,13 @@ function DayEditorModal({
           {activeGroups.map((g) => {
             const lines = slotLinesFor(g, dayRows);
             return (
-              <div key={g.code} className="rounded-xl border border-slate-200 overflow-hidden" data-testid={`editor-pos-${g.code}`}>
+              <div
+                key={g.code}
+                className={`overflow-hidden rounded-xl border ${
+                  g.code === focusCode ? "border-teal-400 ring-2 ring-teal-100" : "border-slate-200"
+                }`}
+                data-testid={`editor-pos-${g.code}`}
+              >
                 <div className="px-3 py-2 bg-slate-50 border-b border-slate-200">
                   <span className="text-xs font-bold text-slate-700">
                     {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}

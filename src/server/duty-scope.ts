@@ -58,7 +58,26 @@ export async function resolveDutyUnitId(user: any, requested: string | null): Pr
     return { ok: true, unitId: requested, authorized, units, isDefault: false };
   }
   const primary = await primaryUnitOf(user.personId);
-  const fallback = (primary && units.some((u) => u.id === primary) ? primary : units[0]?.id) || "";
+  const primaryValid = primary && units.some((u) => u.id === primary) ? primary : null;
+  let fallback = primaryValid || units[0]?.id || "";
+
+  // Tránh mở trang vào một bảng trống: Lãnh đạo đơn vị (phạm vi ALL) thường có đơn vị chính là
+  // "Lãnh đạo đơn vị" — nơi không có danh mục vị trí. Khi đó ưu tiên bộ phận đã có danh mục
+  // vị trí/nhiệm vụ đang hoạt động để trang mở đúng bảng cần phân công.
+  if (primaryValid && authorized === "ALL" && units.length > 1) {
+    const hasCatalog = await prisma.dutyPosition.count({
+      where: { unitId: primaryValid, status: "ACTIVE" },
+    });
+    if (hasCatalog === 0) {
+      const withCatalog = await prisma.dutyPosition.groupBy({
+        by: ["unitId"],
+        where: { unitId: { in: units.map((u) => u.id) }, status: "ACTIVE" },
+      });
+      const preferred = units.find((u) => withCatalog.some((w) => w.unitId === u.id));
+      if (preferred) fallback = preferred.id;
+    }
+  }
+
   if (!fallback) return { ok: false, status: 400, error: "Không xác định được bộ phận — vui lòng chọn bộ phận" };
   return { ok: true, unitId: fallback, authorized, units, isDefault: true };
 }

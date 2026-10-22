@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
 
     const scopeUnitIds = units.map((u) => u.id);
 
-    const [positionsRaw, dayInfos, assignGroups, infoGroups, legacyUnassigned] = await Promise.all([
+    const [positionsRaw, dayInfos, assignGroups, infoGroups, positionGroups, legacyUnassigned] = await Promise.all([
       prisma.dutyPosition.findMany({ where: { unitId }, orderBy: [{ sortOrder: "asc" }, { code: "asc" }] }),
       prisma.dutyDayInfo.findMany({ where: { unitId, date: { gte: from, lte: to } }, orderBy: { date: "asc" } }),
       // Trạng thái đã/chưa lập bảng theo bộ phận (chỉ trong phạm vi người xem)
@@ -190,6 +190,12 @@ export async function GET(req: NextRequest) {
       prisma.dutyDayInfo.groupBy({
         by: ["unitId"],
         where: { unitId: { in: scopeUnitIds }, date: { gte: from, lte: to } },
+        _count: { id: true },
+      }),
+      // Số vị trí/nhiệm vụ đang hoạt động — cho biết bộ phận đã thiết lập danh mục hay chưa
+      prisma.dutyPosition.groupBy({
+        by: ["unitId"],
+        where: { unitId: { in: scopeUnitIds }, status: "ACTIVE" },
         _count: { id: true },
       }),
       authorized === "ALL"
@@ -216,6 +222,7 @@ export async function GET(req: NextRequest) {
       unitId: u.id,
       assignments: assignGroups.find((g) => g.unitId === u.id)?._count.id || 0,
       dayInfos: infoGroups.find((g) => g.unitId === u.id)?._count.id || 0,
+      catalog: positionGroups.find((g) => g.unitId === u.id)?._count.id || 0,
     }));
 
     return NextResponse.json({
