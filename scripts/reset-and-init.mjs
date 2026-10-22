@@ -1,4 +1,4 @@
-/**
+﻿/**
  * reset-and-init.mjs — RESET & KHỞI TẠO HỆ THỐNG V3 (chuẩn bị vận hành thật).
  *
  *   # 1) rehearsal trên bản sao local
@@ -64,14 +64,14 @@ const DELETE_TABLES = [
   // --- ho so phe duyet / de nghi ---
   "approval_decisions", "approval_cases", "evaluation_assessments",
   "work_evidence_adjustments", "work_evidences",
-  "work_item_reviews", "score_run_items", "score_runs", "feedback", "official_docs",
+  "work_item_reviews", "score_run_items", "score_runs", "official_docs",
   // --- bang diem / tong hop ---
   "metric_daily_entries", "metric_entry_revisions", "metric_baselines", "metric_plan_targets",
   "metric_entry_assignments", "report_blocks", "report_snapshots",
   "briefing_report_versions", "briefing_narratives", "narrative_sections",
   // --- cong viec / nhiem vu ---
   "work_item_products", "work_item_assignments", "work_item_series", "plan_task_links",
-  "plan_item_work_links", "plan_items", "plans", "task_counters",
+  "plan_items", "plans", "task_counters",
   "task_updates", "task_assignees", "task_attachments", "task_comments", "comment_reactions",
   "tasks", "personal_work_items",
   // --- nhat ky ---
@@ -650,7 +650,7 @@ async function main() {
 
   // --- NGHIEM THU: 0 nghiep vu + du lieu nen duoc nhap day du ---
   const mustBeZero = [
-    "plans", "plan_items", "plan_task_links", "plan_item_work_links", "task_counters",
+    "plans", "plan_items", "plan_task_links", "task_counters",
     "tasks", "task_updates", "task_assignees", "task_attachments", "task_comments", "comment_reactions",
     "personal_work_items", "work_item_products", "work_item_reviews", "work_item_assignments",
     "routine_entries", "result_submissions", "submission_values", "monthly_work_results",
@@ -658,7 +658,7 @@ async function main() {
     "notifications", "push_subscriptions", "activity_templates", "metric_daily_entries",
     "score_runs", "score_run_items", "report_snapshots", "report_blocks",
     "deadline_requests", "leave_requests", "meetings", "department_work_items",
-    "duty_rosters", "duty_day_infos", "feedback", "official_docs",
+    "duty_rosters", "duty_day_infos", "official_docs",
     "person_supervisions", "audit_events",
   ];
   const notClean = mustBeZero.filter((t) => (counts[t] || 0) > 0);
