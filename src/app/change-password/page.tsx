@@ -123,6 +123,9 @@ export default function ChangePasswordPage() {
             className="w-14 h-14 rounded-full object-cover bg-white shadow-md ring-4 ring-primary/5"
           />
           <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
+            Chi cục hải quan khu vực XVI
+          </p>
+          <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
             Hải quan cửa khẩu Quốc tế Tà Lùng
           </p>
           <h1 className="font-headline-lg text-primary font-bold">Đổi mật khẩu tài khoản quản trị</h1>
@@ -245,7 +248,7 @@ export default function ChangePasswordPage() {
             <span className="text-[11px] font-mono">Kết nối an toàn nội bộ • PostgreSQL</span>
           </div>
           <p className="text-[11px] text-on-surface-variant">
-            Bộ phận CNTT Hải quan cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng
+            Hải quan cửa khẩu Quốc tế Tà Lùng • Chi cục hải quan khu vực XVI • Tỉnh Cao Bằng
           </p>
         </footer>
       </div>

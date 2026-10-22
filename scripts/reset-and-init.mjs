@@ -438,6 +438,16 @@ async function main() {
   }
 
   /* ---------- 1. XOA du lieu nghiep vu (theo ma tran) ---------- */
+  // Mapping nhom TX -> don vi: phai XOA TRUOC org_units (FK SET NULL + CHECK "active requires unit").
+  try {
+    const nMap = await prisma.workCatalogDepartmentMapping.deleteMany();
+    if (nMap.count) {
+      manifest.deleted["work_catalog_department_mappings"] = nMap.count;
+      console.log(`  XOA work_catalog_department_mappings: ${nMap.count}`);
+    }
+  } catch (e) {
+    manifest.notes.push(`khong xoa duoc work_catalog_department_mappings: ${String(e.message).slice(0, 120)}`);
+  }
   for (const t of [...DELETE_TABLES, ...REBUILD_TX, ...REBUILD_ORG]) {
     if (!(await tableExists(t))) continue;
     try {
@@ -451,22 +461,51 @@ async function main() {
   }
   console.log("  (audit_events GIU nguyen - nhung ghi de trong nhat ky moi)");
 
-  /* ---------- 2. DON VI ---------- */
+  /* ---------- 2. DON VI (cay 3 cap chuan hoa 22/10/2026) ---------- */
   const org = await prisma.organization.findFirst();
   if (!org) throw new Error("Khong tim thay organization nen tang");
   const unitByName = new Map();
-  const rootUnit = await prisma.orgUnit.findFirst({ where: { code: "HQCK_TALUNG" } });
+  // Cau 1: Chi cuc Hai quan khu vuc XVI
+  const chiCuc = await prisma.orgUnit.upsert({
+    where: { code: "HQCB-CHI-CUC-HQKV-XVI" },
+    create: {
+      code: "HQCB-CHI-CUC-HQKV-XVI", name: "Chi cục hải quan khu vực XVI",
+      orgId: org.id, parentId: null, level: 1, sortOrder: 0, status: "ACTIVE",
+    },
+    update: { name: "Chi cục hải quan khu vực XVI", parentId: null, level: 1, sortOrder: 0, status: "ACTIVE" },
+  });
+  // Cau 2: Hai quan cua khau Quoc te Ta Lung
+  const hqUnit = await prisma.orgUnit.upsert({
+    where: { code: "HQCB-HAI-QUAN-CUA-KHAU-QUOC-TE-TA-LUNG" },
+    create: {
+      code: "HQCB-HAI-QUAN-CUA-KHAU-QUOC-TE-TA-LUNG", name: "Hải quan cửa khẩu Quốc tế Tà Lùng",
+      orgId: org.id, parentId: chiCuc.id, level: 2, sortOrder: 0, status: "ACTIVE",
+    },
+    update: { name: "Hải quan cửa khẩu Quốc tế Tà Lùng", parentId: chiCuc.id, level: 2, sortOrder: 0, status: "ACTIVE" },
+  });
+  const BO_PHAN_ORDER = [
+    ["HQCB-LANH-DAO-DON-VI", 10],
+    ["HQCB-BO-PHAN-NGHIEP-VU-HAI-QUAN", 20],
+    ["HQCB-BO-PHAN-CNTT", 30],
+    ["HQCB-BO-PHAN-DIEU-TRA-CBL", 40],
+    ["HQCB-BO-PHAN-PHUC-TAP-KT-STQ", 50],
+    ["HQCB-BO-PHAN-TH-BAO-CAO", 60],
+    ["HQCB-BO-PHAN-CONG-TAC-DANG", 70],
+  ];
+  const sortByCode = new Map(BO_PHAN_ORDER);
   for (const o of orgRows) {
     const code = "HQCB-" + norm(o.name).split(" ").join("-").toUpperCase();
+    const sort = sortByCode.get(code) ?? 80;
     const u = await prisma.orgUnit.upsert({
       where: { code },
-      create: { code, name: o.name, orgId: org.id, parentId: rootUnit?.id || null, status: "ACTIVE" },
-      update: { name: o.name, orgId: org.id, status: "ACTIVE" },
+      create: { code, name: o.name, orgId: org.id, parentId: hqUnit.id, level: 3, sortOrder: sort, status: "ACTIVE" },
+      update: { name: o.name, orgId: org.id, parentId: hqUnit.id, level: 3, sortOrder: sort, status: "ACTIVE" },
     });
     unitByName.set(norm(o.name), u.id);
     manifest.created["org_units:" + code] = 1;
   }
-  console.log(`  don vi: ${unitByName.size}`);
+  unitByName.set(norm("Hải quan cửa khẩu Quốc tế Tà Lùng"), hqUnit.id);
+  console.log(`  don vi: ${unitByName.size} (cay 3 cap: Chi cuc HQKV XVI > HQ CKQT Ta Lung > 6 bo phan)`);
 
   /* ---------- 3. NHAN SU (35 nguoi, KHONG tao tai khoan) ---------- */
   const personByName = new Map();
@@ -571,6 +610,40 @@ async function main() {
     factorChangedVsOld: txFactorChanged,
   };
   console.log(`  TX: ${txCreated} muc (${txNullFactor} he so NULL, ${txFactorChanged} doi he so so voi he thong cu)`);
+
+  /* ---------- 4b. CHUAN HOA TEN NHOM TX + MAPPING 6 NHOM -> 6 BO PHAN ---------- */
+  const TX_DEPT_FIX = [
+    ["Bộ phân Nghiệp vụ Hải quan", "Bộ phận Nghiệp vụ Hải quan"],
+    ["Bộ phận công tác Đảng", "Bộ phận Công tác Đảng"],
+  ];
+  for (const [from, to] of TX_DEPT_FIX) {
+    const r = await prisma.workCatalogEntry.updateMany({ where: { department: from }, data: { department: to } });
+    if (r.count) console.log(`  chuan hoa ten nhom TX: ${r.count} dong "${from}" -> "${to}"`);
+  }
+  const TX_MAPPING = [
+    ["Bộ phận Nghiệp vụ Hải quan", "HQCB-BO-PHAN-NGHIEP-VU-HAI-QUAN"],
+    ["Bộ phận CNTT", "HQCB-BO-PHAN-CNTT"],
+    ["Bộ phận điều tra CBL", "HQCB-BO-PHAN-DIEU-TRA-CBL"],
+    ["Bộ phận Phúc tập & KT STQ", "HQCB-BO-PHAN-PHUC-TAP-KT-STQ"],
+    ["Bộ phận TH & Báo cáo", "HQCB-BO-PHAN-TH-BAO-CAO"],
+    ["Bộ phận Công tác Đảng", "HQCB-BO-PHAN-CONG-TAC-DANG"],
+  ];
+  let mapped = 0;
+  for (const [department, code] of TX_MAPPING) {
+    const unit = await prisma.orgUnit.findUnique({ where: { code } });
+    if (!unit) continue;
+    await prisma.workCatalogDepartmentMapping.upsert({
+      where: { department },
+      create: {
+        department, unitId: unit.id, isActive: true,
+        note: "Chuan hoa 22/10/2026: khop 1:1 ten nhom TX voi don vi to chuc",
+        confirmedBy: "chu-danh-anh (22/10/2026)", confirmedAt: new Date(),
+      },
+      update: { unitId: unit.id, isActive: true },
+    });
+    mapped++;
+  }
+  console.log(`  mapping nhom TX -> bo phan: ${mapped} (isActive=true)`);
 
   /* ---------- 5. DANH MUC QD1277 (trich xuat tu DB nguon da kiem chung) ---------- */
   if (src) {

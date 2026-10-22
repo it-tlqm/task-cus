@@ -65,10 +65,10 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                 />
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-[13px] font-bold uppercase leading-tight tracking-wide text-white">
-                    Hải quan Tà Lùng
+                    Hải quan cửa khẩu Tà Lùng
                   </span>
                   <span className="truncate text-[10.5px] font-medium leading-tight text-on-primary-container">
-                    Quản lý Kế hoạch &amp; Công việc
+                    Chi cục hải quan khu vực XVI
                   </span>
                 </span>
               </Link>

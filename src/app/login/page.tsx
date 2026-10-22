@@ -94,6 +94,9 @@ export default function LoginPage() {
               className="w-14 h-14 rounded-full object-cover shadow-lg ring-4 ring-white/10 shrink-0 bg-white"
             />
             <div className="flex flex-col">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary-fixed">
+                Chi cục hải quan khu vực XVI
+              </span>
               <h2 className="text-lg xl:text-xl font-bold tracking-tight text-white leading-snug">
                 HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
               </h2>
@@ -117,7 +120,7 @@ export default function LoginPage() {
               Quản Lý Kế Hoạch &amp; Điều Hành Tác Nghiệp Hải Quan
             </h1>
             <p className="text-sm xl:text-base text-white/80 leading-relaxed">
-              Nền tảng số hóa 5 nhóm nghiệp vụ và 48 hoạt động mẫu; hỗ trợ phân công nhiệm vụ, ghi nhận nhật ký hằng ngày và xuất biểu mẫu Excel Mẫu A &amp; Mẫu B tự động.
+              Nền tảng số hóa 6 nhóm nghiệp vụ và 348 đầu công việc thường xuyên; hỗ trợ phân công nhiệm vụ, ghi nhận nhật ký hằng ngày và xuất biểu mẫu Excel Mẫu A &amp; Mẫu B tự động.
             </p>
           </div>
 
@@ -129,7 +132,7 @@ export default function LoginPage() {
                 <span className="text-xs font-bold uppercase tracking-wider">Kế hoạch tuần &amp; tháng</span>
               </div>
               <p className="text-xs text-white/75 leading-normal">
-                Lập, trình duyệt và phân rã đầu việc theo 5 nhóm nghiệp vụ chuẩn Excel nguồn.
+                Lập, trình duyệt và phân rã đầu việc theo 6 nhóm nghiệp vụ chuẩn theo cơ cấu tổ chức.
               </p>
             </div>
 
@@ -195,6 +198,9 @@ export default function LoginPage() {
               alt="Logo Hải quan Việt Nam"
               className="w-12 h-12 rounded-full object-cover bg-white shadow-md mb-2"
             />
+            <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
+              Chi cục hải quan khu vực XVI
+            </p>
             <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
               HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
             </p>
@@ -347,7 +353,7 @@ export default function LoginPage() {
               <span className="text-[11px] font-mono">Bản dựng: v1.2.4-TL (Enterprise Build)</span>
             </div>
             <p className="text-[11px] text-on-surface-variant">
-              Bộ phận CNTT Hải quan cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng
+              Hải quan cửa khẩu Quốc tế Tà Lùng • Chi cục hải quan khu vực XVI • Tỉnh Cao Bằng
             </p>
           </footer>
         </div>
