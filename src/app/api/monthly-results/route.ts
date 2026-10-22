@@ -225,6 +225,7 @@ export async function POST(req: NextRequest) {
       taskId: string | null;
       dueDate: Date | null;
       completedDate: Date | null;
+      reviewState: string | null; // V3-F01
     } | null = null;
     if (workItemId) {
       const wi = await prisma.personalWorkItem.findUnique({
@@ -237,6 +238,7 @@ export async function POST(req: NextRequest) {
           taskId: true,
           dueDate: true,
           completedDate: true,
+          reviewState: true, // V3-F01: biết công việc đã được lãnh đạo xác nhận chưa
         },
       });
       if (!wi) return jsonError("Đầu việc kế hoạch không tồn tại — hãy chọn lại", 400);
@@ -250,6 +252,7 @@ export async function POST(req: NextRequest) {
         taskId: wi.taskId,
         dueDate: wi.dueDate,
         completedDate: wi.completedDate,
+        reviewState: wi.reviewState,
       };
     }
 
@@ -299,7 +302,11 @@ export async function POST(req: NextRequest) {
             periodMonth: month,
             productItemId: effectiveProductItemId,
             workItemId: linkedWorkItem?.id || null,
-            needsReview: !effectiveProductItemId,
+            // V3-F01: bản ghi gắn công việc CHƯA được lãnh đạo xác nhận ⇒ đánh dấu
+            // "chờ đối chiếu" (không tính vào điểm chính thức; bộ máy tính điểm không đổi).
+            needsReview:
+              !effectiveProductItemId ||
+              (linkedWorkItem ? linkedWorkItem.reviewState !== "CONFIRMED" : false),
             taskId: taskId || linkedWorkItem?.taskId || null,
             title: resolvedTitle,
             outputText: outputText?.trim() || null,

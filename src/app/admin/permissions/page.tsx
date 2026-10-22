@@ -611,7 +611,7 @@ export default function AdminPermissionsPage() {
                   data-testid="grant-submit"
                   disabled={busy}
                   onClick={grant}
-                  className="w-full px-4 py-2 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:opacity-90 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cấp vai trò
                 </button>

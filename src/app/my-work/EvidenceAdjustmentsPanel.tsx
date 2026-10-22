@@ -171,7 +171,7 @@ export default function EvidenceAdjustmentsPanel({
             data-testid={`adj-submit-${workItemId}`}
             disabled={busy}
             onClick={propose}
-            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-status-primary bg-status-primary text-on-primary disabled:opacity-50"
+            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Gửi đề nghị
           </button>
@@ -202,7 +202,7 @@ export default function EvidenceAdjustmentsPanel({
                   data-testid={`adj-${r.myStep === "ENDORSE" ? "endorse" : "approve"}-${r.id}`}
                   disabled={busy}
                   onClick={() => act(r, r.myStep)}
-                  className="px-2 py-1 rounded text-[11px] font-semibold border border-status-primary text-status-primary hover:bg-status-warning-bg disabled:opacity-50"
+                  className="px-2 py-1 rounded text-[11px] font-semibold border border-status-primary text-status-primary hover:bg-status-warning-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {r.myStepLabel}
                 </button>

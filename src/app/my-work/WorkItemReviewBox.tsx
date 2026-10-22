@@ -203,7 +203,7 @@ export default function WorkItemReviewBox({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-border-default bg-surface-container text-on-surface hover:bg-surface-container-low"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-border-default bg-surface-container text-on-surface hover:bg-surface-container-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Huỷ
               </button>
@@ -212,7 +212,7 @@ export default function WorkItemReviewBox({
                 data-testid={`work-item-submit-confirm-${item.id}`}
                 disabled={busy}
                 onClick={submit}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:opacity-90 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {busy ? "Đang gửi…" : "Gửi lãnh đạo xác nhận"}
               </button>

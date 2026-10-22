@@ -592,6 +592,17 @@ export async function PATCH(req: NextRequest) {
       return jsonError(err.message, err.statusCode || 423);
     }
 
+    // V3-F01 (P0): công việc TỰ GHI NHẬN chỉ hoàn thành được qua luồng
+    // "Báo hoàn thành & gửi lãnh đạo". Không cho gán/xoá ngày hoàn thành hay trạng thái
+    // COMPLETED bằng cách khác (tránh tự xác nhận nghiệp vụ & tạo dữ liệu đủ điều kiện
+    // tính điểm mà không qua lãnh đạo). Công việc đã gắn NHIỆM VỤ giữ nguyên luồng V1/V2.
+    if (!currentItem.taskId && (completedDate !== undefined || status === "COMPLETED")) {
+      return jsonError(
+        "Công việc tự ghi nhận chỉ được hoàn thành qua luồng \"Báo hoàn thành & gửi lãnh đạo\" (có nội dung kết quả và ngày hoàn thành thực tế).",
+        409
+      );
+    }
+
     // V3.0.1 — D1-A + R3-C: hồ sơ đang chờ xác nhận hoặc đã xác nhận ⇒ KHOÁ chỉnh sửa.
     if (isWorkItemReviewLocked(currentItem)) {
       return jsonError(

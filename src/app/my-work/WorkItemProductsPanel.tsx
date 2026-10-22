@@ -322,7 +322,7 @@ export default function WorkItemProductsPanel({
                       data-testid={`sp-propose-${workItemId}`}
                       disabled={busy}
                       onClick={propose}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-status-primary bg-status-primary text-on-primary disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Gửi đề xuất
                     </button>

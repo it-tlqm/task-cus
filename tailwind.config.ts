@@ -64,6 +64,11 @@ const config: Config = {
         "border-default": "#E2E8F0",
         "border-subtle": "#CBD5E1",
 
+        // V3-F05: token "status-primary" bi thieu nen class bg-status-primary
+        // khong duoc sinh -> nut co chu trang tren nen sang (khong doc duoc).
+        // Sua tai theme de moi nut dung chung deu co tuong phan dung.
+        "status-primary": "#001d36",
+        "status-primary-hover": "#002b4d",
         "status-success": "#059669",
         "status-success-bg": "#ECFDF5",
         "status-warning": "#D97706",

@@ -585,22 +585,29 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      data-testid={`work-item-complete-${item.id}`}
-                      disabled={busyId === item.id}
-                      onClick={() => markComplete(item)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border active-press disabled:opacity-50 ${
-                        done
-                          ? "bg-surface-container-lowest text-on-surface-variant border-border-default hover:bg-surface-container"
-                          : "bg-status-success text-on-error border-status-success hover:opacity-90"
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[16px]">
-                        {done ? "undo" : "check_circle"}
-                      </span>
-                      {done ? "Bỏ hoàn thành" : "Đánh dấu hoàn thành"}
-                    </button>
+                    {/* V3-F01: chi cong viec da gan NHEM VU moi dung nut danh dau hoan thanh
+                        (luong V1/V2, lanh dao duyet qua nhiem vu). Cong viec tu ghi nhan chi
+                        co 1 duong: "Bao hoan thanh & gui lanh dao" (WorkItemReviewBox).
+                        Khi dang cho duyet / da xac nhan => khoa moi thao tac. */}
+                    {!!item.taskId && (item.reviewState || "DRAFT") === "DRAFT" && (
+                      <button
+                        type="button"
+                        data-testid={`work-item-complete-${item.id}`}
+                        disabled={busyId === item.id}
+                        onClick={() => markComplete(item)}
+                        title="Cán bộ đánh dấu đã hoàn thành. Việc này được lãnh đạo xác nhận trong luồng duyệt của nhiệm vụ."
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border active-press disabled:opacity-50 ${
+                          done
+                            ? "bg-surface-container-lowest text-on-surface-variant border-border-default hover:bg-surface-container"
+                            : "bg-status-success text-on-error border-status-success hover:opacity-90"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          {done ? "undo" : "check_circle"}
+                        </span>
+                        {done ? "Bỏ đánh dấu hoàn thành" : "Đánh dấu đã hoàn thành"}
+                      </button>
+                    )}
 
                     <EvidenceAdjustmentsPanel
                       mode="staff"

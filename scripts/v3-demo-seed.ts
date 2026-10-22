@@ -25,6 +25,13 @@ const DEMO_PASSWORD = process.env.V3_DEMO_PASSWORD || "LocalTest@2026";
 const TAG = "[V3-DEMO]";
 
 async function main() {
+  // Ngày làm việc của DEMO = hôm nay theo giờ Việt Nam (để luôn hiện với bộ lọc
+  // mặc định "Hôm nay" của trang Nhật ký công việc).
+  const todayVN = new Date(
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date())
+  );
+  const TODAY = new Date(Date.UTC(todayVN.getUTCFullYear(), todayVN.getUTCMonth(), todayVN.getUTCDate()));
+
   // ---- 1. Mật khẩu tài khoản demo -------------------------------------------
   const hash = await bcrypt.hash(DEMO_PASSWORD, 10);
   for (const username of ["democb01", "democb02", "demold01"]) {
@@ -93,8 +100,8 @@ async function main() {
         status: "IN_PROGRESS",
         priority: "Trung bình",
         expectedResult: "Rà soát hồ sơ và gửi lãnh đạo trực tiếp xác nhận",
-        dueDate: new Date("2026-10-21T00:00:00.000Z"),
-        workDate: new Date("2026-10-21T00:00:00.000Z"),
+        dueDate: TODAY,
+        workDate: TODAY,
         reviewState: "DRAFT",
       },
     });
