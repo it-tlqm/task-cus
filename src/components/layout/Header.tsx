@@ -305,7 +305,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               <span className="flex min-w-0 flex-col">
                 <span className="flex items-center gap-1.5">
                   <span className="truncate text-[13px] font-bold leading-tight tracking-tight text-primary-container">
-                    HẢI QUAN TÀ LÙNG
+                    HẢI QUAN CỬA KHẨU TÀ LÙNG
                   </span>
                   <span
                     title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."

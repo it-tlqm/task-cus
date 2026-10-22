@@ -1187,7 +1187,7 @@ export default function PlansPage() {
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">warning</span>
                 <span>
-                  <strong>Cảnh báo nghiệp vụ:</strong> Kế hoạch này có nhiệm vụ trọng tâm chưa được phân vào 5 nhóm nghiệp vụ quy chuẩn của Hải quan. Vui lòng xác định nhóm nghiệp vụ trước khi phát hành báo cáo chính thức.
+                  <strong>Cảnh báo nghiệp vụ:</strong> Kế hoạch này có nhiệm vụ trọng tâm chưa được phân vào 6 nhóm nghiệp vụ quy chuẩn của Hải quan. Vui lòng xác định nhóm nghiệp vụ trước khi phát hành báo cáo chính thức.
                 </span>
               </div>
               <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-status-warning-bg text-status-warning border border-status-warning/40">
