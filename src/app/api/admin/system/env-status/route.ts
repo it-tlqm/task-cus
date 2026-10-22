@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/server/auth";
 import { checkPermission, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { getSupabaseBaseUrl } from "@/server/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,7 +52,8 @@ export async function GET(req: NextRequest) {
       process.env.SUPABASE_SECRET_KEY ||
       ""
     ).trim();
-    const baseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/$/, "");
+    const baseUrl = getSupabaseBaseUrl();
+    const urlFromEnv = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
     const bucket = process.env.SUPABASE_STORAGE_BUCKET || "task-attachments";
     const evidenceBucket = process.env.SUPABASE_EVIDENCE_BUCKET || "work-evidence";
 
@@ -66,7 +68,13 @@ export async function GET(req: NextRequest) {
         });
         if (!r.ok) return { name, checked: true, exists: false, httpStatus: r.status };
         const j: any = await r.json().catch(() => ({}));
-        return { name, checked: true, exists: true, public: j.public === true };
+        return {
+          name,
+          checked: true,
+          exists: true,
+          public: j.public === true,
+          note: urlFromEnv ? "" : "URL lấy từ giá trị mặc định (NEXT_PUBLIC_SUPABASE_URL chưa được đặt)",
+        };
       } catch (e: any) {
         return { name, checked: false, reason: String(e?.message || e).slice(0, 80) };
       }

@@ -73,6 +73,13 @@ function getSupabaseServerKey(): string {
   ).trim();
 }
 
+/** URL gốc của project Supabase (có fallback mặc định — dùng chung mọi nơi). */
+export function getSupabaseBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ekswvjbpqblssxcdwagi.supabase.co"
+  ).replace(/\/$/, "");
+}
+
 function buildStorageKey(
   originalName: string,
   subfolder: string
@@ -102,9 +109,7 @@ class SupabaseStorageProvider implements IStorageProvider {
   private serverKey: string;
 
   constructor(bucket?: string, options: StorageProviderOptions = {}) {
-    this.baseUrl = (
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ekswvjbpqblssxcdwagi.supabase.co"
-    ).replace(/\/$/, "");
+    this.baseUrl = getSupabaseBaseUrl();
     this.forEvidence = !!options.forEvidence;
     this.privateMode = isPrivateStorageMode();
     this.serverKey = getSupabaseServerKey();
