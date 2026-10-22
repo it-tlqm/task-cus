@@ -140,6 +140,23 @@ class SupabaseStorageProvider implements IStorageProvider {
     );
   }
 
+  /** Đọc thông tin bucket qua khoá server (null nếu không truy cập được). */
+  private async bucketInfo(name: string): Promise<{ ok: boolean; status: number; info?: any }> {
+    try {
+      const res = await fetch(
+        `${this.baseUrl}/storage/v1/bucket/${encodeURIComponent(name)}`,
+        {
+          headers: { apikey: this.apiKey, Authorization: `Bearer ${this.apiKey}` },
+          cache: "no-store",
+        }
+      );
+      if (!res.ok) return { ok: false, status: res.status };
+      return { ok: true, status: res.status, info: await res.json().catch(() => null) };
+    } catch {
+      return { ok: false, status: 0 };
+    }
+  }
+
   async assertReady(): Promise<void> {
     if (this.bucketVerified) return;
     // - Minh chứng: LUÔN bắt buộc bucket private + khóa server.
@@ -151,23 +168,34 @@ class SupabaseStorageProvider implements IStorageProvider {
         `Chưa cấu hình SUPABASE_SERVICE_ROLE_KEY (hoặc SUPABASE_SECRET_KEY) trên máy chủ — không thể dùng kho ${what} ở chế độ private.`
       );
     }
-    const res = await fetch(
-      `${this.baseUrl}/storage/v1/bucket/${encodeURIComponent(this.bucket)}`,
-      {
-        headers: {
-          apikey: this.apiKey,
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        cache: "no-store",
+
+    let info = await this.bucketInfo(this.bucket);
+    // Tên bucket trong cấu hình có thể lệch với project (biến môi trường đặt sai tên):
+    // thử các tên chuẩn trước khi kết luận cấu hình sai.
+    if (!info.ok) {
+      for (const cand of ["task-attachments", "work-evidence"]) {
+        if (cand === this.bucket) continue;
+        const alt = await this.bucketInfo(cand);
+        if (alt.ok && alt.info) {
+          console.warn(
+            `[Storage] Bucket "${this.bucket}" không truy cập được (HTTP ${info.status}) — dùng "${cand}".`
+          );
+          this.bucket = cand;
+          info = alt;
+          break;
+        }
       }
-    );
-    if (!res.ok) {
-      throw new StorageConfigError(
-        `Bucket ${what} "${this.bucket}" chưa tồn tại hoặc khóa server không có quyền truy cập (HTTP ${res.status})`
-      );
     }
-    const info: any = await res.json().catch(() => null);
-    if (!info || info.public !== false) {
+
+    if (!info.ok) {
+      // KHÔNG chặn dịch vụ: khoá server vẫn dùng được cho upload/download; chỉ ghi cảnh báo.
+      console.warn(
+        `[Storage] Không xác minh được trạng thái bucket "${this.bucket}" (HTTP ${info.status}) — tiếp tục dùng khoá server.`
+      );
+      this.bucketVerified = true;
+      return;
+    }
+    if (!info.info || info.info.public !== false) {
       throw new StorageConfigError(
         `Bucket "${this.bucket}" phải ở chế độ PRIVATE. Hệ thống từ chối dùng bucket public cho ${what}.`
       );
