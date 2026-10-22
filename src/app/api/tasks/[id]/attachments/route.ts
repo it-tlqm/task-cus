@@ -36,13 +36,8 @@ export async function GET(
 
     // F5/đường phụ (YC-38): nhiệm vụ đã nghiệm thu ⇒ không đính kèm thêm
     // (chưa có chính sách minh chứng bổ sung cho nhiệm vụ đã nghiệm thu ⇒ chặn, fail-closed).
-    if (isTerminalTaskStatus(task.status)) {
-      return jsonError(
-        `Nhiệm vụ ${task.status === "CANCELED" ? "đã bị loại" : "đã được nghiệm thu hoàn thành"} — không thể đính kèm thêm tài liệu.`,
-        409
-      );
-    }
-
+    // LƯU Ý: chỉ chặn THÊM tệp (POST). XEM danh sách + tải tệp (GET) vẫn được phép
+    // để xem lại hồ sơ của nhiệm vụ đã nghiệm thu.
     const readAccess = await verifyTaskAccess(user, taskId, "READ");
     if (!readAccess.allowed) {
       return jsonError(readAccess.reason || "Truy cập bị từ chối", 403);
