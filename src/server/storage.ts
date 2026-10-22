@@ -157,6 +157,25 @@ class SupabaseStorageProvider implements IStorageProvider {
     }
   }
 
+  /** Bucket có tồn tại & truy cập được không? (dùng endpoint list — hoạt động với cả khoá mới) */
+  private async bucketExists(name: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/storage/v1/object/list/${encodeURIComponent(name)}`, {
+        method: "POST",
+        headers: {
+          apikey: this.apiKey,
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prefix: "", limit: 1 }),
+        cache: "no-store",
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   async assertReady(): Promise<void> {
     if (this.bucketVerified) return;
     // - Minh chứng: LUÔN bắt buộc bucket private + khóa server.
@@ -171,17 +190,16 @@ class SupabaseStorageProvider implements IStorageProvider {
 
     let info = await this.bucketInfo(this.bucket);
     // Tên bucket trong cấu hình có thể lệch với project (biến môi trường đặt sai tên):
-    // thử các tên chuẩn trước khi kết luận cấu hình sai.
+    // dò lại bằng endpoint list trước khi kết luận cấu hình sai.
     if (!info.ok) {
       for (const cand of ["task-attachments", "work-evidence"]) {
         if (cand === this.bucket) continue;
-        const alt = await this.bucketInfo(cand);
-        if (alt.ok && alt.info) {
+        if (await this.bucketExists(cand)) {
           console.warn(
             `[Storage] Bucket "${this.bucket}" không truy cập được (HTTP ${info.status}) — dùng "${cand}".`
           );
           this.bucket = cand;
-          info = alt;
+          info = await this.bucketInfo(cand);
           break;
         }
       }

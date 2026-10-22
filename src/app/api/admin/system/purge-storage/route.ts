@@ -1,4 +1,4 @@
-/**
+﻿/**
  * POST /api/admin/system/purge-storage — DỌN KHO TỆP Storage bằng khoá server
  * (dùng sau khi đã lưu trữ đầy đủ). Mặc định `--dry-run` (chỉ liệt kê).
  *
@@ -41,29 +41,56 @@ export async function POST(req: NextRequest) {
     const base = getSupabaseBaseUrl();
     const H = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
 
-    // Liệt kê object (đệ quy theo "thư mục" con)
-    const objects: string[] = [];
-    const walk = async (prefix: string) => {
-      const r = await fetch(`${base}/storage/v1/object/list/${bucket}`, {
-        method: "POST",
-        headers: H,
-        body: JSON.stringify({ prefix, limit: 1000 }),
-      });
-      if (!r.ok) throw new Error(`list không được (HTTP ${r.status})`);
-      const items = await r.json().catch(() => []);
-      for (const it of items) {
-        if (!it?.name) continue;
-        if (it.name.includes("/")) await walk(it.name);
-        else objects.push(it.name);
-      }
+    // Liệt kê object (đệ quy theo "thư mục" con) — dò tên bucket nếu cấu hình lệch
+    const listObjects = async (name: string): Promise<string[] | null> => {
+      const found: string[] = [];
+      const walk = async (prefix: string): Promise<boolean> => {
+        const r = await fetch(`${base}/storage/v1/object/list/${encodeURIComponent(name)}`, {
+          method: "POST",
+          headers: H,
+          body: JSON.stringify({ prefix, limit: 1000 }),
+        });
+        if (!r.ok) return false;
+        const items = await r.json().catch(() => []);
+        for (const it of items) {
+          if (!it?.name) continue;
+          if (it.name.includes("/")) {
+            const ok = await walk(it.name);
+            if (!ok) return false;
+          } else found.push(it.name);
+        }
+        return true;
+      };
+      const ok = await walk("");
+      return ok ? found : null;
     };
-    await walk("");
+
+    let bucketUsed = bucket;
+    let objects = await listObjects(bucketUsed);
+    if (objects === null) {
+      for (const cand of ["task-attachments", "work-evidence"]) {
+        if (cand === bucket) continue;
+        const alt = await listObjects(cand);
+        if (alt !== null) {
+          bucketUsed = cand;
+          objects = alt;
+          break;
+        }
+      }
+    }
+    if (objects === null) {
+      return jsonError(
+        `Không truy cập được bucket "${bucket}" (kiểm tra tên bucket/khoá server trên Vercel).`,
+        404
+      );
+    }
+    objects = objects as string[];
 
     let deleted = 0;
     const failed: string[] = [];
     if (!dryRun) {
       for (const o of objects) {
-        const r = await fetch(`${base}/storage/v1/object/${bucket}/${o}`, { method: "DELETE", headers: H });
+        const r = await fetch(`${base}/storage/v1/object/${bucketUsed}/${o}`, { method: "DELETE", headers: H });
         if (r.ok) deleted++;
         else failed.push(o);
       }
@@ -94,3 +121,4 @@ export async function POST(req: NextRequest) {
     return jsonError("Lỗi khi dọn kho lưu trữ: " + String(err?.message || err).slice(0, 120), 500);
   }
 }
+
