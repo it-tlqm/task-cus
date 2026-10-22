@@ -59,11 +59,13 @@ demo-ops\start-v3-demo.cmd
 ## 3. KỊCH BẢN UAT THEO VAI TRÒ (≈15 phút)
 
 ### Vai trò CÁN BỘ — `democb01` / `LocalTest@2026`
-1. Vào **Nhật ký công việc** → tìm thẻ **`[V3-DEMO] Kiểm tra hồ sơ thu nghiệm V3.0.1`** (hạn 21/10/2026).
-2. Mở mục **"3 sản phẩm"** → xem 3 mã SP đang ở trạng thái *"Chờ lãnh đạo xác nhận"*; bấm **"Xác nhận mã SP"** ở vai trò lãnh đạo, hoặc để nguyên.
-3. Bấm **"Báo hoàn thành & gửi lãnh đạo"** → nhập nội dung kết quả + ngày 21/10/2026 → **Gửi lãnh đạo xác nhận**.
+1. Vào **Nhật ký công việc** → tìm thẻ **`[V3-DEMO] Kiểm tra hồ sơ thu nghiệm V3.0.1`** (hạn = **hôm nay**, đã cập nhật theo ngày chạy demo).
+2. Mở mục **"3 sản phẩm"** → xem 3 mã SP ở trạng thái *"Chờ lãnh đạo xác nhận"*.
+3. Bấm **"Báo hoàn thành & gửi lãnh đạo"** → nhập nội dung kết quả + ngày hoàn thành thực tế → **Gửi lãnh đạo xác nhận**.
    - **Kỳ vọng**: thẻ hiện *"Đã gửi — chờ lãnh đạo xác nhận"*; nút sửa hạn / thêm minh chứng **bị khoá** (409).
 4. Thử lại **"Báo hoàn thành & gửi lãnh đạo"** → hệ thống báo đã gửi rồi (chống trùng).
+
+> **Lưu ý F01 (đã sửa):** công việc **tự ghi nhận** **không còn** nút "Đánh dấu hoàn thành" — chỉ còn **một** luồng *"Báo hoàn thành & gửi lãnh đạo"*. Nút đánh dấu hoàn thành cũ chỉ còn với công việc **đã gắn nhiệm vụ** (lãnh đạo duyệt theo luồng nhiệm vụ). API cũng **khoá** việc tự gán ngày hoàn thành/trạng thái COMPLETED cho công việc tự ghi nhận (409) để không tự xác nhận nghiệp vụ.
 
 ### Vai trò LÃNH ĐẠO — `demold01` / `LocalTest@2026`
 5. Menu **"Xác nhận công việc"** (`/work-item-reviews`) → thấy hồ sơ của Cán bộ DEMO 01.
@@ -112,7 +114,11 @@ demo-ops\start-v3-demo.cmd
 | `67a2e84` | V3.3 — quy trình R3-C 2 cấp (đề nghị → xem xét → phê duyệt), giữ bản minh chứng cũ |
 
 **Tài liệu:** `docs/V3/V3_MASTER_SPEC.md` · `docs/V3/V3_MVP_IMPLEMENTATION.md` · `docs/V3/V3_DEMO_HANDOVER.md` (file này)
-**Bộ kiểm thử:** `scripts/test-v3-review-flow.ts` (38) · `test-v3-permissions.ts` (24) · `test-v3-multi-product.ts` (33) · `test-v3-evidence-adjustment.ts` (21) + 7 bộ hồi quy V1/V2 (245) = **361 kiểm tra, 0 fail**, parity **38/38**.
+**Bộ kiểm thử:** `scripts/test-v3-review-flow.ts` (38) · `test-v3-permissions.ts` (24) · `test-v3-multi-product.ts` (33) · `test-v3-evidence-adjustment.ts` (21) · `test-v3-f01-f05.ts` (22) + 7 bộ hồi quy V1/V2 (245) = **383 kiểm tra, 0 fail**, parity **38/38**.
+
+**Đợt sửa lỗi UAT (F01 + F05) — commit `f0e25c2`:**
+- **F05** (nút khó nhìn): nguyên nhân gốc là theme **thiếu token `status-primary`** ⇒ class `bg-status-primary` không được sinh ⇒ nền trong suốt + chữ trắng. Đã sửa **tại theme** (dùng chung cho mọi nút) + bổ sung trạng thái hover/focus/disabled đồng nhất. Đo trên trình duyệt: nền `rgb(0,29,54)` + chữ trắng ⇒ **tương phản 7.45:1** (WCAG AAA).
+- **F01** (bỏ đường hoàn thành bypass, P0): công việc tự ghi nhận chỉ còn **một** luồng "Báo hoàn thành & gửi lãnh đạo"; API khoá tự gán ngày hoàn thành/COMPLETED (409); khoá sửa khi chờ duyệt/đã xác nhận; kết quả tháng gắn công việc chưa xác nhận được đánh dấu "chờ đối chiếu". Luồng nhiệm vụ V1/V2 **giữ nguyên**.
 
 ---
 
