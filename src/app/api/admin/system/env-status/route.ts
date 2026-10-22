@@ -101,6 +101,18 @@ export async function GET(req: NextRequest) {
           hasServerKey: !!serverKey,
           buckets,
         },
+        // Host của project Supabase (thông tin CÔNG KHAI — biến NEXT_PUBLIC_*, không phải bí mật)
+        supabase: {
+          host: (() => {
+            try {
+              return new URL(baseUrl).host;
+            } catch {
+              return null;
+            }
+          })(),
+          fromEnv: urlFromEnv,
+          isExpectedProject: baseUrl === "https://ekswvjbpqblssxcdwagi.supabase.co",
+        },
         checks: {
           "Có khóa service-role cho kho tệp": !!serverKey,
           "Chế độ PRIVATE bật (SUPABASE_STORAGE_PRIVATE=1)":
