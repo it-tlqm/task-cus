@@ -43,8 +43,15 @@ if (!TARGET) {
   console.error("Thiếu --db=<db đích>");
   process.exit(2);
 }
-if (MODE === "production" && CONFIRM !== "RESET-2026-10-22") {
+// Preflight là bước CHỈ ĐỌC (kiểm tra điều kiện an toàn) ⇒ không cần mã xác nhận xoá.
+const IS_PREFLIGHT = arg("preflight") === "1";
+if (MODE === "production" && CONFIRM !== "RESET-2026-10-22" && !IS_PREFLIGHT) {
   console.error("CHẾ ĐỘ PRODUCTION: cần --confirm=RESET-2026-10-22 (lệnh của chủ dự án).");
+  process.exit(2);
+}
+// An toàn: lệnh xoá Production chỉ chạy trên DB Supabase thật, không chạy trên DB local.
+if (MODE === "production" && !IS_PREFLIGHT && !String(TARGET || "").includes("supabase")) {
+  console.error("CHẾ ĐỘ PRODUCTION: --db phải trỏ tới DB Production thật (Supabase), không phải DB local.");
   process.exit(2);
 }
 
@@ -289,11 +296,12 @@ async function main() {
     add("Co role SYSTEM_ADMIN", !!adminRole);
     if (adminRole) {
       const codes = adminRole.rolePermissions.map((rp) => rp.permission.code);
-      const need = ["org.manage", "users.manage", "catalog.manage", "system.config"];
+      // Quyen ky thuat bat buoc cho Super Admin (theo quyet dinh 22/10/2026)
+      const need = ["org.manage", "catalog.manage", "system.config", "users.manage", "audit.view"];
       const missing = need.filter((c) => !codes.includes(c));
       add("Quyen ky thuat day du", missing.length === 0, missing.length ? "thieu: " + missing.join(",") : codes.length + " quyen");
-      // KHONG duyet nghiep vu
-      const approve = codes.filter((c) => /approve|confirm|review|duyet/i.test(c));
+      // KHONG duyet nghiep vu mac dinh
+      const approve = codes.filter((c) => /approve|review|confirm|duyet/i.test(c));
       add("SYSTEM_ADMIN khong co quyet duyet nghiep vu", approve.length === 0, approve.join(","));
     }
 
@@ -302,15 +310,24 @@ async function main() {
     const files = fm?.files || [];
     add("Manifest tep da co", !!fm, `${files.length} tep`);
     for (const f of files) {
-      const p = path.join(REPO, "demo-ops", "reset", "reconciliation", "prod-files", f.archivedFile || "");
-      const ok = fs.existsSync(p);
-      add(`Tep da luu tru: ${f.archivedFile || f.fileName}`, ok, ok ? `${fs.statSync(p).size} bytes` : "THIEU");
+      // Tep co the nam trong kho luu tru tong hoac thu muc reconciliation
+      const candidates = [
+        path.join(REPO, "demo-ops", "reset", "reconciliation", "prod-files", f.archivedFile || ""),
+        path.join(REPO, "demo-ops", "archive", "prod-2026-10-22", f.archivedFile || ""),
+      ];
+      const p = candidates.find((c) => fs.existsSync(c));
+      const ok = !!p;
+      add(`Tep da luu tru: ${f.fileName || f.archivedFile}`, ok, ok ? `${fs.statSync(p).size} bytes` : "THIEU");
     }
 
     // 7) Kehoa tep trong Storage (can xoa sau khi luu tru)
-    const att = await prisma.$queryRawUnsafe(`SELECT count(*)::int n FROM task_attachments`).catch(() => ({ n: -1 }));
-    const ev = await prisma.$queryRawUnsafe(`SELECT count(*)::int n FROM work_evidences`).catch(() => ({ n: -1 }));
-    add("Can don sach tep trong Storage", true, `task_attachments=${att.n} work_evidences=${ev.n} (xoa sau khi luu tru)`);
+    const att = await prisma.$queryRawUnsafe(`SELECT count(*)::int AS n FROM task_attachments`).catch(() => [{ n: -1 }]);
+    const ev = await prisma.$queryRawUnsafe(`SELECT count(*)::int AS n FROM work_evidences`).catch(() => [{ n: -1 }]);
+    add(
+      "Can don sach tep trong Storage",
+      true,
+      `task_attachments=${att[0].n} work_evidences=${ev[0].n} (xoa sau khi luu tru bang purge-storage.mjs)`
+    );
 
     const go = checks.every((c) => c.ok);
     console.log("\n=== PREFLIGHT RESET PRODUCTION ===");
