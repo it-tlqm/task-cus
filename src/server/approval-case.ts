@@ -555,6 +555,17 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     return { success: false, status: 403, error: "Bạn không có thẩm quyền quyết định hồ sơ này" };
   }
 
+  // KHÔNG AI TỰ QUYẾT ĐỊNH HỒ SƠ CỦA MÌNH (áp dụng cho mọi loại hồ sơ:
+  // nghiệm thu nhiệm vụ, phê duyệt kế hoạch, gia hạn hạn chót).
+  // Lãnh đạo vẫn duyệt được hồ sơ của người khác trong đơn vị.
+  if (submitterId && submitterId === user.personId) {
+    return {
+      success: false,
+      status: 403,
+      error: "Bạn không được tự quyết định hồ sơ do chính mình trình — cần lãnh đạo khác thẩm quyền xử lý.",
+    };
+  }
+
   // 2) Điều kiện trạng thái hợp lệ theo từng quy trình
   if (caseType === "TASK_RESULT" && resourceStatus !== "WAITING_REVIEW") {
     return {

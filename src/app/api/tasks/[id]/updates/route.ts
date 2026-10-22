@@ -135,6 +135,19 @@ export async function POST(
 
       // Guard tập trung (Slice 1): chặn tự nghiệm thu COMPLETED qua endpoint tiến độ
       try {
+        // KHÔNG AI TỰ DUYỆT NHIỆM VỤ CỦA MÌNH: kể cả lãnh đạo thì chủ nhiệm vụ
+        // phải được một lãnh đạo khác có thẩm quyền nghiệm thu.
+        if (
+          (targetStatus === "COMPLETED" || targetStatus === "DONE") &&
+          fresh.ownerId === user.personId
+        ) {
+          return {
+            kind: "guard" as const,
+            message:
+              "Bạn không thể tự nghiệm thu nhiệm vụ do chính mình chủ trì — cần lãnh đạo khác thẩm quyền.",
+            statusCode: 403,
+          };
+        }
         assertTaskStatusTransition({
           currentStatus: fresh.status,
           targetStatus,
