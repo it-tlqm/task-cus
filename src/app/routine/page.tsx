@@ -116,6 +116,11 @@ export default function RoutinePage() {
   const { can: canPerm, canAudit } = usePermissions();
   const canManageForms = canPerm("form.manage");
   const [builderFields, setBuilderFields] = useState<FormFieldDef[]>([]);
+  // F19: chi hien truong DN / container khi bieu mau (Form Builder) that su yeu cau.
+  // Khong co bieu mau chuyen biet => dung bieu mau ghi nhan co ban, khong ep chi tieu thong quan.
+  const formKeys = (builderFields || []).map((f: any) => f.key);
+  const showCompanyField = formKeys.length === 0 || formKeys.includes("company_name");
+  const showContainerField = formKeys.length === 0 || formKeys.includes("container_count");
   const [builderTemplateId, setBuilderTemplateId] = useState<string>("");
   const [isPublishingVersion, setIsPublishingVersion] = useState(false);
 
@@ -254,7 +259,7 @@ export default function RoutinePage() {
           containerCount: newConts === "" ? null : Number(newConts),
           progressPercent: Number(newProgress),
           timeSpent: "Theo ca trực",
-          templateId: selectedTemplateId || null,
+          templateId: null, // F19: danh muc cong viec chinh thuc chi dung TX moi
           formVersionId: activeFormVersion?.id,
           formValues: dynamicFormValues,
           // F18: danh muc TX + danh sach SP QD1277 de xuat
@@ -560,33 +565,9 @@ export default function RoutinePage() {
                   products={proposedProducts}
                   onProductsChange={setProposedProducts}
                 />
-                <details className="rounded-lg border border-border-subtle bg-surface-container-lowest px-3 py-2">
-                  <summary className="text-[11px] font-semibold text-primary cursor-pointer">
-                    Dùng mẫu nghiệp vụ cũ (mã TTHQ/GSHQ) — chỉ để tra cứu dữ liệu cũ
-                  </summary>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => {
-                      setNewCategory(e.target.value);
-                      const tpl = catalogTemplates.find((t) => `[${t.code}] ${t.title}` === e.target.value);
-                      if (tpl) {
-                        setSelectedTemplateId(tpl.id);
-                        if (!newTitle) setNewTitle(tpl.title);
-                      } else {
-                        setSelectedTemplateId("");
-                      }
-                    }}
-                    className="mt-2 h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary cursor-pointer w-full"
-                  >
-                    <option value="">-- Chọn mẫu cũ --</option>
-                    {catalogTemplates.map((tpl) => (
-                      <option key={tpl.id} value={`[${tpl.code}] ${tpl.title}`}>
-                        [{tpl.code}] — {tpl.title}
-                      </option>
-                    ))}
-                  </select>
-                </details>
 
+
+                {showCompanyField && (
                 <div className="flex flex-col gap-1">
                   <label className="font-label-md text-label-md text-primary font-semibold">
                     Doanh nghiệp / Chủ hàng liên quan (nếu có)
@@ -599,7 +580,9 @@ export default function RoutinePage() {
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
+                )}
 
+                {showContainerField && (
                 <div className="flex flex-col gap-1">
                   <label className="font-label-md text-label-md text-primary font-semibold">
                     Số lượng container / Phương tiện
@@ -613,6 +596,7 @@ export default function RoutinePage() {
                     className="h-10 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
+                )}
 
                 <div className="flex flex-col gap-1">
                   <label className="font-label-md text-label-md text-primary font-semibold">
