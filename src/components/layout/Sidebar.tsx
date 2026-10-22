@@ -68,7 +68,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                     Hải quan cửa khẩu Tà Lùng
                   </span>
                   <span className="truncate text-[10.5px] font-medium leading-tight text-on-primary-container">
-                    Chi cục hải quan khu vực XVI
+                    Quản lý Kế hoạch &amp; Công việc
                   </span>
                 </span>
               </Link>

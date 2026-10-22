@@ -31,7 +31,10 @@ export async function GET(req: NextRequest) {
       unitMap.set(u.id, {
         ...u,
         children: [],
-        personnelCount: u._count.assignments,
+        // personnelCount = số NGƯỜI duy nhất thuộc cây con của đơn vị (không đếm trùng
+        // người làm việc ở 2 bộ phận). Sẽ cộng dồn ở bước sau.
+        personnelCount: 0,
+        directCount: new Set(u.assignments.map((a) => a.personId)).size,
         taskCount: u._count.tasks,
       });
     });
@@ -46,10 +49,25 @@ export async function GET(req: NextRequest) {
       }
     });
 
+    // Cộng dồn số người theo cây (mỗi người tính 1 lần cho mỗi nhánh cha)
+    const countPersons = (node: any): Set<string> => {
+      const set = new Set<string>(node.assignments.map((a: any) => a.personId));
+      for (const child of node.children) {
+        for (const pid of countPersons(child)) set.add(pid);
+      }
+      node.personnelCount = set.size;
+      return set;
+    };
+    for (const root of rootNodes) countPersons(root);
+
+    // Số cán bộ chưa được gán đơn vị (hiển thị thành nhóm riêng trong UI)
+    const unassignedCount = await prisma.person.count({ where: { assignments: { none: {} } } });
+
     return NextResponse.json({
       success: true,
       data: rootNodes,
       flatList: units,
+      unassignedCount,
     });
   } catch (error: any) {
     return jsonError("Lỗi khi tải cây cơ cấu tổ chức: " + error.message, 500);

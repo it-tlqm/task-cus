@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const unitId = searchParams.get("unitId");
+    const includeDescendants = searchParams.get("includeDescendants") === "1";
     const search = searchParams.get("search")?.trim();
     const status = searchParams.get("status");
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -26,16 +27,37 @@ export async function GET(req: NextRequest) {
     const whereClause: any = {};
 
     // 1. Lọc theo đơn vị và kiểm tra Scope Guard
+    //    Gồm cả cán bộ KIÊM NHIỆM (phân công không chính) để số liệu cây đơn vị
+    //    khớp với danh sách hiển thị.
     if (unitId) {
-      if (authorizedUnits !== "ALL" && !authorizedUnits.includes(unitId)) {
-        return jsonError("Bạn không có quyền xem danh sách nhân sự của bộ phận này", 403);
+      // Mở rộng sang các đơn vị con khi được yêu cầu (bấm vào đơn vị cha trong cây)
+      let targetUnits = [unitId];
+      if (includeDescendants) {
+        const allUnits = await prisma.orgUnit.findMany({ select: { id: true, parentId: true } });
+        const result = [unitId];
+        const walk = (pid: string) => {
+          for (const u of allUnits) {
+            if (u.parentId === pid && !result.includes(u.id)) {
+              result.push(u.id);
+              walk(u.id);
+            }
+          }
+        };
+        walk(unitId);
+        targetUnits = result;
+      }
+      if (authorizedUnits !== "ALL") {
+        const outside = targetUnits.filter((id) => !authorizedUnits.includes(id));
+        if (outside.length > 0) {
+          return jsonError("Bạn không có quyền xem danh sách nhân sự của bộ phận này", 403);
+        }
       }
       whereClause.assignments = {
-        some: { unitId, isPrimary: true },
+        some: { unitId: { in: targetUnits } },
       };
     } else if (authorizedUnits !== "ALL") {
       whereClause.assignments = {
-        some: { unitId: { in: authorizedUnits }, isPrimary: true },
+        some: { unitId: { in: authorizedUnits } },
       };
     }
 
@@ -69,7 +91,6 @@ export async function GET(req: NextRequest) {
         where: whereClause,
         include: {
           assignments: {
-            where: { isPrimary: true },
             include: {
               unit: true,
               position: true,
@@ -95,8 +116,18 @@ export async function GET(req: NextRequest) {
 
     // Chuẩn hóa DTO trả về cho giao diện
     const formattedPeople = people.map((p) => {
-      const primaryAssignment = p.assignments[0];
+      // Phân công CHÍNH (isPrimary) là phân công chuẩn; nếu không có thì lấy phân công đầu tiên
+      const primaryAssignment =
+        p.assignments.find((a) => a.isPrimary) || p.assignments[0] || null;
       const primaryGrant = p.account?.roleGrants[0];
+      const allAssignments = p.assignments.map((a) => ({
+        unitId: a.unitId,
+        unitCode: a.unit?.code || null,
+        unitName: a.unit?.name || null,
+        positionId: a.positionId || null,
+        position: a.position?.title || null,
+        isPrimary: a.isPrimary,
+      }));
 
       return {
         id: p.id,
@@ -121,6 +152,10 @@ export async function GET(req: NextRequest) {
               name: primaryAssignment.unit.name,
             }
           : undefined,
+        // Tất cả phân công (chính + kiêm nhiệm) để màn hình Tổ chức hiển thị & đếm khớp
+        assignments: allAssignments,
+        unitIds: allAssignments.map((a) => a.unitId),
+        secondaryUnits: allAssignments.filter((a) => !a.isPrimary),
         account: p.account
           ? {
               id: p.account.id,

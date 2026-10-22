@@ -94,9 +94,6 @@ export default function LoginPage() {
               className="w-14 h-14 rounded-full object-cover shadow-lg ring-4 ring-white/10 shrink-0 bg-white"
             />
             <div className="flex flex-col">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary-fixed">
-                Chi cục hải quan khu vực XVI
-              </span>
               <h2 className="text-lg xl:text-xl font-bold tracking-tight text-white leading-snug">
                 HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
               </h2>
@@ -198,9 +195,6 @@ export default function LoginPage() {
               alt="Logo Hải quan Việt Nam"
               className="w-12 h-12 rounded-full object-cover bg-white shadow-md mb-2"
             />
-            <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
-              Chi cục hải quan khu vực XVI
-            </p>
             <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
               HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
             </p>
@@ -353,7 +347,7 @@ export default function LoginPage() {
               <span className="text-[11px] font-mono">Bản dựng: v1.2.4-TL (Enterprise Build)</span>
             </div>
             <p className="text-[11px] text-on-surface-variant">
-              Hải quan cửa khẩu Quốc tế Tà Lùng • Chi cục hải quan khu vực XVI • Tỉnh Cao Bằng
+              Hải quan cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng
             </p>
           </footer>
         </div>

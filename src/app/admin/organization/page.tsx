@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Building2,
   Users,
@@ -28,6 +28,9 @@ import {
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
+/** Mã đơn vị giả để chọn nhóm "Chưa gán đơn vị" trong cây tổ chức. */
+const UNASSIGNED_UNIT_ID = "__unassigned__";
+
 interface OrgUnit {
   id: string;
   code: string;
@@ -37,6 +40,7 @@ interface OrgUnit {
   parentId?: string | null;
   children?: OrgUnit[];
   personnelCount?: number;
+  directCount?: number;
 }
 
 interface Position {
@@ -68,6 +72,22 @@ interface Person {
   positionId?: string | null;
   position: string;
   orgUnit?: { id: string; name: string; code: string };
+  assignments?: {
+    unitId: string;
+    unitCode?: string | null;
+    unitName?: string | null;
+    positionId?: string | null;
+    position?: string | null;
+    isPrimary: boolean;
+  }[];
+  secondaryUnits?: {
+    unitId: string;
+    unitCode?: string | null;
+    unitName?: string | null;
+    positionId?: string | null;
+    position?: string | null;
+    isPrimary: boolean;
+  }[];
   account?: {
     id: string;
     username: string;
@@ -86,6 +106,7 @@ export default function OrganizationAdminPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
+  const [unassignedCount, setUnassignedCount] = useState(0);
 
   const [selectedUnit, setSelectedUnit] = useState<OrgUnit | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
@@ -175,7 +196,7 @@ export default function OrganizationAdminPage() {
     try {
       const [resTree, resPeople, resPositions, resRoles] = await Promise.all([
         fetch("/api/org-units/tree"),
-        fetch("/api/people"),
+        fetch("/api/people?pageSize=100"),
         fetch("/api/positions"),
         fetch("/api/roles"),
       ]);
@@ -185,6 +206,7 @@ export default function OrganizationAdminPage() {
         const treeData: OrgUnit[] = json.data || [];
         setOrgTree(treeData);
         setFlatUnits(json.flatList || []);
+        setUnassignedCount(typeof json.unassignedCount === "number" ? json.unassignedCount : 0);
 
         // Expand root by default
         const initialExpanded: Record<string, boolean> = {};
@@ -665,9 +687,32 @@ export default function OrganizationAdminPage() {
     });
   };
 
+  // Tập mã đơn vị thuộc cây con của đơn vị đang chọn.
+  // Danh sách cán bộ và số đếm trên cây dùng CÙNG bộ này => không còn lệch số.
+  const subtreeUnitIds = useMemo(() => {
+    if (!selectedUnit || selectedUnit.id === UNASSIGNED_UNIT_ID) return [] as string[];
+    const ids = new Set<string>([selectedUnit.id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const u of flatUnits) {
+        if (u.parentId && ids.has(u.parentId) && !ids.has(u.id)) {
+          ids.add(u.id);
+          changed = true;
+        }
+      }
+    }
+    return [...ids];
+  }, [selectedUnit, flatUnits]);
+
   // Filter people by selected unit, status, and search
   const filteredPeople = people.filter((p) => {
-    const matchesUnit = selectedUnit ? p.unitId === selectedUnit.id : true;
+    const assignments = p.assignments || [];
+    const matchesUnit = !selectedUnit
+      ? true
+      : selectedUnit.id === UNASSIGNED_UNIT_ID
+      ? assignments.length === 0
+      : assignments.some((a) => subtreeUnitIds.includes(a.unitId));
     const matchesStatus =
       statusFilter === "ALL"
         ? true
@@ -905,7 +950,54 @@ export default function OrganizationAdminPage() {
             ) : orgTree.length === 0 ? (
               <div className="text-center py-8 text-xs text-slate-400">Chưa có dữ liệu đơn vị</div>
             ) : (
-              orgTree.map((node) => renderTreeNode(node, 0))
+              <>
+                {orgTree.map((node) => renderTreeNode(node, 0))}
+                {/* Nhóm cán bộ chưa được gán đơn vị — không bị "mất" khỏi danh sách */}
+                {unassignedCount > 0 && (
+                  <div
+                    onClick={() =>
+                      setSelectedUnit({
+                        id: UNASSIGNED_UNIT_ID,
+                        code: "CHƯA GÁN",
+                        name: "Chưa gán đơn vị",
+                        level: 2,
+                        personnelCount: unassignedCount,
+                      })
+                    }
+                    className={`flex items-center justify-between py-2 pr-3 rounded-lg cursor-pointer transition-colors text-xs font-medium ${
+                      selectedUnit?.id === UNASSIGNED_UNIT_ID
+                        ? "bg-amber-500 text-white font-semibold shadow-sm"
+                        : "text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-4" />
+                      <UserX className="w-3.5 w-3.5 shrink-0 text-amber-600" />
+                      <span className="truncate">Chưa gán đơn vị</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span
+                        className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${
+                          selectedUnit?.id === UNASSIGNED_UNIT_ID
+                            ? "bg-amber-600 text-white"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        CHƯA GÁN
+                      </span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                          selectedUnit?.id === UNASSIGNED_UNIT_ID
+                            ? "bg-white text-amber-800 font-bold"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {unassignedCount}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -923,7 +1015,9 @@ export default function OrganizationAdminPage() {
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 {selectedUnit
-                  ? `Mã đơn vị: ${selectedUnit.code} • Cấp: ${selectedUnit.level || 2}`
+                  ? selectedUnit.id === UNASSIGNED_UNIT_ID
+                    ? "Cán bộ chưa được phân công vào đơn vị nào — cần gán đơn vị"
+                    : `Mã đơn vị: ${selectedUnit.code} • Cấp: ${selectedUnit.level || 1} • gồm cả cán bộ kiêm nhiệm`
                   : "Hải quan cửa khẩu Quốc tế Tà Lùng"}
               </p>
             </div>
@@ -996,6 +1090,16 @@ export default function OrganizationAdminPage() {
                         <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
                           <Building2 className="w-3 h-3 text-slate-400" />
                           <span>{p.unitName || "Chưa phân công"}</span>
+                          {(p.secondaryUnits || []).map((u) => (
+                            <span
+                              key={u.unitId}
+                              title={`Kiêm nhiệm tại ${u.unitName || ""}`}
+                              className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium"
+                            >
+                              <span className="material-symbols-outlined text-[11px]">swap_horiz</span>
+                              {u.unitName}
+                            </span>
+                          ))}
                         </div>
                       </td>
 

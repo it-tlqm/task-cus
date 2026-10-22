@@ -461,27 +461,18 @@ async function main() {
   }
   console.log("  (audit_events GIU nguyen - nhung ghi de trong nhat ky moi)");
 
-  /* ---------- 2. DON VI (cay 3 cap chuan hoa 22/10/2026) ---------- */
+  /* ---------- 2. DON VI (cay 2 cap chuan hoa 22/10/2026) ---------- */
   const org = await prisma.organization.findFirst();
   if (!org) throw new Error("Khong tim thay organization nen tang");
   const unitByName = new Map();
-  // Cau 1: Chi cuc Hai quan khu vuc XVI
-  const chiCuc = await prisma.orgUnit.upsert({
-    where: { code: "HQCB-CHI-CUC-HQKV-XVI" },
-    create: {
-      code: "HQCB-CHI-CUC-HQKV-XVI", name: "Chi cục hải quan khu vực XVI",
-      orgId: org.id, parentId: null, level: 1, sortOrder: 0, status: "ACTIVE",
-    },
-    update: { name: "Chi cục hải quan khu vực XVI", parentId: null, level: 1, sortOrder: 0, status: "ACTIVE" },
-  });
-  // Cau 2: Hai quan cua khau Quoc te Ta Lung
+  // Cau 1: Hai quan cua khau Quoc te Ta Lung (don vi goc duy nhat)
   const hqUnit = await prisma.orgUnit.upsert({
     where: { code: "HQCB-HAI-QUAN-CUA-KHAU-QUOC-TE-TA-LUNG" },
     create: {
       code: "HQCB-HAI-QUAN-CUA-KHAU-QUOC-TE-TA-LUNG", name: "Hải quan cửa khẩu Quốc tế Tà Lùng",
-      orgId: org.id, parentId: chiCuc.id, level: 2, sortOrder: 0, status: "ACTIVE",
+      orgId: org.id, parentId: null, level: 1, sortOrder: 0, status: "ACTIVE",
     },
-    update: { name: "Hải quan cửa khẩu Quốc tế Tà Lùng", parentId: chiCuc.id, level: 2, sortOrder: 0, status: "ACTIVE" },
+    update: { name: "Hải quan cửa khẩu Quốc tế Tà Lùng", parentId: null, level: 1, sortOrder: 0, status: "ACTIVE" },
   });
   const BO_PHAN_ORDER = [
     ["HQCB-LANH-DAO-DON-VI", 10],
@@ -498,14 +489,14 @@ async function main() {
     const sort = sortByCode.get(code) ?? 80;
     const u = await prisma.orgUnit.upsert({
       where: { code },
-      create: { code, name: o.name, orgId: org.id, parentId: hqUnit.id, level: 3, sortOrder: sort, status: "ACTIVE" },
-      update: { name: o.name, orgId: org.id, parentId: hqUnit.id, level: 3, sortOrder: sort, status: "ACTIVE" },
+      create: { code, name: o.name, orgId: org.id, parentId: hqUnit.id, level: 2, sortOrder: sort, status: "ACTIVE" },
+      update: { name: o.name, orgId: org.id, parentId: hqUnit.id, level: 2, sortOrder: sort, status: "ACTIVE" },
     });
     unitByName.set(norm(o.name), u.id);
     manifest.created["org_units:" + code] = 1;
   }
   unitByName.set(norm("Hải quan cửa khẩu Quốc tế Tà Lùng"), hqUnit.id);
-  console.log(`  don vi: ${unitByName.size} (cay 3 cap: Chi cuc HQKV XVI > HQ CKQT Ta Lung > 6 bo phan)`);
+  console.log(`  don vi: ${unitByName.size} (cay 2 cap: HQ CKQT Ta Lung > 7 don vi cap 2)`);
 
   /* ---------- 3. NHAN SU (35 nguoi, KHONG tao tai khoan) ---------- */
   const personByName = new Map();

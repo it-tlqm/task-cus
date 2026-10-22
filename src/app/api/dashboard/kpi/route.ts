@@ -371,6 +371,8 @@ export async function GET(req: NextRequest) {
         _count: {
           select: { assignments: true },
         },
+        // Số cán bộ = số NGƯỜI duy nhất (không đếm trùng người kiêm nhiệm nhiều bộ phận)
+        assignments: { select: { personId: true } },
       },
       orderBy: { sortOrder: "asc" },
     });
@@ -404,7 +406,7 @@ export async function GET(req: NextRequest) {
         overdueTasks: dOverdue,
         completionRate: dCompletionRate,
         averageProgress: dAvgProg,
-        staffCount: u._count.assignments,
+        staffCount: new Set(u.assignments.map((a) => a.personId)).size,
       };
     });
 

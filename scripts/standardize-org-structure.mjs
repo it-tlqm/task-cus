@@ -40,18 +40,19 @@ if (!DB_URL) {
 }
 
 /* ---------- Cây đơn vị chuẩn ---------- */
-const CHI_CUC = { code: "HQCB-CHI-CUC-HQKV-XVI", name: "Chi cục hải quan khu vực XVI", level: 1, sort: 0 };
-const HQ = { code: "HQCB-HAI-QUAN-CUA-KHAU-QUOC-TE-TA-LUNG", name: "Hải quan cửa khẩu Quốc tế Tà Lùng", level: 2, sort: 0 };
-// Bộ phận cấp 3 (thứ tự theo file Excel "Cơ cấu tổ chức")
+const HQ = { code: "HQCB-HAI-QUAN-CUA-KHAU-QUOC-TE-TA-LUNG", name: "Hải quan cửa khẩu Quốc tế Tà Lùng", level: 1, sort: 0 };
+// Đơn vị cấp 2 (thứ tự theo file Excel "Cơ cấu tổ chức")
 const BO_PHAN = [
-  { code: "HQCB-LANH-DAO-DON-VI", name: "Lãnh đạo đơn vị", level: 3, sort: 10 },
-  { code: "HQCB-BO-PHAN-NGHIEP-VU-HAI-QUAN", name: "Bộ phận Nghiệp vụ Hải quan", level: 3, sort: 20 },
-  { code: "HQCB-BO-PHAN-CNTT", name: "Bộ phận CNTT", level: 3, sort: 30 },
-  { code: "HQCB-BO-PHAN-DIEU-TRA-CBL", name: "Bộ phận điều tra CBL", level: 3, sort: 40 },
-  { code: "HQCB-BO-PHAN-PHUC-TAP-KT-STQ", name: "Bộ phận Phúc tập & KT STQ", level: 3, sort: 50 },
-  { code: "HQCB-BO-PHAN-TH-BAO-CAO", name: "Bộ phận TH & Báo cáo", level: 3, sort: 60 },
-  { code: "HQCB-BO-PHAN-CONG-TAC-DANG", name: "Bộ phận Công tác Đảng", level: 3, sort: 70 },
+  { code: "HQCB-LANH-DAO-DON-VI", name: "Lãnh đạo đơn vị", level: 2, sort: 10 },
+  { code: "HQCB-BO-PHAN-NGHIEP-VU-HAI-QUAN", name: "Bộ phận Nghiệp vụ Hải quan", level: 2, sort: 20 },
+  { code: "HQCB-BO-PHAN-CNTT", name: "Bộ phận CNTT", level: 2, sort: 30 },
+  { code: "HQCB-BO-PHAN-DIEU-TRA-CBL", name: "Bộ phận điều tra CBL", level: 2, sort: 40 },
+  { code: "HQCB-BO-PHAN-PHUC-TAP-KT-STQ", name: "Bộ phận Phúc tập & KT STQ", level: 2, sort: 50 },
+  { code: "HQCB-BO-PHAN-TH-BAO-CAO", name: "Bộ phận TH & Báo cáo", level: 2, sort: 60 },
+  { code: "HQCB-BO-PHAN-CONG-TAC-DANG", name: "Bộ phận Công tác Đảng", level: 2, sort: 70 },
 ];
+// Đơn vị cấp trên không dùng trong hệ thống này (chủ dự án yêu cầu bỏ 22/10/2026)
+const REMOVE_UNITS = ["HQCB-CHI-CUC-HQKV-XVI"];
 
 /* ---------- Chuẩn hoá tên nhóm TX (lỗi chính tả trong file nguồn) ---------- */
 const TX_DEPT_FIX = [
@@ -80,15 +81,11 @@ const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
   const byName = new Map(units.map((u) => [u.name, u]));
 
   console.log("\n  [1] CAY DON VI (muc tieu)");
-  console.log(`      C1  ${CHI_CUC.name}  [${CHI_CUC.code}]`);
-  console.log(`      C2  ${HQ.name}  [${HQ.code}]`);
-  for (const b of BO_PHAN) console.log(`      C3  ${b.name}  [${b.code}]`);
-
-  // Kiểm tra tồn tại
-  for (const u of [CHI_CUC, HQ, ...BO_PHAN]) {
-    if (!byCode.has(u.code) && !byName.has(u.name)) {
-      console.log(`      (se TAO MOI: ${u.name})`);
-    }
+  console.log(`      C1  ${HQ.name}  [${HQ.code}]`);
+  for (const b of BO_PHAN) console.log(`      C2  ${b.name}  [${b.code}]`);
+  for (const code of REMOVE_UNITS) {
+    const u = byCode.get(code);
+    if (u) console.log(`      (se XOA: ${u.name} [${code}])`);
   }
 
   // [2] Chuan hoa ten nhom TX
@@ -123,10 +120,30 @@ const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
       update: { name: u.name, parentId, level: u.level, sortOrder: u.sort, status: "ACTIVE" },
     });
 
-  const chiCuc = await upsertUnit(CHI_CUC, null);
-  const hq = await upsertUnit(HQ, chiCuc.id);
+  // 1) Gỡ đơn vị cấp trên không dùng: đưa con về gốc rồi xoá
+  const hqId = (await prisma.orgUnit.findUnique({ where: { code: HQ.code } }))?.id || null;
+  for (const code of REMOVE_UNITS) {
+    const u = await prisma.orgUnit.findUnique({ where: { code } });
+    if (!u) continue;
+    const children = await prisma.orgUnit.findMany({ where: { parentId: u.id } });
+    for (const c of children) {
+      await prisma.orgUnit.update({ where: { id: c.id }, data: { parentId: hqId, level: 2 } });
+      console.log(`  [OK] Chuyển "${c.name}" về dưới ${HQ.name}`);
+    }
+    const people = await prisma.personAssignment.count({ where: { unitId: u.id } });
+    if (people > 0) {
+      console.log(`  [!!] Đơn vị ${u.name} còn ${people} phân công — KHÔNG xoá, chuyển sang ${HQ.name}.`);
+      for (const a of await prisma.personAssignment.findMany({ where: { unitId: u.id } })) {
+        await prisma.personAssignment.update({ where: { id: a.id }, data: { unitId: hqId } });
+      }
+    }
+    await prisma.orgUnit.delete({ where: { id: u.id } });
+    console.log(`  [OK] Đã xoá đơn vị "${u.name}" [${code}]`);
+  }
+
+  const hq = await upsertUnit(HQ, null);
   for (const b of BO_PHAN) await upsertUnit(b, hq.id);
-  console.log("\n  [OK] Cay don vi da chuan hoa (3 cap)");
+  console.log("  [OK] Cay don vi da chuan hoa (2 cap: HQ CKQT Ta Lung > 7 don vi cap 2)");
 
   for (const f of TX_DEPT_FIX) {
     const r = await prisma.workCatalogEntry.updateMany({
@@ -165,8 +182,9 @@ const prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } });
       resourceType: "OrgUnit",
       resourceId: hq.id,
       newData: {
-        root: CHI_CUC.name,
+        root: HQ.name,
         unit: HQ.name,
+        removedUnits: REMOVE_UNITS,
         departments: BO_PHAN.map((b) => b.name),
         mappings: MAPPING.map((m) => m.department),
         by: "standardize-org-structure.mjs",
