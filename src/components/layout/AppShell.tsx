@@ -13,7 +13,9 @@ import { FeedbackButton } from "@/components/ui/FeedbackButton";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/login";
+  // Trang xác thực: không bọc sidebar/header để form đăng nhập & đổi mật khẩu
+  // chiếm trọn màn hình, đúng layout của design system.
+  const isLoginPage = pathname === "/login" || pathname === "/change-password";
 
   // Thu gọn menu: giữ trạng thái ở đây để Sidebar, Header và vùng nội dung cùng biết.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
