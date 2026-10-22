@@ -82,6 +82,26 @@ export async function GET(req: NextRequest) {
 
     const buckets = await Promise.all([bucketState(bucket), bucketState(evidenceBucket)]);
 
+    // Liệt kê bucket thực tế trong project (chỉ TÊN + trạng thái) để chẩn đoán
+    // lệch tên bucket giữa cấu hình Vercel và project Supabase.
+    let bucketList: { ok: boolean; httpStatus?: number; names?: string[]; error?: string } = {
+      ok: false,
+    };
+    if (baseUrl && serverKey) {
+      try {
+        const r = await fetch(`${baseUrl}/storage/v1/bucket`, {
+          headers: { apikey: serverKey, Authorization: `Bearer ${serverKey}` },
+          cache: "no-store",
+        });
+        const j: any = await r.json().catch(() => null);
+        bucketList = r.ok
+          ? { ok: true, httpStatus: r.status, names: (j || []).map((b: any) => b.name).sort() }
+          : { ok: false, httpStatus: r.status, error: String(j?.message || j?.errorCode || "").slice(0, 120) };
+      } catch (e: any) {
+        bucketList = { ok: false, error: String(e?.message || e).slice(0, 120) };
+      }
+    }
+
     await recordAuditEvent({
       actorId: user.id,
       action: "SYSTEM_ENV_STATUS_VIEWED",
@@ -100,6 +120,7 @@ export async function GET(req: NextRequest) {
           privateMode: String(process.env.SUPABASE_STORAGE_PRIVATE || "").trim() === "1",
           hasServerKey: !!serverKey,
           buckets,
+          bucketList,
         },
         // Host của project Supabase (thông tin CÔNG KHAI — biến NEXT_PUBLIC_*, không phải bí mật)
         supabase: {
