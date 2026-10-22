@@ -113,6 +113,17 @@ export async function GET(req: NextRequest) {
           fromEnv: urlFromEnv,
           isExpectedProject: baseUrl === "https://ekswvjbpqblssxcdwagi.supabase.co",
         },
+        // LOẠI khoá server (chỉ nhận diện, KHÔNG trả về giá trị):
+        //  sb_secret_* = secret key (đúng) · sb_publishable_* = khoá công khai (SAI) · eyJ* = JWT
+        serverKeyKind: !serverKey
+          ? "none"
+          : serverKey.startsWith("sb_secret_")
+          ? "sb_secret (dung)"
+          : serverKey.startsWith("sb_publishable_")
+          ? "sb_publishable (SAI - day la khoa cong khai)"
+          : serverKey.startsWith("eyJ")
+          ? "jwt"
+          : "unknown",
         checks: {
           "Có khóa service-role cho kho tệp": !!serverKey,
           "Chế độ PRIVATE bật (SUPABASE_STORAGE_PRIVATE=1)":
