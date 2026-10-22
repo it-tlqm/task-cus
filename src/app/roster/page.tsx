@@ -862,7 +862,28 @@ export default function RosterPage() {
 
           {/* Mobile: thẻ theo ngày */}
           <div className="space-y-3 lg:hidden" data-testid="roster-mobile" data-tour="roster-week">
-            {days.map((d, i) => {
+            {positions.length === 0 ? (
+              <div
+                className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center"
+                data-testid="roster-mobile-empty-catalog"
+              >
+                <span className="material-symbols-outlined text-[32px] text-slate-300">assignment_late</span>
+                <div className="mt-1 text-sm font-semibold text-slate-700">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
+                <p className="mx-auto mt-1 max-w-xs text-xs text-slate-500">
+                  Mỗi bộ phận có bảng phân công riêng. Chọn bộ phận khác ở trên hoặc thiết lập danh mục cho bộ phận này.
+                </p>
+                {canApprove && (
+                  <button
+                    onClick={() => setShowCatalog(true)}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-teal-800"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">list_alt</span>
+                    Thiết lập danh mục
+                  </button>
+                )}
+              </div>
+            ) : (
+              days.map((d, i) => {
               const iso = toISODate(d);
               const dayRows = rowsOnDay(iso, rows);
               const isToday = iso === todayISO;
@@ -899,7 +920,7 @@ export default function RosterPage() {
                             : "Chưa phân công"}
                       </div>
                     </button>
-                    {canApprove && positions.length > 0 && (
+                    {canApprove && (
                       <button
                         data-testid={`roster-day-assign-${iso}`}
                         onClick={() => openEditor(iso)}
@@ -910,24 +931,9 @@ export default function RosterPage() {
                       </button>
                     )}
                   </div>
-                  <div className="space-y-2 px-3 py-2">
-                    {positions.length === 0 ? (
-                      <div className="py-3 text-center">
-                        <div className="text-xs text-slate-500">Bộ phận chưa có danh mục vị trí/nhiệm vụ.</div>
-                        {canApprove && (
-                          <button
-                            onClick={() => setShowCatalog(true)}
-                            className="mt-2 inline-flex items-center gap-1 rounded-lg bg-teal-700 px-3 py-1.5 text-[11px] font-semibold text-white"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">list_alt</span>
-                            Thiết lập danh mục
-                          </button>
-                        )}
-                      </div>
-                    ) : filledGroups.length === 0 ? (
-                      <div className="text-xs italic text-slate-400">Chưa phân công nhiệm vụ cho ngày này.</div>
-                    ) : (
-                      filledGroups.map(({ g, filled }) => (
+                  {filledGroups.length > 0 && (
+                    <div className="space-y-2 px-3 py-2">
+                      {filledGroups.map(({ g, filled }) => (
                         <div key={g.code}>
                           <div className="text-[11px] font-semibold text-slate-600">
                             {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
@@ -952,12 +958,13 @@ export default function RosterPage() {
                             ))}
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
-            })}
+              })
+            )}
           </div>
         </>
       ) : (

@@ -68,3 +68,5 @@ docs/Dữ liệu-file-hai-quan-gui/
 docs/Dữ liệu.zip
 
 
+.vercel
+.env*.local

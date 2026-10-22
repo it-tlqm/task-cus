@@ -165,7 +165,7 @@ export function TourGuide() {
           <span className="text-[11px] font-bold text-secondary uppercase">
             Bước {idx + 1}/{steps.length} · {step.title}
           </span>
-          <button onClick={() => stop(false)} className="text-xs text-outline hover:text-primary font-semibold">
+          <button onClick={() => stop(true)} className="text-xs text-outline hover:text-primary font-semibold">
             Bỏ qua
           </button>
         </div>
