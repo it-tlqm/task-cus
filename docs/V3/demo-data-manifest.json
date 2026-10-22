@@ -1,0 +1,428 @@
+{
+  "generatedAt": "2026-10-22T03:12:10.042Z",
+  "demoAccounts": [
+    {
+      "username": "cb001",
+      "personCode": "CB-001",
+      "fullName": "Nguyễn Đình Giang",
+      "status": "ACTIVE",
+      "roles": [
+        "DEPARTMENT_LEADER:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 2,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb0018",
+      "personCode": "CB0018",
+      "fullName": "Trần Minh Hoàng",
+      "status": "ACTIVE",
+      "roles": [
+        "DEPARTMENT_LEADER:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb002",
+      "personCode": "CB-002",
+      "fullName": "Nguyễn Hải Yên",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT",
+        "DEPARTMENT_LEADER:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb003",
+      "personCode": "CB-003",
+      "fullName": "Phương Khánh Hạ",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb004",
+      "personCode": "CB-004",
+      "fullName": "Lô Thùy Ly",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb005",
+      "personCode": "CB-005",
+      "fullName": "Đinh Đức Hoàng",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb006",
+      "personCode": "CB-006",
+      "fullName": "Nguyễn Mạnh Hiên",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 1,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb007",
+      "personCode": "CB-007",
+      "fullName": "Lê Quốc Hưng",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb008",
+      "personCode": "CB-008",
+      "fullName": "Đặng Minh Được",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb009",
+      "personCode": "CB-009",
+      "fullName": "Hà Thị Dung",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb010",
+      "personCode": "CB-010",
+      "fullName": "Triệu Văn Hòa",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 1,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb011",
+      "personCode": "CB-011",
+      "fullName": "Tô Văn Thụ",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 1,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb012",
+      "personCode": "CB-012",
+      "fullName": "Trương Hồng Thắng",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb013",
+      "personCode": "CB-013",
+      "fullName": "Nguyễn Mạnh Toàn",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb014",
+      "personCode": "CB-014",
+      "fullName": "Bế Hoài Châu",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb015",
+      "personCode": "CB-015",
+      "fullName": "Phạm Linh Thuận",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 14,
+        "monthlyResults": 0,
+        "tasks": 1,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb016",
+      "personCode": "CB-016",
+      "fullName": "Hoàng Văn Bằng",
+      "status": "ACTIVE",
+      "roles": [
+        "UNIT_LEADER:ORGANIZATION"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb017",
+      "personCode": "CB-017",
+      "fullName": "Nông Xuân Ánh",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "cb020",
+      "personCode": "CB-020",
+      "fullName": "Nguyễn Tuấn Anh",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 4,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "democb01",
+      "personCode": "DEMO-CB-01",
+      "fullName": "Cán bộ DEMO 01 (thử nghiệm)",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 8,
+        "monthlyResults": 8,
+        "tasks": 7,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "democb02",
+      "personCode": "DEMO-CB-02",
+      "fullName": "Cán bộ DEMO 02 (thử nghiệm)",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 6,
+        "monthlyResults": 6,
+        "tasks": 3,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "demold01",
+      "personCode": "DEMO-LD-01",
+      "fullName": "Lãnh đạo DEMO (thử nghiệm)",
+      "status": "ACTIVE",
+      "roles": [
+        "UNIT_LEADER:ORGANIZATION"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 1,
+        "tasks": 0,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    },
+    {
+      "username": "testacc",
+      "personCode": "HQT",
+      "fullName": "HQTATTTT",
+      "status": "ACTIVE",
+      "roles": [
+        "STAFF:DEPARTMENT"
+      ],
+      "linked": {
+        "workItems": 3,
+        "monthlyResults": 0,
+        "tasks": 4,
+        "evidences": 0,
+        "plans": 0
+      },
+      "action": "DEACTIVATE_OR_HIDE"
+    }
+  ],
+  "realAccounts": [
+    {
+      "username": "dantn",
+      "personCode": "QT-ADMIN-7259",
+      "fullName": "Trần Nguyên Đán",
+      "status": "ACTIVE",
+      "roles": [
+        "UNIT_LEADER"
+      ],
+      "linked": {
+        "workItems": 0,
+        "monthlyResults": 0,
+        "tasks": 0
+      }
+    }
+  ],
+  "keepData": {
+    "monthlyWorkResults": 15,
+    "personalWorkItems": 32,
+    "tasks": 23,
+    "workEvidences": 0,
+    "plans": 5,
+    "notifications": 177,
+    "auditEvents": 1478,
+    "productItems": 3386,
+    "workCatalogEntries": 348,
+    "orgUnits": 11,
+    "persons": 39,
+    "accounts": 24,
+    "roleGrants": 25
+  }
+}

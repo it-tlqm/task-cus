@@ -1,0 +1,3408 @@
+{
+  "generatedAt": "2026-10-22T03:02:22.488Z",
+  "source": "D:\\thanhnx\\OpenCode\\talung-cus-work\\docs\\Dữ liệu-file-hai-quan-gui\\Danh sách.xlsx",
+  "checksum": "ab13cac7d39269f9e6287f319ef44c6534cc17fa9cb650a29a17c8c312337651",
+  "dryRun": false,
+  "db": "postgresql://postgres.ekswvjbpqblssxcdwagi:***@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres",
+  "report": {
+    "units": [
+      {
+        "excel": "Hải quan cửa khẩu Quốc tế Tà Lùng",
+        "action": "MATCH",
+        "prodId": "5ea70971-541a-4d6f-9d2b-48828473cb8c",
+        "prodCode": "HQCK_TALUNG",
+        "prodName": "Hải quan cửa khẩu Quốc tế Tà Lùng",
+        "how": "exact",
+        "renameTo": null,
+        "staffCount": 5
+      },
+      {
+        "excel": "Lãnh đạo đơn vị",
+        "action": "MATCH",
+        "prodId": "7a712d69-5b33-4ae2-9c03-e48630933fea",
+        "prodCode": "BAN_LANH_DAO",
+        "prodName": "Lãnh đạo đơn vị",
+        "how": "exact",
+        "renameTo": null,
+        "staffCount": 4
+      },
+      {
+        "excel": "Bộ phận Nghiệp vụ Hải quan",
+        "action": "MATCH",
+        "prodId": "98bb55cb-bc05-4d68-9616-e5d64f72236c",
+        "prodCode": "BP_NGHIEPVU_A",
+        "prodName": "Bộ phận Nghiệp vụ A (Thủ tục Hải quan)",
+        "how": "token-subset",
+        "renameTo": "Bộ phận Nghiệp vụ Hải quan",
+        "staffCount": 7
+      },
+      {
+        "excel": "Bộ phận CNTT",
+        "action": "CREATE",
+        "prodId": null,
+        "prodCode": null,
+        "prodName": null,
+        "how": null,
+        "renameTo": null,
+        "staffCount": 0
+      },
+      {
+        "excel": "Bộ phận điều tra CBL",
+        "action": "CREATE",
+        "prodId": null,
+        "prodCode": null,
+        "prodName": null,
+        "how": null,
+        "renameTo": null,
+        "staffCount": 0
+      },
+      {
+        "excel": "Bộ phận Phúc tập & KT STQ",
+        "action": "MATCH",
+        "prodId": "844183dc-d957-4b7c-bc5a-d9939d016fd4",
+        "prodCode": "BỘ PHẬN PHÚC TẬP _ KTSTQ",
+        "prodName": "Tổng hợp",
+        "how": "fuzzy-code",
+        "renameTo": "Bộ phận Phúc tập & KT STQ",
+        "staffCount": 1
+      },
+      {
+        "excel": "Bộ phận TH & Báo cáo",
+        "action": "NEEDS_DECISION",
+        "prodId": null,
+        "prodCode": "BP_TONGHOP_D",
+        "prodName": "Bộ phận Tổng hợp & Báo cáo D",
+        "how": "similar-0.70",
+        "renameTo": null,
+        "staffCount": 1
+      },
+      {
+        "excel": "Bộ phận Công tác Đảng",
+        "action": "CREATE",
+        "prodId": null,
+        "prodCode": null,
+        "prodName": null,
+        "how": null,
+        "renameTo": null,
+        "staffCount": 0
+      },
+      {
+        "excel": null,
+        "action": "KEEP_UNMATCHED",
+        "prodId": "f5bc937e-8b13-49d0-bf02-1d4469a14d9c",
+        "prodCode": "BP_TONDONG_C",
+        "prodName": "Bộ phận Xử lý nghiệp vụ tồn đọng C",
+        "how": null,
+        "renameTo": null,
+        "staffCount": 1
+      },
+      {
+        "excel": null,
+        "action": "KEEP_UNMATCHED",
+        "prodId": "68be8b6e-8340-4084-bf83-853ea1bf1233",
+        "prodCode": "BP_GIAMSAT_B",
+        "prodName": "Bộ phận Kiểm tra giám sát B (Barie & kho, bãi)",
+        "how": null,
+        "renameTo": null,
+        "staffCount": 10
+      },
+      {
+        "excel": null,
+        "action": "KEEP_UNMATCHED",
+        "prodId": "f8cccd24-eb0e-4cd5-a571-e20a301e586f",
+        "prodCode": "BP_TONGHOP_D",
+        "prodName": "Bộ phận Tổng hợp & Báo cáo D",
+        "how": null,
+        "renameTo": null,
+        "staffCount": 1
+      },
+      {
+        "excel": null,
+        "action": "KEEP_UNMATCHED",
+        "prodId": "3cf32e5a-b7d4-4577-aab2-abf9e0c6a710",
+        "prodCode": "KT_MGH_03",
+        "prodName": "Kế toán, MGH",
+        "how": null,
+        "renameTo": null,
+        "staffCount": 1
+      }
+    ],
+    "persons": [
+      {
+        "name": "Lê Văn Hậu",
+        "code": null,
+        "prodId": null,
+        "action": "CREATE",
+        "email": "haulv0302@gmail.com",
+        "phone": "986863838",
+        "groups": [
+          null
+        ],
+        "roles": [
+          "Phó trưởng Hải quan khu vực"
+        ],
+        "account": null
+      },
+      {
+        "name": "Hoàng Văn Bằng",
+        "code": "CB-016",
+        "prodId": "b0277fdf-7ce2-4785-875c-d7c91be18dfc",
+        "action": "MATCH",
+        "email": "Banghv73@gmail.com",
+        "phone": "988066468",
+        "groups": [
+          null,
+          "Lãnh đạo đơn vị"
+        ],
+        "roles": [
+          "Phó trưởng Hải quan cửa khẩu"
+        ],
+        "account": "cb016"
+      },
+      {
+        "name": "Nông Xuân Ánh",
+        "code": "CB-017",
+        "prodId": "413c7222-8c6d-4747-bcbb-f73ba5f47bb4",
+        "action": "MATCH",
+        "email": "xuananhhqcb@gmail.com",
+        "phone": "0989116226 0813226886",
+        "groups": [
+          null,
+          "Lãnh đạo đơn vị"
+        ],
+        "roles": [
+          "Phó trưởng Hải quan cửa khẩu"
+        ],
+        "account": "cb017"
+      },
+      {
+        "name": "Trần Nguyên Đán",
+        "code": "QT-ADMIN-7259",
+        "prodId": "2b0716ab-fc51-460d-9fcd-5eea81fffae6",
+        "action": "MATCH",
+        "email": "dantrannguyen85@gmail.com",
+        "phone": "947595985",
+        "groups": [
+          null,
+          "Lãnh đạo đơn vị"
+        ],
+        "roles": [
+          "Phó trưởng Hải quan cửa khẩu"
+        ],
+        "account": "dantn"
+      },
+      {
+        "name": "Nguyễn Hải Yên",
+        "code": "CB-002",
+        "prodId": "06027969-df21-4b5c-9063-518dd15bbefa",
+        "action": "MATCH",
+        "email": "nucleovn@gmail.com",
+        "phone": "914996337",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Trưởng nhóm"
+        ],
+        "account": "cb002"
+      },
+      {
+        "name": "Nguyễn Đình Giang",
+        "code": "CB-001",
+        "prodId": "4371e64e-9639-4e2a-ac43-eb9ec6c5dd78",
+        "action": "MATCH",
+        "email": "dinhgiangtl@gmail.com",
+        "phone": "977773714",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Trưởng nhóm"
+        ],
+        "account": "cb001"
+      },
+      {
+        "name": "Lô Thùy Ly",
+        "code": "CB-004",
+        "prodId": "bd1b0ffb-aaec-45eb-b86b-87bd55506497",
+        "action": "MATCH",
+        "email": "lothuyly1979@gmail.com",
+        "phone": "0366061031 0987093168",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb004"
+      },
+      {
+        "name": "Lê Quốc Hưng",
+        "code": "CB-007",
+        "prodId": "458de7ce-4317-4814-a466-1e80409e575f",
+        "action": "MATCH",
+        "email": "lequochung25081992@gmail.com",
+        "phone": "915025819",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb007"
+      },
+      {
+        "name": "Bế Hoài Châu",
+        "code": "CB-014",
+        "prodId": "521f0977-ca77-4c5b-9a52-2f7e91129ff5",
+        "action": "MATCH",
+        "email": "bechau97hqcb@gmail.com",
+        "phone": "986396888",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb014"
+      },
+      {
+        "name": "Hà Thị Dung",
+        "code": "CB-009",
+        "prodId": "b010d956-d0bd-4e0f-b915-7d2d0eea2aa1",
+        "action": "MATCH",
+        "email": "dungcb1984@gmail.com",
+        "phone": "0984498637",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan",
+          "Bộ phận CNTT"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb009"
+      },
+      {
+        "name": "Đặng Minh Được",
+        "code": "CB-008",
+        "prodId": "1e15d58d-4d1f-410c-b666-18bb08160637",
+        "action": "MATCH",
+        "email": "dangduoc2809@gmail.com",
+        "phone": "973279666",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb008"
+      },
+      {
+        "name": "Nguyễn Mạnh Toàn",
+        "code": "CB-013",
+        "prodId": "5aaaa0be-7ca0-4bf7-9720-6afd9ef1ee85",
+        "action": "MATCH",
+        "email": "toannmstc@gmail.com",
+        "phone": "982847768",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb013"
+      },
+      {
+        "name": "Triệu Văn Hòa",
+        "code": "CB-010",
+        "prodId": "14449275-1d2a-42ef-8f82-383fb1802a70",
+        "action": "MATCH",
+        "email": "hoaftv.sctcb@gmail.com",
+        "phone": "822636388",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb010"
+      },
+      {
+        "name": "Trương Hồng Thắng",
+        "code": "CB-012",
+        "prodId": "1718d514-4106-4c5d-988b-976c56c507ea",
+        "action": "MATCH",
+        "email": "truonghongthang@gmail.com",
+        "phone": "948144369",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan",
+          "Bộ phận CNTT"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb012"
+      },
+      {
+        "name": "Đinh Đức Hoàng",
+        "code": "CB-005",
+        "prodId": "8adec8e5-1a7e-4619-be94-ff88e2628a95",
+        "action": "MATCH",
+        "email": "hoanghqcb@yahoo.com.vn",
+        "phone": "964699899",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb005"
+      },
+      {
+        "name": "Tô Văn Thụ",
+        "code": "CB-011",
+        "prodId": "0ce8e7b2-8781-49ce-8e54-58d862e20f81",
+        "action": "MATCH",
+        "email": null,
+        "phone": null,
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb011"
+      },
+      {
+        "name": "Phạm Linh Thuận",
+        "code": "CB-015",
+        "prodId": "4b7cc3d6-f72b-4b3d-9381-ee7f8548f9c9",
+        "action": "MATCH",
+        "email": null,
+        "phone": null,
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb015"
+      },
+      {
+        "name": "Hoàng Đức Hạnh",
+        "code": "CB-112",
+        "prodId": "dd09af19-c38f-482a-8bf4-4e66100efd07",
+        "action": "MATCH",
+        "email": null,
+        "phone": null,
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": null
+      },
+      {
+        "name": "Nguyễn Mạnh Hiên",
+        "code": "CB-006",
+        "prodId": "7fa7df63-0ec2-49e0-850b-1ccc13d04f90",
+        "action": "MATCH",
+        "email": "Manhhien761311@gmail.com",
+        "phone": "0942922633",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb006"
+      },
+      {
+        "name": "Phương Khánh Hạ",
+        "code": "CB-003",
+        "prodId": "31e563eb-effd-4b46-a585-2e0ed24c6f3c",
+        "action": "MATCH",
+        "email": "ha.pk812@gmail.com",
+        "phone": "0834326988",
+        "groups": [
+          "Bộ phận Nghiệp vụ Hải quan"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb003"
+      },
+      {
+        "name": "Hoàng Văn Huynh",
+        "code": "CB-101",
+        "prodId": "6988412f-1326-43e6-a5be-b6c86aa546cb",
+        "action": "MATCH",
+        "email": "Huynhvkscbphong1@gmail.com",
+        "phone": "824181888",
+        "groups": [
+          "Bộ phận điều tra CBL"
+        ],
+        "roles": [
+          "Trưởng nhóm"
+        ],
+        "account": null
+      },
+      {
+        "name": "Lã Trần Minh",
+        "code": "CB-102",
+        "prodId": "88d81266-35ae-40be-a879-93a5501e96c8",
+        "action": "MATCH",
+        "email": "labolacon@gmail.com",
+        "phone": "914595556",
+        "groups": [
+          "Bộ phận điều tra CBL"
+        ],
+        "roles": [
+          "Phó nhóm"
+        ],
+        "account": null
+      },
+      {
+        "name": "Nông Đức Thiện",
+        "code": "CB-103",
+        "prodId": "5d0abe1e-eb4e-4397-bcb9-6869d20d9000",
+        "action": "MATCH",
+        "email": "thientlcbg92@gmail.com",
+        "phone": "968105976",
+        "groups": [
+          "Bộ phận điều tra CBL"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": null
+      },
+      {
+        "name": "Tống Thái Nam",
+        "code": "CB-104",
+        "prodId": "7358fdf3-1a72-4f0e-bdce-9694f4fe8ddb",
+        "action": "MATCH",
+        "email": "Namkiemsoat@gmail.com",
+        "phone": "0988299636",
+        "groups": [
+          "Bộ phận điều tra CBL"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": null
+      },
+      {
+        "name": "Đặng Minh Tuấn",
+        "code": "CB-111",
+        "prodId": "03985a65-9ecf-4ad2-8c32-a0ee9c5eb72d",
+        "action": "MATCH",
+        "email": null,
+        "phone": null,
+        "groups": [
+          "Bộ phận điều tra CBL"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": null
+      },
+      {
+        "name": "Trần Minh Hoàng",
+        "code": "CB0018",
+        "prodId": "b3930971-7079-4013-9d0c-ff2116695719",
+        "action": "MATCH",
+        "email": "hoangcaobang@gmail.com",
+        "phone": "912423663",
+        "groups": [
+          "Bộ phận phúc tập & KTSTQ",
+          "Bộ phận TH & Báo cáo",
+          "Bộ phận Công tác Đảng"
+        ],
+        "roles": [
+          "Trưởng nhóm",
+          "Công chức"
+        ],
+        "account": "cb0018"
+      },
+      {
+        "name": "Lý Thị Hương",
+        "code": "CB-100",
+        "prodId": "7308c44e-06fe-42a5-addf-0a1d8cd7a74e",
+        "action": "MATCH",
+        "email": "thihuongly379@gmail.com",
+        "phone": "982783784",
+        "groups": [
+          "Bộ phận phúc tập & KTSTQ",
+          "Bộ phận TH & Báo cáo"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": null
+      },
+      {
+        "name": "Lâm Nhật Anh",
+        "code": "CB-105",
+        "prodId": "58b5d56f-89e2-456d-8a76-3810adfda377",
+        "action": "MATCH",
+        "email": "lamanh.huc@gmail.com",
+        "phone": "0913530616",
+        "groups": [
+          "Bộ phận phúc tập & KTSTQ",
+          "Bộ phận TH & Báo cáo"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": null
+      },
+      {
+        "name": "Nguyễn Tuấn Anh",
+        "code": "CB-020",
+        "prodId": "d9da76c0-83ca-4482-b31b-57a2f0334039",
+        "action": "MATCH",
+        "email": "xegheplientinh@gmail.com",
+        "phone": "0906175336",
+        "groups": [
+          "Bộ phận phúc tập & KTSTQ",
+          "Bộ phận TH & Báo cáo"
+        ],
+        "roles": [
+          "Công chức"
+        ],
+        "account": "cb020"
+      },
+      {
+        "name": "Long Trọng Giáp",
+        "code": "CB-106",
+        "prodId": "725d93ab-476e-4b80-8371-8515af9df23f",
+        "action": "MATCH",
+        "email": "longtronggiap@gmail.com",
+        "phone": "982889389",
+        "groups": [
+          "Hợp đồng lao động 111"
+        ],
+        "roles": [
+          "Hợp đồng lao động 111"
+        ],
+        "account": null
+      },
+      {
+        "name": "Hoàng Đức Trung",
+        "code": "CB-107",
+        "prodId": "36baf3a8-deec-480b-abbf-b5d37c27b438",
+        "action": "MATCH",
+        "email": "ductrung1991@gmail.com",
+        "phone": "914382685",
+        "groups": [
+          "Hợp đồng lao động 111"
+        ],
+        "roles": [
+          "Hợp đồng lao động 111"
+        ],
+        "account": null
+      },
+      {
+        "name": "Triệu Văn Giáp",
+        "code": "CB-108",
+        "prodId": "c1cd76a1-c119-4141-8835-37dfd7383468",
+        "action": "MATCH",
+        "email": null,
+        "phone": "941330198",
+        "groups": [
+          "Hợp đồng lao động 111"
+        ],
+        "roles": [
+          "Hợp đồng lao động 111"
+        ],
+        "account": null
+      },
+      {
+        "name": "Bế Thị Hồng",
+        "code": "CB-109",
+        "prodId": "ba1e83f8-1511-4b6e-9716-7ee310a19816",
+        "action": "MATCH",
+        "email": null,
+        "phone": "379800552",
+        "groups": [
+          "Hợp đồng lao động 111"
+        ],
+        "roles": [
+          "Hợp đồng lao động 111"
+        ],
+        "account": null
+      },
+      {
+        "name": "Nông Thế Đạt",
+        "code": "CB-110",
+        "prodId": "25edb9f7-eb03-4efc-b45c-9b720aa8226d",
+        "action": "MATCH",
+        "email": null,
+        "phone": "862892898",
+        "groups": [
+          "Hợp đồng lao động 111"
+        ],
+        "roles": [
+          "Hợp đồng lao động 111"
+        ],
+        "account": null
+      },
+      {
+        "name": "Hoàng Văn Bách",
+        "code": "CB-113",
+        "prodId": "e2e1c60a-7e29-4aba-8e17-8982a63c886f",
+        "action": "MATCH",
+        "email": "hoangvanbach02071989@gmail.com",
+        "phone": "0382392374",
+        "groups": [
+          "Hợp đồng lao động 111"
+        ],
+        "roles": [
+          "Hợp đồng lao động 111"
+        ],
+        "account": null
+      }
+    ],
+    "assignments": [],
+    "tx": [
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thu NSNN",
+        "prodId": "0ae4b21d-4615-4551-ad73-a08e294fda26",
+        "prodCode": "NV-01",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác dự toán thu NSNN",
+        "prodId": "508d67d7-6af2-430d-b853-700dcee066e0",
+        "prodCode": "NV-02",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý thuế đối với hàng hoá XNK",
+        "prodId": "0f338a17-37c8-4bc8-bfce-4c0a8273047f",
+        "prodCode": "NV-03",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác MGH, không thu thuế",
+        "prodId": "817a8137-6a10-4e92-9d0d-599508d611fd",
+        "prodCode": "NV-04",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác ghi nhãn, xuất xứ hàng hoá XNK",
+        "prodId": "74a56fdf-5072-416f-8957-7591887777c8",
+        "prodCode": "NV-05",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác theo dõi thu, nộp, quản lý và sử dụng phí HQ và lệ phí hàng hoá, PTVT quá cảnh",
+        "prodId": "148b53ed-e7b4-4a17-986e-528497437918",
+        "prodCode": "NV-06",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thu thập thông tin QLRR",
+        "prodId": "4271b6b1-0843-4461-888c-880a94e45134",
+        "prodCode": "NV-07",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm tra mặt hàng lưỡng dụng, áp dụng mức thuế khác nhau",
+        "prodId": "659a2db7-d3b5-4170-bd33-fe01a6ecda76",
+        "prodCode": "NV-08",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác SHTT",
+        "prodId": "3c95698d-72cb-45df-bb87-5f678c351e18",
+        "prodCode": "NV-09",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác phân loại hàng hoá XNK",
+        "prodId": "fb781d03-c849-4d26-8e70-70a5f7f271b0",
+        "prodCode": "NV-10",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm định và phân tích phân loại hàng hoá XNK",
+        "prodId": "38a39d88-9d64-449b-827d-adce9600f721",
+        "prodCode": "NV-11",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý đưa hàng về bảo quản",
+        "prodId": "713d9639-8483-4bcb-b620-e308d42cd2d5",
+        "prodCode": "NV-12",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác giám sát thực hiện thủ tục huỷ/sửa/ giải phóng hàng",
+        "prodId": "7c8689ec-361f-46f0-ab71-a12671acb1ef",
+        "prodCode": "NV-13",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm tra, giám sát hải quan",
+        "prodId": "e2e2ecb6-f220-4901-baa8-6eeffc310ab6",
+        "prodCode": "NV-14",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý cơ sở gia công",
+        "prodId": "c1a46d3c-4615-466c-b829-17bd140729d0",
+        "prodCode": "NV-15",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý KNQ, địa điểm tập kết",
+        "prodId": "93bbe797-c127-41be-981d-be88c1dac157",
+        "prodCode": "NV-16",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý cửa hàng miễn thuế",
+        "prodId": "9e1b3c5e-4c05-4e82-85d8-08f6770c3584",
+        "prodCode": "NV-17",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý, sử dụng trang thiết bị kiểm tra giám sát",
+        "prodId": "a7e04073-b741-4c75-a063-b2f17a2d3dc9",
+        "prodCode": "NV-18",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác đối với PTVT đường bộ XC, NC, QC",
+        "prodId": "a00bca09-722e-4a1d-b127-982a876f6a6b",
+        "prodCode": "NV-19",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm tra, giám sát hải quan đối với hành khách XNC",
+        "prodId": "98311de3-5659-40d3-9b5f-36bee147f15a",
+        "prodCode": "NV-20",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác đối với hàng hoá của CDBG",
+        "prodId": "2895a80f-6e91-4d54-aa82-afdbfafc10e0",
+        "prodCode": "NV-21",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác giám sát Hải quan đối với hàng hóa vận chuyển chịu sự giám sát hải quan",
+        "prodId": "c3b56d43-211d-442b-8eda-2f3f61b18f11",
+        "prodCode": "NV-22",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác giám sát hải quan đối với hàng hóa đưa vào, lưu giữ, đưa ra KVGS",
+        "prodId": "1de5ffce-5f96-4fef-bad0-ad3458c1f5ac",
+        "prodCode": "NV-23",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý, sử dụng máy soi hành lý",
+        "prodId": "627f69e8-4b05-448d-966c-2f87248e9101",
+        "prodCode": "NV-24",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác xử lý hàng hoá tồn đọng",
+        "prodId": "4df7a7a9-a752-4800-8cf0-287191438962",
+        "prodCode": "NV-25",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác CCHC, HĐH Hải quan",
+        "prodId": "fb9ec0ef-074c-4283-b77e-d436a55cd757",
+        "prodCode": "NV-26",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác chuyển đổi số",
+        "prodId": "95f54dd2-e835-4c78-82f2-d0e114c182f9",
+        "prodCode": "NV-27",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác phát triển quan hệ đối tác HQ - DN",
+        "prodId": "e87de034-7832-44df-ab1a-c179b92a4ccb",
+        "prodCode": "NV-28",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác hợp tác quốc tế",
+        "prodId": "5cfbfab5-322b-4dcb-bdfe-6a279ed562d5",
+        "prodCode": "NV-29",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm soát nội bộ",
+        "prodId": "5c8e8e3d-b327-4da2-b4d1-3f1ca21bd3df",
+        "prodCode": "NV-30",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý và lưu trữ hồ sơ",
+        "prodId": "3ca3fb7b-f2a7-4bff-b869-782069c3137a",
+        "prodCode": "NV-31",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý ấn chỉ và niêm phong Hải quan",
+        "prodId": "d318a815-49ee-4033-b961-b1082c26db25",
+        "prodCode": "NV-32",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tiếp nhận hồ sơ",
+        "prodId": "52ccf348-217c-4653-bda8-e47ebf5c17e6",
+        "prodCode": "NV-33",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm tra C/O",
+        "prodId": "3bb2dfd4-aad9-4875-979a-a823adb42693",
+        "prodCode": "NV-34",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác phúc tập hồ sơ XNK",
+        "prodId": "61c9458e-729b-4061-be55-09d0a0276eab",
+        "prodCode": "NV-35",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác Rà soát chính sách thuế, mã HS",
+        "prodId": "f3f29a1a-faee-49f3-b6b8-3642f9f610ec",
+        "prodCode": "NV-36",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác báo cáo định kỳ, đột xuất",
+        "prodId": "9502c318-f567-494e-be03-85933469ed03",
+        "prodCode": "NV-37",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tham mưu chính xử lý các vụ việc vi phạm về thủ tục hải quan",
+        "prodId": "de9e44c0-0206-4300-8462-ab0c3e859d37",
+        "prodCode": "NV-38",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thực hiện công tác trị giá hải quan (cập nhật, tham vấn, chỉ đạo cấp trên...)",
+        "prodId": "d306bec5-bab8-486f-add2-c214e08acb1e",
+        "prodCode": "NV-39",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tư vấn, hỗ trợ doanh nghiệp thực hiện thủ tục hải quan đối với hàng hóa xuất nhập khẩu.",
+        "prodId": "e4cc80cd-1fa4-4aa1-837b-e6f1b28cdd5d",
+        "prodCode": "NV-40",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thực hiện các báo cáo định kỳ. báo cáo đột xuất liên quan.",
+        "prodId": "1795d2ff-095d-4fc9-b86c-85c5f8d95cd7",
+        "prodCode": "NV-41",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác hủy tờ khai đối với các tờ khai chưa thông quan.",
+        "prodId": "13fdef9d-65e3-4538-97fe-9e516a77f17a",
+        "prodCode": "NV-42",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tiếp nhận tờ khai sửa bổ sung đối với các tờ khai thay đổi về mã hàng và thuế",
+        "prodId": "d48d01bf-c236-4565-a1ba-3355a9969e03",
+        "prodCode": "NV-43",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thực hiện hồi báo đối với các lô hàng KNQ theo quy định.",
+        "prodId": "1af5c7d9-7935-4f1b-89a7-de201f9f114b",
+        "prodCode": "NV-44",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý và sử dụng đối với các loại niêm phong hải quan, trang TBCD",
+        "prodId": "f005628c-2d50-4105-9ead-e15e0e46e752",
+        "prodCode": "NV-45",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác hủy tờ khai đối với các tờ khai đã thông quan trên DVCTT",
+        "prodId": "86d33818-dd38-4b25-b452-f16342d31a11",
+        "prodCode": "NV-46",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tiếp nhận TK sửa bổ sung đối với các TK không thay đổi về mã hàng và thuế trên DVCTT",
+        "prodId": "dae6725f-d537-44dd-8fbe-8796661bba9d",
+        "prodCode": "NV-47",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tiếp nhận hồ sơ giấy (huỷ, MGH, sửa…)",
+        "prodId": "e83c74bb-ad1c-4591-8e1b-289071ef5f6f",
+        "prodCode": "NV-48",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tham mưu trả lời vướng mắc, kiến nghị và đề xuất",
+        "prodId": "e79d052a-03f9-498e-88e0-8a7e008a928e",
+        "prodCode": "NV-49",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm tra hồ sơ XNK (Getin/getout, Hệ thống QL PTVT XNC, GPS, BBBG điện tử, CKS …)",
+        "prodId": "99ccce5b-3e1d-49cc-8f97-0550c6b6d9a2",
+        "prodCode": "NV-50",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác theo dõi hàng hoá vận chuyển đi/đến (BIA/BOA)",
+        "prodId": "9154a42c-8e23-4a49-b056-09e2268bb7cf",
+        "prodCode": "NV-51",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác theo dõi trạng thái seal GPS",
+        "prodId": "9f262d49-f770-42fa-b186-20efa0497938",
+        "prodCode": "NV-52",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác giám sát tại kho, bãi địa điểm tập kết",
+        "prodId": "ba808e68-299e-4282-a388-a823b06e165d",
+        "prodCode": "NV-53",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác theo dõi quản lý trang thiết bị kiểm tra giám sát",
+        "prodId": "a49c58c4-56ff-44cf-9c37-2faf22aaea38",
+        "prodCode": "NV-54",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý hàng hoá XNK tồn tại địa điểm (KNQ/địa điểm tập kết)",
+        "prodId": "6449a1ea-3a0b-4bf8-acf4-74fdd732aca7",
+        "prodCode": "NV-55",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm tra thực tế hàng hóa",
+        "prodId": "69b953c9-b8f0-4109-8c15-cf0598d2b73c",
+        "prodCode": "NV-56",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác kiểm tra hành khách XNC và CDBG, Soi chiếu hành lý",
+        "prodId": "bfa7f97a-4124-4b9d-a7ae-cfec79d95f5c",
+        "prodCode": "NV-57",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thực hiện kiểm tra, kiểm soát phương tiện vận chuyển hàng hóa qua lại biên giới",
+        "prodId": "34189504-4c54-4085-9f27-dfbb014183f8",
+        "prodCode": "NV-58",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thông quan đối với tờ khai PTVT tạm xuất",
+        "prodId": "817b53f2-5f4e-47b1-b6ff-76b2b2d61101",
+        "prodCode": "NV-59",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tiếp nhận và thông quan đối với tờ khai PTVT tái nhập",
+        "prodId": "7116f80c-f39e-4e70-9df4-2f763e55b87f",
+        "prodCode": "NV-60",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tiếp nhận và xác nhận bản kê 119 trên hệ thống.",
+        "prodId": "0ceb573e-4a61-4de3-8f06-e84c70f4df35",
+        "prodCode": "NV-61",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tham mưu, đề xuất và báo cáo kế hoạch về công tác thu ngân sách.",
+        "prodId": "d5eba4f7-09ab-4c25-8b63-8dee980cbe8b",
+        "prodCode": "NV-62",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thực hiện và báo cáo hàng ngày về công tác thu ngân sách",
+        "prodId": "ee6c7165-71d7-4717-8011-4957e7e34f3d",
+        "prodCode": "NV-63",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thu phí tờ khai, tờ khai phương tiện, Hàng quá cảnh.",
+        "prodId": "ce96d3b0-27a9-47ff-acb4-f478050a24a7",
+        "prodCode": "NV-64",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thực hiện công tác Hoàn thuế, không thu thuế.",
+        "prodId": "3a39fa40-117d-4ecd-b619-57092d020cf1",
+        "prodCode": "NV-65",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác thực hiện kiểm hóa đối với các lô hàng nhập trả, xuất trả, buộc tái xuất.",
+        "prodId": "88c7ea22-d760-4609-aebc-a365e792cb08",
+        "prodCode": "NV-66",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tham mưu chính xử lý các vụ việc vi phạm về kiểm tra, giám sát, kiểm soát hải quan",
+        "prodId": "38a26a1d-0826-4e1d-94c9-3910005a4f7b",
+        "prodCode": "NV-67",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tắm tình hình nội, ngoại biên",
+        "prodId": "7cfd5f28-f6ec-43bb-b806-10101ff769f9",
+        "prodCode": "NV-68",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác Đo thời gian thông quan, giải phóng hàng hóa",
+        "prodId": "604075ef-479a-4f93-8df8-ce94a405d5e7",
+        "prodCode": "NV-69",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tổng hợp kết quả đo thời gian giải phóng hàng",
+        "prodId": "d5d5a4a0-c5e8-458f-8df5-4e6e52ab5a72",
+        "prodCode": "NV-70",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác tổ chức các Hội nghị đối thoại giữa Cục Hải quan  với cộng đồng doanh nghiệp, một số Hiệp hội doanh nghiệp",
+        "prodId": "68f2f4cc-82dd-47f9-8dfe-eb382a1d1830",
+        "prodCode": "NV-71",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tiếp nhận, cấp số tiếp nhận và theo dõi đối với hợp đồng gia công lại/phụ lục hợp đồng gia công lại",
+        "prodId": "4eabc693-96bc-4f38-938a-594a670e3a4d",
+        "prodCode": "NV-72",
+        "action": "SAME",
+        "factor": 1.64
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "prodId": "2785aa4a-73d6-4e0d-afb1-8da81c4d2de6",
+        "prodCode": "NV-165",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ; phê duyệt tờ khai vận chuyển độc lập (nơi đi); niêm phong hàng hóa và thực hiện tác nghiệp BOA\nKiểm tra tình trạng cont, niêm phong HQ (nơi đến); thực hiện tác nghiệp BIA\nKiểm tra hồ sơ, thông tin và thực hiện tác nghiệp bàn giao hàng hóa đối với hàng hóa vận chuyển kết hợp (nơi đi)",
+        "prodId": "70803aef-e1a5-40ad-b2dd-a43396e33768",
+        "prodCode": "NV-141",
+        "action": "SAME",
+        "factor": 5
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "- Quản lý, theo dõi các trang thiết bị chuyên dùng; Đảm bảo các trang thiết bị chuyên dùng hoạt động ổn định (hệ thống camera giám sát, seal định vị)",
+        "prodId": "47716e6c-c94d-45e8-a5ed-6d7c4447cd38",
+        "prodCode": "NV-104",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ; phê duyệt tờ khai vận chuyển độc lập (nơi đi); niêm phong hàng hóa và thực hiện tác nghiệp BOA\nKiểm tra tình trạng cont, niêm phong HQ (nơi đến); thực hiện tác nghiệp BIA\nKiểm tra hồ sơ, thông tin và thực hiện tác nghiệp bàn giao hàng hóa đối với hàng hóa vận chuyển kết hợp (nơi đi)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ hải quan (luồng vàng, đỏ)",
+        "prodId": "efad83e5-3816-4283-916b-96b9a6c35453",
+        "prodCode": "NV-162",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Theo dõi, quản lý hồ sơ giải phóng hàng.",
+        "prodId": "cf664d38-9da4-4e79-889f-5b55a41f2730",
+        "prodCode": "NV-78",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo định kỳ về tham vấn trị giá QĐ 181",
+        "prodId": "c35c8dc5-1eb5-411f-9c3c-65875e609847",
+        "prodCode": "NV-79",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo định kỳ về  xâm phạm quyền SHTT theo Kế hoạch 1421",
+        "prodId": "61bb7ca6-a807-4a44-a1b5-793154cb1b4f",
+        "prodCode": "NV-80",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo DMRR về phân loại",
+        "prodId": "7452d23e-2db1-496e-855d-41f12be4b546",
+        "prodCode": "NV-81",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Rà soát Hệ thống GTT02 theo nhiệm vụ QĐ 51/QĐ-HQKV16 ngày 20/8/2025 của Chi cục HQKV 16 về thành lập Tổ chuyên trách rà soát trị giá hải quan.",
+        "prodId": "28ebbfc6-1aab-4e8b-81ce-35ff5b851b51",
+        "prodCode": "NV-82",
+        "action": "SAME",
+        "factor": 7.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "- Quản lý, theo dõi các trang thiết bị chuyên dùng; Đảm bảo các trang thiết bị chuyên dùng hoạt động ổn định (hệ thống camera giám sát, seal định vị)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo định kỳ tháng",
+        "prodId": "8037a6d1-e5dc-42e7-8479-867a59825bfe",
+        "prodCode": "NV-85",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo tình hình thu NSNN hàng ngày",
+        "prodId": "601d495b-b99b-4d60-a41f-589b2cc94af8",
+        "prodCode": "NV-86",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác Kế toán thu NSNN",
+        "prodId": "69c7fa9e-9d3a-4467-89ec-c45b6a28abb3",
+        "prodCode": "NV-87",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Công tác quản lý thuế",
+        "prodId": "26dc994d-bc07-4a4f-a4a1-35332dc7446d",
+        "prodCode": "NV-88",
+        "action": "SAME",
+        "factor": 2.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Nghiệp vụ giám sát hải quan đối với hàng hóa đưa vào, lưu giữ, đưa ra KVGS",
+        "prodId": "5eba08ef-9228-4607-b2a3-cc389b1a9b7d",
+        "prodCode": "NV-89",
+        "action": "SAME",
+        "factor": 1.88
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện thủ tục giám sát Hải quan đối với hàng hóa vận chuyển chịu sự giám sát hải quan",
+        "prodId": "b159f830-3fb5-4e3a-9b64-3eb1c4aaacf7",
+        "prodCode": "NV-114",
+        "action": "SAME",
+        "factor": 5
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thủ tục hải quan, kiểm tra, giám sát hải quan đối với hành khách xuất nhập cảnh",
+        "prodId": "1738a8ee-2dbb-44f2-9586-daf721c8b0cd",
+        "prodCode": "NV-117",
+        "action": "CONFLICT",
+        "from": 2,
+        "to": 2.04
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ hải quan (luồng vàng, đỏ)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tiếp nhận, thực hiện thủ tục theo quy định đối với tờ khai PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "prodId": "11754500-5643-425c-861d-548099e272c3",
+        "prodCode": "NV-105",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra thực tế hàng hóa theo quy trình thủ tục hải quan; thực hiện hoàn thành việc kiểm tra thực tế hàng hóa thông qua chức năng CEA/CEE và lập phiếu ghi kết quả kiểm tra, thông quan/GPH/đề xuất mang hàng về bảo quản theo quy định",
+        "prodId": "86dac05e-5da1-4624-b811-134d95609b3e",
+        "prodCode": "NV-108",
+        "action": "SAME",
+        "factor": 6.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ hải quan (luồng vàng, đỏ)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện thủ tục giám sát Hải quan đối với hàng hóa vận chuyển chịu sự giám sát hải quan",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo số liệu ngày",
+        "prodId": "5b1b9e8f-fd3f-4078-a87f-19d7ee9b19de",
+        "prodCode": "NV-99",
+        "action": "SAME",
+        "factor": 0.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra thực tế hàng hóa theo quy trình thủ tục hải quan; thực hiện hoàn thành việc kiểm tra thực tế hàng hóa thông qua chức năng CEA/CEE và lập phiếu ghi kết quả kiểm tra, thông quan/GPH/đề xuất mang hàng về bảo quản theo quy định",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "- Quản lý, theo dõi các trang thiết bị chuyên dùng; Đảm bảo các trang thiết bị chuyên dùng hoạt động ổn định (hệ thống camera giám sát, seal định vị)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "- Quản lý, theo dõi các trang thiết bị chuyên dùng; Đảm bảo các trang thiết bị chuyên dùng hoạt động ổn định (hệ thống camera giám sát, seal định vị)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tiếp nhận, thực hiện thủ tục theo quy định đối với tờ khai PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện thủ tục giám sát Hải quan đối với hàng hóa vận chuyển chịu sự giám sát hải quan",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra thực tế hàng hóa theo quy trình thủ tục hải quan; thực hiện hoàn thành việc kiểm tra thực tế hàng hóa thông qua chức năng CEA/CEE và lập phiếu ghi kết quả kiểm tra, thông quan/GPH/đề xuất mang hàng về bảo quản theo quy định",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Theo dõi chuyển phát và xử lý đối với bì thư không chuyển phát được",
+        "prodId": "aa3de813-ac32-496a-a9a4-819de817d9e0",
+        "prodCode": "NV-109",
+        "action": "SAME",
+        "factor": 2.72
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tiếp nhận; phân loại; bóc bì văn bản gửi đến cơ quan",
+        "prodId": "29158184-9bd8-43d4-8fb1-d11f60e1d45a",
+        "prodCode": "NV-110",
+        "action": "SAME",
+        "factor": 6.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra tính chính xác của văn bản và file văn bản kèm theo; Cấp số đến, cập nhật thời hạn xử lý; Chọn văn bản công khai/ không công khai",
+        "prodId": "39dcf7b9-1cae-4377-b121-f75da52a6c71",
+        "prodCode": "NV-111",
+        "action": "SAME",
+        "factor": 7.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra trang thiết bị; điều kiện bảo quản và tình trạng tài liệu trong kho",
+        "prodId": "40e9dfce-05be-40fb-b076-2cf63c4e0aa5",
+        "prodCode": "NV-112",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Phúc tập hồ sơ và kiểm tra sau thông quan",
+        "prodId": "92113146-1b72-458f-a044-0a2956377427",
+        "prodCode": "NV-113",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện thủ tục giám sát Hải quan đối với hàng hóa vận chuyển chịu sự giám sát hải quan",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Lập danh sách hồ sơ doanh nghiệp trọng điểm, trình phê duyệt",
+        "prodId": "e8a0340b-c6a5-4f82-9d6b-872157a00b78",
+        "prodCode": "NV-115",
+        "action": "SAME",
+        "factor": 11.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ hải quan (luồng vàng, đỏ)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thủ tục hải quan, kiểm tra, giám sát hải quan đối với hành khách xuất nhập cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Xây dựng/phát hành Biểu số liệu ngày",
+        "prodId": "b8fc3ca4-d588-4e63-8dda-db436d63935f",
+        "prodCode": "NV-118",
+        "action": "SAME",
+        "factor": 1.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Xây dựng/phát hành Biểu số liệu tuần",
+        "prodId": "1d276157-8adb-463f-a353-0b705b4fe8cf",
+        "prodCode": "NV-119",
+        "action": "SAME",
+        "factor": 1.5
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Xây dựng/phát hành Biểu số liệu tháng",
+        "prodId": "8389c048-107a-42cc-a0eb-e5c4751930a6",
+        "prodCode": "NV-120",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tham gia các cuộc họp, hội nghị, tập huấn, bồi dưỡng",
+        "prodId": "cd5e6497-9677-439d-820c-3640e15e26d8",
+        "prodCode": "NV-121",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Xử lý các vướng mắc của CBCC, Doanh nghiệp, khắc phục sự cố trong sử dụng trang thiết bị CNTT, vận hành, sử dụng các phần mềm ứng dụng của Ngành (Quản lý phương tiện, cửa khẩu số)",
+        "prodId": "0a01dc62-c7cc-495b-8341-276c17072c67",
+        "prodCode": "NV-122",
+        "action": "SAME",
+        "factor": 2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Phúc tập hồ sơ hải quan",
+        "prodId": "95470253-db2f-4a41-b683-a2837c7985a5",
+        "prodCode": "NV-123",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "dự báo số thu theo tuần Dự báo số thu theo tháng Dự báo số thu theo quý",
+        "prodId": "19b5ce4d-3f8d-4dd3-92f3-c2b8b3d03597",
+        "prodCode": "NV-124",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thu thập, theo dõi và tổng hợp số liệu thu NSNN, bao gồm: Tình hình XK, NK và số thu chi tiết từng mặt hàng theo tuần, tháng, quý; Nghiên cứu, tìm hiểu và tổng hợp các tài liệu, thông tin có liên quan đến thu NSNN trong và ngoài địa bàn",
+        "prodId": "33c82ee8-8d05-4343-be02-a5b929c38883",
+        "prodCode": "NV-125",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tham mưu, chuẩn bị số liệu phục vụ Đội trưởng đi họp",
+        "prodId": "9d845207-8b81-478c-984f-8a6b63f91d5e",
+        "prodCode": "NV-126",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "V/v phối hợp trao đổi thông tin hàng hóa gửi KNQ tại cửa khẩu xuất",
+        "prodId": "d5feeb31-5917-4301-8d85-a0410b1350c0",
+        "prodCode": "NV-127",
+        "action": "SAME",
+        "factor": 2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Phối hợp trao đổi thông tin tờ khai TNTX",
+        "prodId": "97e6e518-fba2-4235-a4c3-ae2f4ac3e79c",
+        "prodCode": "NV-173",
+        "action": "CONFLICT",
+        "from": 6,
+        "to": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo nội ngoại biên",
+        "prodId": "a17ae687-531f-4b14-b1aa-577ccf2ef9f6",
+        "prodCode": "NV-129",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "về việc phối hợp trao đổi thông tin hàng hóa gửi KNQ tại cửa khẩu xuất",
+        "prodId": "d2f83237-8741-4d24-a12c-74a01e98c4d3",
+        "prodCode": "NV-134",
+        "action": "CONFLICT",
+        "from": 2,
+        "to": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kết quả triển khai thí điểm phầm mềm Quản lý, làm thủ tục đối với phương tiện vận tải xuất nhập cảnh",
+        "prodId": "eb411561-15a0-4daf-b2e1-94c513e8ad02",
+        "prodCode": "NV-131",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kế hoạch thu ngân sách tháng",
+        "prodId": "182b1e36-b5f5-4e92-a408-ec9c053bc6c8",
+        "prodCode": "NV-132",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Báo cáo thu NSNN tuần",
+        "prodId": "53e01b5c-bbca-47f2-812c-3cd062561bb2",
+        "prodCode": "NV-133",
+        "action": "SAME",
+        "factor": 1.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Về việc phối hợp trao đổi thông tin hàng hóa gửi KNQ tại cửa khẩu xuất",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Phối hợp xác minh thông tin tờ khai tạm nhập tái xuất",
+        "prodId": "e0093f26-e486-4fa7-a270-839ea5a1c94f",
+        "prodCode": "NV-172",
+        "action": "CONFLICT",
+        "from": 6,
+        "to": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Cung cấp số liệu về gian lận xuất xứ, chuyển tải bất hợp pháp theo cv 21399",
+        "prodId": "45b324dd-af51-4a64-85d6-2658621c036b",
+        "prodCode": "NV-136",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "BÁO CÁO Kết quả thực hiện công tác cải cách hành chính và Kiểm soát thủ tục hành chính Quý/năm",
+        "prodId": "6106a737-c3da-47a7-bea3-736c6889638e",
+        "prodCode": "NV-137",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tham mưu thực hiện công tác phát triển quan hệ đối tác hải quan doanh nghiệp, tuyên truyền hướng dẫn, giải đáp vướng mắc và cung cấp thông tin cho người khai hải quan,",
+        "prodId": "52dc06d0-0e00-421a-aabe-034f5ffb3a06",
+        "prodCode": "NV-138",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tham mưu kiểm tra rà soát các mảng công tác nghiệp vụ (Công tác quản lý Kho,bãi địa điểm tập kết, cửa hàng miễn thuế, cơ sở gia công, thuế, miễn giảm hoàn, GTT02, tham vấn)",
+        "prodId": "4a97d2d2-9fcc-4ec0-932a-9daac5d90237",
+        "prodCode": "NV-139",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tham mưu quản lý và sử dụng vận hành máy soi hành lý, thiết bị đo phóng xạ cầm tay;",
+        "prodId": "3194209d-4437-4b89-bc41-d5ae163653ac",
+        "prodCode": "NV-140",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ, phê duyệt tờ khai vận chuyển độc lập (nơi đi); niêm phong hàng hóa và thực hiện tác nghiệp BOA Kiểm tra tình trạng cont, niêm phong HQ (nơi đến), thực hiện tác nghiệp BIA Kiểm tra hồ sơ, thông tin và thực hiện tác nghiệp bàn giao hàng hóa đối với hàng hóa vận chuyển kết hợp (nơi đi)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Quản lý, theo dõi các trang thiết bị chuyên dùng; Đảm bảo các trang thiết bị chuyên dùng hoạt động ổn định (hệ thống camera giám sát, seal định vị, hệ thống RFID, hệ thống cảnh báo phóng xạ, hệ thống bộ đàm,...) Kiểm tra sơ cấp nồng độ phóng xạ khi có cảnh báo",
+        "prodId": "b5556091-5dd8-499c-9de6-665d45395861",
+        "prodCode": "NV-142",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện thủ tục tham vấn trị giá đối với hàng hóa xuất, nhập khẩu",
+        "prodId": "92206bd2-30a7-4445-b650-29626eb65669",
+        "prodCode": "NV-169",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "tham mưu Kiểm tra, rà soát công tác mã số, giá",
+        "prodId": "8e57850e-ab48-4c61-baa5-4ad2ba715fe4",
+        "prodCode": "NV-144",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thu thập, cập nhật thông tin về tổ chức, cá nhân hoạt động xuất nhập khẩu",
+        "prodId": "4aca6d63-b036-431f-9bfa-675021ca899b",
+        "prodCode": "NV-145",
+        "action": "SAME",
+        "factor": 2.92
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "tham mưu thực hiện kiểm tra, giám sát hàng hoá liên quan đến sở hữu trí tuế",
+        "prodId": "0955a258-8942-493a-b3a4-60717016495b",
+        "prodCode": "NV-146",
+        "action": "SAME",
+        "factor": 7.8
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra thực tế hàng hoá (luồng đỏ)",
+        "prodId": "0fdbc337-2cc3-49df-8386-8c8e53ff6059",
+        "prodCode": "NV-147",
+        "action": "SAME",
+        "factor": 6.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện thủ tục khai sửa tờ khai (ama), xử lý hồ sơ trên dịch vụ công",
+        "prodId": "57f3caf8-5974-426c-9443-edfbd5fb044c",
+        "prodCode": "NV-148",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Lập biên bản làm việc, chứng nhận giám sát hải quan theo các QĐ;",
+        "prodId": "0f9642b7-f00e-4183-a29f-aca2d247dd3e",
+        "prodCode": "NV-149",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra chi tiết hồ sơ hải quan xuất khẩu, nhập khẩu (thông quan, giải phóng hàng, đưa hàng về bảo quản)",
+        "prodId": "a7b4f686-0620-465b-a7d0-eccc1bba6c3a",
+        "prodCode": "NV-150",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ; phê duyệt tờ khai vận chuyển độc lập (nơi đi); BOA",
+        "prodId": "52273201-daae-4e56-a7c2-184fa084c72e",
+        "prodCode": "NV-151",
+        "action": "SAME",
+        "factor": 5
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Lập biên bản; Niêm phong hàng hóa và thực hiện bàn giao hải quan nơi đi",
+        "prodId": "a27034c8-a512-4ad3-abe1-9b36f728e166",
+        "prodCode": "NV-152",
+        "action": "SAME",
+        "factor": 5
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra tình trạng cont, niêm phong HQ (nơi đến); thực hiện tác nghiệp BIA",
+        "prodId": "9586a435-6092-4d4b-abcd-5fbf7a439041",
+        "prodCode": "NV-153",
+        "action": "SAME",
+        "factor": 5
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Giám sát việc thay đổi trạng thái hàng hoá; Giám sát việc thay đổi thông tin phương tiện chứa hàng…",
+        "prodId": "c798e80b-155f-48e4-91a6-2148f4331769",
+        "prodCode": "NV-154",
+        "action": "SAME",
+        "factor": 4.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ chở hàng hoá quá cảnh, hàng hoá xuất khẩu, nhập khẩu tại kho, bãi, địa điểm trong khu vực giám sát hải quan (tiếp nhận tờ khai trên Hệ thống quản lý phương tiện)",
+        "prodId": "a1cf3c5a-3d8f-463a-83f8-12591da8fed8",
+        "prodCode": "NV-155",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Xác nhận hàng hoá thực xuất, nhập (tờ khai đăng ký tại đơn vị)",
+        "prodId": "3cfab5aa-080f-41f5-861d-71ea947d487f",
+        "prodCode": "NV-156",
+        "action": "SAME",
+        "factor": 1.88
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Xác nhận hàng hoá thực xuất (hàng chuyển cửa khẩu",
+        "prodId": "f465e9ab-d4a2-4a81-bc3a-237cc7fd4ea8",
+        "prodCode": "NV-157",
+        "action": "SAME",
+        "factor": 1.88
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Soi chiếu hành lý của hành khách XNC",
+        "prodId": "737d07fe-263c-42fc-a4a8-cb380c371ffc",
+        "prodCode": "NV-167",
+        "action": "SAME",
+        "factor": 2.04
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Trực kiểm tra, giám sát hải quan ngoài giờ trưa, chiều hoặc tối tại cửa khẩu, kho bãi địa điểm",
+        "prodId": "718b9c4a-98a4-4047-9508-e1b31d59128f",
+        "prodCode": "NV-159",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tham gia các cuộc họp (học tập nghị quyết, sinh hoạt chi bộ, công tác chuyên môn, ...)",
+        "prodId": "a07bce94-87eb-4626-868d-0a384bd4aa3b",
+        "prodCode": "NV-160",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện các công việc khác được giao (tổng hợp báo cáo, phối hợp xử lý công tác nghiệp vụ; trực ban; trực nghiệp vụ; hỗ trợ người khai hải quan,…)",
+        "prodId": "83d1ac22-8816-4705-b2dd-401a8aabd336",
+        "prodCode": "NV-161",
+        "action": "SAME",
+        "factor": 2.3
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra hồ sơ hải quan (luồng vàng, đỏ)",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Theo dõi, quản lý hồ sơ mang hàng hóa về bảo quản, giải phóng hàng.",
+        "prodId": "bf2e2301-501c-461f-8719-418bc8504877",
+        "prodCode": "NV-163",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tiếp nhận, thực hiện thủ tục theo quy định đối với tờ khai PTVT đường bộ xuất cảnh, nhập cảnh, quá cảnh",
+        "prodId": "66b07b1a-2667-4074-9885-df03ffb37788",
+        "prodCode": "NV-164",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Kiểm tra, giám sát PTVT đường bộ/đường sắt xuất cảnh, nhập cảnh, quá cảnh",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Giám sát hàng ngày đối với cửa hàng miễn thuế và thực hiện các thủ tục liên quan khi phát sinh.",
+        "prodId": "0f395bb1-cb36-4e3d-b921-67fabd97991b",
+        "prodCode": "NV-166",
+        "action": "SAME",
+        "factor": 4.2
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Soi chiếu hành lý của hành khách XNC",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Theo dõi, quản lý lượng hàng tạm nhập tái xuất, tạm xuất tái nhập trên Hệ thống.",
+        "prodId": "2eff4886-5793-449a-9dae-bff2cd88fe51",
+        "prodCode": "NV-168",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Thực hiện thủ tục tham vấn trị giá đối với hàng hóa xuất, nhập khẩu",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tiếp nhận, trả lời các yêu cầu tư vấn (qua điện thoại hoặc trực tiếp",
+        "prodId": "4e1f6668-1fe1-4d8b-bb03-273ca06e09ac",
+        "prodCode": "NV-170",
+        "action": "SAME",
+        "factor": 3.24
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Cung cấp hồ sơ tài liệu",
+        "prodId": "c840debd-08bf-4fe4-b464-641979f5b2c6",
+        "prodCode": "NV-171",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Phối hợp xác minh thông tin tờ khai tạm nhập tái xuất",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Phối hợp trao đổi thông tin tờ khai TNTX",
+        "action": "DUPLICATE_IN_FILE"
+      },
+      {
+        "dept": "Bộ phân Nghiệp vụ Hải quan",
+        "title": "Tham gia các cuộc họp đơn vị định kỳ",
+        "prodId": "f2acce49-3f15-412d-9bb8-8eaae60f08e0",
+        "prodCode": "NV-174",
+        "action": "SAME",
+        "factor": 0.2
+      },
+      {
+        "dept": "Bộ phận CNTT",
+        "title": "Công tác quản lý an toàn an ninh mạng",
+        "prodId": "931a0de0-5fe6-4f98-bb80-b19314275f1b",
+        "prodCode": "CNTT-01",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận CNTT",
+        "title": "Công tác thống kê Hải quan",
+        "prodId": "7d4ef9a6-b80e-4fb4-9d97-4782c1556780",
+        "prodCode": "CNTT-02",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận CNTT",
+        "title": "Công tác quản lý vận hành hệ thống CNTT",
+        "prodId": "3da8ab23-03cb-4686-8cc6-262bc6a0eb55",
+        "prodCode": "CNTT-03",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận CNTT",
+        "title": "Công tác quản lý, hướng dẫn sử dụng DVCTT",
+        "prodId": "73535e3d-77e4-4472-b40c-195fdd988e82",
+        "prodCode": "CNTT-04",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận CNTT",
+        "title": "Công tác đảm bảo hậu cần cho các hội nghị, cuộc họp tại trụ sở cơ quan",
+        "prodId": "cb4d7690-ada1-4fdc-8a7f-31b0097c3126",
+        "prodCode": "CNTT-05",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác kiểm soát, phòng chống buôn lậu, phòng chống ma tuý, SHTT",
+        "prodId": "1348224f-f43d-4400-90f1-4fdc442d4592",
+        "prodCode": "CBL-01",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác tổ chức các biện pháp nghiệp vụ KSHQ",
+        "prodId": "718a2bc0-6aa1-48fc-9c1e-cba299502b44",
+        "prodCode": "CBL-02",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác tham mưu XL VPHC",
+        "prodId": "ff24a53a-5bb9-4a63-a56a-707235b7cc36",
+        "prodCode": "CBL-03",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác điều tra theo trình tự tố tụng hình sự",
+        "prodId": "0bb31252-c53b-49a7-9164-9ecbd52d2881",
+        "prodCode": "CBL-04",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác trực ban đường dây nóng",
+        "prodId": "1a862206-5a02-4bf7-a2e3-6cd08eaa0062",
+        "prodCode": "CBL-05",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác phối hợp và cung cấp thông tin",
+        "prodId": "af2ada62-3ab3-4389-b3d3-b14df5dc02d9",
+        "prodCode": "CBL-06",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác tham mưu nghiệp vụ KSHQ",
+        "prodId": "37d75eb7-9be2-4fe3-b28e-e00bd6d3454d",
+        "prodCode": "CBL-07",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác thực hiện nhiệm vụ chuyên môn (Quản lý, sử dụng TTB, PT KSHQ)",
+        "prodId": "7a0faed6-5a1b-45a0-a116-b3955d5a136c",
+        "prodCode": "CBL-08",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác tuần tra KSHQ",
+        "prodId": "95a44f42-399b-4a0c-b79d-34b68380cb0b",
+        "prodCode": "CBL-09",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác tham mưu xử lý vướng mắc XPVPHC",
+        "prodId": "fe6298bd-b7cd-45d5-b64e-2acfd05c0368",
+        "prodCode": "CBL-10",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Công tác tổ chức triển khai thực hiện văn bản pháp luật về công tác xử lý vi phạm hành chính",
+        "prodId": "15a42832-fb8a-4483-a89f-5a98bd37d617",
+        "prodCode": "CBL-11",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Quản trị Hệ thống thống tin quản lý vi phạm hải quan - QLVP14",
+        "prodId": "1afc3e78-c59c-494a-b5b5-8b3235f87bc3",
+        "prodCode": "CBL-12",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tuần tra hải quan (Tổ trưởng tuần tra,  trực tiếp tham gia thực hiện tuần tra, thẩm định và hoàn thiện hồ sơ).",
+        "prodId": "b609c5b1-ce35-42bb-ae7e-7e1a60335831",
+        "prodCode": "CBL-13",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Quyết buộc thực hiện biện pháp khắc phục hậu quả",
+        "prodId": "4ff101e3-67d1-49ec-a5bb-8eef3ce2effb",
+        "prodCode": "CBL-14",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Thực hiện cập nhật, ghi sổ, nhật ký nghiệp vụ do bộ phận kiểm soát quản lý theo quy định",
+        "prodId": "c3ad3182-7b7f-4523-bd52-936999338589",
+        "prodCode": "CBL-15",
+        "action": "SAME",
+        "factor": 1.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Thực hiện công tác tổng hợp báo định kỳ, đột xuất đúng nội dung và thời gian quy định liên quan đến lĩnh vực được phân công",
+        "prodId": "61ed3c00-8748-4c3d-8033-6375d0bd4258",
+        "prodCode": "CBL-16",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Cập nhật, ghi sổ, nhật ký nghiệp vụ theo Quyết định số 46/QĐ-HQTL ngày 20/7/2026",
+        "prodId": "d526407a-fad6-4839-b912-2c7bed74e648",
+        "prodCode": "CBL-17",
+        "action": "SAME",
+        "factor": 0.6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Thực hiện thu thập thông tin, nắm tình hình địa bàn theo Quyết định số 46/QĐ-HQTL ngày 20/7/2026",
+        "prodId": "01cb3bb1-1368-40d8-b598-8982308443f9",
+        "prodCode": "CBL-18",
+        "action": "SAME",
+        "factor": 0.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Lập phương án xác lập quyền sở hữu toàn dân",
+        "prodId": "634dc9d9-3ccb-4df8-b319-b2629689fac9",
+        "prodCode": "CBL-19",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Sử dụng máy phát hiện ma tuý",
+        "prodId": "2a029d23-d786-4f15-9758-521c328fcb30",
+        "prodCode": "CBL-20",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tham gia phối hợp cùng Công an xã bắt giữ đối tượng Tàng trữ trái phép chất ma tuý",
+        "prodId": "be24aba5-0d14-496b-bc2e-63f7c389d785",
+        "prodCode": "CBL-21",
+        "action": "SAME",
+        "factor": 6.4
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Báo cáo nhanh bắt giữ ma tuý",
+        "prodId": "5303628a-d7a4-4760-b025-4f6a64a5b050",
+        "prodCode": "CBL-22",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Báo cáo quản lý, sử dụng trang thiết bị chuyên dùng tháng",
+        "prodId": "9de0dfba-da70-4c1c-8a25-71667d71e913",
+        "prodCode": "CBL-23",
+        "action": "SAME",
+        "factor": 0.6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Báo cáo công tác phòng, chống ma tuý tháng",
+        "prodId": "99e29a23-3e1a-4e9f-9068-4d86cf85bd04",
+        "prodCode": "CBL-24",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Báo cáo công tác phòng, chống ma tuý mục tiêu quốc gia tháng",
+        "prodId": "5c4631b8-0595-4afe-a834-837f9665d9cc",
+        "prodCode": "CBL-25",
+        "action": "SAME",
+        "factor": 6.4
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Báo cáo quản lý, sử dụng trang thiết bị chuyên dùng Quý/ năm",
+        "prodId": "c5e2e6e8-bd5e-4e42-afab-0a1e274690a4",
+        "prodCode": "CBL-26",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Quản lý, sử dụng thông tin qua đường dây nóng",
+        "prodId": "f4a85504-2f0b-4503-bc89-3bbd99441579",
+        "prodCode": "CBL-27",
+        "action": "SAME",
+        "factor": 1.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tập huấn bồi dưỡng nghệp vụ chuyên sâu về kiểm soát hải quan",
+        "prodId": "10786087-2133-4ad7-aef5-9903335ce972",
+        "prodCode": "CBL-28",
+        "action": "SAME",
+        "factor": 1.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Kiểm tra, thống kê, tổng hợp số liệu tài sản công chuẩn bị cho công tác bàn giao",
+        "prodId": "45ab13f4-835c-4b77-9152-50466be46dbc",
+        "prodCode": "CBL-29",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Nắm tình hình buôn lậu, vân chuyển trái phép hàng hóa qua biên giới.",
+        "prodId": "972d4592-16e8-4f7c-9f5b-c0f2f30134ce",
+        "prodCode": "CBL-30",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Thực hiện khám, phòng chữa bệnh đảm bảo vệ sinh, sức khỏe cho chó nghiệp vụ",
+        "prodId": "5313a571-e5c3-44d5-9586-1798ced321ae",
+        "prodCode": "CBL-31",
+        "action": "SAME",
+        "factor": 0.6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Bảo quản thuốc, trang thiết bị, dụng cụ chữa bệnh, chăm sóc chó nghiêp vụ.",
+        "prodId": "d97d21fa-f11b-4439-affe-c3ac0c5cf44d",
+        "prodCode": "CBL-32",
+        "action": "SAME",
+        "factor": 0.6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tham mưu công tác huấn luyện, quản lý, chăm sóc và sử dụng chó nghiệp vụ",
+        "prodId": "0db54965-b6d5-4e94-b21c-4fda18fc789e",
+        "prodCode": "CBL-33",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Chăm sóc chó nghiệp vụ hàng ngày",
+        "prodId": "671820c5-8008-4cc4-99f7-6c9346fd1531",
+        "prodCode": "CBL-34",
+        "action": "SAME",
+        "factor": 0.6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Huấn luyện và sử dụng chó nghiệp vụ",
+        "prodId": "ebf91977-1822-4382-976c-0d879b6116ce",
+        "prodCode": "CBL-35",
+        "action": "SAME",
+        "factor": 1.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tổ chức kiểm tra việc thực hiện quy định về trang bị quản lý, sử dụng chó nghiệp vụ",
+        "prodId": "814f0e72-8ae4-48f9-a970-914fbf304b59",
+        "prodCode": "CBL-36",
+        "action": "SAME",
+        "factor": 6.6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Xác định mục đích, nhu cầu",
+        "prodId": "c8b9d95d-87ee-4fa5-a80b-ee6ad9afb666",
+        "prodCode": "CBL-37",
+        "action": "SAME",
+        "factor": 4.4
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Thu thập thông tin",
+        "prodId": "b0bd4a93-d076-4e7e-8e9f-c00d573b7f45",
+        "prodCode": "CBL-38",
+        "action": "SAME",
+        "factor": 5.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Xử lý thông tin",
+        "prodId": "9f0d9b70-e4b3-41ff-9d20-d6262131445c",
+        "prodCode": "CBL-39",
+        "action": "SAME",
+        "factor": 10
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Phổ biến thông tin",
+        "prodId": "f916a4fa-561e-4e0f-a360-b51ec4388b83",
+        "prodCode": "CBL-40",
+        "action": "SAME",
+        "factor": 1.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Phản hồi, đánh giá và lưu trữ thông tin",
+        "prodId": "3e676662-5dfa-4724-8b3e-3d1d9817ad6c",
+        "prodCode": "CBL-41",
+        "action": "SAME",
+        "factor": 1.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Triển khai thực hiện các biện pháp nghiệp vụ kiểm soát hải quan: lập kế hoạch triển khai, báo cáo kết quả (vận động quần chúng, tuần tra hải quan, điều tra nghiên cứu nắm tình hình, sưu tra, thu thập xử lý thông tin, xây dựng cơ sở bí mật, trinh sát ngoại tuyến, trinh sát kỹ thuật, đấu tranh chuyên án)",
+        "prodId": "e53e3cf4-9730-4b2a-8de7-b67300d602c9",
+        "prodCode": "CBL-42",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Lập, thẩm định, quản lý, sử dụng Hồ sơ nghiệp vụ kiểm soát hải quan: Điều tra nghiên cứu nắm tình hình;Sưu tra;Cơ sở bí mật; Đấu tranh chuyên án",
+        "prodId": "a4ecacdf-3ee4-4664-bc32-ebfd75ae775a",
+        "prodCode": "CBL-43",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Kiểm tra, lập hồ sơ xác định hành vi vi phạm và lập biên bản vi phạm hành chính",
+        "prodId": "c2302bad-c4b9-44af-aced-4bce0b298ad0",
+        "prodCode": "CBL-44",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Xác minh vụ việc vi phạm hành chính; Xác định thẩm quyền xử phạt vi phạm hành chính; Xác định trị giá tang vật vi phạm; Xử lý tang vật bị tạm giữ",
+        "prodId": "cada6ab8-f57f-483a-a0db-63c6f033aa14",
+        "prodCode": "CBL-45",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Nghiên cứu hồ sơ và soạn thảo báo cáo, dự thảo các mẫu ấn chỉ trình người có thẩm quyền ra quyết định xử phạt vi phạm hành chính; Trình ra Quyết định xử phạt vi phạm hành chính; Phát hành, theo dõi thi hành Quyết định xử phạt vi phạm hành chính; Vào sổ theo dõi hồ sơ, cập nhật hệ thống QLVP14; Lưu trữ-giao nhận hồ sơ; Xây dựng, trình cấp có thẩm quyền phê duyệt phương án xử lý tài sản",
+        "prodId": "decd3dc8-ad94-4525-8050-5e35b4fe7009",
+        "prodCode": "CBL-46",
+        "action": "SAME",
+        "factor": 14.4
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tham mưu thực hiện trình tự thủ tục xử lý tài sản được xác lập quyền sở hữu toàn dân là tang vật, phương tiện vi phạm hành chính bị tịch thu theo phương án được phê duyệt",
+        "prodId": "c81445c2-cf6e-4a02-b923-a38671698f30",
+        "prodCode": "CBL-47",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tham mưu, hướng dẫn tổ chức thực hiện Quyết định cưỡng chế thi hành quyết định hành chính theo phân công",
+        "prodId": "84e80447-dece-41dc-9667-16382ee9861b",
+        "prodCode": "CBL-48",
+        "action": "SAME",
+        "factor": 7.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tham mưu giải quyết khiếu nại các quyết định hành chính, hành vi hành chính; tham gia tố tụng tại Toà án",
+        "prodId": "fe42f814-f060-443e-b17d-80e3798d820c",
+        "prodCode": "CBL-49",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Đối với các vụ án, vụ việc nghiêm trọng, phức tạp, có yếu tố nước ngoài, được dư luận xã hội quan tâm, tham mưu Đảng ủy, Ban Thường vụ Đảng ủy trực tiếp, kịp thời chỉ đạo các Chi bộ, các đơn vị thực hiện",
+        "prodId": "1d3cd81b-819d-4be4-b132-3e61b9d97bd7",
+        "prodCode": "CBL-50",
+        "action": "SAME",
+        "factor": 10
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Xử lý vụ việc trong đấu tranh chuyên án",
+        "prodId": "9d1f7183-0d0a-4d2b-9456-55b3139be88a",
+        "prodCode": "CBL-51",
+        "action": "SAME",
+        "factor": 14.4
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Xử lý vụ việc trong kiểm tra giám sát và kiểm soát hải quan",
+        "prodId": "a6392f30-0e17-4221-b3b1-24a293fd45b7",
+        "prodCode": "CBL-52",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Xử lý vụ việc theo phối hợp đề nghị của cơ quan chức năng",
+        "prodId": "02fc1d9f-70fa-486d-93c6-a023e8c71296",
+        "prodCode": "CBL-53",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Thực hiện nhiệm vụ trực ban",
+        "prodId": "c4e90296-de50-44d9-88f3-da6a4bbb96a8",
+        "prodCode": "CBL-54",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tham mưu, đầu mối tổ chức triển khai tổ chức thực hiện công tác phối hợp trong lĩnh vực kiểm soát hải quan giữa các đơn vị trong và ngoài ngành",
+        "prodId": "cdc98168-06d7-40b6-8c08-4942394f84d0",
+        "prodCode": "CBL-55",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Tổ chức triển khai thực hiện công tác phối hợp: Phối hợp các hải quan cửa khẩu, ngoài cửa khẩu để kiểm tra thực tế hàng hóa hoặc khám phương tiện, con người, đồ vật theo thủ tục hành chính khi có dấu hiệu nghi vấn vi phạm; Phối hợp kiểm tra, giám sát theo chỉ đạo, chuyên đề, kế hoạch; Phối hợp với các chủ thể quyền để thực hiện công tác kiểm soát biên giới đối với các nhãn hiệu được bảo hộ.",
+        "prodId": "bc947028-f969-4fbd-9b56-f14bffaee366",
+        "prodCode": "CBL-56",
+        "action": "SAME",
+        "factor": 11.2
+      },
+      {
+        "dept": "Bộ phận điều tra CBL",
+        "title": "Cung cấp thông tin nghiệp vụ kiểm soát theo yêu cầu phục vụ công tác điều tra, xác minh của các cơ quan trong và ngoài ngành: công an, viện kiểm soát, biên phòng, cảnh sát biển, ngân hàng nhà nước…",
+        "prodId": "1b69faf3-1ee0-4250-9cc6-aacd418e7128",
+        "prodCode": "CBL-57",
+        "action": "SAME",
+        "factor": 6.6
+      },
+      {
+        "dept": "Bộ phận Phúc tập & KT STQ",
+        "title": "Công tác thu thập thông tin phục vụ công tác KT STQ",
+        "prodId": "20584a0c-2e9a-4345-a6a0-4a76d3e8195e",
+        "prodCode": "PT-01",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận Phúc tập & KT STQ",
+        "title": "Công tác phúc tập hồ sơ hải quan đã thông quan",
+        "prodId": "a6a8079b-9f78-480d-88f5-4a258019b197",
+        "prodCode": "PT-02",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo tổng hợp định kỳ công tác tháng, quý, sơ kết, tổng kết năm",
+        "prodId": "39332ac9-9837-4c2c-aaa7-09ec437e3df5",
+        "prodCode": "TH-01",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo cải cách hành chính, kiểm soát thủ tục hành chính",
+        "prodId": "79c66fb2-494d-4cdc-9767-7ef92b08ca59",
+        "prodCode": "TH-02",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo công tác kiểm soát nội ngành",
+        "prodId": "b0755ba0-de9d-4bd5-b476-90a9670e8c77",
+        "prodCode": "TH-03",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo công tác Văn thư - Lưu trữ",
+        "prodId": "84e4e160-1055-4e30-8b0b-4283228bcda7",
+        "prodCode": "TH-04",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo kết quả thực hiện quy chế dân chủ",
+        "prodId": "1487871f-9889-48e5-9a8e-f278fb9c91f4",
+        "prodCode": "TH-05",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo công tác bảo vệ bí mật nhà nước",
+        "prodId": "4ec77ba2-74ab-4604-878e-8443b1b834ae",
+        "prodCode": "TH-06",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo hình ảnh hoạt động Hải quan",
+        "prodId": "21e0706c-05dd-4b7c-8111-18696e580ed2",
+        "prodCode": "TH-07",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "BC công tác tiếp công dân, giải quyết khiếu nại tố cáo; công tác phòng chống tham nhũng",
+        "prodId": "53d59c30-81a7-48c0-b405-ed4395448e3c",
+        "prodCode": "TH-08",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "BC tình hình, kết quả thực hiện kết luận, kiến nghị thanh tra, kiểm tra",
+        "prodId": "12eece2b-1b87-4b3b-bd9a-c840f4b4233b",
+        "prodCode": "TH-09",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "BC kết quả kiểm soát tài sản thu nhập hàng năm",
+        "prodId": "6f7dd2fd-ff88-46da-9de4-37bbbd4a3a3e",
+        "prodCode": "TH-10",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo danh sách đi nước ngoài giải quyết việc riêng hàng năm",
+        "prodId": "be492eb6-1108-4cbc-8c26-4aa8edc52aa9",
+        "prodCode": "TH-11",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo công tác đánh giá xếp loại tháng, năm",
+        "prodId": "28e3506d-f4c8-4511-8e41-096f84bb331b",
+        "prodCode": "TH-12",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo tình hình quản lý, sử dụng ấn chỉ",
+        "prodId": "e49b768a-abb2-44d5-b63a-42dfba53d560",
+        "prodCode": "TH-13",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo tình hình quản lý, sử dụng vũ khí, công cụ hỗ trợ, vật liệu nổ",
+        "prodId": "2d1bff73-c2fa-4744-abc3-32d9c5805fcf",
+        "prodCode": "TH-14",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo tình hình quản lý, sử dụng máy móc, thiết bị chuyên dùng và báo cáo tự kiểm tra, đánh giá việc quản lý sử dụng tài sản chuyên dùng tại đơn vị",
+        "prodId": "24bbee22-4d9c-47a4-9cd7-b43038383ecd",
+        "prodCode": "TH-15",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo doanh nghiệp dự kiến kiểm tra sau thông quan",
+        "prodId": "7189158e-0a1c-4de3-a1b5-92b0f598f8a4",
+        "prodCode": "TH-16",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo Công tác nội chính, phòng chống tham nhũng lãng phí tiêu cực và Cải cách tư pháp hàng ngày",
+        "prodId": "e5737d74-99d7-4d04-b31b-cf86ac56cf85",
+        "prodCode": "TH-17",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Xây dựng kế hoạch trọng tâm hàng tháng/quý/năm",
+        "prodId": "83bdbde2-2996-42c8-bd8d-55cdf71e815a",
+        "prodCode": "TH-18",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Công tác truyền thông và tuyên truyền trên nền tảng số",
+        "prodId": "d43ca3aa-eee9-4fb1-8c8e-f58c6f15b362",
+        "prodCode": "TH-19",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Công tác tổ chức truyền thông cho các sự kiện lớn của Ngành",
+        "prodId": "aa20c0d2-c0c3-424e-937b-5c6256f928a2",
+        "prodCode": "TH-20",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Xây dựng video clip báo cáo kết quả công tác của đơn vị",
+        "prodId": "d4bb6dc1-95b5-4d89-9655-8fc966ada554",
+        "prodCode": "TH-21",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Công tác thu thập tư liệu hình ảnh, video xây dựng sơ sở dữ liệu tổng kết",
+        "prodId": "32b44192-02bb-42dc-830c-14840ce2fbc4",
+        "prodCode": "TH-22",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Quản lý, chăm sóc cảnh quan công sở",
+        "prodId": "74960983-ec8a-4683-a011-291e783f4176",
+        "prodCode": "TH-23",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo công tác phòng cháy, chữa cháy",
+        "prodId": "24948107-498b-4d1d-9193-cb0765f97204",
+        "prodCode": "TH-24",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Báo cáo công tác nắm tình hình dư luận xã hội theo báo cáo định kỳ tháng, quý, 6 tháng, năm theo công văn số 12-CV/ĐU ngày 28/08/2025 của Đảng ủy",
+        "prodId": "e8fe9efc-5498-44c5-8f1a-db61b8535958",
+        "prodCode": "TH-25",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Kế hoạch kiểm tra, rà soát, hệ thống hóa văn bản quy phạm pháp luật năm 2026",
+        "prodId": "9b9fb734-6eca-4e1e-ae60-6dec95f1996e",
+        "prodCode": "TH-26",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Kế hoạch thực hiện Nghị quyết số 02/NQ-CP ngày 08/01/2026 của Chính phủ về những nhiệm vụ, giải pháp chủ yếu cải thiện môi trường kinh doanh, nâng cao năng lực cạnh tranh quốc gia năm 2026",
+        "prodId": "85b464ac-073c-4d32-801b-653618bc29b9",
+        "prodCode": "TH-27",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Kế hoạch thực hiện Chỉ thị số 17-CT/TW, ngày 21/10/2022 của Ban Bí thư Trung ương Đảng (khoá XIII) “về tăng cường bảo đảm an ninh, an toàn thực phẩm trong tình hình mới”",
+        "prodId": "ba7047bd-dc20-4062-b4f1-a5b1720a7bfb",
+        "prodCode": "TH-28",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Triển khai kiểm tra sau thông quan theo chỉ tiêu được giao (hoặc phát hiện vi phạm trong qúa trình phúc tập hồ sơ)",
+        "prodId": "05e0769b-c664-40c4-a5cb-938dcc1add9b",
+        "prodCode": "TH-29",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tổng hợp số liệu giao ban tuần (Ghi biên bản, thông báo kết luận giao ban)",
+        "prodId": "914a24bc-dd15-40fa-a665-89d8823d7228",
+        "prodCode": "TH-30",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tổng hợp kết quả theo dõi phân loại đánh giá tháng, quý, năm",
+        "prodId": "89dffa6b-99ce-4a12-bab7-e495c112de52",
+        "prodCode": "TH-31",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Xử lý văn bản đi, đến trên hệ thống CCES",
+        "prodId": "240c2b4d-0ad3-4462-bc84-36ebd0f52131",
+        "prodCode": "TH-32",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Định kỳ tổng hợp số liệu trang phục của đơn vị",
+        "prodId": "e0ac9b4b-39f2-4688-b65c-6c685f4f07e0",
+        "prodCode": "TH-33",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Xét công nhận sáng kiến, khả năng nhân rộng, phạm vi ảnh hưởng của sáng kiến, đề tài khoa học",
+        "prodId": "2b0a6c1b-db5f-4726-9849-a4e305e8b6e1",
+        "prodCode": "TH-34",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Theo dõi, đôn đốc việc thực hiện kết luận, kiến nghị",
+        "prodId": "19d19ba4-eb07-4b34-9859-63a207a5b215",
+        "prodCode": "TH-35",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Thực hiện kết luận, kiến nghị thanh tra, kiểm tra, kiểm toán trong và ngoài ngành",
+        "prodId": "092278e0-fdff-4ae5-8b45-b7c3d8186d1b",
+        "prodCode": "TH-36",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận bản kê khai tài sản, thu nhập của cán bộ, công chức trong đơn vị",
+        "prodId": "d4e4657e-1f11-4271-9134-2338d0c50871",
+        "prodCode": "TH-37",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Công tác phối hợp với Đoàn thanh tra, kiểm tra, kiểm toán",
+        "prodId": "e3d6f084-e5c5-4e74-bb0c-4e82b1a65e53",
+        "prodCode": "TH-38",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tổ chức và tham dự Hội thảo, Hội nghị quốc tế trong và ngoài nước, làm việc với đối tác nước ngoài",
+        "prodId": "f52e8249-f37e-40a7-8daa-7a378ed63e67",
+        "prodCode": "TH-39",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Công tác quản lý sử dụng tài sản công",
+        "prodId": "ef3403d6-02cf-430c-aab7-1e8b1b8a23d4",
+        "prodCode": "TH-40",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Quản lý, xử lý tài sản công là tang vật, phương tiện vi phạm hành chính bị tịch thu, hàng hóa tồn đọng được xác lập quyền sở hữu toàn dân về tài sản",
+        "prodId": "3a3a75ef-7123-4337-a587-ab4bf273b2ef",
+        "prodCode": "TH-41",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Sinh hoạt Chi bộ",
+        "prodId": "ce277f6a-ec54-46e2-a4af-0866d1c21e7d",
+        "prodCode": "TH-42",
+        "action": "SAME",
+        "factor": 0.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Soạn thảo văn bản về việc phối hợp trao đổi thông tin hàng hóa gửi KNQ tại cửa khẩu xuất",
+        "prodId": "7ad03786-d74e-447e-87a6-86e9ae83cf7f",
+        "prodCode": "TH-43",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Quản lý, theo dõi các trang thiết bị chuyên dùng; Đảm bảo các trang thiết bị chuyên dùng hoạt động ổn định",
+        "prodId": "031c1d34-9951-44a7-aed9-188f43ad93b3",
+        "prodCode": "TH-44",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Xử lý các văn bản được giao trên CCES",
+        "prodId": "0e48b202-25de-4af2-919e-ddcb9942a0fd",
+        "prodCode": "TH-45",
+        "action": "SAME",
+        "factor": 2.3
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Quản lý an toàn con dấu, thiết bị lưu khóa bí mật; Mở sổ nhật ký sử dụng con dấu theo quy định của pháp luật",
+        "prodId": "d72da3df-47da-4dca-b5cc-7d0a487d8220",
+        "prodCode": "TH-46",
+        "action": "SAME",
+        "factor": 7
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Lưu hồ sơ quản lý con dấu: Các biên bản bàn giao con dấu; Giấy chứng nhận đăng ký mẫu con dấu do Cục Cảnh sát QLHC về TTXH cấp",
+        "prodId": "0044660e-fe4c-4a11-81b0-4f04940b1194",
+        "prodCode": "TH-47",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận, kiểm tra thể thức, thẩm quyền ký văn bản giấy/điện tử; Cấp số, ngày tháng năm văn bản; ký nháy văn bản",
+        "prodId": "719a27cd-927d-4dc8-91af-ba00a6d6a99e",
+        "prodCode": "TH-48",
+        "action": "SAME",
+        "factor": 6.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Đóng dấu, phát hành văn bản",
+        "prodId": "a8bb35d1-7157-4cdc-89bb-4dea3431dea8",
+        "prodCode": "TH-49",
+        "action": "SAME",
+        "factor": 2.12
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Số hóa văn bản giấy đẩy lên Hệ thống CCES (đối với phát hành văn bản giấy)",
+        "prodId": "e4dc61d1-4536-4754-a294-2f4d6bedb105",
+        "prodCode": "TH-50",
+        "action": "SAME",
+        "factor": 2.4
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận công văn; Phân loại; nhập nơi nhận và địa chỉ vào bì thư; chuyển giao bì thư; in bảng kê văn bản gửi bưu điện",
+        "prodId": "25130a80-3c5b-4ecd-9401-055bd637ba40",
+        "prodCode": "TH-51",
+        "action": "SAME",
+        "factor": 2.28
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Rà soát, đối chiếu số lượng giữa bảng kê và bảng kê bưu phẩm của bưu điện để thống nhất số lượng bì thư chuyển phát",
+        "prodId": "b5208b6d-3279-4f5b-8902-96dd9f121cf9",
+        "prodCode": "TH-52",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Thực hiện các thủ tục: cập nhật thông tin sao y, sao lục trên hệ thống, chuyển văn thư Cục, làm thủ tục sao bản giấy (nếu có yêu cầu), trình Lãnh đạo có thẩm quyền ký sao y, sao lục",
+        "prodId": "a0c06702-b9cb-4558-8854-fc5cb412ce76",
+        "prodCode": "TH-53",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Sắp xếp văn bản gốc (đối với văn bản giấy) và bản chính (đối với văn bản điện tử) và lập hồ sơ, lưu trữ phục vụ khai thác, sử dụng theo đúng quy định",
+        "prodId": "c87f75e1-c206-49c8-8a61-cba0fe6ee2d9",
+        "prodCode": "TH-54",
+        "action": "SAME",
+        "factor": 4.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Đóng dấu đến của cơ quan lên văn bản",
+        "prodId": "b72f136b-de25-4155-908a-a2cb91511340",
+        "prodCode": "TH-55",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Đăng ký văn bản đến lên hệ thống CCES hoặc vào sổ theo dõi đơn, thư tố cáo, khiếu nại…",
+        "prodId": "4c9e19d5-de35-4e20-ba28-b7fe2047594f",
+        "prodCode": "TH-56",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Trình Lãnh đạo có thẩm quyền phân luồng xử lý công văn",
+        "prodId": "cc8c518f-f90f-4466-a47d-4e1f0444dfec",
+        "prodCode": "TH-57",
+        "action": "SAME",
+        "factor": 5.4
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Số hóa văn bản; đẩy file lên hệ thống",
+        "prodId": "3af0ae5f-be48-4720-a950-be969c67ebb3",
+        "prodCode": "TH-58",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Cập nhật danh mục bì văn bản gửi đến đơn vị/cá nhân;  Đóng dấu “Đến” lên bì để chuyển giao",
+        "prodId": "f617b044-b219-4a8b-9f34-2acc67bdd8b1",
+        "prodCode": "TH-59",
+        "action": "SAME",
+        "factor": 5.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tra tìm theo số đến của công văn trên Hệ thống CCES theo phê duyệt của Lãnh đạo có thẩm quyền để chuyển bản giấy cho đơn vị/cá nhân",
+        "prodId": "22286ce0-08ad-4399-b396-6cccb07b1dff",
+        "prodCode": "TH-60",
+        "action": "SAME",
+        "factor": 7
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "In bảng giao nhận và chuyển giao văn bản đến cho đơn vị/cá nhân",
+        "prodId": "5d980a4a-1c95-43cb-9036-9252d12657d3",
+        "prodCode": "TH-61",
+        "action": "SAME",
+        "factor": 6.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận văn bản đến từ trục liên thông của Bộ Tài chính và Hệ thống quản lý điều hành tập trung của Cục Hải quan",
+        "prodId": "9306c9d8-2d8d-4bb6-8fec-8de2c18a0854",
+        "prodCode": "TH-62",
+        "action": "SAME",
+        "factor": 7.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Trình Lãnh đạo phân luồng văn bản trên Hệ thống CCES",
+        "prodId": "2b118cbf-0a72-4999-8114-3df2d9616954",
+        "prodCode": "TH-63",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Phê duyệt văn bản đến đã được chuyển trên Hệ thống CCES cho các đơn vị, cá nhân theo chức năng, nhiệm vụ",
+        "prodId": "a673a546-aa7e-423f-8adc-6301c0f466da",
+        "prodCode": "TH-64",
+        "action": "SAME",
+        "factor": 6.6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận, phân loại, Lập phiếu trình, đóng dấu “Đến”, trình Lãnh đạo đơn vị",
+        "prodId": "eb6a1b1a-4dd5-4300-9822-2e180b41e9b2",
+        "prodCode": "TH-65",
+        "action": "SAME",
+        "factor": 5
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Phân công xử lý văn bản mật đến",
+        "prodId": "30f653c0-cebb-4e9b-9e63-c9e9bed339fd",
+        "prodCode": "TH-66",
+        "action": "SAME",
+        "factor": 2.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Đăng ký vào sổ theo dõi văn bản mật, nhập thông tin bì",
+        "prodId": "f5c2eb28-88a2-407e-a7dd-c254e186023f",
+        "prodCode": "TH-67",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Chuyển giao văn bản mật đến và ký nhận",
+        "prodId": "c284be6d-51c1-42d5-91c6-9a9d806b9be8",
+        "prodCode": "TH-68",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "In bảng kê văn bản để rà soát, đối chiếu tổng hợp số lượng để theo dõi: Kết xuất danh mục văn bản mật đã nhập; rà soát, đối chiếu, tổng hợp số lượng để theo dõi, quản lý",
+        "prodId": "85ff0b43-9343-4612-b012-93d7d49192d6",
+        "prodCode": "TH-69",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Phân loại văn bản cần sao; đăng ký vào sổ theo dõi; trình Lãnh đạo ký sao văn bản; đóng dấu bản sao; Bàn giao bản chính và bản sao cho các đơn vị",
+        "prodId": "ab570678-9b78-4c27-8512-969f078331a0",
+        "prodCode": "TH-70",
+        "action": "SAME",
+        "factor": 5.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Sắp xếp, đánh số tờ, lập hồ sơ bản lưu danh mục ký nhận văn bản đến, phục vụ khai thác, sử dụng theo đúng quy định",
+        "prodId": "bc1c7e12-7776-4491-9542-3858bf3be718",
+        "prodCode": "TH-71",
+        "action": "SAME",
+        "factor": 6.4
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận báo, tạp chí, bản tin và các ấn phẩm khác (nếu có) từ đơn vị cung cấp để phân chia cho các đối tượng theo danh mục đã đăng ký và được phê duyệt",
+        "prodId": "1f29c111-834e-443b-800a-cf85e8311586",
+        "prodCode": "TH-72",
+        "action": "SAME",
+        "factor": 5.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Xây dựng kế hoạch thu thập hồ sơ, tài liệu vào Lưu trữ cơ quan",
+        "prodId": "57bf2ee9-79fa-44ad-808b-e60215578dde",
+        "prodCode": "TH-73",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Giao, Nhận hồ sơ, tài liệu; Thực hiện kiểm tra, đối chiếu danh mục nộp lưu sơ với hồ sơ thực tế",
+        "prodId": "e1b94b77-ea03-4840-8a06-f17e5efb0b79",
+        "prodCode": "TH-74",
+        "action": "SAME",
+        "factor": 7.6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Lập biên bản giao nhận hồ sơ với cá nhân, đơn vị có hồ sơ nộp lưu.",
+        "prodId": "c181d4cc-0a61-42e1-a2fa-b766190046fa",
+        "prodCode": "TH-75",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Vận chuyển tài liệu từ trong kho bảo quản ra phòng chỉnh lý",
+        "prodId": "f27f893c-b88c-416e-9e3f-d6210e3eec7c",
+        "prodCode": "TH-76",
+        "action": "SAME",
+        "factor": 4.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Phân loại, lập hồ sơ và sắp xếp hồ sơ, xác định thời hạn, đánh số tờ, biên mục hồ sơ (đối với hồ sơ vĩnh viễn và mật); Đánh tiêu đề hồ sơ, đánh số hồ sơ, đánh số cặp, hộp",
+        "prodId": "517dcacf-60ae-4c32-b489-ea1d1e893fdc",
+        "prodCode": "TH-77",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Lập danh mục hồ sơ, hệ thống hóa hồ sơ; xây dựng công cụ tra cứu tài liệu lưu trữ và đưa lên giá bảo quản",
+        "prodId": "1f99ff2d-0b19-42bd-b8b8-6a441074236b",
+        "prodCode": "TH-78",
+        "action": "SAME",
+        "factor": 4.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận phiếu yêu cầu khai thác tài liệu của cá nhân, đơn vị",
+        "prodId": "95203be8-ca4e-4a3a-947f-cc227fc1a0dd",
+        "prodCode": "TH-79",
+        "action": "SAME",
+        "factor": 5.6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Thực hiện khai thác hồ sơ, tài liệu đúng với yêu cầu của cá nhân, đơn vị; Sao y/photo tài liệu hoặc cấp bản gốc tài liệu theo quy định",
+        "prodId": "5b3f1906-d047-4ab9-8ca7-fab03eb27f76",
+        "prodCode": "TH-80",
+        "action": "SAME",
+        "factor": 4.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Vào sổ và bàn giao hồ sơ, tài liệu cho đơn vị;",
+        "prodId": "81d9aa9b-4f3e-4149-9100-cdd624dab58c",
+        "prodCode": "TH-81",
+        "action": "SAME",
+        "factor": 0
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tiếp nhận lại tài liệu đơn vị/cá nhân trả; Cất hồ sơ vào đúng vị trí bảo quản trong kho lưu trữ",
+        "prodId": "e4cd9eaa-576d-4f47-a579-97a4072561a6",
+        "prodCode": "TH-82",
+        "action": "SAME",
+        "factor": 5.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Rà soát, lập kế hoạch xác định tài liệu lưu trữ hết thời hạn bảo quản (THBQ) trình Lãnh đạo phê duyệt",
+        "prodId": "85df75bf-eb01-4319-b35f-52000c652734",
+        "prodCode": "TH-83",
+        "action": "SAME",
+        "factor": 4.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Đề nghị cơ quan có thẩm quyền thẩm định; phối hợp cơ quan có thẩm quyền thực hiện công tác thẩm định HSTL dự kiến tiêu hủy.",
+        "prodId": "59907c99-ab17-4ad6-8be7-8fe67cad36b3",
+        "prodCode": "TH-84",
+        "action": "SAME",
+        "factor": 5
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Hoàn thiện hồ sơ sau khi có ý kiến cơ quan thẩm định, trình Lãnh đạo ban hành Quyết định cho phép huỷ tài liệu lưu trữ hết THBQ",
+        "prodId": "010ca010-b59c-4939-a3af-2200397e233c",
+        "prodCode": "TH-85",
+        "action": "SAME",
+        "factor": 4.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tổ chức tiêu huỷ tài liệu, đưa ra khỏi kho lưu trữ; Lập biên bản tiêu huỷ tài liệu hết THBQ",
+        "prodId": "848b65f1-78e7-437d-ae43-9f9ffadbc7a0",
+        "prodCode": "TH-86",
+        "action": "SAME",
+        "factor": 5.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Vệ sinh kho định kỳ",
+        "prodId": "a764f9a4-0d86-4f0d-875c-c91bdc88eddd",
+        "prodCode": "TH-87",
+        "action": "SAME",
+        "factor": 6.4
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Xây dựng kế hoạch trình Lãnh đạo phê duyệt",
+        "prodId": "c031a132-dcd7-4282-8e90-b545d71df683",
+        "prodCode": "TH-88",
+        "action": "SAME",
+        "factor": 2.08
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Phân loại hồ sơ tài liệu có chức BMNN; sắp xếp bảo quản theo khu vực riêng; thống kê HSTL có chức BMNN; phục vụ khai thác sử dụng; rà soát, tiến hành đóng dấu giải mật theo quy định.",
+        "prodId": "cbfca375-6810-4c8f-9b1f-7c8d0ae1ea33",
+        "prodCode": "TH-89",
+        "action": "SAME",
+        "factor": 4.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Ghi chép, cập nhật số liệu tài liệu trong kho và lập sổ thống kê, danh mục hồ sơ tài liệu lưu trữ",
+        "prodId": "57b2e427-85ea-4383-bf04-c9c69e037454",
+        "prodCode": "TH-90",
+        "action": "SAME",
+        "factor": 1.92
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Thu thập tư liệu hình ảnh, video xây dựng cơ sở dữ liệu thông tin truyền thông",
+        "prodId": "769c9d28-90a4-48b1-b6a2-7a18a1d15989",
+        "prodCode": "TH-91",
+        "action": "SAME",
+        "factor": 6.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Thu thập thông tin, hình ảnh và biên tập, tin bài, lựa chọn video, hình ảnh; thiết kế poster inforgrap bảo đảm phù hợp định hướng tuyên truyền của Ngành.",
+        "prodId": "279e3681-af16-4c18-80f3-657ad2713c82",
+        "prodCode": "TH-92",
+        "action": "SAME",
+        "factor": 3.4
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Trình duyệt nội dung theo quy trình quản lý thông tin; cập nhật kịp thời các hoạt động, sự kiện, chính sách mới và đăng tải, quản trị, theo dõi hiệu quả tương tác phản hồi trên các nền tảng (Facebook, YouTube, Zalo, TikTok, Twitter…).",
+        "prodId": "6d726296-f4f6-481b-a807-9755a0f26b84",
+        "prodCode": "TH-93",
+        "action": "SAME",
+        "factor": 1.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Kế hoạch Bảo vệ phòng, kho lưu trữ và hồ sơ, tài liệu lưu trữ năm",
+        "prodId": "73ab7a9b-c758-4621-95e8-91133108b6a1",
+        "prodCode": "TH-94",
+        "action": "SAME",
+        "factor": 7
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Chuẩn bị nội dung, Làm việc với đoàn kiểm tra nội bộ theo quyết định",
+        "prodId": "0b807be6-beff-47b3-8d91-0ee6dd600dbd",
+        "prodCode": "TH-95",
+        "action": "SAME",
+        "factor": 9.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Quản lý, theo dõi các trang thiết bị chuyên dùng; Đảm bảo các trang thiết bị chuyên dùng hoạt động ổn định (hệ thống camera giám sát, seal định vị, hệ thống RFID, hệ thống cảnh báo phóng xạ, hệ thống bộ đàm,...) - Kiểm tra sơ cấp nồng độ phóng xạ khi có cảnh báo - Cấp phát tem, thẻ RFID",
+        "prodId": "4b2695dc-337b-4ed7-b155-fd96bd1ecfec",
+        "prodCode": "TH-96",
+        "action": "SAME",
+        "factor": 6
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tham mưu tổ chức các cuộc họp, Hội nghị giao ban hàng tuần, tháng",
+        "prodId": "1c5e03a9-dfaa-4cbf-8166-e84d34c2f389",
+        "prodCode": "TH-97",
+        "action": "SAME",
+        "factor": 6.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Tổng hợp, đôn đốc phần mềm theo dõi ý kiến chỉ đạo của đơn vị, xây dựng kế hoạch tháng",
+        "prodId": "a8a88577-a8a2-420b-8951-c67888c70316",
+        "prodCode": "TH-98",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Chuẩn bị tài liệu báo cáo: Trên cơ cở báo cáo định kỳ, cập nhật kết quả, nội dung đến hết kỳ báo cáo và bổ sung các phụ lục theo dõi tiến độ; vướng mắc kiến nghị của các bộ phận",
+        "prodId": "93a27f67-e956-4346-9fa0-c7a3a44b0abc",
+        "prodCode": "TH-99",
+        "action": "SAME",
+        "factor": 10.8
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Về việc lập danh sách cán bộ thực hiện nhiệm vụ số hóa hồ sơ Đảng viên của Chi bộ",
+        "prodId": "b129b351-3e9a-491b-8154-ec61fe99f37b",
+        "prodCode": "TH-100",
+        "action": "SAME",
+        "factor": 1
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Sinh hoạt Chi bộ và sinh hoạt chuyên đề",
+        "prodId": "9c5aea65-058a-4361-949b-0b86ffb6b102",
+        "prodCode": "TH-101",
+        "action": "SAME",
+        "factor": 0.2
+      },
+      {
+        "dept": "Bộ phận TH & Báo cáo",
+        "title": "Quản lý ấn chỉ, niêm phong hải quan",
+        "prodId": "d92e5e9d-277b-42a7-a026-e2f7b7819c35",
+        "prodCode": "TH-102",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Báo cáo tình hình Đảng viên tham gia hội nghị tập huấn",
+        "prodId": "f6bb6f8e-c29b-4ed5-984f-3fffcffc7d8a",
+        "prodCode": "DANG-01",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Xây dựng dự thảo Nội dung sinh hoạt thường kỳ/sinh hoạt chuyên đề",
+        "prodId": "1a42aad9-030c-47eb-bc80-3ac471311445",
+        "prodCode": "DANG-02",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Ghi biên bản họp, tổng hợp ý kiến sinh hoạt chi bộ, dự thảo nghị quyết",
+        "prodId": "7765b76c-12ce-43cc-a63d-b096e7041887",
+        "prodCode": "DANG-03",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Cập nhật thông tin tình hình Đảng viên",
+        "prodId": "2a3a3c2e-3c70-454d-8b4d-48e3ccc0611b",
+        "prodCode": "DANG-04",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Thực hiện các thủ tục Đảng viên chuyển đi, chuyên đến",
+        "prodId": "a46e5a52-e35f-462b-ad7d-61930408fc09",
+        "prodCode": "DANG-05",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Thu, nộp đảng phí, đoàn phí",
+        "prodId": "bbf3c8d0-f5a7-4cb6-a4c1-70986437bd45",
+        "prodCode": "DANG-06",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Tổ chức nghiên cứu, học tập Nghị quyết của Đảng ủy các cấp",
+        "prodId": "3d237f7d-5fac-4655-9f7d-605956918bc9",
+        "prodCode": "DANG-07",
+        "action": "SAME",
+        "factor": null
+      },
+      {
+        "dept": "Bộ phận công tác Đảng",
+        "title": "Tuyên truyển và tổ chức, triển khai các hoạt động của Đoàn thanh niên",
+        "prodId": "85b5073d-08c8-4a69-b911-9b2b7517b02a",
+        "prodCode": "DANG-08",
+        "action": "SAME",
+        "factor": null
+      }
+    ],
+    "needsDecision": [
+      {
+        "type": "UNIT_POSSIBLE_DUPLICATE",
+        "excel": "Bộ phận TH & Báo cáo",
+        "prodCode": "BP_TONGHOP_D",
+        "prodName": "Bộ phận Tổng hợp & Báo cáo D",
+        "similarity": 0.7
+      },
+      {
+        "type": "PERSON_OUTSIDE_BRANCH",
+        "person": "Lê Văn Hậu",
+        "role": "Phó trưởng Hải quan khu vực",
+        "note": "Cấp trên Hải quan khu vực — không gán đơn vị cửa khẩu"
+      }
+    ],
+    "stats": {
+      "persons": {
+        "match": 34,
+        "create": 1,
+        "demo": 0,
+        "total": 35
+      },
+      "tx": {
+        "same": 316,
+        "setFactor": 0,
+        "nullify": 0,
+        "keepFactor": 0,
+        "conflict": 4,
+        "create": 0,
+        "total": 348
+      }
+    }
+  }
+}
