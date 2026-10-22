@@ -64,16 +64,60 @@
 | Smoke ghi có kiểm soát trên Production | ✅ **13/13**: tạo → DRAFT (không tự duyệt) → gửi → SUBMITTED → **tự duyệt bị chặn 403** → khoá sửa 409 → lãnh đạo xác nhận → CONFIRMED → lịch sử P1 thấy hồ sơ → tạo kết quả tháng → **dọn sạch 0/0** |
 | Số lượng bảng Production sau deploy | **không đổi** (plans 5 · tasks 23 · work items 32 · routine 19 · monthly 15 · accounts 24 · people 39 · org 11 · TX 348 · SP 3.386); chỉ `audit_events` +7 (dấu vết kiểm thử) và `notifications` +1 |
 
-## 6. ROLLBACK
+## 6. ROLLBACK — phải trở về **đúng `d524576`**
+
+> KHÔNG dùng `git revert 6b0fa94`: `6b0fa94` chỉ là commit PREPARE (script + tài liệu);
+> revert nó KHÔNG gỡ mã V3 — toàn bộ 13 commit V3 vẫn nằm trên Production.
+> Mục tiêu: đưa Production về đúng phiên bản trước V3 = `d524576`.
+
+### 6.1. Phương án A (khuyến nghị) — revert nguyên chuỗi 13 commit, KHÔNG force-push
 
 ```bash
-# 1) Mã: revert commit đang chạy rồi push main
-git revert 6b0fa94 && git push origin main      # Vercel auto-deploy lại bản trước
-# 2) Schema + dữ liệu: khôi phục từ backup đã kiểm chứng (74/74 bảng, 0 vi phạm FK)
-node scripts/pg-backup-restore.mjs restore --db=<url Production> \
-  --file=demo-ops/yc38c-backup/prod-predeploy-2026-10-22-123725.json
+git checkout main
+git fetch origin
+git branch backup/pre-rollback-6b0fa94 6b0fa94     # lưu trạng thái hiện tại (đường quay lui)
+git revert --no-commit d524576..6b0fa94             # revert 13 commit ngược thứ tự
+git commit -m "revert(v3): tra Production ve dung phien ban d524576"
+git push origin main                                # Vercel auto-deploy lại bản d524576
 ```
-Thời gian rollback đo được: restore 7.598 bản ghi ≈ **2–4 phút**; deploy mã ≈ **2–4 phút**.
+
+* Đã kiểm chứng (22/10/2026) trên worktree riêng: `git revert --no-commit d524576..6b0fa94`
+  → exit 0, không xung đột, 62 file thay đổi, và `git diff d524576` RỖNG
+  ⇒ cây mã sau revert giống hệt `d524576`.
+* Giữ nguyên lịch sử Git ⇒ không cần force-push, không rủi ro ghi đè lịch sử của người khác.
+* Thời gian: revert + push ≈ 1 phút · Vercel build + đưa traffic ≈ 2–4 phút.
+
+### 6.2. Phương án B — trỏ `main` về đúng `d524576` (force-push)
+
+```bash
+git checkout main
+git branch backup/pre-rollback-6b0fa94 6b0fa94
+git reset --hard d524576
+git push --force-with-lease origin main              # --force-with-lease chặn ghi đè lịch sử người khác
+```
+
+* Rủi ro: ghi đè lịch sử `main` (13 commit V3 biến mất khỏi `main`, nhưng vẫn còn ở
+  `backup/pre-rollback-6b0fa94` và nhánh `feature/v3-demo`) → dùng `--force-with-lease`, không dùng `--force`.
+* Chọn B khi cần `main` đúng bằng `d524576` (ví dụ để so khớp SHA hiển thị trên Vercel).
+
+### 6.3. Phương án C — không đụng `main`, deploy thẳng từ SHA `d524576`
+
+* Vercel Dashboard → Deployments → ⋯ → Redeploy / Deploy from commit chọn `d524576` → Promote to Production.
+* Hoặc: `git checkout -b rollback-d524576 d524576 && vercel --prod` (cần VERCEL_TOKEN).
+
+### 6.4. Schema / dữ liệu
+
+* KHÔNG cần rollback schema khi rollback mã: migration V3 là additive (chỉ thêm cột/bảng),
+  mã cũ (`d524576`) chạy bình thường với schema V3 — cột/bảng thừa bị Prisma bỏ qua.
+* Nếu cần trả schema/dữ liệu về trước V3 (chỉ khi dữ liệu V3 đã ghi sai):
+
+```bash
+node scripts/pg-backup-restore.mjs restore --db=<url Production> --file=demo-ops/yc38c-backup/prod-predeploy-2026-10-22-123725.json
+```
+
+  Đã kiểm chứng: 74/74 bảng khớp, 0 bảng thiếu, 0 vi phạm FK · 7.598 bản ghi · ≈ 2–4 phút.
+* KHÔNG dùng `prisma migrate deploy` trên Production (bảng `_prisma_migrations` rỗng →
+  sẽ chạy `0_init` và phá dữ liệu). Đồng bộ schema chỉ dùng `prisma db push` additive.
 
 ## 7. LỖI CẦN SỬA TRỰC TIẾP TRÊN PRODUCTION (ghi nhận)
 

@@ -109,7 +109,8 @@ Chi tiết từng bảng + checksum: `scripts/verify-archive.mjs` (bấm 74/74, 
 
 1. **T-1 ngày**: duyệt checklist (§9) + bàn giao file QĐ1277 gốc + key storage.
 2. **T-0 (30–45 phút)**: maintenance notice → dừng luồng ghi (chặn ingress hoặc cờ `MAINTENANCE_MODE`) → backup cuối (`pg-backup-restore.mjs backup`) → **restore-test lần cuối** → chạy `reset-and-init.mjs --mode=production --confirm=RESET-2026-10-22` → đối soát manifest → smoke test (đăng nhập admin, tạo 1 hồ sơ thử, xoá) → bỏ maintenance → theo dõi log 30 phút.
-3. **Rollback**: `pg-backup-restore.mjs restore --db=<Production> --file=prod-pre-reset-<...>.json` (đã kiểm chứng 74/74 bảng) — thời gian đo được: **restore 7.598 bản ghi ≈ 2–4 phút** → nằm trong maintenance window.
+3. **Rollback dữ liệu**: `pg-backup-restore.mjs restore --db=<Production> --file=prod-pre-reset-<...>.json` (đã kiểm chứng 74/74 bảng) — thời gian đo được: **restore 7.598 bản ghi ≈ 2–4 phút** → nằm trong maintenance window.
+4. **Rollback mã về đúng `d524576`** (nếu cần gỡ toàn bộ V3): xem `docs/V3/DEPLOY_PRODUCTION_V3_2026-10-22.md` §6 — phương án A `git revert --no-commit d524576..6b0fa94` (đã kiểm chứng: cây mã sau revert giống hệt `d524576`, không cần force-push) hoặc phương án B `git reset --hard d524576 && git push --force-with-lease origin main`. **Không** dùng `git revert 6b0fa94` (chỉ gỡ commit PREPARE, mã V3 vẫn còn).
 
 ## 9. CHECKLIST PHẢI PHÊ DUYỆT TRƯỚC EXECUTE
 

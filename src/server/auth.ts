@@ -55,6 +55,39 @@ interface CachedAuth {
   user: SessionUser;
   expiresAt: number;
 }
+
+/** Thứ tự ưu tiên vai trò (cao = quyền rộng hơn). */
+const ROLE_PRIORITY: Record<string, number> = {
+  SYSTEM_ADMIN: 4,
+  UNIT_LEADER: 3,
+  DEPARTMENT_LEADER: 2,
+  STAFF: 1,
+};
+
+/** Thứ tự ưu tiên phạm vi (rộng hơn = quyền nhiều hơn). */
+const SCOPE_WIDTH: Record<string, number> = {
+  ORGANIZATION: 4,
+  SUBTREE: 3,
+  DEPARTMENT: 2,
+  ASSIGNED: 1,
+  OWN: 0,
+};
+
+/**
+ * Chọn grant chính (vai trò + phạm vi) theo phạm vi RỘNG NHẤT — tất định,
+ * không phụ thuộc thứ tự hàng trả về của CSDL.
+ * Dùng chung cho cả lúc đăng nhập và mỗi lần gọi API, để vai trò mà người dùng
+ * thấy trên giao diện LUÔN khớp với vai trò dùng để kiểm tra quyền.
+ */
+export function pickPrimaryGrant<T extends { role: { code: string }; scopeType: string }>(
+  grants: T[]
+): T | undefined {
+  return [...grants].sort((a, b) => {
+    const byRole = (ROLE_PRIORITY[b.role.code] || 0) - (ROLE_PRIORITY[a.role.code] || 0);
+    if (byRole !== 0) return byRole;
+    return (SCOPE_WIDTH[b.scopeType] ?? 0) - (SCOPE_WIDTH[a.scopeType] ?? 0);
+  })[0];
+}
 const authMemoryCache = new Map<string, CachedAuth>();
 const AUTH_CACHE_MAX = 1000;
 
@@ -128,7 +161,9 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
   }
 
   const primaryAssignment = account.person.assignments[0];
-  const primaryGrant = account.roleGrants[0];
+  // Vai trò chính = grant đang hiệu lực có phạm vi rộng nhất (tất định) —
+  // DÙNG CHUNG với lúc đăng nhập để giao diện và kiểm tra quyền không lệch nhau.
+  const primaryGrant = pickPrimaryGrant(account.roleGrants);
 
   const permissions = new Set<string>();
   for (const grant of account.roleGrants) {
@@ -196,15 +231,7 @@ export async function getAccountWithPermissions(username: string) {
 
   // Vai trò chính = vai trò đang hiệu lực có phạm vi rộng nhất (xác định tất định,
   // không phụ thuộc thứ tự trả về của CSDL).
-  const ROLE_PRIORITY: Record<string, number> = {
-    SYSTEM_ADMIN: 4,
-    UNIT_LEADER: 3,
-    DEPARTMENT_LEADER: 2,
-    STAFF: 1,
-  };
-  const primaryGrant = [...activeGrants].sort(
-    (a, b) => (ROLE_PRIORITY[b.role.code] || 0) - (ROLE_PRIORITY[a.role.code] || 0)
-  )[0];
+  const primaryGrant = pickPrimaryGrant(activeGrants);
 
   const permissions = new Set<string>();
   for (const grant of activeGrants) {

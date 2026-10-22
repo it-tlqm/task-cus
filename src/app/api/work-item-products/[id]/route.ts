@@ -11,7 +11,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
-import { canReviewAsDirectLeader, isWorkItemReviewLocked } from "@/server/work-item-review";
+import { canReviewAsDirectLeader, isWorkItemReviewLocked, reviewDeniedMessage } from "@/server/work-item-review";
 
 export const runtime = "nodejs";
 
@@ -39,7 +39,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const canReview = await canReviewAsDirectLeader(user, link.workItem.personId);
     if (!canReview) {
-      return jsonError("Bạn không phải lãnh đạo trực tiếp quản lý công việc này.", 403);
+      return jsonError(await reviewDeniedMessage(user, link.workItem.personId), 403);
     }
     if (isWorkItemReviewLocked(link.workItem) && link.workItem.reviewState === "CONFIRMED") {
       return jsonError("Công việc đã được xác nhận — không thể thay đổi sản phẩm.", 409);

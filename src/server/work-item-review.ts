@@ -14,7 +14,6 @@
  */
 import { prisma } from "@/server/db";
 import { SessionUser } from "@/server/auth";
-import { getAuthorizedUnitIds } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 import { assertPeriodWritable } from "@/server/period-guard";
@@ -84,12 +83,18 @@ export async function resolveDirectLeaderIds(subordinatePersonId: string): Promi
 /**
  * Người dùng có quyền xác nhận/trả lại công việc của cán bộ này không?
  *
- * 1. Lãnh đạo trực tiếp theo `person_supervisions` (nguồn chính, quyết định A1).
- * 2. Nếu cán bộ ĐÃ có quan hệ phụ trách nhưng người đang đăng nhập không phải lãnh đạo
- *    của họ ⇒ KHÔNG được quyền (không mở rộng theo đơn vị).
- * 3. Nếu cán bộ CHƯA có quan hệ phụ trách nào ⇒ lùi về phạm vi đơn vị
- *    (lãnh đạo bộ phận phụ trách đơn vị của cán bộ) để hệ thống vẫn dùng được.
- * 4. SYSTEM_ADMIN không tự động có quyền nghiệp vụ (R3-C điểm 5).
+ * 1. Lãnh đạo trực tiếp theo `person_supervisions` (nguồn chính, quyết định A1) —
+ *    quan hệ phụ trách phải CÓ hiệu lực và khớp đúng người.
+ * 2. Nếu cán bộ CHƯA có quan hệ phụ trách nào ⇒ KHÔNG ai được quyền xác nhận:
+ *    hồ sơ CHỜ phân tuyến. TUYỆT ĐỐI KHÔNG lùi về phạm vi đơn vị
+ *    (lãnh đạo đơn vị/Trưởng bộ phận) để cấp quyền duyệt khi chưa có tuyến.
+ * 3. SYSTEM_ADMIN không tự động có quyền nghiệp vụ (R3-C điểm 5).
+ *
+ * Lý do bỏ fallback phạm vi đơn vị (rà soát sau phát hành 2026-10-22):
+ * Production có `person_supervisions = 0`, nên fallback biến mọi lãnh đạo đơn vị
+ * (UNIT_LEADER phạm vi ORGANIZATION) thành người duyệt được mọi hồ sơ của mọi
+ * cán bộ trong cơ quan — trái nghiệp vụ đã chốt "tuyến chưa có người duyệt hợp lệ
+ * phải chờ phân tuyến".
  */
 export async function canReviewAsDirectLeader(
   user: SessionUser,
@@ -99,17 +104,22 @@ export async function canReviewAsDirectLeader(
   if (user.role === "SYSTEM_ADMIN") return false;
 
   const leaderIds = await resolveDirectLeaderIds(subordinatePersonId);
-  if (leaderIds.length > 0) return leaderIds.includes(user.personId);
+  return leaderIds.includes(user.personId);
+}
 
-  // Chưa có quan hệ phụ trách → lùi về phạm vi đơn vị
-  const authorized = await getAuthorizedUnitIds(user);
-  if (authorized === "ALL") return user.role === "UNIT_LEADER";
-  if (user.role !== "DEPARTMENT_LEADER") return false;
-  const assignments = await prisma.personAssignment.findMany({
-    where: { personId: subordinatePersonId },
-    select: { unitId: true },
-  });
-  return assignments.some((a) => authorized.includes(a.unitId));
+/**
+ * Thông điệp từ chối quyền phê duyệt — phân biệt "chưa có tuyến phê duyệt" với
+ * "không phải lãnh đạo trực tiếp" để người dùng hiểu vì sao hồ sơ chưa xử lý được.
+ */
+export async function reviewDeniedMessage(
+  user: SessionUser,
+  subordinatePersonId: string
+): Promise<string> {
+  const leaderIds = await resolveDirectLeaderIds(subordinatePersonId);
+  if (leaderIds.length === 0) {
+    return "Cán bộ này chưa có tuyến phê duyệt hợp lệ — hồ sơ đang chờ phân tuyến, chưa thể xác nhận.";
+  }
+  return "Bạn không phải lãnh đạo trực tiếp quản lý công việc này.";
 }
 
 /* ------------------------------------------------------------------ */
@@ -250,7 +260,7 @@ export async function decideWorkItemReview(
 
   const canReview = await canReviewAsDirectLeader(user, item.personId);
   if (!canReview) {
-    throw new ReviewError("Bạn không phải lãnh đạo trực tiếp quản lý công việc này.", 403);
+    throw new ReviewError(await reviewDeniedMessage(user, item.personId), 403);
   }
   await assertPeriodWritable(item.periodId);
   const state = reviewStateOf(item);
