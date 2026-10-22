@@ -8,10 +8,12 @@ export const UNIT_SHORT_NAME = "Hải quan cửa khẩu Quốc tế Tà Lùng";
 
 export const UNIT_ALL_LABEL = `Toàn đơn vị - ${UNIT_SHORT_NAME}`;
 
-/** Nhãn chức danh hiển thị theo mã vai trò (không đổi mã Role/Enum backend). */
+/** Nhãn chức danh hiển thị theo mã vai trò (không đổi mã Role/Enum backend).
+ *  Lưu ý: đây là nhãn DỰ PHÒNG khi chưa gán chức vụ (position).
+ *  Chức danh chính xác (Trưởng/Phó Trưởng hải quan cửa khẩu…) lấy từ position.title. */
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {
-  UNIT_LEADER: "Trưởng hải quan cửa khẩu",
-  DEPARTMENT_LEADER: "Trưởng bộ phận",
+  UNIT_LEADER: "Lãnh đạo đơn vị",
+  DEPARTMENT_LEADER: "Lãnh đạo bộ phận",
   STAFF: "Công chức",
   SYSTEM_ADMIN: "Quản trị hệ thống",
 };

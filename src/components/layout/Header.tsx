@@ -110,7 +110,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
       case "UNIT_LEADER":
         return "Lãnh đạo đơn vị";
       case "DEPARTMENT_LEADER":
-        return "Trưởng bộ phận";
+        return "Lãnh đạo bộ phận";
       case "SYSTEM_ADMIN":
         return "Quản trị hệ thống";
       case "STAFF":

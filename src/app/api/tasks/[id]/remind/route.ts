@@ -51,7 +51,7 @@ export async function POST(
         unitId: task.unitId,
         position: {
           code: {
-            in: ["DOI_TRUONG", "PHO_DOI_TRUONG", "CHI_CUC_TRUONG", "PHO_CHI_CUC_TRUONG"],
+            in: ["CHI_CUC_TRUONG", "DEPUTY_CHIEF", "TRUONG_BO_PHAN", "DEPT_DEPUTY", "DEPT_LEADER"],
           },
         },
       },

@@ -113,9 +113,19 @@ export default function MyWorkPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
+  // Bộ đếm KPI do server tính trên toàn phạm vi (không phụ thuộc trang đã tải)
+  const [serverStats, setServerStats] = useState<{
+    active: number;
+    high: number;
+    dueSoon: number;
+    overdue: number;
+    waiting: number;
+    done: number;
+    maxOverdueDays: number;
+  } | null>(null);
 
-  // Số liệu thật từ tasks đã tải (không hardcode)
-  const myStats = React.useMemo(() => {
+  // Số liệu thật: ưu tiên bộ đếm server, fallback tính từ tasks đã tải (không hardcode)
+  const derivedStats = React.useMemo(() => {
     const now = Date.now();
     const active = tasks.filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELED");
     const high = active.filter((t) => t.priority === "Cao" || t.priority === "Khẩn").length;
@@ -133,6 +143,7 @@ export default function MyWorkPage() {
     }, 0);
     return { active: active.length, high, dueSoon, overdue: overdueList.length, waiting, done, maxOverdueDays };
   }, [tasks]);
+  const myStats = serverStats ?? derivedStats;
 
   // Hoạt động gần nhất từ TaskUpdate thật (tối đa 2)
   const recentActivity = React.useMemo(() => {
@@ -270,6 +281,7 @@ export default function MyWorkPage() {
         setPage(p);
         setTotalPages(json.pagination?.totalPages || 1);
         setTotalCount(json.pagination?.total ?? data.length);
+        if (json.stats) setServerStats(json.stats);
         setLastSyncAt(new Date());
       }
     } catch {
@@ -1371,23 +1383,30 @@ export default function MyWorkPage() {
           </div>
         </div>
 
-        {/* THỐNG KÊ NHANH TÁC VỤ CÁ NHÂN (GRID 2x2 ĐẶC THÙ NGHIỆP VỤ) */}
+        {/* THỐNG KÊ NHANH TÁC VỤ CÁ NHÂN (GRID 2x2 ĐẶC THÙ NGHIỆP VỤ) — số liệu THẬT từ tasks */}
         <div className="px-margin py-2">
           <div className="grid grid-cols-2 gap-2.5">
-            {/* Card 1: Hôm nay */}
+            {/* Card 1: Cần xử lý hôm nay */}
             <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between border border-border-default/40">
               <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md text-on-surface-variant">Cần làm hôm nay</span>
+                <span className="font-label-md text-label-md text-on-surface-variant">Cần xử lý hôm nay</span>
                 <span className="w-6 h-6 rounded bg-primary-container/10 text-primary-container flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px]">today</span>
+                  <span className="material-symbols-outlined text-[15px]">assignment</span>
                 </span>
               </div>
               <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-primary font-bold">05</span>
-                <span className="font-label-sm text-label-sm text-status-danger font-medium">2 việc Gấp</span>
+                <span className="font-headline-xl text-headline-xl text-primary font-bold">
+                  {String(myStats.active).padStart(2, "0")}
+                </span>
+                <span className="font-label-sm text-label-sm text-status-danger font-medium">
+                  {myStats.high > 0 ? `${myStats.high} việc ưu tiên cao` : "Không có việc gấp"}
+                </span>
               </div>
               <div className="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-                <div className="bg-primary h-full rounded-full" style={{ width: "60%" }} />
+                <div
+                  className="bg-primary h-full rounded-full"
+                  style={{ width: `${myStats.active > 0 ? Math.round((myStats.high / myStats.active) * 100) : 0}%` }}
+                />
               </div>
             </div>
 
@@ -1400,11 +1419,13 @@ export default function MyWorkPage() {
                 </span>
               </div>
               <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-status-warning font-bold">03</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">trước 17:00</span>
+                <span className="font-headline-xl text-headline-xl text-status-warning font-bold">
+                  {String(myStats.dueSoon).padStart(2, "0")}
+                </span>
+                <span className="font-label-sm text-label-sm text-on-surface-variant">trong 24 giờ tới</span>
               </div>
               <span className="font-label-sm text-[11px] text-status-warning font-medium truncate">
-                Cần xử lý luồng vàng
+                {myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}
               </span>
             </div>
 
@@ -1417,11 +1438,16 @@ export default function MyWorkPage() {
                 </span>
               </div>
               <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-status-danger font-bold">01</span>
-                <span className="font-label-sm text-label-sm text-status-danger">TSK-1038</span>
+                <span className="font-headline-xl text-headline-xl text-status-danger font-bold">
+                  {String(myStats.overdue).padStart(2, "0")}
+                </span>
+                <span className="font-label-sm text-label-sm text-status-danger">
+                  {myStats.overdue > 0 ? (overdueTask?.code || "hồ sơ trễ") : "Không trễ hạn"}
+                </span>
               </div>
               <span className="font-label-sm text-[11px] text-status-danger font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[13px]">gavel</span> Quá 24h • Cần giải trình
+                <span className="material-symbols-outlined text-[13px]">gavel</span>
+                {myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày • Cần giải trình` : "Đúng hạn"}
               </span>
             </div>
 
@@ -1434,11 +1460,13 @@ export default function MyWorkPage() {
                 </span>
               </div>
               <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-status-unassigned font-bold">02</span>
+                <span className="font-headline-xl text-headline-xl text-status-unassigned font-bold">
+                  {String(myStats.waiting).padStart(2, "0")}
+                </span>
                 <span className="font-label-sm text-label-sm text-on-surface-variant">đầu việc</span>
               </div>
               <span className="font-label-sm text-[11px] text-status-unassigned font-medium truncate">
-                Chờ Trưởng BP duyệt
+                {myStats.waiting > 0 ? "Chờ Trưởng BP duyệt" : "Không có hồ sơ chờ duyệt"}
               </span>
             </div>
           </div>
@@ -1479,7 +1507,7 @@ export default function MyWorkPage() {
                   : "bg-surface-container text-on-surface-variant"
               }`}
             >
-              <span>Đang làm (05)</span>
+              <span>Đang làm ({myStats.active})</span>
             </button>
             <button
               onClick={() => setActiveTab("OVERDUE")}
@@ -1489,7 +1517,7 @@ export default function MyWorkPage() {
                   : "bg-status-danger-bg text-status-danger"
               }`}
             >
-              <span>Quá hạn (01)</span>
+              <span>Quá hạn ({myStats.overdue})</span>
             </button>
             <button
               onClick={() => setActiveTab("WAITING_REVIEW")}
@@ -1499,7 +1527,7 @@ export default function MyWorkPage() {
                   : "bg-surface-container text-on-surface-variant"
               }`}
             >
-              <span>Chờ duyệt (02)</span>
+              <span>Chờ duyệt ({myStats.waiting})</span>
             </button>
           </div>
         </div>
@@ -1510,6 +1538,8 @@ export default function MyWorkPage() {
           {filteredTasks.map((task) => {
             const isOverdue = task.isOverdue || task.hasIssue;
             const isWaiting = task.status === "WAITING_REVIEW";
+            const deadlineAt = new Date(task.currentDeadline).getTime();
+            const overdueDays = isNaN(deadlineAt) ? 0 : Math.max(0, Math.floor((Date.now() - deadlineAt) / 86400000));
 
             if (isOverdue) {
               return (
@@ -1523,12 +1553,15 @@ export default function MyWorkPage() {
                       <span className="font-label-sm text-label-sm font-bold text-status-danger bg-status-danger-bg px-2 py-0.5 rounded">
                         {task.code}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-0.5">
-                        <span className="material-symbols-outlined text-[13px]">report_problem</span> Có vướng mắc
-                      </span>
+                      {task.hasIssue && (
+                        <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[13px]">report_problem</span> Có vướng mắc
+                        </span>
+                      )}
                     </div>
                     <span className="px-2 py-0.5 rounded bg-status-danger text-on-primary font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0 shadow-xs">
-                      <span className="material-symbols-outlined text-[13px]">alarm_off</span> Quá hạn 1 ngày
+                      <span className="material-symbols-outlined text-[13px]">alarm_off</span>{" "}
+                      {task.isOverdue ? `Quá hạn ${overdueDays} ngày` : "Cần xử lý"}
                     </span>
                   </div>
                   <div className="pl-1">
@@ -1536,15 +1569,18 @@ export default function MyWorkPage() {
                       {task.title}
                     </h3>
                     <p className="font-label-sm text-[12px] text-on-surface-variant mt-1">
-                      Hạn gốc: 11:30 Hôm qua • Lãnh đạo đơn vị trực tiếp giao
+                      Hạn: {formatDateTime(task.currentDeadline)}
+                      {task.owner ? ` • ${task.owner.fullName}` : ""}
                     </p>
-                    <div className="mt-2.5 p-2.5 rounded-lg bg-status-warning-bg/80 flex items-start gap-2">
-                      <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">info</span>
-                      <div className="flex flex-col text-[12px]">
-                        <span className="font-body-semibold text-status-warning">Vướng mắc phát sinh:</span>
-                        <span className="text-on-surface">Chờ doanh nghiệp bổ sung Giấy phép chuyên ngành &amp; chứng từ bảo lãnh ngân hàng.</span>
+                    {task.issueNotes && (
+                      <div className="mt-2.5 p-2.5 rounded-lg bg-status-warning-bg/80 flex items-start gap-2">
+                        <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">info</span>
+                        <div className="flex flex-col text-[12px]">
+                          <span className="font-body-semibold text-status-warning">Vướng mắc phát sinh:</span>
+                          <span className="text-on-surface">{task.issueNotes}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-1 pl-1">
                     <button
@@ -1579,7 +1615,9 @@ export default function MyWorkPage() {
                       <span className="font-label-sm text-label-sm font-bold text-primary-container bg-surface-container px-2 py-0.5 rounded">
                         {task.code}
                       </span>
-                      <span className="font-label-sm text-on-surface-variant text-[11px]">Kỳ báo cáo 10 ngày</span>
+                      <span className="font-label-sm text-on-surface-variant text-[11px]">
+                        {task.planLinks?.[0]?.planItem?.plan?.title || "Đầu việc phát sinh"}
+                      </span>
                     </div>
                     <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0">
                       <span className="material-symbols-outlined text-[13px]">pending</span> Chờ Trưởng BP duyệt
@@ -1591,10 +1629,12 @@ export default function MyWorkPage() {
                     </h3>
                     <div className="mt-2.5 p-2 rounded-lg bg-surface-container-low flex items-center justify-between text-[12px]">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="material-symbols-outlined text-secondary text-[20px] shrink-0">description</span>
+                        <span className="material-symbols-outlined text-secondary text-[20px] shrink-0">assignment_turned_in</span>
                         <div className="flex flex-col min-w-0">
-                          <span className="font-body-semibold text-on-surface truncate">BBBG-TL-{task.code}.xlsx</span>
-                          <span className="text-on-surface-variant text-[11px]">Nộp lúc 09:15 hôm nay</span>
+                          <span className="font-body-semibold text-on-surface truncate">Đã nộp kết quả</span>
+                          <span className="text-on-surface-variant text-[11px]">
+                            Hạn: {formatDateTime(task.currentDeadline)}
+                          </span>
                         </div>
                       </div>
                       <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success font-label-sm text-[10px] font-bold shrink-0">

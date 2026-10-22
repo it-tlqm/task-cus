@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           success: true, data: [],
           pagination: { page, pageSize, total: 0, totalPages: 0 },
+          stats: { active: 0, high: 0, dueSoon: 0, overdue: 0, waiting: 0, done: 0, maxOverdueDays: 0 },
         });
       }
       filters.id = { in: ids };
@@ -102,7 +103,7 @@ export async function GET(req: NextRequest) {
 
     const where: any = { ...filters, ...visibilityClause };
 
-    const [total, tasks] = await Promise.all([
+    const [total, tasks, statRows] = await Promise.all([
       prisma.task.count({ where }),
       prisma.task.findMany({
       where,
@@ -156,9 +157,47 @@ export async function GET(req: NextRequest) {
       skip: (page - 1) * pageSize,
       take: pageSize,
       }),
+      // Bộ đếm KPI: lấy toàn bộ phạm vi (chỉ 4 cột nhẹ) — không phụ thuộc trang đang tải
+      prisma.task.findMany({
+        where,
+        select: { status: true, priority: true, currentDeadline: true, hasIssue: true },
+      }),
     ]);
 
     const now = new Date();
+
+    // Cùng nguồn dữ liệu với danh sách → bộ đếm không còn "ảo" khi phân trang
+    const stats = {
+      active: 0,
+      high: 0,
+      dueSoon: 0,
+      overdue: 0,
+      waiting: 0,
+      done: 0,
+      maxOverdueDays: 0,
+    };
+    for (const t of statRows) {
+      const finished = t.status === "COMPLETED" || t.status === "DONE" || t.status === "CANCELED";
+      if (t.status === "WAITING_REVIEW") stats.waiting += 1;
+      if (finished) {
+        if (t.status !== "CANCELED") stats.done += 1;
+        continue;
+      }
+      const dl = new Date(t.currentDeadline).getTime();
+      const late = !isNaN(dl) && dl < now.getTime();
+      stats.active += 1;
+      if (t.priority === "Cao" || t.priority === "Khẩn") stats.high += 1;
+      if (late) {
+        stats.maxOverdueDays = Math.max(
+          stats.maxOverdueDays,
+          Math.floor((now.getTime() - dl) / 86400000)
+        );
+      } else if (!isNaN(dl) && dl <= now.getTime() + 24 * 3600 * 1000) {
+        stats.dueSoon += 1;
+      }
+      // Khớp quy ước danh sách: quá hạn HOẶC có vướng mắc
+      if (late || t.hasIssue) stats.overdue += 1;
+    }
 
     // Tính toán cờ isOverdue độc lập với hasIssue + % tiến độ từ cập nhật mới nhất
     // (Task không lưu sẵn % — nguồn duy nhất là TaskUpdate)
@@ -194,6 +233,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: enrichedTasks,
       pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
+      stats,
     });
   } catch (error: any) {
     return jsonError("Lỗi khi tải danh sách nhiệm vụ: " + error.message, 500);
