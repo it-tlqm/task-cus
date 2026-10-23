@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
-import { fmtMetric, fmtPercent, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 import { RevenueComparisonSection } from "@/components/dashboard/RevenueComparisonSection";
 
@@ -341,7 +341,12 @@ export default function GiaoBanPage() {
                                 {colLabel(c)}
                               </th>
                             ))}
-                            <th className="px-2 py-2 font-semibold text-center">% chỉ tiêu giao</th>
+                            <th
+                              className="px-2 py-2 font-semibold text-center"
+                              title="D5 DEFERRED_B_C_3: chưa có quy tắc %, chỉ hiển thị chỉ tiêu và trạng thái; không công bố % chính thức"
+                            >
+                              % chỉ tiêu giao
+                            </th>
                             <th className="px-2 py-2 font-semibold">Cập nhật</th>
                           </tr>
                         </thead>
@@ -390,28 +395,22 @@ export default function GiaoBanPage() {
                                             </span>
                                           );
                                         }
-                                        const pending = t.percent === null && (t.status === "PROPOSED" || !t.status);
-                                        const percentLabel = t.percent === null ? null : t.percentText || fmtPercent(t.percent);
+                                        // D5 = DEFERRED_B_C_3: chưa có direction/measureMode/baselineScope.
+                                        // Không công bố % chính thức; chỉ hiển thị target + trạng thái.
+                                        const statusLabel =
+                                          t.status === "LOCKED"
+                                            ? "Đã chốt"
+                                            : t.status === "CONFIRMED"
+                                              ? "Đã xác nhận"
+                                              : "Đề xuất";
                                         return (
                                           <span
                                             key={i}
-                                            title={`${t.label}: ${fmtMetric(t.targetValue, m)}${
-                                              t.percent === null
-                                                ? pending
-                                                  ? " — chưa xác nhận nên chưa công bố tỷ lệ"
-                                                  : " — chưa xác định tỷ lệ (thiếu dữ liệu hoặc mẫu số 0)"
-                                                : ` — ${percentLabel}`
-                                            }`}
-                                            className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${
-                                              t.percent === null
-                                                ? "border-border-default text-on-surface-variant"
-                                                : t.percent >= 100
-                                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                  : "border-amber-200 bg-amber-50 text-amber-700"
-                                            }`}
+                                            data-testid={`target-status-${m.code}`}
+                                            title={`${t.label}: ${fmtMetric(t.targetValue, m)} · ${statusLabel} · D5 chưa có quy tắc % (chờ B-C-3), không công bố tỷ lệ chính thức`}
+                                            className="text-[11px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold"
                                           >
-                                            {t.label}{" "}
-                                            {t.percent === null ? (pending ? "chờ xác nhận" : "—") : `${percentLabel}%`}
+                                            {t.label} · {fmtMetric(t.targetValue, m, { withUnit: false })} · {statusLabel} · % chờ B-C-3
                                           </span>
                                         );
                                       })}

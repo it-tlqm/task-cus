@@ -36,9 +36,18 @@ import { MOCK_METRICS, MOCK_TARGETS } from "./target-draft-mock";
 export interface MetricTargetDraftEditorProps {
   metrics?: MetricOption[];
   initialTargets?: TargetDraftInput[];
-  /** Mock callback; production sẽ gọi API target-only sau khi S2 công bố schema. */
-  onSaveDraft?: (draft: TargetDraftInput) => void;
-  onConfirm?: (draft: TargetDraftInput) => void;
+  /** Callback API target-only; trả false để báo lỗi, undefined/true để thành công. */
+  onSaveDraft?: (draft: TargetDraftInput) => Promise<boolean | void> | boolean | void;
+  onConfirm?: (draft: TargetDraftInput) => Promise<boolean | void> | boolean | void;
+  onLock?: (target: TargetDraftInput) => Promise<boolean | void> | boolean | void;
+  onVoid?: (target: TargetDraftInput) => Promise<boolean | void> | boolean | void;
+  onHistory?: (target: TargetDraftInput) => void;
+  /** true khi component đã nối API target-only. */
+  apiMode?: boolean;
+  showMetricSelect?: boolean;
+  labelCodes?: readonly TargetLabelCode[];
+  /** D5 chưa có: ẩn preview %, chỉ hiển thị “chưa có quy tắc”. */
+  rulesPending?: boolean;
 }
 
 function emptyDraft(metric: MetricOption | undefined): TargetDraftInput {
@@ -79,10 +88,18 @@ export function MetricTargetDraftEditor({
   initialTargets = MOCK_TARGETS,
   onSaveDraft,
   onConfirm,
+  onLock,
+  onVoid,
+  onHistory,
+  apiMode = false,
+  showMetricSelect = true,
+  labelCodes = TARGET_LABEL_CODES,
+  rulesPending = false,
 }: MetricTargetDraftEditorProps) {
   const [targets, setTargets] = useState<TargetDraftInput[]>(initialTargets);
-  const [draft, setDraft] = useState<TargetDraftInput>(initialTargets[0] ?? emptyDraft(metrics[0]));
+  const [draft, setDraft] = useState<TargetDraftInput>(emptyDraft(metrics[0]));
   const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const selectedMetric = metrics.find((m) => m.id === draft.metricId) ?? metrics[0];
   const existingKeys: ExistingTargetKey[] = targets.map((t) => ({
@@ -163,28 +180,82 @@ export function MetricTargetDraftEditor({
     setMessage(null);
   }
 
-  function save(status: TargetStatus) {
+  async function save(status: TargetStatus) {
+    if (busy) return;
     const next: TargetDraftInput = {
       ...draft,
       status,
-      id: draft.id ?? `mock-target-${Date.now()}`,
+      id: draft.id ?? (apiMode ? `temp-${Date.now()}` : `mock-target-${Date.now()}`),
     };
     if (status === "CONFIRMED" && !canConfirmTarget(next, selectedMetric, existingKeys)) {
       setMessage("Không thể xác nhận: còn lỗi validation. Xem danh sách bên dưới.");
       return;
     }
-    setTargets((current) => {
-      const exists = current.some((t) => t.id === next.id);
-      return exists ? current.map((t) => (t.id === next.id ? next : t)) : [next, ...current];
-    });
-    setDraft(next);
-    if (status === "CONFIRMED") onConfirm?.(next);
-    else onSaveDraft?.(next);
-    setMessage(
-      status === "CONFIRMED"
-        ? "Đã xác nhận (mock). Chỉ target CONFIRMED mới đủ điều kiện tính % chính thức."
-        : "Đã lưu nháp (mock). Target DRAFT chỉ hiển thị tạm tính, không dùng báo cáo."
-    );
+    const callback = status === "CONFIRMED" ? onConfirm : onSaveDraft;
+    setBusy(true);
+    try {
+      const result = await callback?.(next);
+      if (result === false) {
+        setMessage("API target-only từ chối thao tác. Kiểm tra lỗi/validation.");
+        return;
+      }
+      setTargets((current) => {
+        const exists = current.some((t) => t.id === next.id);
+        return exists ? current.map((t) => (t.id === next.id ? next : t)) : [next, ...current];
+      });
+      setDraft(next);
+      setMessage(
+        status === "CONFIRMED"
+          ? apiMode
+            ? "Đã gửi xác nhận chỉ tiêu. Hệ thống chưa tính % chính thức cho tới B-C-3."
+            : "Đã xác nhận (mock). Chỉ target CONFIRMED mới đủ điều kiện tính % chính thức."
+          : apiMode
+            ? "Đã lưu nháp/đề xuất (PROPOSED). Chỉ hiển thị tạm tính."
+            : "Đã lưu nháp (mock). Target DRAFT chỉ hiển thị tạm tính, không dùng báo cáo."
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Lỗi khi gọi API target-only.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runAction(action: "confirm" | "lock" | "void" | "history", target: TargetDraftInput) {
+    if (!target.id || busy) return;
+    if (action === "history") {
+      onHistory?.(target);
+      return;
+    }
+    const callback = action === "confirm" ? onConfirm : action === "lock" ? onLock : onVoid;
+    if (!callback) return;
+    setBusy(true);
+    try {
+      const result = await callback(target);
+      if (result === false) {
+        setMessage("API target-only từ chối thao tác.");
+        return;
+      }
+      setTargets((current) =>
+        action === "void"
+          ? current.filter((t) => t.id !== target.id)
+          : current.map((t) =>
+              t.id === target.id
+                ? { ...t, status: action === "confirm" ? "CONFIRMED" : "LOCKED" }
+                : t
+            )
+      );
+      setMessage(
+        action === "confirm"
+          ? "Đã xác nhận chỉ tiêu. Chưa tính % chính thức cho tới B-C-3."
+          : action === "lock"
+            ? "Đã chốt chỉ tiêu giao."
+            : "Đã hủy chỉ tiêu giao (chỉ áp dụng cho PROPOSED)."
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Lỗi khi gọi API target-only.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const nextConfirm = nextTargetStatus(draft.status, "CONFIRM");
@@ -195,12 +266,12 @@ export function MetricTargetDraftEditor({
         <div>
           <div className="flex items-center gap-2">
             <h2 className="font-headline-sm text-headline-sm text-primary">Chỉ tiêu giao — bản nháp UI</h2>
-            <span className="rounded border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
-              MOCK · CHƯA NỐI API
+            <span className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${apiMode ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-sky-300 bg-sky-50 text-sky-800"}`}>
+              {apiMode ? "API TARGET-ONLY" : "MOCK · CHƯA NỐI API"}
             </span>
           </div>
           <p className="mt-1 text-body-sm text-on-surface-variant">
-            Chỉ tiêu cấp Cục (Q1=A). Target <b>DRAFT</b> chỉ tạm tính; <b>CONFIRMED</b> mới tính % chính thức.
+            Chỉ tiêu cấp Cục (Q1=A). Target <b>DRAFT</b> chỉ tạm tính. D5 đang <b>DEFERRED_B_C_3</b>: chưa có quy tắc %, không tô đạt/vượt.
           </p>
         </div>
         <span className="rounded border border-border-default bg-surface-container-low px-2 py-1 text-[11px] font-semibold text-on-surface-variant">
@@ -209,25 +280,28 @@ export function MetricTargetDraftEditor({
       </div>
 
       <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
-        Bản nháp độc lập: không gọi API, không ghi DB, không sửa schema/metrics. Dữ liệu dưới đây là mock.
-        Khi S2 công bố schema target, phần này sẽ được nối target-only.
+        {apiMode
+          ? "Đã nối API target-only (/api/metrics/targets). D5 chưa có: direction/measureMode/baselineScope hiển thị “chưa có quy tắc”; không tính % chính thức cho tới B-C-3."
+          : "Bản nháp độc lập: không gọi API, không ghi DB, không sửa schema/metrics. Dữ liệu dưới đây là mock."}
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
-          Chỉ tiêu
-          <select
-            className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
-            value={draft.metricId}
-            onChange={(e) => handleMetricChange(e.target.value)}
-          >
-            {metrics.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.code} — {m.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {showMetricSelect && (
+          <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+            Chỉ tiêu
+            <select
+              className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
+              value={draft.metricId}
+              onChange={(e) => handleMetricChange(e.target.value)}
+            >
+              {metrics.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.code} — {m.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
           Loại chỉ tiêu giao
@@ -237,7 +311,7 @@ export function MetricTargetDraftEditor({
             onChange={(e) => patch({ labelCode: e.target.value as TargetLabelCode | "" })}
           >
             <option value="">— chọn loại —</option>
-            {TARGET_LABEL_CODES.map((code) => (
+            {labelCodes.map((code) => (
               <option key={code} value={code}>
                 {code}
               </option>
@@ -374,20 +448,26 @@ export function MetricTargetDraftEditor({
         )}
       </div>
 
-      {preview && (
-        <div className="rounded-lg border border-border-default bg-surface-container-low px-3 py-2 text-body-sm">
-          <b>Tạm tính (mock):</b>{" "}
-          {preview.state === "COMPUTED" ? (
-            <span className="font-semibold tabular-nums text-primary">{preview.displayValue}</span>
-          ) : (
-            <span className="text-on-surface-variant">
-              {preview.reason ? PERCENT_REASON_LABELS[preview.reason] : "Không tính"}
-            </span>
-          )}
-          <span className="ml-2 text-body-xs text-on-surface-variant">
-            (số thực hiện giả lập = 80% chỉ tiêu; target DRAFT/DEMO không dùng báo cáo)
-          </span>
+      {rulesPending ? (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-sm text-amber-900">
+          <b>Chưa có quy tắc đánh giá (D5 — DEFERRED_B_C_3):</b> direction = NOT_SET; measureMode/baselineScope = PENDING_BUSINESS_INPUT. Không tính % chính thức.
         </div>
+      ) : (
+        preview && (
+          <div className="rounded-lg border border-border-default bg-surface-container-low px-3 py-2 text-body-sm">
+            <b>Tạm tính (mock):</b>{" "}
+            {preview.state === "COMPUTED" ? (
+              <span className="font-semibold tabular-nums text-primary">{preview.displayValue}</span>
+            ) : (
+              <span className="text-on-surface-variant">
+                {preview.reason ? PERCENT_REASON_LABELS[preview.reason] : "Không tính"}
+              </span>
+            )}
+            <span className="ml-2 text-body-xs text-on-surface-variant">
+              (số thực hiện giả lập = 80% chỉ tiêu; target DRAFT/DEMO không dùng báo cáo)
+            </span>
+          </div>
+        )
       )}
 
       {(errors.length > 0 || warnings.length > 0) && (
@@ -411,22 +491,24 @@ export function MetricTargetDraftEditor({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface hover:bg-surface-container-low"
+          disabled={busy}
+          className="rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50"
           onClick={() => save("DRAFT")}
         >
-          Lưu nháp (mock)
+          {apiMode ? "Lưu nháp (PROPOSED)" : "Lưu nháp (mock)"}
         </button>
         <button
           type="button"
           className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={errors.length > 0 || draft.status !== "DRAFT"}
+          disabled={busy || errors.length > 0 || draft.status !== "DRAFT"}
           onClick={() => save("CONFIRMED")}
         >
-          Xác nhận (mock)
+          {apiMode ? "Xác nhận chỉ tiêu" : "Xác nhận (mock)"}
         </button>
         <button
           type="button"
-          className="rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface hover:bg-surface-container-low"
+          disabled={busy}
+          className="rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50"
           onClick={() => setDraft(emptyDraft(selectedMetric))}
         >
           Tạo mới
@@ -436,7 +518,7 @@ export function MetricTargetDraftEditor({
       {message && <div className="text-body-xs text-on-surface-variant">{message}</div>}
 
       <div className="overflow-x-auto rounded-lg border border-border-default">
-        <table className="w-full min-w-[720px] border-collapse text-body-xs">
+        <table className="w-full min-w-[900px] border-collapse text-body-xs">
           <thead className="bg-surface-container-low text-left text-on-surface-variant">
             <tr>
               <th className="px-2 py-1.5">Chỉ tiêu</th>
@@ -445,6 +527,7 @@ export function MetricTargetDraftEditor({
               <th className="px-2 py-1.5 text-right">Giá trị</th>
               <th className="px-2 py-1.5">Nguồn</th>
               <th className="px-2 py-1.5">Trạng thái</th>
+              <th className="px-2 py-1.5">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -453,7 +536,12 @@ export function MetricTargetDraftEditor({
               const value = parseMetricInput(t.value);
               return (
                 <tr key={t.id} className="border-t border-border-default/40">
-                  <td className="px-2 py-1.5">{metric ? `${metric.code} — ${metric.name}` : t.metricId}</td>
+                  <td className="px-2 py-1.5">
+                    <div className="font-medium">{t.label}</div>
+                    <div className="text-[10px] text-on-surface-variant">
+                      {metric ? `${metric.code} — ${metric.name}` : t.metricId}
+                    </div>
+                  </td>
                   <td className="px-2 py-1.5">{t.labelCode || "—"}</td>
                   <td className="px-2 py-1.5">{periodLabel(t)}</td>
                   <td className="px-2 py-1.5 text-right tabular-nums">
@@ -466,7 +554,61 @@ export function MetricTargetDraftEditor({
                     <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_STYLE[t.status]}`}>
                       {TARGET_STATE_LABELS[t.status === "DRAFT" ? "DRAFT" : t.status === "CONFIRMED" ? "CONFIRMED" : t.status === "LOCKED" ? "LOCKED" : t.status === "VOID" ? "VOID" : "SUPERSEDED"]}
                     </span>
-                    <span className="ml-1 text-[10px] text-on-surface-variant">{t.isOfficial ? "official" : "demo"}</span>
+                    <span className="ml-1 text-[10px] text-on-surface-variant">{t.isOfficial ? "official" : "DEMO"}</span>
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {t.status !== "LOCKED" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setDraft({ ...t })}
+                          className="rounded border border-border-default px-1.5 py-0.5 text-[10px] font-semibold disabled:opacity-50"
+                        >
+                          Sửa
+                        </button>
+                      )}
+                      {t.status === "DRAFT" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => runAction("confirm", t)}
+                          className="rounded border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 disabled:opacity-50"
+                        >
+                          Xác nhận
+                        </button>
+                      )}
+                      {t.status === "CONFIRMED" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => runAction("lock", t)}
+                          className="rounded border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800 disabled:opacity-50"
+                        >
+                          Chốt
+                        </button>
+                      )}
+                      {t.status === "DRAFT" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => runAction("void", t)}
+                          className="rounded border border-rose-300 bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-800 disabled:opacity-50"
+                        >
+                          Hủy
+                        </button>
+                      )}
+                      {onHistory && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => runAction("history", t)}
+                          className="rounded border border-border-default px-1.5 py-0.5 text-[10px] font-semibold disabled:opacity-50"
+                        >
+                          Lịch sử
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

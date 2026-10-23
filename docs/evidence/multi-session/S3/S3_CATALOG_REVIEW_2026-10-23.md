@@ -4,7 +4,7 @@
 **Branch:** `codex/v3-phase-c-metrics`  
 **Worktree:** `D:\thanhnx\OpenCode\talung-phase-c`  
 **Database đã dùng:** `talung_v3_phase_c` (localhost, test)  
-**Trạng thái:** `APPROVED` theo `S0_DECISION_LOG_2026-10-23.md` — **được làm pure helper/state model + test và target UI draft mock**; **chưa sửa schema, `metrics.ts`, `/api/metrics/*`, `/giao-ban`, migration shared** cho tới khi S2 công bố schema.
+**Trạng thái:** `APPROVED` + **`TARGET_ONLY_IMPLEMENTED`** theo `S0_DECISION_LOG_2026-10-23.md`; merge nền `75e5fae`. **Không sửa** schema/migration/`metrics.ts`/`/api/metrics/admin`/summary/entries/Dashboard.
 
 **Ngày:** 23/10/2026
 
@@ -19,8 +19,8 @@
 3. **636 bản ghi** tháng 10/2026 đều là `RECORDED`; **0 bản ghi `CONFIRMED`**. Báo cáo tháng 10 đã có phiên bản lưu, nên logic hiện tại gắn `LOCKED` cho mọi chỉ tiêu có bản ghi — kể cả khi chưa ai xác nhận.
 4. Công thức `%` hiện tại có 4 lỗ hổng contract: không lọc chỉ tiêu giao theo đúng năm/kỳ; không phân biệt 0 với thiếu; không có chiều đánh giá; không có trạng thái nguồn/chỉ tiêu giao.
 5. **S0 đã phê duyệt toàn bộ contract** tại `docs/V3/S0_DECISION_LOG_2026-10-23.md` (Q1–Q12), theo hướng dẫn tại `S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md`.
-6. Đã triển khai phần được phép: **pure helper/state model + test 108/108 PASS**, **mapping layer B-C-2 + test 77/77 PASS** và **target UI draft độc lập (mock)**; chưa nối DB/API, chưa dùng Production.
-7. Phần còn chặn: schema target + `metrics.ts` + API `/api/metrics/*` + `/giao-ban` + `/giao-ban/cau-hinh` + migration shared thuộc S2; S3 chỉ làm target-only sau khi S2 công bố schema.
+6. Đã triển khai **target-only**: service/API + UI, contract **110/110**, mapping **80/80**, target API **26/26**, target UI **18/18**; D5 chưa có nên không tính % chính thức.
+7. Phần shared schema/`metrics.ts`/summary/entries/Dashboard vẫn thuộc S2; S3 không sửa.
 
 ---
 
@@ -46,6 +46,10 @@
 | Mock data cho UI draft | `src/components/metrics/target-draft-mock.ts` |
 | Test contract APPROVED | `scripts/test-phase-c-contract.ts` |
 | Test mapping B-C-2 | `scripts/test-phase-c-bc2-mapping.ts` |
+| Target service/API (D7=A) | `src/server/metric-targets.ts`, `src/app/api/metrics/targets/**` |
+| Target UI manager | `src/components/metrics/MetricTargetManager.tsx` |
+| Test target API/UI | `scripts/test-phase-c-target-api.ts`, `scripts/test-phase-c-target-ui.ts` |
+| Handoff target-only | `docs/evidence/multi-session/S3/S3_HANDOFF_TARGET_ONLY_2026-10-23.md` |
 | Quyết định S0 | `D:\thanhnx\OpenCode\talung-integration\docs\V3\S0_DECISION_LOG_2026-10-23.md` |
 | Câu hỏi contract gửi S0 (bản gốc) | `docs/evidence/multi-session/S3/S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md` |
 | Handoff APPROVED | `docs/evidence/multi-session/S3/S3_HANDOFF_APPROVED_2026-10-23.md` |
@@ -430,7 +434,7 @@ Các điểm đã khóa:
 - `src/components/metrics/MetricTargetDraftEditor.tsx`: UI draft độc lập, không gọi API/DB.
 - `src/components/metrics/target-draft-mock.ts`: 3 metric + 3 target mock (gồm DRAFT/CONFIRMED/DEMO/PENDING_BUSINESS_INPUT).
 - Có validate, badge trạng thái, nguồn/căn cứ, chiều C1, preview tạm tính, bảng target mock.
-- SSR smoke test đã render thành công; chưa nối `/giao-ban/cau-hinh` (chờ S2 schema).
+- SSR smoke test đã render thành công; target UI đã nối `/api/metrics/targets` và `/giao-ban/cau-hinh` (target tab).
 
 ### 7.4. Cách chạy
 
@@ -452,7 +456,7 @@ npx tsc --noEmit
 
 ### 7.6. Giới hạn
 
-Helper/UI draft/mapping **chưa được nối** vào app. Đây là phần độc lập theo Q3=A/D7=A; khi S2 công bố B-C-2, S3 mới làm service/API target-only và chạy test tích hợp.
+Helper/UI/mapping đã được nối vào target-only (D7=A). Phần shared `metrics.ts`/summary/entries/Dashboard vẫn thuộc S2; S3 không sửa.
 
 ---
 
@@ -464,7 +468,7 @@ Helper/UI draft/mapping **chưa được nối** vào app. Đây là phần đ�
 - **Chưa đổi** `requireConfirm`, `expectDaily`, `showOnDashboard`.
 - **Chưa dùng** Production; mọi truy vấn là local test read-only.
 - **Chưa chốt** C1 (danh sách chỉ tiêu giao/chu kỳ/chiều) — vẫn `PENDING_C1`.
-- **Chưa nối** target UI draft vào màn hình thật.
+- **Đã nối** target-only vào `/giao-ban/cau-hinh` tab target và `/giao-ban` target display; vẫn không sửa `metrics.ts`/admin/summary/entries/Dashboard.
 
 ---
 
@@ -482,4 +486,4 @@ Bước tiếp theo:
 
 ---
 
-**KẾT LUẬN:** Contract YC-06/07 đã **APPROVED**. Phần độc lập (pure helper/state model + target UI mock) đã hoàn tất và test **108/108 PASS**. Các phần schema/API/`metrics.ts`/`/giao-ban` vẫn chờ S2 công bố B-C-2; không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.
+**KẾT LUẬN:** Contract YC-06/07 đã **APPROVED** và target-only đã **IMPLEMENTED**. Test: contract 110/110, mapping 80/80, target API 26/26, target UI 18/18. D5 vẫn `DEFERRED_B_C_3` nên không tính % chính thức; `/giao-ban` hiển thị target/trạng thái + “% chờ B-C-3”. Không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.

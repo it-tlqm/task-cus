@@ -142,15 +142,13 @@ export function mapComparisonKindToLabelCode(kind: string): TargetLabelCode | nu
       return "UBND";
     case "MONTH_PLAN":
       return "KH_THANG";
-    case "KHAC":
-      return "KHAC";
     case "NONE":
     default:
       return null;
   }
 }
 
-/** D4 — chỉ 3 loại B-C-2 hỗ trợ; KH_QUY/KH_NAM/KHAC chưa có kind tương ứng. */
+/** D4 — B-C-2 chỉ có 3 kind so sánh + NONE; KHAC là "không đối chiếu". */
 export function mapLabelCodeToComparisonKind(labelCode: TargetLabelCode | "" | null | undefined): Bc2ComparisonKind | null {
   switch (labelCode) {
     case "BTC":
@@ -160,7 +158,7 @@ export function mapLabelCodeToComparisonKind(labelCode: TargetLabelCode | "" | n
     case "KH_THANG":
       return "MONTH_PLAN";
     case "KHAC":
-      return "KHAC";
+      return "NONE";
     case "KH_QUY":
     case "KH_NAM":
     default:
@@ -236,7 +234,7 @@ export function mapBc2TargetToS3(dto: Bc2TargetDto): Bc2MappingResult<S3TargetVi
   if (!dto.unitType) issues.push(issue("unitType", "UNIT_MISSING", "Thiếu unitType."));
 
   const labelCode = mapComparisonKindToLabelCode(dto.comparisonKind);
-  if (!labelCode) {
+  if (!labelCode && dto.comparisonKind !== "NONE") {
     issues.push(
       issue(
         "comparisonKind",
@@ -336,7 +334,7 @@ export function mapBc2TargetToTargetDraft(dto: Bc2TargetDto): Bc2MappingResult<T
       id: dto.id,
       metricId: dto.metricId,
       classificationId: dto.classificationId ?? "",
-      labelCode: target.labelCode ?? "",
+      labelCode: target.labelCode || (dto.comparisonKind === "NONE" ? "KHAC" : ""),
       label: dto.label ?? target.labelCode ?? dto.comparisonKind,
       periodType: target.periodType,
       year: target.year,

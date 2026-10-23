@@ -4,8 +4,10 @@
 - **Branch:** `codex/v3-phase-c-metrics`
 - **Worktree:** `D:\thanhnx\OpenCode\talung-phase-c`
 - **Database test:** `talung_v3_phase_c` (localhost)
-- **Trạng thái:** `WAIT_B_C_2` — **chưa sửa** schema/API/metrics.ts/`/giao-ban`
+- **Trạng thái:** `IMPLEMENTED_TARGET_ONLY — WAIT_S0_REVIEW`; merge nền `75e5fae`; D5 `DEFERRED_B_C_3`
 - **Ngày:** 23/10/2026
+
+> **Kết quả 23/10/2026:** đã triển khai service/API/UI target-only theo D7=A. Contract 110/110, mapping 80/80, target API 26/26, target UI 18/18. Không sửa schema/migration/`metrics.ts`/`/api/metrics/admin`/summary/entries. D5 chưa có nên **không tính % chính thức**; `/giao-ban` hiển thị target/trạng thái + “% chờ B-C-3”.
 
 > Căn cứ: `S0_DECISION_LOG_2026-10-23.md`, `S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md`, `S3_HANDOFF_APPROVED_2026-10-23.md`, `DATA_CONTRACT_B_C_2026-10-23.md` (B-C-1).
 >
@@ -299,9 +301,11 @@ GET  /api/metrics/targets/{id}/revisions  # lịch sử
 SESSION: S3
 YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
-STATUS: WAIT_B_C_2 — blocker Q9/Q11; D3–D7 APPROVED, mapping layer ready
-IMPLEMENTED: helper/state model + test 108/108 + mapping 77/77 + target UI mock
-NOT_IMPLEMENTED: target API/UI thật, schema/API/metrics.ts/giao-ban
+STATUS: IMPLEMENTED_TARGET_ONLY — WAIT_S0_REVIEW
+MERGE_BASE: 75e5fae
+IMPLEMENTED: target service/API + target UI + contract 110/110 + mapping 80/80 + API 26/26 + UI 18/18
+D5: DEFERRED_B_C_3 — không tính % chính thức
+NOT_CHANGED: prisma/schema.prisma, migration, src/server/metrics.ts, /api/metrics/admin, summary, entries, Dashboard
 PRODUCTION_TOUCHED: NO
-READY_FOR_INTEGRATION: NO — chờ B-C-2
+READY_FOR_INTEGRATION: YES — target-only; D5 pending
 ```
