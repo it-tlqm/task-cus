@@ -27,21 +27,43 @@ export interface PickedProduct {
   id: string;
   code: string;
   taskName: string;
+  outputProduct?: string | null;
   convertFactor?: number | null;
+  groupName?: string | null;
+  /** Đơn vị tính của liên kết (nếu đã có); không tự suy ra. */
+  quantityUnit?: string | null;
+  /** PROPOSED | CONFIRMED | REJECTED | null (chưa vào luồng xác nhận). */
+  reviewState?: string | null;
+  /** ID dòng WorkItemProduct khi sửa đầu việc đã có. */
+  linkId?: string | null;
+  isPrimary?: boolean;
 }
 
 interface Props {
   /** Tiêu đề công việc đang nhập — dùng để gợi ý. */
   title: string;
   catalogEntry: PickedCatalogEntry | null;
-  product: PickedProduct | null;
+  /** Chế độ một sản phẩm (tương thích các màn hình cũ). */
+  product?: PickedProduct | null;
   onCatalogChange: (entry: PickedCatalogEntry | null) => void;
-  onProductChange: (product: PickedProduct | null) => void;
+  onProductChange?: (product: PickedProduct | null) => void;
+  /**
+   * Chế độ nhiều sản phẩm QĐ1277: truyền products + onProductsChange.
+   * Khi có onProductsChange, component cho chọn/bỏ nhiều mã và không tự đóng modal.
+   */
+  products?: PickedProduct[];
+  onProductsChange?: (products: PickedProduct[]) => void;
   /** Khóa lưu "gần đây"/"ghim" — nên gồm mã người dùng. */
   storageKey?: string;
   disabled?: boolean;
   /** Bật/tắt tab sản phẩm QĐ1277 (mặc định bật). */
   allowProduct?: boolean;
+  /**
+   * Chỉ hiển thị sản phẩm QĐ1277 ở chế độ đọc: dùng khi người đang đăng nhập
+   * không phải người thực hiện (lãnh đạo lập hộ). Việc đề xuất SP QĐ1277
+   * thuộc quyền của người thực hiện, không phải người giao việc.
+   */
+  lockProducts?: boolean;
 }
 
 const RECENT_MAX = 10;
@@ -72,10 +94,19 @@ export default function WorkSourcePicker({
   product,
   onCatalogChange,
   onProductChange,
+  products,
+  onProductsChange,
   storageKey = "yc38b",
   disabled,
   allowProduct = true,
+  lockProducts = false,
 }: Props) {
+  const isMulti = typeof onProductsChange === "function";
+  const selectedProducts: PickedProduct[] = isMulti
+    ? products || []
+    : product
+      ? [product]
+      : [];
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"tx" | "product">("tx");
   const [query, setQuery] = useState("");
@@ -95,6 +126,13 @@ export default function WorkSourcePicker({
     setRecent(readStore(storageKey, "recent"));
     setFavorites(readStore(storageKey, "favorites"));
   }, [storageKey]);
+
+  // Không giữ tab QĐ1277 khi người dùng không có quyền đề xuất sản phẩm.
+  useEffect(() => {
+    if ((!allowProduct || lockProducts) && tab === "product") {
+      setTab("tx");
+    }
+  }, [allowProduct, lockProducts, tab]);
 
   // ---- Gợi ý TX theo tiêu đề đang nhập (debounce 300ms)
   useEffect(() => {
@@ -173,10 +211,31 @@ export default function WorkSourcePicker({
     setQuery("");
   };
 
+  const setSelectedProducts = (next: PickedProduct[]) => {
+    if (onProductsChange) {
+      onProductsChange(next);
+      return;
+    }
+    onProductChange?.(next[0] || null);
+  };
+
   const pickProduct = (p: PickedProduct) => {
-    onProductChange(p);
+    if (isMulti) {
+      const exists = selectedProducts.some((item) => item.id === p.id);
+      setSelectedProducts(
+        exists ? selectedProducts.filter((item) => item.id !== p.id) : [...selectedProducts, p]
+      );
+      setQuery("");
+      return;
+    }
+    onProductChange?.(p);
     setOpen(false);
     setQuery("");
+  };
+
+  const removeProduct = (p: PickedProduct) => {
+    if (p.reviewState === "CONFIRMED") return;
+    setSelectedProducts(selectedProducts.filter((item) => item.id !== p.id));
   };
 
   // ---- Tìm trong modal (server-side, không tải toàn bộ danh mục)
@@ -216,7 +275,11 @@ export default function WorkSourcePicker({
                 id: p.id,
                 code: p.code,
                 taskName: p.taskName,
+                outputProduct: p.outputProduct ?? null,
                 convertFactor: p.convertFactor ?? null,
+                groupName: p.group?.title || p.groupName || null,
+                quantityUnit: null,
+                reviewState: null,
               }))
             );
           }
@@ -245,10 +308,17 @@ export default function WorkSourcePicker({
     []
   );
 
+  const reviewLabel = (state?: string | null) => {
+    if (state === "CONFIRMED") return "Đã xác nhận";
+    if (state === "PROPOSED") return "Đã đề xuất — chờ xác nhận";
+    if (state === "REJECTED") return "Bị từ chối — cần điều chỉnh";
+    return "Chưa xác nhận";
+  };
+
   return (
     <div className="flex flex-col gap-2" data-testid="work-source-picker">
       {/* Nguồn đã chọn */}
-      {(catalogEntry || product) && (
+      {(catalogEntry || selectedProducts.length > 0) && (
         <div className="flex flex-col gap-1.5">
           {catalogEntry && (
             <div className="flex items-center justify-between gap-2 rounded-lg border border-teal-200 bg-teal-50/60 px-2.5 py-1.5">
@@ -288,30 +358,51 @@ export default function WorkSourcePicker({
               </div>
             </div>
           )}
-          {product && (
-            <div className="flex items-center justify-between gap-2 rounded-lg border border-indigo-200 bg-indigo-50/60 px-2.5 py-1.5">
+          {selectedProducts.map((p) => (
+            <div
+              key={p.id}
+              className="flex items-start justify-between gap-2 rounded-lg border border-indigo-200 bg-indigo-50/60 px-2.5 py-1.5"
+            >
               <div className="min-w-0">
                 <p className="text-[10px] uppercase tracking-wide text-indigo-800 font-semibold">
                   Sản phẩm đầu ra QĐ1277
+                  {p.isPrimary ? " · Chính" : ""}
+                  {lockProducts ? " · Chỉ đọc" : ""}
                 </p>
                 <p className="text-[12px] text-slate-800 truncate">
-                  <span className="font-mono font-semibold">{product.code}</span> ·{" "}
-                  {product.taskName}
+                  <span className="font-mono font-semibold">{p.code}</span> · {p.taskName}
                 </p>
                 <p className="text-[10px] text-slate-600">
-                  Hệ số sản phẩm: {factorLabel(product.convertFactor)}
+                  Nhóm: {p.groupName || "Chưa phân nhóm"} · {factorLabel(p.convertFactor)}
+                </p>
+                <p className="text-[10px] text-slate-600">
+                  Đơn vị tính: {p.quantityUnit || "Chưa xác nhận"} · {reviewLabel(p.reviewState)}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => onProductChange(null)}
-                aria-label="Bỏ chọn sản phẩm QĐ1277"
-                className="rounded-md px-1.5 py-1 text-[16px] leading-none text-slate-400 hover:text-red-600"
+                onClick={() => removeProduct(p)}
+                disabled={p.reviewState === "CONFIRMED" || lockProducts}
+                aria-label={
+                  lockProducts
+                    ? "Chỉ người thực hiện được bỏ sản phẩm QĐ1277"
+                    : p.reviewState === "CONFIRMED"
+                      ? "Sản phẩm đã xác nhận, không thể bỏ"
+                      : "Bỏ chọn sản phẩm QĐ1277"
+                }
+                title={
+                  lockProducts
+                    ? "Chỉ người thực hiện công việc được gắn/bỏ sản phẩm QĐ1277"
+                    : p.reviewState === "CONFIRMED"
+                      ? "Sản phẩm đã được lãnh đạo xác nhận — không thể bỏ khỏi đầu việc"
+                      : "Bỏ sản phẩm này"
+                }
+                className="rounded-md px-1.5 py-1 text-[16px] leading-none text-slate-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 ✕
               </button>
             </div>
-          )}
+          ))}
         </div>
       )}
 
@@ -325,10 +416,14 @@ export default function WorkSourcePicker({
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-[15px]">library_books</span>
-          Chọn từ danh mục
+          {isMulti ? `Chọn từ danh mục (${selectedProducts.length} SP QĐ1277)` : "Chọn từ danh mục"}
         </button>
-        <span className="text-[10px] text-slate-500">
-          Không bắt buộc chọn danh mục — công việc ngoài danh mục vẫn ghi được.
+        <span className={`text-[10px] ${lockProducts ? "text-amber-700 font-medium" : "text-slate-500"}`}>
+          {lockProducts
+            ? "Chỉ người thực hiện công việc được gắn/bỏ sản phẩm QĐ1277. Lãnh đạo chỉ giao việc, không đề xuất sản phẩm thay cán bộ."
+            : isMulti
+              ? "Có thể gắn nhiều sản phẩm QĐ1277; TX và QĐ1277 là hai danh mục độc lập."
+              : "Không bắt buộc chọn danh mục — công việc ngoài danh mục vẫn ghi được."}
         </span>
       </div>
 
@@ -441,7 +536,7 @@ export default function WorkSourcePicker({
               >
                 ① Công việc thường xuyên (TX)
               </button>
-              {allowProduct && (
+              {allowProduct && !lockProducts && (
                 <button
                   type="button"
                   onClick={() => setTab("product")}
@@ -514,22 +609,40 @@ export default function WorkSourcePicker({
                     <p className="py-4 text-center text-[11px] text-slate-500">Đang tìm…</p>
                   )}
                   <ul className="flex flex-col gap-1">
-                    {productResults.map((p) => (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => pickProduct(p)}
-                          className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-2 text-left hover:border-indigo-300 hover:bg-indigo-50/50"
-                        >
-                          <p className="text-[12px] text-slate-800">
-                            <span className="font-mono font-semibold">{p.code}</span> · {p.taskName}
-                          </p>
-                          <p className="text-[10px] text-slate-500">
-                            Hệ số sản phẩm: {factorLabel(p.convertFactor)}
-                          </p>
-                        </button>
-                      </li>
-                    ))}
+                    {productResults.map((p) => {
+                      const picked = selectedProducts.some((item) => item.id === p.id);
+                      return (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            onClick={() => pickProduct(p)}
+                            className={`w-full rounded-md border px-2.5 py-2 text-left ${
+                              picked
+                                ? "border-indigo-400 bg-indigo-50"
+                                : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50"
+                            }`}
+                          >
+                            <p className="flex items-center justify-between gap-2 text-[12px] text-slate-800">
+                              <span>
+                                <span className="font-mono font-semibold">{p.code}</span> · {p.taskName}
+                              </span>
+                              {picked && (
+                                <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                                  ĐÃ CHỌN
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-slate-500">
+                              Nhóm: {p.groupName || "Chưa phân nhóm"} · {factorLabel(p.convertFactor)}
+                            </p>
+                            <p className="text-[10px] text-slate-500">
+                              Đơn vị tính: {p.quantityUnit || "Chưa xác nhận"} ·{" "}
+                              {reviewLabel(p.reviewState)}
+                            </p>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                   {query && !loadingList && productResults.length === 0 && (
                     <p className="py-6 text-center text-[11px] text-slate-500">
@@ -543,13 +656,14 @@ export default function WorkSourcePicker({
             <div className="flex items-center justify-between gap-2 border-t border-surface-container px-4 py-3">
               <p className="text-[10px] text-slate-500">
                 TX và QĐ1277 là hai danh mục độc lập — chọn riêng khi phù hợp, không bắt buộc chọn cả hai.
+                {isMulti ? " Có thể chọn nhiều sản phẩm QĐ1277 cho cùng một đầu việc." : ""}
               </p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
               >
-                Đóng
+                {isMulti ? `Xong (${selectedProducts.length})` : "Đóng"}
               </button>
             </div>
           </div>

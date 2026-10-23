@@ -627,6 +627,7 @@ model PersonalWorkItem {
   @@index([seriesId])
   @@index([catalogEntryId])
   @@index([taskId])
+  @@unique([personId, idempotencyKey], map: "personal_work_items_person_idempotency_key")
   @@map("personal_work_items")
 }
 
