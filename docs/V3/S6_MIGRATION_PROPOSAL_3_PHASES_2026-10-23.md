@@ -3,12 +3,16 @@
 **Ngày:** 23/10/2026  
 **Trạng thái:** **APPROVED PROPOSAL** — căn cứ `S0_DECISION_LOG_2026-10-23.md`  
 **Nhánh spec:** `codex/v3-approval-rules-spec` — **không tạo migration, không sửa schema**  
-**Nhánh implementation:** S0 mở sau khi S4 merge  
+**Nhánh implementation:** S0 mở sau khi xác nhận baseline `70ea5d7` (S4 đã merge)  
 **Nguyên tắc:** additive, nullable, không default nghiệp vụ, không backfill nội dung, rollback giữ dữ liệu.
 
 > Đây là **đề xuất logic**. Tên cột/bảng có thể được implementation owner tinh chỉnh cho khớp
 > convention Prisma, nhưng không được thay đổi semantics đã APPROVED. Không chạy bất kỳ DDL nào
 > từ tài liệu này trên Production.
+
+**Baseline S4:** integration `70ea5d7` (S4 merge `5d5c299`, S4 code `e198187`) **không có thay đổi
+schema/migration**. Phase 1 migration mới phải có timestamp sau migration gần nhất
+`20261023120000_v3_phase_a_planning`; không sửa migration cũ.
 
 ---
 
@@ -29,6 +33,11 @@
 ---
 
 ## 2. Phase 1 — YC-09 per-person
+
+**Ràng buộc từ S4:** `TaskUpdate` đã dùng `kind=accept/submit/approve/return/progress/extend/cancel`
+(`schema.prisma:714`); `ApprovalCase` đã unique `(caseType, resourceId)` và `decideApproval` dùng
+`upsert` một case/Task. Phase 1 **không** đổi các semantics này; chỉ thêm participant result/event
+và snapshot.
 
 ### 2.1. Bảng `task_participant_results` (current projection)
 
@@ -91,6 +100,13 @@
 - Không unique theo `(participant_result_id, round, event_type)` vì có thể có nhiều lần trả/gửi
   trong cùng vòng do thao tác lặp; app chống trùng bằng transaction/idempotency.
 
+**Phân biệt với `TaskUpdate.kind` S4:**
+- `TaskUpdate` vẫn là timeline chung: `submit` (owner nộp chung), `approve`/`return` (final),
+  `progress` (owner/leader), `accept` (nhận việc), `extend`, `cancel`.
+- Participant event dùng taxonomy riêng: `SUBMIT/RETURN/ACCEPT/EXEMPT/REOPEN/PRECHECK_PASS/PRECHECK_RETURN`.
+- Không đổi nghĩa `TaskUpdate.kind` cũ; có thể mirror sự kiện participant thành `TaskUpdate` với
+  `subject_person_id` để timeline hiển thị, nhưng event là nguồn audit.
+
 ### 2.3. Bổ sung `task_updates`
 
 | Cột | Kiểu | Null | Ghi chú |
@@ -101,21 +117,28 @@
 - Index `(task_id, subject_person_id, created_at)`.
 - Không đổi dữ liệu cũ; đọc NULL như sự kiện Task-level.
 - Không dùng `progress_percent` của participant thay tiến độ Task.
+- `ApprovalCase.submittedById` đã có sẵn; Phase 1 chỉ sửa **code** để ghi người nộp thật, không
+  thêm cột và không ghi đè bằng `ownerId` mỗi lần quyết định.
 
-### 2.4. Bảng `approval_case_snapshots` (audit tại thời điểm nộp)
+### 2.4. Bảng `task_submission_snapshots` (audit tại thời điểm nộp)
+
+> Điều chỉnh theo S4: `ApprovalCase` chỉ được tạo ở lần quyết định đầu, nên snapshot không gắn
+> `case_id`; snapshot keyed theo Task/round. Khi case được tạo, đọc `submitted_by_id` từ snapshot.
 
 | Cột | Kiểu | Null | Ghi chú |
 |---|---|---|---|
 | `id` | UUID | PK | |
-| `case_id` | UUID | NOT NULL | FK `approval_cases(id)` ON DELETE CASCADE |
-| `round` | int | NOT NULL | Vòng trình |
+| `task_id` | UUID | NOT NULL | FK `tasks(id)` ON DELETE CASCADE |
+| `round` | int | NOT NULL | Vòng trình của Task (bắt đầu 1) |
 | `snapshot_json` | jsonb | NOT NULL | Danh sách participant + trạng thái + kết quả + người/ thời gian |
+| `submitted_by_id` | UUID | NULL | FK `people(id)` ON DELETE SET NULL; người nộp thật |
 | `created_at` | timestamptz | NOT NULL default now | |
-| `created_by_id` | UUID | NULL | FK `people(id)` ON DELETE SET NULL |
 
-- Unique `(case_id, round)`.
+- Unique `(task_id, round)`.
 - Chỉ ghi khi owner nộp chung; không sửa snapshot cũ.
-- Có thể lưu `route_snapshot` Phase 3 ở bảng riêng (xem mục 4).
+- `round = max(snapshot.round hiện có) + 1` (1 nếu chưa có), tính trong transaction/advisory lock.
+- Khi `decideApproval` tạo `ApprovalCase` lần đầu, dùng `submitted_by_id` từ snapshot mới nhất;
+  không tạo case riêng cho snapshot.
 
 ### 2.5. Backfill / tương thích
 
@@ -132,7 +155,7 @@
 1. Tắt feature flag per-person.
 2. Giữ nguyên dữ liệu participant/event (không xóa dấu vết); chỉ ngừng đọc/ghi.
 3. Nếu buộc drop: export bảng/ sự kiện trước; drop theo thứ tự FK:
-   `task_updates` columns → `approval_case_snapshots` → `task_participant_events` →
+   `task_updates` columns → `task_submission_snapshots` → `task_participant_events` →
    `task_participant_results`.
 4. Không sửa `tasks`/`task_assignees`.
 
@@ -257,7 +280,7 @@ Phase 1:
   task_participant_results
   task_participant_events
   task_updates (+subject_person_id, +participant_event_id)
-  approval_case_snapshots
+  task_submission_snapshots
 
 Phase 2:
   approval_decisions (+quality_percent)
@@ -270,6 +293,8 @@ Phase 3:
 - Phase 1 phải apply trước Phase 3 (event table).
 - Phase 2 độc lập schema nhưng cùng approval service; apply sau Phase 1 để tránh conflict.
 - Không gộp migration 3 phase vào một file; mỗi phase một migration riêng, có rollback.
+- Timestamp Phase 1 phải **lớn hơn** `20261023120000_v3_phase_a_planning` (migration gần nhất);
+  không sửa migration S1/S4 cũ.
 
 ### 5.2. Rehearsal bắt buộc
 
@@ -279,7 +304,7 @@ Phase 3:
   - Bảng mới tồn tại; unique/index/check đúng.
   - Legacy Task/ApprovalCase vẫn đọc được.
   - Không có dòng quality ngoài 65–100.
-  - Không có snapshot trùng `(case_id, round)`.
+  - Không có snapshot trùng `(task_id, round)`.
 - Rollback từng phase; xác nhận dữ liệu cũ còn nguyên.
 - Không chạy trên Production; backup trước nếu môi trường chia sẻ.
 
@@ -326,5 +351,6 @@ Phase 3:
 ## 8. Kết luận
 
 Đề xuất migration này **additive, có thể rollback**, không chạm QĐ1277/monthly/scoring và không
-tạo role/stage. Đủ điều kiện để S0 review và giao implementation owner sau khi S4 merge. Trên
+tạo role/stage. Đủ điều kiện để S0 review và giao implementation owner sau khi xác nhận baseline
+`70ea5d7` (S4 đã merge). Trên
 nhánh spec **không tạo migration**.

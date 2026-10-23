@@ -3,7 +3,7 @@
 **Ngày:** 23/10/2026  
 **Trạng thái:** **APPROVED TEST PLAN** — căn cứ `S0_DECISION_LOG_2026-10-23.md`  
 **Nhánh spec:** `codex/v3-approval-rules-spec` — không chạy test runtime, không DB/port  
-**Nhánh implementation:** S0 mở sau khi S4 merge  
+**Nhánh implementation:** S0 mở sau khi xác nhận baseline `70ea5d7` (S4 đã merge)  
 **Tài liệu liên quan:**
 - `docs/V3/S6_IMPLEMENTATION_PLAN_3_PHASES_2026-10-23.md`
 - `docs/V3/S6_MIGRATION_PROPOSAL_3_PHASES_2026-10-23.md`
@@ -43,6 +43,21 @@
 | **422** | Thiếu/sai dữ liệu đầu vào: result text, ngày, quality, quality ngoài tập |
 | **200/201** | Thành công; trả projection/ID cần thiết |
 | **404** | Không tìm thấy resource trong phạm vi được phép |
+
+### 1.4. Baseline S4 (integration `70ea5d7`)
+
+S4 đã merge tại `5d5c299` (code `e198187`) và **không đổi schema**. Trước Phase 1 phải chạy lại:
+
+- `test-v3-task-approval-hardening.ts` — 40/40
+- `test-v3-no-self-approval.ts` — 5/5
+- `test-yc37-approval-flow.ts` — 25/25
+- `test-v3-review-flow.ts` — 38/38
+- `test-yc38-submit-approval.ts` — 36/36
+- `test-yc38-locked-task.ts` — 15/15
+- `test-v3-e2e-flow.ts` — 40/40
+- `tsc`, `prisma validate`, `build`
+
+Các bộ này là **regression bắt buộc** cho Phase 1; nếu fail, dừng trước khi thêm participant.
 
 ---
 
@@ -93,6 +108,14 @@
 | P1-A18 | SYSTEM_ADMIN gọi API Task | 403; không nghiệp vụ |
 | P1-A19 | Double submit đồng thời | Một thành công; còn lại 409/dedup; không mất event |
 | P1-A20 | Audit old/new | Có đủ actor, thời gian, trạng thái, lý do |
+| P1-A21 | Collaborator gửi progress 100/notes | Không làm `Task.progressPercent` = 100; chỉ participant progress |
+| P1-A22 | Collaborator set `IN_PROGRESS`/issue fields | 403; Task status/issue không đổi; note ghi qua participant API |
+| P1-A23 | `submittedById` sau owner nộp | Là owner/người nộp thật; không bị ghi đè khi final decision |
+| P1-A24 | Reopen bởi collaborator (defense-in-depth) | 403/không mở vòng; owner mở đúng |
+| P1-A25 | Một ApprovalCase/Task | Không tạo case thứ hai cho participant |
+| P1-A26 | Collaborator `ACCEPT_TASK` | Participant `IN_PROGRESS`; Task status không đổi nếu owner chưa bắt đầu |
+| P1-A27 | Owner nộp trước quyết định | Case count 0; snapshot `(task,round)` có; sau quyết định case 1, `submittedById` đúng |
+| P1-A28 | Resubmit sau REJECT | Snapshot round 2; `ApprovalCase.currentRound` 2 sau reopen; không trùng snapshot |
 
 ### 2.3. DB/migration tests
 
@@ -103,9 +126,12 @@
 | P1-D03 | Check `part_status`/progress/round | Giá trị sai bị từ chối |
 | P1-D04 | Legacy Task đọc sau migration | Không lỗi; không có dòng giả |
 | P1-D05 | `task_updates` cũ | `subject_person_id/participant_event_id` NULL; đọc bình thường |
-| P1-D06 | `approval_case_snapshots` unique `(case_id, round)` | Không trùng; snapshot cũ không đổi |
-| P1-D07 | Rollback Phase 1 | Bảng/cột mới drop; Task/ApprovalCase cũ nguyên |
-| P1-D08 | Không chạm bảng QĐ1277/monthly/scoring | Schema diff chỉ trong phạm vi |
+| P1-D06 | `task_submission_snapshots` unique `(task_id, round)` | Không trùng; snapshot cũ không đổi |
+| P1-D07 | `ApprovalCase` tạo ở lần quyết định đầu | Không có case lúc submit; snapshot vẫn có; không case treo khi Task hủy |
+| P1-D08 | Rollback Phase 1 | Bảng/cột mới drop; Task/ApprovalCase cũ nguyên |
+| P1-D09 | Không chạm bảng QĐ1277/monthly/scoring | Schema diff chỉ trong phạm vi |
+| P1-D10 | S4 baseline không có schema/migration | Không có migration S4; Phase 1 là migration mới sau `20261023120000` |
+| P1-D11 | `TaskUpdate.kind` S4 | `accept/submit/approve/return/progress/extend/cancel` giữ nguyên nghĩa |
 
 ### 2.4. UI tests
 
@@ -118,6 +144,8 @@
 | P1-UI05 | Leader xem Task/Approvals | Thấy phần việc, trả/chấp nhận; không thấy nút tự duyệt |
 | P1-UI06 | Legacy Task | Không hiện panel participant rỗng gây hiểu nhầm; có nhãn phù hợp |
 | P1-UI07 | Sau final AGREE/REJECT | UI cập nhật đúng, không stale; deep link đúng |
+| P1-UI08 | my-work drawer collaborator | Không có nút “Báo hoàn thành & Trình duyệt”; chỉ lưu phần việc |
+| P1-UI09 | my-work drawer owner | Có nút nộp chung; disabled khi S-ALL fail |
 
 ### 2.5. Regression Phase 1
 
@@ -130,6 +158,8 @@
 | P1-R05 | QĐ1277 multi-product | Không sinh dòng/số lượng trùng |
 | P1-R06 | PersonalWorkItem standalone | Không bị chặn/không mở per-person |
 | P1-R07 | Plan/Deadline approval | Không đổi |
+| P1-R08 | `test-v3-task-approval-hardening` | 40/40 PASS (S4 baseline) |
+| P1-R09 | `test-yc37-approval-flow`/`test-yc38-submit-approval` | PASS; một case/decision, không trùng |
 
 ---
 

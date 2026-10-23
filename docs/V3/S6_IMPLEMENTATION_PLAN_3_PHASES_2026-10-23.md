@@ -3,9 +3,10 @@
 **Ngày:** 23/10/2026  
 **Trạng thái:** **APPROVED PLAN** — căn cứ `S0_DECISION_LOG_2026-10-23.md`  
 **Nhánh spec:** `codex/v3-approval-rules-spec` — **không code/schema/migration**  
-**Nhánh implementation:** do S0 mở sau khi S4 merge (tên tạm: `codex/v3-impl-yc09-11`)  
+**Nhánh implementation:** do S0 mở sau khi xác nhận baseline `70ea5d7` (S4 đã merge)  
 **Tài liệu liên quan:**
 - `docs/V3/S6_SPEC_YC09_YC10_YC11_2026-10-23.md`
+- `docs/V3/S6_PHASE1_S4_REVIEW_2026-10-23.md`
 - `docs/V3/S6_MIGRATION_PROPOSAL_3_PHASES_2026-10-23.md`
 - `docs/V3/S6_TEST_PLAN_3_PHASES_2026-10-23.md`
 
@@ -51,8 +52,20 @@ Triển khai tuần tự ba năng lực đã được chủ dự án phê duyệ
 | 5 | `person_supervisions` được xác minh read-only trước Phase 3 | query read-only; không seed |
 | 6 | Feature flag/tắt được cho từng phase | config server-side |
 
-**Không bắt đầu Phase 1 nếu S4 chưa merge**, trừ khi S0 quyết định tách nhánh và chấp nhận
-conflict rõ ràng. Không sửa approval service đang có thay đổi chưa merge.
+**Không bắt đầu Phase 1 nếu baseline `70ea5d7`/S4 chưa được S0 xác nhận**, trừ khi S0 quyết định
+tách nhánh và chấp nhận conflict rõ ràng. Không sửa approval service đang có thay đổi chưa merge.
+
+### 1.5. Baseline S4 đã merge (đọc thực tế)
+
+- Integration HEAD: `70ea5d7`; S4 merge: `5d5c299`; S4 code commit: `e198187`.
+- S4 **không đổi schema/migration**; đã sửa `approval-case.ts`, `task-transitions.ts`,
+  Task routes/UI, `/approvals`, `/my-work`, `/tasks/[id]`, test hardening.
+- Phase 1 **tái sử dụng**: một ApprovalCase/Task, transaction quyết định + `TaskUpdate`
+  `approve/return`, notification owner + collaborator, guard owner-only submit, status whitelist,
+  approval summary.
+- Phase 1 **còn phải làm**: participant result/event/snapshot; chuyển collaborator progress khỏi
+  Task-level; UI vai trò; `submittedById`/reopen; final decision cập nhật participant.
+- Chi tiết + file:line: `docs/V3/S6_PHASE1_S4_REVIEW_2026-10-23.md`.
 
 ---
 
@@ -96,15 +109,16 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 
 | WP | Nội dung | File/module dự kiến | Deliverable |
 |---|---|---|---|
-| **P1-DB** | Bảng participant result/event; cột `task_updates`; snapshot | `prisma/schema.prisma`, migration mới | Migration additive + rehearsal report |
+| **P1-DB** | Bảng participant result/event; cột `task_updates`; `task_submission_snapshots` | `prisma/schema.prisma`, migration mới | Migration additive + rehearsal report |
 | **P1-DOM** | Domain service trạng thái, S-ALL, E9.3, lock/unlock, permission | `src/server/task-participant.ts` (mới) | Service + unit tests |
 | **P1-API** | API submit/return/accept/exempt phần việc; submit overall | `src/app/api/tasks/[id]/participant-results/**` (mới), `tasks/[id]/updates/route.ts` | API contract + tests |
-| **P1-GUARD** | Hardening legacy Task routes; whitelist status; actualResultText | `src/app/api/tasks/[id]/route.ts`, `src/app/api/tasks/route.ts`, `src/server/task-transitions.ts` | 403/409/422 đúng; security tests |
-| **P1-APP** | ApprovalCase snapshot, submittedBy thật, reopen guard, decision effects | `src/server/approval-case.ts` | Preview/decision tích hợp |
-| **P1-UI** | Task detail participant panel; nút own part/overall submit; blocker list | `src/app/tasks/[id]/page.tsx`, component mới | UI Desktop/Mobile |
+| **P1-PROGRESS** | Collaborator progress đi participant result; Task progress chỉ từ owner/leader; không lấy trung bình | `api/tasks/[id]/updates/route.ts`, `api/tasks/route.ts`, `api/tasks/[id]/route.ts` | Progress projection + tests |
+| **P1-GUARD** | **S4 đã làm phần lớn**; Phase 1 chỉ xử lý residual: collaborator `IN_PROGRESS`/issue fields, actualResult/side effects; giữ nguyên guard S4 | Task routes; `task-transitions.ts` (hạn chế sửa) | 403/409/422 đúng; S4 40/40 vẫn PASS |
+| **P1-APP** | **S4 đã có transaction/TaskUpdate/notification**; Phase 1 bổ sung participant snapshot, `submittedById` thật, reopen guard, decision effects | `src/server/approval-case.ts` | Preview/decision tích hợp, không rewrite S4 |
+| **P1-UI** | Task detail participant panel; nút own part/overall submit; blocker list; ẩn nút sai vai trò | `src/app/tasks/[id]/page.tsx`, `my-work/page.tsx`, component mới | UI Desktop/Mobile |
 | **P1-APPROVAL-UI** | Approval preview hiển thị phần việc + trạng thái | `src/app/approvals/ApprovalPreviewModal.tsx`, `page.tsx` | UI evidence |
 | **P1-AUDIT** | Audit + notification cho submit/return/accept/overall/final | `src/server/audit.ts`, `src/server/notifications.ts` | Event list + tests |
-| **P1-TEST** | Test plan Phase 1 | `scripts/test-v3-yc09-per-person.ts` (mới) | Pass/fail + evidence |
+| **P1-TEST** | Test plan Phase 1 + S4 regression 40/40 | `scripts/test-v3-yc09-per-person.ts` (mới), `test-v3-task-approval-hardening.ts` | Pass/fail + evidence |
 
 ### 4.3. Mô hình & trạng thái (đã chốt)
 
@@ -114,7 +128,10 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 - `EXEMPT` chỉ người có thẩm quyền, có lý do + audit.
 - `E9.3`: final `AGREE` → phần bắt buộc `ACCEPTED`, Task `COMPLETED`; `REJECT/CLARIFY` → Task
   `IN_PROGRESS`, phần được chọn `RETURNED`, phần đã `ACCEPTED` giữ nguyên.
+- Khi gửi lại: `TaskParticipantResult.round` cập nhật theo snapshot round mới; event giữ round cũ.
 - `E9.6`: không partial approval; một quyết định cuối.
+- `ACCEPT_TASK`: owner → Task `IN_PROGRESS`; collaborator → `TaskParticipantResult IN_PROGRESS` +
+  event, **không** đổi Task status chung.
 - Lock: `WAITING_REVIEW`/`COMPLETED` khóa phần việc và kết quả; mở lại khi lãnh đạo trả.
 
 ### 4.4. API contract đề xuất
@@ -159,7 +176,8 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 
 - Chỉ owner.
 - `S-ALL` thỏa; nếu không, 409/422 kèm danh sách người chưa báo.
-- Transaction: tạo snapshot + Task `WAITING_REVIEW` + mở/round ApprovalCase + TaskUpdate `submit`.
+- Transaction: tạo snapshot `(task,round)` + Task `WAITING_REVIEW`; `ApprovalCase` chỉ tạo ở lần
+  quyết định đầu (S4), không tạo case lúc submit.
 
 **D. Legacy hardening**
 
@@ -169,14 +187,37 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
   collaborator không set `WAITING_REVIEW`/`COMPLETED`/`CANCELED`; progress chỉ ghi nhận phần mình.
 - `POST /api/tasks`/assignee changes: giữ quyền hiện có; không mở cho collaborator.
 
+### 4.4b. S4 deltas — không viết lại phần đã merge
+
+Phase 1 phải **patch trên S4** (integration `70ea5d7`), không revert:
+
+| Điểm S4 đã có | Phase 1 xử lý |
+|---|---|
+| `decideApproval` transaction + `TaskUpdate kind=approve/return` + notification | Giữ; thêm cập nhật participant trong cùng transaction |
+| Owner-only submit + status whitelist + collaborator result/assignee/cancel guard | Giữ; test lại 40/40 |
+| `approvalCase.upsert` một case/Task | Giữ nguyên unique; không tạo case thứ hai |
+| `ApprovalCase` chỉ tạo ở lần quyết định đầu | Giữ hành vi; snapshot keyed Task/round; không case treo |
+| Preview/case status/self-check | Giữ; bổ sung participant summary |
+| `submittedById = owner` | Sửa thành người nộp thật; không ghi đè owner nếu ủy quyền |
+| `reopen` đã ghi actorPersonId | Thêm kiểm tra owner/submitter hoặc call-site contract |
+| Task progress lấy từ `TaskUpdate` mới nhất | **Sửa**: collaborator progress không ghi Task-level; owner/leader là nguồn tiến độ chung |
+| Collaborator có thể set `IN_PROGRESS`/issue fields | **Chặn Task-level**; ghi vướng mắc vào participant note |
+| UI đã có summary/badge | **Sửa**: ẩn nút nộp chung/COMPLETED với collaborator; thêm participant panel |
+
 ### 4.5. Tích hợp ApprovalCase
 
+- **Giữ hành vi S4:** `ApprovalCase` được tạo ở lần quyết định đầu (`upsert` unique
+  `(caseType, resourceId)`), không tạo case lúc submit; tránh case OPEN treo nếu Task bị hủy.
+- Khi owner nộp: ghi `task_submission_snapshots` keyed `(task_id, round)` + `submitted_by_id` thật.
+  `round = max(snapshot.round hiện có) + 1` (1 nếu chưa có), tính trong transaction/advisory lock;
+  không lấy `ApprovalCase.currentRound` khi case chưa tồn tại.
 - Preview trả `participants[]` (tên, vai trò, trạng thái, kết quả phần, ngày, note) + snapshot.
 - `decideApproval`:
   - `AGREE`: Task `WAITING_REVIEW → COMPLETED`; participant bắt buộc → `ACCEPTED`; audit.
   - `REJECT/CLARIFY`: Task → `IN_PROGRESS`; participant được chọn → `RETURNED`; accepted giữ;
     audit.
-- `submittedById` = người bấm nộp thật, không mặc định owner.
+- Khi tạo case ở lần quyết định đầu: `submittedById` lấy từ snapshot mới nhất (không mặc định
+  `task.ownerId`); không ghi đè khi case đã có. Self-approval so người nộp thật.
 - `reopenApprovalCaseOnResubmit`: chỉ owner; ghi actor đúng; không cho collaborator mở vòng.
 - Không tạo `ApprovalDecision` cho từng participant.
 
@@ -193,10 +234,14 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 ### 4.7. Acceptance criteria Phase 1
 
 - [ ] Collaborator không thể ghi đè `actualResultText`/assignee/owner/cancel/nộp chung.
+- [ ] Collaborator không làm Task progress 100% / không ghi đè tiến độ chung.
+- [ ] UI collaborator không còn nút “Báo hoàn thành & Trình duyệt”/“Nộp kết quả chung”.
 - [ ] Collaborator gửi phần mình thành công; Task chưa `WAITING_REVIEW`.
 - [ ] Owner nộp chung khi S-ALL fail → 409/422, nêu người thiếu; không đổi status.
-- [ ] Owner nộp đủ → Task `WAITING_REVIEW`; case đúng; snapshot đúng.
+- [ ] Owner nộp đủ → Task `WAITING_REVIEW`; snapshot đúng; case chỉ tạo ở lần quyết định đầu.
 - [ ] Final AGREE/REJECT/CLARIFY đúng E9.3; một quyết định; lịch sử đầy đủ.
+- [ ] Một ApprovalCase/Task; không tạo case participant/pre-check; không case treo khi Task hủy trước quyết định.
+- [ ] S4 `test-v3-task-approval-hardening` vẫn 40/40.
 - [ ] Legacy Task không có participant vẫn xem/nộp/duyệt được.
 - [ ] Không sinh `MonthlyWorkResult`/`WorkItemProduct` cho collaborator.
 - [ ] Audit/notification đúng; không gửi “đã duyệt” khi mới accepted part.
@@ -349,17 +394,17 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 
 ### 7.1. Branch/commit
 
-- Nhánh implementation riêng từ baseline đã merge S4; không dùng nhánh spec.
+- Nhánh implementation riêng từ baseline integration `70ea5d7` (S4 đã merge); không dùng nhánh spec.
 - Mỗi phase một chuỗi commit/PR nhỏ; migration + code + test cùng phase.
 - Không merge phase sau khi phase trước chưa đạt gate.
 - Không `git push --force` lên `main`/integration.
 
 ### 7.2. Thứ tự migration
 
-1. Phase 1 tables/columns.
+1. Phase 1 tables/columns — migration timestamp **sau** `20261023120000_v3_phase_a_planning`.
 2. Phase 2 column/table.
 3. Phase 3 route snapshot.
-4. Không chạy migration Production; rehearsal trên fixture; backup/rollback.
+4. Không sửa migration cũ; không chạy Production; rehearsal trên fixture; backup/rollback.
 
 ### 7.3. Feature flag
 
@@ -380,12 +425,23 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 | **S6** | Làm rõ spec; không code trên nhánh spec |
 | **Chủ dự án** | Quyết định bổ sung nếu phát sinh ngoài phạm vi APPROVED |
 
-### 7.5. Xung đột dự kiến
+### 7.5. Xung đột dự kiến (theo S4 thực tế)
 
-- `src/server/approval-case.ts`: S4 và implementation cùng chạm → S0 khóa ownership sau merge.
-- Task routes: hotfix S4 và Phase 1 cùng chạm → rebase sau S4, review từng dòng.
-- `/approvals` UI: Phase 2/3 cùng chạm → Phase 2 làm quality, Phase 3 làm pre-check; review diff.
-- Monthly/export: Phase 2 chỉ thêm sheet phụ; không chạm scoring.
+| File | S4 đã chạm | Phase 1 | Xử lý |
+|---|---|---|---|
+| `src/server/approval-case.ts` | 630 dòng; transaction/preview/summary/reopen | Thêm participant/snapshot; sửa submittedById | Patch trên HEAD; test S4 40/40 trước/sau; không revert |
+| `src/server/task-transitions.ts` | 95 dòng; whitelist/owner/cancel | Hạn chế sửa | Giữ nguyên; nếu sửa, test 10/10 |
+| `src/app/api/tasks/[id]/route.ts` | 92 dòng; completion qua case; content/assignee guard | Thêm participant/progress | Sửa cục bộ; giữ guard S4 |
+| `src/app/api/tasks/[id]/updates/route.ts` | 58 dòng; chặn submit/result | Chuyển collaborator progress | Viết test trước; không bỏ guard |
+| `src/app/api/tasks/route.ts` | 162 dòng; legacy actions/summary | Thêm participant submit | Giữ action contract |
+| `src/app/tasks/[id]/page.tsx` | 69 dòng; badge/summary | Participant panel/nút | Component mới; không phá summary |
+| `src/app/my-work/page.tsx` | 64 dòng; badge/action | Drawer collaborator | Sửa theo `isOwner`/assignee |
+| `src/app/approvals/page.tsx` | 169 dòng; history | Participant summary | Chỉ thêm block; không đổi filter |
+| `prisma/schema.prisma` | Không đổi | Bảng/cột Phase 1 | Additive; migration mới; không sửa migration cũ |
+
+- `src/app/api/personal-work-items/**`, `/plans/**`, `work-item-reviews/**`: **không sửa**.
+- Monthly/export/QĐ1277: Phase 1 không chạm; Phase 2 chỉ thêm sheet phụ.
+- Mọi conflict phải S0 quyết định; không dùng `ours/theirs` mù quáng.
 
 ### 7.6. Thứ tự công việc chuẩn trong mỗi phase
 
@@ -433,7 +489,7 @@ không review được.
 
 | Rủi ro | Mức | Giảm thiểu |
 |---|---|---|
-| S4 chưa merge, conflict approval service | Cao | Chờ merge; rebase; S0 khóa ownership |
+| S4 regression/conflict approval service | Cao | Baseline 70ea5d7; test 40/40; rebase; S0 khóa ownership |
 | Legacy Task `WAITING_REVIEW` bị chặn bởi per-person | Cao | Legacy final-only; không backfill; test |
 | Collaborator leo quyền qua route cũ | Cao | Whitelist server; test mọi route; audit |
 | S-ALL làm ách vận hành | Trung bình | Ngoại lệ có lý do/audit; UI nêu người thiếu |
