@@ -44,6 +44,9 @@ export type DisplayDataState =
 
 export type TargetStatus = "DRAFT" | "CONFIRMED" | "LOCKED" | "VOID" | "SUPERSEDED";
 
+/** Q9 — nguồn dữ liệu chính thức/DEMO. S2 B-C-2 có thể dùng `dataSource`. */
+export type DataSource = "REAL" | "DEMO";
+
 export type TargetState =
   | "NOT_APPLICABLE"
   | "NOT_ASSIGNED"
@@ -175,7 +178,9 @@ export interface TargetSnapshot {
   exists: boolean;
   applicable: boolean;
   status: TargetStatus;
-  isOfficial: boolean;
+  /** Có thể lấy trực tiếp hoặc map từ `dataSource` qua resolveOfficialFlag(). */
+  isOfficial?: boolean;
+  dataSource?: DataSource;
   year: number;
   periodType: "YEAR" | "QUARTER" | "MONTH";
   periodNo: number | null;
@@ -235,7 +240,7 @@ export function roundPercent2(value: number): number {
 
 export function formatPercentVi(value: number | null): string | null {
   if (value === null || !Number.isFinite(value)) return null;
-  return `${value.toFixed(2).replace(".", ",")}%`;
+  return `${roundPercent2(value).toFixed(2).replace(".", ",")}%`;
 }
 
 export function formatNumberVi(value: number, maximumFractionDigits = 0): string {
@@ -396,9 +401,19 @@ function samePeriod(target: TargetSnapshot, period: Period): boolean {
   return target.periodNo === period.periodNo;
 }
 
+/**
+ * Q9: `dataSource` là nguồn chuẩn khi B-C-2 trả cờ này; nếu không có thì dùng
+ * `isOfficial`. DEMO luôn thắng nếu dữ liệu mâu thuẫn — không dùng regex nhãn.
+ */
+export function resolveOfficialFlag(target: { isOfficial?: boolean; dataSource?: DataSource }): boolean {
+  if (target.dataSource) return target.dataSource === "REAL";
+  return target.isOfficial === true;
+}
+
 export function deriveTargetState(target: TargetSnapshot, period: Period): TargetStateResult {
+  const official = resolveOfficialFlag(target);
   if (!target.applicable) {
-    return { state: "NOT_APPLICABLE", matchesPeriod: false, isOfficial: target.isOfficial, reason: "NOT_IN_SCOPE" };
+    return { state: "NOT_APPLICABLE", matchesPeriod: false, isOfficial: official, reason: "NOT_IN_SCOPE" };
   }
   if (!target.exists) {
     return { state: "NOT_ASSIGNED", matchesPeriod: false, isOfficial: false, reason: "NO_TARGET" };
@@ -407,23 +422,23 @@ export function deriveTargetState(target: TargetSnapshot, period: Period): Targe
     return {
       state: "NOT_ASSIGNED",
       matchesPeriod: false,
-      isOfficial: target.isOfficial,
+      isOfficial: official,
       reason: "TARGET_PERIOD_MISMATCH",
     };
   }
 
   switch (target.status) {
     case "VOID":
-      return { state: "VOID", matchesPeriod: true, isOfficial: target.isOfficial, reason: "TARGET_VOID" };
+      return { state: "VOID", matchesPeriod: true, isOfficial: official, reason: "TARGET_VOID" };
     case "SUPERSEDED":
-      return { state: "SUPERSEDED", matchesPeriod: true, isOfficial: target.isOfficial, reason: "TARGET_SUPERSEDED" };
+      return { state: "SUPERSEDED", matchesPeriod: true, isOfficial: official, reason: "TARGET_SUPERSEDED" };
     case "LOCKED":
-      return { state: "LOCKED", matchesPeriod: true, isOfficial: target.isOfficial };
+      return { state: "LOCKED", matchesPeriod: true, isOfficial: official };
     case "CONFIRMED":
-      return { state: "CONFIRMED", matchesPeriod: true, isOfficial: target.isOfficial };
+      return { state: "CONFIRMED", matchesPeriod: true, isOfficial: official };
     case "DRAFT":
     default:
-      return { state: "DRAFT", matchesPeriod: true, isOfficial: target.isOfficial };
+      return { state: "DRAFT", matchesPeriod: true, isOfficial: official };
   }
 }
 

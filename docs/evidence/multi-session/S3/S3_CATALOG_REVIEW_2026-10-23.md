@@ -19,7 +19,7 @@
 3. **636 bản ghi** tháng 10/2026 đều là `RECORDED`; **0 bản ghi `CONFIRMED`**. Báo cáo tháng 10 đã có phiên bản lưu, nên logic hiện tại gắn `LOCKED` cho mọi chỉ tiêu có bản ghi — kể cả khi chưa ai xác nhận.
 4. Công thức `%` hiện tại có 4 lỗ hổng contract: không lọc chỉ tiêu giao theo đúng năm/kỳ; không phân biệt 0 với thiếu; không có chiều đánh giá; không có trạng thái nguồn/chỉ tiêu giao.
 5. **S0 đã phê duyệt toàn bộ contract** tại `docs/V3/S0_DECISION_LOG_2026-10-23.md` (Q1–Q12), theo hướng dẫn tại `S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md`.
-6. Đã triển khai phần được phép: **pure helper/state model + test 96/96 PASS** và **target UI draft độc lập (mock)**; chưa nối DB/API, chưa dùng Production.
+6. Đã triển khai phần được phép: **pure helper/state model + test 108/108 PASS** và **target UI draft độc lập (mock)**; chưa nối DB/API, chưa dùng Production.
 7. Phần còn chặn: schema target + `metrics.ts` + API `/api/metrics/*` + `/giao-ban` + `/giao-ban/cau-hinh` + migration shared thuộc S2; S3 chỉ làm target-only sau khi S2 công bố schema.
 
 ---
@@ -47,6 +47,7 @@
 | Quyết định S0 | `D:\thanhnx\OpenCode\talung-integration\docs\V3\S0_DECISION_LOG_2026-10-23.md` |
 | Câu hỏi contract gửi S0 (bản gốc) | `docs/evidence/multi-session/S3/S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md` |
 | Handoff APPROVED | `docs/evidence/multi-session/S3/S3_HANDOFF_APPROVED_2026-10-23.md` |
+| Kế hoạch target-only sau B-C-2 | `docs/evidence/multi-session/S3/S3_TARGET_ONLY_IMPLEMENTATION_PLAN_2026-10-23.md` |
 
 ### 1.3. Giới hạn
 
@@ -208,7 +209,7 @@ Không có `direction` trên target. Với chỉ tiêu “càng thấp càng t�
 
 `isMetricsAdmin` (`metrics.ts:49-52`) cho phép `UNIT_LEADER` hoặc người có `system.config`. API target dùng đúng cổng này (`api/metrics/admin/route.ts:245`).
 
-Trái nguyên tắc YC-07: “không cấp `system.config` chỉ để nhập chỉ tiêu nghiệp vụ”. Cần quyền nghiệp vụ riêng, ví dụ `giao_ban.target.view/manage/confirm`, và `SYSTEM_ADMIN` không mặc nhiên có quyền nghiệp vụ.
+Trái nguyên tắc YC-07: “không cấp `system.config` chỉ để nhập chỉ tiêu nghiệp vụ”. **S0 đã chốt Q8:** dùng `metrics.config` cho target, `metrics.entry_all`/assignment cho nhập liệu; **không** thêm `giao_ban.target.*`; `SYSTEM_ADMIN` không mặc nhiên có quyền nghiệp vụ. Việc seed/kiểm tra permission thuộc S2 B-C-2.
 
 ### F10 — Thiếu lịch sử/nguồn/trạng thái của chỉ tiêu giao
 
@@ -383,6 +384,7 @@ Không thay đổi 49 mã, không thêm/bớt chỉ tiêu trước khi C1 chốt
 
 - `deriveActualState`: `recordState` + `coverage` + `displayState`; xử lý ENTRY/BASELINE/DERIVED, khóa báo cáo, không phát sinh, không áp dụng.
 - `deriveTargetState`: DRAFT/CONFIRMED/LOCKED/VOID/SUPERSEDED; khớp kỳ năm/quý/tháng.
+- `resolveOfficialFlag`: Q9 — `dataSource=REAL/DEMO` thắng `isOfficial`; không dùng regex nhãn.
 - `computePercent`: OFFICIAL/PREVIEW; chặn target thiếu/0/âm/DEMO/DRAFT, actual thiếu/partial/chưa xác nhận, lệch đơn vị, chiều chưa chốt, `PENDING_BUSINESS_INPUT`.
 - `aggregateClassifications`: không coi phân loại thiếu là 0.
 - `validateTargetDraft` + `canConfirmTarget` + `nextTargetStatus`: validation target, bắt buộc nguồn khi CONFIRMED, revision/status Q2.
@@ -390,11 +392,11 @@ Không thay đổi 49 mã, không thêm/bớt chỉ tiêu trước khi C1 chốt
 
 ### 7.2. Test
 
-`scripts/test-phase-c-contract.ts` — 96 test:
+`scripts/test-phase-c-contract.ts` — 108 test:
 
 - 18 test trạng thái dữ liệu (A1–A18).
-- 11 test trạng thái chỉ tiêu giao (B1–B11).
-- 26 test tỷ lệ (C1–C26).
+- 16 test trạng thái chỉ tiêu giao (B1–B16, gồm dataSource/isOfficial).
+- 33 test tỷ lệ (C1–C31 + C3a/C3b, gồm 2 chữ số half-up).
 - 5 test gộp phân loại (D1–D5).
 - 17 test validate target (E1–E17).
 - 6 test chuyển trạng thái target (F1–F6).
@@ -404,7 +406,7 @@ Không thay đổi 49 mã, không thêm/bớt chỉ tiêu trước khi C1 chốt
 Kết quả:
 
 ```text
-PASS 96/96, FAIL 0
+PASS 108/108, FAIL 0
 ```
 
 Các điểm đã khóa:
@@ -459,12 +461,12 @@ Helper/UI draft **chưa được nối** vào app. Đây là phần độc lập
 
 Bước tiếp theo:
 
-1. S2 công bố schema/contract target (trường `status`, `source`, `direction`, `revision`, `isOfficial`, `measureMode`...).
-2. S3 rebase nhánh `codex/v3-phase-c-metrics` lên schema đó.
-3. S3 nối **target-only**: API target, `/giao-ban/cau-hinh`, hiển thị trạng thái/lý do trên `/giao-ban` theo phân công của S0.
+1. S2 công bố **B-C-2**: sửa Q9 (`dataSource`/`isOfficial`) + Q11 (2 chữ số) + xác nhận D3/D4/D5 (`PROPOSED`↔`DRAFT`, `comparisonKind`→`labelCode`, `direction`/`measureMode`).
+2. S0 merge B-C-2; S3 rebase nhánh `codex/v3-phase-c-metrics` lên schema đó.
+3. S3 nối **target-only** theo `S3_TARGET_ONLY_IMPLEMENTATION_PLAN_2026-10-23.md`: API target, `/giao-ban/cau-hinh`, hiển thị trạng thái/lý do trên `/giao-ban` theo phân công của S0.
 4. Chạy test tích hợp DB fixture + UI Desktop/Mobile; báo cáo `PRODUCTION_TOUCHED: NO`.
 5. C1 vẫn `PENDING_C1`: UI hiển thị “Chưa có quy tắc đánh giá”, không tô đạt/vượt.
 
 ---
 
-**KẾT LUẬN:** Contract YC-06/07 đã **APPROVED**. Phần độc lập (pure helper/state model + target UI mock) đã hoàn tất và test **96/96 PASS**. Các phần schema/API/`metrics.ts`/`/giao-ban` vẫn chờ S2 công bố schema; không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.
+**KẾT LUẬN:** Contract YC-06/07 đã **APPROVED**. Phần độc lập (pure helper/state model + target UI mock) đã hoàn tất và test **108/108 PASS**. Các phần schema/API/`metrics.ts`/`/giao-ban` vẫn chờ S2 công bố B-C-2; không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.

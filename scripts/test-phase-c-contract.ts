@@ -25,6 +25,7 @@ import {
   formatPercentVi,
   nextTargetStatus,
   parseMetricInput,
+  resolveOfficialFlag,
   targetDraftErrors,
   validateTargetDraft,
   type ActualSnapshot,
@@ -214,6 +215,19 @@ check("B11. Target DEMO vẫn có state nhưng isOfficial=false", (() => {
   const r = targetOf({ isOfficial: false });
   return r.state === "CONFIRMED" && r.isOfficial === false;
 })());
+check("B12. dataSource=DEMO thắng isOfficial=true → không chính thức", (() => {
+  const r = targetOf({ dataSource: "DEMO", isOfficial: true });
+  return r.isOfficial === false;
+})());
+check("B13. dataSource=REAL thắng isOfficial=false → chính thức", (() => {
+  const r = targetOf({ dataSource: "REAL", isOfficial: false });
+  return r.isOfficial === true;
+})());
+check("B14. resolveOfficialFlag: DEMO luôn false", resolveOfficialFlag({ dataSource: "DEMO", isOfficial: true }) === false);
+check("B15. resolveOfficialFlag: REAL luôn true", resolveOfficialFlag({ dataSource: "REAL", isOfficial: false }) === true);
+check("B16. resolveOfficialFlag: không có dataSource thì dùng isOfficial", (() => {
+  return resolveOfficialFlag({ isOfficial: true }) === true && resolveOfficialFlag({ isOfficial: false }) === false;
+})());
 
 // ============================================================
 // C. TỶ LỆ THỰC HIỆN
@@ -222,6 +236,11 @@ console.log("\n[C] TỶ LỆ THỰC HIỆN (YC-07)");
 check("C1. Thiếu target → TARGET_NOT_ASSIGNED", percentOf(actualOf(), targetOf({ exists: false })).reason === "TARGET_NOT_ASSIGNED");
 check("C2. Target DRAFT, chế độ official → TARGET_DRAFT", percentOf(actualOf(), targetOf({ status: "DRAFT" })).reason === "TARGET_DRAFT");
 check("C3. Target DEMO, chế độ official → TARGET_NOT_OFFICIAL", percentOf(actualOf(), targetOf({ isOfficial: false })).reason === "TARGET_NOT_OFFICIAL");
+check("C3a. dataSource=DEMO dù isOfficial=true → vẫn TARGET_NOT_OFFICIAL", percentOf(actualOf(), targetOf({ dataSource: "DEMO", isOfficial: true })).reason === "TARGET_NOT_OFFICIAL");
+check("C3b. dataSource=REAL dù isOfficial=false → tính chính thức", (() => {
+  const r = percentOf(actualOf(), targetOf({ dataSource: "REAL", isOfficial: false }));
+  return r.state === "COMPUTED" && r.value === 50;
+})());
 check("C4. Target 0 → TARGET_ZERO, không trả 0%", (() => {
   const r = percentOf(actualOf(), targetOf(), { targetValue: 0 });
   return r.reason === "TARGET_ZERO" && r.value === null;
@@ -282,6 +301,17 @@ check("C23. Preview target DEMO → tạm tính, provisional=true", (() => {
 check("C24. Preview measureMode pending vẫn bị chặn", percentOf(actualOf(), targetOf(), { mode: "PREVIEW", measureMode: "PENDING_BUSINESS_INPUT" }).reason === "BUSINESS_RULE_PENDING");
 check("C25. formatPercentVi(78.18) = 78,18%", formatPercentVi(78.18) === "78,18%");
 check("C26. formatPercentVi(null) = null", formatPercentVi(null) === null);
+check("C27. 78,184% làm tròn half-up 2 chữ số = 78,18%", formatPercentVi(78.184) === "78,18%");
+check("C28. 109,666% làm tròn half-up 2 chữ số = 109,67%", formatPercentVi(109.666) === "109,67%");
+check("C29. 77,495% làm tròn half-up 2 chữ số = 77,50%", formatPercentVi(77.495) === "77,50%");
+check("C30. computePercent 78,184/100 trả 78,18", (() => {
+  const r = percentOf(actualOf({ value: 78.184, entries: [{ slotKey: "d1", value: 78.184, status: "CONFIRMED" }], expectedSlots: 1, coveredSlots: 1 }), targetOf());
+  return r.value === 78.18 && r.displayValue === "78,18%";
+})());
+check("C31. 0 đã xác nhận + target 100 → 0,00% (không phải null)", (() => {
+  const r = percentOf(actualOf({ value: 0, noActivityConfirmed: true, entries: [], expectedSlots: 1, coveredSlots: 0 }), targetOf());
+  return r.state === "COMPUTED" && r.displayValue === "0,00%";
+})());
 
 // ============================================================
 // D. GỘP PHÂN LOẠI
