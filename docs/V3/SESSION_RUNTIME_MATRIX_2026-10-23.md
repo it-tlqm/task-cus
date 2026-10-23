@@ -12,7 +12,7 @@
 | S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `3708672` | 3111 | `talung_v3_phase_a_qa` | **MERGED** — QA gate release pending |
 | S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `207dcfc` | 3112 | `talung_v3_phase_b` | **BLOCKED_BY_CONTRACT_ALIGNMENT** — Q9/Q11 |
 | S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `3ec7b9e` | 3113 | `talung_v3_phase_c` | **PARTIAL MERGED** — 96/96 + tsc PASS; target-only chờ S2 |
-| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED** — hardening 40/40 + no-self 5/5 |
+| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED — STANDBY** — không code thêm; rerun khi S0 yêu cầu |
 | S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED** — 22/22 API + 24/24 UI |
 | S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `21c37ae` | — | — | **PLAN MERGED** — docs/plan; code chờ nhánh implementation |
 
