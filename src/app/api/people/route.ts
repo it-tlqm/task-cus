@@ -5,6 +5,9 @@ import { checkPermission, getAuthorizedUnitIds, jsonError } from "@/server/guard
 import { unaccentSearchIds } from "@/server/search";
 import { recordAuditEvent } from "@/server/audit";
 
+/** Đơn vị Lãnh đạo đơn vị — cán bộ thuộc đơn vị này được phép kiêm nhiệm nhiều vị trí trực. */
+const LEADERSHIP_UNIT_CODE = "HQCB-LANH-DAO-DON-VI";
+
 export async function GET(req: NextRequest) {
   try {
     const user = await authenticateRequest(req);
@@ -15,6 +18,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const unitId = searchParams.get("unitId");
     const includeDescendants = searchParams.get("includeDescendants") === "1";
+    const includeLeaders = searchParams.get("includeLeaders") === "1";
     const search = searchParams.get("search")?.trim();
     const status = searchParams.get("status");
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -23,8 +27,10 @@ export async function GET(req: NextRequest) {
     // Scope check: Lãnh đạo hoặc Admin kỹ thuật được xem danh mục nhân sự toàn cơ quan để quản lý;
     // Cán bộ công chức thường chỉ xem đồng nghiệp trong đơn vị mình nếu lọc
     const authorizedUnits = await getAuthorizedUnitIds(user, true);
+    const canAssignDuty = user.role === "UNIT_LEADER" || user.role === "DEPARTMENT_LEADER";
 
     const whereClause: any = {};
+    const scopeClauses: any[] = [];
 
     // 1. Lọc theo đơn vị và kiểm tra Scope Guard
     //    Gồm cả cán bộ KIÊM NHIỆM (phân công không chính) để số liệu cây đơn vị
@@ -52,13 +58,31 @@ export async function GET(req: NextRequest) {
           return jsonError("Bạn không có quyền xem danh sách nhân sự của bộ phận này", 403);
         }
       }
-      whereClause.assignments = {
-        some: { unitId: { in: targetUnits } },
-      };
+      scopeClauses.push({
+        assignments: {
+          some: { unitId: { in: targetUnits } },
+        },
+      });
     } else if (authorizedUnits !== "ALL") {
-      whereClause.assignments = {
-        some: { unitId: { in: authorizedUnits } },
-      };
+      scopeClauses.push({
+        assignments: {
+          some: { unitId: { in: authorizedUnits } },
+        },
+      });
+    }
+
+    // Bảng phân công trực cần chọn được 3 lãnh đạo đơn vị dù người lập bảng chỉ
+    // là Trưởng bộ phận (scope hẹp hơn). Chỉ mở thêm đơn vị Lãnh đạo, không mở
+    // toàn bộ danh mục nhân sự ngoài phạm vi.
+    if (includeLeaders && !unitId && canAssignDuty && authorizedUnits !== "ALL") {
+      scopeClauses.push({
+        assignments: {
+          some: { unit: { code: LEADERSHIP_UNIT_CODE } },
+        },
+      });
+    }
+    if (scopeClauses.length > 0) {
+      whereClause.AND = scopeClauses.length === 1 ? scopeClauses : [{ OR: scopeClauses }];
     }
 
     // 2. Lọc theo trạng thái hồ sơ cán bộ (ACTIVE / INACTIVE)
@@ -143,6 +167,9 @@ export async function GET(req: NextRequest) {
         unitId: primaryAssignment?.unitId || null,
         unitName: primaryAssignment?.unit?.name || "Chưa phân công",
         unitCode: primaryAssignment?.unit?.code || null,
+        // Lãnh đạo đơn vị được phép kiêm nhiệm nhiều vị trí trực; dùng để bỏ
+        // cảnh báo trùng phân công trên bảng trực.
+        isLeader: p.assignments.some((a) => a.unit?.code === LEADERSHIP_UNIT_CODE),
         positionId: primaryAssignment?.positionId || null,
         position: primaryAssignment?.position?.title || "Công chức",
         orgUnit: primaryAssignment?.unit

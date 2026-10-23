@@ -75,6 +75,8 @@ interface UnitLite {
 interface PersonLite {
   id: string;
   fullName: string;
+  /** Lãnh đạo đơn vị — được phép kiêm nhiệm nhiều vị trí trực. */
+  isLeader?: boolean;
 }
 
 interface LeaveLite {
@@ -243,7 +245,8 @@ function prewarnFor(
   dateISO: string,
   dayRows: DutyRow[],
   leaves: LeaveLite[],
-  positionTitle?: string | null
+  positionTitle?: string | null,
+  ignoreOverlap = false
 ): string[] {
   const out: string[] = [];
   const d = new Date(dateISO);
@@ -256,16 +259,18 @@ function prewarnFor(
     return d >= s && d <= e;
   });
   if (hit) out.push(`Cán bộ có đơn nghỉ đã duyệt (${hit.type}) trùng ngày — cân nhắc lại.`);
-  const targetNoon = isNoonDutyTitle(positionTitle);
-  const sameCategory = dayRows.filter(
-    (r) => r.personId === personId && isNoonDutyTitle(r.positionTitle) === targetNoon
-  );
-  if (sameCategory.length > 0) {
-    out.push(
-      targetNoon
-        ? "Cán bộ đã được phân công trực trưa ở vị trí khác trong ngày (trùng nhóm trực trưa)."
-        : "Cán bộ đã được phân công trực thường ở vị trí khác trong ngày (trùng nhóm trực thường)."
+  if (!ignoreOverlap) {
+    const targetNoon = isNoonDutyTitle(positionTitle);
+    const sameCategory = dayRows.filter(
+      (r) => r.personId === personId && isNoonDutyTitle(r.positionTitle) === targetNoon
     );
+    if (sameCategory.length > 0) {
+      out.push(
+        targetNoon
+          ? "Cán bộ đã được phân công trực trưa ở vị trí khác trong ngày (trùng nhóm trực trưa)."
+          : "Cán bộ đã được phân công trực thường ở vị trí khác trong ngày (trùng nhóm trực thường)."
+      );
+    }
   }
   return out;
 }
@@ -283,6 +288,10 @@ export default function RosterPage() {
   const [legacyUnassigned, setLegacyUnassigned] = useState<LegacyUnassignedRow[]>([]);
   const [leaves, setLeaves] = useState<LeaveLite[]>([]);
   const [people, setPeople] = useState<PersonLite[]>([]);
+  const leaderIds = useMemo(
+    () => new Set(people.filter((p) => p.isLeader).map((p) => p.id)),
+    [people]
+  );
   const [selUnitId, setSelUnitId] = useState("");
   const [fPersonId, setFPersonId] = useState("");
   const [fPositionId, setFPositionId] = useState("");
@@ -334,13 +343,13 @@ export default function RosterPage() {
   }, [fetchData]);
 
   useEffect(() => {
-    fetch("/api/people?pageSize=100&status=ACTIVE")
+    fetch("/api/people?pageSize=100&status=ACTIVE&includeLeaders=1")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const list = Array.isArray(json) ? json : json?.data || [];
         setPeople(
           list
-            .map((p: any) => ({ id: p.id, fullName: p.fullName }))
+            .map((p: any) => ({ id: p.id, fullName: p.fullName, isLeader: !!p.isLeader }))
             .sort((a: PersonLite, b: PersonLite) => a.fullName.localeCompare(b.fullName, "vi"))
         );
       })
@@ -411,7 +420,10 @@ export default function RosterPage() {
       arr.push(r);
       byPersonDay.set(k, arr);
     }
-    for (const [, arr] of byPersonDay) {
+    for (const [personId, arr] of byPersonDay) {
+      // Lãnh đạo đơn vị được kiêm nhiệm nhiều vị trí trực: không cảnh báo trùng.
+      // Vẫn giữ cảnh báo trùng đơn nghỉ ở vòng lặp phía trên.
+      if (leaderIds.has(personId)) continue;
       // Trực thường và trực trưa là hai nhóm riêng: chỉ cảnh báo khi CÙNG NHÓM có từ 2 phân công.
       const normalCount = arr.filter((r) => !isNoonDutyTitle(r.positionTitle)).length;
       const noonCount = arr.filter((r) => isNoonDutyTitle(r.positionTitle)).length;
@@ -430,7 +442,7 @@ export default function RosterPage() {
       }
     }
     return list;
-  }, [rows]);
+  }, [rows, leaderIds]);
 
   const prevPeriod = () => {
     if (view === "week") setWeekStart((w) => addDays(w, -7));
@@ -889,7 +901,7 @@ export default function RosterPage() {
                                             warning
                                           </span>
                                         )}
-                                        {ln.row && ln.row.overlapCount > 1 && (
+                                        {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
                                           <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
                                             error
                                           </span>
@@ -999,7 +1011,7 @@ export default function RosterPage() {
                                     warning
                                   </span>
                                 )}
-                                {ln.row && ln.row.overlapCount > 1 && (
+                                {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
                                   <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
                                     error
                                   </span>
@@ -1026,6 +1038,7 @@ export default function RosterPage() {
           groups={buildMatrixGroups(rows, positions)}
           info={infoByDay.get(selDay)}
           warnings={warnings.filter((w) => w.includes(fmtDM(selDay)))}
+          leaderIds={leaderIds}
           canApprove={canApprove}
           canExport={canExport}
           onEdit={() => setEditorDate(selDay)}
@@ -1131,6 +1144,7 @@ function DayFormView({
   groups,
   info,
   warnings,
+  leaderIds,
   canApprove,
   canExport,
   onEdit,
@@ -1144,6 +1158,7 @@ function DayFormView({
   groups: MatrixGroup[];
   info: DayInfoRow | undefined;
   warnings: string[];
+  leaderIds: Set<string>;
   canApprove: boolean;
   canExport: boolean;
   onEdit: () => void;
@@ -1252,7 +1267,7 @@ function DayFormView({
                               warning
                             </span>
                           )}
-                          {ln.row && ln.row.overlapCount > 1 && (
+                          {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
                             <span className="material-symbols-outlined text-[12px] text-rose-500 ml-1 align-middle" title="Trùng phân công cùng nhóm trực trong ngày">
                               error
                             </span>
@@ -1497,6 +1512,7 @@ function DayEditorModal({
       toast.error("Chưa xác định bộ phận của bảng phân công — chọn bộ phận trước.");
       return;
     }
+    const isLeaderPerson = people.find((p) => p.id === personId)?.isLeader === true;
     setBusyKey(key);
     try {
       const res = await fetch("/api/rosters", {
@@ -1508,7 +1524,9 @@ function DayEditorModal({
       if (res.ok) {
         toast.success("Đã phân công nhiệm vụ.");
         if (json.warning) toast.warning(json.warning);
-        if (json.crossWarning) toast.warning(json.crossWarning);
+        if (json.crossWarning && !(isLeaderPerson && json.crossWarning.includes("cùng nhóm trực"))) {
+          toast.warning(json.crossWarning);
+        }
         setSel((s) => ({ ...s, [key]: "" }));
         const pid = g.positionId;
         if (pid) {
@@ -1540,6 +1558,7 @@ function DayEditorModal({
       toast.error("Đổi người thực hiện phải ghi lý do (tối thiểu 3 ký tự).");
       return;
     }
+    const isLeaderPerson = people.find((p) => p.id === personId)?.isLeader === true;
     setBusyKey(key);
     try {
       const res = await fetch("/api/rosters", {
@@ -1551,7 +1570,9 @@ function DayEditorModal({
       if (res.ok) {
         toast.success("Đã đổi người thực hiện (có lưu vết).");
         if (json.warning) toast.warning(json.warning);
-        if (json.crossWarning) toast.warning(json.crossWarning);
+        if (json.crossWarning && !(isLeaderPerson && json.crossWarning.includes("cùng nhóm trực"))) {
+          toast.warning(json.crossWarning);
+        }
         setSel((s) => ({ ...s, [key]: "" }));
         setReasons((s) => ({ ...s, [key]: "" }));
         onChanged();
@@ -1819,13 +1840,24 @@ function SlotRow({
   const busy = busyKey === key;
   const occupied = !!row;
   const changed = occupied && !!selected && selected !== row!.personId;
+  const selectedPerson = selected ? people.find((p) => p.id === selected) : undefined;
+  const rowPersonIsLeader = row ? people.find((p) => p.id === row.personId)?.isLeader === true : false;
   const prewarns = selected
-    ? prewarnFor(selected, dateISO, dayRows.filter((r) => r.id !== row?.id), leaves, positionTitle)
+    ? prewarnFor(
+        selected,
+        dateISO,
+        dayRows.filter((r) => r.id !== row?.id),
+        leaves,
+        positionTitle,
+        selectedPerson?.isLeader === true
+      )
     : [];
 
   const options = useMemo(() => {
     const list = people.slice();
-    if (row && !list.some((p) => p.id === row.person.id)) list.push({ id: row.person.id, fullName: row.person.fullName });
+    if (row && !list.some((p) => p.id === row.person.id)) {
+      list.push({ id: row.person.id, fullName: row.person.fullName, isLeader: false });
+    }
     return list;
   }, [people, row]);
 
@@ -1845,7 +1877,7 @@ function SlotRow({
                   warning
                 </span>
               )}
-              {row!.overlapCount > 1 && (
+              {row!.overlapCount > 1 && !rowPersonIsLeader && (
                 <span className="material-symbols-outlined text-[14px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
                   error
                 </span>
