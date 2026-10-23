@@ -1,11 +1,20 @@
 # HỢP ĐỒNG DỮ LIỆU B/C — YC-01/02 (Phase B) và YC-06/07 (Phase C)
 
-**Mã hợp đồng:** `B-C-1` — **Ngày:** 23/10/2026
+**Mã hợp đồng:** `B-C-2` — **Ngày:** 23/10/2026
 **Bên soạn:** S2 — Phase B (`codex/v3-phase-b-revenue`)
 **Bên nhận để phối hợp:** S0 — Integration Owner; S3 — Phase C (`codex/v3-phase-c-metrics`)
 **Trạng thái:** **ĐỀ XUẤT ĐÓNG BĂNG KỸ THUẬT** — không thay thế quyết định nghiệp vụ còn mở.
 **Phạm vi:** dữ liệu số liệu giao ban dùng chung cho Thu NSNN (YC-01/02) và trạng thái/chỉ tiêu/tỷ lệ (YC-06/07).
 **Nguyên tắc:** hợp đồng này chỉ mô tả cấu trúc, quy ước trạng thái, công thức và quyền. Các quyết định B1/B2/C1 vẫn **PENDING** và không được hard-code.
+
+## 0. Lịch sử phiên bản
+
+| Phiên bản | Thay đổi | Trạng thái |
+|---|---|---|
+| `B-C-1` (commit `8d4f076`) | Baseline ban đầu | **Superseded** bởi `B-C-2` |
+| `B-C-2` | Q9: thêm `dataSource` (`REAL`/`DEMO`) + `isOfficial`, bỏ regex `[DEMO]` khỏi logic; Q11/YC-02: tỷ lệ 2 chữ số thập phân, dấu phẩy vi-VN | **Hiện hành** |
+
+> `B-C-2` chỉ bổ sung/ siết chặt; không thay đổi công thức B1 và không tự chốt B1/B2/C1.
 
 ---
 
@@ -34,6 +43,7 @@
 - `valueKind = BALANCE`: lấy bản ghi mới nhất đến cuối kỳ (số dư), **không cộng**.
 - `valueKind = DERIVED`: tính từ công thức `derivation`; API từ chối nhập trực tiếp.
 - `entryDate` là ngày phát sinh (date-only, UTC), không phải ngày nhập máy.
+- `dataSource`: `REAL` (số liệu thật) hoặc `DEMO` (mô phỏng). API trả `isOfficial = (dataSource === "REAL")`. DEMO không dùng cho báo cáo chính thức.
 
 **Cấm:** nhập một số lũy kế năm/tháng vào ô phát sinh ngày rồi coi là FLOW. Hệ thống đã có cảnh báo mềm `detectSuspiciousEntryValues`; cảnh báo **không tự sửa dữ liệu** và **không chặn** (theo quyết định hiện hành), nhưng UI phải hiển thị rõ.
 
@@ -42,7 +52,8 @@
 - `cumKind`:
   - `MONTH` / `QUARTER` / `YEAR`: mốc lũy kế của đúng kỳ, chỉ dùng khi `asOfDate` nằm trong kỳ đang xem.
   - `LEDGER`: số dư liên tục, áp dụng từ `asOfDate` trở đi, không hết hạn.
-- Chỉ mốc `status = CONFIRMED` hoặc `LOCKED` được dùng để tính.
+- Chỉ mốc `status = CONFIRMED` hoặc `LOCKED` được dùng để tính lũy kế.
+- `dataSource`: `REAL | DEMO`; API trả `isOfficial`. DEMO hiển thị nhãn riêng và không được dùng làm nguồn chính thức trong báo cáo. Backfill lịch sử một lần theo nhãn/nguồn cũ; sau đó logic không dò nhãn.
 - Công thức không trùng lặp:
 
 ```text
@@ -90,6 +101,11 @@ Khóa tháng: `BriefingReportVersion` tồn tại cho `periodType=MONTH`, `perio
 
 Mỗi lần tạo/sửa/xác nhận/chốt ghi một dòng `MetricPlanTargetRevision` + `AuditEvent`.
 
+**Q9 — nguồn dữ liệu:** mỗi target có `dataSource` (`REAL | DEMO`); API trả thêm `isOfficial = dataSource === "REAL"`.
+- `REAL` + `CONFIRMED/LOCKED` ⇒ được tính `%` chính thức.
+- `DEMO` ⇒ chỉ hiển thị nhãn DEMO, **không** tính `%` chính thức.
+- Logic không dùng regex/nội dung nhãn để nhận diện DEMO.
+
 ### 3.3. Trạng thái mốc lũy kế (`MetricBaseline.status`)
 
 `PROPOSED → CONFIRMED → LOCKED`. Chỉ `CONFIRMED`/`LOCKED` tham gia tính toán. Sửa mốc đã `CONFIRMED` phải tạo revision và đưa về `PROPOSED` để xác nhận lại, trừ khi đã `LOCKED` (từ chối).
@@ -120,11 +136,11 @@ Authorization: Bearer <token>
 
 Chỉ người đã đăng nhập được đọc. Không yêu cầu `system.config`.
 
-### 4.2. Cấu trúc `comparison` (phiên bản `B-C-1`)
+### 4.2. Cấu trúc `comparison` (phiên bản `B-C-2`)
 
 ```jsonc
 {
-  "version": "B-C-1",
+  "version": "B-C-2",
   "rule": {
     "targetSource": "EXPLICIT_COMPARISON_KIND",
     "prevMonth": "PENDING_B1",
@@ -149,9 +165,12 @@ Chỉ người đã đăng nhập được đọc. Không yêu cầu `system.con
         "label": "Chỉ tiêu BTC năm 2026",
         "comparisonKind": "BTC_YEAR",
         "targetValue": 1685000000000,
-        "percent": 78.2,
+        "percent": 78.18,
+        "percentText": "78,18",
         "periodLabel": "Năm 2026",
         "status": "CONFIRMED",
+        "dataSource": "REAL",
+        "isOfficial": true,
         "sourceNote": "Quyết định giao chỉ tiêu…",
         "confirmedAt": "2026-10-23T…",
         "basis": "YEAR_CUM",
@@ -186,10 +205,10 @@ Chỉ người đã đăng nhập được đọc. Không yêu cầu `system.con
 % KH tháng = monthCum / targetValue(MONTH_PLAN, đúng tháng/năm) × 100
 ```
 
-- Làm tròn **1 chữ số thập phân** ở API; UI hiển thị đúng 1–2 chữ số theo cấu hình.
-- Chỉ tính khi: tử số `!== null`, mẫu số `> 0`, target `status ∈ {CONFIRMED, LOCKED}`, target **không** mang nhãn `[DEMO...]`.
+- Làm tròn **2 chữ số thập phân, half-up** ở API. `percent` là số; `percentText` là chuỗi vi-VN dùng dấu `,` (ví dụ `"78,18"`). UI hiển thị `percentText` hoặc định dạng 2 chữ số.
+- Chỉ tính khi: tử số `!== null`, mẫu số `> 0`, target `status ∈ {CONFIRMED, LOCKED}`, **`dataSource = REAL` / `isOfficial = true`**.
 - Không có target/không khớp kỳ/nhiều target cùng loại ⇒ `targetValue=null`, `percent=null`, `ambiguous=true` nếu nhiều.
-- **Không** nhận diện BTC/UBND/KH tháng bằng chuỗi nhãn. Dùng `comparisonKind` đã cấu hình tường minh.
+- **Không** nhận diện BTC/UBND/KH tháng bằng chuỗi nhãn và **không** dùng regex `[DEMO]` để quyết định chính thức. Dùng `comparisonKind` + `dataSource` đã cấu hình tường minh.
 
 ### 4.4. Hai dòng đang PENDING (B1)
 
@@ -238,10 +257,16 @@ Trường lưu vết: `metricId`, `classificationId` (phạm vi), `periodType/ye
 ## 7. Migration và tương thích
 
 - Migration **additive**; không xóa/đổi cột cũ.
-- Thêm vào `metric_plan_targets`: `comparison_kind` (mặc định `NONE`), `source_note`, `status` (mặc định `PROPOSED`), `proposed_by_id`, `confirmed_by_id`, `confirmed_at`, `locked_by_id`, `locked_at`.
+- Thêm vào `metric_plan_targets`: `comparison_kind` (mặc định `NONE`), `source_note`, `status` (mặc định `PROPOSED`), `proposed_by_id`, `confirmed_by_id`, `confirmed_at`, `locked_by_id`, `locked_at`, `data_source` (mặc định `REAL`).
+- Thêm `data_source` (mặc định `REAL`) vào `metric_baselines`, `metric_daily_entries`.
 - Bảng mới: `metric_plan_target_revisions`, `metric_baseline_revisions`.
-- Thêm `source_note` (nếu chưa có) / `status` / `locked_at` cho baseline theo nhu cầu; **không** suy đoán `comparison_kind` từ nhãn cũ. Dữ liệu cũ để `NONE` và phải được cấu hình lại tường minh.
-- Không chạy migration trên Production trong Phase B; chỉ rehearsal trên `talung_v3_phase_b`/fixture.
+- Backfill một lần (migration `20261023160000_v3_phase_b_data_source`):
+  - target có `label` chứa `[DEMO` → `data_source=DEMO`;
+  - baseline có `source_note`/người đề xuất DEMO → `DEMO`;
+  - entry do tài khoản DEMO nhập hoặc note `[DEMO` → `DEMO`;
+  - ghi AuditEvent `MIGRATION_BACKFILL_METRIC_DATA_SOURCE` với số lượng REAL/DEMO.
+- **Không** suy đoán `comparison_kind` từ nhãn cũ. Dữ liệu cũ để `NONE` và phải được cấu hình lại tường minh.
+- Không chạy migration trên Production trong Phase B; rehearsal trên bản sao test (`talung_v3_phase_b`/fixture).
 
 ---
 
@@ -257,13 +282,14 @@ Trường lưu vết: `metricId`, `classificationId` (phạm vi), `periodType/ye
 
 ## 9. Acceptance tối thiểu của hợp đồng
 
-1. Nhập fixture: `yearCum=1.317.372.334.554`, target BTC `1.685.000.000.000` ⇒ `78.2%`; UBND `1.700.000.000.000` ⇒ `77.5%`; `monthCum=219.341.201.856`, KH tháng `200.000.000.000` ⇒ `109.7%`.
+1. Nhập fixture: `yearCum=1.317.372.334.554`, target BTC `1.685.000.000.000` ⇒ `78,18%`; UBND `1.700.000.000.000` ⇒ `77,49%`; `monthCum=219.341.201.856`, KH tháng `200.000.000.000` ⇒ `109,67%` (API `percent` 78.18/77.49/109.67; `percentText` 78,18/77,49/109,67).
 2. `prevMonth.percent === null`, `samePeriodLastYear.percent === null`, `ruleState === "PENDING_B1"` dù có dữ liệu.
-3. Mẫu số `0`/`null` ⇒ `percent=null`, không có `0%`.
+3. Mẫu số `0`/`null` ⇒ `percent=null`, không có `0%`; giá trị thực 0 hợp lệ ⇒ `0,00%`.
 4. Mốc lũy kế không bị cộng trùng; nhập số lũy kế vào ô ngày không tự thành FLOW.
 5. STAFF không có assignment ⇒ 403 khi nhập; SYSTEM_ADMIN không có `metrics.*` ⇒ 403 cấu hình/nhập toàn bộ.
 6. Mọi thay đổi target/baseline có revision + AuditEvent; UI hiển thị nguồn, trạng thái, người/thời điểm xác nhận.
-7. Dashboard và `/giao-ban` dùng **cùng component/contract**; Desktop/Mobile hiển thị được 5 dòng.
+7. Target `dataSource=DEMO` không được dùng tính `%` chính thức; target `REAL` dù nhãn có chữ `[DEMO]` vẫn là nguồn thật.
+8. Dashboard và `/giao-ban` dùng **cùng component/contract**; Desktop/Mobile hiển thị được 5 dòng.
 
 ---
 
@@ -272,7 +298,7 @@ Trường lưu vết: `metricId`, `classificationId` (phạm vi), `periodType/ye
 - [ ] S3 đọc hợp đồng này trước khi sửa API/schema/metric definitions dùng chung.
 - [ ] S3 dùng `MetricPlanTarget` cho % thực hiện nhưng **không** đổi `comparisonKind`, `status`, `sourceNote` của B.
 - [ ] S3 bổ sung trạng thái C bằng lớp đọc/tính toán, không ghi đè trạng thái B.
-- [ ] S0 ghi nhận `B-C-1` là baseline hợp đồng cho thứ tự tích hợp S2 → S3.
+- [ ] S0 ghi nhận `B-C-2` là baseline hợp đồng cho thứ tự tích hợp S2 → S3.
 - [ ] Mọi thay đổi phá vỡ hợp đồng phải qua S2 + S0.
 
-**Kết luận:** Hợp đồng `B-C-1` đủ để S2 triển khai phần đã chốt của YC-01/02 và để S3 dựng phần độc lập. B1/B2/C1 vẫn PENDING, không được biến thành số liệu chính thức.
+**Kết luận:** Hợp đồng `B-C-2` đủ để S2 triển khai phần đã chốt của YC-01/02 và để S3 dựng phần độc lập. B1/B2/C1 vẫn PENDING, không được biến thành số liệu chính thức.

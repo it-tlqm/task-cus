@@ -4,11 +4,11 @@
     "YC-01",
     "YC-02"
   ],
-  "contract": "B-C-1",
-  "timestamp": "2026-10-23T10:11:44.974Z",
+  "contract": "B-C-2",
+  "timestamp": "2026-10-23T11:10:23.906Z",
   "db": "talung_v3_phase_b",
   "api": "http://localhost:3112",
-  "passed": 34,
+  "passed": 43,
   "failed": 0,
   "failures": [],
   "evidence": {
@@ -16,6 +16,17 @@
       "code": "THU_NSNN",
       "id": "0a0e94dc-750f-470f-b7be-7deac016d7ab",
       "classification": "Ô tô"
+    },
+    "fixture": {
+      "year": 2023,
+      "month": 10,
+      "yearCum": 1317372334554,
+      "monthCum": 219341201856,
+      "baseline": 1098031132698,
+      "btc": 1685000000000,
+      "ubnd": 1700000000000,
+      "monthPlan": 200000000000,
+      "prevMonthEntry": 50
     },
     "permissions": {
       "leader": [
@@ -33,68 +44,77 @@
       "unitLabel": "đồng",
       "displayScale": 1,
       "decimals": 0,
-      "yearCum": 115,
-      "monthCum": 15,
-      "latestDate": "2024-02-02",
+      "yearCum": 1317372334554,
+      "monthCum": 219341201856,
+      "latestDate": "2023-10-31",
       "btc": {
-        "targetId": "9f9e1560-8450-4728-82c9-0c324c2c77e6",
-        "label": "[S2-PHASE-B-1792750286890] BTC 2024",
+        "targetId": "32b78540-b0a5-4f7f-9375-a5661b4ffac7",
+        "label": "[S2-PHASE-B-1792753806160] BTC 2023",
         "comparisonKind": "BTC_YEAR",
-        "targetValue": 1000,
-        "percent": 11.5,
-        "periodLabel": "Năm 2024",
+        "targetValue": 1685000000000,
+        "percent": 78.18,
+        "percentText": "78,18",
+        "periodLabel": "Năm 2023",
         "basis": "YEAR_CUM",
         "ruleState": "OFFICIAL",
         "ambiguous": false,
         "status": "CONFIRMED",
-        "sourceNote": "[S2-PHASE-B-1792750286890] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T10:11:38.830Z"
+        "dataSource": "REAL",
+        "isOfficial": true,
+        "sourceNote": "[S2-PHASE-B-1792753806160] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:10:16.823Z"
       },
       "ubnd": {
-        "targetId": "31b95ddc-852f-4d3a-9666-5c587cd76f11",
-        "label": "[S2-PHASE-B-1792750286890] UBND 2024",
+        "targetId": "822d656f-8930-4d5b-98cf-8e0132243316",
+        "label": "[S2-PHASE-B-1792753806160] UBND 2023",
         "comparisonKind": "UBND_YEAR",
-        "targetValue": 500,
-        "percent": 23,
-        "periodLabel": "Năm 2024",
+        "targetValue": 1700000000000,
+        "percent": 77.49,
+        "percentText": "77,49",
+        "periodLabel": "Năm 2023",
         "basis": "YEAR_CUM",
         "ruleState": "OFFICIAL",
         "ambiguous": false,
         "status": "CONFIRMED",
-        "sourceNote": "[S2-PHASE-B-1792750286890] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T10:11:38.884Z"
+        "dataSource": "REAL",
+        "isOfficial": true,
+        "sourceNote": "[S2-PHASE-B-1792753806160] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:10:16.879Z"
       },
       "monthPlan": {
-        "targetId": "670e964b-f004-4558-b28c-c9ebfdf7b59a",
-        "label": "[S2-PHASE-B-1792750286890] KH tháng 02/2024",
+        "targetId": "c0c10957-9e97-4487-af8c-ba299183de6b",
+        "label": "[S2-PHASE-B-1792753806160] KH tháng 10/2023",
         "comparisonKind": "MONTH_PLAN",
-        "targetValue": 100,
-        "percent": 15,
-        "periodLabel": "Tháng 2/2024",
+        "targetValue": 200000000000,
+        "percent": 109.67,
+        "percentText": "109,67",
+        "periodLabel": "Tháng 10/2023",
         "basis": "MONTH_CUM",
         "ruleState": "OFFICIAL",
         "ambiguous": false,
         "status": "CONFIRMED",
-        "sourceNote": "[S2-PHASE-B-1792750286890] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T10:11:38.886Z"
+        "dataSource": "REAL",
+        "isOfficial": true,
+        "sourceNote": "[S2-PHASE-B-1792753806160] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:10:16.879Z"
       },
       "prevMonth": {
         "value": 50,
         "percent": null,
-        "label": "Tháng 1/2024",
+        "label": "Tháng 9/2023",
         "basis": "FULL_PREVIOUS_MONTH_CUM",
         "ruleState": "PENDING_B1"
       },
       "samePeriodLastYear": {
         "value": null,
         "percent": null,
-        "label": "Tháng 2/2023",
+        "label": "Tháng 10/2022",
         "basis": "FULL_MONTH_LAST_YEAR_CUM",
         "ruleState": "PENDING_B1"
       }
     },
     "totals": {
-      "passed": 34,
+      "passed": 43,
       "failed": 0
     }
   }

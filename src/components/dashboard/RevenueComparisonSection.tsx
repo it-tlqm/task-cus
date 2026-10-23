@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { fmtDate, fmtMetric } from "@/lib/metric-format";
+import { fmtDate, fmtMetric, fmtPercent } from "@/lib/metric-format";
 
 export interface ComparisonTargetBlock {
   targetId: string | null;
@@ -10,11 +10,14 @@ export interface ComparisonTargetBlock {
   comparisonKind: string | null;
   targetValue: number | null;
   percent: number | null;
+  percentText: string | null;
   periodLabel: string;
   basis: "YEAR_CUM" | "MONTH_CUM";
   ruleState: "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET";
   ambiguous: boolean;
   status: string | null;
+  dataSource: string | null;
+  isOfficial: boolean;
   sourceNote: string | null;
   confirmedAt: string | null;
 }
@@ -95,12 +98,20 @@ export function RevenueComparisonSection({
       block.percent >= 100
         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
         : "border-amber-200 bg-amber-50 text-amber-700";
-    return <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${cls}`}>{block.percent}%</span>;
+    // B-C-2/Q11: API trả percentText 2 chữ số thập phân, dấu phẩy vi-VN.
+    return (
+      <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${cls}`}>
+        {block.percentText ? `${block.percentText}%` : fmtPercent(block.percent)}
+      </span>
+    );
   };
 
   const sourceLine = (block: ComparisonTargetBlock) => (
     <span className="text-body-xs text-on-surface-variant block">
       {block.label ? `${block.label} · ${block.periodLabel}` : block.periodLabel}
+      {block.dataSource === "DEMO" ? (
+        <span className="ml-1 text-[10px] px-1 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600 font-semibold">DEMO</span>
+      ) : null}
       {block.sourceNote ? <span className="block italic">Căn cứ: {block.sourceNote}</span> : null}
       {block.confirmedAt ? <span className="block">Xác nhận: {fmtDate(block.confirmedAt)}</span> : null}
     </span>
@@ -228,8 +239,9 @@ export function RevenueComparisonSection({
 
         <p className="text-body-xs text-on-surface-variant">
           Công thức: % BTC/UBND = lũy kế năm / chỉ tiêu năm × 100; % KH tháng = lũy kế tháng / kế hoạch tháng × 100. Chỉ tiêu BTC/UBND/KH
-          tháng phải được cấu hình tường minh trong <b>Cấu hình → Chỉ tiêu giao</b> (không dò nhãn) và ở trạng thái Đã xác nhận/Đã chốt.
-          Thiếu dữ liệu hoặc mẫu số bằng 0 hiển thị “Chưa xác định”, không tự hiện 0%. Hai dòng kỳ trước/cùng kỳ đang chờ quyết định B1.
+          tháng phải được cấu hình tường minh trong <b>Cấu hình → Chỉ tiêu giao</b>, có nguồn dữ liệu <b>REAL</b> (không dùng DEMO) và ở
+          trạng thái Đã xác nhận/Đã chốt. Tỷ lệ hiển thị 2 chữ số thập phân; thiếu dữ liệu hoặc mẫu số bằng 0 hiển thị “Chưa xác định”,
+          không tự hiện 0%. Hai dòng kỳ trước/cùng kỳ đang chờ quyết định B1.
         </p>
       </div>
     </div>

@@ -22,6 +22,7 @@ const PERIOD_TYPES = ["YEAR", "QUARTER", "MONTH"];
 const CUM_KINDS = ["MONTH", "QUARTER", "YEAR", "LEDGER"];
 // B-C-1: loại đối chiếu phải được cấu hình tường minh, không dò chuỗi nhãn.
 const COMPARISON_KINDS = ["NONE", "BTC_YEAR", "UBND_YEAR", "MONTH_PLAN"];
+const DATA_SOURCES = ["REAL", "DEMO"];
 
 function str(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -192,6 +193,8 @@ export async function GET(req: NextRequest) {
         valueBase: Number(t.valueNumeric),
         comparisonKind: t.comparisonKind,
         sourceNote: t.sourceNote,
+        dataSource: t.dataSource,
+        isOfficial: t.dataSource === "REAL",
         status: t.status,
         proposedByName: t.proposedById ? nameById.get(t.proposedById) || null : null,
         proposedAt: t.createdAt.toISOString(),
@@ -215,6 +218,8 @@ export async function GET(req: NextRequest) {
         asOfDate: dateOnlyToStr(b.asOfDate),
         valueBase: Number(b.valueNumeric),
         sourceNote: b.sourceNote,
+        dataSource: b.dataSource,
+        isOfficial: b.dataSource === "REAL",
         status: b.status,
         proposedByName: b.proposedById ? nameById.get(b.proposedById) || null : null,
         proposedAt: b.createdAt.toISOString(),
@@ -589,6 +594,9 @@ export async function POST(req: NextRequest) {
           return jsonError("Kế hoạch tháng HQTL phải là chỉ tiêu Tháng", 400);
         const note = str(data.note);
         const sourceNote = str(data.sourceNote);
+        const dataSource = (str(data.dataSource) || "REAL").toUpperCase();
+        if (!DATA_SOURCES.includes(dataSource))
+          return jsonError("Nguồn dữ liệu phải là REAL hoặc DEMO", 400);
 
         if (action === "create") {
           const dup = await prisma.metricPlanTarget.findFirst({
@@ -618,6 +626,7 @@ export async function POST(req: NextRequest) {
                 valueNumeric: valueBase,
                 comparisonKind,
                 sourceNote,
+                dataSource,
                 note,
                 status: "PROPOSED",
                 proposedById: user.personId,
@@ -642,10 +651,11 @@ export async function POST(req: NextRequest) {
             label,
             year,
             comparisonKind,
+            dataSource,
             valueBase: valueBase.toString(),
             sourceNote,
           });
-          return NextResponse.json({ success: true, id: t.id, status: "PROPOSED" });
+          return NextResponse.json({ success: true, id: t.id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
         }
 
         const id = str(data.id);
@@ -687,6 +697,7 @@ export async function POST(req: NextRequest) {
               valueNumeric: valueBase,
               comparisonKind,
               sourceNote,
+              dataSource,
               note,
               // Sửa số/căn cứ đã xác nhận phải xác nhận lại.
               status: "PROPOSED",
@@ -717,12 +728,14 @@ export async function POST(req: NextRequest) {
           label,
           year,
           comparisonKind,
+          dataSource,
+          oldDataSource: existing.dataSource,
           oldValue: existing.valueNumeric.toString(),
           newValue: valueBase.toString(),
           oldStatus: existing.status,
           newStatus: "PROPOSED",
         });
-        return NextResponse.json({ success: true, id, status: "PROPOSED" });
+        return NextResponse.json({ success: true, id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
 
       if (action === "confirm" || action === "lock") {
@@ -803,6 +816,9 @@ export async function POST(req: NextRequest) {
         const valueBase = new D(parsed).mul(metric.displayScale || 1);
         const classificationId = str(data.classificationId) || "";
         const sourceNote = str(data.sourceNote);
+        const dataSource = (str(data.dataSource) || "REAL").toUpperCase();
+        if (!DATA_SOURCES.includes(dataSource))
+          return jsonError("Nguồn dữ liệu phải là REAL hoặc DEMO", 400);
         const dup = await prisma.metricBaseline.findUnique({
           where: {
             metricId_classificationId_cumKind_asOfDate: { metricId, classificationId, cumKind, asOfDate: asOf },
@@ -818,6 +834,7 @@ export async function POST(req: NextRequest) {
               asOfDate: asOf,
               valueNumeric: valueBase,
               sourceNote,
+              dataSource,
               status: "PROPOSED",
               proposedById: user.personId,
             },
@@ -840,8 +857,9 @@ export async function POST(req: NextRequest) {
           asOfDate: str(data.asOfDate),
           valueBase: valueBase.toString(),
           sourceNote,
+          dataSource,
         });
-        return NextResponse.json({ success: true, id: b.id, status: "PROPOSED" });
+        return NextResponse.json({ success: true, id: b.id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
 
       if (action === "update") {
@@ -872,6 +890,9 @@ export async function POST(req: NextRequest) {
         if (dup && dup.id !== id)
           return jsonError("Đã có mốc cùng ngày/loại cho chỉ tiêu này — kiểm tra lại", 400);
         const sourceNote = str(data.sourceNote);
+        const dataSource = (str(data.dataSource) || existing.dataSource || "REAL").toUpperCase();
+        if (!DATA_SOURCES.includes(dataSource))
+          return jsonError("Nguồn dữ liệu phải là REAL hoặc DEMO", 400);
         await prisma.$transaction(async (tx) => {
           await tx.metricBaseline.update({
             where: { id },
@@ -879,6 +900,7 @@ export async function POST(req: NextRequest) {
               asOfDate: asOf,
               valueNumeric: valueBase,
               sourceNote,
+              dataSource,
               // Sửa số/căn cứ đã xác nhận phải xác nhận lại.
               status: "PROPOSED",
               confirmedById: null,
@@ -904,12 +926,14 @@ export async function POST(req: NextRequest) {
         });
         await audit("BASELINE_UPDATED", id, {
           metricId: existing.metricId,
+          dataSource,
+          oldDataSource: existing.dataSource,
           oldValue: existing.valueNumeric.toString(),
           newValue: valueBase.toString(),
           oldStatus: existing.status,
           newStatus: "PROPOSED",
         });
-        return NextResponse.json({ success: true, id, status: "PROPOSED" });
+        return NextResponse.json({ success: true, id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
 
       if (action === "confirm" || action === "lock") {

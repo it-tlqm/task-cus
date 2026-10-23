@@ -1481,6 +1481,8 @@ model MetricDailyEntry {
   classificationId String    @default("") @map("classification_id")
   entryDate        DateTime  @map("entry_date") @db.Date
   valueNumeric     Decimal   @map("value_numeric") @db.Decimal(24, 4)
+  /// B-C-2/Q9: REAL = số liệu thật; DEMO = dữ liệu mô phỏng, không dùng chính thức.
+  dataSource       String    @default("REAL") @map("data_source")
   status           String    @default("RECORDED")
   note             String?
   enteredById      String    @map("entered_by_id")
@@ -1525,6 +1527,8 @@ model MetricBaseline {
   asOfDate         DateTime  @map("as_of_date") @db.Date
   valueNumeric     Decimal   @map("value_numeric") @db.Decimal(24, 4)
   sourceNote       String?   @map("source_note")
+  /// B-C-2/Q9: REAL = mốc thật; DEMO = mốc mô phỏng, không dùng chính thức.
+  dataSource       String    @default("REAL") @map("data_source")
   status           String    @default("PROPOSED")
   proposedById     String?   @map("proposed_by_id")
   confirmedById    String?   @map("confirmed_by_id")
@@ -1576,6 +1580,8 @@ model MetricPlanTarget {
   valueNumeric     Decimal   @map("value_numeric") @db.Decimal(24, 4)
   comparisonKind   String    @default("NONE") @map("comparison_kind")
   sourceNote       String?   @map("source_note")
+  /// B-C-2/Q9: REAL = chỉ tiêu thật; DEMO = mô phỏng. Chỉ REAL mới tính % chính thức.
+  dataSource       String    @default("REAL") @map("data_source")
   status           String    @default("PROPOSED")
   proposedById     String?   @map("proposed_by_id")
   confirmedById    String?   @map("confirmed_by_id")

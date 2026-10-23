@@ -1,5 +1,5 @@
 /**
- * S2 — Phase B / YC-01/02 regression trên DB kiểm thử.
+ * S2 — Phase B / YC-01/02 regression trên DB kiểm thử (B-C-2).
  *
  * CHỈ chạy trên môi trường cách ly:
  *   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/talung_v3_phase_b
@@ -7,7 +7,7 @@
  *   npx tsx scripts/test-v3-phase-b-revenue.ts
  *
  * Bộ test này tạo dữ liệu tạm (target/mốc/bản ghi ngày) và DỌN SẠCH trong finally.
- * Không dùng dữ liệu Production, không hard-code số Excel.
+ * Không dùng dữ liệu Production, không hard-code số ngoài fixture.
  */
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
@@ -30,6 +30,19 @@ const TAG = `[S2-PHASE-B-${Date.now()}]`;
 const OUT_DIR = path.resolve("docs/evidence/multi-session");
 const OUT_FILE = path.join(OUT_DIR, "S2_PHASE_B_TEST_RESULTS_2026-10-23.json");
 
+// Fixture đối chiếu đã được S0/YC-01 chấp thuận — chỉ dùng trong test, không seed.
+const ACC = {
+  year: 2023,
+  month: 10,
+  yearCum: 1_317_372_334_554,
+  monthCum: 219_341_201_856,
+  baseline: 1_098_031_132_698, // yearCum - monthCum
+  btc: 1_685_000_000_000,
+  ubnd: 1_700_000_000_000,
+  monthPlan: 200_000_000_000,
+  prevMonthEntry: 50,
+};
+
 let passed = 0;
 let failed = 0;
 const failures: string[] = [];
@@ -45,8 +58,6 @@ function check(name: string, ok: boolean, detail = "") {
     console.log(`[FAIL] ${name}${detail ? " — " + detail : ""}`);
   }
 }
-
-const round1 = (n: number) => Math.round(n * 10) / 10;
 
 async function login(username: string) {
   const res = await fetch(`${BASE}/api/auth/login`, {
@@ -81,7 +92,6 @@ const cleanup = {
 };
 
 async function cleanupAll() {
-  // Revision lưu độc lập (không FK cascade) → dọn theo id trước/sau đều được.
   if (cleanup.targetIds.length) {
     await prisma.metricPlanTargetRevision.deleteMany({ where: { targetId: { in: cleanup.targetIds } } });
     await prisma.metricPlanTarget.deleteMany({ where: { id: { in: cleanup.targetIds } } });
@@ -96,7 +106,7 @@ async function cleanupAll() {
   }
   if (cleanup.accountIds.length) await prisma.account.deleteMany({ where: { id: { in: cleanup.accountIds } } });
   if (cleanup.personIds.length) await prisma.person.deleteMany({ where: { id: { in: cleanup.personIds } } });
-  // Audit test: dọn để lần chạy sau không nhiễu.
+
   const resourceIds = [...cleanup.targetIds, ...cleanup.baselineIds];
   if (resourceIds.length) {
     await prisma.auditEvent.deleteMany({
@@ -121,6 +131,18 @@ async function cleanupAll() {
   }
 }
 
+async function summary(year: number, month: number, token: string, scope = "full") {
+  return api(
+    "GET",
+    `/api/metrics/summary?year=${year}&month=${month}&week=40&quarter=4&comparison=1${scope === "dashboard" ? "&scope=dashboard" : ""}`,
+    token
+  );
+}
+
+function thuRow(res: any) {
+  return (res.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
+}
+
 async function main() {
   console.log(`=== S2 PHASE B (YC-01/02) — ${TAG} ===`);
   console.log(`DB: ${dbUrl.replace(/\/\/[^@]+@/, "//***@")} | API: ${BASE}`);
@@ -135,9 +157,10 @@ async function main() {
     orderBy: { sortOrder: "asc" },
   });
   evidence.metric = { code: thu.code, id: thu.id, classification: thuClass.label };
+  evidence.fixture = ACC;
 
   // ============================================================
-  // 1. Phân quyền: không dùng system.config cho nghiệp vụ
+  // 1. Phân quyền: Q8 — metrics.*, không dùng system.config
   // ============================================================
   const staffCfg = await api("GET", "/api/metrics/admin", staff.token);
   check("1.1 STAFF không được xem/cấu hình chỉ tiêu giao (403)", staffCfg.status === 403, `HTTP ${staffCfg.status}`);
@@ -149,7 +172,6 @@ async function main() {
   });
   check("1.2 STAFF không được tạo chỉ tiêu giao (403)", staffTarget.status === 403, `HTTP ${staffTarget.status}`);
 
-  // Tạo tạm SYSTEM_ADMIN (không có metrics.config) để chứng minh system.config không mở quyền nghiệp vụ.
   const adminRole = await prisma.role.findUniqueOrThrow({ where: { code: "SYSTEM_ADMIN" } });
   const adminPerson = await prisma.person.create({
     data: { code: `S2ADM${Date.now()}`, fullName: `${TAG} System Admin tạm` },
@@ -181,39 +203,116 @@ async function main() {
   };
 
   // ============================================================
-  // 2. Tạo chỉ tiêu gốc + trạng thái + nguồn/căn cứ + lịch sử
+  // 2. Q9 — dataSource/isOfficial + backfill, không dùng regex nhãn
   // ============================================================
-  const mkTarget = async (label: string, periodType: string, year: number, periodNo: number | null, value: string, kind: string) =>
+  const legacyDemoTargets = await prisma.metricPlanTarget.count({ where: { label: { contains: "[DEMO" } } });
+  const legacyDemoTargetsFlagged = await prisma.metricPlanTarget.count({
+    where: { label: { contains: "[DEMO" }, dataSource: "DEMO" },
+  });
+  const legacyDemoLabelMisflagged = await prisma.metricPlanTarget.count({
+    where: { label: { contains: "[DEMO" }, dataSource: "REAL" },
+  });
+  check(
+    "2.1 Backfill target [DEMO] → dataSource=DEMO (migration rehearsal)",
+    legacyDemoTargets > 0 && legacyDemoTargetsFlagged === legacyDemoTargets && legacyDemoLabelMisflagged === 0,
+    `legacy=${legacyDemoTargets}, flagged=${legacyDemoTargetsFlagged}, misflagged=${legacyDemoLabelMisflagged}`
+  );
+
+  const legacyDemoBaselineLabels = await prisma.metricBaseline.count({
+    where: { sourceNote: { contains: "[DEMO" } },
+  });
+  const baselineDemoFlagged = await prisma.metricBaseline.count({ where: { dataSource: "DEMO" } });
+  const realBaselineWithDemoLabel = await prisma.metricBaseline.count({
+    where: { sourceNote: { contains: "[DEMO" }, dataSource: "REAL" },
+  });
+  check(
+    "2.2 Backfill baseline DEMO theo cờ dữ liệu",
+    baselineDemoFlagged > 0 &&
+      baselineDemoFlagged >= legacyDemoBaselineLabels &&
+      realBaselineWithDemoLabel === 0,
+    `demoBaselines=${baselineDemoFlagged}, legacyLabels=${legacyDemoBaselineLabels}, misflagged=${realBaselineWithDemoLabel}`
+  );
+
+  const demoEntriesFlagged = await prisma.metricDailyEntry.count({ where: { dataSource: "DEMO" } });
+  check("2.3 Backfill entry DEMO theo cờ dữ liệu", demoEntriesFlagged > 0, `demoEntries=${demoEntriesFlagged}`);
+
+  // ============================================================
+  // 3. Tạo chỉ tiêu gốc + trạng thái + nguồn/căn cứ + lịch sử
+  // ============================================================
+  const mkTarget = async (opts: {
+    label: string;
+    periodType: string;
+    year: number;
+    periodNo: number | null;
+    value: string;
+    kind: string;
+    dataSource?: "REAL" | "DEMO";
+  }) =>
     api("POST", "/api/metrics/admin", leader.token, {
       entity: "target",
       action: "create",
       data: {
         metricId: thu.id,
         classificationId: "",
-        label,
-        periodType,
-        year,
-        periodNo,
-        value,
-        comparisonKind: kind,
+        label: opts.label,
+        periodType: opts.periodType,
+        year: opts.year,
+        periodNo: opts.periodNo,
+        value: opts.value,
+        comparisonKind: opts.kind,
+        dataSource: opts.dataSource || "REAL",
         sourceNote: `${TAG} căn cứ kiểm thử`,
         note: "Dữ liệu kiểm thử tự động",
       },
     });
 
-  const btc = await mkTarget(`${TAG} BTC 2024`, "YEAR", 2024, null, "1000", "BTC_YEAR");
-  const ubnd = await mkTarget(`${TAG} UBND 2024`, "YEAR", 2024, null, "500", "UBND_YEAR");
-  const monthPlan = await mkTarget(`${TAG} KH tháng 02/2024`, "MONTH", 2024, 2, "100", "MONTH_PLAN");
+  const btc = await mkTarget({
+    label: `${TAG} BTC 2023`,
+    periodType: "YEAR",
+    year: ACC.year,
+    periodNo: null,
+    value: "1685000000000",
+    kind: "BTC_YEAR",
+  });
+  const ubnd = await mkTarget({
+    label: `${TAG} UBND 2023`,
+    periodType: "YEAR",
+    year: ACC.year,
+    periodNo: null,
+    value: "1700000000000",
+    kind: "UBND_YEAR",
+  });
+  const monthPlan = await mkTarget({
+    label: `${TAG} KH tháng 10/2023`,
+    periodType: "MONTH",
+    year: ACC.year,
+    periodNo: ACC.month,
+    value: "200000000000",
+    kind: "MONTH_PLAN",
+  });
   for (const r of [btc, ubnd, monthPlan]) if (r.json?.id) cleanup.targetIds.push(r.json.id);
-  check("2.1 Tạo được 3 chỉ tiêu gốc tường minh (BTC/UBND/KH tháng)", !!btc.json?.id && !!ubnd.json?.id && !!monthPlan.json?.id);
-  check("2.2 Chỉ tiêu mới ở trạng thái PROPOSED", btc.json?.status === "PROPOSED", String(btc.json?.status));
+  check(
+    "3.1 Tạo được 3 chỉ tiêu gốc REAL (BTC/UBND/KH tháng)",
+    !!btc.json?.id && !!ubnd.json?.id && !!monthPlan.json?.id
+  );
+  check(
+    "3.2 API trả dataSource=REAL + isOfficial=true cho target thật",
+    btc.json?.dataSource === "REAL" && btc.json?.isOfficial === true,
+    JSON.stringify(btc.json)
+  );
+  check("3.3 Chỉ tiêu mới ở trạng thái PROPOSED", btc.json?.status === "PROPOSED", String(btc.json?.status));
 
   const cfg1 = await api("GET", "/api/metrics/admin", leader.token);
   const cfgMetric = (cfg1.json?.groups || []).flatMap((g: any) => g.metrics || []).find((m: any) => m.code === "THU_NSNN");
   const cfgBtc = (cfgMetric?.targets || []).find((t: any) => t.id === btc.json?.id);
   check(
-    "2.3 API cấu hình trả nguồn/căn cứ + trạng thái + người đề xuất",
-    !!cfgBtc && cfgBtc.sourceNote === `${TAG} căn cứ kiểm thử` && cfgBtc.status === "PROPOSED" && !!cfgBtc.proposedAt,
+    "3.4 API cấu hình trả nguồn/căn cứ + trạng thái + dataSource/isOfficial",
+    !!cfgBtc &&
+      cfgBtc.sourceNote === `${TAG} căn cứ kiểm thử` &&
+      cfgBtc.status === "PROPOSED" &&
+      cfgBtc.dataSource === "REAL" &&
+      cfgBtc.isOfficial === true &&
+      !!cfgBtc.proposedAt,
     JSON.stringify(cfgBtc || null)
   );
 
@@ -226,10 +325,10 @@ async function main() {
       })
     )
   );
-  check("2.4 Xác nhận được 3 chỉ tiêu gốc", confirmTargets.every((r) => r.status === 200 && r.json?.status === "CONFIRMED"));
+  check("3.5 Xác nhận được 3 chỉ tiêu gốc", confirmTargets.every((r) => r.status === 200 && r.json?.status === "CONFIRMED"));
 
   const revTargetCount = await prisma.metricPlanTargetRevision.count({ where: { targetId: { in: cleanup.targetIds } } });
-  check("2.5 Lịch sử chỉ tiêu gốc ghi CREATE + CONFIRM (3×2)", revTargetCount === 6, `revisions=${revTargetCount}`);
+  check("3.6 Lịch sử chỉ tiêu gốc ghi CREATE + CONFIRM (3×2)", revTargetCount === 6, `revisions=${revTargetCount}`);
 
   const auditTarget = await prisma.auditEvent.count({
     where: {
@@ -237,10 +336,10 @@ async function main() {
       action: { in: ["METRIC_ADMIN_TARGET_CREATED", "METRIC_ADMIN_TARGET_CONFIRMED"] },
     },
   });
-  check("2.6 Audit ghi nhận tạo + xác nhận chỉ tiêu", auditTarget >= 6, `audit=${auditTarget}`);
+  check("3.7 Audit ghi nhận tạo + xác nhận chỉ tiêu", auditTarget >= 6, `audit=${auditTarget}`);
 
   // ============================================================
-  // 3. Mốc lũy kế + phát sinh ngày; chống cộng trùng
+  // 4. Mốc lũy kế + phát sinh ngày; chống cộng trùng
   // ============================================================
   const baseCreate = await api("POST", "/api/metrics/admin", leader.token, {
     entity: "baseline",
@@ -249,63 +348,86 @@ async function main() {
       metricId: thu.id,
       classificationId: thuClass.id,
       cumKind: "YEAR",
-      asOfDate: "2024-01-31",
-      value: "100",
+      asOfDate: "2023-09-30",
+      value: String(ACC.baseline),
+      dataSource: "REAL",
       sourceNote: `${TAG} mốc kiểm thử`,
     },
   });
   if (baseCreate.json?.id) cleanup.baselineIds.push(baseCreate.json.id);
-  check("3.1 Tạo mốc lũy kế ở trạng thái PROPOSED", baseCreate.status === 200 && baseCreate.json?.status === "PROPOSED");
+  check(
+    "4.1 Tạo mốc lũy kế REAL ở trạng thái PROPOSED",
+    baseCreate.status === 200 && baseCreate.json?.status === "PROPOSED" && baseCreate.json?.dataSource === "REAL"
+  );
 
   const baseConfirm = await api("POST", "/api/metrics/admin", leader.token, {
     entity: "baseline",
     action: "confirm",
     data: { id: baseCreate.json.id, reason: "Xác nhận mốc kiểm thử" },
   });
-  check("3.2 Xác nhận mốc lũy kế", baseConfirm.status === 200 && baseConfirm.json?.status === "CONFIRMED");
+  check("4.2 Xác nhận mốc lũy kế", baseConfirm.status === 200 && baseConfirm.json?.status === "CONFIRMED");
 
   const entryRes = await api("POST", "/api/metrics/entries", leader.token, {
     entries: [
-      { metricId: thu.id, classificationId: thuClass.id, entryDate: "2024-01-15", value: "50", note: `${TAG} entry Jan` },
-      { metricId: thu.id, classificationId: thuClass.id, entryDate: "2024-02-01", value: "10", note: `${TAG} entry Feb 1` },
-      { metricId: thu.id, classificationId: thuClass.id, entryDate: "2024-02-02", value: "5", note: `${TAG} entry Feb 2` },
+      { metricId: thu.id, classificationId: thuClass.id, entryDate: "2023-09-15", value: String(ACC.prevMonthEntry), note: `${TAG} entry Sep` },
+      { metricId: thu.id, classificationId: thuClass.id, entryDate: "2023-10-31", value: String(ACC.monthCum), note: `${TAG} entry Oct` },
     ],
   });
   const entryIds = (entryRes.json?.items || []).map((i: any) => i.entryId || i.id).filter(Boolean);
   cleanup.entryIds.push(...entryIds);
-  check("3.3 Nhập được phát sinh ngày (3 bản ghi)", entryRes.status === 200 && entryIds.length === 3, JSON.stringify(entryRes.json?.errors || null));
+  check("4.3 Nhập được phát sinh ngày (2 bản ghi REAL)", entryRes.status === 200 && entryIds.length === 2);
+  check("4.4 Entry API trả dataSource=REAL/isOfficial=true", (entryRes.json?.items || []).every((i: any) => i.dataSource === "REAL"));
 
-  const sum1 = await api("GET", `/api/metrics/summary?year=2024&month=2&week=6&quarter=1&comparison=1`, leader.token);
-  const row1 = (sum1.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
-  check("3.4 Lũy kế năm 2024 = mốc 100 + phát sinh sau mốc 15 = 115 (không cộng trùng)", row1?.yearCum === 115, `yearCum=${row1?.yearCum}`);
-  check("3.5 Lũy kế tháng 02 = 10 + 5 = 15", row1?.monthCum === 15, `monthCum=${row1?.monthCum}`);
-  check("3.6 Số liệu đến ngày 02/02/2024", row1?.latestDate === "2024-02-02", String(row1?.latestDate));
+  const sum1 = await summary(ACC.year, ACC.month, leader.token);
+  const row1 = thuRow(sum1);
+  check(
+    "4.5 Lũy kế năm = mốc + phát sinh sau mốc (không cộng trùng)",
+    row1?.yearCum === ACC.yearCum,
+    `yearCum=${row1?.yearCum}`
+  );
+  check("4.6 Lũy kế tháng = phát sinh trong tháng", row1?.monthCum === ACC.monthCum, `monthCum=${row1?.monthCum}`);
+  check("4.7 Số liệu đến ngày 31/10/2023", row1?.latestDate === "2023-10-31", String(row1?.latestDate));
 
   evidence.comparison = row1;
 
   // ============================================================
-  // 4. Tỷ lệ tự tính + hợp đồng B-C-1
+  // 5. Q11/YC-02 — tỷ lệ 2 chữ số thập phân + hợp đồng B-C-2
   // ============================================================
-  check("4.1 Hợp đồng trả version B-C-1", sum1.json?.comparison?.version === "B-C-1", String(sum1.json?.comparison?.version));
-  check("4.2 % BTC = 115/1000 = 11.5%", row1?.btc?.percent === 11.5, `${row1?.btc?.percent}%`);
-  check("4.3 % UBND = 115/500 = 23%", row1?.ubnd?.percent === 23, `${row1?.ubnd?.percent}%`);
-  check("4.4 % KH tháng = 15/100 = 15%", row1?.monthPlan?.percent === 15, `${row1?.monthPlan?.percent}%`);
-  check("4.5 Target trả kèm nguồn/căn cứ + trạng thái đã xác nhận", row1?.btc?.status === "CONFIRMED" && row1?.btc?.sourceNote?.startsWith(TAG), JSON.stringify({ status: row1?.btc?.status, source: row1?.btc?.sourceNote }));
+  check("5.1 Hợp đồng trả version B-C-2", sum1.json?.comparison?.version === "B-C-2", String(sum1.json?.comparison?.version));
   check(
-    "4.6 Tháng trước: có giá trị 50 nhưng KHÔNG công bố % (B1 pending)",
-    row1?.prevMonth?.value === 50 && row1?.prevMonth?.percent === null && row1?.prevMonth?.ruleState === "PENDING_B1",
+    "5.2 % BTC = 78,18% (API percent 78.18 + percentText)",
+    row1?.btc?.percent === 78.18 && row1?.btc?.percentText === "78,18",
+    JSON.stringify({ percent: row1?.btc?.percent, text: row1?.btc?.percentText })
+  );
+  check(
+    "5.3 % UBND = 77,49%",
+    row1?.ubnd?.percent === 77.49 && row1?.ubnd?.percentText === "77,49",
+    JSON.stringify({ percent: row1?.ubnd?.percent, text: row1?.ubnd?.percentText })
+  );
+  check(
+    "5.4 % KH tháng = 109,67%",
+    row1?.monthPlan?.percent === 109.67 && row1?.monthPlan?.percentText === "109,67",
+    JSON.stringify({ percent: row1?.monthPlan?.percent, text: row1?.monthPlan?.percentText })
+  );
+  check(
+    "5.5 Target trả dataSource=REAL + isOfficial=true khi tính chính thức",
+    row1?.btc?.dataSource === "REAL" && row1?.btc?.isOfficial === true && row1?.btc?.status === "CONFIRMED"
+  );
+  check(
+    "5.6 Tháng trước: có giá trị 50 nhưng KHÔNG công bố % (B1 pending)",
+    row1?.prevMonth?.value === ACC.prevMonthEntry && row1?.prevMonth?.percent === null && row1?.prevMonth?.ruleState === "PENDING_B1",
     JSON.stringify(row1?.prevMonth)
   );
   check(
-    "4.7 Cùng kỳ năm trước: percent null + PENDING_B1",
+    "5.7 Cùng kỳ năm trước: percent null + PENDING_B1",
     row1?.samePeriodLastYear?.percent === null && row1?.samePeriodLastYear?.ruleState === "PENDING_B1",
     JSON.stringify(row1?.samePeriodLastYear)
   );
 
-  const dash = await api("GET", `/api/metrics/summary?scope=dashboard&year=2024&month=2&week=6&quarter=1&comparison=1`, leader.token);
-  const dashRow = (dash.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
+  const dash = await summary(ACC.year, ACC.month, leader.token, "dashboard");
+  const dashRow = thuRow(dash);
   check(
-    "4.8 Dashboard dùng cùng hợp đồng: % BTC/UBND/KH tháng khớp /giao-ban",
+    "5.8 Dashboard dùng cùng hợp đồng: % BTC/UBND/KH tháng khớp /giao-ban",
     dashRow?.btc?.percent === row1?.btc?.percent &&
       dashRow?.ubnd?.percent === row1?.ubnd?.percent &&
       dashRow?.monthPlan?.percent === row1?.monthPlan?.percent,
@@ -313,82 +435,158 @@ async function main() {
   );
 
   // ============================================================
-  // 5. Mẫu số 0 và target chưa xác nhận không tạo %
+  // 6. Q9 — nhãn không quyết định; DEMO không tính chính thức
+  // ============================================================
+  const demoCountBefore = await prisma.metricPlanTarget.count({ where: { dataSource: "DEMO" } });
+  const realWithDemoLabel = await mkTarget({
+    label: `[DEMO] ${TAG} nhãn DEMO nhưng dataSource REAL`,
+    periodType: "YEAR",
+    year: 2024,
+    periodNo: null,
+    value: "1000",
+    kind: "BTC_YEAR",
+    dataSource: "REAL",
+  });
+  if (realWithDemoLabel.json?.id) cleanup.targetIds.push(realWithDemoLabel.json.id);
+  await api("POST", "/api/metrics/admin", leader.token, {
+    entity: "target",
+    action: "confirm",
+    data: { id: realWithDemoLabel.json.id, metricId: thu.id, reason: "Xác nhận kiểm thử nhãn" },
+  });
+  const sum2024 = await summary(2024, 1, leader.token);
+  const row2024 = thuRow(sum2024);
+  check(
+    "6.1 Target nhãn [DEMO] nhưng dataSource REAL vẫn là nguồn thật (isOfficial=true)",
+    row2024?.btc?.targetValue === 1000 && row2024?.btc?.isOfficial === true && row2024?.btc?.ruleState === "OFFICIAL",
+    JSON.stringify(row2024?.btc)
+  );
+
+  const demoCountAfterRealLabel = await prisma.metricPlanTarget.count({ where: { dataSource: "DEMO" } });
+  check(
+    "6.2 Target nhãn [DEMO] + dataSource REAL không làm tăng demoTargets",
+    demoCountAfterRealLabel === demoCountBefore,
+    `before=${demoCountBefore}, after=${demoCountAfterRealLabel}`
+  );
+
+  const demo2025 = await mkTarget({
+    label: `${TAG} BTC 2025 DEMO không nhãn`,
+    periodType: "YEAR",
+    year: 2025,
+    periodNo: null,
+    value: "500",
+    kind: "BTC_YEAR",
+    dataSource: "DEMO",
+  });
+  if (demo2025.json?.id) cleanup.targetIds.push(demo2025.json.id);
+  await api("POST", "/api/metrics/admin", leader.token, {
+    entity: "target",
+    action: "confirm",
+    data: { id: demo2025.json.id, metricId: thu.id, reason: "Xác nhận kiểm thử DEMO" },
+  });
+  const sum2025 = await summary(2025, 1, leader.token);
+  const row2025 = thuRow(sum2025);
+  check(
+    "6.3 Target dataSource=DEMO không được dùng tính % chính thức",
+    row2025?.btc?.targetValue === null && row2025?.btc?.ruleState === "NO_TARGET",
+    JSON.stringify(row2025?.btc)
+  );
+
+  // ============================================================
+  // 7. Mẫu số 0 + target PROPOSED không tạo %
   // ============================================================
   const updateZero = await api("POST", "/api/metrics/admin", leader.token, {
     entity: "target",
     action: "update",
     data: {
-      id: btc.json.id,
+      id: realWithDemoLabel.json.id,
       metricId: thu.id,
-      label: `${TAG} BTC 2024`,
+      label: `[DEMO] ${TAG} nhãn DEMO nhưng dataSource REAL`,
       periodType: "YEAR",
       year: 2024,
       periodNo: null,
       value: "0",
       comparisonKind: "BTC_YEAR",
+      dataSource: "REAL",
       sourceNote: `${TAG} căn cứ kiểm thử (sửa về 0)`,
       reason: "Kiểm thử mẫu số 0",
     },
   });
-  check("5.1 Sửa chỉ tiêu đã xác nhận quay về PROPOSED (buộc xác nhận lại)", updateZero.json?.status === "PROPOSED", JSON.stringify(updateZero.json));
+  check("7.1 Sửa chỉ tiêu đã xác nhận quay về PROPOSED (buộc xác nhận lại)", updateZero.json?.status === "PROPOSED", JSON.stringify(updateZero.json));
   await api("POST", "/api/metrics/admin", leader.token, {
     entity: "target",
     action: "confirm",
-    data: { id: btc.json.id, metricId: thu.id, reason: "Xác nhận lại sau sửa" },
+    data: { id: realWithDemoLabel.json.id, metricId: thu.id, reason: "Xác nhận lại sau sửa" },
   });
-  const sumZero = await api("GET", `/api/metrics/summary?year=2024&month=2&week=6&quarter=1&comparison=1`, leader.token);
-  const rowZero = (sumZero.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
+  const sumZero = await summary(2024, 1, leader.token);
+  const rowZero = thuRow(sumZero);
   check(
-    "5.2 Mẫu số 0 → percent null (không hiện 0%)",
-    rowZero?.btc?.targetValue === 0 && rowZero?.btc?.percent === null,
+    "7.2 Mẫu số 0 → percent null (không hiện 0%)",
+    rowZero?.btc?.targetValue === 0 && rowZero?.btc?.percent === null && rowZero?.btc?.percentText === null,
     JSON.stringify(rowZero?.btc)
   );
 
-  const proposed2025 = await mkTarget(`${TAG} BTC 2025 chưa xác nhận`, "YEAR", 2025, null, "500", "BTC_YEAR");
-  if (proposed2025.json?.id) cleanup.targetIds.push(proposed2025.json.id);
-  const sum2025 = await api("GET", `/api/metrics/summary?year=2025&month=1&week=1&quarter=1&comparison=1`, leader.token);
-  const row2025 = (sum2025.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
+  const proposed2026 = await mkTarget({
+    label: `${TAG} BTC 2026 chưa xác nhận`,
+    periodType: "YEAR",
+    year: 2026,
+    periodNo: null,
+    value: "500",
+    kind: "BTC_YEAR",
+    dataSource: "REAL",
+  });
+  if (proposed2026.json?.id) cleanup.targetIds.push(proposed2026.json.id);
+  const sum2026 = await summary(2026, 1, leader.token);
+  const row2026 = thuRow(sum2026);
   check(
-    "5.3 Target PROPOSED không được dùng tính % chính thức",
-    row2025?.btc?.status === "PROPOSED" && row2025?.btc?.percent === null && row2025?.btc?.ruleState === "PROPOSED",
-    JSON.stringify(row2025?.btc)
+    "7.3 Target REAL nhưng PROPOSED không được tính % chính thức",
+    row2026?.btc?.status === "PROPOSED" &&
+      row2026?.btc?.isOfficial === true &&
+      row2026?.btc?.percent === null &&
+      row2026?.btc?.ruleState === "PROPOSED",
+    JSON.stringify(row2026?.btc)
   );
 
   // ============================================================
-  // 6. Chống xóa mất lịch sử + lịch sử sửa mốc
+  // 8. Chống xóa mất lịch sử + lịch sử sửa mốc
   // ============================================================
   const delConfirmed = await api("POST", "/api/metrics/admin", leader.token, {
     entity: "target",
     action: "delete",
     data: { id: btc.json.id, metricId: thu.id },
   });
-  check("6.1 Không xóa được chỉ tiêu đã xác nhận/chốt", delConfirmed.status === 400, `HTTP ${delConfirmed.status}`);
+  check("8.1 Không xóa được chỉ tiêu đã xác nhận/chốt", delConfirmed.status === 400, `HTTP ${delConfirmed.status}`);
 
   const delProposed = await api("POST", "/api/metrics/admin", leader.token, {
     entity: "target",
     action: "delete",
-    data: { id: proposed2025.json.id, metricId: thu.id },
+    data: { id: proposed2026.json.id, metricId: thu.id },
   });
   const deletedRev = await prisma.metricPlanTargetRevision.count({
-    where: { targetId: proposed2025.json.id, action: "DELETE" },
+    where: { targetId: proposed2026.json.id, action: "DELETE" },
   });
-  check("6.2 Xóa target PROPOSED nhưng vẫn giữ revision DELETE", delProposed.status === 200 && deletedRev === 1, `revisionDelete=${deletedRev}`);
+  check("8.2 Xóa target PROPOSED nhưng vẫn giữ revision DELETE", delProposed.status === 200 && deletedRev === 1, `revisionDelete=${deletedRev}`);
 
   const baseUpdate = await api("POST", "/api/metrics/admin", leader.token, {
     entity: "baseline",
     action: "update",
-    data: { id: baseCreate.json.id, value: "120", asOfDate: "2024-01-31", sourceNote: `${TAG} mốc sửa`, reason: "Kiểm thử sửa mốc" },
+    data: {
+      id: baseCreate.json.id,
+      value: String(ACC.baseline),
+      asOfDate: "2023-09-30",
+      dataSource: "REAL",
+      sourceNote: `${TAG} mốc sửa`,
+      reason: "Kiểm thử sửa mốc",
+    },
   });
-  check("6.3 Sửa mốc đã xác nhận quay về PROPOSED", baseUpdate.json?.status === "PROPOSED", JSON.stringify(baseUpdate.json));
+  check("8.3 Sửa mốc đã xác nhận quay về PROPOSED", baseUpdate.json?.status === "PROPOSED", JSON.stringify(baseUpdate.json));
   const baseRev = await prisma.metricBaselineRevision.count({ where: { baselineId: baseCreate.json.id } });
-  check("6.4 Lịch sử mốc ghi CREATE + CONFIRM + UPDATE", baseRev === 3, `revisions=${baseRev}`);
+  check("8.4 Lịch sử mốc ghi CREATE + CONFIRM + UPDATE", baseRev === 3, `revisions=${baseRev}`);
 
-  const sumBaseDraft = await api("GET", `/api/metrics/summary?year=2024&month=2&week=6&quarter=1&comparison=1`, leader.token);
-  const rowBaseDraft = (sumBaseDraft.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
+  const sumBaseDraft = await summary(ACC.year, ACC.month, leader.token);
+  const rowBaseDraft = thuRow(sumBaseDraft);
   check(
-    "6.5 Mốc chưa xác nhận lại không được dùng (năm = tổng phát sinh 65)",
-    rowBaseDraft?.yearCum === 65,
+    "8.5 Mốc chưa xác nhận lại không được dùng (năm = tổng phát sinh 219.341.201.906)",
+    rowBaseDraft?.yearCum === ACC.monthCum + ACC.prevMonthEntry,
     `yearCum=${rowBaseDraft?.yearCum}`
   );
 
@@ -397,42 +595,38 @@ async function main() {
     action: "confirm",
     data: { id: baseCreate.json.id, reason: "Xác nhận lại mốc sau sửa" },
   });
-  const sumBaseFixed = await api("GET", `/api/metrics/summary?year=2024&month=2&week=6&quarter=1&comparison=1`, leader.token);
-  const rowBaseFixed = (sumBaseFixed.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
-  check(
-    "6.6 Mốc xác nhận lại 120 + phát sinh 15 = 135 (không cộng trùng)",
-    rowBaseFixed?.yearCum === 135,
-    `yearCum=${rowBaseFixed?.yearCum}`
-  );
+  const sumBaseFixed = await summary(ACC.year, ACC.month, leader.token);
+  const rowBaseFixed = thuRow(sumBaseFixed);
+  check("8.6 Mốc xác nhận lại + phát sinh = 1.317.372.334.554 (không cộng trùng)", rowBaseFixed?.yearCum === ACC.yearCum, `yearCum=${rowBaseFixed?.yearCum}`);
 
   const baseLock = await api("POST", "/api/metrics/admin", leader.token, {
     entity: "baseline",
     action: "lock",
     data: { id: baseCreate.json.id, reason: "Chốt mốc kiểm thử" },
   });
-  const sumBaseLocked = await api("GET", `/api/metrics/summary?year=2024&month=2&week=6&quarter=1&comparison=1`, leader.token);
-  const rowBaseLocked = (sumBaseLocked.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
+  const sumBaseLocked = await summary(ACC.year, ACC.month, leader.token);
+  const rowBaseLocked = thuRow(sumBaseLocked);
   check(
-    "6.7 Mốc LOCKED vẫn được dùng tính lũy kế",
-    baseLock.json?.status === "LOCKED" && rowBaseLocked?.yearCum === 135,
+    "8.7 Mốc LOCKED vẫn được dùng tính lũy kế",
+    baseLock.json?.status === "LOCKED" && rowBaseLocked?.yearCum === ACC.yearCum,
     `status=${baseLock.json?.status}, yearCum=${rowBaseLocked?.yearCum}`
   );
 
   // ============================================================
-  // 7. Lịch sử bản ghi ngày
+  // 9. Lịch sử bản ghi ngày + dataSource
   // ============================================================
   const histEntry = await api("GET", `/api/metrics/entries?history=${encodeURIComponent(entryIds[0])}`, leader.token);
   check(
-    "7.1 Lịch sử bản ghi ngày trả revision CREATE + người nhập",
+    "9.1 Lịch sử bản ghi ngày trả revision CREATE + người nhập",
     histEntry.status === 200 && (histEntry.json?.revisions || []).some((r: any) => r.action === "CREATE" && r.editedByName),
     JSON.stringify(histEntry.json?.revisions?.[0] || null)
   );
 
+  const entryCheck = await prisma.metricDailyEntry.findFirst({ where: { id: entryIds[0] } });
+  check("9.2 Entry do tài khoản thật nhập có dataSource=REAL", entryCheck?.dataSource === "REAL", String(entryCheck?.dataSource));
+
   evidence.totals = { passed, failed };
 
-  // ============================================================
-  // Dọn dẹp
-  // ============================================================
   await cleanupAll();
   console.log("\n• Đã dọn dữ liệu kiểm thử.");
 
@@ -449,7 +643,7 @@ async function main() {
       {
         session: "S2",
         yc: ["YC-01", "YC-02"],
-        contract: "B-C-1",
+        contract: "B-C-2",
         timestamp: new Date().toISOString(),
         db: "talung_v3_phase_b",
         api: BASE,

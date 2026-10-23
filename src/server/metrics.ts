@@ -7,6 +7,11 @@ import { getIsoWeekBounds, getVnDateParts } from "@/lib/period-helper";
 const D = Prisma.Decimal;
 export type Dec = Prisma.Decimal;
 
+/** B-C-2/Q11: API trả chuỗi tỷ lệ 2 chữ số thập phân, dấu phẩy vi-VN. */
+export function formatPercentText(value: number): string {
+  return value.toFixed(2).replace(".", ",");
+}
+
 // ============================================================
 // Ngày (date-only, mốc UTC 00:00 — khớp cột DATE trong Postgres)
 // ============================================================
@@ -211,6 +216,7 @@ interface EntryRow {
   entryDate: Date;
   valueNumeric: Prisma.Decimal;
   status: string;
+  dataSource: string;
   enteredById: string;
   updatedAt: Date;
 }
@@ -222,6 +228,7 @@ interface BaselineRow {
   asOfDate: Date;
   valueNumeric: Prisma.Decimal;
   status: string;
+  dataSource: string;
 }
 
 export interface MetricCols {
@@ -264,8 +271,11 @@ export interface MetricSummaryRow {
     periodNo: number | null;
     targetValue: number;
     percent: number | null;
+    percentText: string | null;
     comparisonKind: string;
     status: string;
+    dataSource: string;
+    isOfficial: boolean;
     sourceNote: string | null;
     confirmedAt: string | null;
   }[];
@@ -290,13 +300,13 @@ export interface MetricSummaryGroup {
  * tại khu vực số liệu, tránh hiển thị số liệu dùng thử như số liệu chính thức.
  */
 export interface MetricDataQuality {
-  /** Số mốc lũy kế đã xác nhận có ghi chú [DEMO... */
+  /** Số mốc lũy kế có dataSource = DEMO. */
   demoBaselines: number;
   /** Số bản ghi nhập trong kỳ do tài khoản DEMO nhập (mã người bắt đầu bằng "DEMO") */
   demoEntries: number;
   /** Số bản ghi nhập trong kỳ do người thật nhập */
   realEntries: number;
-  /** Số chỉ tiêu giao gắn nhãn [DEMO... */
+  /** Số chỉ tiêu giao có dataSource = DEMO. */
   demoTargets: number;
   /** Có thành phần DEMO trong nguồn số liệu đang hiển thị */
   demoPresent: boolean;
@@ -389,6 +399,7 @@ export async function computeMetricSummary(
           entryDate: true,
           valueNumeric: true,
           status: true,
+          dataSource: true,
           enteredById: true,
           updatedAt: true,
         },
@@ -412,16 +423,15 @@ export async function computeMetricSummary(
   // Tên người nhập cho "latest" + mã người (YC-26: nhận diện DEMO)
   const personIds = Array.from(new Set(entries.map((e) => e.enteredById)));
   const persons = personIds.length
-    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true, code: true } })
+    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true } })
     : [];
   const personName = new Map(persons.map((p) => [p.id, p.fullName]));
-  const personCode = new Map(persons.map((p) => [p.id, p.code]));
 
-  // --- YC-26: cờ chất lượng dữ liệu — phát hiện DEMO lẫn trong nguồn số liệu ---
-  const demoBaselines = baselines.filter((b) => /\[DEMO/i.test(b.sourceNote || "")).length;
-  const demoEntries = entries.filter((e) => (personCode.get(e.enteredById) || "").toUpperCase().startsWith("DEMO")).length;
+  // --- B-C-2/Q9: cờ chất lượng dữ liệu đọc từ data_source, KHÔNG dò nhãn/tên tài khoản ---
+  const demoBaselines = baselines.filter((b) => b.dataSource === "DEMO").length;
+  const demoEntries = entries.filter((e) => e.dataSource === "DEMO").length;
   const realEntries = entries.length - demoEntries;
-  const demoTargets = targets.filter((t) => /^\s*\[DEMO/i.test(t.label)).length;
+  const demoTargets = targets.filter((t) => t.dataSource === "DEMO").length;
   const dataQuality: MetricDataQuality = {
     demoBaselines,
     demoEntries,
@@ -639,11 +649,12 @@ export async function computeMetricSummary(
           const col =
             t.periodType === "YEAR" ? base.year : t.periodType === "MONTH" ? base.month : base.quarter;
           const targetValue = Number(t.valueNumeric);
-          // Chỉ tiêu chưa xác nhận/chốt vẫn hiển thị số gốc nhưng không công bố % chính thức.
-          const official = t.status === "CONFIRMED" || t.status === "LOCKED";
+          // B-C-2/Q9: chỉ target REAL + đã xác nhận/chốt mới công bố % chính thức.
+          const isOfficial = t.dataSource === "REAL";
+          const official = isOfficial && (t.status === "CONFIRMED" || t.status === "LOCKED");
           const percent =
             official && col !== null && targetValue > 0
-              ? Math.round((col / targetValue) * 1000) / 10
+              ? Math.round((col / targetValue) * 10000) / 100
               : null;
           return {
             id: t.id,
@@ -654,8 +665,11 @@ export async function computeMetricSummary(
             periodNo: t.periodNo,
             targetValue,
             percent,
+            percentText: percent === null ? null : formatPercentText(percent),
             comparisonKind: t.comparisonKind,
             status: t.status,
+            dataSource: t.dataSource,
+            isOfficial,
             sourceNote: t.sourceNote,
             confirmedAt: t.confirmedAt ? t.confirmedAt.toISOString() : null,
           };
@@ -772,13 +786,13 @@ export function parseNumberInput(input: string | number): string | null {
 //
 // Quy ước:
 //   - BTC/UBND/KH tháng chỉ lấy target có `comparisonKind` tường minh, đúng kỳ/năm,
-//     status CONFIRMED/LOCKED, không mang nhãn [DEMO]. KHÔNG dò chuỗi nhãn.
+//     status CONFIRMED/LOCKED, dataSource REAL. KHÔNG dò chuỗi nhãn.
 //   - Tháng trước / cùng kỳ: B1 CHƯA CHỐT. API trả giá trị kỳ đối chiếu (nếu có)
 //     nhưng percent luôn null và ruleState=PENDING_B1 — không công bố % thiếu căn cứ.
 //   - Tỷ lệ chỉ tính khi đủ tử số, mẫu số > 0; thiếu -> null (UI "Chưa xác định").
 // ============================================================
 
-export const COMPARISON_CONTRACT_VERSION = "B-C-1";
+export const COMPARISON_CONTRACT_VERSION = "B-C-2";
 
 export type ComparisonRuleState = "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET";
 export type ComparisonDiffRuleState = "PENDING_B1";
@@ -789,11 +803,14 @@ export interface ComparisonTargetBlock {
   comparisonKind: string | null;
   targetValue: number | null;
   percent: number | null;
+  percentText: string | null;
   periodLabel: string;
   basis: "YEAR_CUM" | "MONTH_CUM";
   ruleState: ComparisonRuleState;
   ambiguous: boolean;
   status: string | null;
+  dataSource: string | null;
+  isOfficial: boolean;
   sourceNote: string | null;
   confirmedAt: string | null;
 }
@@ -837,7 +854,7 @@ export interface MetricComparisonResult {
 }
 
 const ratioPercent = (num: number | null, den: number | null): number | null =>
-  num !== null && den !== null && den > 0 ? Math.round((num / den) * 1000) / 10 : null;
+  num !== null && den !== null && den > 0 ? Math.round((num / den) * 10000) / 100 : null;
 
 type TargetRow = MetricSummaryRow["targets"][number];
 
@@ -855,11 +872,14 @@ function comparisonTargetBlock(
       comparisonKind: kind,
       targetValue: null,
       percent: null,
+      percentText: null,
       periodLabel,
       basis,
       ruleState: "NO_TARGET",
       ambiguous: false,
       status: null,
+      dataSource: null,
+      isOfficial: false,
       sourceNote: null,
       confirmedAt: null,
     };
@@ -871,28 +891,35 @@ function comparisonTargetBlock(
       comparisonKind: kind,
       targetValue: null,
       percent: null,
+      percentText: null,
       periodLabel,
       basis,
       ruleState: "AMBIGUOUS",
       ambiguous: true,
       status: null,
+      dataSource: null,
+      isOfficial: false,
       sourceNote: null,
       confirmedAt: null,
     };
   }
   const t = candidates[0];
-  const official = t.status === "CONFIRMED" || t.status === "LOCKED";
+  const official = t.isOfficial && (t.status === "CONFIRMED" || t.status === "LOCKED");
+  const percent = official ? ratioPercent(num, t.targetValue) : null;
   return {
     targetId: t.id,
     label: t.label,
     comparisonKind: kind,
     targetValue: t.targetValue,
-    percent: official ? ratioPercent(num, t.targetValue) : null,
+    percent,
+    percentText: percent === null ? null : formatPercentText(percent),
     periodLabel,
     basis,
     ruleState: official ? "OFFICIAL" : "PROPOSED",
     ambiguous: false,
     status: t.status,
+    dataSource: t.dataSource,
+    isOfficial: t.isOfficial,
     sourceNote: t.sourceNote,
     confirmedAt: t.confirmedAt,
   };
@@ -920,12 +947,9 @@ export async function computeMetricComparison(
   const rows: MetricComparisonRow[] = [];
   for (const g of baseSummary.groups) {
     for (const m of g.metrics) {
-      // KHÔNG dùng chỉ tiêu giao gắn nhãn [DEMO...] làm nguồn đối chiếu chính thức
-      // (tránh hiển thị dữ liệu DEMO như số liệu thật — quy ước YC-24).
+      // B-C-2/Q9: chỉ dùng target REAL (cờ dữ liệu) — KHÔNG dò nhãn.
       // Chỉ so sánh ở phạm vi TỔNG (classificationId rỗng) để khớp cột lũy kế tổng.
-      const officialTargets = m.targets.filter(
-        (t) => !/^\s*\[DEMO/i.test(t.label) && !t.classificationId
-      );
+      const officialTargets = m.targets.filter((t) => t.isOfficial && !t.classificationId);
       // Chỉ lấy chỉ tiêu có nguồn đối chiếu chính thức hoặc đang hiển thị trên Trang chủ.
       if (officialTargets.length === 0 && !m.showOnDashboard) continue;
 

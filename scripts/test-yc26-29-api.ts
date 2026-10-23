@@ -86,7 +86,7 @@ async function waitForServer(): Promise<void> {
   throw new Error("Dev server không phản hồi sau 120 giây");
 }
 
-const round1 = (n: number) => Math.round(n * 10) / 10;
+const round2 = (n: number) => Math.round(n * 100) / 100;
 const todayVnStr = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 /** POST /api/metrics/entries trả về "items" — chuẩn hóa về danh sách entryId chuỗi. */
 const normEntryIds = (items: any[] | undefined): string[] =>
@@ -368,9 +368,9 @@ async function main() {
 
   const comp1 = await api("GET", `/api/metrics/summary?${anchors}&comparison=1`, leader);
   const thuRow = (comp1.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
-  const expectedBtcPct = round1((thuRow.yearCum / 1_685_000_000_000) * 100);
-  const expectedUbndPct = round1((thuRow.yearCum / 1_700_000_000_000) * 100);
-  const expectedKhPct = round1((thuRow.monthCum / 200_000_000_000) * 100);
+  const expectedBtcPct = round2((thuRow.yearCum / 1_685_000_000_000) * 100);
+  const expectedUbndPct = round2((thuRow.yearCum / 1_700_000_000_000) * 100);
+  const expectedKhPct = round2((thuRow.monthCum / 200_000_000_000) * 100);
   check(
     "3.5 Tỷ lệ BTC năm = LK năm / chỉ tiêu BTC (đủ tử số & mẫu số)",
     thuRow.btc.targetValue === 1_685_000_000_000 && thuRow.btc.percent === expectedBtcPct,

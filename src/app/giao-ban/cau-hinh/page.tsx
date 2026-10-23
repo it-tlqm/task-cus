@@ -193,6 +193,7 @@ export default function CauHinhSoLieuPage() {
     periodNo: "",
     value: "",
     comparisonKind: "NONE",
+    dataSource: "REAL",
     sourceNote: "",
     note: "",
     classificationId: "",
@@ -201,7 +202,7 @@ export default function CauHinhSoLieuPage() {
 
   // ------------------- BASELINE -------------------
   const [selBaseMetricId, setSelBaseMetricId] = useState("");
-  const [baseDraft, setBaseDraft] = useState<any>({ cumKind: "YEAR", asOfDate: "", value: "", sourceNote: "", classificationId: "" });
+  const [baseDraft, setBaseDraft] = useState<any>({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", classificationId: "" });
   const [editBaseId, setEditBaseId] = useState("");
 
   // ------------------- ASSIGN -------------------
@@ -741,6 +742,9 @@ export default function CauHinhSoLieuPage() {
                           </span>
                           <span className="text-body-sm tabular-nums font-semibold text-primary">{fmtMetric(t.valueBase, selTargetMetric)}</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${stCls}`}>{TARGET_STATUS_LABELS[st] || st}</span>
+                          {t.dataSource === "DEMO" && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600 font-semibold">DEMO</span>
+                          )}
                           {t.confirmedByName && <span className="text-body-xs text-on-surface-variant">· {t.confirmedByName}{t.confirmedAt ? ` (${fmtDate(t.confirmedAt)})` : ""}</span>}
                         </div>
                         {t.sourceNote && <div className="text-body-xs text-on-surface-variant">Căn cứ: {t.sourceNote}</div>}
@@ -757,6 +761,7 @@ export default function CauHinhSoLieuPage() {
                                   periodNo: t.periodNo ?? "",
                                   value: String(t.valueBase / (selTargetMetric.displayScale || 1)),
                                   comparisonKind: t.comparisonKind || "NONE",
+                                  dataSource: t.dataSource || "REAL",
                                   sourceNote: t.sourceNote || "",
                                   note: t.note || "",
                                   classificationId: t.classificationId || "",
@@ -813,6 +818,15 @@ export default function CauHinhSoLieuPage() {
                     <input type="number" value={targetDraft.periodNo} onChange={(e) => setTargetDraft({ ...targetDraft, periodNo: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder={targetDraft.periodType === "MONTH" ? "Tháng 1-12" : "Quý 1-4"} />
                   )}
                   <input value={targetDraft.value} onChange={(e) => setTargetDraft({ ...targetDraft, value: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder={`Giá trị (${selTargetMetric.unitLabelEffective || "số"})`} />
+                  <select
+                    value={targetDraft.dataSource || "REAL"}
+                    onChange={(e) => setTargetDraft({ ...targetDraft, dataSource: e.target.value })}
+                    className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                    title="Nguồn dữ liệu: REAL dùng chính thức; DEMO chỉ mô phỏng"
+                  >
+                    <option value="REAL">Nguồn: Số liệu thật</option>
+                    <option value="DEMO">Nguồn: DEMO (mô phỏng)</option>
+                  </select>
                   <input value={targetDraft.sourceNote} onChange={(e) => setTargetDraft({ ...targetDraft, sourceNote: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Nguồn / căn cứ (VD: Quyết định giao chỉ tiêu số...)" />
                   <input value={targetDraft.note} onChange={(e) => setTargetDraft({ ...targetDraft, note: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Ghi chú (nếu có)" />
                   {selTargetMetric.classifications.length > 0 && (
@@ -844,7 +858,7 @@ export default function CauHinhSoLieuPage() {
                       );
                       if (ok) {
                         setEditTargetId("");
-                        setTargetDraft({ label: "", periodType: "YEAR", year: new Date().getFullYear(), periodNo: "", value: "", comparisonKind: "NONE", sourceNote: "", note: "", classificationId: "" });
+                        setTargetDraft({ label: "", periodType: "YEAR", year: new Date().getFullYear(), periodNo: "", value: "", comparisonKind: "NONE", dataSource: "REAL", sourceNote: "", note: "", classificationId: "" });
                       }
                     }}
                     className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
@@ -855,7 +869,7 @@ export default function CauHinhSoLieuPage() {
                     <button
                       onClick={() => {
                         setEditTargetId("");
-                        setTargetDraft({ label: "", periodType: "YEAR", year: new Date().getFullYear(), periodNo: "", value: "", comparisonKind: "NONE", sourceNote: "", note: "", classificationId: "" });
+                        setTargetDraft({ label: "", periodType: "YEAR", year: new Date().getFullYear(), periodNo: "", value: "", comparisonKind: "NONE", dataSource: "REAL", sourceNote: "", note: "", classificationId: "" });
                       }}
                       className="px-3 py-2 rounded-lg border border-border-default text-label-sm font-semibold"
                     >
@@ -926,6 +940,9 @@ export default function CauHinhSoLieuPage() {
                             <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${stCls}`}>
                               {st === "LOCKED" ? "Đã chốt" : st === "CONFIRMED" ? `Đã xác nhận${b.confirmedByName ? " · " + b.confirmedByName : ""}` : "Đề xuất"}
                             </span>
+                            {b.dataSource === "DEMO" && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600 font-semibold">DEMO</span>
+                            )}
                           </div>
                           {b.sourceNote && <div className="text-body-xs text-on-surface-variant">Căn cứ: {b.sourceNote}</div>}
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -937,6 +954,7 @@ export default function CauHinhSoLieuPage() {
                                     cumKind: b.cumKind,
                                     asOfDate: b.asOfDate,
                                     value: String(b.valueBase / (selBaseMetric.displayScale || 1)),
+                                    dataSource: b.dataSource || "REAL",
                                     sourceNote: b.sourceNote || "",
                                     classificationId: b.classificationId || "",
                                   });
@@ -977,6 +995,15 @@ export default function CauHinhSoLieuPage() {
                   </select>
                   <input type="date" value={baseDraft.asOfDate} onChange={(e) => setBaseDraft({ ...baseDraft, asOfDate: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" />
                   <input value={baseDraft.value} onChange={(e) => setBaseDraft({ ...baseDraft, value: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder={`Giá trị đến ngày mốc (${selBaseMetric.unitLabelEffective || "số"})`} />
+                  <select
+                    value={baseDraft.dataSource || "REAL"}
+                    onChange={(e) => setBaseDraft({ ...baseDraft, dataSource: e.target.value })}
+                    className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                    title="Nguồn dữ liệu: REAL dùng chính thức; DEMO chỉ mô phỏng"
+                  >
+                    <option value="REAL">Số liệu thật</option>
+                    <option value="DEMO">DEMO (mô phỏng)</option>
+                  </select>
                   <input value={baseDraft.sourceNote} onChange={(e) => setBaseDraft({ ...baseDraft, sourceNote: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Nguồn (VD: báo cáo tuần 41)" />
                 </div>
                 <div className="flex items-center gap-2">
@@ -991,7 +1018,7 @@ export default function CauHinhSoLieuPage() {
                       );
                       if (ok) {
                         setEditBaseId("");
-                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", sourceNote: "", classificationId: baseDraft.classificationId || "" });
+                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", classificationId: baseDraft.classificationId || "" });
                       }
                     }}
                     className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
@@ -1002,7 +1029,7 @@ export default function CauHinhSoLieuPage() {
                     <button
                       onClick={() => {
                         setEditBaseId("");
-                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", sourceNote: "", classificationId: baseDraft.classificationId || "" });
+                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", classificationId: baseDraft.classificationId || "" });
                       }}
                       className="px-3 py-2 rounded-lg border border-border-default text-label-sm font-semibold"
                     >

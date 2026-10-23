@@ -1,0 +1,61 @@
+{
+  "database": "talung_v3_phase_b_rehearsal_1792753583968",
+  "columns": [
+    {
+      "table_name": "metric_baselines",
+      "column_name": "data_source",
+      "column_default": "'REAL'::text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "metric_daily_entries",
+      "column_name": "data_source",
+      "column_default": "'REAL'::text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "metric_plan_targets",
+      "column_name": "data_source",
+      "column_default": "'REAL'::text",
+      "is_nullable": "NO"
+    }
+  ],
+  "counts": [
+    {
+      "kind": "target",
+      "total": 49,
+      "demo": 49,
+      "real": 0
+    },
+    {
+      "kind": "baseline",
+      "total": 47,
+      "demo": 47,
+      "real": 0
+    },
+    {
+      "kind": "entry",
+      "total": 636,
+      "demo": 622,
+      "real": 14
+    }
+  ],
+  "misflagged": {
+    "target_demo_label_real": 0,
+    "baseline_demo_label_real": 0
+  },
+  "audit": {
+    "action": "MIGRATION_BACKFILL_METRIC_DATA_SOURCE",
+    "resource_id": "20261023160000_v3_phase_b_data_source",
+    "new_data": {
+      "demoEntries": 622,
+      "demoTargets": 49,
+      "realEntries": 14,
+      "realTargets": 0,
+      "demoBaselines": 47,
+      "realBaselines": 0
+    }
+  },
+  "pass": true,
+  "timestamp": "2026-10-23T11:06:25.903Z"
+}

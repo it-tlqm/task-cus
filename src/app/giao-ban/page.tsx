@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
-import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { fmtMetric, fmtPercent, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 import { RevenueComparisonSection } from "@/components/dashboard/RevenueComparisonSection";
 
@@ -18,8 +18,11 @@ interface TargetRow {
   periodNo: number | null;
   targetValue: number;
   percent: number | null;
+  percentText?: string | null;
   status?: string;
   comparisonKind?: string;
+  dataSource?: string;
+  isOfficial?: boolean;
 }
 interface ClassCol {
   classificationId: string;
@@ -374,24 +377,21 @@ export default function GiaoBanPage() {
                                   ) : (
                                     <div className="flex items-center justify-center gap-1 flex-wrap">
                                       {m.targets.map((t, i) => {
-                                        // YC-26: chỉ tiêu gắn nhãn [DEMO... là chỉ tiêu MÔ PHỎNG —
-                                        // không hiển thị như chỉ tiêu chính thức (không khoe tỷ lệ đạt).
-                                        if (/^\s*\[DEMO/i.test(t.label)) {
-                                          const cleanLabel = t.label.replace(/^\s*\[DEMO[^\]]*\]\s*/i, "");
+                                        // B-C-2/Q9: DEMO nhận diện bằng dataSource, KHÔNG dò nhãn.
+                                        if (t.dataSource === "DEMO" || t.isOfficial === false) {
                                           return (
                                             <span
                                               key={i}
                                               data-testid={`target-demo-${m.code}`}
-                                              title={`${t.label}: ${fmtMetric(t.targetValue, m)}${
-                                                t.percent === null ? "" : ` — tỷ lệ tạm tính ${t.percent}%`
-                                              } · Chỉ tiêu MÔ PHỎNG dùng thử (DEMO), chưa phải chỉ tiêu chính thức được duyệt`}
+                                              title={`${t.label}: ${fmtMetric(t.targetValue, m)} · Dữ liệu MÔ PHỎNG (DEMO), không dùng tính tỷ lệ chính thức`}
                                               className="text-[11px] px-1.5 py-0.5 rounded border border-dashed border-slate-300 bg-slate-50 text-slate-500 font-semibold"
                                             >
-                                              Demo{cleanLabel ? ` · ${cleanLabel}` : ""}
+                                              DEMO · {t.label}
                                             </span>
                                           );
                                         }
                                         const pending = t.percent === null && (t.status === "PROPOSED" || !t.status);
+                                        const percentLabel = t.percent === null ? null : t.percentText || fmtPercent(t.percent);
                                         return (
                                           <span
                                             key={i}
@@ -400,7 +400,7 @@ export default function GiaoBanPage() {
                                                 ? pending
                                                   ? " — chưa xác nhận nên chưa công bố tỷ lệ"
                                                   : " — chưa xác định tỷ lệ (thiếu dữ liệu hoặc mẫu số 0)"
-                                                : ` — ${t.percent}%`
+                                                : ` — ${percentLabel}`
                                             }`}
                                             className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${
                                               t.percent === null
@@ -410,8 +410,8 @@ export default function GiaoBanPage() {
                                                   : "border-amber-200 bg-amber-50 text-amber-700"
                                             }`}
                                           >
-                                            {t.label.replace(/^Chỉ tiêu\s*/i, "").replace(/^KH\s*/i, "KH ")}{" "}
-                                            {t.percent === null ? (pending ? "chờ xác nhận" : "—") : `${t.percent}%`}
+                                            {t.label}{" "}
+                                            {t.percent === null ? (pending ? "chờ xác nhận" : "—") : `${percentLabel}%`}
                                           </span>
                                         );
                                       })}
