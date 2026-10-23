@@ -8,12 +8,12 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `7d86639` + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline + merges PASS |
-| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `3708672` | 3111 | `talung_v3_phase_a_qa` | **MERGED** — QA gate release pending |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `6824029` + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline + merges PASS |
+| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `2953aea` | 3111 | `talung_v3_phase_a_qa` | **MERGED — release readiness**; RC chưa freeze; production access blocked |
 | S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `207dcfc` | 3112 | `talung_v3_phase_b` | **BLOCKED_BY_CONTRACT_ALIGNMENT** — Q9/Q11 |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `3ec7b9e` | 3113 | `talung_v3_phase_c` | **PARTIAL MERGED** — 96/96 + tsc PASS; target-only chờ S2 |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `860c10a` | 3113 | `talung_v3_phase_c` | **WAIT_B_C_2** — 108/108 + plan merged; chờ S2 |
 | S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED — STANDBY** — không code thêm; rerun khi S0 yêu cầu |
-| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED** — 22/22 API + 24/24 UI |
+| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED — STANDBY** — E13 PENDING |
 | S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `21c37ae` | — | — | **PLAN MERGED** — docs/plan; code chờ nhánh implementation |
 
 Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. Không có thay đổi schema/API trong S3/S6.
@@ -77,7 +77,7 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 
 | Session | HEAD | Phạm vi | Kết quả S0 | Merge? |
 |---|---|---|---|---|
-| S3 | `3ec7b9e` | Helper + target UI mock + test; không schema/API | **96/96 PASS**, tsc/build PASS; **PARTIAL MERGED** | **YES — partial**; target-only chờ S2 |
+| S3 | `860c10a` | Helper + target UI mock + target-only plan; không schema/API | **108/108 PASS**, tsc/build PASS; **WAIT_B_C_2** | **YES — plan/helper**; target-only chờ S2 |
 | S6 | `21c37ae` | Docs-only; spec + implementation/migration/test plan | **PLAN MERGED** | **YES — docs/plan**; code chờ nhánh implementation |
 
 Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
