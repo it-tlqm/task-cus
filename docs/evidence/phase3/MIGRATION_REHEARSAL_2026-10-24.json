@@ -1,0 +1,117 @@
+{
+  "suite": "YC-11 Phase 3 migration rehearsal",
+  "database": "postgresql://postgres:postgres@localhost:5432/talung_v3_approval_impl_quality",
+  "migration": "20261023190000_v3_approval_precheck_route",
+  "executedAt": "2026-10-23T19:17:25.453Z",
+  "apply": {
+    "statements": 8,
+    "tableExists": true,
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "task_id",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "case_id",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "round",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "route_status",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "route_json",
+        "data_type": "jsonb",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_by_id",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "approval_route_snapshots_case_id_idx",
+        "indexdef": "CREATE INDEX approval_route_snapshots_case_id_idx ON public.approval_route_snapshots USING btree (case_id)"
+      },
+      {
+        "indexname": "approval_route_snapshots_pkey",
+        "indexdef": "CREATE UNIQUE INDEX approval_route_snapshots_pkey ON public.approval_route_snapshots USING btree (id)"
+      },
+      {
+        "indexname": "approval_route_snapshots_task_id_created_at_idx",
+        "indexdef": "CREATE INDEX approval_route_snapshots_task_id_created_at_idx ON public.approval_route_snapshots USING btree (task_id, created_at)"
+      },
+      {
+        "indexname": "approval_route_snapshots_task_id_round_key",
+        "indexdef": "CREATE UNIQUE INDEX approval_route_snapshots_task_id_round_key ON public.approval_route_snapshots USING btree (task_id, round)"
+      }
+    ],
+    "checks": [
+      {
+        "conname": "approval_route_snapshots_round_check",
+        "def": "CHECK ((round >= 1))"
+      },
+      {
+        "conname": "approval_route_snapshots_route_status_check",
+        "def": "CHECK ((route_status = ANY (ARRAY['READY'::text, 'WAITING_ASSIGNMENT'::text, 'CYCLE'::text, 'AMBIGUOUS'::text])))"
+      }
+    ],
+    "uniqueTaskRound": true,
+    "routeStatusCheck": true
+  },
+  "rollback": {
+    "statements": 1,
+    "tableExists": false
+  },
+  "reapply": {
+    "statements": 8,
+    "tableExists": true
+  },
+  "dataBefore": {
+    "tasks": 83,
+    "approvalCases": 26,
+    "approvalDecisions": 43,
+    "participantEvents": 53,
+    "participantResults": 24,
+    "supervisions": 2
+  },
+  "dataAfterApply": {
+    "tasks": 83,
+    "approvalCases": 26,
+    "approvalDecisions": 43,
+    "participantEvents": 53,
+    "participantResults": 24,
+    "supervisions": 2
+  },
+  "dataAfterRollback": {
+    "tasks": 83,
+    "approvalCases": 26,
+    "approvalDecisions": 43,
+    "participantEvents": 53,
+    "participantResults": 24,
+    "supervisions": 2
+  },
+  "dataUnchanged": true,
+  "pass": true,
+  "productionTouched": false
+}
