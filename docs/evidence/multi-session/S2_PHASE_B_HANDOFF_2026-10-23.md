@@ -15,13 +15,23 @@
 |---|---|
 | Base code (Phase A đã merge) | `a68d31e` |
 | Base docs/bootstrap | `50daed3` |
-| Hợp đồng dữ liệu B/C `B-C-1` | `8d4f076` |
-| Thông báo S0 + S3 | `1827fe7` |
+| Hợp đồng dữ liệu B/C `B-C-1` (superseded) | `8d4f076` |
+| Thông báo S0 + S3 ban đầu | `1827fe7` |
 | Backend/schema/permission | `08e6521` |
 | UI Dashboard + `/giao-ban` + cấu hình | `df99460` |
+| **Q9 dataSource + Q11 2 chữ số thập phân (B-C-2)** | **`1e18886`** + `b396bf6` (isOfficial entry API/evidence) |
 | Handoff/docs/tests (commit này) | xem branch head |
 
 Không merge `main`, không deploy, không chạy migration trên Production.
+
+### Đối chiếu blocker S0 (`S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md`)
+
+| Mã | Yêu cầu S0 | Kết quả S2 |
+|---|---|---|
+| **Q9** | `dataSource`/`isOfficial`, backfill `[DEMO]` → DEMO, bỏ regex, API trả cờ | **Đã sửa**: schema + migration `20261023160000`, API/UI đọc `dataSource`; test `2.1–2.3`, `6.1–6.3` |
+| **Q11/YC-02** | 2 chữ số thập phân, dấu phẩy vi-VN; acceptance 78,18 / 77,49 / 109,67 | **Đã sửa**: `percent` 2 chữ số, `percentText`; test `5.2–5.4`, UI `7–8` |
+| **Q8** | `metrics.config` / `metrics.entry_all`, không quyền target riêng | **Giữ nguyên**, không thêm quyền mới |
+| Migration | Additive + rehearsal, không Production | **PASS** trên bản sao `talung_v3_phase_b`; evidence JSON |
 
 ---
 
@@ -36,15 +46,17 @@ Không merge `main`, không deploy, không chạy migration trên Production.
   - So với tháng trước
   - So với cùng kỳ năm trước
 - BTC/UBND/KH tháng dùng **`comparisonKind` tường minh** (`BTC_YEAR`, `UBND_YEAR`, `MONTH_PLAN`), không dò nhãn/chữ.
-- Chỉ tính % khi target đúng kỳ/năm, phạm vi tổng, trạng thái `CONFIRMED`/`LOCKED`, không phải `[DEMO]`, mẫu số > 0.
+- Chỉ tính % khi target đúng kỳ/năm, phạm vi tổng, `dataSource = REAL` / `isOfficial = true`, trạng thái `CONFIRMED`/`LOCKED`, mẫu số > 0.
+- **Q9:** API trả `dataSource` (`REAL|DEMO`) + `isOfficial`; DEMO có nhãn riêng, không dùng tính % chính thức. **Không còn regex `[DEMO]` trong logic.**
+- **Q11/YC-02:** API trả `percent` 2 chữ số thập phân (half-up) + `percentText` dấu phẩy vi-VN; UI hiển thị 2 chữ số. Acceptance: **78,18% / 77,49% / 109,67%**.
 - Hiển thị nguồn/căn cứ, trạng thái, người/ngày xác nhận, “Số liệu đến ngày…”.
 - Hai dòng kỳ trước/cùng kỳ: **B1 PENDING** — API trả `percent = null`, `ruleState = "PENDING_B1"`; UI ghi “Chờ chốt quy tắc”, không công bố %.
-- Thiếu dữ liệu/mẫu số 0: `null`, UI “Chưa xác định”, không tự hiện 0%.
+- Thiếu dữ liệu/mẫu số 0: `null`, UI “Chưa xác định”, không tự hiện 0%; số 0 thật hiển thị `0,00%`.
 
 ### YC-02 — Nhập giá trị gốc, tự tính %, trạng thái/audit
 
-- `MetricPlanTarget` bổ sung: `comparisonKind`, `sourceNote`, `status` (`PROPOSED → CONFIRMED → LOCKED`), `proposedById`, `confirmedById/At`, `lockedById/At`.
-- `MetricBaseline` bổ sung trạng thái `LOCKED` + người/thời điểm chốt; mốc `CONFIRMED`/`LOCKED` mới được tính.
+- `MetricPlanTarget` bổ sung: `comparisonKind`, `sourceNote`, `dataSource` (`REAL|DEMO`), `status` (`PROPOSED → CONFIRMED → LOCKED`), `proposedById`, `confirmedById/At`, `lockedById/At`.
+- `MetricBaseline`/`MetricDailyEntry` bổ sung `dataSource` (`REAL|DEMO`); baseline có thêm trạng thái `LOCKED` + người/thời điểm chốt. Mốc `CONFIRMED`/`LOCKED` mới được tính.
 - Bảng mới:
   - `metric_plan_target_revisions`
   - `metric_baseline_revisions`
@@ -69,10 +81,12 @@ Không merge `main`, không deploy, không chạy migration trên Production.
 
 ## 3. Schema / migration
 
-- Migration: `prisma/migrations/20261023150000_v3_phase_b_revenue/migration.sql`
+- Migration Phase B: `prisma/migrations/20261023150000_v3_phase_b_revenue/migration.sql`
+- Migration B-C-2/Q9: `prisma/migrations/20261023160000_v3_phase_b_data_source/migration.sql`
 - **Additive**, không xóa/đổi cột cũ; không suy đoán `comparison_kind` cho dữ liệu cũ (mặc định `NONE`).
-- Đã rehearsal **chỉ trên** `talung_v3_phase_b` bằng `prisma db execute` (do DB test hiện không có lịch sử `_prisma_migrations` đầy đủ).
-- **S0 cần:** diễn tập migration trên bản sao schema gần Production; không coi việc đã chạy trên DB test của S2 là bằng chứng Production.
+- Backfill `data_source`: target nhãn `[DEMO` → DEMO; baseline/entry theo nguồn/người DEMO cũ → DEMO; ghi AuditEvent `MIGRATION_BACKFILL_METRIC_DATA_SOURCE`.
+- **Đã rehearsal cả 2 migration** trên bản sao mới tạo từ `talung_v3_fixture` (không phải DB đã sửa), kiểm tra cột/bảng/backfill/audit — **PASS**; sau đó mới áp lên DB test S2. **Chưa chạy Production.**
+- **S0 cần:** diễn tập lại trên bản sao schema gần Production; không coi việc đã chạy trên DB test của S2 là bằng chứng Production.
 
 ---
 
@@ -83,16 +97,19 @@ Không merge `main`, không deploy, không chạy migration trên Production.
 | `npx tsc --noEmit` | **PASS** | |
 | `npx prisma validate` | **PASS** | |
 | `pnpm build` | **PASS** | Next.js 15.5.27, 98 trang |
-| `scripts/test-v3-phase-b-revenue.ts` | **34/34 PASS** | API: quyền, target lifecycle, mốc, FLOW/lũy kế, %, zero denominator, B1, audit/revision |
-| `scripts/test-v3-phase-b-ui.ts` | **14/14 PASS** | Dashboard + `/giao-ban` + cấu hình + mobile 390×844 + STAFF 403 |
+| `scripts/test-v3-phase-b-revenue.ts` | **43/43 PASS** | API: Q8 quyền, Q9 dataSource/isOfficial/backfill, target lifecycle, mốc, FLOW/lũy kế, %, 2 chữ số, zero denominator, B1, audit/revision |
+| `scripts/test-v3-phase-b-ui.ts` | **17/17 PASS** | Dashboard + `/giao-ban` + cấu hình + mobile 390×844 + STAFF 403 + UI 78,18%/77,49%/109,67% |
+| Migration rehearsal | **PASS** | Bản sao `talung_v3_phase_b`, 3 cột `data_source`, 49 target DEMO, 47 baseline DEMO, 622 entry DEMO; misflag 0; audit có ghi |
 | `scripts/test-yc30-navigation.ts` | **207 pass / 1 fail** | Fail `/change-password` coverage — **không liên quan thay đổi S2**, cần S0 xác nhận baseline |
-| `scripts/test-yc26-29-api.ts` | **Chưa chạy** | Đã cập nhật theo `B-C-1` (comparisonKind + confirm target) nhưng bộ cũ khóa DB `localhost:54329`; cần chạy trên fixture của S0/S1 |
+| `scripts/test-yc26-29-api.ts` | **Chưa chạy** | Đã cập nhật theo `B-C-2` (comparisonKind + confirm + 2 chữ số) nhưng bộ cũ khóa DB `localhost:54329`; cần chạy trên fixture của S0/S1 |
 | `scripts/test-yc26-29-ui.ts` | **Chưa chạy** | Bộ cũ khóa DB `localhost:54329` |
 | Phase A tests | **Chưa chạy lại** | Ngoài phạm vi S2; S0 regression sau merge |
 
 **Bằng chứng:**
 - `docs/evidence/multi-session/S2_PHASE_B_TEST_RESULTS_2026-10-23.json`
+- `docs/evidence/multi-session/S2_PHASE_B_MIGRATION_REHEARSAL_2026-10-23.json`
 - `docs/evidence/phase-b/dashboard-comparison-desktop.png`
+- `docs/evidence/phase-b/giao-ban-comparison-acceptance-2023.png` (78,18% / 77,49% / 109,67%)
 - `docs/evidence/phase-b/giao-ban-comparison-desktop.png`
 - `docs/evidence/phase-b/giao-ban-cau-hinh-target.png`
 - `docs/evidence/phase-b/giao-ban-target-history.png`
@@ -134,13 +151,13 @@ npx tsx scripts/test-v3-phase-b-ui.ts
 
 ## 7. Contract B/C và phối hợp S3
 
-- Hợp đồng: `docs/V3/DATA_CONTRACT_B_C_2026-10-23.md` — phiên bản **`B-C-1`**.
-- Thông báo: `docs/evidence/multi-session/S2_CONTRACT_B_C_NOTICE_2026-10-23.md`.
+- Hợp đồng: `docs/V3/DATA_CONTRACT_B_C_2026-10-23.md` — phiên bản **`B-C-2`** (supersedes `B-C-1`).
+- Thông báo: `docs/evidence/multi-session/S2_CONTRACT_B_C_NOTICE_2026-10-23.md` + notice `B-C-2` (commit docs này).
 - Đề nghị S3:
-  - đọc/xác nhận `B-C-1` trước khi sửa API/schema/metric definitions dùng chung;
+  - đọc/xác nhận `B-C-2` trước khi sửa API/schema/metric definitions dùng chung;
   - chỉ đọc các trường B; trạng thái C (`CHUA_NHAP`, `CHUA_DU_KY`, `KHONG_PHAT_SINH`, …) tính ở lớp read-model, không ghi đè trạng thái B;
-  - không đổi `comparisonKind`/`status`/`sourceNote` của B.
-- Đề nghị S0 ghi nhận `B-C-1` là baseline hợp đồng cho thứ tự tích hợp **S2 → S3**.
+  - không đổi `comparisonKind`/`status`/`sourceNote`/`dataSource` của B.
+- Đề nghị S0 ghi nhận `B-C-2` là baseline hợp đồng cho thứ tự tích hợp **S2 → S3**.
 
 ---
 
@@ -153,15 +170,15 @@ Các file S3/S0 cần lưu ý khi merge:
 - `prisma/schema.prisma` + migration Phase B
 - `src/config/navigation.ts` (quyền menu cấu hình)
 
-Không nhận “ours/theirs” mù quáng; đối chiếu `B-C-1` trước khi resolve.
+Không nhận “ours/theirs” mù quáng; đối chiếu `B-C-2` trước khi resolve.
 
 ---
 
 ## 9. Ready for integration?
 
 **YES — có điều kiện:**
-1. S3/S0 xác nhận hợp đồng `B-C-1`.
-2. S0 diễn tập migration `20261023150000_v3_phase_b_revenue` trên bản sao schema gần Production; không chạy trực tiếp Production.
+1. S3/S0 xác nhận hợp đồng `B-C-2`.
+2. S0 diễn tập migration `20261023150000_v3_phase_b_revenue` + `20261023160000_v3_phase_b_data_source` trên bản sao schema gần Production; không chạy trực tiếp Production.
 3. S0 chạy regression sau merge (gồm `test-yc26-29-api.ts` đã cập nhật) và xác nhận 1 fail `/change-password` của test navigation là baseline cũ, không do S2.
 4. Không merge phần B1/B2/C1 như quyết định đã chốt khi chưa có văn bản.
 

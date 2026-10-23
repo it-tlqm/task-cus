@@ -1,5 +1,8 @@
 # S2 → S0 + S3 — Thông báo hợp đồng dữ liệu B/C
 
+> **ĐÃ THAY THẾ bởi `B-C-2`** — xem `S2_CONTRACT_B_C_2_NOTICE_2026-10-23.md` và commit `1e18886`.
+
+
 - **Session:** S2 — Phase B
 - **Branch:** `codex/v3-phase-b-revenue`
 - **Base:** `50daed3` (docs) / `a68d31e` (code)
