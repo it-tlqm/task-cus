@@ -11,10 +11,10 @@
 | S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `6cacc50` (start signal) / `a68d31e` code | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
 | S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `3708672` | 3111 | `talung_v3_phase_a_qa` | **MERGED** — QA gate release pending |
 | S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `207dcfc` | 3112 | `talung_v3_phase_b` | **BLOCKED_BY_CONTRACT_ALIGNMENT** — Q9/Q11 |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `8af7a66` (handoff) / code `a68d31e` | 3113 | `talung_v3_phase_c` | **CONTRACT APPROVED** — pure helper/test + target UI độc lập; schema/API chờ S2 |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `3ec7b9e` | 3113 | `talung_v3_phase_c` | **PARTIAL HANDOFF READY** — 96/96 + tsc PASS; chờ S2 schema |
 | S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED** — hardening 40/40 + no-self 5/5 |
 | S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED** — 22/22 API + 24/24 UI |
-| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `af197d7` (handoff) / code `a68d31e` | — | — | **DECISIONS APPROVED** — implementation planning; chờ S4 merge + nhánh riêng |
+| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `21c37ae` | — | — | **APPROVED PLAN READY** — docs/plan only; chờ nhánh implementation |
 
 Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. Không có thay đổi schema/API trong S3/S6.
 
@@ -77,8 +77,8 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 
 | Session | HEAD | Phạm vi | Kết quả S0 | Merge? |
 |---|---|---|---|---|
-| S3 | `8af7a66` | Docs + script DB read-only + pure test; không schema/API | 43/43 pure test PASS; `tsc --noEmit` PASS; **CONTRACT APPROVED** | **NO** — chờ S2 schema |
-| S6 | `af197d7` | Docs-only; không code/schema/DB | Spec đầy đủ; **DECISIONS APPROVED** | **NO** — implementation branch sau S4 |
+| S3 | `3ec7b9e` | Helper + target UI mock + test; không schema/API | **96/96 PASS**, tsc PASS; **PARTIAL READY** | **NO** — chờ S2 schema |
+| S6 | `21c37ae` | Docs-only; spec + implementation/migration/test plan | **APPROVED PLAN READY** | **NO** — implementation branch sau S4 |
 
 Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
 

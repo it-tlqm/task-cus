@@ -360,10 +360,10 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 | S0 — Integration | **Integration Manager**; đã merge S1/S4/S5; S2 bị chặn contract | `codex/v3-integration-yc01-13` | `06c5d19` | Phase A 37/37, S4 hardening 40/40, no-self 5/5; typecheck/build/PASS trước đó | S2 Q9/Q11 blocker; chưa release | N/A — không merge `main`/không release |
 | S1 — Phase A QA | **MERGED**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `3708672` | Báo cáo 313/313; S0 rerun Phase A 37/37 + S4 40/40 + no-self 5/5; release gate pending | Production audit/backup + UAT + lệnh release | N/A — đã merge |
 | S2 — Phase B | **BLOCKED_BY_CONTRACT_ALIGNMENT**; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `207dcfc` | 34/34 API + 14/14 UI báo cáo; chưa merge | **Q9**: DEMO label phải thay bằng `isOfficial/dataSource`; **Q11/YC-02**: API 1 chữ số phải thành 2 chữ số; B1/B2/C1 PENDING | NO |
-| S3 — Phase C | **CONTRACT APPROVED**; chỉ pure helper/test + target UI độc lập; shared schema/API chờ S2 | `codex/v3-phase-c-metrics` | `8af7a66` | 43/43 pure test PASS, tsc PASS; không schema/API | Q1–Q12 đã chốt; Q3=A (S2 owns schema); Q6 per-code semantics PENDING; chờ S2 schema | NO |
+| S3 — Phase C | **PARTIAL HANDOFF READY — S0 review**; helper + target UI mock đã có, chưa nối app | `codex/v3-phase-c-metrics` | `3ec7b9e` | S0 rerun **96/96 PASS**, tsc PASS; không schema/API | Q1–Q12 đã chốt; Q3=A (S2 owns schema); Q6 per-code semantics PENDING; target-only chờ S2 schema | NO — partial only |
 | S4 — Task Approval | **MERGED**; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `56a8d68` | Báo cáo 40/40 hardening + no-self 5/5 + transitions/YC37/YC38/e2e; S0 rerun 40/40 + 5/5 | E8/E9/E12 PENDING; không quality/team/stage | N/A — đã merge |
 | S5 — Roster | **MERGED**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `2bc645d` | Báo cáo 22/22 API + 24/24 UI; S0 rerun 22/22 + 24/24 trên nhánh | E13 ghi chú ô trống/Excel PENDING | N/A — đã merge |
-| S6 — Business Spec | **DECISIONS APPROVED — implementation planning**; không DB/port | `codex/v3-approval-rules-spec` | `af197d7` | Docs-only; spec đủ căn cứ | P1/Q1/R1 + E9/E10/E11/P-1..P-5 APPROVED; code chờ S4 merge + nhánh implementation riêng | NO |
+| S6 — Business Spec | **APPROVED PLAN READY — S0 review**; docs-only, không DB/port | `codex/v3-approval-rules-spec` | `21c37ae` | Docs-only; spec + implementation/migration/test plan 3 phase | P1/Q1/R1 + E9/E10/E11/P-1..P-5 APPROVED; S4 đã merge; code chờ nhánh implementation riêng | NO — plan only |
 
 ### Nhật ký tích hợp (S0 điền sau, không xóa lịch sử)
 
@@ -377,7 +377,8 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 | 23/10/2026 | S5 — YC-13 roster | `6cacc50` → `2bc645d` | `532c3f6` merge `--no-ff` | S5 API 22/22 + UI 24/24; build integration PASS | **MERGED** | S0 |
 | 23/10/2026 | S4 — YC-08/09/12 | `6cacc50` → `56a8d68` | `5d5c299` merge `--no-ff` | S4 hardening 40/40 + no-self 5/5 trên integration; build PASS | **MERGED** | S0 |
 | 23/10/2026 | S1 — Phase A QA | `6cacc50` → `3708672` | `06c5d19` merge `--no-ff` | S0 rerun Phase A 37/37; S1 báo cáo 313/313 + migration rehearsal 14/14 | **MERGED — QA gate pending release** | S0 |
-| 23/10/2026 | S0 — regression sau merge S1/S4/S5 | `06c5d19` | — | Phase A 37/37; S4 hardening 40/40; no-self 5/5; review-flow 38/38; YC37 25/25; e2e 40/40; tsc/prisma validate/build PASS | **PASS** — S2 vẫn blocked | S0 |
+| 23/10/2026 | S0 — regression sau merge S1/S4/S5 | `06c5d19` | — | Phase A 37/37; S4 hardening 40/40; no-self 5/5; review-flow 38/38; YC37 25/25; e2e 40/40; roster API 22/22; tsc/prisma validate/build PASS | **PASS** — S2 vẫn blocked | S0 |
+| 23/10/2026 | S3/S6 — cập nhật sau decisions | S3 `3ec7b9e`; S6 `21c37ae` | Chưa merge | S3 96/96 + tsc PASS; S6 docs/plan only | **PARTIAL/PLAN READY** — chờ S2 schema/S4 implementation branch | S0 |
 | 23/10/2026 | S2 — Phase B | `6cacc50` → `207dcfc` | Chưa merge | S2 34/34 + 14/14 báo cáo; S0 thấy contract lệch Q9/Q11 | **BLOCKED** — sửa `isOfficial/dataSource` và 2 chữ số trước | S0 |
 
 > **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `50daed3` (master + runtime matrix + assignment cards + baseline results + start signal). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
