@@ -86,7 +86,7 @@ SESSION: S3
 YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
 BASE_SHA: 75e5fae (integration merge)
-COMMIT_SHA: 45fc14f (service/API) + 98e09cb (UI) + ebb2269 (tests) + docs commit
+COMMIT_SHA: 45fc14f (service/API) + 98e09cb (UI) + ebb2269 (tests) + 19f5d3a (NONE→KHAC) + cb08b43 (docs)
 FILES_CHANGED:
   - src/server/metric-targets.ts
   - src/app/api/metrics/targets/route.ts
