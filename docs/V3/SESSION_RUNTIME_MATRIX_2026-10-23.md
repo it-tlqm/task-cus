@@ -8,15 +8,15 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `origin/main` + Phase A | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
-| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `50daed3` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
-| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `50daed3` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `50daed3` docs / `a68d31e` code | 3113 | `talung_v3_phase_c` | **WAIT_CONTRACT** |
-| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `50daed3` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12 |
-| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `50daed3` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
-| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `50daed3` docs / `a68d31e` code | — | — | **READY TO START — SPEC ONLY** |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `6cacc50` (start signal) / `a68d31e` code | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
+| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `6cacc50` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
+| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `6cacc50` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `8af7a66` (handoff) / code `a68d31e` | 3113 | `talung_v3_phase_c` | **WAIT_CONTRACT** — 43/43 pure test + tsc PASS |
+| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `6cacc50` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12 |
+| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `6cacc50` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
+| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `af197d7` (handoff) / code `a68d31e` | — | — | **SPEC COMPLETE** — chờ E9/E10/E11 |
 
-Ghi chú: baseline `a68d31e` là commit merge Phase A vào integration. Session branches được tạo từ baseline này trước khi bổ sung tài liệu S0; S0 sẽ fast-forward tài liệu bootstrap khi hoàn tất.
+Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. Không có thay đổi schema/API trong S3/S6.
 
 ## 2. Cô lập runtime
 
@@ -73,7 +73,16 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 - DB test: `talung_v3_fixture_integration`; không dùng Production.
 - Hai bộ Phase A vẫn chờ fixture/storage riêng: `test-yc23-25-api.ts` và `test-v3-evidence-adjustment.ts`; S1 xử lý theo gate, không hạ bảo mật.
 
-## 7. Điều kiện handoff
+## 7. Handoff S3/S6 đã review
+
+| Session | HEAD | Phạm vi | Kết quả S0 | Merge? |
+|---|---|---|---|---|
+| S3 | `8af7a66` | Docs + script DB read-only + pure test; không schema/API | 43/43 pure test PASS; `tsc --noEmit` PASS; `WAIT_CONTRACT` | **NO** |
+| S6 | `af197d7` | Docs-only; không code/schema/DB | Spec đầy đủ; chờ E9/E10/E11 | **NO** |
+
+Quyết định cần chủ dự án chốt: `docs/V3/S0_DECISIONS_REQUIRED_2026-10-23.md`.
+
+## 8. Điều kiện handoff
 
 Mỗi session gửi S0 theo mẫu mục 7 của master plan, kèm:
 - commit SHA, file changed, schema/migration;
