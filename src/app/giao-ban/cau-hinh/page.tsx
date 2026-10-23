@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { fmtMetric, fmtDate } from "@/lib/metric-format";
+import { MetricTargetManager } from "@/components/metrics/MetricTargetManager";
 
 type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION" | "REPORT";
 
@@ -38,18 +39,6 @@ const BLOCK_KIND_LABELS: Record<string, string> = {
   HEADING: "Tiêu đề mục",
   METRIC_GROUP: "Bảng số liệu (theo nhóm chỉ tiêu)",
   NARRATIVE: "Nội dung nhận xét",
-};
-// B-C-1: loại đối chiếu tường minh — không suy từ nhãn.
-const COMPARISON_LABELS: Record<string, string> = {
-  NONE: "Không dùng đối chiếu",
-  BTC_YEAR: "Chỉ tiêu BTC (năm)",
-  UBND_YEAR: "Chỉ tiêu UBND tỉnh (năm)",
-  MONTH_PLAN: "Kế hoạch tháng HQTL",
-};
-const TARGET_STATUS_LABELS: Record<string, string> = {
-  PROPOSED: "Đã nhập / chưa xác nhận",
-  CONFIRMED: "Đã xác nhận",
-  LOCKED: "Đã chốt",
 };
 
 export default function CauHinhSoLieuPage() {
@@ -184,22 +173,6 @@ export default function CauHinhSoLieuPage() {
 
   const allMetricsFlat: any[] = cfg?.metricsFlat || [];
 
-  // ------------------- TARGET -------------------
-  const [selTargetMetricId, setSelTargetMetricId] = useState("");
-  const [targetDraft, setTargetDraft] = useState<any>({
-    label: "",
-    periodType: "YEAR",
-    year: new Date().getFullYear(),
-    periodNo: "",
-    value: "",
-    comparisonKind: "NONE",
-    dataSource: "REAL",
-    sourceNote: "",
-    note: "",
-    classificationId: "",
-  });
-  const [editTargetId, setEditTargetId] = useState("");
-
   // ------------------- BASELINE -------------------
   const [selBaseMetricId, setSelBaseMetricId] = useState("");
   const [baseDraft, setBaseDraft] = useState<any>({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", classificationId: "" });
@@ -306,7 +279,6 @@ export default function CauHinhSoLieuPage() {
     }
   };
 
-  const selTargetMetric = metricById.get(selTargetMetricId);
   const selBaseMetric = metricById.get(selBaseMetricId);
 
   if (permLoading) {
@@ -698,189 +670,8 @@ export default function CauHinhSoLieuPage() {
         )}
 
         {/* ============ CHỈ TIÊU GIAO ============ */}
-        {tab === "TARGET" && (
-          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
-            <span className="font-label-md text-label-md text-primary font-bold">Chỉ tiêu giao (BTC / UBND / KH tháng / chỉ tiêu giao…)</span>
-            <p className="text-body-xs text-on-surface-variant">
-              Giá trị nhập theo đơn vị hiển thị của chỉ tiêu. Phần trăm tự tính trên cột lũy kế tương ứng (Năm cho chỉ tiêu năm, Tháng cho KH
-              tháng…).
-            </p>
-            <select value={selTargetMetricId} onChange={(e) => setSelTargetMetricId(e.target.value)} className="px-3 py-2 rounded-lg border border-border-default text-body-sm">
-              <option value="">— chọn chỉ tiêu —</option>
-              {groups.map((g) => (
-                <optgroup key={g.id} label={g.name}>
-                  {g.metrics.map((m: any) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.unitLabelEffective})
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+        {tab === "TARGET" && <MetricTargetManager groups={groups} />}
 
-            {selTargetMetric && (
-              <>
-                <div className="flex flex-col gap-1">
-                  {selTargetMetric.targets.length === 0 && <span className="text-body-sm text-on-surface-variant italic">Chưa có chỉ tiêu giao nào</span>}
-                  {selTargetMetric.targets.map((t: any) => {
-                    const st = t.status || "PROPOSED";
-                    const stCls =
-                      st === "LOCKED"
-                        ? "border-violet-300 bg-violet-50 text-violet-800"
-                        : st === "CONFIRMED"
-                          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                          : "border-amber-300 bg-amber-50 text-amber-800";
-                    return (
-                      <div key={t.id} className="border border-border-default/40 rounded px-3 py-2 flex flex-col gap-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-body-sm">{t.label}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-300 bg-sky-50 text-sky-800 font-semibold">
-                            {COMPARISON_LABELS[t.comparisonKind || "NONE"] || t.comparisonKind}
-                          </span>
-                          <span className="text-body-xs text-on-surface-variant">
-                            {t.periodType === "YEAR" ? `Năm ${t.year}` : t.periodType === "MONTH" ? `Tháng ${t.periodNo}/${t.year}` : `Quý ${t.periodNo}/${t.year}`}
-                          </span>
-                          <span className="text-body-sm tabular-nums font-semibold text-primary">{fmtMetric(t.valueBase, selTargetMetric)}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${stCls}`}>{TARGET_STATUS_LABELS[st] || st}</span>
-                          {t.dataSource === "DEMO" && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600 font-semibold">DEMO</span>
-                          )}
-                          {t.confirmedByName && <span className="text-body-xs text-on-surface-variant">· {t.confirmedByName}{t.confirmedAt ? ` (${fmtDate(t.confirmedAt)})` : ""}</span>}
-                        </div>
-                        {t.sourceNote && <div className="text-body-xs text-on-surface-variant">Căn cứ: {t.sourceNote}</div>}
-                        {t.note && <div className="text-body-xs text-on-surface-variant">Ghi chú: {t.note}</div>}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {st !== "LOCKED" && (
-                            <button
-                              onClick={() => {
-                                setEditTargetId(t.id);
-                                setTargetDraft({
-                                  label: t.label,
-                                  periodType: t.periodType,
-                                  year: t.year,
-                                  periodNo: t.periodNo ?? "",
-                                  value: String(t.valueBase / (selTargetMetric.displayScale || 1)),
-                                  comparisonKind: t.comparisonKind || "NONE",
-                                  dataSource: t.dataSource || "REAL",
-                                  sourceNote: t.sourceNote || "",
-                                  note: t.note || "",
-                                  classificationId: t.classificationId || "",
-                                });
-                              }}
-                              className="px-2 py-1 rounded border border-border-default text-body-xs font-semibold hover:bg-surface-container"
-                            >
-                              Sửa
-                            </button>
-                          )}
-                          {st === "PROPOSED" && (
-                            <button onClick={() => post("target", "confirm", { id: t.id, metricId: selTargetMetric.id }, "Đã xác nhận chỉ tiêu giao")} className="px-2 py-1 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 text-body-xs font-semibold hover:bg-emerald-100">
-                              Xác nhận
-                            </button>
-                          )}
-                          {st === "CONFIRMED" && (
-                            <button onClick={() => post("target", "lock", { id: t.id, metricId: selTargetMetric.id }, "Đã chốt chỉ tiêu giao")} className="px-2 py-1 rounded border border-violet-300 bg-violet-50 text-violet-800 text-body-xs font-semibold hover:bg-violet-100">
-                              Chốt
-                            </button>
-                          )}
-                          <button onClick={() => showHistory("target", t.id, t.label)} className="px-2 py-1 rounded border border-border-default text-body-xs font-semibold hover:bg-surface-container">
-                            Lịch sử
-                          </button>
-                          {st === "PROPOSED" && (
-                            <button onClick={() => post("target", "delete", { id: t.id, metricId: selTargetMetric.id }, "Đã xóa chỉ tiêu giao")} className="ml-auto p-1 rounded text-rose-600 hover:bg-rose-50">
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 border-t border-border-default/40 pt-3">
-                  <input placeholder="Tên (VD: Chỉ tiêu BTC)" value={targetDraft.label} onChange={(e) => setTargetDraft({ ...targetDraft, label: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" />
-                  <select
-                    value={targetDraft.comparisonKind}
-                    onChange={(e) => setTargetDraft({ ...targetDraft, comparisonKind: e.target.value })}
-                    className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2"
-                    title="Loại đối chiếu dùng cho khối So sánh kết quả thu NSNN"
-                  >
-                    <option value="NONE">Không dùng đối chiếu</option>
-                    {targetDraft.periodType === "YEAR" && <option value="BTC_YEAR">Chỉ tiêu BTC (năm)</option>}
-                    {targetDraft.periodType === "YEAR" && <option value="UBND_YEAR">Chỉ tiêu UBND tỉnh (năm)</option>}
-                    {targetDraft.periodType === "MONTH" && <option value="MONTH_PLAN">Kế hoạch tháng HQTL</option>}
-                  </select>
-                  <select value={targetDraft.periodType} onChange={(e) => setTargetDraft({ ...targetDraft, periodType: e.target.value, comparisonKind: "NONE" })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
-                    <option value="YEAR">Cả năm</option>
-                    <option value="QUARTER">Quý</option>
-                    <option value="MONTH">Tháng</option>
-                  </select>
-                  <input type="number" value={targetDraft.year} onChange={(e) => setTargetDraft({ ...targetDraft, year: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Năm" />
-                  {targetDraft.periodType !== "YEAR" && (
-                    <input type="number" value={targetDraft.periodNo} onChange={(e) => setTargetDraft({ ...targetDraft, periodNo: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder={targetDraft.periodType === "MONTH" ? "Tháng 1-12" : "Quý 1-4"} />
-                  )}
-                  <input value={targetDraft.value} onChange={(e) => setTargetDraft({ ...targetDraft, value: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder={`Giá trị (${selTargetMetric.unitLabelEffective || "số"})`} />
-                  <select
-                    value={targetDraft.dataSource || "REAL"}
-                    onChange={(e) => setTargetDraft({ ...targetDraft, dataSource: e.target.value })}
-                    className="px-2 py-1.5 rounded border border-border-default text-body-sm"
-                    title="Nguồn dữ liệu: REAL dùng chính thức; DEMO chỉ mô phỏng"
-                  >
-                    <option value="REAL">Nguồn: Số liệu thật</option>
-                    <option value="DEMO">Nguồn: DEMO (mô phỏng)</option>
-                  </select>
-                  <input value={targetDraft.sourceNote} onChange={(e) => setTargetDraft({ ...targetDraft, sourceNote: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Nguồn / căn cứ (VD: Quyết định giao chỉ tiêu số...)" />
-                  <input value={targetDraft.note} onChange={(e) => setTargetDraft({ ...targetDraft, note: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Ghi chú (nếu có)" />
-                  {selTargetMetric.classifications.length > 0 && (
-                    <select value={targetDraft.classificationId} onChange={(e) => setTargetDraft({ ...targetDraft, classificationId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2">
-                      <option value="">Áp dụng cho: Tổng</option>
-                      {selTargetMetric.classifications.map((c: any) => (
-                        <option key={c.id} value={c.id}>
-                          Áp dụng cho: {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={busy === "target.create" || busy === "target.update"}
-                    onClick={async () => {
-                      const payload = {
-                        metricId: selTargetMetric.id,
-                        ...targetDraft,
-                        periodNo: targetDraft.periodType === "YEAR" ? null : targetDraft.periodNo,
-                        ...(editTargetId ? { id: editTargetId } : {}),
-                      };
-                      const ok = await post(
-                        "target",
-                        editTargetId ? "update" : "create",
-                        payload,
-                        editTargetId ? "Đã cập nhật chỉ tiêu giao (cần xác nhận lại)" : "Đã thêm chỉ tiêu giao (trạng thái Đã nhập)"
-                      );
-                      if (ok) {
-                        setEditTargetId("");
-                        setTargetDraft({ label: "", periodType: "YEAR", year: new Date().getFullYear(), periodNo: "", value: "", comparisonKind: "NONE", dataSource: "REAL", sourceNote: "", note: "", classificationId: "" });
-                      }
-                    }}
-                    className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
-                  >
-                    {editTargetId ? "Lưu thay đổi chỉ tiêu" : "+ Thêm chỉ tiêu giao"}
-                  </button>
-                  {editTargetId && (
-                    <button
-                      onClick={() => {
-                        setEditTargetId("");
-                        setTargetDraft({ label: "", periodType: "YEAR", year: new Date().getFullYear(), periodNo: "", value: "", comparisonKind: "NONE", dataSource: "REAL", sourceNote: "", note: "", classificationId: "" });
-                      }}
-                      className="px-3 py-2 rounded-lg border border-border-default text-label-sm font-semibold"
-                    >
-                      Hủy sửa
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
 
         {/* ============ MỐC LŨY KẾ ============ */}
         {tab === "BASELINE" && (

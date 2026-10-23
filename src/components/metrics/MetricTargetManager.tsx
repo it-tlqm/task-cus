@@ -1,0 +1,356 @@
+"use client";
+
+/**
+ * S3 — Phase C: manager target-only (D7=A).
+ *
+ * Gọi `/api/metrics/targets/*`; không sửa `/api/metrics/admin`.
+ * D5 đang DEFERRED_B_C_3: UI hiển thị “chưa có quy tắc”; không tính % chính thức.
+ */
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "@/components/ui/Toast";
+import type { MetricOption, TargetDraftInput, TargetLabelCode } from "../../lib/metrics-contract";
+import {
+  mapBc2TargetToTargetDraft,
+  mapTargetDraftToBc2CreateInput,
+  type Bc2TargetDto,
+} from "../../lib/metrics-bc2-mapping";
+import { MetricTargetDraftEditor } from "./MetricTargetDraftEditor";
+
+interface ConfigMetric {
+  id: string;
+  code: string;
+  name: string;
+  unitType: string;
+  unitLabel?: string | null;
+  unitLabelEffective?: string | null;
+  displayScale?: number | null;
+  decimals?: number | null;
+  classifications?: { id: string; code: string; label: string }[];
+}
+
+interface ConfigGroup {
+  id: string;
+  name: string;
+  metrics: ConfigMetric[];
+}
+
+export interface MetricTargetManagerProps {
+  groups: ConfigGroup[];
+}
+
+interface RevisionView {
+  id: string;
+  action: string;
+  oldValue: number | null;
+  newValue: number | null;
+  oldStatus: string | null;
+  newStatus: string | null;
+  oldSourceNote: string | null;
+  newSourceNote: string | null;
+  reason: string | null;
+  editedByName: string | null;
+  editedAt: string;
+}
+
+const TARGET_LABEL_CODES_BC2: TargetLabelCode[] = ["BTC", "UBND", "KH_THANG", "KHAC"];
+
+function formatValue(v: number | null): string {
+  if (v === null) return "—";
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(v);
+}
+
+export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
+  const metricOptions: MetricOption[] = useMemo(
+    () =>
+      groups.flatMap((g) =>
+        g.metrics.map((m) => ({
+          id: m.id,
+          code: m.code,
+          name: m.name,
+          unitType: m.unitType,
+          unitLabel: m.unitLabelEffective || m.unitLabel || m.unitType,
+          measureMode: "PENDING_BUSINESS_INPUT" as const,
+          direction: "NOT_SET" as const,
+          classifications: m.classifications || [],
+        }))
+      ),
+    [groups]
+  );
+  const metricById = useMemo(() => new Map(metricOptions.map((m) => [m.id, m])), [metricOptions]);
+
+  const [selectedMetricId, setSelectedMetricId] = useState(metricOptions[0]?.id ?? "");
+  const [targets, setTargets] = useState<TargetDraftInput[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [history, setHistory] = useState<{ target: TargetDraftInput; revisions: RevisionView[] } | null>(null);
+
+  useEffect(() => {
+    if (!selectedMetricId && metricOptions[0]) setSelectedMetricId(metricOptions[0].id);
+  }, [metricOptions, selectedMetricId]);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedMetricId) {
+      setTargets([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    fetch(`/api/metrics/targets?metricId=${encodeURIComponent(selectedMetricId)}`, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    })
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) throw new Error(json.error || "Không tải được chỉ tiêu giao.");
+        const mapped = (json.targets || []).flatMap((t: Bc2TargetDto) => {
+          const result = mapBc2TargetToTargetDraft(t);
+          return result.value ? [result.value] : [];
+        });
+        if (!cancelled) setTargets(mapped);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Lỗi tải chỉ tiêu giao.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMetricId, refreshKey]);
+
+  const selectedMetric = metricById.get(selectedMetricId);
+  const targetsKey = targets
+    .map((t) => [t.id || t.label, t.status, t.isOfficial ? "official" : "demo", t.value, t.sourceNote].join(":"))
+    .join("|");
+
+  async function request(path: string, method: string, body?: unknown): Promise<any> {
+    const res = await fetch(path, {
+      method,
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.error || "API target-only từ chối thao tác.");
+    return json;
+  }
+
+  async function handleSaveDraft(draft: TargetDraftInput): Promise<boolean> {
+    if (!selectedMetric) return false;
+    const mapped = mapTargetDraftToBc2CreateInput(draft, {
+      unitType: selectedMetric.unitType,
+      measureMode: "PENDING_BUSINESS_INPUT",
+      baselineScope: "PENDING_BUSINESS_INPUT",
+    });
+    if (!mapped.value) {
+      toast.error(mapped.issues[0]?.message || "Dữ liệu chỉ tiêu giao không hợp lệ.");
+      return false;
+    }
+    const payload = {
+      metricId: mapped.value.metricId,
+      classificationId: mapped.value.classificationId,
+      label: draft.label,
+      periodType: mapped.value.periodType,
+      year: mapped.value.year,
+      periodNo: mapped.value.periodNo,
+      value: String(mapped.value.valueBase),
+      comparisonKind: mapped.value.comparisonKind,
+      dataSource: mapped.value.dataSource,
+      sourceNote: mapped.value.sourceNote,
+      note: mapped.value.note,
+    };
+    try {
+      const realId = draft.id && !draft.id.startsWith("temp-") ? draft.id : null;
+      if (realId) await request(`/api/metrics/targets/${realId}`, "PATCH", payload);
+      else await request("/api/metrics/targets", "POST", payload);
+      toast.success(realId ? "Đã cập nhật chỉ tiêu giao (PROPOSED)." : "Đã tạo chỉ tiêu giao (PROPOSED).");
+      refresh();
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi lưu chỉ tiêu giao.");
+      return false;
+    }
+  }
+
+  async function handleConfirm(draft: TargetDraftInput): Promise<boolean> {
+    if (!draft.id) return false;
+    try {
+      await request(`/api/metrics/targets/${draft.id}`, "POST", {
+        action: "confirm",
+        sourceNote: draft.sourceNote,
+        reason: "Xác nhận từ UI target-only",
+      });
+      toast.success("Đã xác nhận chỉ tiêu giao. Chưa tính % chính thức cho tới B-C-3.");
+      refresh();
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi xác nhận chỉ tiêu giao.");
+      return false;
+    }
+  }
+
+  async function handleLock(draft: TargetDraftInput): Promise<boolean> {
+    if (!draft.id) return false;
+    try {
+      await request(`/api/metrics/targets/${draft.id}`, "POST", {
+        action: "lock",
+        reason: "Chốt từ UI target-only",
+      });
+      toast.success("Đã chốt chỉ tiêu giao.");
+      refresh();
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi chốt chỉ tiêu giao.");
+      return false;
+    }
+  }
+
+  async function handleVoid(draft: TargetDraftInput): Promise<boolean> {
+    if (!draft.id) return false;
+    try {
+      await request(`/api/metrics/targets/${draft.id}`, "POST", {
+        action: "void",
+        reason: "Hủy từ UI target-only",
+      });
+      toast.success("Đã hủy chỉ tiêu giao (PROPOSED).");
+      refresh();
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi hủy chỉ tiêu giao.");
+      return false;
+    }
+  }
+
+  async function handleHistory(draft: TargetDraftInput) {
+    if (!draft.id) return;
+    try {
+      const json = await request(`/api/metrics/targets/${draft.id}/revisions`, "GET");
+      setHistory({ target: draft, revisions: json.revisions || [] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi tải lịch sử chỉ tiêu giao.");
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-xl border border-border-default/50 bg-surface-container-lowest p-4 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="font-label-md text-label-md text-primary font-bold">Chỉ tiêu giao — target-only</div>
+            <div className="text-body-xs text-on-surface-variant">
+              D7=A · API <code>/api/metrics/targets</code> · quyền <code>metrics.config</code> · D5 DEFERRED_B_C_3
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={refresh}
+            className="rounded-lg border border-border-default px-3 py-1.5 text-body-sm font-semibold hover:bg-surface-container-low"
+          >
+            Tải lại
+          </button>
+        </div>
+        <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant max-w-xl">
+          Chọn chỉ tiêu
+          <select
+            value={selectedMetricId}
+            onChange={(e) => setSelectedMetricId(e.target.value)}
+            className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
+          >
+            {groups.map((g) => (
+              <optgroup key={g.id} label={g.name}>
+                {g.metrics.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.code} — {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
+          D5 chưa có: <b>direction=NOT_SET</b>, <b>measureMode/baselineScope=PENDING_BUSINESS_INPUT</b>. Không tính % chính thức cho tới B-C-3; không tô đạt/vượt.
+        </div>
+        {error && <div className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-body-xs text-rose-800">{error}</div>}
+        {loading && <div className="text-body-xs text-on-surface-variant">Đang tải chỉ tiêu giao…</div>}
+      </div>
+
+      {selectedMetric && (
+        <MetricTargetDraftEditor
+          key={`${selectedMetricId}-${refreshKey}-${targetsKey}`}
+          metrics={[selectedMetric]}
+          initialTargets={targets}
+          apiMode
+          showMetricSelect={false}
+          labelCodes={TARGET_LABEL_CODES_BC2}
+          rulesPending
+          onSaveDraft={handleSaveDraft}
+          onConfirm={handleConfirm}
+          onLock={handleLock}
+          onVoid={handleVoid}
+          onHistory={handleHistory}
+        />
+      )}
+
+      {history && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="max-h-[85vh] w-full max-w-4xl overflow-auto rounded-xl border border-border-default bg-surface p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div>
+                <div className="font-label-md text-label-md text-primary font-bold">Lịch sử chỉ tiêu giao</div>
+                <div className="text-body-xs text-on-surface-variant">{history.target.label}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistory(null)}
+                className="rounded border border-border-default px-2 py-1 text-body-sm font-semibold"
+              >
+                Đóng
+              </button>
+            </div>
+            {history.revisions.length === 0 ? (
+              <div className="text-body-sm text-on-surface-variant italic">Chưa có lịch sử.</div>
+            ) : (
+              <table className="w-full min-w-[700px] border-collapse text-body-xs">
+                <thead className="bg-surface-container-low text-left text-on-surface-variant">
+                  <tr>
+                    <th className="px-2 py-1.5">Hành động</th>
+                    <th className="px-2 py-1.5 text-right">Giá trị cũ</th>
+                    <th className="px-2 py-1.5 text-right">Giá trị mới</th>
+                    <th className="px-2 py-1.5">Trạng thái</th>
+                    <th className="px-2 py-1.5">Nguồn</th>
+                    <th className="px-2 py-1.5">Lý do</th>
+                    <th className="px-2 py-1.5">Người/thời điểm</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.revisions.map((r) => (
+                    <tr key={r.id} className="border-t border-border-default/40">
+                      <td className="px-2 py-1.5 font-semibold">{r.action}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{formatValue(r.oldValue)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{formatValue(r.newValue)}</td>
+                      <td className="px-2 py-1.5">{r.oldStatus || "—"} → {r.newStatus || "—"}</td>
+                      <td className="max-w-[220px] truncate px-2 py-1.5" title={r.newSourceNote || r.oldSourceNote || ""}>
+                        {r.newSourceNote || r.oldSourceNote || "—"}
+                      </td>
+                      <td className="max-w-[180px] truncate px-2 py-1.5" title={r.reason || ""}>{r.reason || "—"}</td>
+                      <td className="px-2 py-1.5">
+                        {r.editedByName || "—"}
+                        <div className="text-[10px] text-on-surface-variant">
+                          {new Date(r.editedAt).toLocaleString("vi-VN")}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

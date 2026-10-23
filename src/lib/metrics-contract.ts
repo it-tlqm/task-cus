@@ -94,7 +94,7 @@ export const TARGET_STATE_LABELS: Record<TargetState, string> = {
   NOT_ASSIGNED: "Chưa giao chỉ tiêu",
   DRAFT: "Chỉ tiêu nháp",
   CONFIRMED: "Đã xác nhận",
-  LOCKED: "Đã khóa",
+  LOCKED: "Đã chốt",
   VOID: "Đã hủy",
   SUPERSEDED: "Đã thay thế",
 };
@@ -611,6 +611,12 @@ export function validateTargetDraft(
   }
   if (draft.periodType === "QUARTER" && (!draft.periodNo || draft.periodNo < 1 || draft.periodNo > 4)) {
     add("periodNo", "QUARTER_INVALID", "Quý phải từ 1 đến 4.");
+  }
+  if ((draft.labelCode === "BTC" || draft.labelCode === "UBND") && draft.periodType !== "YEAR") {
+    add("periodType", "PERIOD_KIND_MISMATCH", "Chỉ tiêu BTC/UBND phải là chỉ tiêu Năm.");
+  }
+  if (draft.labelCode === "KH_THANG" && draft.periodType !== "MONTH") {
+    add("periodType", "PERIOD_KIND_MISMATCH", "Kế hoạch tháng HQTL phải là chỉ tiêu Tháng.");
   }
 
   const value = parseMetricInput(draft.value);
