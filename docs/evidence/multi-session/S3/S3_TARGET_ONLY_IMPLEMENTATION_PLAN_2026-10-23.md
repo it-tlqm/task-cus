@@ -7,7 +7,7 @@
 - **Trạng thái:** `IMPLEMENTED_TARGET_ONLY — WAIT_S0_REVIEW`; merge nền `75e5fae`; D5 `DEFERRED_B_C_3`
 - **Ngày:** 23/10/2026
 
-> **Kết quả 23/10/2026:** đã triển khai service/API/UI target-only theo D7=A. Contract 110/110, mapping 79/79, target API 26/26, target UI 18/18. Không sửa schema/migration/`metrics.ts`/`/api/metrics/admin`/summary/entries. D5 chưa có nên **không tính % chính thức**; `/giao-ban` hiển thị target/trạng thái + “% chờ B-C-3”.
+> **Kết quả 23/10/2026:** đã triển khai service/API/UI target-only theo D7=A. Contract 110/110, mapping 80/80, target API 26/26, target UI 18/18. Không sửa schema/migration/`metrics.ts`/`/api/metrics/admin`/summary/entries. D5 chưa có nên **không tính % chính thức**; `/giao-ban` hiển thị target/trạng thái + “% chờ B-C-3”.
 
 > Căn cứ: `S0_DECISION_LOG_2026-10-23.md`, `S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md`, `S3_HANDOFF_APPROVED_2026-10-23.md`, `DATA_CONTRACT_B_C_2026-10-23.md` (B-C-1).
 >
@@ -303,7 +303,7 @@ YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
 STATUS: IMPLEMENTED_TARGET_ONLY — WAIT_S0_REVIEW
 MERGE_BASE: 75e5fae
-IMPLEMENTED: target service/API + target UI + contract 110/110 + mapping 79/79 + API 26/26 + UI 18/18
+IMPLEMENTED: target service/API + target UI + contract 110/110 + mapping 80/80 + API 26/26 + UI 18/18
 D5: DEFERRED_B_C_3 — không tính % chính thức
 NOT_CHANGED: prisma/schema.prisma, migration, src/server/metrics.ts, /api/metrics/admin, summary, entries, Dashboard
 PRODUCTION_TOUCHED: NO

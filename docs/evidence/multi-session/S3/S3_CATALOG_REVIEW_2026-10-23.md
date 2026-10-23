@@ -19,7 +19,7 @@
 3. **636 bản ghi** tháng 10/2026 đều là `RECORDED`; **0 bản ghi `CONFIRMED`**. Báo cáo tháng 10 đã có phiên bản lưu, nên logic hiện tại gắn `LOCKED` cho mọi chỉ tiêu có bản ghi — kể cả khi chưa ai xác nhận.
 4. Công thức `%` hiện tại có 4 lỗ hổng contract: không lọc chỉ tiêu giao theo đúng năm/kỳ; không phân biệt 0 với thiếu; không có chiều đánh giá; không có trạng thái nguồn/chỉ tiêu giao.
 5. **S0 đã phê duyệt toàn bộ contract** tại `docs/V3/S0_DECISION_LOG_2026-10-23.md` (Q1–Q12), theo hướng dẫn tại `S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md`.
-6. Đã triển khai **target-only**: service/API + UI, contract **110/110**, mapping **79/79**, target API **26/26**, target UI **18/18**; D5 chưa có nên không tính % chính thức.
+6. Đã triển khai **target-only**: service/API + UI, contract **110/110**, mapping **80/80**, target API **26/26**, target UI **18/18**; D5 chưa có nên không tính % chính thức.
 7. Phần shared schema/`metrics.ts`/summary/entries/Dashboard vẫn thuộc S2; S3 không sửa.
 
 ---
@@ -486,4 +486,4 @@ Bước tiếp theo:
 
 ---
 
-**KẾT LUẬN:** Contract YC-06/07 đã **APPROVED** và target-only đã **IMPLEMENTED**. Test: contract 110/110, mapping 79/79, target API 26/26, target UI 18/18. D5 vẫn `DEFERRED_B_C_3` nên không tính % chính thức; `/giao-ban` hiển thị target/trạng thái + “% chờ B-C-3”. Không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.
+**KẾT LUẬN:** Contract YC-06/07 đã **APPROVED** và target-only đã **IMPLEMENTED**. Test: contract 110/110, mapping 80/80, target API 26/26, target UI 18/18. D5 vẫn `DEFERRED_B_C_3` nên không tính % chính thức; `/giao-ban` hiển thị target/trạng thái + “% chờ B-C-3”. Không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.

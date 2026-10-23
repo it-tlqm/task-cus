@@ -59,7 +59,7 @@ GET  /api/metrics/targets/{id}/revisions
 | Bộ test | Kết quả |
 |---|---|
 | `scripts/test-phase-c-contract.ts` | **110/110 PASS** |
-| `scripts/test-phase-c-bc2-mapping.ts` | **79/79 PASS** |
+| `scripts/test-phase-c-bc2-mapping.ts` | **80/80 PASS** |
 | `scripts/test-phase-c-target-api.ts` (DB service) | **26/26 PASS**, cleanup 5 target test |
 | `scripts/test-phase-c-target-ui.ts` (Puppeteer) | **18/18 PASS** |
 | `npx tsc --noEmit` | PASS |
@@ -105,7 +105,7 @@ FILES_CHANGED:
 SCHEMA_OR_MIGRATION: NONE (chỉ áp dụng migration B-C-2 của S2 lên DB test local)
 TESTS_PASS:
   - contract: 110/110
-  - mapping: 79/79
+  - mapping: 80/80
   - target-api DB: 26/26
   - target-ui Puppeteer: 18/18
   - tsc/prisma validate/build: PASS
