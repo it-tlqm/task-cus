@@ -7,7 +7,9 @@
 **Base:** `3eef97e` (integration — đã gồm S2 B-C-2, S3 target-only, S4, S5, S6 Phase 1)  
 **DB test:** `talung_v3_approval_impl_quality` (localhost) — port `3117`  
 **Production touched:** **NO**  
-**Trạng thái:** READY FOR S0 RE-REVIEW (đã xử lý 3 issue review + 1 quick-approve confirmation; chưa merge integration/main)
+**Trạng thái:** **MERGED — Phase 2** (S0 merge `a94ce39`; integration head `a94ce39`; flag `V3_YC10_QUALITY` mặc định OFF)
+
+> **S0 review/merge 23/10/2026:** đã merge `0764830` vào integration `a94ce39`; S0 rerun quality 120/120 + UI 15/15, S4 40/40, per-person 42/42, no-self 5/5, e2e 40/40, tsc/prisma/build PASS. Migration `20261023180000_v3_approval_quality` đã áp lên `talung_v3_fixture_integration`. Chưa bật flag; quick approve My Work cần picker trước khi bật.
 
 ```text
 SESSION: S6-Impl — Phase 2 (YC-10 quality 65–100)
