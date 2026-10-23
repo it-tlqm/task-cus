@@ -376,7 +376,10 @@ async function main() {
   const entryIds = (entryRes.json?.items || []).map((i: any) => i.entryId || i.id).filter(Boolean);
   cleanup.entryIds.push(...entryIds);
   check("4.3 Nhập được phát sinh ngày (2 bản ghi REAL)", entryRes.status === 200 && entryIds.length === 2);
-  check("4.4 Entry API trả dataSource=REAL/isOfficial=true", (entryRes.json?.items || []).every((i: any) => i.dataSource === "REAL"));
+  check(
+    "4.4 Entry API trả dataSource=REAL/isOfficial=true",
+    (entryRes.json?.items || []).every((i: any) => i.dataSource === "REAL" && i.isOfficial === true)
+  );
 
   const sum1 = await summary(ACC.year, ACC.month, leader.token);
   const row1 = thuRow(sum1);

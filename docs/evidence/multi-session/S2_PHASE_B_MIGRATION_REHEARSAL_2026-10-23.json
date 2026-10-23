@@ -1,5 +1,10 @@
 {
-  "database": "talung_v3_phase_b_rehearsal_1792753583968",
+  "template": "talung_v3_fixture",
+  "database": "talung_v3_phase_b_rehearsal_both_1792755100676",
+  "migrations": [
+    "20261023150000_v3_phase_b_revenue",
+    "20261023160000_v3_phase_b_data_source"
+  ],
   "columns": [
     {
       "table_name": "metric_baselines",
@@ -15,29 +20,42 @@
     },
     {
       "table_name": "metric_plan_targets",
+      "column_name": "comparison_kind",
+      "column_default": "'NONE'::text",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "metric_plan_targets",
       "column_name": "data_source",
       "column_default": "'REAL'::text",
       "is_nullable": "NO"
+    },
+    {
+      "table_name": "metric_plan_targets",
+      "column_name": "status",
+      "column_default": "'PROPOSED'::text",
+      "is_nullable": "NO"
     }
+  ],
+  "tables": [
+    "metric_baseline_revisions",
+    "metric_plan_target_revisions"
   ],
   "counts": [
     {
       "kind": "target",
       "total": 49,
-      "demo": 49,
-      "real": 0
+      "demo": 49
     },
     {
       "kind": "baseline",
       "total": 47,
-      "demo": 47,
-      "real": 0
+      "demo": 47
     },
     {
       "kind": "entry",
       "total": 636,
-      "demo": 622,
-      "real": 14
+      "demo": 622
     }
   ],
   "misflagged": {
@@ -57,5 +75,5 @@
     }
   },
   "pass": true,
-  "timestamp": "2026-10-23T11:06:25.903Z"
+  "timestamp": "2026-10-23T11:31:44.568Z"
 }

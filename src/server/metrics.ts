@@ -52,7 +52,7 @@ export function daysInMonth(year: number, month: number): number {
 // ============================================================
 
 /**
- * YC-02/B-C-1 — tách quyền nghiệp vụ khỏi đặc quyền kỹ thuật `system.config`.
+ * YC-02/B-C-2 — tách quyền nghiệp vụ khỏi đặc quyền kỹ thuật `system.config`.
  * `metrics.config`: cấu hình chỉ tiêu/chỉ tiêu giao/mốc/phân công.
  * `metrics.entry_all`: nhập mọi chỉ tiêu không cần từng assignment.
  * UNIT_LEADER được hưởng theo vai trò điều hành (checkPermission xử lý);
@@ -375,7 +375,7 @@ export async function computeMetricSummary(
     }),
     prisma.metricPlanTarget.findMany({ where: { metricId: { in: metricIds } } }),
     prisma.metricBaseline.findMany({
-      // B-C-1: mốc đã xác nhận hoặc đã chốt đều được dùng; PROPOSED thì không.
+      // B-C-2: mốc đã xác nhận hoặc đã chốt đều được dùng; PROPOSED thì không.
       where: { metricId: { in: metricIds }, status: { in: ["CONFIRMED", "LOCKED"] } },
     }),
   ]);
@@ -780,7 +780,7 @@ export function parseNumberInput(input: string | number): string | null {
 }
 
 // ============================================================
-// YC-01/B-C-1 — Bảng so sánh kết quả thu NSNN:
+// YC-01/B-C-2 — Bảng so sánh kết quả thu NSNN:
 //   Chỉ tiêu BTC năm · Chỉ tiêu UBND năm · Kế hoạch tháng HQTL ·
 //   So với tháng trước · So với cùng kỳ năm trước
 //

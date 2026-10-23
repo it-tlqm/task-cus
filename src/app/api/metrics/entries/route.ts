@@ -299,7 +299,14 @@ export async function POST(req: NextRequest) {
 
     // ---- Lưu (một giao dịch: hoặc tất cả, hoặc không gì) ----
     const savedIds = await prisma.$transaction(async (tx) => {
-      const out: { metricId: string; classificationId: string; entryId: string; status: string; dataSource: string }[] = [];
+      const out: {
+        metricId: string;
+        classificationId: string;
+        entryId: string;
+        status: string;
+        dataSource: string;
+        isOfficial: boolean;
+      }[] = [];
       for (const p of prepared) {
         const existing = await tx.metricDailyEntry.findUnique({
           where: {
@@ -373,12 +380,14 @@ export async function POST(req: NextRequest) {
             },
           });
         }
+        const savedDataSource = existing?.dataSource || entryDataSource;
         out.push({
           metricId: p.metric.id,
           classificationId: p.classificationId,
           entryId,
           status: nextStatus,
-          dataSource: existing?.dataSource || entryDataSource,
+          dataSource: savedDataSource,
+          isOfficial: savedDataSource === "REAL",
         });
       }
       return out;
