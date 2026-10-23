@@ -38,6 +38,7 @@ import {
   getTaskPrecheckView,
   isPrecheckEnabled,
   linkRouteSnapshotToCase,
+  resolveTaskRoute,
 } from "./approval-route";
 import { ParticipantError } from "./task-participant-error";
 
@@ -613,9 +614,18 @@ export async function buildApprovalPreview(
       finalCandidates.some((c) => c.personId === user.personId) &&
       !excluded.includes(user.personId) &&
       (!view.latestSnapshot || String(view.latestSnapshot.routeStatus) === "READY");
-    // Chưa có snapshot => hồ sơ nộp trước khi bật YC-11 (legacy final-only).
-    if (!view.latestSnapshot) routeFinalAllowed = true;
-    if (!routeFinalAllowed) {
+    // Chưa có snapshot: chỉ Task legacy (không có participant row) được final-only.
+    // Task có participant row nhưng thiếu snapshot phải bị chặn, không được coi là legacy.
+    if (!view.latestSnapshot) {
+      if (view.route?.legacyOnly) {
+        routeFinalAllowed = true;
+      } else {
+        routeFinalAllowed = false;
+        routeDeniedReason =
+          "Chưa có snapshot tuyến kiểm tra sơ bộ tại thời điểm nộp — không thể quyết định cuối.";
+      }
+    }
+    if (!routeFinalAllowed && !routeDeniedReason) {
       routeDeniedReason = excluded.includes(String(user.personId))
         ? "Bạn đã pre-check hồ sơ này — cần người có thẩm quyền khác quyết định cuối."
         : "Bạn không thuộc tuyến quyết định cuối đã chốt tại thời điểm nộp hồ sơ.";

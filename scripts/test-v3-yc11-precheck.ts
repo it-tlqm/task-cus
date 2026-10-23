@@ -700,6 +700,30 @@ async function main() {
       check("D4 legacy has no route snapshot", snapshotCount === 0);
     }
 
+    // D5-D6: Task có participant row nhưng thiếu snapshot KHÔNG được coi là legacy.
+    {
+      const tNoSnapshot = await createTask({
+        suffix: "NOSNAPSHOT",
+        ownerId: demoOwner.personId,
+        unitId: unitA,
+        withParticipantRows: true,
+        status: "WAITING_REVIEW",
+        actualResultText: "Task co participant row nhung thieu snapshot.",
+      });
+      const blocked = await decide(tokLeader, tNoSnapshot.id, "AGREE", {
+        reason: "Thu final khi thieu snapshot",
+      });
+      check(
+        "D5 participant task without snapshot => 409",
+        blocked.res.status === 409,
+        `${blocked.res.status} ${blocked.json?.error || ""}`
+      );
+      const caseCount = await prisma.approvalCase.count({
+        where: { caseType: "TASK_RESULT", resourceId: tNoSnapshot.id },
+      });
+      check("D6 no ApprovalCase when snapshot missing", caseCount === 0, String(caseCount));
+    }
+
     // ================================================================
     // E. Security: SYSTEM_ADMIN, self, wrong route
     // ================================================================

@@ -718,7 +718,17 @@ export async function assertFinalDecisionAllowed(
   if (!isPrecheckEnabled()) return { snapshot: null, legacyFinalOnly: false };
   const snapshot = await getLatestRouteSnapshot(taskId, tx);
   if (!snapshot) {
-    return { snapshot: null, legacyFinalOnly: true };
+    // Chỉ Task legacy (không có participant row) mới được final-only.
+    // Task có participant row nhưng thiếu snapshot là bất thường/không an toàn => chặn.
+    const route = await resolveTaskRoute(taskId, { tx });
+    if (route.legacyOnly) {
+      return { snapshot: null, legacyFinalOnly: true };
+    }
+    throw new ParticipantError(
+      "Chưa có snapshot tuyến kiểm tra sơ bộ tại thời điểm nộp — không thể quyết định cuối.",
+      409,
+      { routeStatus: route.status, blockers: route.blockers }
+    );
   }
   if (String(snapshot.routeStatus) !== "READY") {
     throw new ParticipantError(
