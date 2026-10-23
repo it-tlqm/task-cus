@@ -26,6 +26,13 @@ import {
   getParticipantSummary,
 } from "./task-participant";
 import { unaccentSearchIds } from "./search";
+import {
+  buildApprovalQualityView,
+  isApprovalQualityEnabled,
+  isQualityRequired,
+  parseQualityPercent,
+  type ApprovalQualityView,
+} from "./approval-quality";
 
 export type ApprovalCaseType = "TASK_RESULT" | "PLAN" | "DEADLINE_REQUEST";
 export type ApprovalAction = "AGREE" | "REJECT" | "CLARIFY" | "RESPOND";
@@ -93,31 +100,75 @@ export interface TaskApprovalSummary {
   decidedById: string | null;
   decidedByName: string | null;
   decidedAt: string | null;
+  /** YC-10: chỉ trả khi truyền viewer và người xem thuộc owner/tuyến/decider. */
+  quality: ApprovalQualityView | null;
 }
 
 /**
  * YC-08 — projection phê duyệt cho nhiệm vụ (badge, người, thời gian, lý do).
  * Trả về quyết định gần nhất của hồ sơ TASK_RESULT; không suy diễn COMPLETED thành "đã duyệt"
  * nếu không có ApprovalDecision tương ứng.
+ *
+ * YC-10: truyền `viewer` để nhận thông tin quality; collaborator nhận `visible=false`
+ * (không lộ mức chất lượng), danh sách Task không truyền viewer nên không kéo dữ liệu quality.
  */
 export async function getTaskApprovalSummaries(
-  taskIds: string[]
+  taskIds: string[],
+  viewer?: SessionUser
 ): Promise<Map<string, TaskApprovalSummary>> {
   const out = new Map<string, TaskApprovalSummary>();
   if (taskIds.length === 0) return out;
-  const cases = await prisma.approvalCase.findMany({
-    where: { caseType: "TASK_RESULT", resourceId: { in: taskIds } },
-    include: {
-      decisions: {
-        where: { action: { in: ["AGREE", "REJECT", "CLARIFY"] } },
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-    },
-  });
-  const names = await personNamesByIds(cases.flatMap((c) => [c.decidedById, c.decisions[0]?.actorPersonId]));
+  const cases = viewer
+    ? await prisma.approvalCase.findMany({
+        where: { caseType: "TASK_RESULT", resourceId: { in: taskIds } },
+        include: {
+          decisions: { orderBy: { createdAt: "asc" } },
+          qualityAdjustments: { orderBy: { requestedAt: "asc" } },
+        },
+      })
+    : await prisma.approvalCase.findMany({
+        where: { caseType: "TASK_RESULT", resourceId: { in: taskIds } },
+        include: {
+          decisions: {
+            where: { action: { in: ["AGREE", "REJECT", "CLARIFY"] } },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+      });
+
+  const tasks = viewer
+    ? await prisma.task.findMany({
+        where: { id: { in: taskIds } },
+        select: { id: true, ownerId: true, unitId: true },
+      })
+    : [];
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
+
+  const names = await personNamesByIds(
+    cases.flatMap((c) => [
+      c.decidedById,
+      ...c.decisions.map((d) => d.actorPersonId),
+    ])
+  );
   for (const c of cases) {
-    const latest = c.decisions[0] || null;
+    const decisions = (c.decisions as any[]).slice();
+    const latest = viewer
+      ? [...decisions]
+          .filter((d) => ["AGREE", "REJECT", "CLARIFY"].includes(d.action))
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0] ?? null
+      : decisions[0] || null;
+    const task = taskById.get(c.resourceId);
+    const quality = viewer
+      ? await buildApprovalQualityView({
+          user: viewer,
+          caseType: "TASK_RESULT",
+          case: c,
+          decisions,
+          adjustments: (c as any).qualityAdjustments ?? [],
+          ownerId: task?.ownerId ?? null,
+        })
+      : null;
     out.set(c.resourceId, {
       caseId: c.id,
       caseStatus: c.status,
@@ -131,6 +182,7 @@ export async function getTaskApprovalSummaries(
       decidedById: c.decidedById,
       decidedByName: c.decidedById ? names.get(c.decidedById) ?? null : null,
       decidedAt: (c.decidedAt ?? latest?.createdAt)?.toISOString() ?? null,
+      quality,
     });
   }
   return out;
@@ -193,6 +245,8 @@ export interface ApprovalPreview {
   content: Record<string, unknown>;
   attachments: ApprovalPreviewAttachment[];
   history: ApprovalPreviewHistoryEntry[];
+  /** YC-10: mức chất lượng hiện tại/hiệu lực/lịch sử (null/visible=false nếu không có quyền). */
+  quality: ApprovalQualityView;
   permissions: {
     canDecide: boolean;
     canRespond: boolean;
@@ -432,6 +486,7 @@ export async function buildApprovalPreview(
     where: { caseType_resourceId: { caseType, resourceId } },
     include: {
       decisions: { orderBy: { createdAt: "asc" } },
+      qualityAdjustments: { orderBy: { requestedAt: "asc" } },
     },
   });
 
@@ -489,6 +544,15 @@ export async function buildApprovalPreview(
       })
     : null;
 
+  const quality = await buildApprovalQualityView({
+    user,
+    caseType,
+    case: existingCase,
+    decisions: existingCase?.decisions ?? [],
+    adjustments: existingCase?.qualityAdjustments ?? [],
+    ownerId: resourceOwnerId,
+  });
+
   const preview: ApprovalPreview = {
     caseType,
     caseId: existingCase?.id ?? null,
@@ -511,6 +575,7 @@ export async function buildApprovalPreview(
     content,
     attachments,
     history,
+    quality,
     permissions: {
       // Hồ sơ chưa tạo (lần đầu) vẫn cho quyết định — case được tạo khi ghi quyết định.
       // Người trình KHÔNG bao giờ được quyết định hồ sơ của chính mình.
@@ -544,6 +609,8 @@ export interface DecideParams {
   action: "AGREE" | "REJECT" | "CLARIFY";
   reason?: string | null;
   content?: string | null;
+  /** YC-10: mức chất lượng 65..100 bước 5 (bắt buộc khi AGREE + TASK_RESULT nếu flag bật). */
+  qualityPercent?: unknown;
   /** E9.3: các personId được chọn trả lại khi REJECT/CLARIFY. Rỗng = trả các phần chưa accepted. */
   returnPersonIds?: string[];
 }
@@ -567,6 +634,28 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
   }
   if (action === "CLARIFY" && !content) {
     return { success: false, status: 400, error: "Vui lòng nêu nội dung cần giải trình." };
+  }
+
+  // YC-10 — validate quality TRƯỚC mọi thay đổi case/Task. Flag tắt = giữ nguyên hành vi cũ.
+  let qualityPercent: number | null = null;
+  if (!isApprovalQualityEnabled()) {
+    qualityPercent = null;
+  } else if (isQualityRequired(caseType, action)) {
+    const parsed = parseQualityPercent(params.qualityPercent);
+    if (!parsed.ok) return { success: false, status: 422, error: parsed.error };
+    if (parsed.value === null) {
+      return {
+        success: false,
+        status: 422,
+        error: "Vui lòng chọn mức chất lượng kết quả (65–100, bước 5) khi đồng ý nghiệm thu.",
+      };
+    }
+    qualityPercent = parsed.value;
+  } else if (caseType === "TASK_RESULT") {
+    // REJECT/CLARIFY: quality không bắt buộc; nếu có thì phải hợp lệ và được lưu lịch sử.
+    const parsed = parseQualityPercent(params.qualityPercent);
+    if (!parsed.ok) return { success: false, status: 422, error: parsed.error };
+    qualityPercent = parsed.value;
   }
 
   // 1) Lấy hồ sơ nghiệp vụ + kiểm tra quyền
@@ -760,6 +849,7 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
           action,
           reason,
           content,
+          qualityPercent,
           actorId: user.id,
           actorPersonId: user.personId ?? null,
         },
@@ -951,6 +1041,7 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
       action,
       reason,
       content,
+      qualityPercent,
       round: txResult.round,
       effect: txResult.workflowMessage,
     },
@@ -976,7 +1067,9 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
         ? `Lãnh đạo yêu cầu giải trình: ${content}`
         : action === "REJECT"
           ? `Lãnh đạo không đồng ý. Lý do: ${reason}`
-          : `Lãnh đạo đã chấp thuận.`;
+          : `Lãnh đạo đã chấp thuận.${
+              qualityPercent !== null ? ` Mức chất lượng: ${qualityPercent}%.` : ""
+            }`;
     await createNotification({
       recipientId,
       category: "approval",

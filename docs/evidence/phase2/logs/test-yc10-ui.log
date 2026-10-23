@@ -1,0 +1,25 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  [PASS] UI1. Mß╗ƒ ─æ╞░ß╗úc preview tß╗½ h├áng ─æß╗úi duyß╗çt
+  [PASS] UI2. Modal c├│ select quality + cß║únh b├ío bß║»t buß╗Öc
+  [PASS] UI3. AGREE thiß║┐u quality hiß╗ân thß╗ï lß╗ùi bß║»t buß╗Öc
+  [PASS] UI4. Chß╗ìn 65 kh├┤ng c├▓n cß║únh b├ío bß║»t buß╗Öc
+  [PASS] UI5. Kh├┤ng c├│ page error
+  [PASS] UI6a. Mß╗ƒ ─æ╞░ß╗úc preview tr├¬n mobile
+  [PASS] UI6. Mobile 390px kh├┤ng tr├án ngang - {"scrollWidth":390,"clientWidth":390}
+  [PASS] UI6b. Mobile c├│ khß╗æi chß╗ìn chß║Ñt l╞░ß╗úng
+  [PASS] UI7. Task detail hiß╗ân thß╗ï quality gß╗æc/hiß╗çu lß╗▒c
+  [PASS] UI8. Task detail c├│ lß╗ïch sß╗¡ ─æiß╗üu chß╗ënh
+  [PASS] UI9. Owner thß║Ñy form y├¬u cß║ºu ─æiß╗üu chß╗ënh
+  [PASS] UI10. Task quality mobile 390px kh├┤ng tr├án ngang - {"scrollWidth":390,"clientWidth":390}
+  [PASS] UI10b. Mobile c├│ panel quality
+  [PASS] UI11. Collaborator KH├öNG thß║Ñy panel quality
+  [PASS] UI12. Collaborator kh├┤ng thß║Ñy gi├í trß╗ï hiß╗çu lß╗▒c 80%
+
+=== UI EVIDENCE 15 PASS / 0 FAIL ===

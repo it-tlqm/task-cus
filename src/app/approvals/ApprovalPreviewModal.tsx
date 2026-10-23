@@ -56,6 +56,41 @@ export interface ApprovalPreviewData {
     actorPersonId: string | null;
     createdAt: string;
   }>;
+  quality: {
+    visible: boolean;
+    enabled: boolean;
+    required: boolean;
+    original: number | null;
+    effective: number | null;
+    adjusted: boolean;
+    latestAdjustmentId: string | null;
+    latestAdjustmentAt: string | null;
+    canRequestAdjustment: boolean;
+    pendingAdjustmentCount: number;
+    history: Array<{
+      decisionId: string;
+      round: number;
+      action: string;
+      actionLabel: string;
+      qualityPercent: number | null;
+      actorName: string | null;
+      createdAt: string;
+    }>;
+    adjustments: Array<{
+      id: string;
+      oldQualityPercent: number | null;
+      newQualityPercent: number;
+      reason: string;
+      status: string;
+      statusLabel: string;
+      requestedByName: string | null;
+      requestedAt: string;
+      decidedByName: string | null;
+      decidedAt: string | null;
+      decisionNote: string | null;
+      canDecide: boolean;
+    }>;
+  };
   permissions: { canDecide: boolean; canRespond: boolean; reason: string | null };
   warnings: string[];
 }
@@ -120,6 +155,13 @@ const STATUS_LABEL: Record<string, string> = {
   CLOSED: "Đã đóng",
 };
 
+const QUALITY_VALUES = [65, 70, 75, 80, 85, 90, 95, 100];
+
+function qualityLabel(value: number | null | undefined) {
+  if (value === null || value === undefined) return "Chưa đánh giá";
+  return `${value}%`;
+}
+
 export default function ApprovalPreviewModal({
   open,
   caseType,
@@ -136,13 +178,100 @@ export default function ApprovalPreviewModal({
   const [reason, setReason] = useState("");
   const [content, setContent] = useState("");
   const [returnPersonIds, setReturnPersonIds] = useState<string[]>([]);
+  const [qualityPercent, setQualityPercent] = useState("");
+  const [adjustmentQuality, setAdjustmentQuality] = useState("");
+  const [adjustmentReason, setAdjustmentReason] = useState("");
+  const [adjustmentBusy, setAdjustmentBusy] = useState(false);
+  const [adjustmentNotes, setAdjustmentNotes] = useState<Record<string, string>>({});
 
+  const refreshPreview = async () => {
+    if (!caseType || !resourceId) return;
+    try {
+      const res = await fetch(`/api/approvals/${caseType}/${resourceId}/preview`, {
+        cache: "no-store",
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.data) setPreview(json.data);
+    } catch {
+      // giữ dữ liệu cũ; người dùng có thể tải lại
+    }
+  };
+
+  const submitAdjustmentRequest = async () => {
+    if (!caseType || !resourceId) return;
+    if (!adjustmentQuality) {
+      toast.error("Vui lòng chọn mức chất lượng điều chỉnh.");
+      return;
+    }
+    if (!adjustmentReason.trim()) {
+      toast.error("Vui lòng nêu lý do điều chỉnh chất lượng.");
+      return;
+    }
+    setAdjustmentBusy(true);
+    try {
+      const res = await fetch(
+        `/api/approvals/${caseType}/${resourceId}/quality-adjustments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            newQualityPercent: Number(adjustmentQuality),
+            reason: adjustmentReason.trim(),
+          }),
+        }
+      );
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(json?.error || "Không gửi được yêu cầu điều chỉnh.");
+        return;
+      }
+      toast.success("Đã gửi yêu cầu điều chỉnh chất lượng.");
+      setAdjustmentQuality("");
+      setAdjustmentReason("");
+      await refreshPreview();
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi khi gửi yêu cầu điều chỉnh.");
+    } finally {
+      setAdjustmentBusy(false);
+    }
+  };
+
+  const decideAdjustment = async (id: string, action: "APPROVE" | "REJECT") => {
+    setAdjustmentBusy(true);
+    try {
+      const res = await fetch(`/api/approvals/quality-adjustments/${id}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, note: adjustmentNotes[id]?.trim() || null }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(json?.error || "Không quyết định được yêu cầu điều chỉnh.");
+        return;
+      }
+      toast.success(
+        action === "APPROVE"
+          ? "Đã chấp thuận điều chỉnh chất lượng."
+          : "Đã từ chối điều chỉnh chất lượng."
+      );
+      setAdjustmentNotes((prev) => ({ ...prev, [id]: "" }));
+      await refreshPreview();
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi khi quyết định điều chỉnh.");
+    } finally {
+      setAdjustmentBusy(false);
+    }
+  };
   useEffect(() => {
     if (!open) return;
     setAction(initialAction);
     setReason("");
     setContent("");
     setReturnPersonIds([]);
+    setQualityPercent("");
+    setAdjustmentQuality("");
+    setAdjustmentReason("");
+    setAdjustmentNotes({});
     setError(null);
     if (!caseType || !resourceId) return;
     let cancelled = false;
@@ -193,12 +322,27 @@ export default function ApprovalPreviewModal({
       toast.error("Vui lòng nêu nội dung cần giải trình.");
       return;
     }
+    if (
+      preview?.caseType === "TASK_RESULT" &&
+      preview.quality?.enabled &&
+      action === "AGREE" &&
+      !qualityPercent
+    ) {
+      toast.error("Vui lòng chọn mức chất lượng kết quả (65–100, bước 5) khi đồng ý nghiệm thu.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`/api/approvals/${caseType}/${resourceId}/decision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, reason, content, returnPersonIds }),
+        body: JSON.stringify({
+          action,
+          reason,
+          content,
+          returnPersonIds,
+          qualityPercent: qualityPercent ? Number(qualityPercent) : null,
+        }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) {
@@ -631,6 +775,164 @@ export default function ApprovalPreviewModal({
                   </ul>
                 </div>
               )}
+              {/* YC-10: mức chất lượng + lịch sử điều chỉnh (chỉ người có quyền xem) */}
+              {preview.caseType === "TASK_RESULT" &&
+                preview.quality?.visible &&
+                (preview.quality.history.length > 0 || preview.quality.adjustments.length > 0) && (
+                  <div
+                    data-testid="quality-history"
+                    className="space-y-2 rounded-lg border border-border-default p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                        Đánh giá chất lượng kết quả
+                      </p>
+                      <span className="text-[11px] font-semibold text-primary">
+                        Hiệu lực: {qualityLabel(preview.quality.effective)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                      <div className="rounded border border-border-default p-2">
+                        <p className="text-[10px] uppercase text-outline font-semibold">Gốc (bất biến)</p>
+                        <p className="text-on-surface font-mono">
+                          {qualityLabel(preview.quality.original)}
+                        </p>
+                      </div>
+                      <div className="rounded border border-border-default p-2">
+                        <p className="text-[10px] uppercase text-outline font-semibold">Hiệu lực</p>
+                        <p className="text-on-surface font-mono">
+                          {qualityLabel(preview.quality.effective)}
+                          {preview.quality.adjusted ? " (đã điều chỉnh)" : ""}
+                        </p>
+                      </div>
+                      <div className="rounded border border-border-default p-2">
+                        <p className="text-[10px] uppercase text-outline font-semibold">Chờ điều chỉnh</p>
+                        <p className="text-on-surface font-mono">
+                          {preview.quality.pendingAdjustmentCount}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-outline font-semibold">
+                        Lịch sử theo vòng
+                      </p>
+                      <ul className="space-y-0.5">
+                        {preview.quality.history.map((h) => (
+                          <li key={h.decisionId} className="text-[11px] text-on-surface-variant">
+                            • Vòng {h.round} · {h.actionLabel} ·{" "}
+                            <strong className="text-on-surface">
+                              {qualityLabel(h.qualityPercent)}
+                            </strong>
+                            {h.actorName ? ` · ${h.actorName}` : ""} · {formatDateTime(h.createdAt)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {preview.quality.adjustments.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase text-outline font-semibold">
+                          Yêu cầu điều chỉnh
+                        </p>
+                        {preview.quality.adjustments.map((a) => (
+                          <div
+                            key={a.id}
+                            data-testid={`quality-adjustment-${a.id}`}
+                            className="rounded border border-border-default p-2 space-y-1"
+                          >
+                            <p className="text-[11px] text-on-surface">
+                              <strong>
+                                {qualityLabel(a.oldQualityPercent)} → {qualityLabel(a.newQualityPercent)}
+                              </strong>{" "}
+                              · {a.statusLabel}
+                            </p>
+                            <p className="text-[11px] text-on-surface-variant">
+                              Lý do: {a.reason} · Người yêu cầu: {a.requestedByName || "—"} ·{" "}
+                              {formatDateTime(a.requestedAt)}
+                            </p>
+                            {a.decidedAt && (
+                              <p className="text-[11px] text-on-surface-variant">
+                                Người quyết định: {a.decidedByName || "—"} ·{" "}
+                                {formatDateTime(a.decidedAt)}
+                                {a.decisionNote ? ` · Ghi chú: ${a.decisionNote}` : ""}
+                              </p>
+                            )}
+                            {a.canDecide && (
+                              <div className="flex flex-col sm:flex-row gap-1.5 pt-1">
+                                <input
+                                  value={adjustmentNotes[a.id] || ""}
+                                  onChange={(e) =>
+                                    setAdjustmentNotes((prev) => ({
+                                      ...prev,
+                                      [a.id]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Ghi chú quyết định (không bắt buộc)"
+                                  className="flex-1 min-w-0 px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                                />
+                                <div className="flex gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    disabled={adjustmentBusy}
+                                    onClick={() => decideAdjustment(a.id, "APPROVE")}
+                                    className="px-2.5 py-1.5 rounded bg-primary text-on-primary text-[11px] font-semibold disabled:opacity-50"
+                                  >
+                                    Chấp thuận
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={adjustmentBusy}
+                                    onClick={() => decideAdjustment(a.id, "REJECT")}
+                                    className="px-2.5 py-1.5 rounded border border-status-danger text-status-danger text-[11px] font-semibold disabled:opacity-50"
+                                  >
+                                    Từ chối
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {preview.quality.canRequestAdjustment && (
+                      <div className="space-y-1.5 rounded border border-secondary/40 bg-surface-container p-2">
+                        <p className="text-[10px] uppercase text-outline font-semibold">
+                          Yêu cầu điều chỉnh chất lượng
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                          <select
+                            data-testid="quality-adjustment-select"
+                            value={adjustmentQuality}
+                            onChange={(e) => setAdjustmentQuality(e.target.value)}
+                            className="w-full px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                          >
+                            <option value="">— Chọn mức mới —</option>
+                            {QUALITY_VALUES.map((v) => (
+                              <option key={v} value={v}>
+                                {v}%
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            data-testid="quality-adjustment-reason"
+                            value={adjustmentReason}
+                            onChange={(e) => setAdjustmentReason(e.target.value)}
+                            placeholder="Lý do điều chỉnh (bắt buộc)"
+                            className="sm:col-span-2 w-full px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          data-testid="quality-adjustment-submit"
+                          disabled={adjustmentBusy}
+                          onClick={submitAdjustmentRequest}
+                          className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-[11px] font-semibold disabled:opacity-50"
+                        >
+                          Gửi yêu cầu điều chỉnh
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
 
             {/* Quyết định */}
@@ -668,6 +970,52 @@ export default function ApprovalPreviewModal({
                   </button>
                 ))}
               </div>
+
+              {preview.caseType === "TASK_RESULT" && preview.quality?.enabled && (
+                <div
+                  data-testid="quality-select-block"
+                  className="mt-3 rounded-lg border border-border-default p-2.5 space-y-1"
+                >
+                  <label
+                    htmlFor="quality-percent"
+                    className="text-xs font-semibold text-on-surface block"
+                  >
+                    Mức chất lượng kết quả (65–100, bước 5){" "}
+                    {action === "AGREE" ? (
+                      <span className="text-status-danger">*</span>
+                    ) : (
+                      <span className="text-outline font-normal">(không bắt buộc)</span>
+                    )}
+                  </label>
+                  <select
+                    id="quality-percent"
+                    data-testid="quality-select"
+                    value={qualityPercent}
+                    onChange={(e) => setQualityPercent(e.target.value)}
+                    disabled={!preview.permissions.canDecide || submitting}
+                    className="w-full px-2.5 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-xs disabled:opacity-50"
+                  >
+                    <option value="">— Chưa đánh giá / chọn mức —</option>
+                    {QUALITY_VALUES.map((v) => (
+                      <option key={v} value={v}>
+                        {v}%{v === 100 ? " — chất lượng đạt yêu cầu đầy đủ" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-on-surface-variant">
+                    Không tự mặc định 100. Mức 65–95 vẫn có thể là Đồng ý; chất lượng không tự đổi
+                    điểm/xếp loại.
+                  </p>
+                  {action === "AGREE" && !qualityPercent && (
+                    <p
+                      data-testid="quality-required-error"
+                      className="text-[11px] font-semibold text-status-danger"
+                    >
+                      Bắt buộc chọn mức chất lượng khi Đồng ý nghiệm thu.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {action === "REJECT" && (
                 <div className="mt-3 flex flex-col gap-1.5">

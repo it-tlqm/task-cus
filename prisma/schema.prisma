@@ -118,6 +118,8 @@ model Person {
   actorParticipantEvents TaskParticipantEvent[] @relation("ParticipantEventActorPerson")
   submissionSnapshots TaskSubmissionSnapshot[] @relation("SubmissionSnapshotSubmitter")
   taskUpdateSubjects TaskUpdate[] @relation("TaskUpdateSubject")
+  qualityAdjustmentsRequested ApprovalQualityAdjustment[] @relation("QualityAdjustmentRequester")
+  qualityAdjustmentsDecided   ApprovalQualityAdjustment[] @relation("QualityAdjustmentDecider")
   @@map("people")
 }
 
@@ -1996,6 +1998,7 @@ model ApprovalCase {
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   decisions ApprovalDecision[]
+  qualityAdjustments ApprovalQualityAdjustment[]
 
   @@unique([caseType, resourceId])
   @@index([status, createdAt])
@@ -2016,11 +2019,54 @@ model ApprovalDecision {
   /// accountId nguoi thuc hien quyet dinh
   actorId       String   @map("actor_id")
   actorPersonId String?  @map("actor_person_id")
+  /// YC-10: muc chat luong ket qua do lanh dao danh gia (65..100, buoc 5). NULL = chua danh gia.
+  qualityPercent Int?    @map("quality_percent")
   createdAt     DateTime @default(now()) @map("created_at")
 
   case ApprovalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  qualityAdjustments ApprovalQualityAdjustment[]
 
   @@index([caseId, round])
   @@index([actorId, createdAt])
   @@map("approval_decisions")
+}
+
+// ----------------------------------------------------
+// YC-10 - YEU CAU DIEU CHINH CHAT LUONG SAU KHI DA QUYET DINH (A1)
+// Khong update de approval_decisions.quality_percent; moi lan dieu chinh la mot ban ghi
+// old/new + ly do + nguoi yeu cau/nguoi quyet dinh + thoi gian (audit-friendly).
+// ----------------------------------------------------
+
+model ApprovalQualityAdjustment {
+  id                   String    @id @default(uuid())
+  caseId               String    @map("case_id")
+  /// Quyet dinh AGREE goc duoc dieu chinh (khong sua ban ghi nay).
+  decisionId           String    @map("decision_id")
+  /// So thu tu dieu chinh tren cung mot decision (1, 2, ...).
+  revision             Int       @default(1)
+  oldQualityPercent    Int?      @map("old_quality_percent")
+  newQualityPercent    Int       @map("new_quality_percent")
+  reason               String
+  requestedById        String    @map("requested_by_id")
+  requestedByAccountId String?   @map("requested_by_account_id")
+  requestedAt          DateTime  @default(now()) @map("requested_at")
+  /// PENDING | APPROVED | REJECTED
+  status               String    @default("PENDING")
+  decidedById          String?   @map("decided_by_id")
+  decidedByAccountId   String?   @map("decided_by_account_id")
+  decidedAt            DateTime? @map("decided_at")
+  decisionNote         String?   @map("decision_note")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  case        ApprovalCase     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  decision    ApprovalDecision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  requestedBy Person           @relation("QualityAdjustmentRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  decidedBy   Person?          @relation("QualityAdjustmentDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@unique([decisionId, revision])
+  @@index([caseId, status])
+  @@index([caseId, requestedAt])
+  @@index([status, requestedAt])
+  @@map("approval_quality_adjustments")
 }

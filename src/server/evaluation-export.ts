@@ -17,6 +17,7 @@
 import ExcelJS from "exceljs";
 import { computeBang1, type ScoreResult } from "./scoring/bang1";
 import { computeForm01A } from "./scoring/bang1";
+import type { ApprovalQualityExportRow } from "./approval-quality";
 
 export type EvaluationTemplate = "01A" | "01B" | "02A" | "02B";
 
@@ -75,6 +76,11 @@ export interface ExportParams {
   tasks: ExportTaskRow[];
   score: ScoreResult | null;
   leader?: ExportLeaderInput | null;
+  /**
+   * YC-10: dữ liệu cho sheet phụ "Đánh giá chất lượng". KHÔNG tham gia Bảng 1/ô chính thức.
+   * undefined = bỏ qua sheet phụ (tương thích caller cũ).
+   */
+  qualityRows?: ApprovalQualityExportRow[];
 }
 
 const DRAFT = "DỰ THẢO — CHƯA ĐỦ CĂN CỨ";
@@ -477,6 +483,120 @@ function buildFormSheet(wb: ExcelJS.Workbook, p: ExportParams): void {
   };
 }
 
+/**
+ * YC-10 — sheet phụ "Đánh giá chất lượng" (annex).
+ * Tuyệt đối không ghi vào các ô/cột chính thức 01A/01B/02A/02B hay Bảng 1.
+ */
+function buildQualitySheet(wb: ExcelJS.Workbook, rows: ApprovalQualityExportRow[]): void {
+  const ws = wb.addWorksheet("Đánh giá chất lượng", {
+    views: [{ state: "frozen", ySplit: 4 }],
+    pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1 },
+  });
+
+  ws.mergeCells("A1:J1");
+  const title = ws.getCell("A1");
+  title.value = "ĐÁNH GIÁ CHẤT LƯỢNG KẾT QUẢ NHIỆM VỤ (SHEET PHỤ — KHÔNG THAY ĐỔI Ô CHÍNH THỨC)";
+  title.font = { bold: true, size: 12 };
+  title.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  ws.getRow(1).height = 28;
+
+  ws.mergeCells("A2:J2");
+  const note = ws.getCell("A2");
+  note.value =
+    "Mức chất lượng do lãnh đạo đánh giá khi nghiệm thu (65–100, bước 5). " +
+    "Chỉ hiển thị/audit; KHÔNG tham gia điểm tháng, Bảng 1, QĐ1277 hoặc xếp loại. " +
+    "Cột “Chất lượng gốc” là giá trị bất biến trên quyết định; “Chất lượng hiệu lực” có thể đã điều chỉnh.";
+  note.font = { italic: true, size: 9 };
+  note.alignment = { wrapText: true, vertical: "top" };
+  ws.getRow(2).height = 42;
+
+  const headers = [
+    "STT",
+    "Mã nhiệm vụ",
+    "Tên nhiệm vụ",
+    "Vòng duyệt",
+    "Chất lượng gốc (%)",
+    "Chất lượng hiệu lực (%)",
+    "Điều chỉnh",
+    "Lý do điều chỉnh",
+    "Người đánh giá",
+    "Thời điểm quyết định",
+  ];
+  const headerRow = ws.getRow(4);
+  headers.forEach((h, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = h;
+    cell.font = { bold: true, size: 9 };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8EEF7" } };
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+  });
+  headerRow.height = 30;
+
+  if (rows.length === 0) {
+    ws.mergeCells("A5:J5");
+    const empty = ws.getCell("A5");
+    empty.value = "Chưa có nhiệm vụ nào trong kỳ để đánh giá chất lượng.";
+    empty.font = { italic: true, size: 9 };
+    empty.alignment = { horizontal: "center" };
+  } else {
+    rows.forEach((r, idx) => {
+      const row = ws.getRow(5 + idx);
+      const values = [
+        idx + 1,
+        r.taskCode,
+        r.taskTitle,
+        r.decisionRound ?? "—",
+        r.originalQualityPercent ?? "Chưa đánh giá",
+        r.effectiveQualityPercent ?? "Chưa đánh giá",
+        r.adjusted ? "Có điều chỉnh" : "—",
+        r.adjustmentReason ?? "—",
+        r.decidedByName ?? "—",
+        r.decidedAt ? new Date(r.decidedAt).toLocaleString("vi-VN") : "—",
+      ];
+      values.forEach((v, i) => {
+        const cell = row.getCell(i + 1);
+        cell.value = v as any;
+        cell.font = { size: 9 };
+        cell.alignment = {
+          horizontal: i === 0 || i === 3 || i >= 4 ? "center" : "left",
+          vertical: "middle",
+          wrapText: true,
+        };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFD9D9D9" } },
+          left: { style: "thin", color: { argb: "FFD9D9D9" } },
+          bottom: { style: "thin", color: { argb: "FFD9D9D9" } },
+          right: { style: "thin", color: { argb: "FFD9D9D9" } },
+        };
+      });
+    });
+  }
+
+  ws.columns = [
+    { width: 6 },
+    { width: 18 },
+    { width: 42 },
+    { width: 10 },
+    { width: 14 },
+    { width: 16 },
+    { width: 14 },
+    { width: 36 },
+    { width: 20 },
+    { width: 20 },
+  ];
+  ws.pageSetup.printArea = `A1:J${Math.max(5, 4 + rows.length)}`;
+  ws.headerFooter = {
+    oddFooter:
+      "&LSheet phụ YC-10 — không thay đổi ô chính thức&RTrang &P / &N",
+  };
+}
+
 /** Sinh workbook biểu mẫu. */
 export async function buildEvaluationWorkbook(p: ExportParams): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
@@ -487,6 +607,9 @@ export async function buildEvaluationWorkbook(p: ExportParams): Promise<Buffer> 
     buildBang1Sheet(wb, p);
   }
   buildFormSheet(wb, p);
+  if (p.qualityRows !== undefined) {
+    buildQualitySheet(wb, p.qualityRows);
+  }
 
   // Excel tính lại khi mở
   wb.calcProperties = { fullCalcOnLoad: true } as any;

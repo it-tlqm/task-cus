@@ -96,7 +96,40 @@ interface TaskDetail {
     decidedById: string | null;
     decidedByName: string | null;
     decidedAt: string | null;
+    quality?: {
+      visible: boolean;
+      enabled: boolean;
+      original: number | null;
+      effective: number | null;
+      adjusted: boolean;
+      canRequestAdjustment: boolean;
+      pendingAdjustmentCount: number;
+      history: Array<{
+        decisionId: string;
+        round: number;
+        action: string;
+        actionLabel: string;
+        qualityPercent: number | null;
+        actorName: string | null;
+        createdAt: string;
+      }>;
+      adjustments: Array<{
+        id: string;
+        oldQualityPercent: number | null;
+        newQualityPercent: number;
+        reason: string;
+        status: string;
+        statusLabel: string;
+        requestedByName: string | null;
+        requestedAt: string;
+        decidedByName: string | null;
+        decidedAt: string | null;
+        decisionNote: string | null;
+        canDecide: boolean;
+      }>;
+    } | null;
   } | null;
+  qualityEnabled?: boolean;
   participantResults?: Array<{
     id: string;
     personId: string;
@@ -138,6 +171,13 @@ export default function TaskDetailPage() {
   // Approval modal state
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approvalNotes, setApprovalNotes] = useState("");
+  const [approvalQualityPercent, setApprovalQualityPercent] = useState("");
+
+  // YC-10: điều chỉnh chất lượng sau nghiệm thu
+  const [qualityAdjustValue, setQualityAdjustValue] = useState("");
+  const [qualityAdjustReason, setQualityAdjustReason] = useState("");
+  const [qualityAdjustBusy, setQualityAdjustBusy] = useState(false);
+  const [qualityAdjustNotes, setQualityAdjustNotes] = useState<Record<string, string>>({});
 
   // YC-03: chỉnh sửa nội dung chỉ đạo (mở lại form với dữ liệu PostgreSQL)
   const [showEditModal, setShowEditModal] = useState(false);
@@ -440,6 +480,68 @@ export default function TaskDetailPage() {
     }
   };
 
+  const submitQualityAdjustment = async () => {
+    if (!qualityAdjustValue) {
+      toast.error("Vui lòng chọn mức chất lượng điều chỉnh.");
+      return;
+    }
+    if (!qualityAdjustReason.trim()) {
+      toast.error("Vui lòng nêu lý do điều chỉnh chất lượng.");
+      return;
+    }
+    setQualityAdjustBusy(true);
+    try {
+      const res = await fetch(`/api/approvals/TASK_RESULT/${taskId}/quality-adjustments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newQualityPercent: Number(qualityAdjustValue),
+          reason: qualityAdjustReason.trim(),
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(json?.error || "Không gửi được yêu cầu điều chỉnh chất lượng.");
+        return;
+      }
+      toast.success("Đã gửi yêu cầu điều chỉnh chất lượng.");
+      setQualityAdjustValue("");
+      setQualityAdjustReason("");
+      await fetchTaskDetail();
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi gửi yêu cầu điều chỉnh.");
+    } finally {
+      setQualityAdjustBusy(false);
+    }
+  };
+
+  const decideQualityAdjustment = async (id: string, action: "APPROVE" | "REJECT") => {
+    setQualityAdjustBusy(true);
+    try {
+      const res = await fetch(`/api/approvals/quality-adjustments/${id}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, note: qualityAdjustNotes[id]?.trim() || null }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(json?.error || "Không quyết định được yêu cầu điều chỉnh.");
+        return;
+      }
+      toast.success(
+        action === "APPROVE"
+          ? "Đã chấp thuận điều chỉnh chất lượng."
+          : "Đã từ chối điều chỉnh chất lượng."
+      );
+      setQualityAdjustNotes((prev) => ({ ...prev, [id]: "" }));
+      await fetchTaskDetail();
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi quyết định điều chỉnh.");
+    } finally {
+      setQualityAdjustBusy(false);
+    }
+  };
+
   useEffect(() => {
     if (taskId) {
       fetchTaskDetail();
@@ -703,6 +805,10 @@ export default function TaskDetailPage() {
 
   const handleApproveResult = async () => {
     if (!task) return;
+    if (task.qualityEnabled && !approvalQualityPercent) {
+      toast.error("Vui lòng chọn mức chất lượng kết quả (65–100, bước 5) khi đồng ý nghiệm thu.");
+      return;
+    }
     try {
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
@@ -710,6 +816,7 @@ export default function TaskDetailPage() {
         body: JSON.stringify({
           status: "COMPLETED",
           actualResultText: approvalNotes || "Lãnh đạo đơn vị đã nghiệm thu và phê duyệt kết quả hoàn thành.",
+          qualityPercent: approvalQualityPercent ? Number(approvalQualityPercent) : null,
         }),
       });
 
@@ -717,6 +824,7 @@ export default function TaskDetailPage() {
         toast.success("Đã phê duyệt nghiệm thu kết quả nhiệm vụ!");
         setShowApproveModal(false);
         setApprovalNotes("");
+        setApprovalQualityPercent("");
         fetchTaskDetail();
       } else {
         const json = await res.json();
@@ -990,6 +1098,167 @@ export default function TaskDetailPage() {
                   )}
                   {task.approval.content && (
                     <span className="text-on-surface">Nội dung: {task.approval.content}</span>
+                  )}
+                </div>
+              )}
+
+              {/* YC-10: chất lượng lãnh đạo đánh giá — chỉ owner/tuyến/decider thấy */}
+              {task.approval?.quality?.visible && (
+                <div
+                  data-testid="task-quality-summary"
+                  className="p-3 rounded-lg border border-border-default bg-surface-container-low text-xs flex flex-col gap-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-bold text-primary flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[18px] text-secondary">
+                        verified
+                      </span>
+                      Đánh giá chất lượng kết quả
+                    </span>
+                    <span className="font-bold text-secondary">
+                      Hiệu lực: {task.approval.quality.effective ?? "Chưa đánh giá"}
+                      {task.approval.quality.effective !== null ? "%" : ""}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-on-surface-variant">
+                    <span>
+                      Gốc: <b className="text-on-surface">
+                        {task.approval.quality.original ?? "Chưa đánh giá"}
+                        {task.approval.quality.original !== null ? "%" : ""}
+                      </b>
+                    </span>
+                    <span>
+                      {task.approval.quality.adjusted
+                        ? "Đã điều chỉnh (giữ nguyên giá trị gốc)"
+                        : "Chưa điều chỉnh"}
+                    </span>
+                    {task.approval.quality.pendingAdjustmentCount > 0 && (
+                      <span className="text-status-warning font-semibold">
+                        {task.approval.quality.pendingAdjustmentCount} yêu cầu chờ xử lý
+                      </span>
+                    )}
+                  </div>
+                  {task.approval.quality.history.length > 0 && (
+                    <div>
+                      <p className="text-[10px] uppercase text-outline font-semibold">
+                        Lịch sử theo vòng
+                      </p>
+                      <ul className="space-y-0.5">
+                        {task.approval.quality.history.map((h) => (
+                          <li key={h.decisionId} className="text-[11px] text-on-surface-variant">
+                            • Vòng {h.round} · {h.actionLabel} ·{" "}
+                            <b className="text-on-surface">
+                              {h.qualityPercent !== null ? `${h.qualityPercent}%` : "Chưa đánh giá"}
+                            </b>
+                            {h.actorName ? ` · ${h.actorName}` : ""} · {formatDateTime(h.createdAt)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {task.approval.quality.adjustments.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase text-outline font-semibold">
+                        Yêu cầu điều chỉnh
+                      </p>
+                      {task.approval.quality.adjustments.map((a) => (
+                        <div
+                          key={a.id}
+                          data-testid={`task-quality-adjustment-${a.id}`}
+                          className="rounded border border-border-default bg-surface-container-lowest p-2 space-y-1"
+                        >
+                          <p className="text-[11px] text-on-surface">
+                            <b>
+                              {a.oldQualityPercent ?? "Chưa đánh giá"}
+                              {a.oldQualityPercent !== null ? "%" : ""} → {a.newQualityPercent}%
+                            </b>{" "}
+                            · {a.statusLabel}
+                          </p>
+                          <p className="text-[11px] text-on-surface-variant">
+                            Lý do: {a.reason} · Người yêu cầu: {a.requestedByName || "—"} ·{" "}
+                            {formatDateTime(a.requestedAt)}
+                          </p>
+                          {a.decidedAt && (
+                            <p className="text-[11px] text-on-surface-variant">
+                              Người quyết định: {a.decidedByName || "—"} ·{" "}
+                              {formatDateTime(a.decidedAt)}
+                              {a.decisionNote ? ` · Ghi chú: ${a.decisionNote}` : ""}
+                            </p>
+                          )}
+                          {a.canDecide && (
+                            <div className="flex flex-col sm:flex-row gap-1.5 pt-1">
+                              <input
+                                value={qualityAdjustNotes[a.id] || ""}
+                                onChange={(e) =>
+                                  setQualityAdjustNotes((prev) => ({
+                                    ...prev,
+                                    [a.id]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Ghi chú quyết định (không bắt buộc)"
+                                className="flex-1 min-w-0 px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                              />
+                              <div className="flex gap-1.5 shrink-0">
+                                <button
+                                  type="button"
+                                  disabled={qualityAdjustBusy}
+                                  onClick={() => decideQualityAdjustment(a.id, "APPROVE")}
+                                  className="px-2.5 py-1.5 rounded bg-primary text-on-primary text-[11px] font-semibold disabled:opacity-50"
+                                >
+                                  Chấp thuận
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={qualityAdjustBusy}
+                                  onClick={() => decideQualityAdjustment(a.id, "REJECT")}
+                                  className="px-2.5 py-1.5 rounded border border-status-danger text-status-danger text-[11px] font-semibold disabled:opacity-50"
+                                >
+                                  Từ chối
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {task.approval.quality.canRequestAdjustment && (
+                    <div className="space-y-1.5 rounded border border-secondary/40 bg-surface-container p-2">
+                      <p className="text-[10px] uppercase text-outline font-semibold">
+                        Yêu cầu điều chỉnh chất lượng
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                        <select
+                          data-testid="task-quality-adjustment-select"
+                          value={qualityAdjustValue}
+                          onChange={(e) => setQualityAdjustValue(e.target.value)}
+                          className="w-full px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                        >
+                          <option value="">— Chọn mức mới —</option>
+                          {[65, 70, 75, 80, 85, 90, 95, 100].map((v) => (
+                            <option key={v} value={v}>
+                              {v}%
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          data-testid="task-quality-adjustment-reason"
+                          value={qualityAdjustReason}
+                          onChange={(e) => setQualityAdjustReason(e.target.value)}
+                          placeholder="Lý do điều chỉnh (bắt buộc)"
+                          className="sm:col-span-2 w-full px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        data-testid="task-quality-adjustment-submit"
+                        disabled={qualityAdjustBusy}
+                        onClick={submitQualityAdjustment}
+                        className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-[11px] font-semibold disabled:opacity-50"
+                      >
+                        Gửi yêu cầu điều chỉnh
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -1795,6 +2064,30 @@ export default function TaskDetailPage() {
                 placeholder="Ý kiến phê duyệt: Đạt yêu cầu, đồng ý lưu hồ sơ..."
                 className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
               />
+              {task.qualityEnabled && (
+                <div className="flex flex-col gap-1" data-testid="task-approve-quality-block">
+                  <label className="text-xs font-semibold text-on-surface">
+                    Mức chất lượng kết quả (65–100, bước 5){" "}
+                    <span className="text-status-danger">*</span>
+                  </label>
+                  <select
+                    data-testid="task-approve-quality-select"
+                    value={approvalQualityPercent}
+                    onChange={(e) => setApprovalQualityPercent(e.target.value)}
+                    className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  >
+                    <option value="">— Chọn mức chất lượng —</option>
+                    {[65, 70, 75, 80, 85, 90, 95, 100].map((v) => (
+                      <option key={v} value={v}>
+                        {v}%
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-on-surface-variant">
+                    Không tự mặc định 100; mức chất lượng không tự đổi điểm/xếp loại.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
               <button

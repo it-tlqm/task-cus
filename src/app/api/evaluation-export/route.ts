@@ -10,6 +10,7 @@ import {
   type EvaluationTemplate,
   type ExportTaskRow,
 } from "@/server/evaluation-export";
+import { getApprovalQualityExportRows, isApprovalQualityEnabled } from "@/server/approval-quality";
 
 export const runtime = "nodejs";
 
@@ -178,6 +179,14 @@ export async function GET(req: NextRequest) {
       evaluationStatus: evaluation?.evaluationStatus ?? "DRAFT",
     };
 
+    const qualityEnabled = isApprovalQualityEnabled();
+    const qualityRows = qualityEnabled
+      ? await getApprovalQualityExportRows(
+          results.map((r) => r.taskId).filter((x): x is string => !!x),
+          personId
+        )
+      : [];
+
     if (preview) {
       return NextResponse.json({
         success: true,
@@ -194,6 +203,14 @@ export async function GET(req: NextRequest) {
             reasons: computation.reasons,
           },
           leader,
+          ...(qualityEnabled
+            ? {
+                quality: {
+                  rows: qualityRows,
+                  note: "Sheet phụ 'Đánh giá chất lượng' chỉ hiển thị/audit; không tham gia điểm chính thức.",
+                },
+              }
+            : {}),
           evaluationStatus: evaluation?.evaluationStatus ?? "DRAFT",
           warnings: [
             ...computation.reasons,
@@ -218,6 +235,7 @@ export async function GET(req: NextRequest) {
       tasks,
       score: computation,
       leader,
+      qualityRows: qualityEnabled ? qualityRows : undefined,
     });
 
     await recordAuditEvent({
