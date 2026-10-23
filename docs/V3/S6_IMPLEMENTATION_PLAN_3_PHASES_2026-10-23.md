@@ -231,6 +231,8 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 - `AGREE` mức 65 vẫn là `AGREE`, Task `COMPLETED`; không tự reject/không tự đổi điểm.
 - `E10.4 A1`: sau quyết định, quality bất biến; điều chỉnh qua yêu cầu riêng, lý do, old/new,
   người xử lý, audit; không update đè.
+- **Quality hiệu lực** = quality gốc trên `ApprovalDecision` + adjustment `APPROVED` mới nhất
+  (nếu có). Không sửa `approval_decisions.quality_percent`; UI/export ghi rõ “điều chỉnh”.
 - `E10.6`: owner + tuyến duyệt + người quyết định được xem; collaborator không mặc nhiên.
 - `E10.7`: không tự tổng hợp quality từng người; Q2 nếu cần phải có quyết định riêng.
 
@@ -317,6 +319,8 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
   `IN_PROGRESS`; không mở case.
 - Một người pre-check là đủ (E11.6); ghi rõ ai.
 - Khi tất cả participant bắt buộc có `PRECHECK_PASS` (hoặc `EXEMPT`), owner mới được nộp chung.
+- Khi owner gửi lại sau `REJECT/CLARIFY`: pre-check lại **phần bị trả**; phần `ACCEPTED` giữ
+  nguyên, không bắt pre-check lại nếu không thay đổi nội dung.
 - Legacy Task không có participant/pre-check: final-only; không bắt pre-check.
 
 ### 6.5. Multi-department (M2)

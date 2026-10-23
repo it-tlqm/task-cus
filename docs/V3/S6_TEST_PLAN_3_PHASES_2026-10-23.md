@@ -153,6 +153,7 @@
 | P2-U12 | E10.7 no aggregation | Không tự lấy trung bình/nhân hệ số |
 | P2-U13 | Direct update quality sau decision | 409/403; không đổi |
 | P2-U14 | Adjustment old/new | Lưu đúng; không update đè |
+| P2-U15 | Quality hiệu lực sau adjustment APPROVED | Đọc original + adjustment mới nhất; UI/export ghi “điều chỉnh” |
 
 ### 3.2. API & security tests
 
@@ -195,6 +196,7 @@
 | P2-S06 | Export 01A/01B/02A/02B | Ô chính thức không đổi |
 | P2-S07 | Sheet phụ quality | Đúng dữ liệu; null hiển thị “chưa đánh giá” |
 | P2-S08 | Kỳ đã chốt | Không tự tính lại/không hồi tố |
+| P2-S09 | Quality hiệu lực sau adjustment | Export/read model dùng giá trị điều chỉnh mới nhất; không sửa decision gốc |
 
 ### 3.5. UI tests
 
@@ -251,6 +253,7 @@
 | P3-A18 | Multi-department | Mỗi phần pre-check đúng tuyến; final đơn vị chủ trì |
 | P3-A19 | Notification | Prechecker/owner/participant nhận đúng; không gửi “đã duyệt” sớm |
 | P3-A20 | Audit | stage event/actor/old-new/route snapshot đầy đủ |
+| P3-A21 | Gửi lại sau REJECT/CLARIFY | Pre-check lại phần bị trả; phần ACCEPTED giữ; route snapshot vòng mới |
 
 ### 4.3. DB/migration tests
 

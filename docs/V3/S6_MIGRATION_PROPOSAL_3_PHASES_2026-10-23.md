@@ -24,7 +24,7 @@
 | `people` | Participant/actor FK |
 | `accounts` | Audit actor nếu cần |
 | `person_supervisions` | Nguồn route Phase 3; không sửa/không seed |
-| `products`/`work_item_products`/`monthly_work_results` | **Không chạm** trong cả 3 phase |
+| `product_items`/`work_item_products`/`monthly_work_results` | **Không chạm** trong cả 3 phase |
 
 ---
 
@@ -175,6 +175,8 @@
 - Index `(case_id, status)`, `(decision_id, status)`, `(requested_by_id, created_at)`.
 - App guard: tối đa một `PENDING`/decision; không cho tự yêu cầu + tự duyệt; không sửa
   `approval_decisions.quality_percent` trực tiếp.
+- **Quality hiệu lực** đọc từ quality gốc + adjustment `APPROVED` mới nhất; adjustment là nguồn
+  lịch sử, không update đè decision.
 - Nếu DB hỗ trợ partial unique: unique `(decision_id) WHERE status='PENDING'`; nếu không, xử lý
   bằng transaction/advisory lock.
 
