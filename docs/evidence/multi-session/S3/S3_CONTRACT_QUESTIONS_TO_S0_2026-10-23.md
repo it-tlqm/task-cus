@@ -22,7 +22,7 @@
 | Q5 | **B — hai trục `recordState + coverage`**, map 6 nhãn; trạng thái tính trên nguồn giá trị đang hiển thị. |
 | Q6 | Approved approach `measureMode`/`baselineScope`; 5 mã `PHI_LK_THU`, `PHI_CON`, `XOA_NO`, `NO_THUE`, `TV_CHO` tiếp tục **PENDING_BUSINESS_INPUT**. |
 | Q7 | **Chưa bật “Thiếu N ngày”**; hiển thị “Số ngày có bản ghi” + khoảng dữ liệu thực tế; không đổi `expectDaily` hàng loạt. |
-| Q8 | **B — quyền nghiệp vụ riêng** `giao_ban.target.view/manage/confirm`; SYSTEM_ADMIN không mặc nhiên. |
+| Q8 | **B — quyền nghiệp vụ hiện có** `metrics.config` cho target, `metrics.entry_all` cho nhập liệu + assignment `canEnter`/`canConfirm`; không `giao_ban.target.*`, không `system.config`. |
 | Q9 | API trả **`isOfficial`/`dataSource`**; chỉ target official tính % chính thức; không dùng regex `[DEMO]`. |
 | Q10 | **Tiếp tục `PENDING_C1`**; UI “Chưa có quy tắc đánh giá”; không tô đạt/vượt. |
 | Q11 | **2 chữ số thập phân, dấu `,`**; không tính hiển thị `—` + lý do, không `0%`; số 0 thật hiển thị `0` + đơn vị. |
@@ -41,7 +41,7 @@
 | **Q5** | Mô hình trạng thái dữ liệu: 1 enum hay 2 trục? | **CÓ** | 2 trục `recordState` + `coverage`, map ra 6 nhãn |
 | **Q6** | Nghĩa lũy kế/snapshot cho `PHI_*`, `XOA_NO`, `NO_THUE`, `TV_CHO` | **CÓ** | `measureMode` tường minh; chốt riêng từng mã |
 | **Q7** | Lịch ngày dự kiến để báo “Thiếu N ngày” | Không chặn code, chặn UI | Chưa báo thiếu ngày khi chưa có lịch nghiệp vụ |
-| **Q8** | Quyền cấu hình target: `isMetricsAdmin` hay quyền riêng? | **CÓ** | Quyền riêng `giao_ban.target.*`; SYSTEM_ADMIN không mặc nhiên |
+| **Q8** | Quyền cấu hình target: `isMetricsAdmin` hay quyền riêng? | **CÓ** | `metrics.config` cho target; `metrics.entry_all`/assignment cho nhập liệu; không `giao_ban.target.*` |
 | **Q9** | Cách đánh dấu DEMO/chính thức ở API | **CÓ** | Cờ `isOfficial`/`dataSource`, không dùng regex nhãn |
 | **Q10** | Danh sách chỉ tiêu được giao + chu kỳ + chiều (C1) | **CÓ** | `PENDING_C1` cho tới khi lãnh đạo chốt; không tự gán |
 | **Q11** | Định dạng/tỷ lệ hiển thị | Không chặn | 2 chữ số thập phân; `—` + lý do khi không tính |
@@ -176,19 +176,17 @@ Cần chốt cho các mã đặc biệt:
 
 ---
 
-## Q8 — Quyền cấu hình chỉ tiêu giao
+## Q8 — Quyền cấu hình chỉ tiêu giao (đã APPROVED)
 
-**Hiện trạng:** `isMetricsAdmin` = `UNIT_LEADER` hoặc `system.config`. Target API dùng cổng này. Trái nguyên tắc “không cấp `system.config` chỉ để nhập chỉ tiêu nghiệp vụ”.
+**S0 đã chốt:** dùng quyền nghiệp vụ hiện có của B-C-1:
 
-**Phương án:**
+- `metrics.config`: cấu hình chỉ tiêu, target, mốc, phân công, mục nhận xét.
+- `metrics.entry_all`: nhập/sửa mọi chỉ tiêu (không cần assignment).
+- Assignment `canEnter`/`canConfirm`: phạm vi được phân công.
+- **Không** dùng `system.config`; `SYSTEM_ADMIN` không mặc nhiên có quyền nghiệp vụ.
+- **Không** thêm `giao_ban.target.*` trong đợt này.
 
-- **A. Giữ `isMetricsAdmin`** cho Phase C; ghi nợ kỹ thuật. Nhanh nhưng vi phạm nguyên tắc.
-- **B. Quyền nghiệp vụ riêng** `giao_ban.target.view/manage/confirm` (hoặc tên S0 chọn); `SYSTEM_ADMIN` chỉ kỹ thuật.
-- **C. Dùng role `UNIT_LEADER` + danh sách người được phân công** (không thêm permission). Ít thay đổi nhưng khó mở rộng.
-
-**Đề xuất S3:** **B**; nếu S0 muốn tránh mở rộng permission trong đợt này, chọn **A** nhưng ghi rõ PENDING và không cấp `system.config` mới cho ai.
-
-**S0 chốt:** ☐ A ☐ B ☐ C — Ghi chú: ________
+**S0 chốt:** ☑ `metrics.config` / `metrics.entry_all` + assignment
 
 ---
 
@@ -273,8 +271,8 @@ SESSION: S3
 YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
 BASE_SHA: 50daed3 (docs) / a68d31e (code)
-STATUS: APPROVED — phần độc lập đã làm; schema/API shared chờ S2
+STATUS: WAIT_B_C_2 — helper/UI mock đã merge; chờ S2 sửa Q9/Q11 + B-C-2
 SCHEMA_OR_MIGRATION: NONE
 PRODUCTION_TOUCHED: NO
-READY_FOR_INTEGRATION: PARTIAL — helper/UI mock ready; target-only chờ S2 schema
+READY_FOR_INTEGRATION: NO — target-only chờ B-C-2
 ```

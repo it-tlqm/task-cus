@@ -22,7 +22,7 @@ S0 đã phê duyệt toàn bộ Q1–Q12. Các điểm ràng buộc:
 - **Q5=B:** hai trục `recordState + coverage`, map 6 nhãn; trạng thái tính trên nguồn giá trị đang hiển thị.
 - **Q6:** `measureMode`/`baselineScope` tường minh; 5 mã `PHI_LK_THU`, `PHI_CON`, `XOA_NO`, `NO_THUE`, `TV_CHO` còn `PENDING_BUSINESS_INPUT`.
 - **Q7:** chưa bật “Thiếu N ngày”; hiển thị “Số ngày có bản ghi” + khoảng dữ liệu thực tế.
-- **Q8=B:** quyền nghiệp vụ riêng cho target; SYSTEM_ADMIN không mặc nhiên.
+- **Q8:** `metrics.config` cho target, `metrics.entry_all`/assignment cho nhập liệu; không `giao_ban.target.*`, không `system.config`.
 - **Q9:** API trả `isOfficial`/`dataSource`; không dùng regex `[DEMO]`.
 - **Q10:** tiếp tục `PENDING_C1`; UI “Chưa có quy tắc đánh giá”.
 - **Q11:** 2 chữ số thập phân, dấu `,`; không tính hiển thị `—` + lý do.
@@ -51,7 +51,7 @@ FILES_CHANGED:
   - src/components/metrics/target-draft-mock.ts
 SCHEMA_OR_MIGRATION: NONE
 TESTS_PASS:
-  - scripts/test-phase-c-contract.ts: 96/96 PASS (pure + SSR smoke, không DB/API)
+  - scripts/test-phase-c-contract.ts: 108/108 PASS (pure + SSR smoke, không DB/API)
   - npx tsc --noEmit: PASS
   - npx prisma validate: PASS
   - pnpm build: PASS (98 trang; warning jose/Edge và themeColor là warning sẵn có)
@@ -86,6 +86,7 @@ READY_FOR_INTEGRATION: PARTIAL — helper + target UI mock ready; target-only ch
 
 - `deriveActualState`: `recordState` + `coverage` + `displayState`; xử lý ENTRY/BASELINE/DERIVED, khóa báo cáo, không phát sinh, không áp dụng.
 - `deriveTargetState`: DRAFT/CONFIRMED/LOCKED/VOID/SUPERSEDED; khớp kỳ năm/quý/tháng.
+- `resolveOfficialFlag`: Q9 — `dataSource=REAL/DEMO` thắng `isOfficial`; không dùng regex nhãn.
 - `computePercent`: OFFICIAL/PREVIEW; chặn target thiếu/0/âm/DEMO/DRAFT, actual thiếu/partial/chưa xác nhận, lệch đơn vị, chiều chưa chốt, `PENDING_BUSINESS_INPUT`.
 - `aggregateClassifications`: không coi phân loại thiếu là 0.
 - `validateTargetDraft` + `canConfirmTarget` + `nextTargetStatus`: validation target, bắt buộc nguồn khi CONFIRMED, chuyển trạng thái Q2.
@@ -102,11 +103,11 @@ READY_FOR_INTEGRATION: PARTIAL — helper + target UI mock ready; target-only ch
 
 ### 3.3. Test
 
-`scripts/test-phase-c-contract.ts` — **PASS 96/96**:
+`scripts/test-phase-c-contract.ts` — **PASS 108/108**:
 
 - A1–A18: trạng thái dữ liệu, gồm DERIVED/BASELINE/LOCKED/coverage.
-- B1–B11: trạng thái target, gồm kỳ/void/superseded/DEMO.
-- C1–C26: tỷ lệ, zero denominator, partial, direction, preview.
+- B1–B16: trạng thái target, gồm kỳ/void/superseded/DEMO/dataSource.
+- C1–C31 (+C3a/C3b): tỷ lệ, zero denominator, partial, direction, preview, 2 chữ số half-up.
 - D1–D5: gộp phân loại.
 - E1–E17: validate target draft.
 - F1–F6: chuyển trạng thái target.
@@ -127,7 +128,10 @@ READY_FOR_INTEGRATION: PARTIAL — helper + target UI mock ready; target-only ch
 
 ## 5. Bước tiếp theo
 
-1. S2 công bố schema/contract target (Q3=A).
+Kế hoạch target-only sau B-C-2: `S3_TARGET_ONLY_IMPLEMENTATION_PLAN_2026-10-23.md`.
+Handoff trạng thái chờ: `S3_HANDOFF_B_C_2_WAIT_2026-10-23.md`.
+
+1. S2 công bố schema/contract B-C-2 (Q9/Q11 + D3/D4/D5).
 2. S3 rebase `codex/v3-phase-c-metrics` lên schema của S2.
 3. S3 làm **target-only**: API target, `/giao-ban/cau-hinh`, hiển thị trạng thái/lý do trên `/giao-ban` theo phân công S0.
 4. Chạy test tích hợp DB fixture + UI Desktop/Mobile; báo cáo `PRODUCTION_TOUCHED: NO`.
