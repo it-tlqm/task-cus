@@ -357,7 +357,7 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 
 | Session | Trạng thái 23/10/2026 | Branch thực tế | SHA mới nhất | Test/UAT | Chặn / quyết định | Ready merge? |
 |---|---|---|---|---|---|---|
-| S0 — Integration | Đã dựng worktree; đã merge Phase A vào integration; DB/port cách ly | `codex/v3-integration-yc01-13` | `a68d31e` (merge baseline); docs bootstrap đang commit | Cần chạy lại typecheck/build/regression sau merge | Chưa có lệnh release; xem runtime matrix | NO (chưa release) |
+| S0 — Integration | Đã dựng worktree; đã merge Phase A vào integration; DB/port cách ly | `codex/v3-integration-yc01-13` | `a68d31e` (merge baseline) + docs `c10c643` | Typecheck PASS, Prisma validate PASS, build PASS; Phase A 37/37, no-self 5/5, multi-product 36/36 | Chưa có lệnh release; xem runtime matrix | N/A — baseline đã tích hợp, chưa release |
 | S1 — Phase A QA | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `a68d31e` (base) | 255 check báo cáo trước đó; 2 bộ còn chặn | Rehearsal migration; fixture/storage; UAT | NO |
 | S2 — Phase B | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `a68d31e` (base) | Chưa implement | B1/B2: kỳ đối chiếu, quyền/nguồn lịch sử; contract B/C | NO |
 | S3 — Phase C | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_c`, port 3113 | `codex/v3-phase-c-metrics` | `a68d31e` (base) | Chưa implement | Chờ contract B/C; C1 chỉ tiêu/chu kỳ/chiều đánh giá | NO |
@@ -370,7 +370,7 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 | Thời điểm | Session/YC | Base → Head SHA | Commit nhận | Kiểm thử sau merge | Kết quả | Người xác minh |
 |---|---|---|---|---|---|---|
 | 23/10/2026 | Khởi tạo kế hoạch | — | — | — | Chưa có merge theo tài liệu này | — |
-| 23/10/2026 | S0 — Phase A baseline | `origin/main 4c7eb52` + Phase A `9534c6a` → `a68d31e` | `a68d31e` merge `--no-ff` | Đang chạy typecheck/build/regression trên DB integration | **PENDING** — chưa release | S0 |
+| 23/10/2026 | S0 — Phase A baseline | `origin/main 4c7eb52` + Phase A `9534c6a` → `a68d31e`; docs `c10c643` | `a68d31e` merge `--no-ff` | `tsc --noEmit` PASS; `prisma validate` PASS; `pnpm build` PASS; Phase A 37/37; no-self 5/5; multi-product 36/36 trên `talung_v3_fixture_integration` | **PASS baseline** — chưa release, 2 bộ test Phase A còn chặn theo báo cáo | S0 |
 
 ### Checklist phát hành cuối
 

@@ -8,7 +8,7 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `origin/main` + Phase A | 3100 | `talung_v3_integration` | Baseline ready |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `origin/main` + Phase A | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | Baseline ready — tests PASS |
 | S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `a68d31e` | 3111 | `talung_v3_phase_a_qa` | Ready for Phase A QA |
 | S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `a68d31e` | 3112 | `talung_v3_phase_b` | Ready, contract B/C pending |
 | S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `a68d31e` | 3113 | `talung_v3_phase_c` | Wait for B/C contract |
@@ -46,7 +46,18 @@ Ghi chú: baseline `a68d31e` là commit merge Phase A vào integration. Session 
 5. S3 / YC-06/07.
 6. S6 chỉ chuyển implementation sau quyết định chính thức.
 
-## 5. Điều kiện handoff
+## 5. Kết quả baseline S0
+
+- `npx tsc --noEmit`: PASS.
+- `npx prisma validate`: PASS.
+- `pnpm build`: PASS (Next.js 15.5.27, 98 trang).
+- `scripts/test-v3-phase-a-planning.ts`: **37/37 PASS**.
+- `scripts/test-v3-no-self-approval.ts`: **5/5 PASS**.
+- `scripts/test-v3-multi-product.ts`: **36/36 PASS**.
+- DB test: `talung_v3_fixture_integration`; không dùng Production.
+- Hai bộ Phase A vẫn chờ fixture/storage riêng: `test-yc23-25-api.ts` và `test-v3-evidence-adjustment.ts`; S1 xử lý theo gate, không hạ bảo mật.
+
+## 6. Điều kiện handoff
 
 Mỗi session gửi S0 theo mẫu mục 7 của master plan, kèm:
 - commit SHA, file changed, schema/migration;
