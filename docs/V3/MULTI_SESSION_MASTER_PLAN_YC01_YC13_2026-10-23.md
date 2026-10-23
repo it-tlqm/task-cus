@@ -357,10 +357,10 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 
 | Session | Trạng thái 23/10/2026 | Branch thực tế | SHA mới nhất | Test/UAT | Chặn / quyết định | Ready merge? |
 |---|---|---|---|---|---|---|
-| S0 — Integration | **Integration Manager**; đã merge S1/S2/S3-partial/S4/S5/S6 Phase1 | `codex/v3-integration-yc01-13` | `e80a24f` | Phase A 37/37, S4 40/40, no-self 5/5, review 38/38, YC37 25/25, e2e 40/40, S3 108+77, S2 43/43 + 17/17, S6 42/42 + 5/5 UI, roster 22/22; build PASS | S1 RC chưa freeze; D5 deferred B-C-3; S3 target-only đang chạy; Phase2/3 PENDING | N/A — không merge `main`/không release |
+| S0 — Integration | **Integration Manager**; đã merge S1/S2/S3/S4/S5/S6 Phase1 | `codex/v3-integration-yc01-13` | `ecfc555` | Phase A 37/37, S4 40/40, no-self 5/5, review 38/38, YC37 25/25, e2e 40/40, S3 contract 110/110 + mapping 80/80 + target API 26/26 + target UI 18/18, S2 43/43 + 17/17 (target tab mới), S6 42/42 + 40/40 + 5/5 UI, roster 22/22; tsc/build PASS | S1 RC chưa freeze; D5 deferred B-C-3; S6 Phase2/3 PENDING | N/A — không merge `main`/không release |
 | S1 — Phase A QA | **MERGED — release readiness**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `2953aea` | Báo cáo 313/313; S0 rerun Phase A 37/37; checklist RC đã merge | RC chưa freeze; Production DB/snapshot **BLOCKED_BY_PRODUCTION_ACCESS**; UAT/lệnh release | N/A — đã merge; release NO |
-| S2 — Phase B | **MERGED — B-C-2 Q9/Q11 PASS**; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `236f7fb` | S0 rerun 43/43 API + 17/17 UI; migration backfill verified; build PASS | B1/B2/C1 PENDING; D5 deferred B-C-3 (`direction`/`measureMode`/`baselineScope`) | N/A — đã merge |
-| S3 — Phase C | **READY_TARGET_ONLY**; B-C-2 đã merge; mapping/helper/UI mock đã merge | `codex/v3-phase-c-metrics` | `cb093f4` | Contract 108/108 + mapping 77/77; tsc/build PASS | Được làm target-only; D5 hiển thị pending, không tính % chính thức; rebase/merge integration trước khi code | NO — target-only chưa code |
+| S2 — Phase B | **MERGED — B-C-2 Q9/Q11 PASS**; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `236f7fb` | S0 rerun 43/43 API + 17/17 UI; UI target tab đã cập nhật theo S3 target-only; migration backfill verified; build PASS | B1/B2/C1 PENDING; D5 deferred B-C-3 (`direction`/`measureMode`/`baselineScope`) | N/A — đã merge |
+| S3 — Phase C | **MERGED — target-only D7=A**; B-C-2 đã merge; không schema/migration | `codex/v3-phase-c-metrics` | `7a25b6a` | S0 rerun contract 110/110, mapping 80/80, target API 26/26, target UI 18/18; tsc/build PASS | D5 vẫn DEFERRED_B_C_3; không tính % chính thức; B-C-3 chưa làm | N/A — đã merge target-only |
 | S4 — Task Approval | **MERGED — STANDBY**; không code thêm; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `56a8d68` | S0 rerun 40/40 + 5/5; review 38/38; YC37 25/25; e2e 40/40; sẵn sàng rerun khi S0 yêu cầu | E8/E9/E12 PENDING; không quality/team/stage/per-assignee; không merge main/không Production | N/A — đã merge, standby |
 | S5 — Roster | **MERGED — STANDBY**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `2bc645d` | Báo cáo 22/22 API + 24/24 UI; S0 rerun 22/22 + 24/24 | E13 PENDING: A0/A1/A2 ô trống, B0/B1 Excel, C0/C1/C2 đổi người; chưa code | N/A — đã merge, standby |
 | S6 — Business Spec | **PLAN MERGED**; docs + Phase 1 S4 review; không code trên nhánh spec | `codex/v3-approval-rules-spec` | `8242674` | Docs-only; S4 review + 3-phase plan/migration/test | Phase 1 **READY_FOR_PHASE1_BRANCH**; implementation branch đã tạo | N/A — plan merged |
@@ -389,6 +389,8 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 | 23/10/2026 | S6-Impl — Phase 1 branch | `54d8c8c` | Worktree `D:\thanhnx\OpenCode\talung-approval-impl`, DB `talung_v3_approval_impl`, port 3116 | Base tsc PASS; chưa code | **BRANCH CREATED** | S0 |
 | 23/10/2026 | S2 — B-C-2 Q9/Q11 | `207dcfc` → `236f7fb` | `352f078` merge `--no-ff` | S0 rerun 43/43 API + 17/17 UI; migration applied to fixture_integration, 49 DEMO targets/47 baselines/622 entries; build PASS | **MERGED** — D5 deferred B-C-3 | S0 |
 | 23/10/2026 | S6-Impl — Phase 1 YC-09 | `54d8c8c` → `722d892` | `e80a24f` merge `--no-ff` | 42/42 per-person; 40/40 hardening; 5/5 no-self; 38/38 review; 25/25 YC37; 36/36 YC38 submit; 15/15 locked; 40/40 e2e; 10/10 transitions; 5/5 UI; build PASS | **MERGED — Phase 1** | S0 |
+| 23/10/2026 | S3 — target-only D7=A | `75e5fae` → `7a25b6a` | `f46bd01` merge `--no-ff` | S0 rerun contract 110/110 + mapping 80/80 + target API 26/26 + target UI 18/18; tsc/build PASS; không schema/migration | **MERGED — target-only**; D5 deferred B-C-3 | S0 |
+| 23/10/2026 | S2 — UI target tab sau S3 | `f46bd01` → `ecfc555` | `ecfc555` test commit | Cập nhật selector/nội dung target tab; S0 rerun S2 UI 17/17 | **PASS** — không hạ coverage S2 | S0 |
 | 23/10/2026 | S2 — Phase B | `6cacc50` → `207dcfc` | Chưa merge | S2 34/34 + 14/14 báo cáo; S0 thấy contract lệch Q9/Q11 | **BLOCKED** — sửa `isOfficial/dataSource` và 2 chữ số trước | S0 |
 
 > **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `50daed3` (master + runtime matrix + assignment cards + baseline results + start signal). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
@@ -397,7 +399,9 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 >
 > **Review handoff S3/S6:** S0 đã nhận, không merge code. S3 đạt 43/43 pure test + tsc, không schema/API, giữ `WAIT_CONTRACT`. S6 hoàn tất spec docs-only, chờ E9/E10/E11. Quyết định đã được chủ dự án chấp thuận: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
 >
-> **S2 blocker:** B-C-1 hiện lệch Q9 (dùng nhãn `[DEMO]` thay vì `isOfficial/dataSource`) và Q11 (API 1 chữ số thay vì 2). Không merge S2 `207dcfc`; chi tiết: `docs/V3/S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md`.
+> **S2 blocker (đã xử lý):** B-C-1 từng lệch Q9 (dùng nhãn `[DEMO]` thay vì `isOfficial/dataSource`) và Q11 (API 1 chữ số thay vì 2). Đã sửa và merge tại `352f078`; S2 UI 17/17 sau khi S3 thay target tab. Không merge `main`, không Production.
+>
+> **S3 target-only:** đã merge `f46bd01` (head `7a25b6a`), contract 110/110 + mapping 80/80 + target API 26/26 + target UI 18/18. D5 vẫn `DEFERRED_B_C_3`; không tính % chính thức.
 
 ### Checklist phát hành cuối
 

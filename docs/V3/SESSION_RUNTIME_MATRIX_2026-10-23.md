@@ -8,13 +8,13 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `e80a24f` + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline + merges PASS |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `ecfc555` + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline + merges PASS |
 | S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `2953aea` | 3111 | `talung_v3_phase_a_qa` | **MERGED — release readiness**; RC chưa freeze; production access blocked |
-| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `236f7fb` | 3112 | `talung_v3_phase_b` | **MERGED** — Q9/Q11 PASS; D5 deferred B-C-3 |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `cb093f4` | 3113 | `talung_v3_phase_c` | **TARGET_ONLY IN PROGRESS** — B-C-2 merged; D5 pending |
+| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `236f7fb` | 3112 | `talung_v3_phase_b` | **MERGED** — Q9/Q11 PASS; S2 UI 17/17 sau S3 target tab; D5 deferred B-C-3 |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `7a25b6a` | 3113 | `talung_v3_phase_c` | **MERGED — target-only D7=A**; D5 pending B-C-3 |
 | S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED — STANDBY** — không code thêm |
 | S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED — STANDBY** — E13 PENDING |
-| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `8242674` | — | — | **PLAN MERGED** — Phase 1 ready |
+| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `8242674` | — | — | **PLAN MERGED** — Phase 1 merged; Phase 2/3 PENDING |
 | S6-Impl | `D:\thanhnx\OpenCode\talung-approval-impl` | `codex/v3-approval-phase1` | `722d892` | 3116 | `talung_v3_approval_impl` | **MERGED — Phase 1**; Phase 2/3 PENDING |
 
 Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. Không có thay đổi schema/API trong S3/S6.
@@ -78,8 +78,9 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 
 | Session | HEAD | Phạm vi | Kết quả S0 | Merge? |
 |---|---|---|---|---|
-| S3 | `860c10a` | Helper + target UI mock + target-only plan; không schema/API | **108/108 PASS**, tsc/build PASS; **WAIT_B_C_2** | **YES — plan/helper**; target-only chờ S2 |
-| S6 | `21c37ae` | Docs-only; spec + implementation/migration/test plan | **PLAN MERGED** | **YES — docs/plan**; code chờ nhánh implementation |
+| S3 | `7a25b6a` | Target-only service/API/UI (D7=A); không schema/migration | **110/110 + 80/80 + 26/26 + 18/18 PASS**, tsc/build PASS | **YES — target-only** `f46bd01`; D5 pending B-C-3 |
+| S6 | `8242674` | Docs-only; spec + 3-phase plan | **PLAN MERGED** | **YES — docs/plan** |
+| S6-Impl | `722d892` | Phase 1 participant results/snapshots/approval integration | **42/42 + 40/40 + 5/5 + … PASS** | **YES — Phase 1** `e80a24f`; Phase 2/3 PENDING |
 
 Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
 
@@ -92,7 +93,7 @@ Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
 | S4 | `56a8d68` | S0 rerun hardening 40/40 + no-self 5/5 | **MERGED** `5d5c299` |
 | S5 | `2bc645d` | S0 rerun API 22/22 + UI 24/24 | **MERGED** `532c3f6` |
 
-S2 blocker chi tiết: xem `docs/V3/S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md` và `docs/V3/S0_DECISION_LOG_2026-10-23.md` mục 1.2.
+S2 blocker chi tiết: xem `docs/V3/S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md` và `docs/V3/S0_DECISION_LOG_2026-10-23.md` mục 1.2. Blocker đã xử lý tại `352f078` (B-C-2 Q9/Q11); S2 UI 17/17 sau khi S3 thay target tab.
 
 ## 9. Điều kiện handoff
 
