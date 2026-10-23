@@ -357,13 +357,13 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 
 | Session | Trạng thái 23/10/2026 | Branch thực tế | SHA mới nhất | Test/UAT | Chặn / quyết định | Ready merge? |
 |---|---|---|---|---|---|---|
-| S0 — Integration | Đã dựng worktree; đã merge Phase A vào integration; DB/port cách ly | `codex/v3-integration-yc01-13` | `a68d31e` (merge baseline) + docs `c10c643` | Typecheck PASS, Prisma validate PASS, build PASS; Phase A 37/37, no-self 5/5, multi-product 36/36 | Chưa có lệnh release; xem runtime matrix | N/A — baseline đã tích hợp, chưa release |
-| S1 — Phase A QA | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `a68d31e` (base) | 255 check báo cáo trước đó; 2 bộ còn chặn | Rehearsal migration; fixture/storage; UAT | NO |
-| S2 — Phase B | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `a68d31e` (base) | Chưa implement | B1/B2: kỳ đối chiếu, quyền/nguồn lịch sử; contract B/C | NO |
-| S3 — Phase C | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_c`, port 3113 | `codex/v3-phase-c-metrics` | `a68d31e` (base) | Chưa implement | Chờ contract B/C; C1 chỉ tiêu/chu kỳ/chiều đánh giá | NO |
-| S4 — Task Approval | Worktree riêng đã sẵn sàng; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `a68d31e` (base) | Chưa implement | E8/E9/E12; không quality/team/stage/per-assignee | NO |
-| S5 — Roster | Worktree riêng đã sẵn sàng; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `a68d31e` (base) | Chưa implement | E13: notes ô trống, in Excel, giữ đổi người | NO |
-| S6 — Business Spec | Worktree riêng đã sẵn sàng; SPEC ONLY, không DB | `codex/v3-approval-rules-spec` | `a68d31e` (base) | N/A | E9/E10/E11 | NO |
+| S0 — Integration | Đã dựng worktree; đã merge Phase A; đã phát hành assignment cards; DB/port cách ly | `codex/v3-integration-yc01-13` | `a68d31e` (merge baseline) + docs `c10c643`, `1b856f1`, `7061abf` | Typecheck PASS, Prisma validate PASS, build PASS; Phase A 37/37, no-self 5/5, multi-product 36/36 | Chưa có lệnh release; xem runtime matrix | N/A — baseline đã tích hợp, chưa release |
+| S1 — Phase A QA | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `7061abf` (base) | 255 check báo cáo trước đó; 2 bộ còn chặn | Rehearsal migration; fixture/storage; UAT | NO |
+| S2 — Phase B | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `7061abf` (base) | Chưa implement | B1/B2: kỳ đối chiếu, quyền/nguồn lịch sử; contract B/C | NO |
+| S3 — Phase C | Worktree riêng đã sẵn sàng; DB `talung_v3_phase_c`, port 3113 | `codex/v3-phase-c-metrics` | `7061abf` (base) | Chưa implement | Chờ contract B/C; C1 chỉ tiêu/chu kỳ/chiều đánh giá | NO |
+| S4 — Task Approval | Worktree riêng đã sẵn sàng; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `7061abf` (base) | Chưa implement | E8/E9/E12; không quality/team/stage/per-assignee | NO |
+| S5 — Roster | Worktree riêng đã sẵn sàng; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `7061abf` (base) | Chưa implement | E13: notes ô trống, in Excel, giữ đổi người | NO |
+| S6 — Business Spec | Worktree riêng đã sẵn sàng; SPEC ONLY, không DB | `codex/v3-approval-rules-spec` | `7061abf` (base) | N/A | E9/E10/E11 | NO |
 
 ### Nhật ký tích hợp (S0 điền sau, không xóa lịch sử)
 
@@ -371,6 +371,8 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 |---|---|---|---|---|---|---|
 | 23/10/2026 | Khởi tạo kế hoạch | — | — | — | Chưa có merge theo tài liệu này | — |
 | 23/10/2026 | S0 — Phase A baseline | `origin/main 4c7eb52` + Phase A `9534c6a` → `a68d31e`; docs `c10c643` | `a68d31e` merge `--no-ff` | `tsc --noEmit` PASS; `prisma validate` PASS; `pnpm build` PASS; Phase A 37/37; no-self 5/5; multi-product 36/36 trên `talung_v3_fixture_integration` | **PASS baseline** — chưa release, 2 bộ test Phase A còn chặn theo báo cáo | S0 |
+
+> **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `7061abf` (master + runtime matrix + assignment cards). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
 
 ### Checklist phát hành cuối
 
