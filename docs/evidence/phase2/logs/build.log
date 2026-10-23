@@ -1,0 +1,308 @@
+pnpm.exe : $ prisma generate && next build
+At C:\Users\thanhnx\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ($ prisma generate && next build:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Γ£ö Generated Prisma Client (v6.19.3) to .\node_modules\.pnpm\@prisma+client@6.19.3_prism_1d040ab5215f59f0e27ddee7f0cf082e\node_modules\@prisma\client in 343ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+   Γû▓ Next.js 15.5.27
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     ┬╖ middlewareClientMaxBodySize: "25mb"
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 14.9s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/99) ...
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban/cau-hinh. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /leaves. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /meetings. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/organization. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /approvals. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /my-work. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/feedback. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/supervisions. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/system. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /calendar. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/audit. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/forms. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /docs. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/catalog. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /products. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/excel. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/excel. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/snapshots. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/snapshots. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /monthly-results. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /routine. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /change-password. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /roster. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /tasks. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/permissions. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban/bao-cao. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /huong-dan. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /work-item-reviews. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /plans. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /notifications. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban/nhap. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (24/99) 
+   Generating static pages (49/99) 
+   Generating static pages (74/99) 
+ Γ£ô Generating static pages (99/99)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                     Size  First Load JS
+Γöî Γùï /                                                          173 B         124 kB
+Γö£ Γùï /_not-found                                                999 B         104 kB
+Γö£ Γùï /admin                                                     390 B         103 kB
+Γö£ Γùï /admin/audit                                             3.41 kB         109 kB
+Γö£ Γùï /admin/catalog                                           16.1 kB         122 kB
+Γö£ Γùï /admin/feedback                                          4.79 kB         107 kB
+Γö£ Γùï /admin/forms                                             5.22 kB         111 kB
+Γö£ Γùï /admin/organization                                      12.7 kB         115 kB
+Γö£ Γùï /admin/permissions                                       5.81 kB         108 kB
+Γö£ Γùï /admin/supervisions                                      3.39 kB         106 kB
+Γö£ Γùï /admin/system                                            8.01 kB         114 kB
+Γö£ ╞Æ /api/admin/audit                                           390 B         103 kB
+Γö£ ╞Æ /api/admin/forms                                           390 B         103 kB
+Γö£ ╞Æ /api/admin/permissions                                     390 B         103 kB
+Γö£ ╞Æ /api/admin/system/config                                   390 B         103 kB
+Γö£ ╞Æ /api/admin/system/env-status                               390 B         103 kB
+Γö£ ╞Æ /api/admin/system/overview                                 390 B         103 kB
+Γö£ ╞Æ /api/admin/system/purge-storage                            390 B         103 kB
+Γö£ ╞Æ /api/ai                                                    390 B         103 kB
+Γö£ ╞Æ /api/approvals/[caseType]/[id]/decision                    390 B         103 kB
+Γö£ ╞Æ /api/approvals/[caseType]/[id]/preview                     390 B         103 kB
+Γö£ ╞Æ /api/approvals/[caseType]/[id]/quality-adjustments         390 B         103 kB
+Γö£ ╞Æ /api/approvals/[caseType]/[id]/response                    390 B         103 kB
+Γö£ ╞Æ /api/approvals/cases                                       390 B         103 kB
+Γö£ ╞Æ /api/approvals/quality-adjustments/[id]/decision           390 B         103 kB
+Γö£ ╞Æ /api/auth/change-password                                  390 B         103 kB
+Γö£ ╞Æ /api/auth/login                                            390 B         103 kB
+Γö£ ╞Æ /api/auth/logout                                           390 B         103 kB
+Γö£ ╞Æ /api/auth/me                                               390 B         103 kB
+Γö£ ╞Æ /api/catalog/groups                                        390 B         103 kB
+Γö£ ╞Æ /api/catalog/groups/[id]                                   390 B         103 kB
+Γö£ ╞Æ /api/catalog/templates                                     390 B         103 kB
+Γö£ ╞Æ /api/catalog/templates/[id]                                390 B         103 kB
+Γö£ ╞Æ /api/dashboard/kpi                                         390 B         103 kB
+Γö£ ╞Æ /api/department-work-items                                 390 B         103 kB
+Γö£ ╞Æ /api/docs                                                  390 B         103 kB
+Γö£ ╞Æ /api/evaluation-export                                     390 B         103 kB
+Γö£ ╞Æ /api/evaluations                                           390 B         103 kB
+Γö£ ╞Æ /api/evidence-adjustments                                  390 B         103 kB
+Γö£ ╞Æ /api/evidence-adjustments/[id]                             390 B         103 kB
+Γö£ ╞Æ /api/feedback                                              390 B         103 kB
+Γö£ ╞Æ /api/feedback/[id]                                         390 B         103 kB
+Γö£ ╞Æ /api/health                                                390 B         103 kB
+Γö£ ╞Æ /api/leaves                                                390 B         103 kB
+Γö£ ╞Æ /api/meetings                                              390 B         103 kB
+Γö£ ╞Æ /api/meetings/[id]                                         390 B         103 kB
+Γö£ ╞Æ /api/metrics/admin                                         390 B         103 kB
+Γö£ ╞Æ /api/metrics/entries                                       390 B         103 kB
+Γö£ ╞Æ /api/metrics/report                                        390 B         103 kB
+Γö£ ╞Æ /api/metrics/summary                                       390 B         103 kB
+Γö£ ╞Æ /api/metrics/targets                                       390 B         103 kB
+Γö£ ╞Æ /api/metrics/targets/[id]                                  390 B         103 kB
+Γö£ ╞Æ /api/metrics/targets/[id]/revisions                        390 B         103 kB
+Γö£ ╞Æ /api/monthly-export                                        390 B         103 kB
+Γö£ ╞Æ /api/monthly-results                                       390 B         103 kB
+Γö£ ╞Æ /api/narratives                                            390 B         103 kB
+Γö£ ╞Æ /api/notifications                                         390 B         103 kB
+Γö£ ╞Æ /api/notifications/[id]                                    390 B         103 kB
+Γö£ ╞Æ /api/notifications/[id]/dismiss                            390 B         103 kB
+Γö£ ╞Æ /api/notifications/[id]/read                               390 B         103 kB
+Γö£ ╞Æ /api/notifications/read-all                                390 B         103 kB
+Γö£ ╞Æ /api/org-units/[id]                                        390 B         103 kB
+Γö£ ╞Æ /api/org-units/tree                                        390 B         103 kB
+Γö£ ╞Æ /api/people                                                390 B         103 kB
+Γö£ ╞Æ /api/people/[id]                                           390 B         103 kB
+Γö£ ╞Æ /api/people/[id]/account                                   390 B         103 kB
+Γö£ ╞Æ /api/people/[id]/account/reset-password                    390 B         103 kB
+Γö£ ╞Æ /api/people/[id]/account/status                            390 B         103 kB
+Γö£ ╞Æ /api/people/[id]/transfer                                  390 B         103 kB
+Γö£ ╞Æ /api/personal-work-items                                   390 B         103 kB
+Γö£ ╞Æ /api/personal-work-items/[id]/review                       390 B         103 kB
+Γö£ ╞Æ /api/personal-work-items/review-queue                      390 B         103 kB
+Γö£ ╞Æ /api/plans                                                 390 B         103 kB
+Γö£ ╞Æ /api/plans/[id]/items                                      390 B         103 kB
+Γö£ ╞Æ /api/plans/[id]/workflow                                   390 B         103 kB
+Γö£ ╞Æ /api/plans/options                                         390 B         103 kB
+Γö£ ╞Æ /api/positions                                             390 B         103 kB
+Γö£ ╞Æ /api/positions/[id]                                        390 B         103 kB
+Γö£ ╞Æ /api/products                                              390 B         103 kB
+Γö£ ╞Æ /api/push/subscribe                                        390 B         103 kB
+Γö£ ╞Æ /api/reports/export                                        390 B         103 kB
+Γö£ ╞Æ /api/reports/snapshots                                     390 B         103 kB
+Γö£ ╞Æ /api/reports/snapshots/[id]                                390 B         103 kB
+Γö£ ╞Æ /api/reports/snapshots/[id]/verify                         390 B         103 kB
+Γö£ ╞Æ /api/reports/summary                                       390 B         103 kB
+Γö£ ╞Æ /api/roles                                                 390 B         103 kB
+Γö£ ╞Æ /api/rosters                                               390 B         103 kB
+Γö£ ╞Æ /api/rosters/day-info                                      390 B         103 kB
+Γö£ ╞Æ /api/rosters/export                                        390 B         103 kB
+Γö£ ╞Æ /api/rosters/positions                                     390 B         103 kB
+Γö£ ╞Æ /api/routine                                               390 B         103 kB
+Γö£ ╞Æ /api/routine/[id]/submit                                   390 B         103 kB
+Γö£ ╞Æ /api/scoring                                               390 B         103 kB
+Γö£ ╞Æ /api/scoring/leader                                        390 B         103 kB
+Γö£ ╞Æ /api/supervisions                                          390 B         103 kB
+Γö£ ╞Æ /api/tasks                                                 390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]                                            390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/attachments                                390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/attachments/[attachmentId]/file            390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/comments                                   390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/comments/reactions                         390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/deadline-request                           390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/deadline-request/[reqId]/review            390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/participant-results                        390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/participant-results/[personId]/decision    390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/progress                                   390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/remind                                     390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/submit-overall                             390 B         103 kB
+Γö£ ╞Æ /api/tasks/[id]/updates                                    390 B         103 kB
+Γö£ ╞Æ /api/work-catalog                                          390 B         103 kB
+Γö£ ╞Æ /api/work-catalog/entries/[id]                             390 B         103 kB
+Γö£ ╞Æ /api/work-catalog/import                                   390 B         103 kB
+Γö£ ╞Æ /api/work-catalog/mappings                                 390 B         103 kB
+Γö£ ╞Æ /api/work-catalog/suggest                                  390 B         103 kB
+Γö£ ╞Æ /api/work-catalog/versions                                 390 B         103 kB
+Γö£ ╞Æ /api/work-evidence                                         390 B         103 kB
+Γö£ ╞Æ /api/work-evidence/[id]                                    390 B         103 kB
+Γö£ ╞Æ /api/work-evidence/[id]/file                               390 B         103 kB
+Γö£ ╞Æ /api/work-item-products                                    390 B         103 kB
+Γö£ ╞Æ /api/work-item-products/[id]                               390 B         103 kB
+Γö£ Γùï /approvals                                               13.5 kB         116 kB
+Γö£ Γùï /calendar                                                3.19 kB         109 kB
+Γö£ Γùï /change-password                                         2.73 kB         105 kB
+Γö£ Γùï /dashboard                                                 172 B         124 kB
+Γö£ Γùï /docs                                                    5.32 kB         111 kB
+Γö£ Γùï /giao-ban                                                5.92 kB         116 kB
+Γö£ Γùï /giao-ban/bao-cao                                        5.95 kB         112 kB
+Γö£ Γùï /giao-ban/cau-hinh                                       23.5 kB         126 kB
+Γö£ Γùï /giao-ban/nhap                                           6.27 kB         112 kB
+Γö£ Γùï /huong-dan                                                7.2 kB         113 kB
+Γö£ Γùï /leaves                                                  4.66 kB         107 kB
+Γö£ Γùï /login                                                   5.71 kB         108 kB
+Γö£ Γùï /meetings                                                3.43 kB         109 kB
+Γö£ ╞Æ /meetings/[id]                                           2.76 kB         112 kB
+Γö£ Γùï /monthly-results                                           13 kB         116 kB
+Γö£ Γùï /my-work                                                 25.4 kB         143 kB
+Γö£ Γùï /notifications                                           5.08 kB         111 kB
+Γö£ Γùï /plans                                                   23.8 kB         134 kB
+Γö£ Γùï /products                                                3.02 kB         106 kB
+Γö£ Γùï /reports                                                 17.9 kB         124 kB
+Γö£ Γùï /reports/excel                                             390 B         103 kB
+Γö£ Γùï /reports/snapshots                                         390 B         103 kB
+Γö£ Γùï /roster                                                  16.7 kB         119 kB
+Γö£ Γùï /routine                                                 11.1 kB         114 kB
+Γö£ Γùï /tasks                                                   8.65 kB         122 kB
+Γö£ ╞Æ /tasks/[id]                                                15 kB         124 kB
+Γöö Γùï /work-item-reviews                                       5.39 kB         112 kB
++ First Load JS shared by all                                 103 kB
+  Γö£ chunks/5767-751a17dc770025ec.js                          46.4 kB
+  Γö£ chunks/dade46cd-a740d24e8d912efb.js                      54.2 kB
+  Γöö other shared chunks (total)                              2.01 kB
+
+
+╞Æ Middleware                                                 39.7 kB
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
