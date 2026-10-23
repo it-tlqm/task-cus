@@ -4,7 +4,7 @@
 **Session:** S2 — Phase B  
 **Branch:** `codex/v3-phase-b-revenue`  
 **HEAD review:** `207dcfc`  
-**Trạng thái:** **BLOCKED_BY_CONTRACT_ALIGNMENT** — chưa merge vào integration.
+**Trạng thái:** **RESOLVED Q9/Q11 — ĐÃ MERGE `352f078`.** D5 (`direction`/`measureMode`/`baselineScope`) được chuyển sang **DEFERRED_B_C_3**; S3 target-only được phép nhưng không tính % chính thức cho tới khi B-C-3.
 
 S0 đã đọc handoff, contract `B-C-1`, schema/migration và code S2. Phần lớn YC-01/02 đúng hướng, nhưng còn **2 điểm lệch quyết định đã được chủ dự án phê duyệt**; phải sửa trước khi merge.
 

@@ -42,7 +42,7 @@
 |---|---|
 | **D3** | B-C-2/DB/API **giữ `PROPOSED`**; S3 map nội bộ/UI sang `DRAFT` (nhãn “Dự thảo”). Không đổi tên schema/status chỉ để đồng nhất hiển thị. |
 | **D4** | B-C-2 giữ `comparisonKind` tường minh (`BTC_YEAR`/`UBND_YEAR`/`MONTH_PLAN`); S3 map sang `labelCode` (`BTC`/`UBND`/`KH_THANG`). **Không dùng regex nhãn**. |
-| **D5** | B-C-2 phải cung cấp tường minh: `direction` trên target (`HIGHER_IS_BETTER`/`LOWER_IS_BETTER`/`NEUTRAL`/`NOT_SET`) và `measureMode`/`baselineScope` cho metric/baseline. S2 đề xuất field vật lý/read-model trong B-C-2; S0 review. S3 không suy từ `valueKind`/tên. C1 vẫn PENDING. |
+| **D5** | **DEFERRED_B_C_3:** B-C-2 hiện chưa có `direction`/`measureMode`/`baselineScope`. S3 được phép làm target-only cho lifecycle/status/amount/source/comparisonKind/dataSource; các trường D5 hiển thị “chưa có quy tắc”, **không tính % chính thức**. S2 bổ sung B-C-3 trước khi bật D5. Không tự suy từ `valueKind`/tên; C1 vẫn PENDING. |
 | **D6** | S2 seed/kiểm tra `metrics.config` và `metrics.entry_all`; assignment `canEnter`/`canConfirm`; `SYSTEM_ADMIN` không mặc nhiên; không `system.config`. |
 | **D7** | **D7=A:** S3 sở hữu service/route target-only mới (`src/server/metric-targets.ts`, `/api/metrics/targets/*`). S2 sở hữu schema và `src/server/metrics.ts`. S3 không sửa `/api/metrics/admin`, `/api/metrics/summary`, `/api/metrics/entries`, Dashboard. |
 | **D8** | Mọi create/update/confirm/lock/void target ghi revision + audit old/new/status/source; lưu proposed/confirmed/locked by/at. |
