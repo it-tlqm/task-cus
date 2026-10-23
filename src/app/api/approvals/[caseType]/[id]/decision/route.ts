@@ -46,6 +46,7 @@ export async function POST(
       action: action as "AGREE" | "REJECT" | "CLARIFY",
       reason: body.reason ?? null,
       content: body.content ?? null,
+      qualityPercent: body.qualityPercent,
       returnPersonIds: Array.isArray(body.returnPersonIds)
         ? body.returnPersonIds.filter((x: any) => typeof x === "string")
         : [],

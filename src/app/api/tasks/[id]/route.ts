@@ -15,6 +15,7 @@ import { reopenApprovalCaseOnResubmit, decideApproval, getTaskApprovalSummaries 
 import { ParticipantError, submitOverallResult } from "@/server/task-participant";
 import { toClientAttachments } from "@/server/attachments";
 import { createNotification } from "@/server/notifications";
+import { isApprovalQualityEnabled } from "@/server/approval-quality";
 
 export async function GET(
   req: NextRequest,
@@ -300,7 +301,7 @@ export async function GET(
     timeline.sort((x, y) => new Date(y.at).getTime() - new Date(x.at).getTime());
 
     // YC-08: projection quyết định duyệt gần nhất (badge/người/thời gian/lý do)
-    const approvalSummaries = await getTaskApprovalSummaries([taskId]);
+    const approvalSummaries = await getTaskApprovalSummaries([taskId], user);
 
     return NextResponse.json({
       success: true,
@@ -311,7 +312,8 @@ export async function GET(
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
         approval: approvalSummaries.get(taskId) ?? null,
-    // YC-38 UAT fix: thong tin danh muc TX kem theo (ma, ten, he so)
+        qualityEnabled: isApprovalQualityEnabled(),
+        // YC-38 UAT fix: thong tin danh muc TX kem theo (ma, ten, he so)
     txSource: (() => {
       const ce = (task as any).workItem?.catalogEntry;
       if (!ce) return null;
@@ -365,6 +367,7 @@ export async function PATCH(
       assigneeIds,
       cancelReason,
       notes,
+      qualityPercent,
     } = body;
 
     const currentTask = access.task;
@@ -406,6 +409,7 @@ export async function PATCH(
         action: decision,
         reason: decisionReason,
         content: decisionContent,
+        qualityPercent,
       });
       if (!result.success) {
         return NextResponse.json(

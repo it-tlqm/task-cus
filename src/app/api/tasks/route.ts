@@ -556,6 +556,7 @@ export async function PATCH(req: NextRequest) {
       issueNotes,
       assigneeIds,
       reason,
+      qualityPercent,
     } = body;
 
     if (!id) {
@@ -598,6 +599,7 @@ export async function PATCH(req: NextRequest) {
         action: decision,
         reason: decisionReason,
         content: decisionContent,
+        qualityPercent,
       });
       if (!result.success) {
         return NextResponse.json(
