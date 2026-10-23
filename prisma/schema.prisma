@@ -120,6 +120,7 @@ model Person {
   taskUpdateSubjects TaskUpdate[] @relation("TaskUpdateSubject")
   qualityAdjustmentsRequested ApprovalQualityAdjustment[] @relation("QualityAdjustmentRequester")
   qualityAdjustmentsDecided   ApprovalQualityAdjustment[] @relation("QualityAdjustmentDecider")
+  createdRouteSnapshots ApprovalRouteSnapshot[] @relation("RouteSnapshotCreator")
   @@map("people")
 }
 
@@ -686,6 +687,7 @@ model Task {
   participantResults TaskParticipantResult[]
   participantEvents TaskParticipantEvent[]
   submissionSnapshots TaskSubmissionSnapshot[]
+  routeSnapshots ApprovalRouteSnapshot[]
   @@index([workItemId])
   workItems        PersonalWorkItem[] @relation("WorkItemTask")
 
@@ -1999,6 +2001,7 @@ model ApprovalCase {
 
   decisions ApprovalDecision[]
   qualityAdjustments ApprovalQualityAdjustment[]
+  routeSnapshots ApprovalRouteSnapshot[]
 
   @@unique([caseType, resourceId])
   @@index([status, createdAt])
@@ -2069,4 +2072,33 @@ model ApprovalQualityAdjustment {
   @@index([caseId, requestedAt])
   @@index([status, requestedAt])
   @@map("approval_quality_adjustments")
+}
+
+// ----------------------------------------------------
+// YC-11 Phase 3 - ANH CHUP TUYEN PRE-CHECK / FINAL
+// - Ghi 1 lan khi chu tri nop ket qua chung (sau khi cac phan duoc pre-check).
+// - Tuyen doi sau do KHONG viet lai snapshot.
+// - Legacy case khong co snapshot => final-only.
+// ----------------------------------------------------
+
+model ApprovalRouteSnapshot {
+  id          String   @id @default(uuid())
+  taskId      String   @map("task_id")
+  /// ApprovalCase chi duoc tao o lan quyet dinh dau (S4); nullable tai thoi diem nop.
+  caseId      String?  @map("case_id")
+  round       Int
+  /// READY | WAITING_ASSIGNMENT | CYCLE | AMBIGUOUS
+  routeStatus String   @map("route_status")
+  routeJson   Json     @map("route_json")
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  task      Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  case      ApprovalCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  createdBy Person?       @relation("RouteSnapshotCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([taskId, round])
+  @@index([taskId, createdAt])
+  @@index([caseId])
+  @@map("approval_route_snapshots")
 }
