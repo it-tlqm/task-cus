@@ -105,6 +105,8 @@ interface TaskItem {
     decidedByName: string | null;
     decidedAt: string | null;
   } | null;
+  // YC-10: bắt buộc chọn mức chất lượng khi duyệt AGREE (flag server-side).
+  qualityEnabled?: boolean;
 }
 
 export default function MyWorkPage() {
@@ -198,7 +200,7 @@ export default function MyWorkPage() {
   const [isCreatingPersonal, setIsCreatingPersonal] = useState(false);
 
   // Lãnh đạo + Trưởng nhóm: sửa giao việc và duyệt ngay trên mobile
-  const { canApprove } = usePermissions();
+  const { canApprove, user: permUser } = usePermissions();
   const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
   const [editTask, setEditTask] = useState<TaskItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -208,6 +210,11 @@ export default function MyWorkPage() {
   const [editPriority, setEditPriority] = useState("Cao");
   const [editSaving, setEditSaving] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  // YC-10 Phase 2b: quick approve phải chọn quality khi flag bật (không còn 422 dead-end).
+  const [qualityEnabled, setQualityEnabled] = useState(false);
+  const [quickApproveTask, setQuickApproveTask] = useState<TaskItem | null>(null);
+  const [quickApproveQuality, setQuickApproveQuality] = useState("");
+  const [quickApproveBusy, setQuickApproveBusy] = useState(false);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -290,6 +297,9 @@ export default function MyWorkPage() {
         const json = await res.json();
         const data = Array.isArray(json) ? json : json.data || [];
         setTasks((prev) => (opts?.append ? [...prev, ...data] : data));
+        setQualityEnabled(
+          Boolean(json.qualityEnabled ?? data.some((t: TaskItem) => t.qualityEnabled))
+        );
         setPage(p);
         setTotalPages(json.pagination?.totalPages || 1);
         setTotalCount(json.pagination?.total ?? data.length);
@@ -650,27 +660,63 @@ export default function MyWorkPage() {
   };
 
   // Lãnh đạo/Trưởng nhóm: duyệt hoàn thành ngay trên mobile (chỉ khi chờ duyệt)
-  const handleApproveTask = async (task: TaskItem) => {
-    if (approvingId) return;
-    if (!confirm(`Duyệt hoàn thành nhiệm vụ [${task.code}] ${task.title}?`)) return;
+  const performApproveTask = async (
+    task: TaskItem,
+    qualityPercent: number | null
+  ): Promise<boolean> => {
+    if (approvingId) return false;
     setApprovingId(task.id);
     try {
       const res = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: task.id, action: "CONFIRM_COMPLETION" }),
+        body: JSON.stringify({
+          id: task.id,
+          action: "CONFIRM_COMPLETION",
+          ...(qualityPercent !== null ? { qualityPercent } : {}),
+        }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
         toast.success("Đã duyệt hoàn thành nhiệm vụ!");
         await fetchTasks();
-      } else {
-        toast.error(json.error || "Không thể duyệt nhiệm vụ");
+        return true;
       }
+      toast.error(json.error || "Không thể duyệt nhiệm vụ");
+      return false;
     } catch (err: any) {
       toast.error("Lỗi: " + err.message);
+      return false;
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const handleApproveTask = (task: TaskItem) => {
+    if (approvingId) return;
+    // Khi flag YC-10 bật: mở modal chọn quality thay vì gửi thiếu (tránh 422).
+    if (qualityEnabled || task.qualityEnabled) {
+      setQuickApproveTask(task);
+      setQuickApproveQuality("");
+      return;
+    }
+    if (!confirm(`Duyệt hoàn thành nhiệm vụ [${task.code}] ${task.title}?`)) return;
+    void performApproveTask(task, null);
+  };
+
+  const handleQuickApproveConfirm = async () => {
+    if (!quickApproveTask || quickApproveBusy) return;
+    const value = Number(quickApproveQuality);
+    if (!quickApproveQuality || !Number.isFinite(value)) {
+      toast.error("Vui lòng chọn mức chất lượng kết quả (65–100, bước 5).");
+      return;
+    }
+    setQuickApproveBusy(true);
+    const ok = await performApproveTask(quickApproveTask, value);
+    setQuickApproveBusy(false);
+    if (ok) {
+      setQuickApproveTask(null);
+      setQuickApproveQuality("");
     }
   };
 
@@ -1244,17 +1290,30 @@ export default function MyWorkPage() {
                         <td className="py-3 px-space-md align-top text-right">
                           <div className="flex items-center justify-end gap-1.5 flex-wrap">
                             {isWaiting ? (
-                              <button
-                                onClick={(e) => handleSendReminder(task.id, e)}
-                                disabled={remindingTaskId === task.id}
-                                className="px-2.5 py-1 rounded bg-surface-subtle text-on-surface font-label-sm text-label-sm hover:bg-surface-container flex items-center gap-1 active-press disabled:opacity-50"
-                                title="Gửi thông báo nhắc Trưởng bộ phận phê duyệt"
-                              >
-                                <span className={`material-symbols-outlined text-[14px] ${remindingTaskId === task.id ? "animate-spin" : ""}`}>
-                                  {remindingTaskId === task.id ? "progress_activity" : "notifications_active"}
-                                </span>
-                                <span>{remindingTaskId === task.id ? "Đang gửi..." : "Nhắc duyệt"}</span>
-                              </button>
+                              <>
+                                <button
+                                  onClick={(e) => handleSendReminder(task.id, e)}
+                                  disabled={remindingTaskId === task.id}
+                                  className="px-2.5 py-1 rounded bg-surface-subtle text-on-surface font-label-sm text-label-sm hover:bg-surface-container flex items-center gap-1 active-press disabled:opacity-50"
+                                  title="Gửi thông báo nhắc Trưởng bộ phận phê duyệt"
+                                >
+                                  <span className={`material-symbols-outlined text-[14px] ${remindingTaskId === task.id ? "animate-spin" : ""}`}>
+                                    {remindingTaskId === task.id ? "progress_activity" : "notifications_active"}
+                                  </span>
+                                  <span>{remindingTaskId === task.id ? "Đang gửi..." : "Nhắc duyệt"}</span>
+                                </button>
+                                {canApprove && task.owner?.id !== permUser?.personId && (
+                                  <button
+                                    onClick={() => handleApproveTask(task)}
+                                    disabled={approvingId === task.id}
+                                    className="px-2.5 py-1 rounded bg-status-success text-white font-label-sm text-label-sm hover:bg-status-success/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
+                                    title="Duyệt hoàn thành và chọn mức chất lượng"
+                                  >
+                                    <span className="material-symbols-outlined text-[14px]">verified</span>
+                                    <span>{approvingId === task.id ? "Đang duyệt..." : "Duyệt hoàn thành"}</span>
+                                  </button>
+                                )}
+                              </>
                             ) : !isTaskTerminal(task.status) ? (
                               <button
                                 onClick={() => openDrawerForTask(task)}
@@ -2450,6 +2509,77 @@ export default function MyWorkPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* YC-10 Phase 2b: modal duyệt nhanh — bắt buộc chọn quality khi flag bật */}
+      {quickApproveTask && (
+        <div
+          className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-4"
+          data-testid="quick-approve-quality-modal"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+            <div className="p-4 bg-status-success text-white flex items-center justify-between gap-2">
+              <h3 className="font-headline-sm text-sm font-bold">
+                Duyệt hoàn thành &amp; chọn chất lượng
+              </h3>
+              <button
+                type="button"
+                onClick={() => setQuickApproveTask(null)}
+                aria-label="Đóng"
+                disabled={quickApproveBusy}
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-3">
+              <p className="text-xs text-on-surface">
+                Nhiệm vụ <strong>{quickApproveTask.code}</strong> — {quickApproveTask.title}
+              </p>
+              <label className="text-xs font-semibold text-on-surface">
+                Mức chất lượng kết quả (65–100, bước 5){" "}
+                <span className="text-status-danger">*</span>
+              </label>
+              <select
+                data-testid="quick-approve-quality-select"
+                value={quickApproveQuality}
+                onChange={(e) => setQuickApproveQuality(e.target.value)}
+                disabled={quickApproveBusy}
+                className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+              >
+                <option value="">— Chọn mức chất lượng —</option>
+                {[65, 70, 75, 80, 85, 90, 95, 100].map((v) => (
+                  <option key={v} value={v}>
+                    {v}%
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-on-surface-variant">
+                Không tự mặc định 100; mức chất lượng chỉ hiển thị/audit, không tự đổi điểm hoặc xếp loại.
+              </p>
+            </div>
+            <div className="p-4 bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+              <button
+                type="button"
+                onClick={() => setQuickApproveTask(null)}
+                disabled={quickApproveBusy}
+                className="px-3 py-1.5 rounded bg-surface-container text-xs font-semibold disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                data-testid="quick-approve-confirm"
+                onClick={handleQuickApproveConfirm}
+                disabled={quickApproveBusy || !quickApproveQuality}
+                className="px-4 py-1.5 rounded bg-status-success text-white text-xs font-semibold active-press disabled:opacity-50"
+              >
+                {quickApproveBusy ? "Đang duyệt..." : "Xác nhận duyệt"}
+              </button>
+            </div>
           </div>
         </div>
       )}

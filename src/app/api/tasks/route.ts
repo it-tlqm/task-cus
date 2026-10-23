@@ -28,6 +28,7 @@ import {
   initializeTaskParticipants,
   submitOverallResult,
 } from "@/server/task-participant";
+import { isApprovalQualityEnabled } from "@/server/approval-quality";
 
 // YC-04: cửa sổ chống bấm trùng khi giao việc (giây)
 const CREATE_DEDUP_WINDOW_SEC = 120;
@@ -97,6 +98,21 @@ export async function GET(req: NextRequest) {
 
     // YC-05: người chủ trì/phối hợp luôn thấy nhiệm vụ của mình kể cả khác đơn vị
     // (không nâng quyền — chỉ cộng thêm 2 điều kiện OR, các guard IDOR giữ nguyên)
+    // YC-11: người phụ trách trực tiếp cũng thấy nhiệm vụ của người mình phụ trách
+    // để vào hàng chờ pre-check (chỉ đọc; quyền thao tác vẫn theo tuyến).
+    const nowForSupervision = new Date();
+    const supervisedPeople = user.personId
+      ? await prisma.personSupervision.findMany({
+          where: {
+            managerPersonId: user.personId,
+            status: "CONFIRMED",
+            effectiveFrom: { lte: nowForSupervision },
+            OR: [{ effectiveTo: null }, { effectiveTo: { gte: nowForSupervision } }],
+          },
+          select: { subordinatePersonId: true },
+        })
+      : [];
+    const supervisedPersonIds = [...new Set(supervisedPeople.map((s) => s.subordinatePersonId))];
     const visibilityClause =
       Object.keys(scopedFilter).length === 0
         ? {}
@@ -105,6 +121,12 @@ export async function GET(req: NextRequest) {
               scopedFilter,
               { ownerId: user.personId },
               { assignees: { some: { personId: user.personId } } },
+              ...(supervisedPersonIds.length > 0
+                ? [
+                    { ownerId: { in: supervisedPersonIds } },
+                    { assignees: { some: { personId: { in: supervisedPersonIds } } } },
+                  ]
+                : []),
             ],
           };
 
@@ -209,6 +231,7 @@ export async function GET(req: NextRequest) {
 
     // Tính toán cờ isOverdue độc lập với hasIssue + % tiến độ từ cập nhật mới nhất
     // (Task không lưu sẵn % — nguồn duy nhất là TaskUpdate)
+    const qualityEnabled = isApprovalQualityEnabled();
     const approvalMap = await getTaskApprovalSummaries(tasks.map((t) => t.id));
     const enrichedTasks = tasks.map((t) => {
       const isFinished = t.status === "COMPLETED" || t.status === "DONE" || t.status === "CANCELED";
@@ -234,6 +257,8 @@ export async function GET(req: NextRequest) {
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
         txSource,
         approval: approvalMap.get(t.id) ?? null,
+        // YC-10 quick approve: client cần biết có bắt buộc chọn quality hay không.
+        qualityEnabled,
         // KHÔNG phát URL công khai của kho lưu trữ.
         attachments: toClientAttachments((t as any).attachments || [], t.id),
       };
@@ -244,6 +269,7 @@ export async function GET(req: NextRequest) {
       data: enrichedTasks,
       pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
       stats,
+      qualityEnabled,
     });
   } catch (error: any) {
     return jsonError("Lỗi khi tải danh sách nhiệm vụ: " + error.message, 500);
