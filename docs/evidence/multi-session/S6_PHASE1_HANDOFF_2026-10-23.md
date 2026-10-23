@@ -15,7 +15,7 @@ BASE_SHA: 54d8c8c (docs); code baseline 70ea5d7 (S4 đã merge)
 COMMIT_SHA: efab0b0 (feat Phase 1; docs handoff cập nhật ở commit kế tiếp)
 FILES_CHANGED:
   - prisma/schema.prisma
-  - prisma/migrations/20261023160000_v3_task_participant_results/migration.sql (mới)
+  - prisma/migrations/20261023170000_v3_task_participant_results/migration.sql (mới)
   - src/server/task-participant.ts (mới)
   - src/server/approval-case.ts
   - src/app/api/tasks/[id]/participant-results/route.ts (mới)
@@ -78,7 +78,7 @@ READY_FOR_INTEGRATION: YES — chờ S0 review/merge theo gate
   PRECHECK phase sau).
 - `TaskSubmissionSnapshot`: snapshot theo `(task_id, round)`, lưu `submitted_by_id` thật.
 - `TaskUpdate`: thêm `subject_person_id`, `participant_event_id` (nullable, additive).
-- Migration: `20261023160000_v3_task_participant_results`.
+- Migration: `20261023170000_v3_task_participant_results`.
 - **Không** đổi `ApprovalCase` unique; **không** thêm role/quyền; **không** chạm
   QĐ1277/monthly/scoring.
 
