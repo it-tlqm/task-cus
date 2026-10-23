@@ -14,10 +14,15 @@
  *  5. Chống gửi trùng, chặn người không đúng vai trò, không tạo 2 luồng duyệt cho 1 kết quả
  */
 import { createRequire } from "node:module";
-const require = createRequire("D:/thanhnx/OpenCode/talung-cus-work/package.json");
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
+const require = createRequire(import.meta.url);
 const { PrismaClient } = require("@prisma/client");
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-review-flow"
+);
 const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DIRECT_URL || process.env.DATABASE_URL } },
+  datasources: { db: { url: dbUrl } },
 });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";

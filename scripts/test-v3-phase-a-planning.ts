@@ -9,16 +9,15 @@
 import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
 import { canReviewAsDirectLeader } from "../src/server/work-item-review";
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
 
 const require = createRequire(import.meta.url);
 const { PrismaClient } = require("@prisma/client");
 
-const dbUrl = process.env.DATABASE_URL || "";
-if (!dbUrl.includes("talung_v3_fixture")) {
-  throw new Error(
-    "TỪ CHỐI CHẠY: DATABASE_URL phải trỏ tới database kiểm thử talung_v3_fixture"
-  );
-}
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-phase-a-planning"
+);
 const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";
 const PASSWORD = process.env.TEST_PASSWORD || "LocalTest@2026";
