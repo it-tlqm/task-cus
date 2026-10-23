@@ -179,6 +179,8 @@ check("E5. isOfficial true", draft.value?.isOfficial === true);
 check("E6. Giữ id/metric", draft.value?.id === BASE_DTO.id && draft.value?.metricId === BASE_DTO.metricId);
 const draftDemo = mapBc2TargetToTargetDraft({ ...BASE_DTO, dataSource: "DEMO" });
 check("E7. DEMO → isOfficial false", draftDemo.value?.isOfficial === false);
+const draftNone = mapBc2TargetToTargetDraft({ ...BASE_DTO, comparisonKind: "NONE" });
+check("E8. comparisonKind NONE → UI labelCode KHAC (để sửa được target không đối chiếu)", draftNone.value?.labelCode === "KHAC");
 
 // ============================================================
 // F. MAP UI DRAFT → B-C-2 CREATE INPUT

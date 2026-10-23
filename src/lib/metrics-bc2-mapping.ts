@@ -334,7 +334,7 @@ export function mapBc2TargetToTargetDraft(dto: Bc2TargetDto): Bc2MappingResult<T
       id: dto.id,
       metricId: dto.metricId,
       classificationId: dto.classificationId ?? "",
-      labelCode: target.labelCode ?? "",
+      labelCode: target.labelCode || (dto.comparisonKind === "NONE" ? "KHAC" : ""),
       label: dto.label ?? target.labelCode ?? dto.comparisonKind,
       periodType: target.periodType,
       year: target.year,
