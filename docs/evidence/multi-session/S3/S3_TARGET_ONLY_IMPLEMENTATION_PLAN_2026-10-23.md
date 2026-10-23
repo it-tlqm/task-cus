@@ -16,11 +16,12 @@
 ## 0. Kết luận điều hành
 
 1. S3 **không thể** làm target-only hoàn chỉnh trên B-C-1 hiện tại vì S2 chưa công bố B-C-2 và còn 2 blocker Q9/Q11.
-2. Ngoài Q9/Q11, còn **3 điểm alignment** phải được B-C-2 xác nhận trước khi S3 nối API/UI:
-   - B-C-1 dùng `MetricPlanTarget.status = PROPOSED`, trong khi Q2 của S3 dùng `DRAFT`;
-   - B-C-1 dùng `comparisonKind` (BTC_YEAR/UBND_YEAR/MONTH_PLAN), S3 đang dùng `labelCode`;
-   - B-C-1 chưa có `direction`, `measureMode`, `baselineScope` — các trường S3 cần cho trạng thái/`%`.
-3. Trong lúc chờ, S3 giữ nguyên helper/test/UI mock; chỉ bổ sung test cho `dataSource`/`isOfficial` và `%` 2 chữ số. Không sửa code shared.
+2. S0 đã chốt **D3–D7** tại decision log §1.3. S3 đã chuẩn bị **mapping layer** (`src/lib/metrics-bc2-mapping.ts`) + test **77/77 PASS**:
+   - `PROPOSED` → `DRAFT` (D3);
+   - `comparisonKind` → `labelCode` (D4);
+   - `dataSource`/`isOfficial` (Q9);
+   - `direction`/`measureMode`/`baselineScope` thiếu thì `NOT_SET`/`PENDING_BUSINESS_INPUT` (D5).
+3. Trong lúc chờ, S3 giữ nguyên helper/test/UI mock; bổ sung test mapping, không sửa code shared.
 4. Quyền target dùng **`metrics.config`**; nhập liệu dùng **`metrics.entry_all`** hoặc assignment `canEnter`/`canConfirm`. **Không thêm `giao_ban.target.*`**.
 
 ---
@@ -29,17 +30,17 @@
 
 ### 1.1. Hard dependencies (phải có trước khi S3 code target-only)
 
-| Mã | Điều kiện | Nguồn | Ảnh hưởng nếu thiếu |
-|---|---|---|---|
-| **D1** | `MetricPlanTarget` có `dataSource` (`REAL`/`DEMO`) hoặc `isOfficial`; migration additive + backfill nhãn `[DEMO]`; API trả cờ | Q9 + S2 blocker §1 | Không phân biệt được target chính thức; S3 không thể tính `%` đúng |
-| **D2** | API/UI/tính toán dùng **2 chữ số thập phân, half-up, dấu `,`**; acceptance 78,18 / 77,49 / 109,67 | Q11 + S2 blocker §2 | Sai định dạng; test S3 không khớp S2 |
-| **D3** | B-C-2 xác nhận map `PROPOSED` (B) ↔ `DRAFT` (S3 Q2), hoặc đổi tên thống nhất | B-C-1 §3.2 vs Q2 | UI/API lệch trạng thái; confirm/lock sai |
-| **D4** | B-C-2 dùng `comparisonKind` tường minh; S3 map `BTC_YEAR`/`UBND_YEAR`/`MONTH_PLAN` sang `labelCode`; **không dùng regex nhãn** | B-C-1 §4.3 | Chọn sai target BTC/UBND/KH tháng |
-| **D5** | B-C-2 bổ sung `direction` (`HIGHER_IS_BETTER`/`LOWER_IS_BETTER`/`NEUTRAL`/`NOT_SET`) và `measureMode`/`baselineScope` cho target/metric | Q4/Q6/Q10 | Không thể chặn % khi chiều chưa chốt hoặc Q6 pending |
-| **D6** | Permission `metrics.config` và `metrics.entry_all` được seed/kiểm tra; `SYSTEM_ADMIN` không mặc nhiên | Q8 + B-C-1 §5 | 403/leo quyền; không được dùng `system.config` thay thế |
-| **D7** | S0/S2 chốt API target-only: route mới `/api/metrics/targets` do S3 sở hữu, hay target CRUD nằm trong `/api/metrics/admin` của S2 | Q3=A | Conflict file/API; không rõ owner |
-| **D8** | `MetricPlanTargetRevision` + audit old/new/status/source; lưu `proposedBy/At`, `confirmedBy/At`, `lockedBy/At` | Q2 + B-C-1 §6 | Không đủ lịch sử điều chỉnh |
-| **D9** | B-C-2 published + migration rehearsal trên test DB + S0 merge vào integration | S2 blocker §4 | S3 không có schema để rebase |
+| Mã | Điều kiện | Nguồn | Trạng thái | Ảnh hưởng nếu thiếu |
+|---|---|---|---|---|
+| **D1** | `MetricPlanTarget` có `dataSource` (`REAL`/`DEMO`) hoặc `isOfficial`; migration additive + backfill nhãn `[DEMO]`; API trả cờ | Q9 + S2 blocker §1 | **PENDING S2** | Không phân biệt được target chính thức; S3 không thể tính `%` đúng |
+| **D2** | API/UI/tính toán dùng **2 chữ số thập phân, half-up, dấu `,`**; acceptance 78,18 / 77,49 / 109,67 | Q11 + S2 blocker §2 | **PENDING S2** | Sai định dạng; test S3 không khớp S2 |
+| **D3** | B-C-2/DB/API giữ `PROPOSED`; S3 map nội bộ/UI sang `DRAFT` | S0 §1.3 | **APPROVED — mapping done** | UI/API lệch trạng thái; confirm/lock sai |
+| **D4** | B-C-2 giữ `comparisonKind`; S3 map `BTC_YEAR`/`UBND_YEAR`/`MONTH_PLAN` sang `labelCode`; không regex nhãn | S0 §1.3 | **APPROVED — mapping done** | Chọn sai target BTC/UBND/KH tháng |
+| **D5** | B-C-2 cung cấp `direction` + `measureMode`/`baselineScope`; thiếu thì `NOT_SET`/`PENDING_BUSINESS_INPUT` | S0 §1.3 | **APPROVED — mapping done; field vật lý chờ S2** | Không thể chặn % khi chiều chưa chốt hoặc Q6 pending |
+| **D6** | `metrics.config`/`metrics.entry_all` được seed/kiểm tra; assignment; SYSTEM_ADMIN không mặc nhiên | S0 §1.3 | **APPROVED — seed chờ S2** | 403/leo quyền; không dùng `system.config` |
+| **D7** | **D7=A**: S3 sở hữu `src/server/metric-targets.ts` + `/api/metrics/targets/*`; S2 sở hữu schema + `metrics.ts` | S0 §1.3 | **APPROVED** | Conflict file/API; không rõ owner |
+| **D8** | Revision + audit old/new/status/source; lưu proposed/confirmed/locked by/at | Q2 + B-C-1 §6 | **PENDING S2** | Không đủ lịch sử điều chỉnh |
+| **D9** | B-C-2 published + migration rehearsal trên test DB + S0 merge vào integration | S2 blocker §4 | **PENDING S2/S0** | S3 không có schema để rebase |
 
 ### 1.2. Mapping đề xuất B-C-1 → S3
 
@@ -55,7 +56,7 @@
 | `comparisonKind = MONTH_PLAN` | `labelCode = KH_THANG` | |
 | `comparisonKind = NONE/khác` | `labelCode = KHAC`/`PENDING_C1` | Không tự gán |
 
-> Mapping này là **đề xuất kỹ thuật**; B-C-2/S0 phải xác nhận. S3 không tự đổi `comparisonKind`, `status`, `sourceNote` của B.
+> Mapping đã được S0 chốt D3–D5 và triển khai tại `src/lib/metrics-bc2-mapping.ts` (77 test). S3 không tự đổi `comparisonKind`, `status`, `sourceNote` của B.
 
 ---
 
@@ -65,7 +66,8 @@
 
 | File | Thay đổi | Owner | Ghi chú |
 |---|---|---|---|
-| `src/lib/metrics-contract.ts` | Map `dataSource`→`isOfficial`, `PROPOSED`↔`DRAFT`, `comparisonKind`→`labelCode`; giữ pure | S3 | Đã có helper; chỉ mở rộng sau B-C-2 |
+| `src/lib/metrics-contract.ts` | State model/percent/validation hiện có; giữ pure | S3 | Đã có; không đổi API |
+| `src/lib/metrics-bc2-mapping.ts` | **Mới (đã có)**: map B-C-2 → S3: status, comparisonKind, dataSource, direction/measureMode/baselineScope | S3 | Pure, không DB/API |
 | `src/server/metric-targets.ts` | **Mới**: service target-only (list/create/update/confirm/lock/void/revision) dùng Prisma + audit | S3 | Không sửa `src/server/metrics.ts` |
 | `src/app/api/metrics/targets/route.ts` | **Mới**: GET list + POST create DRAFT | S3 (nếu D7=A) | Không sửa `/api/metrics/admin` |
 | `src/app/api/metrics/targets/[id]/route.ts` | **Mới**: PATCH update DRAFT; POST confirm/lock/void; GET revisions | S3 (nếu D7=A) | Path cụ thể chốt sau D7 |
@@ -73,6 +75,7 @@
 | `src/app/giao-ban/cau-hinh/page.tsx` | **Chỉ tab target**: list/filter/create/edit/confirm/void; dùng `metrics.config` | S3 sau merge | Không sửa các tab khác |
 | `src/app/giao-ban/page.tsx` | **Chỉ hiển thị target/%/trạng thái** từ summary/API; không tự tính | S3 sau merge | Không sửa logic summary |
 | `scripts/test-phase-c-contract.ts` | Bổ sung test mapping/dataSource/2 decimals | S3 | Đang 108/108 |
+| `scripts/test-phase-c-bc2-mapping.ts` | **Mới**: 77 test mapping B-C-2 (status/comparisonKind/dataSource/D5) | S3 | Đang 77/77 |
 | `scripts/test-phase-c-target-api.ts` | **Mới**: DB test target API, quyền, audit, cleanup | S3 | Chạy trên `talung_v3_phase_c`/fixture |
 | `scripts/test-phase-c-target-ui.ts` | **Mới**: UI test target tab/status/2 decimals | S3 | Desktop + Mobile |
 
@@ -196,6 +199,15 @@ GET  /api/metrics/targets/{id}/revisions  # lịch sử
   - `%` 2 chữ số half-up: 78,18 / 109,67 / 77,50; 0 thực = 0,00%.
 - Giữ nguyên các test cũ; không sửa schema/API.
 
+`scripts/test-phase-c-bc2-mapping.ts`:
+
+- Hiện **77/77 PASS**.
+- D3: `PROPOSED` ↔ `DRAFT`, các status còn lại.
+- D4: `BTC_YEAR`/`UBND_YEAR`/`MONTH_PLAN` → `BTC`/`UBND`/`KH_THANG`; kind lạ → null/warning.
+- Q9: `dataSource=DEMO/REAL` thắng `isOfficial`; thiếu cờ → không official + warning.
+- D5: thiếu `direction`/`measureMode`/`baselineScope` → `NOT_SET`/`PENDING_BUSINESS_INPUT`, không suy.
+- Tích hợp mapping → `deriveTargetState`/`computePercent`: PROPOSED/DEMO không tính chính thức; BTC/UBND/KH tháng ra 78,18 / 77,49 / 109,67%.
+
 ### 5.2. DB test target API (mới, sau B-C-2)
 
 `scripts/test-phase-c-target-api.ts` — dùng `talung_v3_phase_c` hoặc fixture riêng; **tạo rồi dọn sạch**:
@@ -232,6 +244,7 @@ GET  /api/metrics/targets/{id}/revisions  # lịch sử
 - `npx prisma validate` PASS.
 - `pnpm build` PASS.
 - `scripts/test-phase-c-contract.ts` PASS (hiện 108/108).
+- `scripts/test-phase-c-bc2-mapping.ts` PASS (hiện 77/77).
 - Target API/UI test PASS hoặc ghi rõ `BLOCKED_BY_*`, không giả PASS.
 - `PRODUCTION_TOUCHED: NO`.
 
@@ -239,9 +252,9 @@ GET  /api/metrics/targets/{id}/revisions  # lịch sử
 
 ## 6. Thứ tự thi công sau khi S2 merge
 
-1. S0 xác nhận B-C-2 + D1–D9; S3 rebase `codex/v3-phase-c-metrics`.
-2. Thêm mapping layer B-C-2 → S3 helper (status/comparisonKind/dataSource); chạy unit test.
-3. Làm `src/server/metric-targets.ts` + API target-only (hoặc dùng API S2 nếu D7 chọn).
+1. S0 xác nhận B-C-2 + D1/D2/D8/D9 (D3–D7 đã APPROVED); S3 rebase `codex/v3-phase-c-metrics`.
+2. Mapping layer B-C-2 → S3 đã có (`src/lib/metrics-bc2-mapping.ts`, 77 test); cập nhật nếu field vật lý B-C-2 khác.
+3. D7=A: làm `src/server/metric-targets.ts` + `/api/metrics/targets/*` (S3 sở hữu).
 4. Nối `MetricTargetDraftEditor` → API; cập nhật `/giao-ban/cau-hinh` **chỉ tab target**.
 5. Cập nhật `/giao-ban` hiển thị target/%/trạng thái (chỉ đọc summary).
 6. Chạy DB test + UI test; dọn dữ liệu test; chạy typecheck/prisma/build.
@@ -286,8 +299,8 @@ GET  /api/metrics/targets/{id}/revisions  # lịch sử
 SESSION: S3
 YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
-STATUS: WAIT_B_C_2 — blocker Q9/Q11 + alignment D3/D4/D5
-IMPLEMENTED: helper/state model + test 108/108 + target UI mock
+STATUS: WAIT_B_C_2 — blocker Q9/Q11; D3–D7 APPROVED, mapping layer ready
+IMPLEMENTED: helper/state model + test 108/108 + mapping 77/77 + target UI mock
 NOT_IMPLEMENTED: target API/UI thật, schema/API/metrics.ts/giao-ban
 PRODUCTION_TOUCHED: NO
 READY_FOR_INTEGRATION: NO — chờ B-C-2
