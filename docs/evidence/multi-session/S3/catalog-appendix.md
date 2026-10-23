@@ -1,6 +1,7 @@
 # S3 — Phụ lục danh mục 49 chỉ tiêu (snapshot đọc-only)
 
 - Database: `talung_v3_phase_c (local test)`
+- Contract: **APPROVED — S0_DECISION_LOG_2026-10-23**
 - Kỳ chụp: tháng 10/2026; báo cáo tháng đã lưu: CÓ
 - Production touched: **NO**
 

@@ -4,7 +4,8 @@
 **Branch:** `codex/v3-phase-c-metrics`  
 **Worktree:** `D:\thanhnx\OpenCode\talung-phase-c`  
 **Database đã dùng:** `talung_v3_phase_c` (localhost, test)  
-**Trạng thái:** `WAIT_CONTRACT` — **chưa sửa schema/API dùng chung với S2**  
+**Trạng thái:** `APPROVED` theo `S0_DECISION_LOG_2026-10-23.md` — **được làm pure helper/state model + test và target UI draft mock**; **chưa sửa schema, `metrics.ts`, `/api/metrics/*`, `/giao-ban`, migration shared** cho tới khi S2 công bố schema.
+
 **Ngày:** 23/10/2026
 
 > Tài liệu này là **báo cáo rà soát + đề xuất**. Không phải quyết định nghiệp vụ, không phải lệnh triển khai, không phải xác nhận Production.
@@ -17,8 +18,9 @@
 2. Trong database test: **49/49 chỉ tiêu giao hiện tại là `[DEMO]`**, **0 chỉ tiêu giao chính thức**. Vì vậy mọi tỷ lệ chính thức hiện phải là **“Chưa giao chỉ tiêu”**, không phải 0% và không phải tỷ lệ DEMO.
 3. **636 bản ghi** tháng 10/2026 đều là `RECORDED`; **0 bản ghi `CONFIRMED`**. Báo cáo tháng 10 đã có phiên bản lưu, nên logic hiện tại gắn `LOCKED` cho mọi chỉ tiêu có bản ghi — kể cả khi chưa ai xác nhận.
 4. Công thức `%` hiện tại có 4 lỗ hổng contract: không lọc chỉ tiêu giao theo đúng năm/kỳ; không phân biệt 0 với thiếu; không có chiều đánh giá; không có trạng thái nguồn/chỉ tiêu giao.
-5. **Đề nghị S0 chốt 12 câu hỏi contract** trong `S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md` trước khi S3 sửa `metrics.ts`, API `/api/metrics/*`, `/giao-ban`, `/giao-ban/cau-hinh` hay schema.
-6. Đã dựng **mock/pure test 43/43 PASS** cho các trạng thái và quy tắc tỷ lệ đề xuất; test không kết nối DB/API, không dùng Production.
+5. **S0 đã phê duyệt toàn bộ contract** tại `docs/V3/S0_DECISION_LOG_2026-10-23.md` (Q1–Q12), theo hướng dẫn tại `S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md`.
+6. Đã triển khai phần được phép: **pure helper/state model + test 96/96 PASS** và **target UI draft độc lập (mock)**; chưa nối DB/API, chưa dùng Production.
+7. Phần còn chặn: schema target + `metrics.ts` + API `/api/metrics/*` + `/giao-ban` + `/giao-ban/cau-hinh` + migration shared thuộc S2; S3 chỉ làm target-only sau khi S2 công bố schema.
 
 ---
 
@@ -38,9 +40,13 @@
 | Snapshot danh mục 49 chỉ tiêu (JSON) | `docs/evidence/multi-session/S3/catalog-snapshot.json` |
 | Phụ lục bảng 49 chỉ tiêu | `docs/evidence/multi-session/S3/catalog-appendix.md` |
 | Script rà soát read-only | `scripts/review-phase-c-catalog.ts` |
-| Mock/pure test contract | `scripts/test-phase-c-contract-proposal.ts` |
-| Câu hỏi contract gửi S0 | `docs/evidence/multi-session/S3/S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md` |
-| Handoff | `docs/evidence/multi-session/S3/S3_HANDOFF_WAIT_CONTRACT_2026-10-23.md` |
+| Pure helper/state model (APPROVED) | `src/lib/metrics-contract.ts` |
+| Target UI draft mock | `src/components/metrics/MetricTargetDraftEditor.tsx` |
+| Mock data cho UI draft | `src/components/metrics/target-draft-mock.ts` |
+| Test contract APPROVED | `scripts/test-phase-c-contract.ts` |
+| Quyết định S0 | `D:\thanhnx\OpenCode\talung-integration\docs\V3\S0_DECISION_LOG_2026-10-23.md` |
+| Câu hỏi contract gửi S0 (bản gốc) | `docs/evidence/multi-session/S3/S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md` |
+| Handoff APPROVED | `docs/evidence/multi-session/S3/S3_HANDOFF_APPROVED_2026-10-23.md` |
 
 ### 1.3. Giới hạn
 
@@ -313,7 +319,9 @@ Audit hiện tại có `TARGET_CREATED/UPDATED/DELETED` nhưng update chỉ ghi 
 8. Xóa target phải là `VOID`/`SUPERSEDED` có lý do, không xóa cứng mất lịch sử.
 9. `DEMO` phải là cờ dữ liệu (`isOfficial=false`), không dựa vào nhãn `[DEMO]`.
 
-### 5.3. Chính sách tính `%`
+### 5.3. Chính sách tính `%` (đã APPROVED tại Q4/Q11)
+
+> S0 đã chốt đúng bảng dưới đây. `DRAFT`/DEMO chỉ được hiển thị tạm tính có nhãn, không dùng báo cáo chính thức.
 
 | Tình huống | Kết quả | Lý do |
 |---|---|---|
@@ -353,7 +361,7 @@ Không thay đổi 49 mã, không thêm/bớt chỉ tiêu trước khi C1 chốt
 | KSBL | 14 | Nhiều chỉ tiêu sự kiện (KS_HS, KS_PHAT…) không phát sinh hằng ngày |
 | TONG_HOP | 8 | Nhiều chỉ tiêu sự kiện (KT_QD_AN, KT_TIEN_AN, KT_QD_XP…) |
 
-**Đề xuất `measureMode`:**
+**Đề xuất `measureMode` (S0 đã APPROVED hướng tiếp cận, Q6):**
 
 - `PERIOD_FLOW`: 43 chỉ tiêu FLOW thông thường.
 - `CUMULATIVE`: `XOA_NO`, `PHI_LK_THU` (cần chốt cách cộng mốc).
@@ -367,45 +375,69 @@ Không thay đổi 49 mã, không thêm/bớt chỉ tiêu trước khi C1 chốt
 
 ---
 
-## 7. Test/mock đã dựng
+## 7. Phần đã triển khai theo contract APPROVED
 
-### 7.1. Nội dung
+### 7.1. Pure helper/state model
 
-`scripts/test-phase-c-contract-proposal.ts` — pure functions + fixture, **không DB/API**:
+`src/lib/metrics-contract.ts` — không import DB/API/Next.js:
 
-- 12 test trạng thái dữ liệu (A1–A12).
-- 8 test trạng thái chỉ tiêu giao (B1–B8).
-- 18 test tỷ lệ (C1–C18).
+- `deriveActualState`: `recordState` + `coverage` + `displayState`; xử lý ENTRY/BASELINE/DERIVED, khóa báo cáo, không phát sinh, không áp dụng.
+- `deriveTargetState`: DRAFT/CONFIRMED/LOCKED/VOID/SUPERSEDED; khớp kỳ năm/quý/tháng.
+- `computePercent`: OFFICIAL/PREVIEW; chặn target thiếu/0/âm/DEMO/DRAFT, actual thiếu/partial/chưa xác nhận, lệch đơn vị, chiều chưa chốt, `PENDING_BUSINESS_INPUT`.
+- `aggregateClassifications`: không coi phân loại thiếu là 0.
+- `validateTargetDraft` + `canConfirmTarget` + `nextTargetStatus`: validation target, bắt buộc nguồn khi CONFIRMED, revision/status Q2.
+- `parseMetricInput` / `formatPercentVi`: nhập số vi-VN, hiển thị 2 chữ số thập phân.
+
+### 7.2. Test
+
+`scripts/test-phase-c-contract.ts` — 96 test:
+
+- 18 test trạng thái dữ liệu (A1–A18).
+- 11 test trạng thái chỉ tiêu giao (B1–B11).
+- 26 test tỷ lệ (C1–C26).
 - 5 test gộp phân loại (D1–D5).
+- 17 test validate target (E1–E17).
+- 6 test chuyển trạng thái target (F1–F6).
+- 7 test SSR smoke cho UI draft (G1–G7).
+- 6 test nhãn hiển thị (H1–H6).
 
-### 7.2. Kết quả
+Kết quả:
 
 ```text
-PASS 43/43, FAIL 0
+PASS 96/96, FAIL 0
 ```
 
-Các điểm đã khóa bằng test:
+Các điểm đã khóa:
 
 - thiếu dữ liệu ≠ 0;
 - 0 đã nhập ≠ không phát sinh;
 - 0 đã xác nhận + target > 0 → 0,00% hợp lệ;
 - target 0 → không tính, không trả 0%;
 - target khác năm/kỳ → không dùng;
-- target nháp → không tính chính thức;
-- thực hiện thiếu kỳ/chưa xác nhận → không tính chính thức (trừ khi policy cho phép tạm tính);
-- lệch đơn vị → không tính;
+- target DRAFT/DEMO → không tính chính thức; preview có nhãn tạm tính;
+- actual thiếu kỳ/chưa xác nhận/lệch đơn vị → không tính chính thức;
+- DERIVED/BASELINE có giá trị không bị gắn “Chưa nhập”;
 - chiều “thấp hơn tốt”/chưa chốt → không tự gắn đạt/vượt;
-- thiếu phân loại → không cộng như đủ.
+- thiếu phân loại → không cộng như đủ;
+- `PENDING_BUSINESS_INPUT` (Q6) → không tự tính lũy kế/số dư.
 
-### 7.3. Cách chạy
+### 7.3. Target UI draft mock
+
+- `src/components/metrics/MetricTargetDraftEditor.tsx`: UI draft độc lập, không gọi API/DB.
+- `src/components/metrics/target-draft-mock.ts`: 3 metric + 3 target mock (gồm DRAFT/CONFIRMED/DEMO/PENDING_BUSINESS_INPUT).
+- Có validate, badge trạng thái, nguồn/căn cứ, chiều C1, preview tạm tính, bảng target mock.
+- SSR smoke test đã render thành công; chưa nối `/giao-ban/cau-hinh` (chờ S2 schema).
+
+### 7.4. Cách chạy
 
 ```powershell
-npx tsx scripts/test-phase-c-contract-proposal.ts
+npx tsx scripts/test-phase-c-contract.ts
+npx tsc --noEmit
 ```
 
-### 7.4. Giới hạn
+### 7.5. Giới hạn
 
-Đây là **executable proposal**, không phải logic production. Khi contract được chốt, S3 sẽ thay bằng implementation thật và test tích hợp; không import script này vào app.
+Helper/UI draft **chưa được nối** vào app. Đây là phần độc lập theo Q3=A; khi S2 công bố schema target, S3 mới thay mock bằng API target-only và chạy test tích hợp.
 
 ---
 
@@ -416,18 +448,23 @@ npx tsx scripts/test-phase-c-contract-proposal.ts
 - **Chưa tạo/sửa/xóa** chỉ tiêu giao, mốc lũy kế, bản ghi.
 - **Chưa đổi** `requireConfirm`, `expectDaily`, `showOnDashboard`.
 - **Chưa dùng** Production; mọi truy vấn là local test read-only.
-- **Chưa chốt** C1, B1/B2, quyền, scope.
+- **Chưa chốt** C1 (danh sách chỉ tiêu giao/chu kỳ/chiều) — vẫn `PENDING_C1`.
+- **Chưa nối** target UI draft vào màn hình thật.
 
 ---
 
-## 9. Đề nghị S0
+## 9. Trạng thái và bước tiếp theo
 
-1. Chốt các câu hỏi trong `S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md`, tối thiểu Q1–Q6 và Q8–Q10.
-2. Chỉ định owner schema: S2 (shared) hay S3 (target-only) cho các trường mới.
-3. Xác nhận danh sách chỉ tiêu giao chính thức + chu kỳ + chiều đánh giá (C1) hoặc chấp nhận trạng thái `PENDING_C1`.
-4. Xác nhận chính sách `%` (mục 5.3) và mức hiển thị (chỉ `/giao-ban` hay cả Dashboard).
-5. Sau khi có xác nhận bằng văn bản, S3 mới bắt đầu sửa code trên nhánh `codex/v3-phase-c-metrics`.
+**S0 đã phê duyệt** toàn bộ Q1–Q12 tại `docs/V3/S0_DECISION_LOG_2026-10-23.md`, với Q3=A: S2 sở hữu schema shared + `src/server/metrics.ts`.
+
+Bước tiếp theo:
+
+1. S2 công bố schema/contract target (trường `status`, `source`, `direction`, `revision`, `isOfficial`, `measureMode`...).
+2. S3 rebase nhánh `codex/v3-phase-c-metrics` lên schema đó.
+3. S3 nối **target-only**: API target, `/giao-ban/cau-hinh`, hiển thị trạng thái/lý do trên `/giao-ban` theo phân công của S0.
+4. Chạy test tích hợp DB fixture + UI Desktop/Mobile; báo cáo `PRODUCTION_TOUCHED: NO`.
+5. C1 vẫn `PENDING_C1`: UI hiển thị “Chưa có quy tắc đánh giá”, không tô đạt/vượt.
 
 ---
 
-**KẾT LUẬN:** Danh mục 49 chỉ tiêu có thể giữ nguyên, nhưng **contract dữ liệu và chỉ tiêu giao phải chốt trước**. Đề xuất tách `recordState`/`coverage`, thêm trạng thái + nguồn + chiều cho target, và chỉ tính `%` khi target/actual hợp lệ. Không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.
+**KẾT LUẬN:** Contract YC-06/07 đã **APPROVED**. Phần độc lập (pure helper/state model + target UI mock) đã hoàn tất và test **96/96 PASS**. Các phần schema/API/`metrics.ts`/`/giao-ban` vẫn chờ S2 công bố schema; không coi thiếu là 0; không tự gắn đạt/vượt; không dùng Production.

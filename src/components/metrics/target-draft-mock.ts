@@ -1,0 +1,96 @@
+/**
+ * Mock data cho target UI draft độc lập (S3 Phase C).
+ * KHÔNG phải dữ liệu chính thức; không gọi API/DB.
+ */
+import type { MetricOption, TargetDraftInput } from "../../lib/metrics-contract";
+
+export const MOCK_METRICS: MetricOption[] = [
+  {
+    id: "mock-thu-nsnn",
+    code: "THU_NSNN",
+    name: "Thu NSNN (mock)",
+    unitType: "VND",
+    unitLabel: "đồng",
+    measureMode: "PERIOD_FLOW",
+    direction: "NOT_SET",
+    classifications: [
+      { id: "mock-o-to", code: "O_TO", label: "Ô tô" },
+      { id: "mock-than-coc", code: "THAN_COC", label: "Than cốc" },
+      { id: "mock-khac", code: "KHAC", label: "Hàng hóa khác" },
+    ],
+  },
+  {
+    id: "mock-xnk-tk",
+    code: "XNK_TK",
+    name: "XNK — số lượng tờ khai (mock)",
+    unitType: "COUNT",
+    unitLabel: "tờ khai",
+    measureMode: "PERIOD_FLOW",
+    direction: "NOT_SET",
+    classifications: [],
+  },
+  {
+    id: "mock-phi-con",
+    code: "PHI_CON",
+    name: "Phí hải quan — còn phải thu (mock)",
+    unitType: "VND",
+    unitLabel: "đồng",
+    measureMode: "PENDING_BUSINESS_INPUT",
+    direction: "NOT_SET",
+    classifications: [],
+  },
+];
+
+export const MOCK_TARGETS: TargetDraftInput[] = [
+  {
+    id: "mock-target-btc-year",
+    metricId: "mock-thu-nsnn",
+    classificationId: "",
+    labelCode: "BTC",
+    label: "Chỉ tiêu BTC năm 2026",
+    periodType: "YEAR",
+    year: 2026,
+    periodNo: null,
+    value: "1685000000000",
+    unitType: "VND",
+    direction: "NOT_SET",
+    sourceNote: "Mock: Quyết định giao chỉ tiêu BTC (không phải số thật)",
+    note: "Chỉ tiêu mô phỏng cho UI draft",
+    status: "CONFIRMED",
+    isOfficial: false,
+  },
+  {
+    id: "mock-target-kh-month",
+    metricId: "mock-thu-nsnn",
+    classificationId: "",
+    labelCode: "KH_THANG",
+    label: "KH tháng 10/2026",
+    periodType: "MONTH",
+    year: 2026,
+    periodNo: 10,
+    value: "200000000000",
+    unitType: "VND",
+    direction: "NOT_SET",
+    sourceNote: "Mock: kế hoạch tháng (không phải số thật)",
+    note: "Target nháp để thử trạng thái DRAFT",
+    status: "DRAFT",
+    isOfficial: true,
+  },
+  {
+    id: "mock-target-xnk",
+    metricId: "mock-xnk-tk",
+    classificationId: "",
+    labelCode: "KH_NAM",
+    label: "KH năm 2026",
+    periodType: "YEAR",
+    year: 2026,
+    periodNo: null,
+    value: "24771",
+    unitType: "COUNT",
+    direction: "NOT_SET",
+    sourceNote: "Mock: kế hoạch năm (không phải số thật)",
+    note: "",
+    status: "CONFIRMED",
+    isOfficial: true,
+  },
+];

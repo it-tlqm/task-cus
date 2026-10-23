@@ -1,5 +1,7 @@
 {
   "generatedAt": "2026-10-23",
+  "contractStatus": "APPROVED — S0_DECISION_LOG_2026-10-23",
+  "implementationScope": "Pure helper/state model + target UI draft mock. No schema, metrics.ts, /api/metrics/*, /giao-ban, or shared migration changes.",
   "database": "talung_v3_phase_c (local test)",
   "productionTouched": false,
   "period": {

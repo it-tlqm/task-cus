@@ -3,11 +3,30 @@
 **Từ:** S3 — Phase C  
 **Đến:** S0 (Integration Owner), đồng gửi S2 (Phase B)  
 **Branch:** `codex/v3-phase-c-metrics`  
-**Trạng thái:** `WAIT_CONTRACT` — S3 **chưa sửa** schema/API dùng chung  
+**Trạng thái:** `APPROVED` theo `D:\thanhnx\OpenCode\talung-integration\docs\V3\S0_DECISION_LOG_2026-10-23.md`
+
 **Ngày:** 23/10/2026
 
-> Mục tiêu: chốt bằng văn bản trước khi S3 sửa `src/server/metrics.ts`, `/api/metrics/*`, `/giao-ban`, `/giao-ban/cau-hinh` hoặc schema.  
-> S0 có thể trả lời trực tiếp vào bảng “S0 chốt” hoặc tạo quyết định trong master plan mục 13.
+> **Đã chốt:** toàn bộ Q1–Q12 được S0 phê duyệt tại decision log ngày 23/10/2026.
+> Tài liệu này giữ lại **phương án gốc + lý do** để truy vết; quyết định có hiệu lực là bảng 1.1 trong decision log.
+> Các ô “S0 chốt” bên dưới là bản đề xuất lịch sử, không thay thế decision log.
+
+### Bảng quyết định đã APPROVED
+
+| Mã | S0 đã chốt |
+|---|---|
+| Q1 | **A — Toàn cục `TOAN_CUC`** cho MVP; chưa thêm `unit_id/scopeUnitId`; per-unit là backlog M1. |
+| Q2 | **B — `DRAFT → CONFIRMED`**; DRAFT chỉ tạm tính, CONFIRMED mới tính chính thức; bắt buộc nguồn + revision + audit. |
+| Q3 | **A — S2 sở hữu schema shared + `src/server/metrics.ts`**; S3 chỉ target UI/helper/test sau khi S2 công bố schema. |
+| Q4 | Theo đề xuất S3 §5.3: không tính % khi thiếu target/0/âm/thiếu thực hiện/thiếu kỳ/lệch đơn vị/chưa xác nhận/chiều chưa chốt; 0 thực + target > 0 = **0,00%**; 2 chữ số half-up. |
+| Q5 | **B — hai trục `recordState + coverage`**, map 6 nhãn; trạng thái tính trên nguồn giá trị đang hiển thị. |
+| Q6 | Approved approach `measureMode`/`baselineScope`; 5 mã `PHI_LK_THU`, `PHI_CON`, `XOA_NO`, `NO_THUE`, `TV_CHO` tiếp tục **PENDING_BUSINESS_INPUT**. |
+| Q7 | **Chưa bật “Thiếu N ngày”**; hiển thị “Số ngày có bản ghi” + khoảng dữ liệu thực tế; không đổi `expectDaily` hàng loạt. |
+| Q8 | **B — quyền nghiệp vụ riêng** `giao_ban.target.view/manage/confirm`; SYSTEM_ADMIN không mặc nhiên. |
+| Q9 | API trả **`isOfficial`/`dataSource`**; chỉ target official tính % chính thức; không dùng regex `[DEMO]`. |
+| Q10 | **Tiếp tục `PENDING_C1`**; UI “Chưa có quy tắc đánh giá”; không tô đạt/vượt. |
+| Q11 | **2 chữ số thập phân, dấu `,`**; không tính hiển thị `—` + lý do, không `0%`; số 0 thật hiển thị `0` + đơn vị. |
+| Q12 | `/giao-ban` trước; Dashboard/báo cáo Word sau khi UX/lãnh đạo chốt. |
 
 ---
 
@@ -226,14 +245,15 @@ Cần chốt cho các mã đặc biệt:
 
 ---
 
-## 1. Điều kiện S3 bắt đầu code
+## 1. Điều kiện triển khai (đã đáp ứng)
 
-S3 chỉ bắt đầu khi có **một trong hai**:
+S0 đã phê duyệt toàn bộ Q1–Q12 tại `S0_DECISION_LOG_2026-10-23.md`. Theo Q3=A:
 
-1. S0 trả lời bằng văn bản các câu Q1–Q6, Q8–Q10 (có thể ghi vào master plan mục 13 hoặc file quyết định riêng), **và** xác nhận owner schema/API; hoặc
-2. S0 cấp một “contract tối thiểu” cho phép S3 làm phần độc lập (target UI + pure helper + test) mà không sửa schema/API shared.
+- **Được làm ngay:** pure helper/state model + test; target UI draft độc lập (mock) — **đã hoàn tất**.
+- **Chưa được làm:** `prisma/schema.prisma`, `src/server/metrics.ts`, `/api/metrics/*`, `/giao-ban`, `/giao-ban/cau-hinh`, migration shared — **chờ S2 công bố schema**.
+- Khi S2 merge schema, S3 rebase và chỉ sửa **target-only**.
 
-Trong lúc chờ, S3 chỉ làm: đọc, test/mock, đề xuất, báo cáo — đúng trạng thái `WAIT_CONTRACT`.
+Không dùng dữ liệu DEMO làm số chính thức; không đổi `requireConfirm`, `expectDaily`, `showOnDashboard` hàng loạt.
 
 ---
 
@@ -253,8 +273,8 @@ SESSION: S3
 YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
 BASE_SHA: 50daed3 (docs) / a68d31e (code)
-STATUS: WAIT_CONTRACT
+STATUS: APPROVED — phần độc lập đã làm; schema/API shared chờ S2
 SCHEMA_OR_MIGRATION: NONE
 PRODUCTION_TOUCHED: NO
-READY_FOR_INTEGRATION: NO — chờ contract
+READY_FOR_INTEGRATION: PARTIAL — helper/UI mock ready; target-only chờ S2 schema
 ```

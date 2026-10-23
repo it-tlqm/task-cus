@@ -175,6 +175,9 @@ async function main() {
 
   const summary = {
     generatedAt: new Date().toISOString().slice(0, 10),
+    contractStatus: "APPROVED — S0_DECISION_LOG_2026-10-23",
+    implementationScope:
+      "Pure helper/state model + target UI draft mock. No schema, metrics.ts, /api/metrics/*, /giao-ban, or shared migration changes.",
     database: "talung_v3_phase_c (local test)",
     productionTouched: false,
     period: { year: PERIOD_YEAR, month: PERIOD_MONTH },
@@ -211,6 +214,7 @@ async function main() {
   md.push("# S3 — Phụ lục danh mục 49 chỉ tiêu (snapshot đọc-only)");
   md.push("");
   md.push(`- Database: \`${summary.database}\``);
+  md.push(`- Contract: **${summary.contractStatus}**`);
   md.push(`- Kỳ chụp: tháng ${PERIOD_MONTH}/${PERIOD_YEAR}; báo cáo tháng đã lưu: ${locked ? "CÓ" : "KHÔNG"}`);
   md.push(`- Production touched: **NO**`);
   md.push("");
