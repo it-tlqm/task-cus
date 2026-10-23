@@ -310,7 +310,10 @@ export async function buildApprovalQualityView(
       createdAt: d.createdAt.toISOString(),
     }));
 
-  const canDecide = await canDecideApprovalCase(user, approvalCase?.unitId ?? null);
+  const isCaseSubmitter =
+    !!approvalCase?.submittedById && approvalCase.submittedById === user.personId;
+  const canDecide =
+    !isCaseSubmitter && (await canDecideApprovalCase(user, approvalCase?.unitId ?? null));
   const mayRequest = await canRequestQualityAdjustment(user, ctx);
   const pending = adjustments.filter((a) => a.status === "PENDING");
 
@@ -599,6 +602,14 @@ export async function decideQualityAdjustment(
       success: false,
       status: 403,
       error: "Bạn không được tự duyệt yêu cầu điều chỉnh do chính mình gửi — cần người khác thẩm quyền.",
+    };
+  }
+  if (adjustment.case.submittedById === params.user.personId) {
+    return {
+      success: false,
+      status: 403,
+      error:
+        "Bạn là người trình hồ sơ — không được tự duyệt điều chỉnh chất lượng của chính hồ sơ mình đã trình; cần người khác thẩm quyền.",
     };
   }
 

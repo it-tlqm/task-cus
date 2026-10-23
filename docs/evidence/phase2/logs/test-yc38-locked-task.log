@@ -1,27 +1,1 @@
-node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
-of npm. See `npm help npmrc` for supported config options.
-At line:1 char:1
-+ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-=== YC-38 ΓÇö Kh├│a nhiß╗çm vß╗Ñ ─æ├ú nghiß╗çm thu (F1ΓÇôF5) ===
-
-[PASS] 0. Tß║ío nhiß╗çm vß╗Ñ (chß╗º tr├¼ + 1 phß╗æi hß╗úp) - NV-2026-0123
-[PASS] 0. Nhiß╗çm vß╗Ñ mß║½u ─æ├ú nghiß╗çm thu (COMPLETED) - COMPLETED
-[PASS] 1. COMPLETED ΓåÆ IN_PROGRESS: bß╗ï chß║╖n - HTTP 409
-[PASS] 2. COMPLETED ΓåÆ WAITING_REVIEW: bß╗ï chß║╖n - HTTP 409
-[PASS] 3. COMPLETED ΓåÆ COMPLETED: kh├┤ng ghi bß║ún ghi mß╗¢i - updates 5ΓåÆ5 (HTTP 409)
-[PASS] 4. Ghi ─æ├¿ actualResultText sau nghiß╗çm thu: bß╗ï chß║╖n - HTTP 409, result kh├┤ng ─æß╗òi=true
-[PASS] 5. SUBMIT_COMPLETION sau nghiß╗çm thu: bß╗ï chß║╖n - HTTP 409
-[PASS] 6. Xin gia hß║ín sau nghiß╗çm thu: bß╗ï chß║╖n - HTTP 409
-[PASS] 7. Ng╞░ß╗¥i phß╗æi hß╗úp kh├┤ng thay ─æß╗òi ─æ╞░ß╗úc nhiß╗çm vß╗Ñ ─æ├ú nghiß╗çm thu
-[PASS] 8. Ng╞░ß╗¥i chß╗º tr├¼ c┼⌐ng kh├┤ng tß╗▒ mß╗ƒ lß║íi ─æ╞░ß╗úc - HTTP 409
-[PASS] 9. L├únh ─æß║ío kh├┤ng ghi ─æ├¿ kß║┐t quß║ú ─æ├ú duyß╗çt qua API th╞░ß╗¥ng - HTTP 409
-[PASS] 10. UI kh├│a thao t├íc ß╗ƒ trß║íng th├íi kß║┐t th├║c - my-work + tasks: isTaskTerminal
-[PASS] 11. API kiß╗âm tra lß║íi trß║íng th├íi NGAY L├ÜC GHI (trong transaction, sau kho├í) - ─æß╗ìc lß║íi trß║íng th├íi sau advisoryLock
-[PASS] 12. Luß╗ông ─æang thß╗▒c hiß╗çn ΓåÆ nß╗Öp duyß╗çt ΓåÆ l├únh ─æß║ío duyß╗çt vß║½n chß║íy - HTTP 201/200 ΓåÆ COMPLETED
-[PASS] 13. Luß╗ông trß║ú lß║íi tr╞░ß╗¢c nghiß╗çm thu vß║½n hoß║ít ─æß╗Öng - trß║ú lß║íi HTTP 200 ΓåÆ IN_PROGRESS; tr├¼nh lß║íi HTTP 201 ΓåÆ WAITING_REVIEW
-
-=== Kß║╛T QUß║ó: 15 pass / 0 fail ===
+潮敤攮數㨠渠浰眠牡⁮湕湫睯⁮牰橯捥⁴潣普杩∠湯祬戭極瑬搭灥湥敤据敩≳‮桔獩眠汩⁬瑳灯眠牯楫杮椠⁮桴⁥敮瑸洠橡牯瘠牥楳湯ഠ漊⁦灮⹭匠敥怠灮⁭敨灬渠浰捲⁠潦⁲畳灰牯整⁤潣普杩漠瑰潩獮മ䄊⁴楬敮ㄺ挠慨㩲റ⬊☠∠㩃停潲牧浡䘠汩獥湜摯橥⽳潮敤攮數•䌢尺牐杯慲⁭楆敬屳潮敤獪港摯彥潭⸠⸮਍‫繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾ൾ †⬠䌠瑡来牯䥹普⁯††††㨠丠瑯灓捥晩敩㩤⠠灮⁭慷湲唠歮潮⹷⸮潣普杩漠瑰潩獮㨮瑓楲杮 嵛‬敒潭整硅散瑰潩൮ †⬠䘠汵祬畑污晩敩䕤牲牯摉㨠丠瑡癩䍥浯慭摮牅潲൲ ਍㴽‽䍙㌭‸鏎蟃뛃䬠鲔铢憂渠楨鿃闢쎗涧瘠鿃闢쎗ₑ铢쎀鲔뫃渠桧썩鞕ꟃ⁭桴⁵䘨츱쎓쎇䚴⤵㴠㴽਍਍偛十嵓〠‮썔醕귃⁯桮썩鞕ꟃ⁭썶鞕釃⠠档鿃闢슗₺牴铢슜₼‫‱桰鿃闢쎗榦栠鿃闢쎗為 ‭噎㈭㈰ⴶ㄰㌲਍偛十嵓〠‮桎썩鞕ꟃ⁭썶鞕釃洠鿃闢슑疽肔ꛃ铢쎜₺杮楨鿃闢쎗涧琠畨⠠佃偍䕌䕔⥄ⴠ䌠䵏䱐呅䑅਍偛十嵓ㄠ‮佃偍䕌䕔⁄鏎ꗃ蛃䤠彎剐䝏䕒卓›썢鞕꿃挠써醕闢準ⴠ䠠呔⁐〴ഹ嬊䅐卓⁝⸲䌠䵏䱐呅䑅츠쎓쎥₆䅗呉义彇䕒䥖坅›썢鞕꿃挠써醕闢準ⴠ䠠呔⁐〴ഹ嬊䅐卓⁝⸳䌠䵏䱐呅䑅츠쎓쎥₆佃偍䕌䕔㩄欠鲔铢溤⁧桧⁩썢醕뫃⁮桧⁩썭鞕ꋂ⁩‭灵慤整⁳층쎓쎥㖆⠠呈偔㐠㤰ഩ嬊䅐卓⁝⸴䜠楨肔ꛃ铢슜₿捡畴污敒畳瑬敔瑸猠畡渠桧썩鞕ꟃ⁭桴㩵戠鿃闢쎗₯档鿃闢隕⁮‭呈偔㐠㤰‬敲畳瑬欠鲔铢溤⁧铢쎀쎦鞕닃㵩牴敵਍偛十嵓㔠‮啓䵂呉䍟䵏䱐呅佉⁎慳⁵杮楨鿃闢쎗涧琠畨›썢鞕꿃挠써醕闢準ⴠ䠠呔⁐〴ഹ嬊䅐卓⁝⸶堠湩朠慩栠鿃闢쎑溭猠畡渠桧썩鞕ꟃ⁭桴㩵戠鿃闢쎗₯档鿃闢隕⁮‭呈偔㐠㤰਍偛十嵓㜠‮李闢醖鿃闢슗榥瀠써鞕ꛃ⁩써鞕뫃⁰桫铢꒔杮琠慨⁹铢쎀쎦鞕닃⁩铢쎀麕離쎑鞕뫃⁣桮썩鞕ꟃ⁭썶鞕釃肔ꛃ铢쎜₺杮楨鿃闢쎗涧琠畨਍偛十嵓㠠‮李闢醖鿃闢슗榥挠써鞕뫂琠鲔볂挠铢邌杮欠鲔铢溤⁧썴鞕離ₒ썭鞕鋆氠鿃闢쎑榭肔ꛃ闢醖鿃闢쎗掺ⴠ䠠呔⁐〴ഹ嬊䅐卓⁝⸹䰠铢쎜溺⁨铢쎀쎦醕귃⁯桫铢꒔杮朠楨肔ꛃ铢슜₿썫醕铢璐焠썵醕뫃肔ꛃ铢쎜₺畤썹鞕ꟃ⁴畱⁡偁⁉桴闢醖鿃闢슗溥⁧‭呈偔㐠㤰਍偛十嵓ㄠ⸰唠⁉桫铢芔⁡桴潡琠铢쎜掭쌠鞕鋆琠썲醕귃杮琠鲔귃⁩썫醕铢璐琠鲔闢掑ⴠ洠⵹潷歲⬠琠獡獫›獩慔歳敔浲湩污਍偛十嵓ㄠ⸱䄠䥐欠썩鞕ꋃ⁭牴⁡썬醕귃⁩牴鿃闢쎑溭⁧桴铢쎜榭丠䅇⁙鲔鳃⁃䡇⁉琨潲杮琠慲獮捡楴湯‬慳⁵桫鲔귃 ‭铢쎀쎦鞕곃⁣썬醕귃⁩牴鿃闢쎑溭⁧桴铢쎜榭猠畡愠癤獩牯䱹捯൫嬊䅐卓⁝㈱‮界鿃闢쎗溴⁧铢쎀憦杮琠써鞕離排栠썩鞕ꟃ⁮鏎ꗃ蛃渠鿃闢쎗炖搠祵鿃闢쎗璧츠쎓쎥₆鲔뫃桮肔ꛃ鿃闢쎑澭搠祵鿃闢쎗璧瘠鿃闢슑溽挠써醕귃⁹‭呈偔㈠㄰㈯〰츠쎓쎥₆佃偍䕌䕔ൄ嬊䅐卓⁝㌱‮界鿃闢쎗溴⁧牴鿃闢쎑₺썬醕귃⁩牴闢醖鿃闢슗探渠桧썩鞕ꟃ⁭桴⁵썶醕뷂⁮潨鿃闢쎑璭肔ꛃ鿃闢쎗準⁧‭牴鿃闢쎑₺썬醕귃⁩呈偔㈠〰츠쎓쎥₆义偟佒則卅㭓琠鲔볂桮氠鿃闢쎑榭䠠呔⁐〲‱鏎ꗃ蛃圠䥁䥔䝎剟噅䕉ൗഊ㴊㴽䬠鿃闢鮕⁔啑鿃闢쎑㪳ㄠ‵慰獳⼠〠映楡⁬㴽ഽ

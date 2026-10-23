@@ -34,14 +34,14 @@ At line:1 char:1
   [PASS] C2. ApprovalCase d├╣ng ─æ├║ng trß║íng th├íi AGREED (kh├┤ng phß║úi APPROVED) - case=AGREED
   [PASS] C3. ApprovalDecision l╞░u ng╞░ß╗¥i/l├╜ do - action=AGREE
   [PASS] C4. TaskUpdate kind=approve + giß╗» tiß║┐n ─æß╗Ö 100% - kind=approve, progress=100
-  [PASS] C5. API chi tiß║┐t trß║ú projection approval (ng╞░ß╗¥i/thß╗¥i gian/l├╜ do) - {"caseId":"ef46f266-511d-4e64-b079-3837633226ac","caseStatus":"AGREED","round":1,"action":"AGREE","actionLabel":"─Éß╗ông ├╜","reason":"─Éß╗ông ├╜ ng
+  [PASS] C5. API chi tiß║┐t trß║ú projection approval (ng╞░ß╗¥i/thß╗¥i gian/l├╜ do) - {"caseId":"62253705-6023-4c92-8260-fb1ac8b79e1a","caseStatus":"AGREED","round":1,"action":"AGREE","actionLabel":"─Éß╗ông ├╜","reason":"─Éß╗ông ├╜ ng
   [PASS] C6. Nhß║¡t k├╜ hß╗úp nhß║Ñt c├│ d├▓ng approve ─æ├║ng ng╞░ß╗¥i - L├únh ─æß║ío DEMO (thß╗¡ nghiß╗çm)
-  [PASS] C7. Th├┤ng b├ío cho cß║ú chß╗º tr├¼ v├á ng╞░ß╗¥i phß╗æi hß╗úp, deep link nhiß╗çm vß╗Ñ - recipients=2, urls=/tasks/49a4b06c-6839-493a-8e1e-063f27966b9d
+  [PASS] C7. Th├┤ng b├ío cho cß║ú chß╗º tr├¼ v├á ng╞░ß╗¥i phß╗æi hß╗úp, deep link nhiß╗çm vß╗Ñ - recipients=2, urls=/tasks/8bb76b30-76f4-448e-969c-0ccd657aae53
 
 --- D. Trß║ú lß║íi + tr├¼nh lß║íi ---
   [PASS] D1. Chß╗º tr├¼ nß╗Öp lß║ºn 1 => 201 - HTTP 201
   [PASS] D2. Trß║ú lß║íi: IN_PROGRESS, GIß╗« kß║┐t quß║ú + tiß║┐n ─æß╗Ö 100% - HTTP 200, status=IN_PROGRESS, progress=100
-  [PASS] D3. Projection bß╗ï trß║ú lß║íi c├│ l├╜ do/ng╞░ß╗¥i - {"caseId":"90ceef00-f857-47d4-9eaf-6abb3188afd2","caseStatus":"REJECTED","round":1,"action":"REJECT","actionLabel":"Kh├┤ng ─æß╗ông ├╜","reason":"
+  [PASS] D3. Projection bß╗ï trß║ú lß║íi c├│ l├╜ do/ng╞░ß╗¥i - {"caseId":"c06da40f-720a-4480-bb6b-9e3744091f87","caseStatus":"REJECTED","round":1,"action":"REJECT","actionLabel":"Kh├┤ng ─æß╗ông ├╜","reason":"
   [PASS] D4. Tr├¼nh lß║íi: WAITING_REVIEW, case mß╗ƒ v├▓ng 2, l╞░u RESPOND ─æ├║ng ng╞░ß╗¥i - HTTP 201, case=OPEN, round=2, actor=13b3751d-3a27-4dd4-9fca-e999e1e2ad37
   [PASS] D5. Lß╗ïch sß╗¡ submit khi tr├¼nh lß║íi c├│ mß║╖t - submit
 

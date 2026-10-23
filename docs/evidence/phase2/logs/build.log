@@ -8,11 +8,11 @@ At C:\Users\thanhnx\AppData\Roaming\npm\pnpm.ps1:14 char:3
 Environment variables loaded from .env
 Prisma schema loaded from prisma\schema.prisma
 
-Γ£ö Generated Prisma Client (v6.19.3) to .\node_modules\.pnpm\@prisma+client@6.19.3_prism_1d040ab5215f59f0e27ddee7f0cf082e\node_modules\@prisma\client in 343ms
+Γ£ö Generated Prisma Client (v6.19.3) to .\node_modules\.pnpm\@prisma+client@6.19.3_prism_1d040ab5215f59f0e27ddee7f0cf082e\node_modules\@prisma\client in 299ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
 
    Γû▓ Next.js 15.5.27
    - Environments: .env.local, .env
@@ -20,10 +20,13 @@ Tip: Need your database queries to be 1000x faster? Accelerate offers you that a
      ┬╖ middlewareClientMaxBodySize: "25mb"
 
    Creating an optimized production build ...
- Γ£ô Compiled successfully in 14.9s
+ Γ£ô Compiled successfully in 12.8s
    Linting and checking validity of types ...
    Collecting page data ...
    Generating static pages (0/99) ...
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /huong-dan. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban/cau-hinh. Please move it to 
 viewport export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
@@ -33,25 +36,31 @@ Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /leaves. Please move it to viewport export 
 instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /notifications. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /products. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /monthly-results. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /meetings. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/organization. Please move it to 
-viewport export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /approvals. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /my-work. Please move it to viewport export 
-instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/feedback. Please move it to viewport 
 export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/catalog. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/audit. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/supervisions. Please move it to 
 viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /approvals. Please move it to viewport export 
+instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/system. Please move it to viewport 
 export instead.
@@ -59,55 +68,40 @@ Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /calendar. Please move it to viewport export 
 instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/audit. Please move it to viewport 
-export instead.
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export 
+instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/forms. Please move it to viewport 
-export instead.
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export 
+instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export 
 instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /docs. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/catalog. Please move it to viewport 
-export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport 
 export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /products. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/excel. Please move it to viewport 
 export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/excel. Please move it to viewport 
 export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports. Please move it to viewport export 
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /my-work. Please move it to viewport export 
 instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/snapshots. Please move it to 
-viewport export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/snapshots. Please move it to 
-viewport export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /monthly-results. Please move it to viewport 
-export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /routine. Please move it to viewport export 
 instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /change-password. Please move it to viewport 
-export instead.
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /plans. Please move it to viewport export 
+instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /roster. Please move it to viewport export 
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/snapshots. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports/snapshots. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /reports. Please move it to viewport export 
 instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /tasks. Please move it to viewport export 
@@ -116,29 +110,35 @@ Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/permissions. Please move it to 
 viewport export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /change-password. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/organization. Please move it to 
+viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /roster. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban/bao-cao. Please move it to viewport 
 export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /huong-dan. Please move it to viewport export 
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /meetings. Please move it to viewport export 
 instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /work-item-reviews. Please move it to 
 viewport export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /plans. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export 
-instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
- ΓÜá Unsupported metadata themeColor is configured in metadata export in /notifications. Please move it to viewport 
-export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban/nhap. Please move it to viewport 
 export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /admin/forms. Please move it to viewport 
+export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /docs. Please move it to viewport export 
+instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ΓÜá Unsupported metadata themeColor is configured in metadata export in /giao-ban. Please move it to viewport export 
+instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
    Generating static pages (24/99) 
    Generating static pages (49/99) 

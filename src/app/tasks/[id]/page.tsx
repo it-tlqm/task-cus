@@ -547,7 +547,8 @@ export default function TaskDetailPage() {
       fetchTaskDetail();
       fetchAttachments(taskId);
       fetchComments(taskId);
-    }    // YC-01/YC-03: danh sách nhân sự thật cho chọn chủ trì/phối hợp khi sửa
+    }
+    // YC-01/YC-03: danh sách nhân sự thật cho chọn chủ trì/phối hợp khi sửa
     fetch("/api/people?pageSize=100")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {

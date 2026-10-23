@@ -1,17 +1,1 @@
-node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
-of npm. See `npm help npmrc` for supported config options.
-At line:1 char:1
-+ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-=== V3.1.3 ΓÇö CHß╗ÉNG Tß╗░ DUYß╗åT (mß╗ìi luß╗ông) ===
-
-  [PASS] A1. Lanh dao TU nghiem thu nhiem vu cua minh => bi chan (403) - HTTP 403 Kh├┤ng nghiß╗çm thu trß╗▒c tiß║┐p qua cß║¡p nhß║¡t tiß║┐n ─æß╗Ö. Vui l├▓ng xß╗¡ l├╜ tß║íi hß╗ô
-  [PASS] A2. Trang thai nhiem vu KHONG doi - IN_PROGRESS
-  [PASS] B1. Lanh dao TU quyet dinh ho so cua minh (AGREE) => bi chan (403) - HTTP 403 Bß║ín kh├┤ng ─æ╞░ß╗úc tß╗▒ quyß║┐t ─æß╗ïnh hß╗ô s╞í do ch├¡nh m├¼nh tr├¼nh ΓÇö cß║ºn l├únh ─æß║ío 
-  [PASS] B2. Ho so chua co quyet dinh tu duyet (status phai khac AGREED) - status=undefined, selfAgree=0
-  [PASS] C1. Can bo khong co tham quyen quyet dinh => bi chan (403) - HTTP 403
-
-=== 5 pass / 0 fail ===
+潮敤攮數㨠渠浰眠牡⁮湕湫睯⁮牰橯捥⁴潣普杩∠湯祬戭極瑬搭灥湥敤据敩≳‮桔獩眠汩⁬瑳灯眠牯楫杮椠⁮桴⁥敮瑸洠橡牯瘠牥楳湯ഠ漊⁦灮⹭匠敥怠灮⁭敨灬渠浰捲⁠潦⁲畳灰牯整⁤潣普杩漠瑰潩獮മ䄊⁴楬敮ㄺ挠慨㩲റ⬊☠∠㩃停潲牧浡䘠汩獥湜摯橥⽳潮敤攮數•䌢尺牐杯慲⁭楆敬屳潮敤獪港摯彥潭⸠⸮਍‫繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾繾ൾ †⬠䌠瑡来牯䥹普⁯††††㨠丠瑯灓捥晩敩㩤⠠灮⁭慷湲唠歮潮⹷⸮潣普杩漠瑰潩獮㨮瑓楲杮 嵛‬敒潭整硅散瑰潩൮ †⬠䘠汵祬畑污晩敩䕤牲牯摉㨠丠瑡癩䍥浯慭摮牅潲൲ ਍㴽‽㍖ㄮ㌮츠쎓쎇₶䡃鿃闢쎗争⁇썔鞕離ₑ啄썙鞕ꗃ⁔洨鿃闢쎗榬氠썵鞕듃杮 㴽ഽഊ 嬠䅐卓⁝ㅁ‮慌桮搠潡吠⁕杮楨浥琠畨渠楨浥瘠⁵畣⁡業桮㴠‾楢挠慨⁮㐨㌰ ‭呈偔㐠㌰䬠鲔铢溤⁧杮楨鿃闢쎗涧琠畨琠썲鞕離排琠썩醕铢炐焠慵挠鿃闢슑炡渠써醕ꇂ⁴楴鿃闢邔⁮铢쎀쎦鞕雃‮畖⁩鲔離溓⁧썸鞕ꇂ氠铢鲕琠鿃闢쎑榭栠鿃闢쎗ප 嬠䅐卓⁝㉁‮牔湡⁧桴楡渠楨浥瘠⁵䡋乏⁇潤⁩‭义偟佒則卅൓ 嬠䅐卓⁝ㅂ‮慌桮搠潡吠⁕畱敹⁴楤桮栠⁯潳挠慵洠湩⁨䄨則䕅 㸽戠⁩档湡⠠〴⤳ⴠ䠠呔⁐〴″썂醕귃⁮桫铢꒔杮肔ꛃ闢醖鿃闢쎗掺琠鿃闢銖焠祵鿃闢邔⁴铢쎀쎦鞕꿃桮栠鿃闢쎗₴麕귃搠⁯档铢슜溡⁨鲔볂桮琠鲔볂桮츠쎓쎇₶썣醕뫂⁮鲔뫃桮肔ꛃ鿃闢쎑澭ഠ 嬠䅐卓⁝㉂‮潈猠⁯档慵挠⁯畱敹⁴楤桮琠⁵畤敹⁴猨慴畴⁳桰楡欠慨⁣䝁䕒䑅 ‭瑳瑡獵甽摮晥湩摥‬敳晬杁敲㵥ര 嬠䅐卓⁝ㅃ‮慃⁮潢欠潨杮挠⁯桴浡焠祵湥焠祵瑥搠湩⁨㸽戠⁩档湡⠠〴⤳ⴠ䠠呔⁐〴ളഊ㴊㴽㔠瀠獡⁳ ‰慦汩㴠㴽਍

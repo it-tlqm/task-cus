@@ -19,6 +19,7 @@ const dbUrl = assertLocalTestDatabase(
 );
 process.env.DATABASE_URL = dbUrl;
 process.env.DIRECT_URL = dbUrl;
+process.env.JWT_SECRET = process.env.JWT_SECRET || "phase_a_local_test_secret";
 
 const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
@@ -222,6 +223,12 @@ async function main() {
     roleCode: "UNIT_LEADER",
     unitId: leaderUnitId,
   });
+  const tempLeader2 = await createTempAccount({
+    username: `yc10leader2${TAG.slice(-4).toLowerCase()}`,
+    fullName: `${TAG} Lãnh đạo dự phòng 2`,
+    roleCode: "UNIT_LEADER",
+    unitId: leaderUnitId,
+  });
   const tempAdmin = await createTempAccount({
     username: `yc10admin${TAG.slice(-4).toLowerCase()}`,
     fullName: `${TAG} Quản trị kỹ thuật`,
@@ -229,6 +236,7 @@ async function main() {
     unitId: leaderUnitId,
   });
   const tokTempLeader = await login(tempLeader.account.username);
+  const tokTempLeader2 = await login(tempLeader2.account.username);
   const tokTempAdmin = await login(tempAdmin.account.username);
 
   // Baseline score/QĐ1277/monthly
@@ -586,6 +594,84 @@ async function main() {
   check("F3. Collaborator quyết định => 403", d.res.status === 403, `HTTP ${d.res.status}`);
   check("F4. Collaborator không tạo case", (await caseOf(taskG.id)) === null);
 
+  // F5-F7: quick approve trên My Work phải fail-closed khi flag bật
+  const taskQ = await createTask({
+    code: `${TAG}-Q`,
+    title: `${TAG} nhiệm vụ quick approve`,
+    ownerId: ownerAccount.personId,
+    unitId,
+  });
+  const quickRes = await fetch(`${BASE}/api/tasks`, {
+    method: "PATCH",
+    headers: H(tokLeader),
+    body: JSON.stringify({ id: taskQ.id, action: "CONFIRM_COMPLETION" }),
+  });
+  const quickJson = await quickRes.json().catch(() => ({}));
+  check("F5. CONFIRM_COMPLETION thiếu quality => 422", quickRes.status === 422, `HTTP ${quickRes.status}`);
+  check("F6. Quick approve 422 không tạo case", (await caseOf(taskQ.id)) === null);
+  check(
+    "F7. Quick approve 422 không đổi Task (WAITING_REVIEW)",
+    (await prisma.task.findUnique({ where: { id: taskQ.id } }))?.status === "WAITING_REVIEW" &&
+      String(quickJson?.error || "").includes("chất lượng")
+  );
+
+  // F8-F13: người trình gốc không được tự duyệt adjustment do người khác yêu cầu
+  const taskI = await createTask({
+    code: `${TAG}-I`,
+    title: `${TAG} nhiệm vụ submitter adjustment`,
+    ownerId: tempLeader.person.id,
+    unitId: leaderUnitId,
+    status: "COMPLETED",
+  });
+  const caseI = await prisma.approvalCase.create({
+    data: {
+      caseType: "TASK_RESULT",
+      resourceId: taskI.id,
+      resourceCode: taskI.code,
+      title: taskI.title,
+      unitId: leaderUnitId,
+      submittedById: tempLeader.person.id,
+      status: "AGREED",
+      currentRound: 1,
+      decidedById: leaderAccount.personId,
+      decidedAt: new Date(),
+    },
+  });
+  await prisma.approvalDecision.create({
+    data: {
+      caseId: caseI.id,
+      round: 1,
+      action: "AGREE",
+      reason: "Đồng ý nghiệm thu",
+      qualityPercent: 65,
+      actorId: leaderAccount.id,
+      actorPersonId: leaderAccount.personId,
+    },
+  });
+  const arI = await adjReq(tokLeader, taskI.id, {
+    newQualityPercent: 80,
+    reason: "Điều chỉnh do lãnh đạo quyết định đề nghị",
+  });
+  check("F8. Người quyết định khác yêu cầu adjustment => 201", arI.res.status === 201, `HTTP ${arI.res.status}`);
+  const adjIId = arI.json?.data?.id as string;
+  pv = await preview(tokTempLeader, taskI.id);
+  const adjIView = (pv.data?.quality?.adjustments || []).find((a: any) => a.id === adjIId);
+  check(
+    "F9. Preview người trình gốc: canDecide=false",
+    adjIView?.canDecide === false,
+    JSON.stringify(adjIView || null)
+  );
+  let adI = await adjDecide(tokTempLeader, adjIId, { action: "APPROVE" });
+  check("F10. Người trình gốc tự duyệt adjustment => 403", adI.res.status === 403, `HTTP ${adI.res.status}`);
+  check(
+    "F11. Adjustment vẫn PENDING sau khi bị chặn",
+    (await prisma.approvalQualityAdjustment.findUnique({ where: { id: adjIId } }))?.status === "PENDING"
+  );
+  adI = await adjDecide(tokTempLeader2, adjIId, { action: "APPROVE" });
+  check("F12. Lãnh đạo khác thẩm quyền duyệt => 200", adI.res.status === 200, `HTTP ${adI.res.status}`);
+  pv = await preview(tokLeader, taskI.id);
+  check("F13. Effective 80 sau khi lãnh đạo khác duyệt", pv.data?.quality?.effective === 80);
+
   // ================================================================
   // G. Flag OFF — legacy behavior (gọi service trực tiếp)
   // ================================================================
@@ -742,6 +828,41 @@ async function main() {
     JSON.stringify(qRowsNull[0] || [])
   );
 
+  // Flag OFF: route export không trả quality preview và không thêm sheet phụ
+  const exportUrl = `${BASE}/api/evaluation-export?template=01A&periodType=MONTH&year=2026&number=10&personId=${ownerAccount.personId}`;
+  process.env.V3_YC10_QUALITY = "false";
+  const { NextRequest } = await import("next/server");
+  const exportRoute = await import("../src/app/api/evaluation-export/route");
+  const offPreviewRes = await exportRoute.GET(
+    new NextRequest(`${exportUrl}&preview=1`, {
+      headers: { Authorization: `Bearer ${tokOwner}` },
+    })
+  );
+  const offPreviewJson = await offPreviewRes.json().catch(() => ({}));
+  check(
+    "I6. Flag OFF: preview export KHÔNG có quality",
+    offPreviewRes.status === 200 &&
+      !Object.prototype.hasOwnProperty.call(offPreviewJson?.data || {}, "quality"),
+    `HTTP ${offPreviewRes.status}`
+  );
+  const offFileRes = await exportRoute.GET(
+    new NextRequest(exportUrl, { headers: { Authorization: `Bearer ${tokOwner}` } })
+  );
+  const offBuf = Buffer.from(await offFileRes.arrayBuffer());
+  const offWb = new ExcelJS.Workbook();
+  await offWb.xlsx.load(offBuf);
+  const offSheetNames = offWb.worksheets.map((w: any) => w.name);
+  check(
+    "I7. Flag OFF: file export KHÔNG có sheet 'Đánh giá chất lượng'",
+    offFileRes.status === 200 && !offSheetNames.includes("Đánh giá chất lượng"),
+    `HTTP ${offFileRes.status} | ${offSheetNames.join(" | ")}`
+  );
+  check(
+    "I8. Flag OFF: vẫn có sheet chính thức 01A",
+    offSheetNames.some((n: string) => n.includes("01A"))
+  );
+  process.env.V3_YC10_QUALITY = "true";
+
   // So sánh trực tiếp: thêm sheet phụ không đổi bất kỳ ô nào của sheet chính thức
   const exportSvc = await import("../src/server/evaluation-export");
   const baseParams: any = {
@@ -816,13 +937,17 @@ async function main() {
     }
   }
   check(
-    "I6. Thêm sheet quality KHÔNG đổi ô chính thức (01A/Bảng 1)",
+    "I9. Thêm sheet quality KHÔNG đổi ô chính thức (01A/Bảng 1)",
     officialIdentical && comparedSheets >= 2,
     `sheets=${comparedSheets}`
   );
   check(
-    "I7. Workbook có qualityRows có thêm đúng 1 sheet",
+    "I10. Workbook có qualityRows có thêm đúng 1 sheet",
     wbYes.worksheets.length === wbNo.worksheets.length + 1
+  );
+  check(
+    "I11. Builder không truyền qualityRows => không có sheet quality",
+    !wbNo.worksheets.some((w: any) => w.name === "Đánh giá chất lượng")
   );
 
   // ================================================================

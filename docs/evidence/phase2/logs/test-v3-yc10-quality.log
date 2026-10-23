@@ -103,9 +103,18 @@ At line:1 char:1
   [PASS] F2. Kh├┤ng tß║ío case khi tß╗▒ duyß╗çt
   [PASS] F3. Collaborator quyß║┐t ─æß╗ïnh => 403 - HTTP 403
   [PASS] F4. Collaborator kh├┤ng tß║ío case
+  [PASS] F5. CONFIRM_COMPLETION thiß║┐u quality => 422 - HTTP 422
+  [PASS] F6. Quick approve 422 kh├┤ng tß║ío case
+  [PASS] F7. Quick approve 422 kh├┤ng ─æß╗òi Task (WAITING_REVIEW)
+  [PASS] F8. Ng╞░ß╗¥i quyß║┐t ─æß╗ïnh kh├íc y├¬u cß║ºu adjustment => 201 - HTTP 201
+  [PASS] F9. Preview ng╞░ß╗¥i tr├¼nh gß╗æc: canDecide=false - {"id":"972a5e80-2460-48b9-bd96-dccaab357b04","decisionId":"0821ab6b-7dd4-4d7f-8795-71552406c630","revision":1,"oldQualityPercent":65,"newQualityPercent":80,"reason":"─Éiß╗üu chß╗ënh do l├únh ─æß║ío quyß║┐t ─æß╗ïnh ─æß╗ü nghß╗ï","status":"PENDING","statusLabel":"Chß╗¥ quyß║┐t ─æß╗ïnh","requestedById":"00d7d7f1-5a24-473c-bcf5-2ae02e34419d","requestedByName":"L├únh ─æß║ío DEMO (thß╗¡ nghiß╗çm)","requestedAt":"2026-10-23T15:35:58.488Z","decidedById":null,"decidedByName":null,"decidedAt":null,"decisionNote":null,"canDecide":false}
+  [PASS] F10. Ng╞░ß╗¥i tr├¼nh gß╗æc tß╗▒ duyß╗çt adjustment => 403 - HTTP 403
+  [PASS] F11. Adjustment vß║½n PENDING sau khi bß╗ï chß║╖n
+  [PASS] F12. L├únh ─æß║ío kh├íc thß║⌐m quyß╗ün duyß╗çt => 200 - HTTP 200
+  [PASS] F13. Effective 80 sau khi l├únh ─æß║ío kh├íc duyß╗çt
 
 --- G. Feature flag OFF (legacy) ---
-  [PASS] G1. Flag off: AGREE thiß║┐u quality vß║½n th├ánh c├┤ng - {"success":true,"message":"─É├ú chß║Ñp thuß║¡n hß╗ô s╞í [YC10-583290-H]. Nhiß╗çm vß╗Ñ ─æ├ú ─æ╞░ß╗úc nghiß╗çm thu ho├án th├ánh.","data":{"caseId":"3becdfd7-be6c-41b9-9680-bf77c38f6c20"
+  [PASS] G1. Flag off: AGREE thiß║┐u quality vß║½n th├ánh c├┤ng - {"success":true,"message":"─É├ú chß║Ñp thuß║¡n hß╗ô s╞í [YC10-727296-H]. Nhiß╗çm vß╗Ñ ─æ├ú ─æ╞░ß╗úc nghiß╗çm thu ho├án th├ánh.","data":{"caseId":"a5543f42-84e7-4fb7-93e0-a68d2731c73c"
   [PASS] G2. Flag off: decision quality NULL (legacy)
   [PASS] G3. Flag off: Task vß║½n COMPLETED
   [PASS] G4. Flag off: quality view disabled/hidden
@@ -124,10 +133,14 @@ At line:1 char:1
   [PASS] I1. Export 01A => 200 - HTTP 200
   [PASS] I2. C├│ sheet phß╗Ñ '─É├ính gi├í chß║Ñt l╞░ß╗úng' - Bß║úng 1 (t├¡nh ─æiß╗âm) | Biß╗âu 01A (CC) | ─É├ính gi├í chß║Ñt l╞░ß╗úng
   [PASS] I3. Vß║½n c├│ sheet ch├¡nh thß╗⌐c 01A
-  [PASS] I4. D├▓ng quality task A: gß╗æc 65, hiß╗çu lß╗▒c 90, c├│ ─æiß╗üu chß╗ënh - [2,"YC10-583290-A","YC10-583290 nhiß╗çm vß╗Ñ A",1,65,90,"C├│ ─æiß╗üu chß╗ënh","─Éiß╗üu chß╗ënh lß║ºn 2","L├únh ─æß║ío DEMO (thß╗¡ nghiß╗çm)","22:16:38 23/10/2026"]
-  [PASS] I5. Quality NULL hiß╗ân thß╗ï 'Ch╞░a ─æ├ính gi├í' - [3,"YC10-583290-B1","YC10-583290 nhiß╗çm vß╗Ñ B1","ΓÇö","Ch╞░a ─æ├ính gi├í","Ch╞░a ─æ├ính gi├í","ΓÇö","ΓÇö","ΓÇö","ΓÇö"]
-  [PASS] I6. Th├¬m sheet quality KH├öNG ─æß╗òi ├┤ ch├¡nh thß╗⌐c (01A/Bß║úng 1) - sheets=2
-  [PASS] I7. Workbook c├│ qualityRows c├│ th├¬m ─æ├║ng 1 sheet
+  [PASS] I4. D├▓ng quality task A: gß╗æc 65, hiß╗çu lß╗▒c 90, c├│ ─æiß╗üu chß╗ënh - [2,"YC10-727296-A","YC10-727296 nhiß╗çm vß╗Ñ A",1,65,90,"C├│ ─æiß╗üu chß╗ënh","─Éiß╗üu chß╗ënh lß║ºn 2","L├únh ─æß║ío DEMO (thß╗¡ nghiß╗çm)","22:35:43 23/10/2026"]
+  [PASS] I5. Quality NULL hiß╗ân thß╗ï 'Ch╞░a ─æ├ính gi├í' - [3,"YC10-727296-B1","YC10-727296 nhiß╗çm vß╗Ñ B1","ΓÇö","Ch╞░a ─æ├ính gi├í","Ch╞░a ─æ├ính gi├í","ΓÇö","ΓÇö","ΓÇö","ΓÇö"]
+  [PASS] I6. Flag OFF: preview export KH├öNG c├│ quality - HTTP 200
+  [PASS] I7. Flag OFF: file export KH├öNG c├│ sheet '─É├ính gi├í chß║Ñt l╞░ß╗úng' - HTTP 200 | Bß║úng 1 (t├¡nh ─æiß╗âm) | Biß╗âu 01A (CC)
+  [PASS] I8. Flag OFF: vß║½n c├│ sheet ch├¡nh thß╗⌐c 01A
+  [PASS] I9. Th├¬m sheet quality KH├öNG ─æß╗òi ├┤ ch├¡nh thß╗⌐c (01A/Bß║úng 1) - sheets=2
+  [PASS] I10. Workbook c├│ qualityRows c├│ th├¬m ─æ├║ng 1 sheet
+  [PASS] I11. Builder kh├┤ng truyß╗ün qualityRows => kh├┤ng c├│ sheet quality
 
 --- J. Kh├┤ng chß║ím ─æiß╗âm/Q─É1277/monthly ---
   [PASS] J1. Kh├┤ng sinh MonthlyWorkResult cho task test (ngo├ái fixture export ─æ├ú tß║ío) - 2
@@ -138,4 +151,4 @@ At line:1 char:1
   [PASS] J6. Quality chß╗ë nß║▒m tr├¬n ApprovalDecision, kh├┤ng sinh d├▓ng ─æiß╗âm
   [PASS] J7. Monthly baseline trß╗ƒ lß║íi sau cleanup
 
-=== 107 PASS / 0 FAIL ===
+=== 120 PASS / 0 FAIL ===
