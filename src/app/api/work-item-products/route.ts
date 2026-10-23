@@ -37,8 +37,10 @@ export async function GET(req: NextRequest) {
             code: true,
             taskName: true,
             outputProduct: true,
+            groupName: true,
             convertFactor: true,
             status: true,
+            group: { select: { code: true, title: true } },
             version: { select: { code: true, status: true } },
           },
         },
@@ -55,9 +57,11 @@ export async function GET(req: NextRequest) {
         code: i.productItem.code,
         taskName: i.productItem.taskName,
         outputProduct: i.productItem.outputProduct,
+        groupName: i.productItem.group?.title || i.productItem.groupName || null,
         factor: i.productItem.convertFactor,
         factorSource: i.factorSource || "QD1277_PRODUCT",
         factorSnapshot: i.factorSnapshot,
+        isPrimary: i.isPrimary,
         quantity: i.quantity,
         quantityUnit: i.quantityUnit,
         note: i.note,
@@ -112,24 +116,48 @@ export async function POST(req: NextRequest) {
       return jsonError("Mã sản phẩm không thuộc danh mục đang hiệu lực.", 400);
     }
 
-    const existing = await prisma.workItemProduct.findFirst({
-      where: { workItemId, productItemId },
-    });
-    if (existing) {
-      return jsonError("Công việc này đã gắn mã sản phẩm này.", 409);
-    }
+    const created = await prisma.$transaction(async (tx) => {
+      const existing = await tx.workItemProduct.findFirst({
+        where: { workItemId, productItemId },
+      });
+      if (existing) {
+        const err: any = new Error("Công việc này đã gắn mã sản phẩm này.");
+        err.statusCode = 409;
+        throw err;
+      }
 
-    const created = await prisma.workItemProduct.create({
-      data: {
-        workItemId,
-        productItemId,
-        quantity: quantity === undefined || quantity === null || quantity === "" ? null : Number(quantity),
-        quantityUnit: quantityUnit ? String(quantityUnit).trim() : null,
-        note: note ? String(note).trim() : null,
-        reviewState: "PROPOSED",
-        proposedById: user.personId,
-        proposedAt: new Date(),
-      },
+      // Liên kết đầu tiên là sản phẩm chính. Đồng thời giữ con trỏ
+      // PersonalWorkItem.productItemId trỏ đúng liên kết chính, tránh
+      // trường hợp có WorkItemProduct nhưng con trỏ null (dữ liệu mồ côi).
+      const isFirstLink = (await tx.workItemProduct.count({ where: { workItemId } })) === 0;
+      const link = await tx.workItemProduct.create({
+        data: {
+          workItemId,
+          productItemId,
+          isPrimary: isFirstLink,
+          quantity: quantity === undefined || quantity === null || quantity === "" ? null : Number(quantity),
+          quantityUnit: quantityUnit ? String(quantityUnit).trim() : null,
+          note: note ? String(note).trim() : null,
+          reviewState: "PROPOSED",
+          proposedById: user.personId,
+          proposedAt: new Date(),
+        },
+      });
+      if (isFirstLink) {
+        await tx.personalWorkItem.update({
+          where: { id: workItemId },
+          data: { productItemId },
+        });
+      }
+      return link;
+    }).catch((err: any) => {
+      if (err?.statusCode === 409) throw err;
+      if (err?.code === "P2002") {
+        const dup: any = new Error("Công việc này đã gắn mã sản phẩm này.");
+        dup.statusCode = 409;
+        throw dup;
+      }
+      throw err;
     });
 
     await recordAuditEvent({
@@ -148,7 +176,115 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (err: any) {
+    if (err?.statusCode) return jsonError(err.message, err.statusCode);
     console.error("[WORK_ITEM_PRODUCTS] lỗi đề xuất:", err);
     return jsonError("Không đề xuất được mã sản phẩm.", 500);
+  }
+}
+
+/**
+ * Bỏ một sản phẩm QĐ1277 do CHÍNH NGƯỜI THỰC HIỆN đề xuất, khi hồ sơ chưa khóa.
+ * - Không xóa liên kết đã được lãnh đạo xác nhận.
+ * - Nếu sản phẩm bị bỏ đang là sản phẩm chính, chuyển con trỏ chính sang liên kết còn lại
+ *   (hoặc null) để không còn tham chiếu mồ côi.
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await authenticateRequest(req);
+    if (!user) return jsonError("Yêu cầu đăng nhập", 401);
+
+    const body = await req.json().catch(() => ({}));
+    const workItemId = String(body.workItemId || "").trim();
+    const productItemId = String(body.productItemId || "").trim();
+    if (!workItemId || !productItemId) {
+      return jsonError("Thiếu đầu việc hoặc mã sản phẩm cần bỏ", 400);
+    }
+
+    const access = await checkWorkItemAccess(user, workItemId);
+    if (!access.allowed || !access.item) {
+      return jsonError(access.reason || "Bạn không có quyền bỏ sản phẩm của công việc này", 403);
+    }
+    if (access.item.personId !== user.personId) {
+      return jsonError("Chỉ người thực hiện công việc mới được bỏ mã sản phẩm đã đề xuất.", 403);
+    }
+    if (isWorkItemReviewLocked(access.item)) {
+      return jsonError(
+        "Công việc đã gửi hoặc đã được xác nhận — không thể tự bỏ sản phẩm.",
+        409
+      );
+    }
+
+    let removed: { code: string; wasPrimary: boolean } | null = null;
+    try {
+      removed = await prisma.$transaction(async (tx) => {
+        const link = await tx.workItemProduct.findFirst({
+          where: { workItemId, productItemId },
+          include: { productItem: { select: { code: true } } },
+        });
+        if (!link) return null;
+
+        if (link.reviewState === "CONFIRMED") {
+          const err: any = new Error(
+            "Sản phẩm này đã được lãnh đạo xác nhận — không thể bỏ."
+          );
+          err.statusCode = 409;
+          throw err;
+        }
+
+        const wasPrimary = link.isPrimary;
+        await tx.workItemProduct.delete({ where: { id: link.id } });
+
+        const currentItem = await tx.personalWorkItem.findUnique({
+          where: { id: workItemId },
+          select: { productItemId: true },
+        });
+        if (wasPrimary || currentItem?.productItemId === productItemId) {
+          const nextLink = await tx.workItemProduct.findFirst({
+            where: { workItemId },
+            orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+            select: { id: true, productItemId: true },
+          });
+          // Giữ đúng một sản phẩm chính sau khi xóa.
+          if (nextLink && wasPrimary) {
+            await tx.workItemProduct.update({
+              where: { id: nextLink.id },
+              data: { isPrimary: true },
+            });
+          }
+          await tx.personalWorkItem.update({
+            where: { id: workItemId },
+            data: { productItemId: nextLink?.productItemId ?? null },
+          });
+        }
+
+        return { code: link.productItem.code, wasPrimary };
+      });
+    } catch (err: any) {
+      if (err?.statusCode) return jsonError(err.message, err.statusCode);
+      throw err;
+    }
+
+    if (removed) {
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "WORK_ITEM_PRODUCT_REMOVE",
+        resourceType: "WorkItemProduct",
+        resourceId: workItemId,
+        oldData: {
+          workItemId,
+          productItemId,
+          productCode: removed.code,
+          wasPrimary: removed.wasPrimary,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { workItemId, productItemId, deleted: !!removed },
+    });
+  } catch (err: any) {
+    console.error("[WORK_ITEM_PRODUCTS] lỗi bỏ sản phẩm:", err);
+    return jsonError("Không bỏ được mã sản phẩm.", 500);
   }
 }

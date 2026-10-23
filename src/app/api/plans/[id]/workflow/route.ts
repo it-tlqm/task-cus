@@ -25,7 +25,11 @@ export async function POST(
       where: { id: planId },
       include: {
         unit: true,
-        items: true,
+        items: {
+          include: {
+            _count: { select: { workItems: true, taskLinks: true } },
+          },
+        },
       },
     });
 
@@ -66,6 +70,24 @@ export async function POST(
           });
         }
         return jsonError(`Kế hoạch ở trạng thái "${plan.status}" không thể trình duyệt lại`, 400);
+      }
+
+      // A4: không cho trình duyệt kế hoạch rỗng. Mỗi kế hoạch phải có ít nhất
+      // một hạng mục và hạng mục đó phải có đầu việc hoặc nhiệm vụ liên kết.
+      if (plan.items.length === 0) {
+        return jsonError(
+          "Kế hoạch chưa có hạng mục nào — hãy thêm hạng mục và đầu việc trước khi trình duyệt",
+          409
+        );
+      }
+      const populatedItems = plan.items.filter(
+        (item) => item._count.workItems > 0 || item._count.taskLinks > 0
+      );
+      if (populatedItems.length === 0) {
+        return jsonError(
+          "Kế hoạch chưa có đầu việc/nhiệm vụ nào — hãy thêm nội dung trước khi trình duyệt",
+          409
+        );
       }
 
       // YC-04: update có điều kiện — hai request đồng thời chỉ một request thắng

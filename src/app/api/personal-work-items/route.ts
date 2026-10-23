@@ -13,6 +13,11 @@ import {
 } from "@/server/work-catalog";
 import { parseDateOnly } from "@/server/work-dates";
 import { getEvidenceStorageProvider } from "@/server/storage";
+import {
+  planContentLockMessage,
+  validatePlanItemLink,
+} from "@/server/planning";
+import { ReportingPeriodError, resolveReportingPeriod } from "@/server/reporting-period";
 
 export async function GET(req: NextRequest) {
   try {
@@ -296,10 +301,25 @@ export async function POST(req: NextRequest) {
     }
 
 
-    // YC-32: hạn xử lý và ngày hoàn thành thực tế (tách biệt nhau)
-    const dueParsed = parseDateOnly(dueDate);    if (!dueParsed.ok) return jsonError(`Hạn xử lý: ${dueParsed.message}`, 400);
-    const completedParsed = parseDateOnly(completedDate);
-    if (!completedParsed.ok) return jsonError(`Ngày hoàn thành: ${completedParsed.message}`, 400);
+    // YC-32: hạn xử lý và ngày hoàn thành thực tế (tách biệt nhau).
+    // A4: không cho TẠO đầu việc ở trạng thái hoàn thành hoặc kèm ngày hoàn thành.
+    // Việc hoàn thành phải đi qua luồng "Báo hoàn thành & gửi lãnh đạo".
+    const dueParsed = parseDateOnly(dueDate);
+    if (!dueParsed.ok) return jsonError(`Hạn xử lý: ${dueParsed.message}`, 400);
+    const hasCompletedDateInput =
+      completedDate !== undefined &&
+      completedDate !== null &&
+      String(completedDate).trim() !== "";
+    if (hasCompletedDateInput || status === "COMPLETED") {
+      return jsonError(
+        "Không được tạo đầu việc ở trạng thái hoàn thành. Hãy tạo ở trạng thái đang thực hiện, sau đó báo hoàn thành để lãnh đạo xác nhận.",
+        409
+      );
+    }
+    const allowedCreateStatuses = ["ACTIVE", "NOT_STARTED", "IN_PROGRESS"];
+    if (status !== undefined && status !== null && status !== "" && !allowedCreateStatuses.includes(status)) {
+      return jsonError("Trạng thái đầu việc khi tạo mới không hợp lệ", 400);
+    }
 
     // YC-32: liên kết nhiệm vụ (nếu có) — kiểm tra tồn tại + quyền
     let resolvedTaskId: string | null = null;
@@ -363,35 +383,24 @@ export async function POST(req: NextRequest) {
       resolvedSourceKind = "CUSTOM";
     }
 
-    // Tự động phân giải hoặc tạo ReportingPeriod nếu truyền periodType, periodYear, periodNumber
-    if (!periodId && periodType && periodNumber) {
-      const typeStr = periodType === "WEEKLY" ? "WEEK" : periodType === "MONTHLY" ? "MONTH" : "DAY";
-      const year = periodYear || new Date().getFullYear();
-      const titleStr = periodType === "WEEKLY" ? `Tuần ${periodNumber}/${year}` : `Tháng ${periodNumber}/${year}`;
-
-      let period = await prisma.reportingPeriod.findFirst({
-        where: {
-          type: typeStr,
-          title: titleStr,
-        },
-      });
-
-      if (!period) {
-        const start = new Date(year, 0, 1 + (Number(periodNumber) - 1) * 7);
-        const end = new Date(start.getTime() + 6 * 86400000);
-        // Upsert theo unique (type, title): 2 request đồng thời không tạo trùng kỳ
-        period = await prisma.reportingPeriod.upsert({
-          where: { type_title: { type: typeStr, title: titleStr } },
-          update: {},
-          create: {
-            type: typeStr,
-            title: titleStr,
-            startAt: start,
-            endAt: end,
-          },
+    // Tự động phân giải hoặc tạo ReportingPeriod nếu truyền periodType, periodYear, periodNumber.
+    // Helper dùng chung với lập kế hoạch, hỗ trợ Ngày/Tuần/Tháng và không tạo kỳ trùng.
+    if (!periodId && periodType) {
+      try {
+        const period = await resolveReportingPeriod({
+          type: periodType,
+          date: periodType === "DAY" && workDate ? workDate : undefined,
+          year: periodYear,
+          monthNumber: periodType === "MONTH" || periodType === "MONTHLY" ? periodNumber : undefined,
+          weekNumber: periodType === "WEEK" || periodType === "WEEKLY" ? periodNumber : undefined,
         });
+        periodId = period.id;
+      } catch (err: any) {
+        if (err instanceof ReportingPeriodError) {
+          return jsonError(err.message, err.statusCode);
+        }
+        throw err;
       }
-      periodId = period.id;
     }
 
     if (!targetPersonId || !periodId || !resolvedTitle?.trim()) {
@@ -405,34 +414,81 @@ export async function POST(req: NextRequest) {
       return jsonError(err.message, err.statusCode || 423);
     }
 
-    // Phân quyền: Cán bộ chỉ được tạo cho mình; Trưởng bộ phận được tạo cho cán bộ trong tổ
-    if (user.role === "STAFF" && targetPersonId !== user.personId) {
-      return jsonError("Cán bộ chỉ được tạo danh mục đầu việc cho chính mình", 403);
+    // Phân quyền theo phạm vi đơn vị: cán bộ chỉ tạo cho mình; lãnh đạo chỉ tạo cho
+    // cán bộ thuộc đơn vị trong phạm vi được cấp.
+    const targetPerson = await prisma.person.findUnique({
+      where: { id: targetPersonId },
+      select: {
+        id: true,
+        status: true,
+        fullName: true,
+        assignments: { select: { unitId: true } },
+      },
+    });
+    if (!targetPerson || targetPerson.status !== "ACTIVE") {
+      return jsonError("Cán bộ phụ trách không tồn tại hoặc đã ngừng hoạt động", 400);
     }
-
-    if (user.role === "DEPARTMENT_LEADER" && targetPersonId !== user.personId) {
+    if (targetPersonId !== user.personId) {
+      if (user.role === "STAFF") {
+        return jsonError("Cán bộ chỉ được tạo danh mục đầu việc cho chính mình", 403);
+      }
       const authorizedUnits = await getAuthorizedUnitIds(user);
-      const targetPerson = await prisma.person.findUnique({
-        where: { id: targetPersonId },
-        include: { assignments: true },
-      });
-      const isBelong = targetPerson?.assignments.some((a) => authorizedUnits === "ALL" || authorizedUnits.includes(a.unitId));
+      const isBelong = targetPerson.assignments.some(
+        (a) => authorizedUnits === "ALL" || authorizedUnits.includes(a.unitId)
+      );
       if (!isBelong) {
         return jsonError("Bạn chỉ được tạo đầu việc cho cán bộ thuộc bộ phận của mình", 403);
       }
     }
 
-    // E1: đầu việc gắn vào kế hoạch đã duyệt/có hiệu lực thì khóa (đi luồng bổ sung)
+    // Q-B4/A-1: không ghi con trỏ sản phẩm QĐ1277 khi lãnh đạo tạo hộ.
+    // Người thực hiện phải tự đề xuất sản phẩm để có bản ghi WorkItemProduct
+    // và trạng thái xác nhận tương ứng; tránh liên kết mồ côi.
+    if (resolvedProductItemId && targetPersonId !== user.personId) {
+      return jsonError(
+        "Chỉ người thực hiện công việc mới được gắn sản phẩm QĐ1277 khi tạo đầu việc.",
+        403
+      );
+    }
+
+    // A2: hạng mục kế hoạch phải tồn tại, đúng kỳ, đúng đơn vị và kế hoạch còn được sửa.
+    // Không để lỗi khóa ngoại (500) hoặc âm thầm lưu planItemId sai.
     if (planItemId) {
-      const parentItem = await prisma.planItem.findUnique({
-        where: { id: planItemId },
-        include: { plan: { select: { id: true, status: true, title: true } } },
+      const link = await validatePlanItemLink({
+        planItemId,
+        personId: targetPersonId,
+        periodId,
+        user,
       });
-      if (parentItem && (parentItem.plan.status === "APPROVED" || parentItem.plan.status === "IN_EFFECT")) {
-        return jsonError(
-          `Kế hoạch "${parentItem.plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì thêm trực tiếp`,
-          403
-        );
+      if (!link.ok) {
+        return jsonError(link.message || "Liên kết hạng mục kế hoạch không hợp lệ", link.status || 400);
+      }
+    }
+
+    const normalizedIdempotencyKey =
+      idempotencyKey !== undefined && idempotencyKey !== null
+        ? String(idempotencyKey).trim()
+        : "";
+    if (normalizedIdempotencyKey.length > 120) {
+      return jsonError("Mã chống gửi trùng không được vượt quá 120 ký tự", 400);
+    }
+    if (normalizedIdempotencyKey) {
+      const replay = await prisma.personalWorkItem.findFirst({
+        where: { personId: targetPersonId, idempotencyKey: normalizedIdempotencyKey },
+        include: {
+          person: true,
+          group: true,
+          period: true,
+          planItem: { include: { plan: true } },
+        },
+      });
+      if (replay) {
+        return NextResponse.json({
+          success: true,
+          data: replay,
+          deduplicated: true,
+          message: "Yêu cầu đã được xử lý trước đó (chặn gửi trùng)",
+        });
       }
     }
 
@@ -442,46 +498,70 @@ export async function POST(req: NextRequest) {
       _max: { sortOrder: true },
     });
 
-    const newItem = await prisma.personalWorkItem.create({
-      data: {
-        personId: targetPersonId,
-        periodId,
-        planItemId: planItemId || null,
-        templateId: templateId || null, // null nếu là đầu việc tự thêm ngoài danh mục 48 mẫu
-        deptWorkItemId: resolvedDeptWorkItemId, // YC-25: nguồn danh mục đầu việc riêng của bộ phận
-        productItemId: resolvedProductItemId, // YC-23: sản phẩm đầu ra theo QĐ1277 (tuỳ chọn)
-        catalogEntryId: resolvedCatalogEntryId, // YC-31: đầu việc TX (tuỳ chọn)
-        dueDate: dueParsed.value ?? null, // YC-32
-        completedDate: completedParsed.value ?? null, // YC-32
-        taskId: resolvedTaskId, // YC-32
-        groupId: resolvedGroupId,
-        title: resolvedTitle.trim(),
-        workDate: workDate ? new Date(workDate) : null,
-        dateText: dateText?.trim() || null,
-        coordinationUnit: coordinationUnit?.trim() || null,
-        priority: resolvedPriority,
-        expectedResult: expectedResult?.trim() || null,
-        sortOrder: (maxSort._max.sortOrder || 0) + 1,
-        status: completedParsed.value ? "COMPLETED" : status || "ACTIVE",
-        // --- YC-38C: provenance bất biến + đầu mối chủ trì ---
-        sourceKind: resolvedSourceKind,
-        sourceRefId: resolvedSourceRefId,
-        sourceCodeSnapshot: resolvedSourceCodeSnapshot,
-        primaryOwnerPersonId: targetPersonId,
-        idempotencyKey: idempotencyKey || null,
-      },
-      include: {
-        person: true,
-        template: { include: { group: true } },
-        deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
-        product: true,
-        catalogEntry: { include: { version: { select: { id: true, code: true, status: true } } } },
-        task: { select: { id: true, code: true, title: true, status: true, currentDeadline: true } },
-        _count: { select: { evidences: true } },
-        group: true,
-        period: true,
-      },
-    });
+    let newItem: any;
+    try {
+      newItem = await prisma.personalWorkItem.create({
+        data: {
+          personId: targetPersonId,
+          periodId,
+          planItemId: planItemId || null,
+          templateId: templateId || null, // null nếu là đầu việc tự thêm ngoài danh mục 48 mẫu
+          deptWorkItemId: resolvedDeptWorkItemId, // YC-25: nguồn danh mục đầu việc riêng của bộ phận
+          productItemId: resolvedProductItemId, // YC-23: sản phẩm đầu ra theo QĐ1277 (tuỳ chọn)
+          catalogEntryId: resolvedCatalogEntryId, // YC-31: đầu việc TX (tuỳ chọn)
+          dueDate: dueParsed.value ?? null, // YC-32
+          completedDate: null, // A4: chỉ đặt qua luồng báo hoàn thành
+          taskId: resolvedTaskId, // YC-32
+          groupId: resolvedGroupId,
+          title: resolvedTitle.trim(),
+          workDate: workDate ? new Date(workDate) : null,
+          dateText: dateText?.trim() || null,
+          coordinationUnit: coordinationUnit?.trim() || null,
+          priority: resolvedPriority,
+          expectedResult: expectedResult?.trim() || null,
+          sortOrder: (maxSort._max.sortOrder || 0) + 1,
+          status: status || "ACTIVE",
+          // --- YC-38C: provenance bất biến + đầu mối chủ trì ---
+          sourceKind: resolvedSourceKind,
+          sourceRefId: resolvedSourceRefId,
+          sourceCodeSnapshot: resolvedSourceCodeSnapshot,
+          primaryOwnerPersonId: targetPersonId,
+          idempotencyKey: normalizedIdempotencyKey || null,
+        },
+        include: {
+          person: true,
+          template: { include: { group: true } },
+          deptWorkItem: { include: { unit: { select: { id: true, code: true, name: true } } } },
+          product: true,
+          catalogEntry: { include: { version: { select: { id: true, code: true, status: true } } } },
+          task: { select: { id: true, code: true, title: true, status: true, currentDeadline: true } },
+          _count: { select: { evidences: true } },
+          group: true,
+          period: true,
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === "P2002" && normalizedIdempotencyKey) {
+        const replay = await prisma.personalWorkItem.findFirst({
+          where: { personId: targetPersonId, idempotencyKey: normalizedIdempotencyKey },
+          include: {
+            person: true,
+            group: true,
+            period: true,
+            planItem: { include: { plan: true } },
+          },
+        });
+        if (replay) {
+          return NextResponse.json({
+            success: true,
+            data: replay,
+            deduplicated: true,
+            message: "Yêu cầu đã được xử lý trước đó (chặn gửi trùng)",
+          });
+        }
+      }
+      throw error;
+    }
 
     // --- YC-38C: bảng phân công (1 việc gốc, nhiều người) + liên kết sản phẩm QĐ1277 ---
     await prisma.workItemAssignment.createMany({
@@ -592,15 +672,44 @@ export async function PATCH(req: NextRequest) {
       return jsonError(err.message, err.statusCode || 423);
     }
 
+    // A4: kế hoạch đang trình duyệt thì khóa toàn bộ nội dung/đầu việc;
+    // chờ trả lại hoặc phê duyệt xong mới thao tác tiếp.
+    if (currentItem.planItem?.plan?.status === "SUBMITTED") {
+      return jsonError(
+        planContentLockMessage(currentItem.planItem.plan) ||
+          "Kế hoạch đang chờ phê duyệt — nội dung đã khóa.",
+        409
+      );
+    }
+
     // V3-F01 (P0): công việc TỰ GHI NHẬN chỉ hoàn thành được qua luồng
     // "Báo hoàn thành & gửi lãnh đạo". Không cho gán/xoá ngày hoàn thành hay trạng thái
     // COMPLETED bằng cách khác (tránh tự xác nhận nghiệp vụ & tạo dữ liệu đủ điều kiện
     // tính điểm mà không qua lãnh đạo). Công việc đã gắn NHIỆM VỤ giữ nguyên luồng V1/V2.
-    if (!currentItem.taskId && (completedDate !== undefined || status === "COMPLETED")) {
+    const hasCompletedDateValue =
+      completedDate !== undefined &&
+      completedDate !== null &&
+      String(completedDate).trim() !== "";
+    const attemptsCompletion =
+      status === "COMPLETED" ||
+      hasCompletedDateValue ||
+      (completedDate !== undefined && currentItem.completedDate !== null);
+    if (!currentItem.taskId && attemptsCompletion) {
       return jsonError(
         "Công việc tự ghi nhận chỉ được hoàn thành qua luồng \"Báo hoàn thành & gửi lãnh đạo\" (có nội dung kết quả và ngày hoàn thành thực tế).",
         409
       );
+    }
+
+    const allowedUpdateStatuses = [
+      "ACTIVE",
+      "NOT_STARTED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "DISCONTINUED",
+    ];
+    if (status !== undefined && status !== null && !allowedUpdateStatuses.includes(status)) {
+      return jsonError("Trạng thái đầu việc không hợp lệ", 400);
     }
 
     // V3.0.1 — D1-A + R3-C: hồ sơ đang chờ xác nhận hoặc đã xác nhận ⇒ KHOÁ chỉnh sửa.
@@ -744,6 +853,14 @@ export async function PATCH(req: NextRequest) {
       // kể cả khi nhóm đã bị ngừng kích hoạt hoặc phiên bản đã bị thay thế.
     }
     // YC-23: đổi/thiết lập sản phẩm đầu ra theo QĐ1277 (tuỳ chọn, độc lập với nguồn đầu việc)
+    // Q-B4/A-1: chỉ người thực hiện được thay đổi con trỏ sản phẩm chính.
+    // Lãnh đạo sửa nội dung/giao việc nhưng không thay cán bộ đề xuất sản phẩm.
+    if (productItemId !== undefined && currentItem.personId !== user.personId) {
+      return jsonError(
+        "Chỉ người thực hiện công việc mới được gắn/bỏ sản phẩm QĐ1277.",
+        403
+      );
+    }
     if (productItemId !== undefined) {
       if (productItemId) {
         const product = await prisma.productItem.findUnique({
@@ -761,15 +878,37 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updateData: any = {};
-    if (title && title.trim()) updateData.title = title.trim();    if (groupId !== undefined) updateData.groupId = groupId || null;
-    if (workDate !== undefined) updateData.workDate = workDate ? new Date(workDate) : null;
+    if (title && title.trim()) updateData.title = title.trim();
+    if (groupId !== undefined) updateData.groupId = groupId || null;
+    if (workDate !== undefined) {
+      const parsed = parseDateOnly(workDate);
+      if (!parsed.ok) return jsonError(`Ngày thực hiện: ${parsed.message}`, 400);
+      updateData.workDate = parsed.value ?? null;
+    }
     if (dateText !== undefined) updateData.dateText = dateText?.trim() || null;
     if (coordinationUnit !== undefined) updateData.coordinationUnit = coordinationUnit?.trim() || null;
     if (priority !== undefined) updateData.priority = priority;
     if (expectedResult !== undefined) updateData.expectedResult = expectedResult?.trim() || null;
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
     if (status) updateData.status = status; // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
-    if (planItemId !== undefined) updateData.planItemId = planItemId;
+
+    // A2: đổi hạng mục phải kiểm tra tồn tại/đúng kỳ/đúng phạm vi/kế hoạch còn sửa.
+    if (planItemId !== undefined) {
+      if (!planItemId) {
+        updateData.planItemId = null;
+      } else {
+        const link = await validatePlanItemLink({
+          planItemId,
+          personId: currentItem.personId,
+          periodId: currentItem.periodId,
+          user,
+        });
+        if (!link.ok) {
+          return jsonError(link.message || "Liên kết hạng mục kế hoạch không hợp lệ", link.status || 400);
+        }
+        updateData.planItemId = link.planItem!.id;
+      }
+    }
 
     // YC-32: hạn xử lý (độc lập với ngày hoàn thành)
     if (dueDate !== undefined) {
@@ -777,15 +916,18 @@ export async function PATCH(req: NextRequest) {
       if (!parsed.ok) return jsonError(`Hạn xử lý: ${parsed.message}`, 400);
       updateData.dueDate = parsed.value ?? null;
     }
-    // YC-32: ngày hoàn thành thực tế quyết định trạng thái; xóa ngày → trả về đang thực hiện
+    // YC-32: ngày hoàn thành thực tế quyết định trạng thái; xóa ngày → trả về đang thực hiện.
+    // A2: client cũ gửi completedDate=null trên mọi lần sửa — coi là KHÔNG thay đổi nếu
+    // đầu việc chưa có ngày hoàn thành, tránh 409 giả và tránh tự đổi trạng thái.
     if (completedDate !== undefined) {
       const parsed = parseDateOnly(completedDate);
       if (!parsed.ok) return jsonError(`Ngày hoàn thành: ${parsed.message}`, 400);
-      updateData.completedDate = parsed.value ?? null;
       if (parsed.value) {
+        updateData.completedDate = parsed.value;
         updateData.status = "COMPLETED";
-      } else if (status === undefined) {
-        updateData.status = "IN_PROGRESS";
+      } else if (currentItem.completedDate) {
+        updateData.completedDate = null;
+        if (status === undefined) updateData.status = "IN_PROGRESS";
       }
     }
     // YC-32: liên kết nhiệm vụ (kiểm tra tồn tại + quyền)
@@ -826,6 +968,38 @@ export async function PATCH(req: NextRequest) {
     try {
       updated = await prisma.$transaction(async (tx) => {
         await assertWorkItemNotLinkedToClosedTask(id, tx);
+        // Giữ nhất quán giữa con trỏ sản phẩm chính và các liên kết QĐ1277.
+        // PATCH cũ chỉ đổi productItemId, có thể tạo liên kết mồ côi.
+        if (linkUpdate.productItemId !== undefined) {
+          const targetProductId: string | null = linkUpdate.productItemId;
+          await tx.workItemProduct.updateMany({
+            where: { workItemId: id },
+            data: { isPrimary: false },
+          });
+          if (targetProductId) {
+            const existingLink = await tx.workItemProduct.findFirst({
+              where: { workItemId: id, productItemId: targetProductId },
+              select: { id: true },
+            });
+            if (existingLink) {
+              await tx.workItemProduct.update({
+                where: { id: existingLink.id },
+                data: { isPrimary: true },
+              });
+            } else {
+              await tx.workItemProduct.create({
+                data: {
+                  workItemId: id,
+                  productItemId: targetProductId,
+                  isPrimary: true,
+                  reviewState: "PROPOSED",
+                  proposedById: user.personId,
+                  proposedAt: new Date(),
+                },
+              });
+            }
+          }
+        }
         return tx.personalWorkItem.update({
           where: { id },
           data: updateData,
@@ -906,10 +1080,17 @@ export async function DELETE(req: NextRequest) {
       return jsonError(err.message, err.statusCode || 423);
     }
 
-    // E1: đầu việc thuộc kế hoạch đã duyệt/có hiệu lực thì khóa (đi luồng bổ sung)
-    if (currentItem.planItem?.plan && (currentItem.planItem.plan.status === "APPROVED" || currentItem.planItem.plan.status === "IN_EFFECT")) {
+    // A4 + E1: kế hoạch đang trình duyệt/đã duyệt/có hiệu lực thì khóa xóa.
+    if (
+      currentItem.planItem?.plan &&
+      (currentItem.planItem.plan.status === "SUBMITTED" ||
+        currentItem.planItem.plan.status === "APPROVED" ||
+        currentItem.planItem.plan.status === "IN_EFFECT")
+    ) {
       return jsonError(
-        `Kế hoạch "${currentItem.planItem.plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì xóa trực tiếp`,
+        currentItem.planItem.plan.status === "SUBMITTED"
+          ? `Kế hoạch "${currentItem.planItem.plan.title}" đang chờ phê duyệt — không thể xóa đầu việc. Hãy yêu cầu trả lại nếu cần sửa.`
+          : `Kế hoạch "${currentItem.planItem.plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì xóa trực tiếp`,
         403
       );
     }

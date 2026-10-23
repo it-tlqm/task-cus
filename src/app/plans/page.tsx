@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
-import WorkSourcePicker from "@/components/work/WorkSourcePicker";
+import WorkSourcePicker, { type PickedCatalogEntry, type PickedProduct } from "@/components/work/WorkSourcePicker";
 import { getDaysOfWeekFromStart, formatPeriodRangeFromDates, getCurrentPeriodLabels } from "@/lib/period-helper";
 
 interface ActivityGroup {
@@ -22,6 +22,13 @@ interface ActivityTemplate {
   group?: { id: string; name: string; code: string };
   defaultPriority?: string;
   reviewStatus?: string;
+}
+
+interface PlanOptions {
+  canCreatePlan: boolean;
+  currentUnitId: string | null;
+  units: Array<{ id: string; code: string; name: string; parentId?: string | null }>;
+  groups: Array<{ id: string; code: string; name: string }>;
 }
 
 interface PersonalWorkItemData {
@@ -44,6 +51,25 @@ interface PersonalWorkItemData {
   // YC-23: sản phẩm đầu ra theo QĐ1277 gắn kèm đầu việc (tuỳ chọn)
   productItemId?: string | null;
   product?: { id: string; code: string; taskName: string; outputProduct?: string | null; convertFactor?: number | null; groupName?: string | null } | null;
+  // V3.0.2: nhiều sản phẩm QĐ1277 trên cùng một đầu việc (độc lập với nguồn TX).
+  linkedProducts?: Array<{
+    id: string;
+    productItemId: string;
+    isPrimary: boolean;
+    reviewState?: string | null;
+    quantityUnit?: string | null;
+    factorSnapshot?: number | null;
+    productItem: {
+      id: string;
+      code: string;
+      taskName: string;
+      outputProduct?: string | null;
+      convertFactor?: number | null;
+      groupName?: string | null;
+      group?: { code?: string | null; title?: string | null } | null;
+    };
+  }>;
+  reviewState?: string | null;
   // YC-31: đầu việc từ Danh mục công việc thường xuyên (phiên bản đang áp dụng)
   catalogEntryId?: string | null;
   catalogEntry?: { id: string; code: string; title: string; department: string; status: string } | null;
@@ -67,15 +93,6 @@ interface DepartmentWorkItemData {
   createdBy?: { id: string; fullName: string } | null;
 }
 
-interface ProductPickerItem {
-  id: string;
-  code: string;
-  taskName: string;
-  outputProduct?: string | null;
-  convertFactor?: number | null;
-  groupName?: string | null;
-}
-
 // YC-31 — Danh mục công việc thường xuyên (phiên bản đang áp dụng)
 interface WorkCatalogEntryPicker {
   id: string;
@@ -87,16 +104,11 @@ interface WorkCatalogEntryPicker {
   status: string;
 }
 
-interface WorkCatalogDepartment {
-  name: string;
-  order: number;
-  count: number;
-}
-
 interface PlanItem {
   id: string;
   title: string;
   status: "DRAFT" | "SUBMITTED" | "APPROVED" | "RETURNED" | "IN_EFFECT";
+  creatorId?: string;
   approvedBy?: string;
   approvedAt?: string;
   period: { id: string; name?: string; title?: string; code?: string; year?: number; weekNumber?: number; periodType?: string; type?: string; startAt?: string; endAt?: string };
@@ -130,7 +142,8 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<PlanItem[]>([]);
   const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [planOptions, setPlanOptions] = useState<PlanOptions | null>(null);
   const [selectedOfficerFilter, setSelectedOfficerFilter] = useState("all");
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"day" | "week" | "month" | "gantt">("week");
@@ -149,11 +162,26 @@ export default function PlansPage() {
 
   const countBy = (t: string) => plans.filter((p) => planPeriodType(p) === t || (t === "WEEK" && planPeriodType(p) === "")).length;
 
-  const activePlan = filteredPlans[Math.min(selectedPlanIndex, Math.max(0, filteredPlans.length - 1))] || null;
+  // ID kế hoạch ổn định — không dùng index (danh sách đổi thứ tự sau mỗi lần tải lại).
+  const activePlan = React.useMemo(
+    () => filteredPlans.find((p) => p.id === selectedPlanId) || filteredPlans[0] || null,
+    [filteredPlans, selectedPlanId]
+  );
+
+  useEffect(() => {
+    if (filteredPlans.length === 0) {
+      if (selectedPlanId) setSelectedPlanId("");
+      return;
+    }
+    if (!selectedPlanId || !filteredPlans.some((p) => p.id === selectedPlanId)) {
+      setSelectedPlanId(filteredPlans[0].id);
+    }
+  }, [filteredPlans, selectedPlanId]);
 
   const switchView = (m: "day" | "week" | "month" | "gantt") => {
     setViewMode(m);
-    setSelectedPlanIndex(0);
+    setSelectedPlanId("");
+    setSelectedOfficerFilter("all");
   };
 
   const planOfficers = React.useMemo(() => {
@@ -171,8 +199,41 @@ export default function PlansPage() {
   }, [activePlan]);
 
   const [groups, setGroups] = useState<ActivityGroup[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ id: string; personId: string; fullName: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    personId: string;
+    fullName: string;
+    role: string;
+    unitId?: string;
+    permissions?: string[];
+  } | null>(null);
   const [selectedScope, setSelectedScope] = useState<"all" | "personal">("all");
+
+  const isLeaderRole =
+    currentUser?.role === "UNIT_LEADER" || currentUser?.role === "DEPARTMENT_LEADER";
+  const planContentEditable =
+    !!activePlan && (activePlan.status === "DRAFT" || activePlan.status === "RETURNED");
+  const canManageActivePlan =
+    !!activePlan &&
+    !!planOptions?.canCreatePlan &&
+    (isLeaderRole || activePlan.creatorId === currentUser?.personId);
+  const canEditActivePlanContent = planContentEditable && canManageActivePlan;
+  const canAddWorkItemToActivePlan =
+    planContentEditable && !!activePlan?.items?.length && !!currentUser;
+  const canSubmitActivePlan =
+    planContentEditable &&
+    !!planOptions?.canCreatePlan &&
+    (isLeaderRole || !!currentUser?.personId);
+  const isActivePlanCreator =
+    !!activePlan?.creatorId && activePlan.creatorId === currentUser?.personId;
+  const canApproveActivePlan =
+    activePlan?.status === "SUBMITTED" && isLeaderRole && !isActivePlanCreator;
+  const canEffectActivePlan = activePlan?.status === "APPROVED" && isLeaderRole;
+  const canRequestAmendment = !!activePlan &&
+    (activePlan.status === "APPROVED" || activePlan.status === "IN_EFFECT") &&
+    !!planOptions?.canCreatePlan;
+  const selfApprovalBlocked =
+    activePlan?.status === "SUBMITTED" && isLeaderRole && isActivePlanCreator;
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -189,6 +250,14 @@ export default function PlansPage() {
   const [modalTitle, setModalTitle] = useState("");
   const [modalTemplateId, setModalTemplateId] = useState("");
   const [modalGroupId, setModalGroupId] = useState("");
+  // A2/D6: cán bộ phụ trách phải được chọn tường minh khi lãnh đạo lập kế hoạch
+  // cho đơn vị; không mặc định danh tính người đang đăng nhập nếu họ ngoài đơn vị.
+  const [modalPersonId, setModalPersonId] = useState("");
+  const [modalPeople, setModalPeople] = useState<
+    Array<{ id: string; fullName: string; code?: string | null; position?: string | null }>
+  >([]);
+  const [modalPeopleLoading, setModalPeopleLoading] = useState(false);
+  const [modalPeopleError, setModalPeopleError] = useState<string | null>(null);
   const [modalWorkDate, setModalWorkDate] = useState("");
   const [modalDateText, setModalDateText] = useState("");
   const [modalCoordination, setModalCoordination] = useState("");
@@ -198,30 +267,26 @@ export default function PlansPage() {
 
   // YC-23 + YC-25: lựa chọn từ danh mục (thường xuyên / sản phẩm QĐ1277 / riêng của bộ phận)
   const [modalDeptWorkItemId, setModalDeptWorkItemId] = useState("");
-  const [modalProductItemId, setModalProductItemId] = useState("");
-  const [modalProductLabel, setModalProductLabel] = useState("");
-  // YC-31/YC-32: nguồn TX, hạn xử lý, ngày hoàn thành thực tế
+  // V3.0.2: danh sách sản phẩm QĐ1277 được chọn — một đầu việc có thể gắn nhiều mã.
+  const [modalProducts, setModalProducts] = useState<PickedProduct[]>([]);
+  // Q-B4/A-1: chỉ người thực hiện được đề xuất/bỏ sản phẩm QĐ1277.
+  // Lãnh đạo lập hộ chỉ giao việc; không thay cán bộ đề xuất sản phẩm.
+  const modalProductOwnerId = editingItem?.person?.id || modalPersonId;
+  const canEditModalProducts =
+    !!currentUser?.personId && modalProductOwnerId === currentUser.personId;
+  // YC-31/YC-32: nguồn TX, hạn xử lý
   const [modalCatalogEntryId, setModalCatalogEntryId] = useState("");
   // YC-38C: hạng mục kế hoạch được chọn — liên kết ĐÚNG việc (không mặc định items[0])
   const [modalPlanItemId, setModalPlanItemId] = useState("");
   // YC-38B: đối tượng nguồn đã chọn (hiển thị trong bộ chọn thông minh)
-  const [pickedCatalogLocal, setPickedCatalogLocal] = useState<{
-    id: string;
-    code: string;
-    title: string;
-    department?: string | null;
-    convertFactor?: number | null;
-  } | null>(null);
-  const [pickedProductLocal, setPickedProductLocal] = useState<{
-    id: string;
-    code: string;
-    taskName: string;
-    convertFactor?: number | null;
-  } | null>(null);
-
+  const [pickedCatalogLocal, setPickedCatalogLocal] = useState<PickedCatalogEntry | null>(null);
 
   const [modalDueDate, setModalDueDate] = useState("");
-  const [modalCompletedDate, setModalCompletedDate] = useState("");
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [modalFieldErrors, setModalFieldErrors] = useState<Record<string, string>>({});
+  const [savingWorkItem, setSavingWorkItem] = useState(false);
+  const savingWorkItemRef = useRef(false);
+  const [modalIdempotencyKey, setModalIdempotencyKey] = useState("");
   const [txEntries, setTxEntries] = useState<WorkCatalogEntryPicker[]>([]);
 
   // Đồng bộ với danh mục TX đã tải (kể cả khi chọn qua select cũ)
@@ -237,25 +302,11 @@ export default function PlansPage() {
       convertFactor: null,
     };
   }, [modalCatalogEntryId, txEntries, pickedCatalogLocal]);
-
-  const pickedProduct = useMemo(() => {
-    if (!modalProductItemId) return null;
-    if (pickedProductLocal && pickedProductLocal.id === modalProductItemId) return pickedProductLocal;
-    const code = modalProductLabel.split(" — ")[0] || "";
-    const taskName = modalProductLabel.split(" — ").slice(1).join(" — ");
-    return { id: modalProductItemId, code, taskName };
-  }, [modalProductItemId, modalProductLabel, pickedProductLocal]);
-  const [txDepartments, setTxDepartments] = useState<WorkCatalogDepartment[]>([]);
   const [legacyTemplatesSelectable, setLegacyTemplatesSelectable] = useState(true);
   const [catalogActivationStatus, setCatalogActivationStatus] = useState<
     "NO_VERSION" | "NOT_ACTIVATED" | "ACTIVATED"
   >("NO_VERSION");
   const [templateSearch, setTemplateSearch] = useState("");
-  const [productSearch, setProductSearch] = useState("");
-  const [productResults, setProductResults] = useState<ProductPickerItem[]>([]);
-  const [productPage, setProductPage] = useState(1);
-  const [productTotal, setProductTotal] = useState(0);
-  const [productSearching, setProductSearching] = useState(false);
   const [deptWorkItems, setDeptWorkItems] = useState<DepartmentWorkItemData[]>([]);
   const [deptCatalogUnits, setDeptCatalogUnits] = useState<Array<{ id: string; code: string; name: string }>>([]);
   const [deptCatalogCanManage, setDeptCatalogCanManage] = useState(false);
@@ -271,6 +322,25 @@ export default function PlansPage() {
   const [deptEditingId, setDeptEditingId] = useState<string | null>(null);
   const [deptBusy, setDeptBusy] = useState(false);
 
+  // Phase A — lập kế hoạch & quản lý hạng mục (chỉ hiển thị khi có quyền plans.create)
+  const [showPlanCreateModal, setShowPlanCreateModal] = useState(false);
+  const [planFormType, setPlanFormType] = useState<"DAY" | "WEEK" | "MONTH">("WEEK");
+  const [planFormDate, setPlanFormDate] = useState("");
+  const [planFormUnitId, setPlanFormUnitId] = useState("");
+  const [planFormTitle, setPlanFormTitle] = useState("");
+  const [planFormFirstItem, setPlanFormFirstItem] = useState("");
+  const [planFormError, setPlanFormError] = useState<string | null>(null);
+  const [planFormFieldErrors, setPlanFormFieldErrors] = useState<Record<string, string>>({});
+  const [planSubmitting, setPlanSubmitting] = useState(false);
+  const planSubmittingRef = useRef(false);
+
+  const [showPlanItemsModal, setShowPlanItemsModal] = useState(false);
+  const [planItemEditingId, setPlanItemEditingId] = useState<string | null>(null);
+  const [planItemTitle, setPlanItemTitle] = useState("");
+  const [planItemGroupId, setPlanItemGroupId] = useState("");
+  const [planItemBusy, setPlanItemBusy] = useState(false);
+  const [planItemError, setPlanItemError] = useState<string | null>(null);
+
   // YC-23: tìm nhanh 48 mẫu thường xuyên phía máy khách (danh mục nhỏ; danh mục sản phẩm 3.000+ mới cần tìm phía máy chủ)
   const filteredTemplates = React.useMemo(() => {
     const q = templateSearch.trim().toLowerCase();
@@ -281,10 +351,8 @@ export default function PlansPage() {
     });
   }, [templates, templateSearch]);
 
-  // Mobile View Filters
-  const [mobilePeriod, setMobilePeriod] = useState<"day" | "week" | "month">("week");
+  // Mobile View Filters — dùng chung viewMode/selectedScope để Desktop và Mobile nhất quán.
   const mobileLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
-  const [mobileScope, setMobileScope] = useState<"personal" | "unit">("personal");
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
     "sec-1": true,
     "sec-2": false,
@@ -293,14 +361,16 @@ export default function PlansPage() {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const [resPlans, resTemplates, resGroups, resUser, resDept, resCatalog] = await Promise.all([
-        fetch("/api/plans"),
-        fetch("/api/catalog/templates"),
-        fetch("/api/catalog/groups"),
-        fetch("/api/auth/me"),
-        fetch("/api/department-work-items?status=ACTIVE"),
-        fetch("/api/work-catalog", { cache: "no-store" }),
-      ]);
+      const [resPlans, resTemplates, resGroups, resUser, resDept, resCatalog, resPlanOptions] =
+        await Promise.all([
+          fetch("/api/plans"),
+          fetch("/api/catalog/templates"),
+          fetch("/api/catalog/groups"),
+          fetch("/api/auth/me"),
+          fetch("/api/department-work-items?status=ACTIVE"),
+          fetch("/api/work-catalog", { cache: "no-store" }),
+          fetch("/api/plans/options", { cache: "no-store" }),
+        ]);
 
       if (resPlans.ok) {
         const json = await resPlans.json();
@@ -332,11 +402,20 @@ export default function PlansPage() {
         setDeptCatalogCanManage(!!jsonDept.canManage);
       }
 
+      if (resPlanOptions.ok) {
+        const jsonOptions = await resPlanOptions.json();
+        setPlanOptions({
+          canCreatePlan: !!jsonOptions.canCreatePlan,
+          currentUnitId: jsonOptions.currentUnitId || null,
+          units: jsonOptions.units || [],
+          groups: jsonOptions.groups || [],
+        });
+      }
+
       if (resCatalog.ok) {
         const jsonCatalog = await resCatalog.json();
         const catData = jsonCatalog.data || {};
         setTxEntries(catData.entries || []);
-        setTxDepartments(catData.departments || []);
         setLegacyTemplatesSelectable(catData.legacyTemplatesSelectable !== false);
         setCatalogActivationStatus(
           catData.activation?.status === "ACTIVATED"
@@ -356,6 +435,70 @@ export default function PlansPage() {
   useEffect(() => {
     fetchPlans();
   }, []);
+
+  /**
+   * Danh sách cán bộ có thể giao đầu việc trong kế hoạch:
+   * - Lãnh đạo: cán bộ đang hoạt động thuộc đúng đơn vị của kế hoạch.
+   * - Cán bộ: chỉ chính mình (backend cũng chặn giao cho người khác).
+   * Không tự chọn người đầu tiên khi lãnh đạo không thuộc đơn vị kế hoạch.
+   */
+  useEffect(() => {
+    if (!showAddModal || editingItem) return;
+    const unitId = activePlan?.unit?.id;
+    if (!unitId) {
+      setModalPeople([]);
+      setModalPeopleError("Chưa xác định đơn vị của kế hoạch");
+      return;
+    }
+    let cancelled = false;
+    setModalPeopleLoading(true);
+    setModalPeopleError(null);
+    fetch(
+      `/api/people?unitId=${encodeURIComponent(unitId)}&status=ACTIVE&pageSize=100`,
+      { cache: "no-store" }
+    )
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json.error || "Không tải được danh sách cán bộ");
+        }
+        const people = (Array.isArray(json.data) ? json.data : []).map((p: any) => ({
+          id: p.id,
+          fullName: p.fullName,
+          code: p.code || null,
+          position: p.position || null,
+        }));
+        return isLeaderRole
+          ? people
+          : people.filter((p: any) => p.id === currentUser?.personId);
+      })
+      .then((people: Array<{ id: string; fullName: string; code?: string | null; position?: string | null }>) => {
+        if (cancelled) return;
+        setModalPeople(people);
+        setModalPersonId((prev) => {
+          if (prev && people.some((p) => p.id === prev)) return prev;
+          const self = people.find((p) => p.id === currentUser?.personId);
+          return self?.id || "";
+        });
+      })
+      .catch((err: any) => {
+        if (cancelled) return;
+        setModalPeople([]);
+        setModalPeopleError(err?.message || "Không tải được danh sách cán bộ");
+      })
+      .finally(() => {
+        if (!cancelled) setModalPeopleLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    showAddModal,
+    editingItem,
+    activePlan?.unit?.id,
+    currentUser?.personId,
+    isLeaderRole,
+  ]);
 
   // Dữ liệu Gantt: nhiệm vụ liên kết của kế hoạch đang chọn (dedupe theo Task.id)
   const ganttData = React.useMemo(() => {
@@ -391,10 +534,88 @@ export default function PlansPage() {
   }, [activePlan]);
 
   // Modal Handlers
+  const toDateInput = (value?: string | null) => {
+    if (!value) return "";
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  };
+
+  const isWorkItemLocked = (wi: PersonalWorkItemData) =>
+    wi.reviewState === "SUBMITTED" || wi.reviewState === "CONFIRMED";
+
+  const canModifyWorkItem = (wi: PersonalWorkItemData) =>
+    planContentEditable &&
+    wi.status !== "COMPLETED" &&
+    !isWorkItemLocked(wi) &&
+    // Cán bộ chỉ sửa đầu việc của mình; lãnh đạo được sửa trong phạm vi
+    // kế hoạch đang xem. Backend vẫn kiểm tra lại quyền và phạm vi.
+    (wi.person?.id === currentUser?.personId || isLeaderRole);
+
+  const reviewStateText = (state?: string | null) => {
+    if (state === "SUBMITTED") return "Chờ lãnh đạo xác nhận";
+    if (state === "CONFIRMED") return "Lãnh đạo đã xác nhận";
+    if (state === "RETURNED") return "Lãnh đạo trả lại";
+    if (state === "DRAFT" || !state) return "Chưa gửi xác nhận";
+    return state;
+  };
+
+  const workItemProducts = (wi: PersonalWorkItemData): PickedProduct[] => {
+    const out: PickedProduct[] = [];
+    const seen = new Set<string>();
+    (wi.linkedProducts || []).forEach((link) => {
+      if (!link.productItem || seen.has(link.productItemId)) return;
+      seen.add(link.productItemId);
+      out.push({
+        id: link.productItemId,
+        code: link.productItem.code,
+        taskName: link.productItem.taskName,
+        outputProduct: link.productItem.outputProduct || null,
+        convertFactor: link.factorSnapshot ?? link.productItem.convertFactor ?? null,
+        groupName: link.productItem.group?.title || link.productItem.groupName || null,
+        quantityUnit: link.quantityUnit || null,
+        reviewState: link.reviewState || null,
+        linkId: link.id,
+        isPrimary: link.isPrimary,
+      });
+    });
+    if (wi.product && !seen.has(wi.product.id)) {
+      out.push({
+        id: wi.product.id,
+        code: wi.product.code,
+        taskName: wi.product.taskName,
+        outputProduct: wi.product.outputProduct || null,
+        convertFactor: wi.product.convertFactor ?? null,
+        groupName: wi.product.groupName || null,
+        reviewState: wi.reviewState || null,
+        isPrimary: true,
+      });
+    }
+    return out;
+  };
+
+  const newIdempotencyKey = () => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return `wi-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  };
+
   const openAddModal = (initialTemplateId = "") => {
-    // E1: kế hoạch đã duyệt/có hiệu lực thì mọi bổ sung đi qua luồng trình duyệt bổ sung
-    if (activePlan?.status === "APPROVED" || activePlan?.status === "IN_EFFECT") {
+    if (!activePlan) {
+      toast.warning("Vui lòng chọn hoặc tạo kế hoạch công tác trước khi thêm đầu việc");
+      return;
+    }
+    if (activePlan.status === "APPROVED" || activePlan.status === "IN_EFFECT") {
       toast.warning("Kế hoạch đã phê duyệt — vui lòng dùng “Trình duyệt bổ sung” để thêm đầu việc theo quy trình");
+      return;
+    }
+    if (activePlan.status === "SUBMITTED") {
+      toast.warning("Kế hoạch đang chờ duyệt — nội dung đã khóa, không thể thêm đầu việc");
+      return;
+    }
+    if (!activePlan.items?.length) {
+      toast.warning("Kế hoạch chưa có hạng mục — hãy tạo hạng mục trước khi thêm đầu việc");
+      if (canEditActivePlanContent) openPlanItemsManager();
       return;
     }
     setEditingItem(null);
@@ -416,142 +637,290 @@ export default function PlansPage() {
     setModalCoordination("");
     setModalExpectedResult("");
     setModalStatus("NOT_STARTED");
+    setModalPersonId("");
+    setModalPeople([]);
+    setModalPeopleError(null);
     setModalDeptWorkItemId("");
-    setModalProductItemId("");
-    setModalProductLabel("");
+    setModalProducts([]);
     setModalCatalogEntryId("");
+    setPickedCatalogLocal(null);
     // YC-38C: mặc định hạng mục CHƯA có đầu việc — không trỏ mặc định vào items[0]
-    const firstFreeItem = (activePlan?.items || []).find((it) => (it.workItems || []).length === 0);
-    setModalPlanItemId(firstFreeItem?.id || activePlan?.items?.[0]?.id || "");
+    const firstFreeItem = (activePlan.items || []).find((it) => (it.workItems || []).length === 0);
+    setModalPlanItemId(firstFreeItem?.id || activePlan.items[0]?.id || "");
     setModalDueDate("");
-    setModalCompletedDate("");
+    setModalError(null);
+    setModalFieldErrors({});
+    setModalIdempotencyKey(newIdempotencyKey());
     setDeptCatalogMsg(null);
     setTemplateSearch("");
-    setProductSearch("");
-    setProductResults([]);
-    setProductTotal(0);
     setShowAddModal(true);
   };
 
   const openEditModal = (wi: PersonalWorkItemData) => {
-    // E1: kế hoạch đã duyệt/có hiệu lực thì mọi sửa đổi đi qua luồng trình duyệt bổ sung
-    if (activePlan?.status === "APPROVED" || activePlan?.status === "IN_EFFECT") {
-      toast.warning("Kế hoạch đã phê duyệt — vui lòng dùng “Trình duyệt bổ sung” để điều chỉnh theo quy trình");
+    if (!canModifyWorkItem(wi)) {
+      toast.warning(
+        !planContentEditable
+          ? "Kế hoạch đang khóa nội dung — không thể sửa đầu việc"
+          : wi.status === "COMPLETED"
+            ? "Đầu việc đã hoàn thành — chỉ xem, không sửa trực tiếp"
+            : isWorkItemLocked(wi)
+              ? "Đầu việc đã gửi/đã được lãnh đạo xác nhận — nội dung đã khóa"
+              : "Bạn chỉ được sửa đầu việc do mình phụ trách"
+      );
       return;
-    };
+    }
     setEditingItem(wi);
+    setModalPersonId(wi.person?.id || "");
+    setModalPeople(wi.person ? [{ id: wi.person.id, fullName: wi.person.fullName }] : []);
+    setModalPeopleError(null);
     setModalTemplateId(wi.templateId || "");
     setModalDeptWorkItemId(wi.deptWorkItemId || "");
-    setModalProductItemId(wi.productItemId || "");
-    setModalProductLabel(wi.product ? `${wi.product.code} — ${wi.product.taskName}` : "");
+    setModalProducts(workItemProducts(wi));
     setModalCatalogEntryId(wi.catalogEntryId || "");
-    setModalDueDate(wi.dueDate ? new Date(wi.dueDate).toISOString().slice(0, 10) : "");
-    setModalCompletedDate(
-      wi.completedDate ? new Date(wi.completedDate).toISOString().slice(0, 10) : ""
+    setPickedCatalogLocal(
+      wi.catalogEntry
+        ? {
+            id: wi.catalogEntry.id,
+            code: wi.catalogEntry.code,
+            title: wi.catalogEntry.title,
+            department: wi.catalogEntry.department,
+            convertFactor: null,
+          }
+        : null
     );
+    setModalDueDate(toDateInput(wi.dueDate));
     setDeptCatalogMsg(
       wi.deptWorkItem && wi.deptWorkItem.status !== "ACTIVE"
         ? "Đầu việc gốc của bộ phận đã ngừng sử dụng — hệ thống giữ nguyên liên kết cũ cho đến khi bạn đổi."
         : null
     );
     setTemplateSearch("");
-    setProductSearch("");
-    setProductResults([]);
-    setProductTotal(0);
     setModalTitle(wi.title);
-    setModalGroupId(wi.groupId || wi.template?.groupId || wi.template?.group?.id || groups[0]?.id || "");
-    setModalWorkDate(wi.workDate ? new Date(wi.workDate).toISOString().slice(0, 10) : "");
+    setModalGroupId(wi.groupId || wi.template?.groupId || groups[0]?.id || "");
+    setModalWorkDate(toDateInput(wi.workDate));
     setModalDateText(wi.dateText || "");
     setModalCoordination(wi.coordinationUnit || "");
     setModalPriority(wi.priority || "Trung bình");
     setModalExpectedResult(wi.expectedResult || "");
-    setModalStatus(wi.status || "NOT_STARTED");
+    setModalStatus(
+      wi.status === "ACTIVE" || wi.status === "IN_PROGRESS"
+        ? "IN_PROGRESS"
+        : wi.status === "DISCONTINUED"
+          ? "DISCONTINUED"
+          : "NOT_STARTED"
+    );
+    setModalPlanItemId(
+      (activePlan?.items || []).find((it) => (it.workItems || []).some((x) => x.id === wi.id))?.id ||
+        activePlan?.items?.[0]?.id ||
+        ""
+    );
+    setModalError(null);
+    setModalFieldErrors({});
     setShowAddModal(true);
+  };
+
+  /**
+   * Đồng bộ liên kết nhiều sản phẩm QĐ1277 với danh sách đang chọn.
+   * Không tự suy hệ số/điểm; chỉ thêm/bớt liên kết qua API chuyên trách.
+   */
+  const syncWorkItemProducts = async (
+    workItemId: string,
+    desired: PickedProduct[]
+  ): Promise<string[]> => {
+    const errors: string[] = [];
+    const res = await fetch(
+      `/api/work-item-products?workItemId=${encodeURIComponent(workItemId)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      return [json.error || "Không đọc được liên kết sản phẩm hiện có"];
+    }
+    const json = await res.json();
+    const existing: Array<{ productItemId: string; reviewState?: string | null }> =
+      json.data || [];
+    const desiredIds = new Set(desired.map((p) => p.id));
+    const existingIds = new Set(existing.map((l) => l.productItemId));
+
+    for (const product of desired) {
+      if (existingIds.has(product.id)) continue;
+      const addRes = await fetch("/api/work-item-products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workItemId, productItemId: product.id }),
+      });
+      if (!addRes.ok) {
+        const addJson = await addRes.json().catch(() => ({}));
+        errors.push(`Không gắn được SP ${product.code}: ${addJson.error || "lỗi không xác định"}`);
+      }
+    }
+
+    for (const link of existing) {
+      if (desiredIds.has(link.productItemId)) continue;
+      if (link.reviewState === "CONFIRMED") {
+        errors.push("Một sản phẩm đã được xác nhận nên không thể bỏ khỏi đầu việc.");
+        continue;
+      }
+      const delRes = await fetch("/api/work-item-products", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workItemId, productItemId: link.productItemId }),
+      });
+      if (!delRes.ok) {
+        const delJson = await delRes.json().catch(() => ({}));
+        errors.push(delJson.error || "Không bỏ được một sản phẩm QĐ1277");
+      }
+    }
+    return errors;
   };
 
   const handleSaveWorkItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!modalTitle.trim()) {
-      toast.warning("Vui lòng nhập tên đầu việc");
+    if (savingWorkItemRef.current) return;
+    if (!activePlan) {
+      setModalError("Vui lòng chọn kế hoạch công tác");
       return;
     }
-    if (!activePlan) {
-      toast.warning("Vui lòng chọn kế hoạch công tác");
+    if (!activePlan.items?.length) {
+      setModalError("Kế hoạch chưa có hạng mục — không thể lưu đầu việc");
+      return;
+    }
+    if (activePlan.status !== "DRAFT" && activePlan.status !== "RETURNED") {
+      setModalError("Kế hoạch đang khóa nội dung — không thể lưu đầu việc");
       return;
     }
 
+    const fieldErrors: Record<string, string> = {};
+    if (!modalTitle.trim()) fieldErrors.title = "Nhập tên đầu việc";
+    if (!modalPlanItemId) fieldErrors.planItemId = "Chọn hạng mục kế hoạch";
+    if (!modalGroupId) fieldErrors.groupId = "Chọn nhóm nhiệm vụ";
+    if (!editingItem && !modalPersonId) {
+      fieldErrors.personId = "Chọn cán bộ phụ trách";
+    }
+    setModalFieldErrors(fieldErrors);
+    setModalError(null);
+    if (Object.keys(fieldErrors).length > 0) {
+      setModalError("Vui lòng hoàn thiện các trường được đánh dấu.");
+      return;
+    }
+
+    savingWorkItemRef.current = true;
+    setSavingWorkItem(true);
     try {
+      const basePayload = {
+        title: modalTitle.trim(),
+        groupId: modalGroupId || null,
+        workDate: modalWorkDate || null,
+        dateText: modalDateText.trim() || null,
+        coordinationUnit: modalCoordination.trim() || null,
+        priority: modalPriority,
+        expectedResult: modalExpectedResult.trim() || null,
+        status: modalStatus,
+        deptWorkItemId: modalDeptWorkItemId || null,
+        // Không ghi con trỏ sản phẩm chính khi người đang lưu không phải
+        // người thực hiện — tránh liên kết mồ côi không có WorkItemProduct.
+        productItemId: canEditModalProducts ? modalProducts[0]?.id || null : undefined,
+        catalogEntryId: modalCatalogEntryId || null,
+        dueDate: modalDueDate || null,
+        planItemId: modalPlanItemId,
+        templateId: modalTemplateId || null,
+      };
+
+      let workItemId = "";
       if (editingItem) {
         const res = await fetch("/api/personal-work-items", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: editingItem.id,
-            title: modalTitle.trim(),
-            groupId: modalGroupId || null,
-            workDate: modalWorkDate || null,
-            dateText: modalDateText.trim() || null,
-            coordinationUnit: modalCoordination.trim() || null,
-            priority: modalPriority,
-            expectedResult: modalExpectedResult.trim() || null,
-            status: modalStatus,
-            deptWorkItemId: modalDeptWorkItemId || null,
-            productItemId: modalProductItemId || null,
-            catalogEntryId: modalCatalogEntryId || null,
-            dueDate: modalDueDate || null,
-            completedDate: modalCompletedDate || null,
+            ...basePayload,
           }),
         });
-        const json = await res.json();
-        if (res.ok) {
-          setShowAddModal(false);
-          setWorkflowMessage("Đã cập nhật đầu việc thành công!");
-          toast.success("Đã cập nhật đầu việc thành công!");
-          fetchPlans();
-          setTimeout(() => setWorkflowMessage(null), 3000);
-        } else {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setModalError(json.error || "Không thể cập nhật đầu việc");
           toast.error(json.error || "Không thể cập nhật đầu việc");
+          return;
         }
+        workItemId = editingItem.id;
       } else {
         const res = await fetch("/api/personal-work-items", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             periodId: activePlan.period?.id,
-            planItemId: modalPlanItemId || undefined,
+            personId: modalPersonId,
+            ...basePayload,
+            idempotencyKey: modalIdempotencyKey || undefined,
             templateId: modalTemplateId || undefined,
             deptWorkItemId: modalDeptWorkItemId || undefined,
-            productItemId: modalProductItemId || undefined,
             catalogEntryId: modalCatalogEntryId || undefined,
-            dueDate: modalDueDate || undefined,
-            completedDate: modalCompletedDate || undefined,
-            groupId: modalGroupId || undefined,
-            title: modalTitle.trim(),
+            planItemId: modalPlanItemId,
             workDate: modalWorkDate || undefined,
             dateText: modalDateText.trim() || undefined,
             coordinationUnit: modalCoordination.trim() || undefined,
-            priority: modalPriority,
             expectedResult: modalExpectedResult.trim() || undefined,
-            status: modalStatus,
           }),
         });
-        const json = await res.json();
-        if (res.ok) {
-          setShowAddModal(false);
-          setWorkflowMessage("Đã thêm thành công đầu việc vào kế hoạch!");
-          toast.success("Đã thêm thành công đầu việc vào kế hoạch!");
-          fetchPlans();
-          setTimeout(() => setWorkflowMessage(null), 3000);
-        } else {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setModalError(json.error || "Không thể thêm đầu việc vào kế hoạch");
           toast.error(json.error || "Không thể thêm đầu việc vào kế hoạch");
+          return;
+        }
+        workItemId = json.data?.id || "";
+      }
+
+      let linkErrors: string[] = [];
+      if (workItemId && canEditModalProducts) {
+        try {
+          linkErrors = await syncWorkItemProducts(workItemId, modalProducts);
+        } catch (err: any) {
+          linkErrors = [err?.message || "Không đồng bộ được sản phẩm QĐ1277"];
         }
       }
+
+      setShowAddModal(false);
+      setModalIdempotencyKey(newIdempotencyKey());
+      if (linkErrors.length > 0) {
+        const message = `Đã lưu đầu việc nhưng chưa đồng bộ đủ sản phẩm: ${linkErrors[0]}`;
+        setWorkflowMessage(message);
+        toast.warning(message);
+        setTimeout(() => setWorkflowMessage(null), 5000);
+      } else {
+        const message = editingItem
+          ? "Đã cập nhật đầu việc thành công!"
+          : "Đã thêm thành công đầu việc vào kế hoạch!";
+        setWorkflowMessage(message);
+        toast.success(message);
+        setTimeout(() => setWorkflowMessage(null), 3000);
+      }
+      await fetchPlans();
     } catch (err: any) {
+      setModalError("Lỗi kết nối: " + err.message);
       toast.error("Lỗi kết nối: " + err.message);
+    } finally {
+      savingWorkItemRef.current = false;
+      setSavingWorkItem(false);
     }
   };
 
   const handleDeleteWorkItem = async (workItemId: string) => {
+    const wi = activePlan?.items
+      ?.flatMap((it) => it.workItems || [])
+      .find((x) => x.id === workItemId);
+    if (!planContentEditable) {
+      toast.warning("Kế hoạch đang khóa nội dung — không thể xóa đầu việc");
+      return;
+    }
+    if (wi && !canModifyWorkItem(wi)) {
+      toast.warning(
+        wi.status === "COMPLETED"
+          ? "Đầu việc đã hoàn thành — không thể xóa trực tiếp"
+          : "Đầu việc đã gửi/đã được xác nhận — nội dung đã khóa"
+      );
+      return;
+    }
     if (!confirm("Bạn có chắc chắn muốn xóa đầu việc này khỏi kế hoạch?")) return;
     try {
       const res = await fetch(`/api/personal-work-items?id=${workItemId}`, {
@@ -569,31 +938,171 @@ export default function PlansPage() {
     }
   };
 
-  // YC-23: tìm kiếm sản phẩm phía máy chủ (không nạp toàn bộ 3.000+ dòng)
-  const searchModalProducts = async (q: string, page = 1) => {
-    setProductSearch(q);
-    setProductPage(page);
-    if (q.trim().length < 2) {
-      setProductResults([]);
-      setProductTotal(0);
+  const openPlanCreateModal = () => {
+    if (!planOptions?.canCreatePlan) {
+      toast.warning("Bạn không có quyền lập kế hoạch công tác");
       return;
     }
-    setProductSearching(true);
+    const defaultUnit =
+      planOptions.units.find((u) => u.id === planOptions.currentUnitId)?.id ||
+      planOptions.units[0]?.id ||
+      "";
+    const defaultDate =
+      toDateInput(activePlan?.period?.startAt) || new Date().toISOString().slice(0, 10);
+    setPlanFormType(viewMode === "day" ? "DAY" : viewMode === "month" ? "MONTH" : "WEEK");
+    setPlanFormDate(defaultDate);
+    setPlanFormUnitId(defaultUnit);
+    setPlanFormTitle("");
+    setPlanFormFirstItem("I. Công tác trọng tâm");
+    setPlanFormError(null);
+    setPlanFormFieldErrors({});
+    setShowPlanCreateModal(true);
+  };
+
+  const handleCreatePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (planSubmittingRef.current) return;
+    if (!planOptions?.canCreatePlan) {
+      setPlanFormError("Bạn không có quyền lập kế hoạch công tác");
+      return;
+    }
+    const errors: Record<string, string> = {};
+    if (!planFormUnitId) errors.unitId = "Chọn đơn vị lập kế hoạch";
+    if (!planFormDate) errors.date = "Chọn ngày trong kỳ kế hoạch";
+    if (!planFormTitle.trim()) errors.title = "Nhập tiêu đề kế hoạch";
+    if (!planFormFirstItem.trim()) errors.firstItem = "Nhập hạng mục đầu tiên";
+    setPlanFormFieldErrors(errors);
+    setPlanFormError(null);
+    if (Object.keys(errors).length > 0) {
+      setPlanFormError("Vui lòng hoàn thiện các trường được đánh dấu.");
+      return;
+    }
+
+    planSubmittingRef.current = true;
+    setPlanSubmitting(true);
     try {
-      const res = await fetch(
-        `/api/products?search=${encodeURIComponent(q.trim())}&page=${page}&pageSize=8`
-      );
-      const json = await res.json();
-      if (res.ok) {
-        setProductResults(json.data || []);
-        setProductTotal(json.pagination?.total ?? 0);
-      } else {
-        toast.error(json.error || "Không thể tìm sản phẩm");
+      const res = await fetch("/api/plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          unitId: planFormUnitId,
+          title: planFormTitle.trim(),
+          type: planFormType,
+          date: planFormDate,
+          items: [{ title: planFormFirstItem.trim(), sortOrder: 1 }],
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPlanFormError(json.error || "Không thể tạo kế hoạch");
+        toast.error(json.error || "Không thể tạo kế hoạch");
+        return;
       }
+      const createdId = json.data?.id || "";
+      setShowPlanCreateModal(false);
+      setViewMode(
+        planFormType === "DAY" ? "day" : planFormType === "MONTH" ? "month" : "week"
+      );
+      toast.success("Đã tạo kế hoạch công tác");
+      setWorkflowMessage("Đã tạo kế hoạch công tác");
+      setTimeout(() => setWorkflowMessage(null), 3000);
+      // Chọn sau khi danh sách đã tải lại: effect chọn kế hoạch mặc định có thể
+      // ghi đè ID mới nếu đặt trước khi kế hoạch xuất hiện trong filteredPlans.
+      await fetchPlans();
+      if (createdId) setSelectedPlanId(createdId);
     } catch (err: any) {
+      setPlanFormError("Lỗi kết nối: " + err.message);
       toast.error("Lỗi kết nối: " + err.message);
     } finally {
-      setProductSearching(false);
+      planSubmittingRef.current = false;
+      setPlanSubmitting(false);
+    }
+  };
+
+  const openPlanItemsManager = () => {
+    if (!activePlan) {
+      toast.warning("Chưa chọn kế hoạch công tác");
+      return;
+    }
+    if (!canEditActivePlanContent) {
+      toast.warning("Kế hoạch không còn ở trạng thái được sửa hạng mục");
+      return;
+    }
+    setPlanItemEditingId(null);
+    setPlanItemTitle("");
+    setPlanItemGroupId(groups[0]?.id || planOptions?.groups[0]?.id || "");
+    setPlanItemError(null);
+    setShowPlanItemsModal(true);
+  };
+
+  const savePlanItem = async () => {
+    if (planItemBusy || !activePlan) return;
+    if (!canEditActivePlanContent) {
+      setPlanItemError("Kế hoạch không còn ở trạng thái được sửa hạng mục");
+      return;
+    }
+    const title = planItemTitle.trim();
+    if (!title) {
+      setPlanItemError("Nhập tên hạng mục");
+      return;
+    }
+    setPlanItemBusy(true);
+    setPlanItemError(null);
+    try {
+      const res = await fetch(`/api/plans/${activePlan.id}/items`, {
+        method: planItemEditingId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemId: planItemEditingId || undefined,
+          title,
+          groupId: planItemGroupId || null,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPlanItemError(json.error || "Không lưu được hạng mục");
+        return;
+      }
+      setPlanItemEditingId(null);
+      setPlanItemTitle("");
+      await fetchPlans();
+      toast.success("Đã lưu hạng mục kế hoạch");
+    } catch (err: any) {
+      setPlanItemError("Lỗi kết nối: " + err.message);
+    } finally {
+      setPlanItemBusy(false);
+    }
+  };
+
+  const deletePlanItem = async (itemId: string, title: string) => {
+    if (!activePlan || planItemBusy) return;
+    if (!canEditActivePlanContent) {
+      setPlanItemError("Kế hoạch không còn ở trạng thái được sửa hạng mục");
+      return;
+    }
+    if (!confirm(`Xóa hạng mục "${title}"? Hạng mục đã có đầu việc/nhiệm vụ sẽ không thể xóa.`)) return;
+    setPlanItemBusy(true);
+    setPlanItemError(null);
+    try {
+      const res = await fetch(
+        `/api/plans/${activePlan.id}/items?itemId=${encodeURIComponent(itemId)}`,
+        { method: "DELETE" }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPlanItemError(json.error || "Không xóa được hạng mục");
+        return;
+      }
+      if (planItemEditingId === itemId) {
+        setPlanItemEditingId(null);
+        setPlanItemTitle("");
+      }
+      await fetchPlans();
+      toast.success("Đã xóa hạng mục kế hoạch");
+    } catch (err: any) {
+      setPlanItemError("Lỗi kết nối: " + err.message);
+    } finally {
+      setPlanItemBusy(false);
     }
   };
 
@@ -740,33 +1249,29 @@ export default function PlansPage() {
     setModalTitle(it.title);
   };
 
-  // YC-31: chọn đầu việc từ Danh mục TX — nguồn loại trừ với mẫu cũ và danh mục bộ phận
-  const handleSelectCatalogEntry = (entryId: string) => {
-    setModalCatalogEntryId(entryId);
-    if (!entryId) return;
-    const entry = txEntries.find((x) => x.id === entryId);
-    if (!entry) return;
-    setModalDeptWorkItemId("");
-    setModalTemplateId("");
-    setModalTitle(entry.title);
-  };
-
-  const handleSelectProduct = (p: ProductPickerItem | null) => {
-    if (!p) {
-      setModalProductItemId("");
-      setModalProductLabel("");
-      return;
-    }
-    setModalProductItemId(p.id);
-    setModalProductLabel(`${p.code} — ${p.taskName}`);
-    setModalTitle(p.taskName);
-  };
-
   // Workflow Action (SUBMIT, APPROVE, RETURN, REQUEST_AMENDMENT)
+  const workflowBusyRef = useRef(false);
   const handleWorkflowAction = async (
     action: "SUBMIT" | "APPROVE" | "RETURN" | "REQUEST_AMENDMENT" | "EFFECT"
   ) => {
-    if (!activePlan || workflowBusy) return;
+    if (!activePlan || workflowBusyRef.current) return;
+    if (action === "SUBMIT" && !activePlan.items?.some((it) => (it.workItems || []).length > 0)) {
+      toast.warning("Kế hoạch phải có ít nhất một hạng mục đã có đầu việc trước khi trình duyệt");
+      return;
+    }
+    if (action === "APPROVE" && selfApprovalBlocked) {
+      toast.error("Không thể tự phê duyệt kế hoạch do chính bạn lập/trình");
+      return;
+    }
+    if (action === "RETURN" && !returnNotes.trim()) {
+      toast.warning("Vui lòng nhập lý do trả lại chỉnh sửa");
+      return;
+    }
+    if (action === "REQUEST_AMENDMENT" && !amendmentNotes.trim()) {
+      toast.warning("Vui lòng nhập lý do/căn cứ điều chỉnh bổ sung");
+      return;
+    }
+    workflowBusyRef.current = true;
     setWorkflowBusy(true);
 
     try {
@@ -801,6 +1306,7 @@ export default function PlansPage() {
     } catch (err: any) {
       toast.error("Lỗi kết nối máy chủ: " + err.message);
     } finally {
+      workflowBusyRef.current = false;
       setWorkflowBusy(false);
     }
   };
@@ -831,7 +1337,11 @@ export default function PlansPage() {
               <div className="flex flex-wrap items-center gap-space-sm">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold tracking-wide uppercase">
                   <span className="material-symbols-outlined text-[15px]">event_repeat</span>
-                  {activePlan ? `${activePlan.period?.name || "KỲ KẾ HOẠCH"} — NĂM ${activePlan.period?.year || 2026}` : "KẾ HOẠCH TUẦN — NĂM 2026"}
+                  {activePlan
+                    ? `${activePlan.period?.name || "KỲ KẾ HOẠCH"}${
+                        activePlan.period?.year ? ` — NĂM ${activePlan.period.year}` : ""
+                      }`
+                    : "CHƯA CHỌN KỲ KẾ HOẠCH"}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-status-success-bg text-status-success font-label-sm text-label-sm font-semibold">
                   <span className="material-symbols-outlined text-[15px]">verified</span>
@@ -843,42 +1353,71 @@ export default function PlansPage() {
                     ? "ĐÃ TRÌNH DUYỆT (Chờ Lãnh đạo phê duyệt)"
                     : activePlan?.status === "RETURNED"
                     ? "YÊU CẦU CHỈNH SỬA"
-                    : "DỰ THẢO KẾ HOẠCH"}
+                    : activePlan
+                    ? "DỰ THẢO KẾ HOẠCH"
+                    : "CHƯA CÓ KẾ HOẠCH"}
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-surface-subtle text-outline font-label-sm text-label-sm">
                   <span className="material-symbols-outlined text-[15px]">tag</span>
-                  {activePlan?.period?.code || (activePlan ? `KH-TL-W42` : "KH-TL")}
+                  {activePlan?.period?.code || (activePlan ? "CHƯA CÓ MÃ KỲ" : "CHƯA CÓ KẾ HOẠCH")}
                 </span>
               </div>
               <h1 className="font-headline-xl text-headline-xl text-primary mt-1 tracking-tight">
-                {activePlan ? activePlan.title : "Kế hoạch công tác tuần — Hải quan cửa khẩu Quốc tế Tà Lùng"}
+                {activePlan ? activePlan.title : "Chưa có kế hoạch công tác"}
               </h1>
               <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
-                <span>Hải quan cửa khẩu Quốc tế Tà Lùng</span>
+                <span>{activePlan?.unit?.name || "Chưa xác định đơn vị"}</span>
                 <span className="text-outline-variant">•</span>
                 <span className="font-body-semibold text-secondary">
-                  {activePlan?.unit?.name || "Bộ phận Nghiệp vụ A"} — Ca trực điều hành trọng điểm
+                  Kế hoạch cấp đơn vị • Dữ liệu theo phân quyền
                 </span>
               </p>
             </div>
 
             {/* Action Group */}
             <div data-tour="workflow-actions" className="flex flex-wrap items-center gap-space-sm shrink-0">
+              {planOptions?.canCreatePlan && (
+                <button
+                  type="button"
+                  data-testid="create-plan-btn"
+                  onClick={openPlanCreateModal}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px]">note_add</span>
+                  <span>Tạo kế hoạch</span>
+                </button>
+              )}
+
               <button
                 data-testid="add-work-item-btn"
                 onClick={() => openAddModal()}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md font-semibold transition-fast shadow-sm active-press"
+                disabled={!canAddWorkItemToActivePlan}
+                title={
+                  !activePlan
+                    ? "Chưa có kế hoạch công tác"
+                    : !planContentEditable
+                      ? "Kế hoạch đang khóa nội dung"
+                      : !activePlan.items?.length
+                        ? "Kế hoạch chưa có hạng mục — hãy tạo hạng mục trước"
+                        : "Thêm đầu việc vào kế hoạch"
+                }
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md font-semibold transition-fast shadow-sm active-press disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 <span>+ Thêm đầu việc mới</span>
               </button>
-              <button
-                onClick={() => openAddModal()}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
-              >
-                <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
-                <span>Chọn từ mẫu nghiệp vụ</span>
-              </button>
+
+              {canEditActivePlanContent && (
+                <button
+                  type="button"
+                  data-testid="manage-plan-items-btn"
+                  onClick={openPlanItemsManager}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-secondary">account_tree</span>
+                  <span>Quản lý hạng mục</span>
+                </button>
+              )}
 
               {deptCatalogCanManage && (
                 <button
@@ -888,12 +1427,12 @@ export default function PlansPage() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
                 >
                   <span className="material-symbols-outlined text-[18px] text-status-warning">settings_applications</span>
-                  <span>Danh mục đầu việc bộ phận (YC-25)</span>
+                  <span>Danh mục đầu việc bộ phận</span>
                 </button>
               )}
 
-              {activePlan?.status === "DRAFT" || activePlan?.status === "RETURNED" ? (
-                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
+              {!activePlan ? null : planContentEditable ? (
+                canSubmitActivePlan ? (
                   <button
                     onClick={() => handleWorkflowAction("SUBMIT")}
                     disabled={workflowBusy}
@@ -905,14 +1444,14 @@ export default function PlansPage() {
                 ) : (
                   <span
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
-                    title="Kế hoạch cấp Đội đang dự thảo. Chờ Trưởng bộ phận tổng hợp và trình duyệt."
+                    title="Bạn không có quyền trình duyệt kế hoạch này."
                   >
                     <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
-                    <span>Chờ Trưởng Đội trình duyệt</span>
+                    <span>Chờ người có thẩm quyền trình duyệt</span>
                   </span>
                 )
-              ) : activePlan?.status === "SUBMITTED" ? (
-                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
+              ) : activePlan.status === "SUBMITTED" ? (
+                canApproveActivePlan ? (
                   <>
                     <button
                       onClick={() => handleWorkflowAction("APPROVE")}
@@ -933,14 +1472,24 @@ export default function PlansPage() {
                 ) : (
                   <span
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
-                    title="Kế hoạch đang chờ lãnh đạo phụ trách phê duyệt."
+                    title={
+                      selfApprovalBlocked
+                        ? "Người lập/trình không được tự phê duyệt kế hoạch của mình."
+                        : "Kế hoạch đang chờ lãnh đạo phụ trách phê duyệt."
+                    }
                   >
-                    <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
-                    <span>Chờ lãnh đạo phê duyệt</span>
+                    <span className="material-symbols-outlined text-[18px]">
+                      {selfApprovalBlocked ? "block" : "hourglass_top"}
+                    </span>
+                    <span>
+                      {selfApprovalBlocked
+                        ? "Không thể tự phê duyệt — chờ cấp khác"
+                        : "Chờ lãnh đạo phê duyệt"}
+                    </span>
                   </span>
                 )
-              ) : activePlan?.status === "APPROVED" ? (
-                currentUser?.role === "DEPARTMENT_LEADER" || currentUser?.role === "UNIT_LEADER" ? (
+              ) : activePlan.status === "APPROVED" ? (
+                canEffectActivePlan ? (
                   <button
                     onClick={() => handleWorkflowAction("EFFECT")}
                     disabled={workflowBusy}
@@ -959,7 +1508,7 @@ export default function PlansPage() {
                     <span>Chờ ban hành hiệu lực</span>
                   </span>
                 )
-              ) : (
+              ) : canRequestAmendment ? (
                 <button
                   onClick={() => setShowAmendmentModal(true)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
@@ -968,18 +1517,20 @@ export default function PlansPage() {
                   <span className="material-symbols-outlined text-[18px]">approval_delegation</span>
                   <span>Trình duyệt bổ sung</span>
                 </button>
-              )}
+              ) : null}
 
-              <a
-                data-testid="export-xlsx-btn"
-                href={`/api/reports/export?template=legacy&planId=${activePlan?.id || ""}&periodId=${activePlan?.period?.id || ""}${selectedScope === "personal" ? "&scope=personal" : ""}`}
-                download
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
-                title="Xuất dữ liệu Excel chuẩn mẫu báo cáo Hải quan (8 cột A-H)"
-              >
-                <span className="material-symbols-outlined text-[18px] text-status-success">download</span>
-                <span>Xuất .XLSX</span>
-              </a>
+              {activePlan && (
+                <a
+                  data-testid="export-xlsx-btn"
+                  href={`/api/reports/export?template=legacy&planId=${activePlan.id}&periodId=${activePlan.period?.id || ""}${selectedScope === "personal" ? "&scope=personal" : ""}`}
+                  download
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
+                  title="Xuất dữ liệu Excel chuẩn mẫu báo cáo Hải quan (8 cột A-H)"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-status-success">download</span>
+                  <span>Xuất .XLSX</span>
+                </a>
+              )}
             </div>
           </div>
 
@@ -1035,6 +1586,7 @@ export default function PlansPage() {
                 </button>
                 <button
                   onClick={() => setSelectedScope("personal")}
+                  title="Chỉ hiển thị các đầu việc/nhiệm vụ do bạn phụ trách trong kế hoạch đang chọn"
                   className={`px-3 py-1.5 rounded text-xs font-semibold transition-fast flex items-center gap-1 ${
                     selectedScope === "personal"
                       ? "bg-primary text-on-primary shadow-sm"
@@ -1042,7 +1594,7 @@ export default function PlansPage() {
                   }`}
                 >
                   <span className="material-symbols-outlined text-[15px]">person</span>
-                  Kế hoạch cá nhân
+                  Việc của tôi
                 </button>
               </div>
 
@@ -1051,13 +1603,13 @@ export default function PlansPage() {
                   <span className="font-label-sm text-label-sm text-outline">Kế hoạch:</span>
                   <select
                     data-testid="plan-select"
-                    value={Math.min(selectedPlanIndex, Math.max(0, filteredPlans.length - 1))}
-                    onChange={(e) => setSelectedPlanIndex(Number(e.target.value))}
+                    value={activePlan?.id || ""}
+                    onChange={(e) => setSelectedPlanId(e.target.value)}
                     className="bg-transparent font-label-md text-label-md font-semibold text-primary focus:outline-none cursor-pointer max-w-[280px] truncate"
                   >
-                    {filteredPlans.map((p, idx) => (
-                      <option key={p.id} value={idx}>
-                        {p.unit?.name || "Đơn vị"}: {p.title} ({p.status})
+                    {filteredPlans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.unit?.name || "Chưa xác định đơn vị"}: {p.title} ({p.status})
                       </option>
                     ))}
                   </select>
@@ -1092,6 +1644,31 @@ export default function PlansPage() {
             </div>
           </div>
         </div>
+
+        {!activePlan && (
+          <div className="bg-surface-container-lowest rounded-xl border border-dashed border-border-default p-8 text-center">
+            <span className="material-symbols-outlined text-outline text-[40px]">event_note</span>
+            <h2 className="font-headline-sm text-headline-sm text-primary mt-2">
+              Chưa có kế hoạch cho kỳ này
+            </h2>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Dữ liệu bên dưới chỉ hiển thị kế hoạch có thật trong phạm vi bạn được xem.
+              {planOptions?.canCreatePlan
+                ? " Bạn có thể tạo kế hoạch mới cho đơn vị trong phạm vi được cấp quyền."
+                : " Bạn chưa có quyền lập kế hoạch — vui lòng liên hệ người có thẩm quyền."}
+            </p>
+            {planOptions?.canCreatePlan && (
+              <button
+                type="button"
+                onClick={openPlanCreateModal}
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded bg-secondary text-on-secondary text-sm font-semibold"
+              >
+                <span className="material-symbols-outlined text-[18px]">note_add</span>
+                Tạo kế hoạch
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Góc nhìn Gantt — timeline nhiệm vụ liên kết của kế hoạch đang chọn (dữ liệu thật) */}
         {viewMode === "gantt" && (
@@ -1225,14 +1802,40 @@ export default function PlansPage() {
                       <tr>
                         <td colSpan={9} className="py-16 text-center text-on-surface-variant">
                           <span className="material-symbols-outlined text-outline text-[40px] block mb-2">
-                            assignment
+                            {activePlan ? "account_tree" : "event_note"}
                           </span>
                           <p className="font-body-semibold text-body-semibold text-on-surface">
-                            Chưa có dữ liệu đầu việc cho kế hoạch này
+                            {activePlan
+                              ? "Kế hoạch chưa có hạng mục"
+                              : "Chưa có kế hoạch công tác trong phạm vi được xem"}
                           </p>
                           <p className="font-table-data text-[12px] text-outline mt-1">
-                            Nhấn &quot;+ Thêm đầu việc công tác&quot; để bổ sung nhiệm vụ vào kế hoạch
+                            {activePlan
+                              ? "Tạo hạng mục trước, sau đó thêm đầu việc vào từng hạng mục."
+                              : planOptions?.canCreatePlan
+                                ? "Bạn có thể tạo kế hoạch mới cho đơn vị trong phạm vi được cấp quyền."
+                                : "Vui lòng liên hệ người có thẩm quyền lập kế hoạch."}
                           </p>
+                          {activePlan && canEditActivePlanContent && (
+                            <button
+                              type="button"
+                              onClick={openPlanItemsManager}
+                              className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">account_tree</span>
+                              Quản lý hạng mục
+                            </button>
+                          )}
+                          {!activePlan && planOptions?.canCreatePlan && (
+                            <button
+                              type="button"
+                              onClick={openPlanCreateModal}
+                              className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">note_add</span>
+                              Tạo kế hoạch
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1251,7 +1854,8 @@ export default function PlansPage() {
                     code?: string;
                     templateCode?: string;
                     deptWorkItemTitle?: string;
-                    productCode?: string;
+                    products?: PickedProduct[];
+                    reviewState?: string | null;
                     ownerName: string;
                     coordinationUnit: string;
                     priority: string;
@@ -1276,7 +1880,11 @@ export default function PlansPage() {
                       }
 
                       const isUnassigned = !wi.groupId && !wi.template?.groupId && !item.groupId;
-                      const groupName = wi.group?.name || wi.template?.group?.name || item.group?.name || (isUnassigned ? "Chưa phân nhóm nghiệp vụ" : "Thực hiện thủ tục hải quan");
+                      const groupName =
+                        wi.group?.name ||
+                        wi.template?.group?.name ||
+                        item.group?.name ||
+                        "Chưa phân nhóm nghiệp vụ";
 
                       allRows.push({
                         id: `wi-${wi.id}`,
@@ -1288,11 +1896,12 @@ export default function PlansPage() {
                         title: wi.title,
                         templateCode: wi.template?.code,
                         deptWorkItemTitle: wi.deptWorkItem?.title,
-                        productCode: wi.product?.code,
+                        products: workItemProducts(wi),
+                        reviewState: wi.reviewState,
                         ownerName: wi.person?.fullName || "Chưa phân công",
-                        coordinationUnit: wi.coordinationUnit || "Nội bộ Chi cục",
+                        coordinationUnit: wi.coordinationUnit || "—",
                         priority: wi.priority || "Trung bình",
-                        expectedResult: wi.expectedResult || "Hoàn thành theo ca trực",
+                        expectedResult: wi.expectedResult || "Chưa nhập",
                         status: wi.status || "NOT_STARTED",
                       });
                     });
@@ -1311,7 +1920,7 @@ export default function PlansPage() {
 
                       let displayTitle = task.title;
                       let displayOwner = task.owner?.fullName || "Chưa phân công";
-                      let displayCoord = activePlan.unit?.name ? `${activePlan.unit.name}, Trạm CK` : "Bộ phận phối hợp";
+                      let displayCoord = activePlan.unit?.name || "Chưa xác định đơn vị";
 
                       if (isPersonal && currentUser) {
                         if (isOwner) {
@@ -1333,7 +1942,7 @@ export default function PlansPage() {
                       allRows.push({
                         id: `tl-${tl.task.id}`,
                         rawTask: task,
-                        dayLabel: "Trong tuần",
+                        dayLabel: "Theo kế hoạch",
                         dateStr: "",
                         deadlineText: deadlineStr,
                         isUnassignedGroup: isUnassigned,
@@ -1343,7 +1952,7 @@ export default function PlansPage() {
                         ownerName: displayOwner,
                         coordinationUnit: displayCoord,
                         priority: task.priority === "HIGH" ? "Cao" : task.priority === "LOW" ? "Thấp" : "Trung bình",
-                        expectedResult: task.expectedResultText || "Đạt yêu cầu quy trình nghiệp vụ",
+                        expectedResult: task.expectedResultText || "Chưa nhập",
                         status: task.status,
                         hasIssue: task.hasIssue,
                       });
@@ -1386,7 +1995,12 @@ export default function PlansPage() {
                             filter_alt_off
                           </span>
                           <p className="font-body-semibold text-body-semibold text-on-surface">
-                            Không tìm thấy đầu việc nào phù hợp với bộ lọc cán bộ / mức ưu tiên
+                            {selectedScope === "personal"
+                              ? "Bạn chưa được phân công đầu việc nào trong kế hoạch này"
+                              : "Không tìm thấy đầu việc nào phù hợp với bộ lọc cán bộ / mức ưu tiên"}
+                          </p>
+                          <p className="font-table-data text-[12px] text-outline mt-1">
+                            Chuyển sang “Toàn đơn vị” để xem toàn bộ đầu việc trong phạm vi được xem.
                           </p>
                         </td>
                       </tr>
@@ -1430,11 +2044,19 @@ export default function PlansPage() {
                                 BỘ PHẬN: {row.deptWorkItemTitle}
                               </span>
                             )}
-                            {row.productCode && (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-secondary/15 text-secondary font-semibold">
-                                SP: {row.productCode}
+                            {row.products?.map((p) => (
+                              <span
+                                key={p.id}
+                                className="px-2 py-0.5 rounded text-[11px] font-mono bg-secondary/15 text-secondary font-semibold"
+                                title={`${p.taskName}${p.groupName ? ` · ${p.groupName}` : ""}${
+                                  p.convertFactor !== null && p.convertFactor !== undefined
+                                    ? ` · Hệ số: ${p.convertFactor}`
+                                    : " · Chưa có hệ số"
+                                }${p.reviewState ? ` · ${reviewStateText(p.reviewState)}` : ""}`}
+                              >
+                                SP: {p.code}
                               </span>
-                            )}
+                            ))}
                             {row.deadlineText && (
                               <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-surface-container-high text-primary font-semibold border border-border-subtle">
                                 Hạn hoàn thành: {row.deadlineText}
@@ -1474,59 +2096,91 @@ export default function PlansPage() {
                         <span className="text-xs text-on-surface-variant">{row.expectedResult}</span>
                       </td>
                       <td className="py-4 px-space-md align-top text-center">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold ${
-                            row.status === "COMPLETED"
-                              ? "bg-status-success-bg text-status-success"
-                              : row.status === "NOT_STARTED"
-                              ? "bg-surface-container text-outline"
-                              : row.hasIssue
-                              ? "bg-status-danger-bg text-status-danger"
-                              : "bg-status-warning-bg text-status-warning"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[14px]">
-                            {row.status === "COMPLETED"
-                              ? "check_circle"
-                              : row.status === "NOT_STARTED"
-                              ? "schedule"
-                              : row.hasIssue
-                              ? "warning"
-                              : "hourglass_top"}
+                        <div className="flex flex-col items-center gap-1">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold ${
+                              row.status === "COMPLETED"
+                                ? "bg-status-success-bg text-status-success"
+                                : row.status === "NOT_STARTED"
+                                ? "bg-surface-container text-outline"
+                                : row.hasIssue
+                                ? "bg-status-danger-bg text-status-danger"
+                                : "bg-status-warning-bg text-status-warning"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[14px]">
+                              {row.status === "COMPLETED"
+                                ? "check_circle"
+                                : row.status === "NOT_STARTED"
+                                ? "schedule"
+                                : row.hasIssue
+                                ? "warning"
+                                : "hourglass_top"}
+                            </span>
+                            <span>
+                              {row.status === "COMPLETED"
+                                ? "Đã hoàn thành"
+                                : row.status === "NOT_STARTED"
+                                ? "Chưa thực hiện"
+                                : row.status === "DISCONTINUED"
+                                ? "Ngừng áp dụng"
+                                : row.hasIssue
+                                ? "Vướng mắc"
+                                : "Đang thực hiện"}
+                            </span>
                           </span>
-                          <span>
-                            {row.status === "COMPLETED"
-                              ? "Đã hoàn thành"
-                              : row.status === "NOT_STARTED"
-                              ? "Chưa thực hiện"
-                              : row.hasIssue
-                              ? "Vướng mắc"
-                              : "Đang thực hiện"}
-                          </span>
-                        </span>
+                          {row.rawWorkItem && (
+                            <span
+                              className={`text-[10px] leading-tight ${
+                                row.reviewState === "CONFIRMED"
+                                  ? "text-status-success font-semibold"
+                                  : row.reviewState === "SUBMITTED"
+                                  ? "text-status-warning font-semibold"
+                                  : "text-outline"
+                              }`}
+                            >
+                              {reviewStateText(row.reviewState)}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-space-md align-top text-center">
                         <div className="flex items-center justify-center gap-1">
-                          {row.rawWorkItem && (
-                            <button
-                              onClick={() => openEditModal(row.rawWorkItem!)}
-                              className="p-1 rounded hover:bg-surface-container text-outline hover:text-primary transition-colors inline-block"
-                              title="Chỉnh sửa đầu việc"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">edit</span>
-                            </button>
-                          )}
-                          {row.id.startsWith("wi-") ? (
-                            <button
-                              onClick={() => handleDeleteWorkItem(row.id.replace("wi-", ""))}
-                              className="p-1 rounded hover:bg-status-danger-bg text-outline hover:text-status-danger transition-colors inline-block"
-                              title="Xóa đầu việc"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
-                            </button>
-                          ) : (
+                          {row.rawWorkItem && (() => {
+                            const canModify = canModifyWorkItem(row.rawWorkItem);
+                            const reason = !planContentEditable
+                              ? "Kế hoạch đang khóa nội dung"
+                              : row.rawWorkItem.status === "COMPLETED"
+                                ? "Đầu việc đã hoàn thành — chỉ xem"
+                                : isWorkItemLocked(row.rawWorkItem)
+                                  ? "Đầu việc đã gửi/đã được xác nhận — nội dung đã khóa"
+                                  : "Chỉnh sửa đầu việc";
+                            return (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditModal(row.rawWorkItem!)}
+                                  disabled={!canModify}
+                                  className="p-1 rounded hover:bg-surface-container text-outline hover:text-primary transition-colors inline-block disabled:opacity-40 disabled:cursor-not-allowed"
+                                  title={reason}
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteWorkItem(row.rawWorkItem!.id)}
+                                  disabled={!canModify}
+                                  className="p-1 rounded hover:bg-status-danger-bg text-outline hover:text-status-danger transition-colors inline-block disabled:opacity-40 disabled:cursor-not-allowed"
+                                  title={canModify ? "Xóa đầu việc" : reason}
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                                </button>
+                              </>
+                            );
+                          })()}
+                          {row.rawTask && (
                             <Link
-                              href={`/tasks/${row.id.replace("tl-", "")}`}
+                              href={`/tasks/${row.rawTask.id}`}
                               className="p-1 rounded hover:bg-surface-container text-outline hover:text-primary transition-colors inline-block"
                               title="Xem chi tiết nhiệm vụ"
                             >
@@ -1552,12 +2206,12 @@ export default function PlansPage() {
 
         {/* Operational Filter Section */}
         <section className="px-margin mt-space-md flex flex-col gap-space-sm">
-          {/* Period Segmented Control */}
+          {/* Period Segmented Control — dùng chung viewMode với Desktop */}
           <div className="bg-surface-container-high p-1 rounded-xl flex items-center justify-between">
             <button
-              onClick={() => setMobilePeriod("day")}
+              onClick={() => switchView("day")}
               className={`flex-1 py-1.5 rounded-lg font-label-md text-label-md text-center transition-fast ${
-                mobilePeriod === "day"
+                viewMode === "day"
                   ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                   : "text-on-surface-variant"
               }`}
@@ -1565,19 +2219,19 @@ export default function PlansPage() {
               Ngày
             </button>
             <button
-              onClick={() => setMobilePeriod("week")}
+              onClick={() => switchView("week")}
               className={`flex-1 py-1.5 rounded-lg font-label-md text-label-md text-center transition-fast ${
-                mobilePeriod === "week"
+                viewMode === "week"
                   ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                   : "text-on-surface-variant"
               }`}
             >
-              {mobileLabels.weekShort} (Hiện tại)
+              {mobileLabels.weekShort}
             </button>
             <button
-              onClick={() => setMobilePeriod("month")}
+              onClick={() => switchView("month")}
               className={`flex-1 py-1.5 rounded-lg font-label-md text-label-md text-center transition-fast ${
-                mobilePeriod === "month"
+                viewMode === "month"
                   ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                   : "text-on-surface-variant"
               }`}
@@ -1586,60 +2240,92 @@ export default function PlansPage() {
             </button>
           </div>
 
-          {/* Week Picker */}
+          {/* Kỳ của kế hoạch đang chọn — không suy đoán kỳ hiện tại nếu chưa có kế hoạch */}
           <div className="flex items-center justify-between bg-surface-container-lowest px-space-md py-space-sm rounded-xl shadow-sm border border-border-default/40">
             <button
-              aria-label="Tuần trước"
-              className="w-9 h-9 rounded-lg bg-surface-subtle flex items-center justify-center text-on-surface hover:bg-surface-container transition-fast"
+              type="button"
+              aria-label="Kỳ trước"
+              disabled
+              title="Chưa hỗ trợ chuyển kỳ trên màn hình này"
+              className="w-9 h-9 rounded-lg bg-surface-subtle flex items-center justify-center text-on-surface opacity-40 cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[20px]">chevron_left</span>
             </button>
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center text-center px-2">
               <div className="flex items-center gap-1 text-primary">
                 <span className="material-symbols-outlined text-[18px]">calendar_month</span>
                 <span className="font-headline-sm text-headline-sm">
                   {activePlan?.period
-                    ? `${activePlan.period.title || activePlan.period.name || "Kế hoạch tuần"}${
+                    ? `${activePlan.period.title || activePlan.period.name || "Kỳ kế hoạch"}${
                         activePlan.period.startAt && activePlan.period.endAt
                           ? ` (${formatPeriodRangeFromDates(new Date(activePlan.period.startAt), new Date(activePlan.period.endAt))})`
                           : ""
                       }`
-                    : "Kế hoạch tuần"}
+                    : "Chưa có kỳ kế hoạch"}
                 </span>
               </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">Kỳ công tác theo kế hoạch</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant">
+                {activePlan ? "Kỳ công tác theo kế hoạch" : "Chọn hoặc tạo kế hoạch để xem kỳ"}
+              </span>
             </div>
             <button
-              aria-label="Tuần sau"
-              className="w-9 h-9 rounded-lg bg-surface-subtle flex items-center justify-center text-on-surface hover:bg-surface-container transition-fast"
+              type="button"
+              aria-label="Kỳ sau"
+              disabled
+              title="Chưa hỗ trợ chuyển kỳ trên màn hình này"
+              className="w-9 h-9 rounded-lg bg-surface-subtle flex items-center justify-center text-on-surface opacity-40 cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[20px]">chevron_right</span>
             </button>
           </div>
 
-          {/* Scope Filter Switch */}
+          {/* Plan selector thật — chỉ liệt kê kế hoạch trong phạm vi được xem */}
+          <label className="flex flex-col gap-1 text-xs font-semibold text-on-surface-variant">
+            Kế hoạch đang xem
+            <select
+              data-testid="plan-select-mobile"
+              value={activePlan?.id || ""}
+              onChange={(e) => setSelectedPlanId(e.target.value)}
+              disabled={filteredPlans.length === 0}
+              className="h-11 px-3 rounded-lg bg-surface-container-lowest text-primary border border-border-default/50 disabled:opacity-60"
+            >
+              {filteredPlans.length === 0 ? (
+                <option value="">Chưa có kế hoạch</option>
+              ) : (
+                filteredPlans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.unit?.name || "Chưa xác định đơn vị"} — {p.title} ({p.status})
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+
+          {/* Scope Filter Switch — bộ lọc đầu việc, không phải loại kế hoạch */}
           <div className="flex gap-space-sm">
             <button
-              onClick={() => setMobileScope("personal")}
+              onClick={() => setSelectedScope("personal")}
+              title="Chỉ hiển thị đầu việc/nhiệm vụ do bạn phụ trách"
               className={`flex-1 py-2 px-space-sm rounded-lg font-body-semibold text-center shadow-sm flex items-center justify-center gap-1.5 transition-fast ${
-                mobileScope === "personal"
+                selectedScope === "personal"
                   ? "bg-primary text-on-primary"
                   : "bg-surface-container-high text-on-surface-variant"
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">person</span>
-              <span>Kế hoạch cá nhân</span>
+              <span>Việc của tôi</span>
             </button>
             <button
-              onClick={() => setMobileScope("unit")}
+              onClick={() => setSelectedScope("all")}
+              title="Hiển thị đầu việc/nhiệm vụ của tất cả nhân sự trong phạm vi được xem"
               className={`flex-1 py-2 px-space-sm rounded-lg font-body-semibold text-center flex items-center justify-center gap-1.5 transition-fast ${
-                mobileScope === "unit"
+                selectedScope === "all"
                   ? "bg-primary text-on-primary"
                   : "bg-surface-container-high text-on-surface-variant"
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">group</span>
-              <span>Toàn bộ phận A</span>
+              <span>Toàn đơn vị</span>
             </button>
           </div>
         </section>
@@ -1650,11 +2336,15 @@ export default function PlansPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-space-sm">
                 <div className="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-headline-sm text-headline-sm font-bold">
-                  {activePlan?.unit?.name?.slice(0, 2).toUpperCase() || "HQ"}
+                  {activePlan?.unit?.name?.slice(0, 2).toUpperCase() || "—"}
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-body-semibold text-primary">{activePlan?.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</span>
-                  <span className="text-xs text-on-surface-variant">{activePlan?.title || "Kế hoạch tuần"}</span>
+                  <span className="font-body-semibold text-primary">
+                    {activePlan?.unit?.name || "Chưa xác định đơn vị"}
+                  </span>
+                  <span className="text-xs text-on-surface-variant">
+                    {activePlan?.title || "Chưa có kế hoạch công tác"}
+                  </span>
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded text-xs font-bold ${
@@ -1662,6 +2352,8 @@ export default function PlansPage() {
                   ? "bg-status-success-bg text-status-success"
                   : activePlan?.status === "SUBMITTED"
                   ? "bg-status-warning-bg text-status-warning"
+                  : activePlan?.status === "RETURNED"
+                  ? "bg-status-danger-bg text-status-danger"
                   : "bg-surface-container text-outline"
               }`}>
                 {activePlan?.status === "IN_EFFECT"
@@ -1670,39 +2362,71 @@ export default function PlansPage() {
                   ? "ĐÃ DUYỆT"
                   : activePlan?.status === "SUBMITTED"
                   ? "CHỜ DUYỆT"
-                  : "BẢN NHÁP"}
+                  : activePlan?.status === "RETURNED"
+                  ? "YÊU CẦU CHỈNH SỬA"
+                  : activePlan
+                  ? "BẢN NHÁP"
+                  : "CHƯA CÓ KẾ HOẠCH"}
               </span>
             </div>
           </div>
         </section>
 
-        {/* Quick Action Toolbar (Stitch 6835e08c233044cebdd3c966fef7fb1e) */}
+        {/* Quick Action Toolbar */}
         <section className="px-margin mt-space-md">
           <div className="flex flex-col gap-2">
             {/* Primary Action CTA */}
             <button
               data-testid="add-work-item-btn-mobile"
               onClick={() => openAddModal()}
-              className="w-full h-11 bg-secondary text-on-secondary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 active:scale-[0.99] transition-all active-press"
+              disabled={!canAddWorkItemToActivePlan}
+              title={
+                !activePlan
+                  ? "Chưa có kế hoạch công tác"
+                  : !planContentEditable
+                    ? "Kế hoạch đang khóa nội dung"
+                    : !activePlan.items?.length
+                      ? "Kế hoạch chưa có hạng mục — hãy tạo hạng mục trước"
+                      : "Thêm đầu việc vào kế hoạch"
+              }
+              className="w-full h-11 bg-secondary text-on-secondary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 active:scale-[0.99] transition-all active-press disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[20px]">add_task</span>
               <span>+ Thêm đầu việc công tác</span>
             </button>
             {/* Secondary Quick Triggers */}
             <div className="grid grid-cols-2 gap-space-sm">
-              <button
-                onClick={() => openAddModal()}
-                className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
-              >
-                <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
-                <span className="truncate">Từ mẫu 48 đầu việc</span>
-              </button>
+              {canEditActivePlanContent ? (
+                <button
+                  type="button"
+                  data-testid="manage-plan-items-btn-mobile"
+                  onClick={openPlanItemsManager}
+                  className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-secondary">account_tree</span>
+                  <span className="truncate">Quản lý hạng mục</span>
+                </button>
+              ) : planOptions?.canCreatePlan ? (
+                <button
+                  type="button"
+                  onClick={openPlanCreateModal}
+                  className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-secondary">note_add</span>
+                  <span className="truncate">Tạo kế hoạch</span>
+                </button>
+              ) : (
+                <span className="h-10 px-space-sm bg-surface-container-lowest text-outline rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 opacity-60">
+                  <span className="material-symbols-outlined text-[18px]">lock</span>
+                  <span className="truncate">Nội dung đang khóa</span>
+                </span>
+              )}
               <Link
                 href="/reports"
                 className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
               >
                 <span className="material-symbols-outlined text-[18px] text-primary">description</span>
-                <span className="truncate">Xem phiếu tuần</span>
+                <span className="truncate">Xem báo cáo</span>
               </Link>
             </div>
             {deptCatalogCanManage && (
@@ -1713,7 +2437,7 @@ export default function PlansPage() {
                 className="w-full h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
               >
                 <span className="material-symbols-outlined text-[18px] text-status-warning">settings_applications</span>
-                <span className="truncate">Danh mục đầu việc bộ phận (YC-25)</span>
+                <span className="truncate">Danh mục đầu việc bộ phận</span>
               </button>
             )}
           </div>
@@ -1754,45 +2478,71 @@ export default function PlansPage() {
                         <p className="text-xs text-outline py-2 text-center">Chưa có đầu việc nào trong mục này</p>
                       ) : (
                         <>
-                          {item.workItems?.map((wi) => (
-                            <div key={wi.id} className="p-3 rounded-lg bg-surface-subtle border border-border-default flex flex-col gap-2">
-                              <div className="flex items-center justify-between">
-                                <span className="font-label-sm font-bold text-primary">
-                                  {wi.template ? `[${wi.template.code}]` : wi.deptWorkItem ? "[BỘ PHẬN]" : "ĐẦU VIỆC"}
-                                </span>
-                                <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary text-xs font-bold">
-                                  {wi.person?.fullName || "Chưa giao"}
-                                </span>
-                              </div>
-                              <h4 className="font-body-semibold text-sm text-primary">
-                                {wi.title}
-                              </h4>
-                              {(wi.deptWorkItem || wi.product) && (
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {wi.deptWorkItem && (
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface-container-high text-primary border border-border-subtle">
-                                      {wi.deptWorkItem.title}
-                                    </span>
-                                  )}
-                                  {wi.product && (
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-secondary/15 text-secondary font-mono">
-                                      SP: {wi.product.code}
-                                    </span>
-                                  )}
+                          {item.workItems?.map((wi) => {
+                            const products = workItemProducts(wi);
+                            const canModify = canModifyWorkItem(wi);
+                            return (
+                              <div key={wi.id} className="p-3 rounded-lg bg-surface-subtle border border-border-default flex flex-col gap-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-label-sm font-bold text-primary truncate">
+                                    {wi.template ? `[${wi.template.code}]` : wi.deptWorkItem ? "[BỘ PHẬN]" : "ĐẦU VIỆC"}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary text-xs font-bold shrink-0">
+                                    {wi.person?.fullName || "Chưa giao"}
+                                  </span>
                                 </div>
-                              )}
-                              <div className="flex items-center justify-between text-xs text-outline pt-1 border-t border-border-default">
-                                <span>Trạng thái: {wi.status}</span>
-                                <button
-                                  onClick={() => handleDeleteWorkItem(wi.id)}
-                                  className="text-status-danger font-bold flex items-center gap-0.5 active:scale-95"
-                                >
-                                  <span className="material-symbols-outlined text-[15px]">delete</span>
-                                  <span>Xóa</span>
-                                </button>
+                                <h4 className="font-body-semibold text-sm text-primary">{wi.title}</h4>
+                                {(wi.deptWorkItem || products.length > 0) && (
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {wi.deptWorkItem && (
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface-container-high text-primary border border-border-subtle">
+                                        {wi.deptWorkItem.title}
+                                      </span>
+                                    )}
+                                    {products.map((p) => (
+                                      <span
+                                        key={p.id}
+                                        className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-secondary/15 text-secondary font-mono"
+                                        title={`${p.taskName}${p.groupName ? ` · ${p.groupName}` : ""}`}
+                                      >
+                                        SP: {p.code}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between gap-2 text-xs text-outline pt-1 border-t border-border-default">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span>Thực hiện: {wi.status === "COMPLETED" ? "Đã hoàn thành" : wi.status === "IN_PROGRESS" || wi.status === "ACTIVE" ? "Đang thực hiện" : wi.status === "DISCONTINUED" ? "Ngừng áp dụng" : "Chưa bắt đầu"}</span>
+                                    <span className={wi.reviewState === "CONFIRMED" ? "text-status-success font-semibold" : wi.reviewState === "SUBMITTED" ? "text-status-warning font-semibold" : ""}>
+                                      Xác nhận: {reviewStateText(wi.reviewState)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditModal(wi)}
+                                      disabled={!canModify}
+                                      title={canModify ? "Sửa đầu việc" : "Đầu việc đã khóa hoặc đã hoàn thành — chỉ xem"}
+                                      className="text-secondary font-bold flex items-center gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                                    >
+                                      <span className="material-symbols-outlined text-[15px]">edit</span>
+                                      <span>Sửa</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteWorkItem(wi.id)}
+                                      disabled={!canModify}
+                                      title={canModify ? "Xóa đầu việc" : "Không thể xóa đầu việc đã khóa/đã hoàn thành"}
+                                      className="text-status-danger font-bold flex items-center gap-0.5 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                                    >
+                                      <span className="material-symbols-outlined text-[15px]">delete</span>
+                                      <span>Xóa</span>
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
 
                           {item.taskLinks?.map((tl) => (
                             <div key={tl.task.id} className="p-3 rounded-lg bg-surface-subtle border border-border-default flex flex-col gap-2">
@@ -1830,8 +2580,46 @@ export default function PlansPage() {
               );
             })
           ) : (
-            <div className="p-6 bg-surface-container-lowest rounded-xl text-center text-outline text-sm">
-              Chưa có dữ liệu đầu việc cho kế hoạch này
+            <div className="p-6 bg-surface-container-lowest rounded-xl text-center text-sm">
+              {activePlan ? (
+                <>
+                  <span className="material-symbols-outlined text-outline text-[32px]">account_tree</span>
+                  <p className="font-semibold text-primary mt-1">Kế hoạch chưa có hạng mục</p>
+                  <p className="text-outline text-xs mt-1">
+                    Tạo hạng mục trước, sau đó thêm đầu việc vào từng hạng mục.
+                  </p>
+                  {canEditActivePlanContent && (
+                    <button
+                      type="button"
+                      onClick={openPlanItemsManager}
+                      className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">account_tree</span>
+                      Quản lý hạng mục
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-outline text-[32px]">event_note</span>
+                  <p className="font-semibold text-primary mt-1">Chưa có kế hoạch công tác</p>
+                  <p className="text-outline text-xs mt-1">
+                    {planOptions?.canCreatePlan
+                      ? "Tạo kế hoạch mới cho đơn vị trong phạm vi được cấp quyền."
+                      : "Bạn chưa có quyền lập kế hoạch — vui lòng liên hệ người có thẩm quyền."}
+                  </p>
+                  {planOptions?.canCreatePlan && (
+                    <button
+                      type="button"
+                      onClick={openPlanCreateModal}
+                      className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">note_add</span>
+                      Tạo kế hoạch
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           )}
         </section>
@@ -1867,6 +2655,15 @@ export default function PlansPage() {
 
             <form onSubmit={handleSaveWorkItem}>
               <div className="p-space-md flex flex-col gap-space-md max-h-[75vh] overflow-y-auto">
+                {modalError && (
+                  <div
+                    role="alert"
+                    className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    <span>{modalError}</span>
+                  </div>
+                )}
                 {/* 1. YC-23 + YC-25: Khu vực chọn đầu việc từ danh mục — mỗi nguồn một cột riêng */}
                 <div
                   data-testid="catalog-picker"
@@ -1880,65 +2677,20 @@ export default function PlansPage() {
                     <span className="text-[11px] text-outline">Nguồn: Danh mục TX · bộ phận · 48 mẫu cũ · sản phẩm QĐ1277 gắn kèm</span>
                   </div>
 
-                  {/* YC-31 — Danh mục công việc thường xuyên (phiên bản đang áp dụng) */}
-                  {txEntries.length > 0 ? (
-                    <div className="flex flex-col gap-1" data-testid="modal-tx-picker">
-                      <label className="text-xs font-semibold text-primary flex items-center justify-between gap-2">
-                        <span>① Công việc thường xuyên — Danh mục TX</span>
-                        <span className="text-[11px] text-outline font-normal">
-                          {txEntries.filter((e) => e.status === "ACTIVE").length} đầu việc đang áp dụng
-                        </span>
-                      </label>
-                      <select
-                        data-testid="modal-tx-item-select"
-                        value={modalCatalogEntryId}
-                        onChange={(e) => handleSelectCatalogEntry(e.target.value)}
-                        className="h-10 px-3 rounded bg-surface-container-lowest text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                      >
-                        <option value="">-- Không chọn từ Danh mục TX --</option>
-                        {modalCatalogEntryId &&
-                          !txEntries.some((e) => e.id === modalCatalogEntryId) &&
-                          editingItem?.catalogEntry && (
-                            <option value={modalCatalogEntryId}>
-                              {editingItem.catalogEntry.title} (đã ngừng — giữ liên kết cũ)
-                            </option>
-                          )}
-                        {txDepartments.map((d) => {
-                          const items = txEntries.filter(
-                            (e) => e.department === d.name && e.status === "ACTIVE"
-                          );
-                          if (items.length === 0) return null;
-                          return (
-                            <optgroup key={d.name} label={`${d.name} (${items.length})`}>
-                              {items.map((e) => (
-                                <option key={e.id} value={e.id}>
-                                  {e.title} — {e.code}
-                                </option>
-                              ))}
-                            </optgroup>
-                          );
-                        })}
-                      </select>
-                      {modalCatalogEntryId &&
-                        (() => {
-                          const selected = txEntries.find((e) => e.id === modalCatalogEntryId);
-                          return selected ? (
-                            <span className="text-[11px] text-emerald-700">
-                              Đã chọn: [{selected.department}] {selected.title} · Mã {selected.code}
-                            </span>
-                          ) : null;
-                        })()}
-                      <span className="text-[11px] text-outline">
-                        Danh mục TX độc lập với 48 mẫu cũ và không tự gắn sản phẩm QĐ1277 — có thể gắn sản phẩm ở Cột B nếu cần.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5">
-                      {catalogActivationStatus === "NO_VERSION"
-                        ? "Chưa có Danh mục TX đang áp dụng — tiếp tục dùng danh mục bộ phận hoặc 48 mẫu cũ bên dưới."
-                        : "Bộ phận của bạn chưa được kích hoạt Danh mục TX — vẫn dùng danh mục bộ phận hoặc 48 mẫu cũ bên dưới."}
-                    </div>
-                  )}
+                  {/* YC-31 — TX và QĐ1277 được chọn tại một bộ chọn thống nhất bên dưới. */}
+                  <div
+                    data-testid="modal-tx-picker"
+                    className="text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5 flex items-start gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[14px] shrink-0">info</span>
+                    <span>
+                      {txEntries.filter((e) => e.status === "ACTIVE").length > 0
+                        ? `${txEntries.filter((e) => e.status === "ACTIVE").length} công việc TX đang áp dụng. Chọn TX và sản phẩm QĐ1277 tại bộ chọn nguồn công việc bên dưới; hai nguồn này độc lập với 48 mẫu cũ và nhóm Excel.`
+                        : catalogActivationStatus === "NO_VERSION"
+                          ? "Chưa có Danh mục TX đang áp dụng — có thể dùng danh mục bộ phận, 48 mẫu cũ hoặc tự nhập."
+                          : "Bộ phận của bạn chưa được kích hoạt Danh mục TX — có thể dùng danh mục bộ phận, 48 mẫu cũ hoặc tự nhập."}
+                    </span>
+                  </div>
 
                   {!legacyTemplatesSelectable && !modalTemplateId && (
                     <div className="text-[11px] text-status-warning flex items-start gap-1">
@@ -1997,8 +2749,8 @@ export default function PlansPage() {
                     )}
                   </div>
 
-                  {/* Hai cột song song: A — thường xuyên; B — sản phẩm theo quyết định (xếp dọc trên mobile) */}
-                  <div className={`grid grid-cols-1 ${!legacyTemplatesSelectable && !modalTemplateId ? "" : "lg:grid-cols-2"} gap-3`}>
+                  {/* 48 mẫu cũ là nguồn độc lập; TX + QĐ1277 đã gộp tại bộ chọn nguồn bên dưới. */}
+                  <div className="grid grid-cols-1 gap-3">
                     {/* Cột A — công việc thường xuyên (48 mẫu) */}
                     <div
                       data-testid="picker-col-routine"
@@ -2083,109 +2835,6 @@ export default function PlansPage() {
                       </div>
                     </div>
 
-                    {/* Cột B — danh mục sản phẩm theo quyết định (tìm phía máy chủ, phân trang) */}
-                    <div
-                      data-testid="picker-col-product"
-                      className="rounded-lg border border-border-default bg-surface-container-lowest flex flex-col min-w-0"
-                    >
-                      <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-bold text-primary uppercase tracking-wide">
-                          Cột B · Danh mục sản phẩm theo QĐ
-                        </span>
-                        {modalProductItemId && (
-                          <button
-                            type="button"
-                            onClick={() => handleSelectProduct(null)}
-                            className="text-[11px] text-status-danger font-semibold shrink-0"
-                          >
-                            Bỏ chọn
-                          </button>
-                        )}
-                      </div>
-                      <div className="p-2 border-b border-border-subtle">
-                        <input
-                          data-testid="picker-col-product-search"
-                          value={productSearch}
-                          onChange={(e) => searchModalProducts(e.target.value, 1)}
-                          placeholder="Tìm theo nhiệm vụ / sản phẩm / mã SP (từ 2 ký tự)..."
-                          className="w-full h-8 px-2 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                        />
-                      </div>
-                      {modalProductItemId && modalProductLabel && (
-                        <div className="px-3 py-1.5 bg-secondary/10 text-[11px] font-semibold text-secondary truncate">
-                          Đã chọn: {modalProductLabel}
-                        </div>
-                      )}
-                      <div className="max-h-44 overflow-y-auto flex flex-col">
-                        {productSearching ? (
-                          <span className="p-3 text-xs text-outline">Đang tìm...</span>
-                        ) : productResults.length === 0 ? (
-                          <span className="p-3 text-xs text-outline">
-                            {productSearch.trim().length < 2
-                              ? "Nhập từ 2 ký tự để tìm trong hơn 3.000 sản phẩm (tìm phía máy chủ)."
-                              : "Không tìm thấy sản phẩm phù hợp."}
-                          </span>
-                        ) : (
-                          productResults.map((p) => {
-                            const active = modalProductItemId === p.id;
-                            return (
-                              <button
-                                type="button"
-                                key={p.id}
-                                data-testid={`picker-product-${p.code}`}
-                                onClick={() => {
-                                  if (active) {
-                                    handleSelectProduct(null);
-                                    return;
-                                  }
-                                  handleSelectProduct(p);
-                                }}
-                                className={`text-left px-3 py-2 border-b border-border-subtle/60 flex flex-col gap-0.5 transition-colors ${
-                                  active
-                                    ? "bg-secondary/10 border-l-2 border-l-secondary"
-                                    : "hover:bg-surface-container-low"
-                                }`}
-                              >
-                                <span className="text-xs font-semibold text-primary">{p.taskName}</span>
-                                <span className="text-[10px] text-outline font-mono">
-                                  {p.code}
-                                  {p.outputProduct ? ` · ${p.outputProduct}` : ""}
-                                  {typeof p.convertFactor === "number"
-                                    ? ` · Hệ số: ${p.convertFactor}`
-                                    : " · CHƯA CÓ HỆ SỐ (chờ đối chiếu)"}
-                                  {p.groupName ? ` · ${p.groupName}` : ""}
-                                </span>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                      {productTotal > 8 && (
-                        <div className="px-3 py-2 border-t border-border-subtle flex items-center justify-between text-[11px] text-outline">
-                          <span>
-                            Trang {productPage}/{Math.ceil(productTotal / 8)} · {productTotal} kết quả
-                          </span>
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              disabled={productPage <= 1}
-                              onClick={() => searchModalProducts(productSearch, productPage - 1)}
-                              className="px-2 py-0.5 rounded border border-border-subtle disabled:opacity-40"
-                            >
-                              Trước
-                            </button>
-                            <button
-                              type="button"
-                              disabled={productPage >= Math.ceil(productTotal / 8)}
-                              onClick={() => searchModalProducts(productSearch, productPage + 1)}
-                              className="px-2 py-0.5 rounded border border-border-subtle disabled:opacity-40"
-                            >
-                              Sau
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   </div>
 
                   {deptCatalogMsg && (
@@ -2206,10 +2855,20 @@ export default function PlansPage() {
                     rows={2}
                     required
                     value={modalTitle}
-                    onChange={(e) => setModalTitle(e.target.value)}
+                    onChange={(e) => {
+                      setModalTitle(e.target.value);
+                      if (modalFieldErrors.title) {
+                        setModalFieldErrors((prev) => ({ ...prev, title: "" }));
+                      }
+                    }}
                     placeholder="Nhập tên nhiệm vụ trong kỳ kế hoạch..."
-                    className="p-2.5 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                    className={`p-2.5 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary resize-none ${
+                      modalFieldErrors.title ? "border-status-danger" : "border-border-subtle"
+                    }`}
                   />
+                  {modalFieldErrors.title && (
+                    <span className="text-[11px] text-status-danger">{modalFieldErrors.title}</span>
+                  )}
                 </div>
 
                 {/* YC-38C: hạng mục kế hoạch — liên kết ĐÚNG đầu việc với đúng hạng mục */}
@@ -2219,10 +2878,21 @@ export default function PlansPage() {
                   </label>
                   <select
                     data-testid="modal-plan-item-select"
+                    required
                     value={modalPlanItemId}
-                    onChange={(e) => setModalPlanItemId(e.target.value)}
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    onChange={(e) => {
+                      setModalPlanItemId(e.target.value);
+                      if (modalFieldErrors.planItemId) {
+                        setModalFieldErrors((prev) => ({ ...prev, planItemId: "" }));
+                      }
+                    }}
+                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                      modalFieldErrors.planItemId ? "border-status-danger" : "border-border-subtle"
+                    }`}
                   >
+                    {!(activePlan?.items || []).length && (
+                      <option value="">Chưa có hạng mục — hãy tạo hạng mục trước</option>
+                    )}
                     {(activePlan?.items || []).map((it, idx) => (
                       <option key={it.id} value={it.id}>
                         {idx + 1}. {it.title}
@@ -2232,6 +2902,102 @@ export default function PlansPage() {
                       </option>
                     ))}
                   </select>
+                  {modalFieldErrors.planItemId && (
+                    <span className="text-[11px] text-status-danger">{modalFieldErrors.planItemId}</span>
+                  )}
+                  {!(activePlan?.items || []).length && canEditActivePlanContent && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddModal(false);
+                        openPlanItemsManager();
+                      }}
+                      className="text-[11px] text-secondary font-semibold text-left hover:underline"
+                    >
+                      Mở quản lý hạng mục
+                    </button>
+                  )}
+                </div>
+
+                {/* A2/D6: cán bộ phụ trách — chọn tường minh, đúng đơn vị kế hoạch */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Cán bộ phụ trách {!editingItem && "*"}
+                  </label>
+                  {editingItem ? (
+                    <div
+                      data-testid="modal-person-readonly"
+                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle flex items-center justify-between gap-2"
+                    >
+                      <span className="truncate">
+                        {editingItem.person?.fullName || "Không xác định"}
+                      </span>
+                      <span className="text-[10px] text-outline shrink-0">
+                        Không đổi khi sửa
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        data-testid="modal-person-select"
+                        required
+                        value={modalPersonId}
+                        disabled={modalPeopleLoading || !!modalPeopleError || !isLeaderRole}
+                        onChange={(e) => {
+                          const nextPersonId = e.target.value;
+                          setModalPersonId(nextPersonId);
+                          // Đổi sang người khác thì bỏ lựa chọn SP QĐ1277 đang có:
+                          // người đó phải tự đề xuất sản phẩm sau khi nhận việc.
+                          if (nextPersonId !== currentUser?.personId) {
+                            setModalProducts([]);
+                          }
+                          if (modalFieldErrors.personId) {
+                            setModalFieldErrors((prev) => ({ ...prev, personId: "" }));
+                          }
+                        }}
+                        className={`h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-70 ${
+                          modalFieldErrors.personId ? "border-status-danger" : "border-border-subtle"
+                        }`}
+                      >
+                        <option value="">
+                          {modalPeopleLoading
+                            ? "Đang tải danh sách cán bộ..."
+                            : modalPeople.length === 0
+                              ? "Không có cán bộ phù hợp"
+                              : "Chọn cán bộ phụ trách"}
+                        </option>
+                        {modalPeople.map((person) => (
+                          <option key={person.id} value={person.id}>
+                            {person.code ? `[${person.code}] ` : ""}
+                            {person.fullName}
+                            {person.position ? ` — ${person.position}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-[10px] text-outline">
+                        {isLeaderRole
+                          ? "Chỉ cán bộ đang hoạt động thuộc đơn vị của kế hoạch."
+                          : "Cán bộ chỉ được thêm đầu việc cho chính mình."}
+                      </span>
+                      {modalPeopleError && (
+                        <span className="text-[11px] text-status-danger">
+                          {modalPeopleError}. Không thể lưu khi chưa xác định được cán bộ phụ trách.
+                        </span>
+                      )}
+                      {!modalPeopleLoading && !modalPeopleError && modalPeople.length === 0 && (
+                        <span className="text-[11px] text-status-danger">
+                          {isLeaderRole
+                            ? "Đơn vị của kế hoạch chưa có cán bộ đang hoạt động để giao việc."
+                            : "Tài khoản của bạn không thuộc đơn vị của kế hoạch này."}
+                        </span>
+                      )}
+                      {modalFieldErrors.personId && (
+                        <span className="text-[11px] text-status-danger">
+                          {modalFieldErrors.personId}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 {/* YC-38B: bộ chọn nguồn thông minh — nhập tên trước, gợi ý TX, chọn từ danh mục */}
@@ -2242,7 +3008,7 @@ export default function PlansPage() {
                   <WorkSourcePicker
                     title={modalTitle}
                     catalogEntry={pickedCatalogEntry}
-                    product={pickedProduct}
+                    products={modalProducts}
                     onCatalogChange={(entry) => {
                       if (!entry) {
                         setModalCatalogEntryId("");
@@ -2255,17 +3021,12 @@ export default function PlansPage() {
                       setModalDeptWorkItemId("");
                       if (!modalTitle.trim()) setModalTitle(entry.title);
                     }}
-                    onProductChange={(p) => {
-                      if (!p) {
-                        setModalProductItemId("");
-                        setModalProductLabel("");
-                        setPickedProductLocal(null);
-                        return;
-                      }
-                      setModalProductItemId(p.id);
-                      setModalProductLabel(`${p.code} — ${p.taskName}`);
-                      setPickedProductLocal(p);
+                    onProductsChange={(next) => {
+                      if (!canEditModalProducts) return;
+                      setModalProducts(next);
                     }}
+                    allowProduct={canEditModalProducts}
+                    lockProducts={!canEditModalProducts}
                     storageKey="yc38b:plans"
                   />
                 </div>
@@ -2279,15 +3040,26 @@ export default function PlansPage() {
                     data-testid="modal-group-select"
                     required
                     value={modalGroupId}
-                    onChange={(e) => setModalGroupId(e.target.value)}
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    onChange={(e) => {
+                      setModalGroupId(e.target.value);
+                      if (modalFieldErrors.groupId) {
+                        setModalFieldErrors((prev) => ({ ...prev, groupId: "" }));
+                      }
+                    }}
+                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                      modalFieldErrors.groupId ? "border-status-danger" : "border-border-subtle"
+                    }`}
                   >
+                    {groups.length === 0 && <option value="">Chưa có nhóm nhiệm vụ</option>}
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>
                         [{g.code}] {g.name}
                       </option>
                     ))}
                   </select>
+                  {modalFieldErrors.groupId && (
+                    <span className="text-[11px] text-status-danger">{modalFieldErrors.groupId}</span>
+                  )}
                 </div>
 
                 {/* 4. Thứ / Ngày (Cột A) & Mức ưu tiên (Cột F) */}
@@ -2328,46 +3100,22 @@ export default function PlansPage() {
                   </div>
                 </div>
 
-                {/* YC-32: Hạn xử lý và ngày hoàn thành thực tế — hai mốc tách biệt */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">
-                      Hạn xử lý
-                    </label>
-                    <input
-                      data-testid="modal-due-date"
-                      type="date"
-                      value={modalDueDate}
-                      onChange={(e) => setModalDueDate(e.target.value)}
-                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                    />
-                    <span className="text-[10px] text-outline">
-                      Mốc cam kết xử lý — độc lập với ngày hoàn thành thực tế.
-                    </span>
-                  </div>
-
-                  {editingItem ? (
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-md text-label-md text-primary font-semibold">
-                        Ngày hoàn thành thực tế
-                      </label>
-                      <input
-                        data-testid="modal-completed-date"
-                        type="date"
-                        value={modalCompletedDate}
-                        onChange={(e) => setModalCompletedDate(e.target.value)}
-                        className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                      />
-                      <span className="text-[10px] text-outline">
-                        Để trống nếu chưa hoàn thành; nhập ngày sẽ chuyển trạng thái sang “Đã hoàn thành”.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5">
-                      Ngày hoàn thành thực tế được ghi nhận khi thực hiện tại mục “Nhật ký công việc”, tách biệt với hạn
-                      xử lý.
-                    </div>
-                  )}
+                {/* YC-32: Hạn xử lý tách biệt hoàn thành thực tế và xác nhận của lãnh đạo. */}
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-md text-label-md text-primary font-semibold">
+                    Hạn xử lý
+                  </label>
+                  <input
+                    data-testid="modal-due-date"
+                    type="date"
+                    value={modalDueDate}
+                    onChange={(e) => setModalDueDate(e.target.value)}
+                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                  <span className="text-[10px] text-outline">
+                    Mốc cam kết xử lý. Ngày hoàn thành thực tế và xác nhận của lãnh đạo được ghi nhận tại
+                    “Nhật ký công việc” — không chỉnh trực tiếp tại đây.
+                  </span>
                 </div>
 
                 {/* 5. Đơn vị phối hợp (Cột E) & Tiến độ / Trạng thái (Cột H) */}
@@ -2398,8 +3146,12 @@ export default function PlansPage() {
                     >
                       <option value="NOT_STARTED">Chưa thực hiện</option>
                       <option value="IN_PROGRESS">Đang thực hiện</option>
-                      <option value="COMPLETED">Đã hoàn thành</option>
+                      <option value="DISCONTINUED">Ngừng áp dụng</option>
                     </select>
+                    <span className="text-[10px] text-outline">
+                      Không đặt “Đã hoàn thành” trực tiếp tại đây. Hoàn thành thực tế và xác nhận của
+                      lãnh đạo là hai bước riêng.
+                    </span>
                   </div>
                 </div>
 
@@ -2430,13 +3182,367 @@ export default function PlansPage() {
                 <button
                   data-testid="modal-submit-btn"
                   type="submit"
-                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5"
+                  disabled={savingWorkItem}
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="material-symbols-outlined text-[18px]">save</span>
-                  <span>{editingItem ? "Lưu thay đổi" : "Lưu vào kế hoạch"}</span>
+                  <span>
+                    {savingWorkItem
+                      ? "Đang lưu..."
+                      : editingItem
+                        ? "Lưu thay đổi"
+                        : "Lưu vào kế hoạch"}
+                  </span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: TẠO KẾ HOẠCH CÔNG TÁC (Phase A — chỉ mở khi có quyền plans.create)
+          ========================================================================= */}
+      {showPlanCreateModal && planOptions?.canCreatePlan && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-white">Tạo kế hoạch công tác</h3>
+                <p className="text-xs text-on-primary-container">
+                  Kế hoạch cấp đơn vị — nội dung chỉnh sửa được khi còn Dự thảo
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlanCreateModal(false)}
+                className="text-on-primary-container hover:text-white transition-fast"
+                aria-label="Đóng"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePlan}>
+              <div className="p-space-md flex flex-col gap-space-md max-h-[72vh] overflow-y-auto">
+                {planFormError && (
+                  <div
+                    role="alert"
+                    className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    <span>{planFormError}</span>
+                  </div>
+                )}
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-primary">
+                  Đơn vị lập kế hoạch *
+                  <select
+                    data-testid="plan-form-unit"
+                    value={planFormUnitId}
+                    onChange={(e) => {
+                      setPlanFormUnitId(e.target.value);
+                      setPlanFormFieldErrors((prev) => ({ ...prev, unitId: "" }));
+                    }}
+                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                      planFormFieldErrors.unitId ? "border-status-danger" : "border-border-subtle"
+                    }`}
+                  >
+                    {planOptions.units.length === 0 && <option value="">Chưa có đơn vị trong phạm vi</option>}
+                    {planOptions.units.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        [{u.code}] {u.name}
+                      </option>
+                    ))}
+                  </select>
+                  {planFormFieldErrors.unitId && (
+                    <span className="text-[11px] text-status-danger">{planFormFieldErrors.unitId}</span>
+                  )}
+                </label>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-primary">Loại kỳ *</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ["DAY", "Ngày"],
+                      ["WEEK", "Tuần"],
+                      ["MONTH", "Tháng"],
+                    ] as const).map(([type, label]) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setPlanFormType(type)}
+                        className={`h-10 rounded-lg text-sm font-semibold border transition-fast ${
+                          planFormType === type
+                            ? "bg-primary text-on-primary border-primary"
+                            : "bg-surface-container-low text-on-surface-variant border-border-subtle"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-primary">
+                  Chọn một ngày trong kỳ *
+                  <input
+                    data-testid="plan-form-date"
+                    type="date"
+                    value={planFormDate}
+                    onChange={(e) => {
+                      setPlanFormDate(e.target.value);
+                      setPlanFormFieldErrors((prev) => ({ ...prev, date: "" }));
+                    }}
+                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                      planFormFieldErrors.date ? "border-status-danger" : "border-border-subtle"
+                    }`}
+                  />
+                  <span className="text-[10px] text-outline font-normal">
+                    Hệ thống xác định đúng Ngày/Tuần/Tháng theo lịch, không tự cộng 7 ngày.
+                  </span>
+                  {planFormFieldErrors.date && (
+                    <span className="text-[11px] text-status-danger">{planFormFieldErrors.date}</span>
+                  )}
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-primary">
+                  Tiêu đề kế hoạch *
+                  <input
+                    data-testid="plan-form-title"
+                    type="text"
+                    value={planFormTitle}
+                    onChange={(e) => {
+                      setPlanFormTitle(e.target.value);
+                      setPlanFormFieldErrors((prev) => ({ ...prev, title: "" }));
+                    }}
+                    placeholder="VD: Kế hoạch công tác tuần 43"
+                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                      planFormFieldErrors.title ? "border-status-danger" : "border-border-subtle"
+                    }`}
+                  />
+                  {planFormFieldErrors.title && (
+                    <span className="text-[11px] text-status-danger">{planFormFieldErrors.title}</span>
+                  )}
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-primary">
+                  Hạng mục đầu tiên *
+                  <input
+                    data-testid="plan-form-first-item"
+                    type="text"
+                    value={planFormFirstItem}
+                    onChange={(e) => {
+                      setPlanFormFirstItem(e.target.value);
+                      setPlanFormFieldErrors((prev) => ({ ...prev, firstItem: "" }));
+                    }}
+                    placeholder="VD: I. Công tác trọng tâm"
+                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                      planFormFieldErrors.firstItem ? "border-status-danger" : "border-border-subtle"
+                    }`}
+                  />
+                  {planFormFieldErrors.firstItem && (
+                    <span className="text-[11px] text-status-danger">{planFormFieldErrors.firstItem}</span>
+                  )}
+                </label>
+              </div>
+
+              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+                <button
+                  type="button"
+                  onClick={() => setShowPlanCreateModal(false)}
+                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                >
+                  Hủy
+                </button>
+                <button
+                  data-testid="plan-form-submit"
+                  type="submit"
+                  disabled={planSubmitting}
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[18px]">save</span>
+                  <span>{planSubmitting ? "Đang tạo..." : "Tạo kế hoạch"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: QUẢN LÝ HẠNG MỤC KẾ HOẠCH (Phase A)
+          ========================================================================= */}
+      {showPlanItemsModal && activePlan && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-white">Quản lý hạng mục kế hoạch</h3>
+                <p className="text-xs text-on-primary-container">{activePlan.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlanItemsModal(false)}
+                className="text-on-primary-container hover:text-white transition-fast"
+                aria-label="Đóng"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <div className="p-space-md flex flex-col gap-space-md max-h-[72vh] overflow-y-auto">
+              {planItemError && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[18px]">error</span>
+                  <span>{planItemError}</span>
+                </div>
+              )}
+
+              {!canEditActivePlanContent && (
+                <div className="rounded-lg border border-border-subtle bg-surface-subtle px-3 py-2 text-xs text-outline flex items-start gap-1.5">
+                  <span className="material-symbols-outlined text-[16px]">lock</span>
+                  <span>
+                    Kế hoạch đang {activePlan.status === "SUBMITTED" ? "chờ duyệt" : "khóa nội dung"} — chỉ xem
+                    hạng mục, không thể thêm/sửa/xóa.
+                  </span>
+                </div>
+              )}
+
+              <div className="rounded-lg border border-border-default p-3 bg-surface-subtle/50 flex flex-col gap-2">
+                <span className="text-xs font-bold text-primary">
+                  {planItemEditingId ? "Sửa hạng mục" : "Thêm hạng mục mới"}
+                </span>
+                <input
+                  data-testid="plan-item-title"
+                  value={planItemTitle}
+                  onChange={(e) => {
+                    setPlanItemTitle(e.target.value);
+                    setPlanItemError(null);
+                  }}
+                  disabled={!canEditActivePlanContent || planItemBusy}
+                  placeholder="Tên hạng mục *"
+                  className="h-10 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
+                />
+                <select
+                  data-testid="plan-item-group"
+                  value={planItemGroupId}
+                  onChange={(e) => setPlanItemGroupId(e.target.value)}
+                  disabled={!canEditActivePlanContent || planItemBusy}
+                  className="h-10 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
+                >
+                  <option value="">Không gán nhóm nghiệp vụ</option>
+                  {(groups.length ? groups : planOptions?.groups || []).map((g) => (
+                    <option key={g.id} value={g.id}>
+                      [{g.code}] {g.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex justify-end gap-2">
+                  {planItemEditingId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlanItemEditingId(null);
+                        setPlanItemTitle("");
+                        setPlanItemError(null);
+                      }}
+                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-surface-container"
+                    >
+                      Hủy sửa
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    data-testid="plan-item-save"
+                    disabled={!canEditActivePlanContent || planItemBusy}
+                    onClick={savePlanItem}
+                    className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed active-press"
+                  >
+                    {planItemBusy ? "Đang lưu..." : planItemEditingId ? "Lưu thay đổi" : "Thêm hạng mục"}
+                  </button>
+                </div>
+              </div>
+
+              {activePlan.items.length === 0 ? (
+                <div className="text-center text-xs text-outline rounded-lg border border-dashed border-border-subtle p-6">
+                  Kế hoạch chưa có hạng mục. Thêm hạng mục đầu tiên ở biểu mẫu phía trên.
+                </div>
+              ) : (
+                <div className="flex flex-col divide-y divide-border-subtle border border-border-default rounded-lg overflow-hidden">
+                  {activePlan.items.map((it, idx) => {
+                    const linked =
+                      (it.workItems?.length || 0) + (it.taskLinks?.length || 0);
+                    return (
+                      <div
+                        key={it.id}
+                        data-testid={`plan-item-row-${it.id}`}
+                        className="p-3 flex items-center justify-between gap-2"
+                      >
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-semibold text-primary truncate">
+                            {idx + 1}. {it.title}
+                          </span>
+                          <span className="text-[11px] text-outline">
+                            {it.group?.name || "Chưa gán nhóm"} · {linked} đầu việc/nhiệm vụ
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            title={
+                              linked > 0
+                                ? "Hạng mục đã có đầu việc — không thể xóa, chỉ có thể đổi tên/nhóm"
+                                : canEditActivePlanContent
+                                  ? "Sửa hạng mục"
+                                  : "Kế hoạch đang khóa nội dung"
+                            }
+                            disabled={!canEditActivePlanContent || planItemBusy}
+                            onClick={() => {
+                              setPlanItemEditingId(it.id);
+                              setPlanItemTitle(it.title);
+                              setPlanItemGroupId(it.groupId || "");
+                              setPlanItemError(null);
+                            }}
+                            className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <span className="material-symbols-outlined text-[16px] text-secondary">edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            title={
+                              linked > 0
+                                ? "Hạng mục đã có đầu việc — không thể xóa"
+                                : canEditActivePlanContent
+                                  ? "Xóa hạng mục"
+                                  : "Kế hoạch đang khóa nội dung"
+                            }
+                            disabled={!canEditActivePlanContent || planItemBusy || linked > 0}
+                            onClick={() => deletePlanItem(it.id, it.title)}
+                            className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <span className="material-symbols-outlined text-[16px] text-status-danger">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-space-md bg-surface-subtle flex items-center justify-end border-t border-border-default">
+              <button
+                type="button"
+                onClick={() => setShowPlanItemsModal(false)}
+                className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

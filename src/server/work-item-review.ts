@@ -102,6 +102,9 @@ export async function canReviewAsDirectLeader(
 ): Promise<boolean> {
   if (!user?.personId) return false;
   if (user.role === "SYSTEM_ADMIN") return false;
+  // A4: tuyệt đối không cho tự xác nhận công việc của chính mình,
+  // kể cả khi bản ghi person_supervisions bị cấu hình sai.
+  if (user.personId === subordinatePersonId) return false;
 
   const leaderIds = await resolveDirectLeaderIds(subordinatePersonId);
   return leaderIds.includes(user.personId);
@@ -115,6 +118,9 @@ export async function reviewDeniedMessage(
   user: SessionUser,
   subordinatePersonId: string
 ): Promise<string> {
+  if (user.personId === subordinatePersonId) {
+    return "Bạn không thể tự xác nhận công việc của chính mình — hãy chờ lãnh đạo trực tiếp xử lý.";
+  }
   const leaderIds = await resolveDirectLeaderIds(subordinatePersonId);
   if (leaderIds.length === 0) {
     return "Cán bộ này chưa có tuyến phê duyệt hợp lệ — hồ sơ đang chờ phân tuyến, chưa thể xác nhận.";
