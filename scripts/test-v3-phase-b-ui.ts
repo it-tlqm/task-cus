@@ -319,12 +319,19 @@ async function main() {
       (skip as HTMLButtonElement | undefined)?.click();
     });
     await sleep(400);
-    await cfg.evaluate(() => {
-      const btn = [...document.querySelectorAll("button")].find(
-        (b) => (b.textContent || "").includes("Chỉ tiêu giao") && !(b.textContent || "").includes("BTC")
+    for (let i = 0; i < 8; i++) {
+      await cfg.evaluate(() => {
+        const btn = [...document.querySelectorAll("button")].find(
+          (b) => (b.textContent || "").includes("Chỉ tiêu giao") && !(b.textContent || "").includes("BTC")
+        );
+        (btn as HTMLButtonElement | undefined)?.click();
+      });
+      await sleep(600);
+      const opened = await cfg.evaluate(() =>
+        document.body.innerText.includes("Chỉ tiêu giao — target-only")
       );
-      (btn as HTMLButtonElement | undefined)?.click();
-    });
+      if (opened) break;
+    }
     await cfg.waitForFunction(() => document.body.innerText.includes("Chỉ tiêu giao — target-only"), { timeout: 60000 });
     await sleep(300);
     // Chọn THU_NSNN trong ô "chọn chỉ tiêu" để thấy danh sách target/trạng thái/lịch sử.
