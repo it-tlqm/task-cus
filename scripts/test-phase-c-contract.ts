@@ -375,6 +375,8 @@ check("E14. canConfirmTarget thiếu nguồn → false", canConfirmTarget({ ...V
 check("E15. parseMetricInput('1.234.567') = 1234567", parseMetricInput("1.234.567") === 1234567);
 check("E16. parseMetricInput('1234567,5') = 1234567.5", parseMetricInput("1234567,5") === 1234567.5);
 check("E17. parseMetricInput('abc') = null", parseMetricInput("abc") === null);
+check("E18. BTC + kỳ THÁNG → PERIOD_KIND_MISMATCH", issuesOf({ labelCode: "BTC", periodType: "MONTH", periodNo: 10 }).some((i) => i.code === "PERIOD_KIND_MISMATCH"));
+check("E19. KH_THANG + kỳ NĂM → PERIOD_KIND_MISMATCH", issuesOf({ labelCode: "KH_THANG", periodType: "YEAR", periodNo: null }).some((i) => i.code === "PERIOD_KIND_MISMATCH"));
 
 // ============================================================
 // F. CHUYỂN TRẠNG THÁI TARGET

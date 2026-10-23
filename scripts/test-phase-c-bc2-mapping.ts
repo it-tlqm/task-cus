@@ -102,13 +102,13 @@ console.log("\n[B] D4 — comparisonKind → labelCode");
 check("B1. BTC_YEAR → BTC", mapComparisonKindToLabelCode("BTC_YEAR") === "BTC");
 check("B2. UBND_YEAR → UBND", mapComparisonKindToLabelCode("UBND_YEAR") === "UBND");
 check("B3. MONTH_PLAN → KH_THANG", mapComparisonKindToLabelCode("MONTH_PLAN") === "KH_THANG");
-check("B4. KHAC → KHAC", mapComparisonKindToLabelCode("KHAC") === "KHAC");
+check("B4. KHAC không phải comparisonKind B-C-2 → null", mapComparisonKindToLabelCode("KHAC") === null);
 check("B5. NONE → null", mapComparisonKindToLabelCode("NONE") === null);
 check("B6. Kind lạ → null (không đoán từ nhãn)", mapComparisonKindToLabelCode("SOMETHING") === null);
 check("B7. BTC → BTC_YEAR", mapLabelCodeToComparisonKind("BTC") === "BTC_YEAR");
 check("B8. UBND → UBND_YEAR", mapLabelCodeToComparisonKind("UBND") === "UBND_YEAR");
 check("B9. KH_THANG → MONTH_PLAN", mapLabelCodeToComparisonKind("KH_THANG") === "MONTH_PLAN");
-check("B10. KHAC → KHAC", mapLabelCodeToComparisonKind("KHAC") === "KHAC");
+check("B10. KHAC → NONE (không đối chiếu)", mapLabelCodeToComparisonKind("KHAC") === "NONE");
 check("B11. KH_QUY chưa có kind B-C-2 → null", mapLabelCodeToComparisonKind("KH_QUY") === null);
 check("B12. KH_NAM chưa có kind B-C-2 → null", mapLabelCodeToComparisonKind("KH_NAM") === null);
 
@@ -163,6 +163,8 @@ const badPeriod = mapBc2TargetToS3({ ...BASE_DTO, periodType: "MONTH", periodNo:
 check("D18. Tháng 13 → value null + MONTH_INVALID", badPeriod.value === null && badPeriod.issues.some((i) => i.code === "MONTH_INVALID"));
 const badPeriodType = mapBc2TargetToS3({ ...BASE_DTO, periodType: "WEEK" as any });
 check("D19. periodType lạ → value null + PERIOD_TYPE_INVALID", badPeriodType.value === null && badPeriodType.issues.some((i) => i.code === "PERIOD_TYPE_INVALID"));
+const noneKind = mapBc2TargetToS3({ ...BASE_DTO, comparisonKind: "NONE" });
+check("D20. comparisonKind NONE → labelCode rỗng, không warning", noneKind.value?.labelCode === "" && !noneKind.issues.some((i) => i.code === "COMPARISON_KIND_UNKNOWN"));
 
 // ============================================================
 // E. MAP DTO → UI DRAFT
@@ -206,6 +208,8 @@ const createNegative = mapTargetDraftToBc2CreateInput({ ...validDraft, value: "-
 check("F11. Giá trị âm → value null + VALUE_NEGATIVE", createNegative.value === null && createNegative.issues.some((i) => i.code === "VALUE_NEGATIVE"));
 const createMissingYear = mapTargetDraftToBc2CreateInput({ ...validDraft, year: null }, { unitType: "VND" });
 check("F12. Thiếu năm → value null + YEAR_INVALID", createMissingYear.value === null && createMissingYear.issues.some((i) => i.code === "YEAR_INVALID"));
+const createKhac = mapTargetDraftToBc2CreateInput({ ...validDraft, labelCode: "KHAC" }, { unitType: "VND" });
+check("F13. KHAC → comparisonKind NONE", createKhac.value?.comparisonKind === "NONE");
 
 // ============================================================
 // G. TÍCH HỢP VỚI STATE/% (D3–D5)
