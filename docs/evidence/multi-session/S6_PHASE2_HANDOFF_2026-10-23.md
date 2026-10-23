@@ -7,7 +7,7 @@
 **Base:** `3eef97e` (integration — đã gồm S2 B-C-2, S3 target-only, S4, S5, S6 Phase 1)  
 **DB test:** `talung_v3_approval_impl_quality` (localhost) — port `3117`  
 **Production touched:** **NO**  
-**Trạng thái:** READY FOR S0 REVIEW (chưa merge integration/main)
+**Trạng thái:** READY FOR S0 RE-REVIEW (đã xử lý 3 issue review + 1 quick-approve confirmation; chưa merge integration/main)
 
 ```text
 SESSION: S6-Impl — Phase 2 (YC-10 quality 65–100)
@@ -19,30 +19,61 @@ COMMITS:
   8cfccd7 feat(s6): xu ly chat luong 65-100 va dieu chinh YC-10
   dd69cfc feat(s6): giao dien chat luong YC-10
   6dde386 test(s6): bo test chat luong YC-10 va bang chung
-  (docs commit: handoff phase 2 YC-10 — SHA thực tế xem `git log`)
+  cd8b481 docs(s6): handoff phase 2 YC-10
+  ea04606 fix(s6): xu ly review S0 cho YC-10
+  (docs commit cập nhật handoff sau fix — SHA thực tế xem `git log`)
 MIGRATION: 20261023180000_v3_approval_quality (additive)
-TESTS:
+TESTS (sau fix S0):
   - tsc --noEmit: PASS
   - prisma validate: PASS
   - pnpm build: PASS
-  - test-v3-yc10-quality: 107/107
+  - test-v3-yc10-quality: 120/120
   - test-yc10-ui: 15/15 (desktop + 390px)
-  - test-v3-task-approval-hardening: 40/40
+  - test-v3-task-approval-hardening: 40/40 (rerun flag OFF)
+  - test-v3-yc09-per-person: 42/42 (rerun flag OFF)
+  - Các bộ regression còn lại: giữ kết quả lần chạy đầy đủ trước fix (không đổi code path)
   - test-v3-no-self-approval: 5/5
   - test-v3-review-flow: 38/38
   - test-yc37-approval-flow: 25/25
-  - test-v3-yc09-per-person: 42/42
   - test-v3-e2e-flow: 40/40
   - test-yc38-submit-approval: 36/36
   - test-yc38-locked-task: 15/15
 UI_EVIDENCE: docs/evidence/phase2/*.png
 MIGRATION_EVIDENCE: docs/evidence/phase2/MIGRATION_REHEARSAL_2026-10-23.{md,json}
 PRODUCTION_TOUCHED: NO
-READY_FOR_INTEGRATION: YES — chờ S0 review/merge
+READY_FOR_INTEGRATION: YES — chờ S0 re-review/merge
 ```
 
 > Ghi chú: commit docs này được tạo sau khi viết handoff; SHA thực tế của chính nó sẽ hiện trong
 > `git log` của branch (không tự tham chiếu được trong nội dung file).
+
+## 0. S0 review fixes (commit `ea04606`)
+
+1. **Export không còn lộ quality khi flag tắt**
+   - `src/app/api/evaluation-export/route.ts` đọc `isApprovalQualityEnabled()` tại thời điểm request.
+   - Flag OFF: preview JSON **không có** thuộc tính `quality`; workbook **không có** sheet
+     “Đánh giá chất lượng”; `qualityRows: undefined` cho builder.
+   - Flag ON: giữ nguyên preview + sheet phụ như trước.
+   - Test: `I6` gọi trực tiếp `GET` route export với `V3_YC10_QUALITY=false` và kiểm tra
+     preview không có `quality`; `I7` tải file với flag OFF và kiểm tra không có sheet;
+     `I8` xác nhận sheet chính thức 01A vẫn còn; `I11` xác nhận builder không truyền
+     `qualityRows` thì không sinh sheet.
+2. **Adjustment không cho người trình gốc tự duyệt**
+   - `decideQualityAdjustment` trả **403** nếu `adjustment.case.submittedById === user.personId`,
+     kể cả khi người đó có vai trò duyệt.
+   - `buildApprovalQualityView` đặt `adjustment.canDecide = false` cho người trình gốc.
+   - Test: `F8` người quyết định khác yêu cầu adjustment; `F9` preview người trình gốc
+     `canDecide=false`; `F10` người trình gốc duyệt → 403; `F11` vẫn PENDING;
+     `F12` lãnh đạo khác thẩm quyền duyệt → 200; `F13` effective cập nhật.
+3. **Formatting `tasks/[id]/page.tsx`**
+   - Tách `}` và comment `// YC-01/YC-03...` về đúng dòng; không đổi hành vi.
+4. **Quick approve fail-closed (flag ON)**
+   - Giữ nguyên yêu cầu quality: `PATCH /api/tasks` với `action: CONFIRM_COMPLETION`
+     không có `qualityPercent` → **422**, không tạo `ApprovalCase`, Task vẫn `WAITING_REVIEW`.
+   - Test: `F5`, `F6`, `F7`.
+   - Đây là **known UX path**: khi bật flag, My Work quick approve chưa có ô chọn quality;
+     lãnh đạo phải dùng task detail hoặc modal Phê duyệt cho đến khi My Work được cập nhật.
+     Không nới lỏng yêu cầu quality để làm quick approve chạy.
 
 ## 1. Phạm vi đã triển khai
 
@@ -72,7 +103,8 @@ READY_FOR_INTEGRATION: YES — chờ S0 review/merge
   **không update đè** `approval_decisions.quality_percent`.
 - Adjustment A1:
   - Yêu cầu có `old/new/reason`; chỉ owner/submitter/tuyến duyệt được gửi.
-  - Chỉ người có thẩm quyền quyết định hồ sơ được duyệt; **không tự duyệt** yêu cầu của mình.
+  - Chỉ người có thẩm quyền quyết định hồ sơ được duyệt; **không tự duyệt** yêu cầu của mình
+    và **không cho người trình gốc tự duyệt** adjustment của chính hồ sơ mình (kể cả có role duyệt).
   - Re-check effective quality khi duyệt để tránh old/new lệch; lưu audit đầy đủ.
 - Feature flag server-side `V3_YC10_QUALITY` — **mặc định TẮT**.
   - Tắt: giữ nguyên hành vi cũ; thiếu quality **không** 422; quality không lưu/hiển thị;
@@ -126,7 +158,7 @@ READY_FOR_INTEGRATION: YES — chờ S0 review/merge
 
 ### 3.1. YC-10 (flag bật)
 
-`npx tsx scripts/test-v3-yc10-quality.ts` → **107 PASS / 0 FAIL**.
+`npx tsx scripts/test-v3-yc10-quality.ts` → **120 PASS / 0 FAIL** (sau fix S0).
 
 Bao phủ:
 - 65..100 accepted; 60/64/66/72/99/101/65.5/chuỗi → 422, không tạo case/không đổi Task.
@@ -135,10 +167,16 @@ Bao phủ:
 - REJECT/CLARIFY không quality → OK; có quality hợp lệ → lưu; quality sai → 422.
 - Lịch sử theo vòng (CLARIFY 70 → response → AGREE 85).
 - Adjustment: thiếu lý do/sai giá trị/trùng/không quyền → 422/403; pending; leader khác duyệt;
-  self-approve 403; reject giữ effective; audit old/new/reason; decision gốc bất biến.
+  self-approve 403; **người trình gốc tự duyệt adjustment của mình → 403**; reject giữ effective;
+  audit old/new/reason; decision gốc bất biến.
 - Visibility: owner/leader thấy; collaborator ẩn; SYSTEM_ADMIN 403.
 - DB CHECK từ chối 60/72; FK/unique/index đúng.
 - Export: sheet phụ đúng; official sheet **không đổi cell-by-cell**.
+- Export flag OFF (gọi trực tiếp route với `V3_YC10_QUALITY=false`): preview không có `quality`,
+  file không có sheet “Đánh giá chất lượng”, sheet 01A vẫn còn; builder không truyền `qualityRows`
+  cũng không sinh sheet.
+- Quick approve `PATCH /api/tasks` + `CONFIRM_COMPLETION` thiếu quality → 422, không tạo case,
+  Task vẫn `WAITING_REVIEW`.
 - Không tăng `ProductItem`, `WorkItemProduct`, `EvaluationAssessment`, `MonthlyWorkResult`.
 - Flag off (service-level): AGREE thiếu quality vẫn thành công, quality NULL, adjustment 409.
 
@@ -170,6 +208,10 @@ Chạy với `V3_YC10_QUALITY=false` (đúng chế độ legacy mặc định) v
 
 Log: `docs/evidence/phase2/logs/*.log`.
 
+- **Sau fix S0**, rerun bắt buộc: `test-v3-task-approval-hardening` **40/40** và
+  `test-v3-yc09-per-person` **42/42** (flag OFF).
+- Các bộ còn lại giữ kết quả lần chạy đầy đủ trước fix; fix S0 chỉ chạm export flag,
+  adjustment submitter guard và formatting, không chạm các luồng của các bộ đó.
 - `test-yc37-approval-flow` gọi service trực tiếp nên cần đặt **cả** `DATABASE_URL` và
   `DIRECT_URL` về DB quality; đã chạy lại 25/25.
 - Các bộ regression khác chạy HTTP qua server port 3117.
@@ -191,9 +233,10 @@ Log: `docs/evidence/phase2/logs/*.log`.
 1. **S0 review & merge** theo thứ tự migration: Phase 1 `20261023170000` → Phase 2
    `20261023180000`. Branch này dựa trên integration đã có Phase 1.
 2. **Feature flag:** production phải để `V3_YC10_QUALITY` TẮT cho đến khi S0/UAT chốt bật.
-   Khi bật, mọi luồng AGREE TASK_RESULT phải gửi quality; các shortcut cũ (vd. “Duyệt hoàn thành”
-   ở My Work) sẽ nhận 422 với thông báo rõ và cần dùng modal Phê duyệt. Đây là hành vi có chủ đích
-   của M1, không phải bypass.
+   Khi bật, mọi luồng AGREE TASK_RESULT phải gửi quality. **Known UX path:** nút “Duyệt hoàn thành”
+   ở My Work chưa có ô chọn quality; `PATCH /api/tasks` + `CONFIRM_COMPLETION` thiếu quality
+   trả **422** (đã test F5–F7), không tạo case/không đổi Task. Lãnh đạo phải dùng task detail
+   hoặc modal Phê duyệt cho đến khi My Work được cập nhật. Không nới lỏng yêu cầu quality.
 3. **Adjustment UI** nằm trong modal duyệt/task detail, chưa có trang hàng đợi riêng cho yêu cầu
    điều chỉnh. Nếu S0 muốn quy trình riêng phải chốt bổ sung.
 4. **DB test clone** không có lịch sử `_prisma_migrations`; release thật cần rehearsal theo S1/S0.
