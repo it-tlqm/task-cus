@@ -245,6 +245,8 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
   - `POST /api/approvals/[caseType]/[id]/quality-adjustments` (request).
   - `POST /api/approvals/quality-adjustments/[id]/decision` (approve/reject).
   - Chỉ người có thẩm quyền duyệt hồ sơ, không phải người yêu cầu, không tự duyệt.
+  - Đây là cách vận hành mặc định, **không phải cấp quyền mới**; nếu S0 muốn người/cấp khác
+    phải chốt bổ sung.
   - Không cấp mã quyền mới (P-3); nếu S0 muốn mã riêng phải chốt bổ sung.
 
 ### 5.5. Ảnh hưởng điểm/export
@@ -380,6 +382,22 @@ conflict rõ ràng. Không sửa approval service đang có thay đổi chưa me
 - Task routes: hotfix S4 và Phase 1 cùng chạm → rebase sau S4, review từng dòng.
 - `/approvals` UI: Phase 2/3 cùng chạm → Phase 2 làm quality, Phase 3 làm pre-check; review diff.
 - Monthly/export: Phase 2 chỉ thêm sheet phụ; không chạm scoring.
+
+### 7.6. Thứ tự công việc chuẩn trong mỗi phase
+
+1. **Freeze contract**: xác nhận field/route/status/permission với S0; không đổi semantics đã
+   APPROVED.
+2. **Migration + rehearsal**: tạo migration additive, apply/rollback trên fixture, ghi log.
+3. **Domain/service + unit test**: trạng thái, quyền, transaction, audit.
+4. **API + security test**: route mới/route cũ, 403/409/422, self-approval, IDOR.
+5. **Tích hợp ApprovalCase/Task**: projection, snapshot, decision effect.
+6. **UI Desktop/Mobile**: hiển thị/ẩn nút theo quyền; không thay server check.
+7. **Regression + score/export + UAT**: chạy test plan phase; lấy evidence.
+8. **Handoff S0**: SHA, files, migration, tests pass/not run, UI evidence, security checks,
+   production touched: NO; chờ gate.
+
+Không chuyển sang bước sau nếu bước trước fail; không gộp migration + UI + test vào một commit
+không review được.
 
 ---
 
