@@ -1,0 +1,68 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== YC-09 PHASE 1 PER-PERSON ΓÇö http://localhost:3117 ===
+
+
+--- A. Collaborator progress / quyß╗ün ---
+  [PASS] A1. Collaborator cß║¡p nhß║¡t tiß║┐n ─æß╗Ö phß║ºn viß╗çc => 201 - HTTP 201
+  [PASS] A2. Task progress KH├öNG bß╗ï collaborator ─æß║⌐y l├¬n 50% - task progress=0
+  [PASS] A3. Participant collaborator IN_PROGRESS/50% - IN_PROGRESS/50
+  [PASS] A4. Collaborator nß╗Öp thay chß╗º tr├¼ => 403 - HTTP 403
+  [PASS] A5. Collaborator ghi ─æ├¿ actualResultText => 403 - HTTP 403
+  [PASS] A6. Collaborator ─æß╗òi assignee => 403 - HTTP 403
+  [PASS] A7. Collaborator ─æß╗òi Task status/issue => 403 - HTTP 403
+
+--- B. Submit part / overall / AGREE ---
+  [PASS] B1. Collaborator b├ío phß║ºn viß╗çc => 201 - HTTP 201
+  [PASS] B2. Participant collaborator SUBMITTED
+  [PASS] B3. Collaborator nß╗Öp kß║┐t quß║ú chung => 403 - HTTP 403
+  [PASS] B4. Owner nß╗Öp chung khi collaborator ─æ├ú b├ío => 201 - HTTP 201
+  [PASS] B5. Task WAITING_REVIEW - WAITING_REVIEW
+  [PASS] B6. Ch╞░a tß║ío ApprovalCase l├║c submit
+  [PASS] B7. Snapshot round 1 + submittedBy owner
+  [PASS] B8. Preview c├│ participant summary - HTTP 200
+  [PASS] B9. Preview submitter l├á owner thß║¡t - 13b3751d-3a27-4dd4-9fca-e999e1e2ad37
+  [PASS] B10. Leader AGREE => 200 - HTTP 200
+  [PASS] B11. Task COMPLETED - COMPLETED
+  [PASS] B12. Case AGREED - AGREED
+  [PASS] B13. Participant bß║»t buß╗Öc ACCEPTED
+  [PASS] B14. Mß╗Öt ApprovalCase/Task
+
+--- C. E9.3 REJECT chß╗ìn phß║ºn / resubmit ---
+  [PASS] C1. Ch╞░a c├│ case tr╞░ß╗¢c quyß║┐t ─æß╗ïnh (S4 timing) - undefined
+  [PASS] C2. Leader REJECT => 200 - HTTP 200
+  [PASS] C2b. Case REJECTED - REJECTED
+  [PASS] C3. Phß║ºn collaborator RETURNED - RETURNED
+  [PASS] C4. Task IN_PROGRESS - IN_PROGRESS
+  [PASS] C5. Owner nß╗Öp lß║íi khi collaborator ch╞░a b├ío => 409 - HTTP 409
+  [PASS] C6. Owner nß╗Öp lß║íi khi ─æß╗º S-ALL => 201 - HTTP 201
+  [PASS] C7. Case mß╗ƒ lß║íi round 2
+  [PASS] C8. Snapshot c├│ round 1 + 2
+  [PASS] C9. Leader AGREE lß║ºn 2 => 200 - HTTP 200
+  [PASS] C10. Vß║½n mß╗Öt ApprovalCase/Task
+
+--- D. Tß╗▒ duyß╗çt ---
+  [PASS] D1. Leader tß╗▒ nß╗Öp chung => 201 - HTTP 201
+  [PASS] D2. Leader tß╗▒ duyß╗çt => 403 - HTTP 403
+  [PASS] D3. Kh├┤ng tß║ío case khi tß╗▒ duyß╗çt bß╗ï chß║╖n
+
+--- E. Legacy Task ---
+  [PASS] E1. Legacy owner nß╗Öp chung => 201 - HTTP 201
+  [PASS] E2. Legacy AGREE => 200 - HTTP 200
+  [PASS] E3. Legacy Task COMPLETED - COMPLETED
+
+--- G. Task mß╗¢i qua API: S-ALL ---
+  [PASS] G1. Tß║ío Task qua API => 201 - HTTP 201
+  [PASS] G2. Owner nß╗Öp khi collaborator ch╞░a b├ío => 409 - HTTP 409
+  [PASS] G3. Owner nß╗Öp sau khi collaborator b├ío => 201 - HTTP 201
+
+--- F. Kh├┤ng tß║ío d├▓ng monthly/Q─É1277 ---
+  [PASS] F1. Kh├┤ng sinh MonthlyWorkResult cho participant/task test - 0
+
+=== 42 PASS / 0 FAIL ===

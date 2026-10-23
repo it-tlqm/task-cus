@@ -1,0 +1,48 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== YC-38 B4 ΓÇö Kiß╗âm thß╗¡ luß╗ông tr├¼nh duyß╗çt kß║┐t quß║ú ===
+
+[PASS] 0. Tß║ío nhiß╗çm vß╗Ñ ─æß╗â l├únh ─æß║ío giao - NV-2026-0122
+[PASS] 0. C├ín bß╗Ö nhß║¡n viß╗çc - HTTP 200
+[PASS] R1. 50% ΓåÆ HTTP 201 - HTTP 201
+[PASS] R1. 50% ΓåÆ status giß╗» IN_PROGRESS - IN_PROGRESS
+[PASS] R1. 50% ΓåÆ kind=progress - progress
+[PASS] R1. 50% ΓåÆ kh├┤ng tß║ío sß╗▒ kiß╗çn submit
+[PASS] R2. 100% ΓåÆ HTTP 201 - HTTP 201
+[PASS] R2. 100% ΓåÆ status = WAITING_REVIEW - WAITING_REVIEW
+[PASS] R2. 100% ΓåÆ ─æ├║ng 1 sß╗▒ kiß╗çn kind=submit - n=1
+[PASS] R2. Response b├ío submitted=true
+[PASS] R3. Gß╗¡i lß║íi ΓåÆ kh├┤ng tß║ío sß╗▒ kiß╗çn submit thß╗⌐ 2 - n=1 (HTTP 409)
+[PASS] R3. Trß║ú lß╗ùi r├╡ r├áng khi ─æ├ú chß╗¥ duyß╗çt - HTTP 409 Nhiß╗çm vß╗Ñ ─æ├ú ─æ╞░ß╗úc tr├¼nh duyß╗çt.
+[PASS] R4. Nß╗Öp lß║íi (nß╗Öi dung kh├íc) ΓåÆ vß║½n ─æ├║ng 1 sß╗▒ kiß╗çn submit - n=1
+[PASS] R4. Trß║ú 409 - HTTP 409
+[PASS] R5. Gß╗¡i 3 request ─æß╗ông thß╗¥i ΓåÆ ─æ├║ng 1 sß╗▒ kiß╗çn submit - n=1
+[PASS] R5. Trß║íng th├íi sau khi gß╗¡i ─æß╗ông thß╗¥i = WAITING_REVIEW - WAITING_REVIEW
+[PASS] R5. Kh├┤ng c├│ m├ú 500 khi gß╗¡i ─æß╗ông thß╗¥i - 409,201,409
+[PASS] R7. Nhiß╗çm vß╗Ñ xuß║Ñt hiß╗çn trong h├áng ─æß╗úi l├únh ─æß║ío duyß╗çt
+[PASS] R10. C├ín bß╗Ö KH├öNG tß╗▒ nghiß╗çm thu ho├án th├ánh (403) - HTTP 403
+[PASS] R10. Trß║íng th├íi kh├┤ng ─æß╗òi sau khi c├ín bß╗Ö cß╗æ tß╗▒ ho├án th├ánh - WAITING_REVIEW
+[PASS] R9. L├únh ─æß║ío trß║ú lß║íi ΓåÆ IN_PROGRESS - IN_PROGRESS
+[PASS] R9. Ghi sß╗▒ kiß╗çn kind=return
+[PASS] R9. C├ín bß╗Ö tr├¼nh lß║íi ΓåÆ WAITING_REVIEW - 201 WAITING_REVIEW
+[PASS] R8. L├únh ─æß║ío nghiß╗çm thu ΓåÆ COMPLETED - 200 COMPLETED
+[PASS] R8. Ghi sß╗▒ kiß╗çn kind=approve
+[PASS] R11. Luß╗ông /my-work (newStatus/statusAfter) ΓåÆ WAITING_REVIEW - HTTP 201 WAITING_REVIEW
+[PASS] R11. Luß╗ông /my-work ΓåÆ kind=submit - n=1
+[PASS] R5b. Tr├¼nh duyß╗çt sß╗¢m ß╗ƒ 50% ΓåÆ KH├öNG chuyß╗ân WAITING_REVIEW - IN_PROGRESS
+[PASS] R5b. C├│ ghi ch├║ giß║úi th├¡ch (─æß╗ü xuß║Ñt nghiß╗çp vß╗Ñ chß╗¥ x├íc nhß║¡n) - Ch╞░a triß╗ân khai luß╗ông tr├¼nh duyß╗çt sß╗¢m khi tiß║┐n ─æß╗Ö d╞░ß╗¢i 100% 
+[PASS] R5. O tick suy ra tu tien do (khong con state rieng lech hien thi) - checked={newProgress === 100}
+[PASS] R5. Payload submitForReview theo quy tß║»c 100%
+[PASS] R6. Mß╗ƒ modal reset tiß║┐n ─æß╗Ö + nß╗Öi dung
+[PASS] R5. C├│ th├┤ng b├ío khi nhiß╗çm vß╗Ñ ─æ├ú chß╗¥ duyß╗çt (chß║╖n nß╗Öp lß║╖p ß╗ƒ giao diß╗çn)
+[PASS] R4. API chß╗æng nß╗Öp tr├╣ng ß╗ƒ server (kho├í + ─æß╗ìc lß║íi trß║íng th├íi + 409)
+[PASS] R4. Ghi sß╗▒ kiß╗çn + ─æß╗òi trß║íng th├íi trong C├ÖNG transaction
+[PASS] R4. Guard chß║╖n lß║╖p WAITING_REVIEW ΓåÆ WAITING_REVIEW
+
+=== Kß║╛T QUß║ó: 36 pass / 0 fail ===

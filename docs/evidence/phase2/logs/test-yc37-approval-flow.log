@@ -1,0 +1,41 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Fixture: task YC37-TEST-MVL446KA
+
+[PASS] L├únh ─æß║ío xem tr╞░ß╗¢c hß╗ô s╞í ─æ╞░ß╗úc
+[PASS] Preview c├│ quyß╗ün quyß║┐t ─æß╗ïnh
+[PASS] Preview c├│ ng╞░ß╗¥i tr├¼nh + hß║ín + kß║┐t quß║ú
+[PASS] Hß╗ô s╞í ch╞░a c├│ quyß║┐t ─æß╗ïnh n├áo - caseStatus=NOT_CREATED
+[PASS] Xem tr╞░ß╗¢c KH├öNG ─æß╗òi trß║íng th├íi nhiß╗çm vß╗Ñ - WAITING_REVIEW
+[PASS] Y├¬u cß║ºu giß║úi tr├¼nh thiß║┐u nß╗Öi dung bß╗ï tß╗½ chß╗æi
+[PASS] Y├¬u cß║ºu giß║úi tr├¼nh th├ánh c├┤ng - ─É├ú y├¬u cß║ºu giß║úi tr├¼nh hß╗ô s╞í [YC37-TEST-MVL446KA]. Nhiß╗çm vß╗Ñ ─æ├ú chß╗¥ giß║úi tr├¼nh, giß╗» nguy├¬n nß╗Öi dung kß║┐t quß║ú ─æ├ú ghi.
+[PASS] Nhiß╗çm vß╗Ñ chuyß╗ân vß╗ü IN_PROGRESS - IN_PROGRESS
+[PASS] Kß║┐t quß║ú ─æ├ú ghi cß╗ºa c├ín bß╗Ö KH├öNG bß╗ï ghi ─æ├¿ - Kß║┐t quß║ú ─æ├ú ghi cß╗ºa c├ín bß╗Ö
+[PASS] Hß╗ô s╞í CLARIFY_REQUESTED - CLARIFY_REQUESTED
+[PASS] Lß╗ïch sß╗¡ c├│ 1 quyß║┐t ─æß╗ïnh
+[PASS] Ng╞░ß╗¥i tr├¼nh xem ─æ╞░ß╗úc hß╗ô s╞í cß╗ºa m├¼nh
+[PASS] Ng╞░ß╗¥i tr├¼nh ─æ╞░ß╗úc phß║ún hß╗ôi giß║úi tr├¼nh
+[PASS] Ng╞░ß╗¥i tr├¼nh KH├öNG c├│ quyß╗ün quyß║┐t ─æß╗ïnh
+[PASS] Gß╗¡i giß║úi tr├¼nh th├ánh c├┤ng - ─É├ú gß╗¡i nß╗Öi dung giß║úi tr├¼nh ΓÇö hß╗ô s╞í quay lß║íi h├áng ─æß╗úi xß╗¡ l├╜.
+[PASS] Nhiß╗çm vß╗Ñ quay lß║íi h├áng ─æß╗úi nghiß╗çm thu - WAITING_REVIEW
+[PASS] Hß╗ô s╞í mß╗ƒ lß║íi (OPEN) - OPEN
+[PASS] Sß╗æ v├▓ng t─âng l├¬n 2 - 2
+[PASS] Lß╗ïch sß╗¡ c├│ 2 mß╗Ñc (y├¬u cß║ºu + phß║ún hß╗ôi)
+[PASS] KH├öNG tß║ío hß╗ô s╞í tr├╣ng - 1 hß╗ô s╞í
+[PASS] Chß║Ñp thuß║¡n th├ánh c├┤ng - ─É├ú chß║Ñp thuß║¡n hß╗ô s╞í [YC37-TEST-MVL446KA]. Nhiß╗çm vß╗Ñ ─æ├ú ─æ╞░ß╗úc nghiß╗çm thu ho├án th├ánh.
+[PASS] Nhiß╗çm vß╗Ñ COMPLETED - COMPLETED
+[PASS] Hß╗ô s╞í AGREED - AGREED
+[PASS] Bß║Ñm lß║íi bß╗ï chß║╖n (409) - HTTP 409
+[PASS] Audit ghi ─æß╗º c├íc quyß║┐t ─æß╗ïnh - APPROVAL_PREVIEW_VIEW, APPROVAL_CLARIFY, APPROVAL_RESPOND, APPROVAL_AGREE
+
+─É├ú dß╗ìn sß║ích dß╗» liß╗çu test.
+
+========================================
+Kß║╛T QUß║ó LUß╗ÆNG YC-37: 25 pass / 0 fail
+========================================

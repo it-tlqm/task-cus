@@ -1,0 +1,69 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== Kß╗èCH Bß║óN END-TO-END V3 (demo local) ===
+
+--- F16/F17 ---
+[PASS] F16. T├¼m SP kh├┤ng dß║Ñu (3.386 SP) hoß║ít ─æß╗Öng - 5 kß║┐t quß║ú
+[PASS] F16. T├¼m SP c├│ dß║Ñu cho kß║┐t quß║ú t╞░╞íng ─æ╞░╞íng - 5 kß║┐t quß║ú
+[PASS] F16. Kh├┤ng lß╗Ö lß╗ùi SQL/Prisma ra giao diß╗çn - -
+[PASS] F17. Danh mß╗Ñc TX tß║úi ─æ╞░ß╗úc ─æß╗º 348 mß╗Ñc - 348 mß╗Ñc
+[PASS] F17. Trß║íng th├íi k├¡ch hoß║ít = ACTIVATED - ACTIVATED
+[PASS] F17. 48 mß║½u c┼⌐ kh├┤ng thay thß║┐ nguß╗ôn TX
+[PASS] F17. C├│ m├ú TX ─æß╗â lß║¡p kß║┐ hoß║ích - NV-01
+
+--- 1. Lß║¡p kß║┐ hoß║ích tß╗½ danh mß╗Ñc TX ---
+[PASS] 1. Tß║ío ─æ╞░ß╗úc ─æß║ºu viß╗çc tß╗½ danh mß╗Ñc TX - HTTP 201
+[PASS] 1. ─Éß║ºu viß╗çc gß║»n ─æ├║ng m├ú TX + nguß╗ôn TX_CATALOG - source=TX_CATALOG
+
+--- 2. Gß║»n nhiß╗üu SP Q─É1277 ---
+[PASS] 2. Gß║»n ─æ╞░ß╗úc 3 m├ú SP tr├¬n 1 c├┤ng viß╗çc - 3/3 SP
+[PASS] 2. Mß╗ùi SP chß╗¥ l├únh ─æß║ío x├íc nhß║¡n
+
+--- 3. C├┤ng chß╗⌐c b├ío kß║┐t quß║ú ---
+[PASS] 3. Thiß║┐u nß╗Öi dung kß║┐t quß║ú ΓçÆ 400 - HTTP 400
+[PASS] 3. Gß╗¡i l├¬n l├únh ─æß║ío ΓçÆ 200 - HTTP 200
+
+--- 4. L├únh ─æß║ío xß╗¡ l├╜ ---
+[PASS] 4. Hß╗ô s╞í xuß║Ñt hiß╗çn trong h├áng ─æß╗úi cß╗ºa l├únh ─æß║ío
+[PASS] 9. Ng╞░ß╗¥i kh├┤ng phß║úi l├únh ─æß║ío trß╗▒c tiß║┐p kh├┤ng thß║Ñy hß╗ô s╞í
+[PASS] 9. Ng╞░ß╗¥i sai vai tr├▓ kh├┤ng x├íc nhß║¡n ─æ╞░ß╗úc ΓçÆ 403 - HTTP 403
+[PASS] 4. Trß║ú lß║íi ΓçÆ 200 - HTTP 200
+[PASS] 4. C├ín bß╗Ö sß╗¡a & gß╗¡i lß║íi ΓçÆ 200 - HTTP 200
+[PASS] 4. X├íc nhß║¡n SP 1 ΓçÆ 200 - HTTP 200
+[PASS] 4. X├íc nhß║¡n SP 2 ΓçÆ 200 - HTTP 200
+[PASS] 7. X├íc nhß║¡n SP1 KH├öNG tß╗▒ x├íc nhß║¡n SP c├▓n lß║íi - CONFIRMED/CONFIRMED/PROPOSED
+[PASS] 4. L├únh ─æß║ío x├íc nhß║¡n c├┤ng viß╗çc ΓçÆ 200 - HTTP 200
+
+--- 5. Lß╗ïch sß╗¡ ph├¬ duyß╗çt ---
+[PASS] 5. L├únh ─æß║ío t├¼m lß║íi ─æ╞░ß╗úc hß╗ô s╞í ─æ├ú x├íc nhß║¡n - 1 hß╗ô s╞í ─æ├ú duyß╗çt
+[PASS] 5. Lß╗ïch sß╗¡ ─æß╗º chuß╗ùi gß╗¡i ΓåÆ trß║ú lß║íi ΓåÆ gß╗¡i lß║íi ΓåÆ x├íc nhß║¡n - SUBMITTED ΓåÆ RETURNED ΓåÆ SUBMITTED ΓåÆ SP_CONFIRMED ΓåÆ SP_CONFIRMED ΓåÆ CONFIRMED
+[PASS] 5. Tab 'Tß║Ñt cß║ú / Lß╗ïch sß╗¡' trß║ú vß╗ü hß╗ô s╞í ─æ├ú xß╗¡ l├╜
+[PASS] 9. Lß╗ïch sß╗¡ kh├┤ng lß╗Ö hß╗ô s╞í ngo├ái phß║ím vi quß║ún l├╜
+
+--- 6. Li├¬n th├┤ng kß║┐t quß║ú th├íng ---
+[PASS] 6. C├┤ng viß╗çc ─æ├ú x├íc nhß║¡n xuß║Ñt hiß╗çn ß╗ƒ Bß║óN NH├üP kß║┐t quß║ú th├íng - 1 bß║ún nh├íp
+[PASS] 6. Bß║ún nh├íp ghi r├╡ sß╗æ SP ─æ├ú x├íc nhß║¡n - 2/3
+[PASS] 6. Tß║ío ─æ╞░ß╗úc hß╗ô s╞í kß║┐t quß║ú th├íng - HTTP 201
+[PASS] 6. Chß╗ë Mß╗ÿT hß╗ô s╞í kß║┐t quß║ú cho mß╗Öt c├┤ng viß╗çc (kh├┤ng ghi tr├╣ng)
+[PASS] 7. D├▓ng c├│ nh├ún trß║íng th├íi (SP ch╞░a duyß╗çt ΓçÆ ch╞░a ─æß╗º ─æiß╗üu kiß╗çn ch├¡nh thß╗⌐c) - state=SP_PENDING
+[PASS] 6. Bß║ún nh├íp biß║┐n mß║Ñt sau khi ─æ├ú c├│ hß╗ô s╞í kß║┐t quß║ú
+[PASS] 6. Ghi tr├╣ng kß║┐t quß║ú th├íng bß╗ï chß║╖n - HTTP 200
+[PASS] 6. Vß║½n chß╗ë 1 hß╗ô s╞í sau khi thß╗¡ ghi tr├╣ng
+
+--- 9. Kh├│a sau nghiß╗çm thu ---
+[PASS] 9. Kh├┤ng sß╗¡a ─æ╞░ß╗úc sau khi l├únh ─æß║ío x├íc nhß║¡n ΓçÆ 409 - HTTP 409
+[PASS] 9. Kh├┤ng th├¬m minh chß╗⌐ng sau khi x├íc nhß║¡n ΓçÆ 409 - HTTP 409
+
+--- 8. C├┤ng viß╗çc kh├┤ng c├│ SP ---
+[PASS] 8. Tß║ío ─æ╞░ß╗úc c├┤ng viß╗çc kh├┤ng c├│ SP - HTTP 201
+[PASS] 8. Vß║½n gß╗¡i & x├íc nhß║¡n ─æ╞░ß╗úc khi kh├┤ng c├│ SP (chß╗¥ ─æß╗æi chiß║┐u) - HTTP 200
+[PASS] 8. L├únh ─æß║ío x├íc nhß║¡n ─æ╞░ß╗úc c├┤ng viß╗çc kh├┤ng SP - HTTP 200
+[PASS] 8. C├┤ng viß╗çc kh├┤ng SP kh├┤ng ─æ╞░ß╗úc t├¡nh ─æiß╗âm ch├¡nh thß╗⌐c - state=undefined
+
+=== Kß║╛T QUß║ó: 40 pass / 0 fail ===

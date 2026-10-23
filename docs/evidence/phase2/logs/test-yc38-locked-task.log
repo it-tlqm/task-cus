@@ -1,0 +1,27 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== YC-38 ΓÇö Kh├│a nhiß╗çm vß╗Ñ ─æ├ú nghiß╗çm thu (F1ΓÇôF5) ===
+
+[PASS] 0. Tß║ío nhiß╗çm vß╗Ñ (chß╗º tr├¼ + 1 phß╗æi hß╗úp) - NV-2026-0123
+[PASS] 0. Nhiß╗çm vß╗Ñ mß║½u ─æ├ú nghiß╗çm thu (COMPLETED) - COMPLETED
+[PASS] 1. COMPLETED ΓåÆ IN_PROGRESS: bß╗ï chß║╖n - HTTP 409
+[PASS] 2. COMPLETED ΓåÆ WAITING_REVIEW: bß╗ï chß║╖n - HTTP 409
+[PASS] 3. COMPLETED ΓåÆ COMPLETED: kh├┤ng ghi bß║ún ghi mß╗¢i - updates 5ΓåÆ5 (HTTP 409)
+[PASS] 4. Ghi ─æ├¿ actualResultText sau nghiß╗çm thu: bß╗ï chß║╖n - HTTP 409, result kh├┤ng ─æß╗òi=true
+[PASS] 5. SUBMIT_COMPLETION sau nghiß╗çm thu: bß╗ï chß║╖n - HTTP 409
+[PASS] 6. Xin gia hß║ín sau nghiß╗çm thu: bß╗ï chß║╖n - HTTP 409
+[PASS] 7. Ng╞░ß╗¥i phß╗æi hß╗úp kh├┤ng thay ─æß╗òi ─æ╞░ß╗úc nhiß╗çm vß╗Ñ ─æ├ú nghiß╗çm thu
+[PASS] 8. Ng╞░ß╗¥i chß╗º tr├¼ c┼⌐ng kh├┤ng tß╗▒ mß╗ƒ lß║íi ─æ╞░ß╗úc - HTTP 409
+[PASS] 9. L├únh ─æß║ío kh├┤ng ghi ─æ├¿ kß║┐t quß║ú ─æ├ú duyß╗çt qua API th╞░ß╗¥ng - HTTP 409
+[PASS] 10. UI kh├│a thao t├íc ß╗ƒ trß║íng th├íi kß║┐t th├║c - my-work + tasks: isTaskTerminal
+[PASS] 11. API kiß╗âm tra lß║íi trß║íng th├íi NGAY L├ÜC GHI (trong transaction, sau kho├í) - ─æß╗ìc lß║íi trß║íng th├íi sau advisoryLock
+[PASS] 12. Luß╗ông ─æang thß╗▒c hiß╗çn ΓåÆ nß╗Öp duyß╗çt ΓåÆ l├únh ─æß║ío duyß╗çt vß║½n chß║íy - HTTP 201/200 ΓåÆ COMPLETED
+[PASS] 13. Luß╗ông trß║ú lß║íi tr╞░ß╗¢c nghiß╗çm thu vß║½n hoß║ít ─æß╗Öng - trß║ú lß║íi HTTP 200 ΓåÆ IN_PROGRESS; tr├¼nh lß║íi HTTP 201 ΓåÆ WAITING_REVIEW
+
+=== Kß║╛T QUß║ó: 15 pass / 0 fail ===

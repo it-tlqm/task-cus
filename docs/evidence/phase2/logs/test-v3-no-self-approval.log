@@ -1,0 +1,17 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== V3.1.3 ΓÇö CHß╗ÉNG Tß╗░ DUYß╗åT (mß╗ìi luß╗ông) ===
+
+  [PASS] A1. Lanh dao TU nghiem thu nhiem vu cua minh => bi chan (403) - HTTP 403 Kh├┤ng nghiß╗çm thu trß╗▒c tiß║┐p qua cß║¡p nhß║¡t tiß║┐n ─æß╗Ö. Vui l├▓ng xß╗¡ l├╜ tß║íi hß╗ô
+  [PASS] A2. Trang thai nhiem vu KHONG doi - IN_PROGRESS
+  [PASS] B1. Lanh dao TU quyet dinh ho so cua minh (AGREE) => bi chan (403) - HTTP 403 Bß║ín kh├┤ng ─æ╞░ß╗úc tß╗▒ quyß║┐t ─æß╗ïnh hß╗ô s╞í do ch├¡nh m├¼nh tr├¼nh ΓÇö cß║ºn l├únh ─æß║ío 
+  [PASS] B2. Ho so chua co quyet dinh tu duyet (status phai khac AGREED) - status=undefined, selfAgree=0
+  [PASS] C1. Can bo khong co tham quyen quyet dinh => bi chan (403) - HTTP 403
+
+=== 5 pass / 0 fail ===

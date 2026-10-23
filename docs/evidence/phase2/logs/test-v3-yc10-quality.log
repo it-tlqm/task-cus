@@ -1,0 +1,141 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== YC-10 PHASE 2 QUALITY ΓÇö http://localhost:3117 ===
+
+
+--- A. Flag / preview / validate ---
+  [PASS] A1. Preview leader 200 - HTTP 200
+  [PASS] A2. Flag quality bß║¡t trong preview
+  [PASS] A3. Quality required = true vß╗¢i TASK_RESULT
+  [PASS] A4. Ch╞░a c├│ quality => original/effective NULL
+  [PASS] A5. Leader xem ─æ╞░ß╗úc quality (visible)
+  [PASS] A6. AGREE thiß║┐u quality => 422 - HTTP 422
+  [PASS] A7. Kh├┤ng tß║ío ApprovalCase khi 422
+  [PASS] A8. Task vß║½n WAITING_REVIEW khi 422
+  [PASS] A9. AGREE quality 60 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A9. AGREE quality 64 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A9. AGREE quality 66 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A9. AGREE quality 72 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A9. AGREE quality 99 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A9. AGREE quality 101 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A9. AGREE quality 65.5 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A9. AGREE quality 80 => 422, kh├┤ng mutation - HTTP 422
+  [PASS] A10. AGREE 65 => 200 - HTTP 200
+  [PASS] A11. Task COMPLETED - COMPLETED
+  [PASS] A12. Decision quality 65
+  [PASS] A13. Case AGREED
+  [PASS] A14. Preview original/effective 65
+  [PASS] A15. History c├│ v├▓ng 1 AGREE quality 65
+  [PASS] A16. MonthlyWorkResult kh├┤ng sinh cho task test
+
+--- A2. C├íc mß╗⌐c hß╗úp lß╗ç 70..100 ---
+  [PASS] A17. AGREE quality 70 => 200 + l╞░u ─æ├║ng - HTTP 200
+  [PASS] A17. AGREE quality 75 => 200 + l╞░u ─æ├║ng - HTTP 200
+  [PASS] A17. AGREE quality 80 => 200 + l╞░u ─æ├║ng - HTTP 200
+  [PASS] A17. AGREE quality 85 => 200 + l╞░u ─æ├║ng - HTTP 200
+  [PASS] A17. AGREE quality 90 => 200 + l╞░u ─æ├║ng - HTTP 200
+  [PASS] A17. AGREE quality 95 => 200 + l╞░u ─æ├║ng - HTTP 200
+  [PASS] A17. AGREE quality 100 => 200 + l╞░u ─æ├║ng - HTTP 200
+
+--- B. REJECT/CLARIFY kh├┤ng bß║»t buß╗Öc ---
+  [PASS] B1. REJECT kh├┤ng quality => 200 - HTTP 200
+  [PASS] B2. REJECT quality NULL
+  [PASS] B3. Task trß║ú vß╗ü IN_PROGRESS
+  [PASS] B4. CLARIFY kh├┤ng quality => 200 - HTTP 200
+  [PASS] B5. CLARIFY quality NULL
+  [PASS] B6. REJECT k├¿m quality 70 => 200 - HTTP 200
+  [PASS] B7. REJECT l╞░u quality 70 (chß╗ë lß╗ïch sß╗¡)
+  [PASS] B8. REJECT quality 72 => 422, kh├┤ng tß║ío case - HTTP 422
+
+--- C. Lß╗ïch sß╗¡ theo v├▓ng ---
+  [PASS] C1. V├▓ng 1 CLARIFY quality 70 - HTTP 200
+  [PASS] C2. Owner gß╗¡i giß║úi tr├¼nh => 200 - HTTP 200
+  [PASS] C3. V├▓ng 2 AGREE quality 85 - HTTP 200
+  [PASS] C4. History giß╗» v├▓ng 1 (70) + v├▓ng 2 (85) - ["1:70","2:85"]
+  [PASS] C5. Quality gß╗æc = AGREE cuß╗æi (85), effective 85
+
+--- D. Quyß╗ün xem quality ---
+  [PASS] D1. Owner thß║Ñy quality
+  [PASS] D2. Leader thß║Ñy quality
+  [PASS] D3. Collaborator kh├┤ng thß║Ñy quality (visible=false, kh├┤ng dß╗» liß╗çu)
+  [PASS] D4. Preview collaborator ß║⌐n quality - HTTP 200
+  [PASS] D5. Preview owner thß║Ñy quality
+  [PASS] D6. SYSTEM_ADMIN preview Task => 403 - HTTP 403
+  [PASS] D7. SYSTEM_ADMIN quyß║┐t ─æß╗ïnh => 403 - HTTP 403
+
+--- E. ─Éiß╗üu chß╗ënh chß║Ñt l╞░ß╗úng A1 ---
+  [PASS] E1. Thiß║┐u l├╜ do => 422 - HTTP 422
+  [PASS] E2. New quality 72 => 422 - HTTP 422
+  [PASS] E3. Tr├╣ng mß╗⌐c hiß╗çn tß║íi 65 => 422 - HTTP 422
+  [PASS] E4. Collaborator y├¬u cß║ºu => 403 - HTTP 403
+  [PASS] E5. SYSTEM_ADMIN y├¬u cß║ºu => 403 - HTTP 403
+  [PASS] E6. Owner y├¬u cß║ºu 80 => 201 - HTTP 201
+  [PASS] E7. L╞░u old/new/reason/requester/status PENDING
+  [PASS] E8. Decision gß╗æc KH├öNG bß╗ï update
+  [PASS] E9. ─É├ú c├│ PENDING => 409 - HTTP 409
+  [PASS] E10. Preview leader thß║Ñy PENDING + canDecide
+  [PASS] E11. Effective vß║½n 65 khi ch╞░a duyß╗çt
+  [PASS] E12. Ng╞░ß╗¥i y├¬u cß║ºu kh├┤ng ─æ╞░ß╗úc tß╗▒ duyß╗çt (canDecide=false)
+  [PASS] E13. Owner tß╗▒ duyß╗çt y├¬u cß║ºu => 403 - HTTP 403
+  [PASS] E14. Leader duyß╗çt y├¬u cß║ºu cß╗ºa owner => 200 - HTTP 200
+  [PASS] E15. L╞░u decider/thß╗¥i gian/status APPROVED
+  [PASS] E16. Effective 80, original vß║½n 65, adjusted=true
+  [PASS] E17. Leader y├¬u cß║ºu 90 => 201 - HTTP 201
+  [PASS] E18. Old cß╗ºa y├¬u cß║ºu 2 = effective 80
+  [PASS] E19. Leader tß╗▒ duyß╗çt y├¬u cß║ºu cß╗ºa m├¼nh => 403 - HTTP 403
+  [PASS] E20. L├únh ─æß║ío kh├íc thß║⌐m quyß╗ün duyß╗çt => 200 - HTTP 200
+  [PASS] E21. Effective 90 sau ─æiß╗üu chß╗ënh 2
+  [PASS] E22. Decision gß╗æc vß║½n 65 sau 2 lß║ºn ─æiß╗üu chß╗ënh
+  [PASS] E23. Y├¬u cß║ºu 95 => 201 - HTTP 201
+  [PASS] E24. Tß╗½ chß╗æi ─æiß╗üu chß╗ënh => 200 - HTTP 200
+  [PASS] E25. Status REJECTED + note + decider
+  [PASS] E26. Tß╗½ chß╗æi kh├┤ng ─æß╗òi effective (vß║½n 90)
+  [PASS] E27. Audit ─æß╗º requested/approved/rejected + old/new/reason
+
+--- F. Tß╗▒ duyß╗çt / collaborator ---
+  [PASS] F1. Leader tß╗▒ duyß╗çt task cß╗ºa m├¼nh => 403 - HTTP 403
+  [PASS] F2. Kh├┤ng tß║ío case khi tß╗▒ duyß╗çt
+  [PASS] F3. Collaborator quyß║┐t ─æß╗ïnh => 403 - HTTP 403
+  [PASS] F4. Collaborator kh├┤ng tß║ío case
+
+--- G. Feature flag OFF (legacy) ---
+  [PASS] G1. Flag off: AGREE thiß║┐u quality vß║½n th├ánh c├┤ng - {"success":true,"message":"─É├ú chß║Ñp thuß║¡n hß╗ô s╞í [YC10-583290-H]. Nhiß╗çm vß╗Ñ ─æ├ú ─æ╞░ß╗úc nghiß╗çm thu ho├án th├ánh.","data":{"caseId":"3becdfd7-be6c-41b9-9680-bf77c38f6c20"
+  [PASS] G2. Flag off: decision quality NULL (legacy)
+  [PASS] G3. Flag off: Task vß║½n COMPLETED
+  [PASS] G4. Flag off: quality view disabled/hidden
+  [PASS] G5. Flag off: adjustment API/service bß╗ï chß║╖n 409
+
+--- H. DB constraints ---
+  [PASS] H1. Cß╗Öt quality_percent nullable integer
+  [PASS] H2. Bß║úng approval_quality_adjustments tß╗ôn tß║íi
+  [PASS] H3. ─Éß╗º FK case/decision/requester/decider - approval_quality_adjustments_case_id_fkey,approval_quality_adjustments_decided_by_id_fkey,approval_quality_adjustments_decision_id_fkey,approval_quality_adjustments_requested_by_id_fkey
+  [PASS] H4. Unique (decision_id, revision)
+  [PASS] H5. DB tß╗½ chß╗æi quality 60 (CHECK)
+  [PASS] H6. DB tß╗½ chß╗æi adjustment new 72 (CHECK)
+  [PASS] H7. Decision gß╗æc vß║½n 65 sau thß╗¡ DB bypass
+
+--- I. Export ---
+  [PASS] I1. Export 01A => 200 - HTTP 200
+  [PASS] I2. C├│ sheet phß╗Ñ '─É├ính gi├í chß║Ñt l╞░ß╗úng' - Bß║úng 1 (t├¡nh ─æiß╗âm) | Biß╗âu 01A (CC) | ─É├ính gi├í chß║Ñt l╞░ß╗úng
+  [PASS] I3. Vß║½n c├│ sheet ch├¡nh thß╗⌐c 01A
+  [PASS] I4. D├▓ng quality task A: gß╗æc 65, hiß╗çu lß╗▒c 90, c├│ ─æiß╗üu chß╗ënh - [2,"YC10-583290-A","YC10-583290 nhiß╗çm vß╗Ñ A",1,65,90,"C├│ ─æiß╗üu chß╗ënh","─Éiß╗üu chß╗ënh lß║ºn 2","L├únh ─æß║ío DEMO (thß╗¡ nghiß╗çm)","22:16:38 23/10/2026"]
+  [PASS] I5. Quality NULL hiß╗ân thß╗ï 'Ch╞░a ─æ├ính gi├í' - [3,"YC10-583290-B1","YC10-583290 nhiß╗çm vß╗Ñ B1","ΓÇö","Ch╞░a ─æ├ính gi├í","Ch╞░a ─æ├ính gi├í","ΓÇö","ΓÇö","ΓÇö","ΓÇö"]
+  [PASS] I6. Th├¬m sheet quality KH├öNG ─æß╗òi ├┤ ch├¡nh thß╗⌐c (01A/Bß║úng 1) - sheets=2
+  [PASS] I7. Workbook c├│ qualityRows c├│ th├¬m ─æ├║ng 1 sheet
+
+--- J. Kh├┤ng chß║ím ─æiß╗âm/Q─É1277/monthly ---
+  [PASS] J1. Kh├┤ng sinh MonthlyWorkResult cho task test (ngo├ái fixture export ─æ├ú tß║ío) - 2
+  [PASS] J2. ProductItem kh├┤ng ─æß╗òi - 3386 -> 3386
+  [PASS] J3. WorkItemProduct kh├┤ng ─æß╗òi - 7 -> 7
+  [PASS] J4. EvaluationAssessment kh├┤ng ─æß╗òi - 3 -> 3
+  [PASS] J5. Q─É1277 convertFactor/maxScore/pointValue kh├┤ng ─æß╗òi
+  [PASS] J6. Quality chß╗ë nß║▒m tr├¬n ApprovalDecision, kh├┤ng sinh d├▓ng ─æiß╗âm
+  [PASS] J7. Monthly baseline trß╗ƒ lß║íi sau cleanup
+
+=== 107 PASS / 0 FAIL ===

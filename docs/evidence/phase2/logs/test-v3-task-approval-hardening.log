@@ -1,0 +1,66 @@
+node.exe : npm warn Unknown project config "only-built-dependencies". This will stop working in the next major version 
+of npm. See `npm help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== S4 TASK/APPROVAL HARDENING ΓÇö http://localhost:3117 ===
+
+
+--- A. Tß╗▒ duyß╗çt mß╗ìi ─æ╞░ß╗¥ng ---
+  [PASS] A1. decision AGREE hß╗ô s╞í cß╗ºa m├¼nh => 403 - HTTP 403
+  [PASS] A2. quick approve CONFIRM_COMPLETION => 403 - HTTP 403
+  [PASS] A3. tasks/[id] PATCH status COMPLETED => 403 - HTTP 403
+  [PASS] A4. updates POST status COMPLETED => 403 - HTTP 403
+  [PASS] A5. Trß║íng th├íi kh├┤ng ─æß╗òi sau 4 ─æ╞░ß╗¥ng tß╗▒ duyß╗çt - WAITING_REVIEW
+  [PASS] A6. Kh├┤ng c├│ ApprovalCase AGREED/decision tß╗▒ duyß╗çt - case=none, decisions=0
+  [PASS] A7. Tß╗▒ duyß╗çt ─æß╗ü nghß╗ï gia hß║ín => 403 v├á vß║½n PENDING - HTTP 403, status=PENDING
+
+--- B. Quyß╗ün cß╗ºa ng╞░ß╗¥i phß╗æi hß╗úp ---
+  [PASS] B1. Collaborator ghi ─æ├¿ result => 403, kh├┤ng b├ío success - HTTP 403, result=Kß║┐t quß║ú gß╗æc cß╗ºa chß╗º tr├¼
+  [PASS] B2. Collaborator nß╗Öp thay => 403, trß║íng th├íi kh├┤ng ─æß╗òi - HTTP 403, status=IN_PROGRESS
+  [PASS] B3. Legacy SUBMIT_COMPLETION cß╗ºa collaborator => 403 - HTTP 403
+  [PASS] B4. tasks/[id] PATCH ghi ─æ├¿ result => 403 - HTTP 403
+  [PASS] B5. Collaborator ─æß╗òi assignee => 403, giß╗» nguy├¬n ng╞░ß╗¥i phß╗æi hß╗úp - HTTP 403, assignees=1
+  [PASS] B6. Legacy PATCH ─æß╗òi assignee => 403 - HTTP 403
+  [PASS] B7. Collaborator hß╗ºy task => 403, kh├┤ng ─æß╗òi CANCELED - HTTP 403, status=IN_PROGRESS
+  [PASS] B8. Legacy PATCH status CANCELED => 403 - HTTP 403
+  [PASS] B9. Chß╗º tr├¼ nß╗Öp ─æ├║ng => WAITING_REVIEW + nhß║¡n result - HTTP 201, status=WAITING_REVIEW
+
+--- C. Quyß║┐t ─æß╗ïnh + lß╗ïch sß╗¡ ---
+  [PASS] C1. Leader AGREE => task COMPLETED - HTTP 200, task=COMPLETED
+  [PASS] C2. ApprovalCase d├╣ng ─æ├║ng trß║íng th├íi AGREED (kh├┤ng phß║úi APPROVED) - case=AGREED
+  [PASS] C3. ApprovalDecision l╞░u ng╞░ß╗¥i/l├╜ do - action=AGREE
+  [PASS] C4. TaskUpdate kind=approve + giß╗» tiß║┐n ─æß╗Ö 100% - kind=approve, progress=100
+  [PASS] C5. API chi tiß║┐t trß║ú projection approval (ng╞░ß╗¥i/thß╗¥i gian/l├╜ do) - {"caseId":"ef46f266-511d-4e64-b079-3837633226ac","caseStatus":"AGREED","round":1,"action":"AGREE","actionLabel":"─Éß╗ông ├╜","reason":"─Éß╗ông ├╜ ng
+  [PASS] C6. Nhß║¡t k├╜ hß╗úp nhß║Ñt c├│ d├▓ng approve ─æ├║ng ng╞░ß╗¥i - L├únh ─æß║ío DEMO (thß╗¡ nghiß╗çm)
+  [PASS] C7. Th├┤ng b├ío cho cß║ú chß╗º tr├¼ v├á ng╞░ß╗¥i phß╗æi hß╗úp, deep link nhiß╗çm vß╗Ñ - recipients=2, urls=/tasks/49a4b06c-6839-493a-8e1e-063f27966b9d
+
+--- D. Trß║ú lß║íi + tr├¼nh lß║íi ---
+  [PASS] D1. Chß╗º tr├¼ nß╗Öp lß║ºn 1 => 201 - HTTP 201
+  [PASS] D2. Trß║ú lß║íi: IN_PROGRESS, GIß╗« kß║┐t quß║ú + tiß║┐n ─æß╗Ö 100% - HTTP 200, status=IN_PROGRESS, progress=100
+  [PASS] D3. Projection bß╗ï trß║ú lß║íi c├│ l├╜ do/ng╞░ß╗¥i - {"caseId":"90ceef00-f857-47d4-9eaf-6abb3188afd2","caseStatus":"REJECTED","round":1,"action":"REJECT","actionLabel":"Kh├┤ng ─æß╗ông ├╜","reason":"
+  [PASS] D4. Tr├¼nh lß║íi: WAITING_REVIEW, case mß╗ƒ v├▓ng 2, l╞░u RESPOND ─æ├║ng ng╞░ß╗¥i - HTTP 201, case=OPEN, round=2, actor=13b3751d-3a27-4dd4-9fca-e999e1e2ad37
+  [PASS] D5. Lß╗ïch sß╗¡ submit khi tr├¼nh lß║íi c├│ mß║╖t - submit
+
+--- E. YC-12 lß╗ïch sß╗¡ ─æ├ú xß╗¡ l├╜ ---
+  [PASS] E1. Leader thß║Ñy hß╗ô s╞í ─æ├ú xß╗¡ l├╜, lß╗ìc ─æ├║ng c├ín bß╗Ö + th├íng/n─âm - HTTP 200, found=true
+  [PASS] E2. Lß╗ìc sai th├íng kh├┤ng trß║ú hß╗ô s╞í - HTTP 200
+  [PASS] E3. C├ín bß╗Ö kh├┤ng phß║úi ng╞░ß╗¥i quyß║┐t ─æß╗ïnh kh├┤ng thß║Ñy lß╗ïch sß╗¡ xß╗¡ l├╜ - HTTP 200
+
+--- F. YC-12 lß╗ïch sß╗¡ x├íc nhß║¡n c├┤ng viß╗çc ---
+  [PASS] F1. Hß╗ô s╞í chß╗¥ x├íc nhß║¡n: badge SUBMITTED + canDecide=true - {"state":"SUBMITTED","canDecide":true}
+  [PASS] F2. Ng╞░ß╗¥i kh├┤ng phß║úi tuyß║┐n trß╗▒c tiß║┐p kh├┤ng thß║Ñy hß╗ô s╞í chß╗¥ - count=0
+  [PASS] F3. L├únh ─æß║ío trß╗▒c tiß║┐p x├íc nhß║¡n => 200 - HTTP 200
+  [PASS] F4. Lß╗ïch sß╗¡ ─æ├ú x├íc nhß║¡n: badge CONFIRMED, canDecide=false, c├│ reviewedBy - {"state":"CONFIRMED","canDecide":false,"reviewer":"L├únh ─æß║ío DEMO (thß╗¡ nghiß╗çm)"}
+  [PASS] F5. Lß╗ïch sß╗¡ c├│ actor v├á l├╜ do x├íc nhß║¡n - history=2
+  [PASS] F6. ─Éß╗òi tuyß║┐n vß║½n giß╗» lß╗ïch sß╗¡ cho ng╞░ß╗¥i ─æ├ú xß╗¡ l├╜ (reviewedById) - count=1
+  [PASS] F7. Ng╞░ß╗¥i ngo├ái tuyß║┐n/kh├┤ng quyß║┐t ─æß╗ïnh kh├┤ng thß║Ñy lß╗ïch sß╗¡ - count=0
+
+--- G. Quick approve ─æß╗ü nghß╗ï gia hß║ín ---
+  [PASS] G1. Quick approve tß║ío ApprovalCase AGREED + decision AGREE - HTTP 200, case=AGREED
+  [PASS] G2. Gia hß║ín cß║¡p nhß║¡t hß║ín nhiß╗çm vß╗Ñ + ghi TaskUpdate extend - deadline=2027-01-20T00:00:00.000Z
+
+=== 40 PASS / 0 FAIL ===

@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-23T15:12:24.023Z",
+  "database": "talung_v3_approval_impl_quality",
+  "expectation": "rolledback",
+  "column": null,
+  "table": null,
+  "checks": [],
+  "indexes": [],
+  "decisions": 10,
+  "decisionsWithNullQuality": null
+}

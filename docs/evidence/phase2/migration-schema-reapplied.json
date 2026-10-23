@@ -1,0 +1,32 @@
+{
+  "checkedAt": "2026-10-23T15:12:26.200Z",
+  "database": "talung_v3_approval_impl_quality",
+  "expectation": "applied",
+  "column": {
+    "column_name": "quality_percent",
+    "data_type": "integer",
+    "is_nullable": "YES"
+  },
+  "table": {
+    "table_name": "approval_quality_adjustments"
+  },
+  "checks": [
+    "approval_quality_adjustments_case_id_fkey",
+    "approval_quality_adjustments_decided_by_id_fkey",
+    "approval_quality_adjustments_decision_id_fkey",
+    "approval_quality_adjustments_new_quality_check",
+    "approval_quality_adjustments_old_quality_check",
+    "approval_quality_adjustments_requested_by_id_fkey",
+    "approval_quality_adjustments_revision_check",
+    "approval_quality_adjustments_status_check"
+  ],
+  "indexes": [
+    "approval_quality_adjustments_case_id_requested_at_idx",
+    "approval_quality_adjustments_case_id_status_idx",
+    "approval_quality_adjustments_decision_id_revision_key",
+    "approval_quality_adjustments_pkey",
+    "approval_quality_adjustments_status_requested_at_idx"
+  ],
+  "decisions": 10,
+  "decisionsWithNullQuality": 10
+}
