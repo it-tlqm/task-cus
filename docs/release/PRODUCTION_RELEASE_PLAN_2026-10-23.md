@@ -1,6 +1,7 @@
 # KẾ HOẠCH RELEASE NHANH V3 — 23/10/2026
 
-**Trạng thái:** `READY_FOR_PRODUCTION_ACCESS` — **chưa phải lệnh deploy**  
+**Trạng thái:** `DEPLOYED — TECHNICAL SMOKE PASS — UAT OWNER PENDING` (24/10/2026)  
+**Bằng chứng deploy:** `docs/evidence/release/PRODUCTION_DEPLOY_2026-10-24.md`  
 **Cập nhật:** 24/10/2026 — bổ sung V3.1 (Phase 3 + quick approve), YC-10/YC-11 vẫn OFF.  
 **RC SHA:** `1765aab` (V3.1 — Phase 3 + quick approve; runtime code)  
 **Nhánh:** `codex/v3-integration-yc01-13`  
@@ -275,21 +276,21 @@ PROD_READONLY_URL="postgresql://release_readonly:...@...:5432/postgres?sslmode=r
 
 | Vai trò | Trách nhiệm | Trạng thái |
 |---|---|---|
-| Chủ dự án | Chốt scope, UAT, lệnh release | **PENDING** |
-| S0 | RC, migration plan, regression, release package | **DONE một phần** |
-| S1 | Final regression trên RC, release checklist | **PENDING** |
-| Ops/DBA | Read-only access, backup/restore, migration execution | **BLOCKED** |
+| Chủ dự án | Chốt scope, UAT, lệnh release | **DEPLOYED — UAT PENDING** |
+| S0 | RC, migration plan, regression, release package, deploy | **DONE** |
+| S1 | Final regression trên RC, release checklist | **PASS trước deploy; UAT hậu deploy PENDING** |
+| Ops/DBA | Read-only access, backup/restore, migration execution | **DONE — backup + restore PASS; migration PASS** |
 | Dev | Code rollback/hotfix | Standby |
 
-**Kết luận hiện tại:** `NO-GO` — thiếu Production read-only/backup, UAT sign-off và lệnh release.  
-**Khi có đủ G1–G6:** có thể deploy trong **1–2 ngày làm việc** theo runbook này.
+**Kết luận hiện tại:** `DEPLOYED` — DB migration + code V3.1 đã lên Production; technical smoke PASS.  
+**Còn lại:** UAT tài khoản thật của chủ dự án; flags YC-10/YC-11 vẫn OFF; `person_supervisions=0`.
 
 ---
 
-## 11. VIỆC CẦN CHỦ DỰ ÁN CUNG CẤP NGAY
+## 11. VIỆC CẦN CHỦ DỰ ÁN LÀM SAU DEPLOY
 
-1. URL/credential **read-only** Production DB hoặc người có quyền chạy preflight audit.
-2. Người/phê duyệt backup + restore thử.
-3. Lịch UAT 0,5 ngày trên Preview/Staging đúng RC.
-4. Xác nhận scope: chấp nhận S2 B1/B2/C1 “CHỜ CHỐT”, S3 không có % chính thức, YC-10 và YC-11 OFF.
-5. Lệnh release Production riêng (bằng văn bản) sau khi UAT PASS.
+1. UAT tài khoản thật: login, task, approval, roster, `/giao-ban`, mobile.
+2. Xác nhận flags YC-10/YC-11 tiếp tục OFF cho đến khi có dữ liệu/UAT riêng.
+3. Xác nhận scope: S2 B1/B2/C1 “CHỜ CHỐT”, S3 không có % chính thức.
+4. Nếu UAT fail: rollback code về `dpl_Yt2otYSTSduGiMEmHbPnLGQWbmLy`; DB additive giữ nguyên.
+5. Theo dõi 24h; backup logical giữ đến khi ổn định.
