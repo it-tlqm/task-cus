@@ -91,6 +91,30 @@ export interface ApprovalPreviewData {
       canDecide: boolean;
     }>;
   };
+  precheck?: {
+    enabled: boolean;
+    routeStatus: string | null;
+    required: boolean;
+    allPrechecked: boolean;
+    canDecideFinal: boolean;
+    snapshotRound: number | null;
+    finalCandidates: Array<{
+      personId: string;
+      fullName: string;
+      role: string | null;
+      unitName: string | null;
+    }>;
+    participants: Array<{
+      personId: string;
+      fullName: string;
+      partStatus: string;
+      precheckStatus: string;
+      precheckedByName: string | null;
+      precheckedAt: string | null;
+      precheckNote: string | null;
+    }>;
+    snapshot: { round: number; routeStatus: string; createdAt: string } | null;
+  } | null;
   permissions: { canDecide: boolean; canRespond: boolean; reason: string | null };
   warnings: string[];
 }
@@ -607,6 +631,60 @@ export default function ApprovalPreviewModal({
                         )}
                       </div>
                     )}
+                    {preview.precheck?.enabled && (
+                      <div
+                        data-testid="approval-precheck-summary"
+                        className="rounded-lg border border-border-default p-2.5 space-y-1.5"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-[10px] uppercase text-outline font-semibold">
+                            Kiểm tra sơ bộ (YC-11)
+                          </p>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              preview.precheck.snapshot
+                                ? "bg-status-success-bg text-status-success"
+                                : "bg-status-warning-bg text-status-warning"
+                            }`}
+                          >
+                            {preview.precheck.snapshot
+                              ? `Đã chốt tuyến vòng ${preview.precheck.snapshot.round}`
+                              : preview.precheck.required
+                                ? "Chưa có snapshot tuyến"
+                                : "Legacy final-only"}
+                          </span>
+                        </div>
+                        {preview.precheck.finalCandidates.length > 0 && (
+                          <p className="text-[11px] text-on-surface">
+                            Người quyết định cuối:{" "}
+                            {preview.precheck.finalCandidates.map((c) => c.fullName).join(", ")}
+                          </p>
+                        )}
+                        {preview.precheck.participants.length > 0 && (
+                          <ul className="space-y-1">
+                            {preview.precheck.participants.map((p) => (
+                              <li key={p.personId} className="text-[11px] text-on-surface-variant">
+                                <span className="font-semibold text-on-surface">{p.fullName}</span>
+                                {" · "}
+                                {p.precheckStatus === "PASSED"
+                                  ? `Pre-check đạt${
+                                      p.precheckedByName ? ` (${p.precheckedByName})` : ""
+                                    }`
+                                  : p.precheckStatus === "RETURNED"
+                                    ? "Pre-check trả lại"
+                                    : "Chưa pre-check"}
+                                {p.precheckNote ? ` · ${p.precheckNote}` : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {preview.precheck.snapshot && (
+                          <p className="text-[10px] text-outline">
+                            Tuyến được chốt tại thời điểm chủ trì nộp; thay đổi tuyến sau đó không viết lại lịch sử.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {Array.isArray(c.assignees) && c.assignees.length > 0 && (
                       <div>
                         <p className="text-[10px] uppercase text-outline font-semibold">
@@ -1058,6 +1136,7 @@ export default function ApprovalPreviewModal({
                 </button>
                 <button
                   type="button"
+                  data-testid="approval-submit-decision"
                   onClick={submit}
                   disabled={submitting || !preview.permissions.canDecide}
                   className="px-4 py-2 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 shadow-sm flex items-center gap-1.5 disabled:opacity-50"

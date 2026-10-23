@@ -9,6 +9,7 @@ import {
   recordParticipantProgress,
   submitParticipantPart,
 } from "@/server/task-participant";
+import { getTaskPrecheckView } from "@/server/approval-route";
 
 function errorResponse(err: any) {
   if (err instanceof ParticipantError) {
@@ -36,6 +37,7 @@ export async function GET(
     const participants = await getParticipantSummary(taskId);
     const missing = await getMissingParticipants(taskId);
     const snapshot = await getLatestSubmissionSnapshot(taskId);
+    const precheck = await getTaskPrecheckView(taskId, user);
     return NextResponse.json({
       success: true,
       data: {
@@ -45,7 +47,9 @@ export async function GET(
           personName: m.person?.fullName ?? null,
           partStatus: m.partStatus,
         })),
-        canSubmitOverall: missing.length === 0,
+        canSubmitOverall:
+          missing.length === 0 && (!precheck.enabled || precheck.canSubmitOverall === true),
+        precheck,
         latestSnapshot: snapshot
           ? {
               round: snapshot.round,

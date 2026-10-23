@@ -130,6 +130,46 @@ interface TaskDetail {
     } | null;
   } | null;
   qualityEnabled?: boolean;
+  precheck?: {
+    enabled: boolean;
+    taskStatus?: string;
+    canSubmitOverall?: boolean;
+    viewerCanPrecheckAny?: boolean;
+    route?: {
+      status: string;
+      ready: boolean;
+      allPrechecked: boolean;
+      legacyOnly: boolean;
+      ownerUnitId?: string;
+      finalCandidates?: Array<{
+        personId: string;
+        fullName: string;
+        role?: string | null;
+        unitName?: string | null;
+      }>;
+      participants?: Array<{
+        personId: string;
+        fullName: string;
+        role: string;
+        partStatus: string;
+        precheckStatus: string;
+        precheckNote?: string | null;
+        precheckedBy?: { personId: string; fullName: string } | null;
+        precheckedAt?: string | null;
+        eligiblePrecheckers: Array<{ personId: string; fullName: string }>;
+        canPrecheck: boolean;
+        routeStatus: string;
+        blockers: Array<{ code: string; personName: string; message: string }>;
+      }>;
+      blockers?: Array<{ code: string; personName: string; message: string }>;
+    } | null;
+    latestSnapshot?: {
+      round: number;
+      routeStatus: string;
+      createdAt: string;
+      routeJson?: any;
+    } | null;
+  };
   participantResults?: Array<{
     id: string;
     personId: string;
@@ -178,6 +218,12 @@ export default function TaskDetailPage() {
   const [qualityAdjustReason, setQualityAdjustReason] = useState("");
   const [qualityAdjustBusy, setQualityAdjustBusy] = useState(false);
   const [qualityAdjustNotes, setQualityAdjustNotes] = useState<Record<string, string>>({});
+
+  // YC-11: báo phần việc của chính mình + pre-check
+  const [ownPartOpen, setOwnPartOpen] = useState(false);
+  const [ownPartText, setOwnPartText] = useState("");
+  const [ownPartBusy, setOwnPartBusy] = useState(false);
+  const [precheckBusy, setPrecheckBusy] = useState<string | null>(null);
 
   // YC-03: chỉnh sửa nội dung chỉ đạo (mở lại form với dữ liệu PostgreSQL)
   const [showEditModal, setShowEditModal] = useState(false);
@@ -705,6 +751,26 @@ export default function TaskDetailPage() {
         return;
       }
 
+      // YC-11: chủ trì chỉ nộp chung khi tuyến pre-check đã đủ.
+      if (
+        newProgress === 100 &&
+        isTaskOwner &&
+        task.precheck?.enabled &&
+        task.precheck.route &&
+        !task.precheck.route.legacyOnly &&
+        !task.precheck.canSubmitOverall
+      ) {
+        const missing = (task.precheck.route.blockers || [])
+          .map((b) => b.message)
+          .filter((v, i, arr) => v && arr.indexOf(v) === i)
+          .slice(0, 2);
+        toast.error(
+          "Chưa thể nộp kết quả chung: còn phần việc chưa được kiểm tra sơ bộ." +
+            (missing.length ? " " + missing.join(" ") : "")
+        );
+        return;
+      }
+
       const res = await fetch(`/api/tasks/${task.id}/updates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -768,6 +834,81 @@ export default function TaskDetailPage() {
       }
     } catch (err: any) {
       toast.error("Lỗi: " + err.message);
+    }
+  };
+
+  // YC-11: người thực hiện báo phần việc của chính mình (kể cả chủ trì)
+  const handleOwnPartSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!task || ownPartBusy) return;
+    if (ownPartText.trim().length < 5) {
+      toast.error("Vui lòng nhập kết quả phần việc (ít nhất 5 ký tự).");
+      return;
+    }
+    setOwnPartBusy(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/participant-results`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "SUBMIT",
+          partResultText: ownPartText.trim(),
+          partCompletedOn: new Date().toISOString().slice(0, 10),
+          partProgressPercent: 100,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã báo phần việc của bạn — chờ kiểm tra sơ bộ.");
+        setOwnPartOpen(false);
+        setOwnPartText("");
+        fetchTaskDetail();
+      } else {
+        toast.error(json.error || "Không thể báo phần việc");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setOwnPartBusy(false);
+    }
+  };
+
+  // YC-11: pre-check PASS/RETURN (một người pre-check là đủ)
+  const handlePrecheck = async (personId: string, action: "PASS" | "RETURN") => {
+    if (!task || precheckBusy) return;
+    let note: string | null = null;
+    if (action === "RETURN") {
+      note = window.prompt("Lý do trả lại ở bước kiểm tra sơ bộ (bắt buộc):") || "";
+      if (note.trim().length < 3) {
+        toast.error("Vui lòng ghi rõ lý do trả lại.");
+        return;
+      }
+    }
+    setPrecheckBusy(personId);
+    try {
+      const res = await fetch(
+        `/api/tasks/${task.id}/participant-results/${personId}/precheck`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, note }),
+        }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(
+          action === "PASS"
+            ? "Đã kiểm tra sơ bộ đạt — chờ chủ trì nộp kết quả chung."
+            : "Đã trả lại phần việc ở bước kiểm tra sơ bộ."
+        );
+        fetchTaskDetail();
+      } else {
+        toast.error(json.error || "Không thể kiểm tra sơ bộ");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setPrecheckBusy(null);
     }
   };
 
@@ -873,6 +1014,18 @@ export default function TaskDetailPage() {
     task.status === "IN_PROGRESS" &&
     (task.approval?.action === "REJECT" || task.approval?.action === "CLARIFY");
   const isOverdue = task.isOverdue;
+  // YC-11: chỉ người thuộc tuyến final đã chốt mới thấy nút ký duyệt.
+  const snapshotFinalCandidates: string[] =
+    task.precheck?.latestSnapshot?.routeJson?.final?.candidates?.map(
+      (c: any) => c.personId
+    ) ?? [];
+  const snapshotExcludedPrecheckers: string[] =
+    task.precheck?.latestSnapshot?.routeJson?.final?.excludedPrecheckerIds ?? [];
+  const canFinalByRoute =
+    !task.precheck?.latestSnapshot ||
+    (!!permUser?.personId &&
+      snapshotFinalCandidates.includes(permUser.personId) &&
+      !snapshotExcludedPrecheckers.includes(permUser.personId));
 
   return (
     <div className="w-full min-h-screen bg-app-bg pb-16">
@@ -1017,7 +1170,7 @@ export default function TaskDetailPage() {
               </button>
             )}
 
-            {isWaiting && canApprove && task.owner?.id !== permUser?.personId && (
+            {isWaiting && canApprove && canFinalByRoute && task.owner?.id !== permUser?.personId && (
               <button
                 onClick={() => setShowApproveModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-status-success text-white font-semibold text-sm shadow-sm active-press"
@@ -1264,13 +1417,13 @@ export default function TaskDetailPage() {
               )}
             </div>
 
-            {/* YC-09 Phase 1: phần việc theo từng người */}
+            {/* YC-09 Phase 1 + YC-11 Phase 3: phần việc theo từng người + pre-check */}
             {!!task.participantResults?.length && (
               <div
                 data-testid="task-participants"
                 className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-3"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary text-[20px]">groups</span>
                     Phần việc theo người
@@ -1279,6 +1432,59 @@ export default function TaskDetailPage() {
                     Một nhiệm vụ — một hồ sơ duyệt chung
                   </span>
                 </div>
+
+                {task.precheck?.enabled && (
+                  <div
+                    data-testid="task-precheck-panel"
+                    className={`rounded-lg border p-3 text-[11px] flex flex-col gap-1.5 ${
+                      task.precheck.route?.legacyOnly
+                        ? "bg-surface-subtle border-border-default/60 text-on-surface-variant"
+                        : task.precheck.canSubmitOverall
+                          ? "bg-status-success-bg/40 border-status-success/30 text-on-surface"
+                          : "bg-status-warning-bg/40 border-status-warning/30 text-on-surface"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <strong className="text-primary">
+                        {task.precheck.route?.legacyOnly
+                          ? "Nhiệm vụ legacy — duyệt cuối trực tiếp"
+                          : `Kiểm tra sơ bộ: ${
+                              task.precheck.route?.status === "READY"
+                                ? task.precheck.canSubmitOverall
+                                  ? "đã đủ"
+                                  : "đang thực hiện"
+                                : "chờ phân tuyến"
+                            }`}
+                      </strong>
+                      {task.precheck.route?.finalCandidates?.length ? (
+                        <span className="text-on-surface-variant">
+                          Người quyết định cuối:{" "}
+                          {task.precheck.route.finalCandidates.map((c) => c.fullName).join(", ")}
+                        </span>
+                      ) : null}
+                    </div>
+                    {task.precheck.route?.legacyOnly ? (
+                      <span>
+                        Không có dữ liệu phần việc/pre-check — giữ luồng final-only, không tự tạo tuyến.
+                      </span>
+                    ) : task.precheck.canSubmitOverall ? (
+                      <span>
+                        Tất cả phần bắt buộc đã được pre-check. Chủ trì có thể nộp kết quả chung để lãnh đạo
+                        quyết định cuối.
+                      </span>
+                    ) : (
+                      <span>
+                        {task.precheck.route?.blockers
+                          ?.map((b) => b.message)
+                          .filter((v, i, arr) => v && arr.indexOf(v) === i)
+                          .slice(0, 4)
+                          .join(" ") ||
+                          "Còn phần việc chưa được kiểm tra sơ bộ — chưa thể nộp kết quả chung."}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-2">
                   {task.participantResults.map((p) => {
                     const statusLabel: Record<string, string> = {
@@ -1289,14 +1495,38 @@ export default function TaskDetailPage() {
                       ACCEPTED: "Đã chấp nhận",
                       EXEMPT: "Được miễn",
                     };
+                    const precheckMode =
+                      !!task.precheck?.enabled && !task.precheck.route?.legacyOnly;
+                    const pre = task.precheck?.route?.participants?.find(
+                      (x) => x.personId === p.personId
+                    );
                     const canDecidePart =
+                      !precheckMode &&
                       canApprove &&
                       p.role !== "OWNER" &&
                       p.personId !== permUser?.personId &&
                       p.partStatus === "SUBMITTED";
+                    const isOwnPart = p.personId === permUser?.personId;
+                    const canReportOwnPart =
+                      isOwnPart &&
+                      ["NOT_STARTED", "IN_PROGRESS", "RETURNED"].includes(p.partStatus) &&
+                      task.status !== "WAITING_REVIEW" &&
+                      task.status !== "COMPLETED" &&
+                      task.status !== "CANCELED";
+                    const canPrecheck =
+                      !!pre?.canPrecheck && p.partStatus === "SUBMITTED";
+                    const precheckLabel =
+                      pre?.precheckStatus === "PASSED"
+                        ? "Pre-check đạt"
+                        : pre?.precheckStatus === "RETURNED"
+                          ? "Pre-check trả lại"
+                          : pre?.precheckStatus === "PENDING"
+                            ? "Chờ pre-check"
+                            : null;
                     return (
                       <div
                         key={p.id}
+                        data-testid={`participant-row-${p.personId}`}
                         className="p-3 rounded-lg bg-surface-subtle border border-border-default/60 flex flex-col gap-1"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1306,21 +1536,37 @@ export default function TaskDetailPage() {
                               ({p.role === "OWNER" ? "Chủ trì" : "Phối hợp"})
                             </span>
                           </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              p.partStatus === "ACCEPTED"
-                                ? "bg-status-success-bg text-status-success"
-                                : p.partStatus === "RETURNED"
-                                  ? "bg-status-danger-bg text-status-danger"
-                                  : p.partStatus === "SUBMITTED"
-                                    ? "bg-status-warning-bg text-status-warning"
-                                    : "bg-surface-container text-on-surface-variant"
-                            }`}
-                          >
-                            {statusLabel[p.partStatus] || p.partStatus}
-                            {p.partProgressPercent !== null && p.partProgressPercent !== undefined
-                              ? ` · ${p.partProgressPercent}%`
-                              : ""}
+                          <span className="flex flex-wrap items-center gap-1">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                p.partStatus === "ACCEPTED"
+                                  ? "bg-status-success-bg text-status-success"
+                                  : p.partStatus === "RETURNED"
+                                    ? "bg-status-danger-bg text-status-danger"
+                                    : p.partStatus === "SUBMITTED"
+                                      ? "bg-status-warning-bg text-status-warning"
+                                      : "bg-surface-container text-on-surface-variant"
+                              }`}
+                            >
+                              {statusLabel[p.partStatus] || p.partStatus}
+                              {p.partProgressPercent !== null && p.partProgressPercent !== undefined
+                                ? ` · ${p.partProgressPercent}%`
+                                : ""}
+                            </span>
+                            {precheckLabel && (
+                              <span
+                                data-testid={`precheck-status-${p.personId}`}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  pre?.precheckStatus === "PASSED"
+                                    ? "bg-status-success-bg text-status-success"
+                                    : pre?.precheckStatus === "RETURNED"
+                                      ? "bg-status-danger-bg text-status-danger"
+                                      : "bg-status-warning-bg text-status-warning"
+                                }`}
+                              >
+                                {precheckLabel}
+                              </span>
+                            )}
                           </span>
                         </div>
                         {p.partResultText && (
@@ -1328,10 +1574,70 @@ export default function TaskDetailPage() {
                             Kết quả: {p.partResultText}
                           </p>
                         )}
+                        {precheckMode && pre && pre.eligiblePrecheckers.length > 0 && (
+                          <p className="text-[10px] text-on-surface-variant">
+                            Tuyến pre-check:{" "}
+                            {pre.eligiblePrecheckers.map((x) => x.fullName).join(", ")}
+                          </p>
+                        )}
+                        {precheckMode && pre?.precheckedBy && (
+                          <p className="text-[10px] text-status-success">
+                            Đã pre-check: {pre.precheckedBy.fullName}
+                            {pre.precheckedAt
+                              ? ` · ${formatVnDateTime(pre.precheckedAt)}`
+                              : ""}
+                          </p>
+                        )}
+                        {precheckMode && pre?.precheckNote && (
+                          <p className="text-[11px] text-status-danger">
+                            Ý kiến pre-check: {pre.precheckNote}
+                          </p>
+                        )}
                         {p.decisionNote && (
                           <p className="text-[11px] text-status-danger">
                             Ý kiến: {p.decisionNote}
                           </p>
+                        )}
+                        {(canReportOwnPart || canPrecheck) && (
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {canReportOwnPart && (
+                              <button
+                                type="button"
+                                data-testid={`own-part-report-${p.personId}`}
+                                onClick={() => {
+                                  setOwnPartText(p.partResultText || "");
+                                  setOwnPartOpen(true);
+                                }}
+                                className="px-2.5 py-1 rounded bg-secondary text-on-secondary text-[11px] font-semibold"
+                              >
+                                {p.partStatus === "RETURNED"
+                                  ? "Báo lại phần việc của tôi"
+                                  : "Báo phần việc của tôi"}
+                              </button>
+                            )}
+                            {canPrecheck && (
+                              <>
+                                <button
+                                  type="button"
+                                  data-testid={`precheck-pass-${p.personId}`}
+                                  disabled={precheckBusy === p.personId}
+                                  onClick={() => handlePrecheck(p.personId, "PASS")}
+                                  className="px-2.5 py-1 rounded bg-status-success text-white text-[11px] font-semibold disabled:opacity-50"
+                                >
+                                  {precheckBusy === p.personId ? "Đang xử lý..." : "Pre-check đạt"}
+                                </button>
+                                <button
+                                  type="button"
+                                  data-testid={`precheck-return-${p.personId}`}
+                                  disabled={precheckBusy === p.personId}
+                                  onClick={() => handlePrecheck(p.personId, "RETURN")}
+                                  className="px-2.5 py-1 rounded bg-status-danger/10 text-status-danger text-[11px] font-semibold border border-status-danger/30 disabled:opacity-50"
+                                >
+                                  Trả lại (pre-check)
+                                </button>
+                              </>
+                            )}
+                          </div>
                         )}
                         {canDecidePart && (
                           <div className="flex gap-2 pt-1">
@@ -1393,6 +1699,8 @@ export default function TaskDetailPage() {
                       edit: { icon: "edit_note", cls: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
                       cancel: { icon: "delete_sweep", cls: "bg-status-danger-bg text-status-danger" },
                       link: { icon: "link", cls: "bg-surface-container text-on-surface-variant" },
+                      participant_precheck_pass: { icon: "fact_check", cls: "bg-status-success-bg text-status-success" },
+                      participant_precheck_return: { icon: "assignment_return", cls: "bg-status-danger-bg text-status-danger" },
                     };
                     const statusVi: Record<string, string> = {
                       NOT_STARTED: "Chưa thực hiện",
@@ -1982,6 +2290,59 @@ export default function TaskDetailPage() {
                   className="px-4 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold active-press disabled:opacity-50"
                 >
                   {updating ? "Đang lưu..." : "Xác nhận cập nhật"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BÁO PHẦN VIỆC CỦA TÔI (YC-09/YC-11) */}
+      {ownPartOpen && (
+        <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            data-testid="own-part-modal"
+            className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default"
+          >
+            <div className="p-4 bg-secondary text-on-secondary flex items-center justify-between">
+              <h3 className="font-headline-sm text-sm font-bold">Báo phần việc của tôi</h3>
+              <button type="button" onClick={() => setOwnPartOpen(false)} aria-label="Đóng">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleOwnPartSubmit} className="p-4 flex flex-col gap-3">
+              <p className="text-[11px] text-on-surface-variant">
+                Kết quả này chỉ thuộc phần việc của bạn. Chủ trì tổng hợp và nộp kết quả chung;
+                lãnh đạo quyết định cuối.
+              </p>
+              <label className="text-xs font-semibold text-on-surface">
+                Kết quả phần việc <span className="text-status-danger">*</span>
+              </label>
+              <textarea
+                data-testid="own-part-text"
+                rows={4}
+                required
+                value={ownPartText}
+                onChange={(e) => setOwnPartText(e.target.value)}
+                placeholder="Mô tả kết quả phần việc đã thực hiện (ít nhất 5 ký tự)..."
+                className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+              />
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-default">
+                <button
+                  type="button"
+                  onClick={() => setOwnPartOpen(false)}
+                  disabled={ownPartBusy}
+                  className="px-3 py-1.5 rounded bg-surface-container text-xs font-semibold disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  data-testid="own-part-submit"
+                  disabled={ownPartBusy}
+                  className="px-4 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold active-press disabled:opacity-50"
+                >
+                  {ownPartBusy ? "Đang gửi..." : "Gửi phần việc"}
                 </button>
               </div>
             </form>

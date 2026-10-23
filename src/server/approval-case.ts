@@ -33,6 +33,13 @@ import {
   parseQualityPercent,
   type ApprovalQualityView,
 } from "./approval-quality";
+import {
+  assertFinalDecisionAllowed,
+  getTaskPrecheckView,
+  isPrecheckEnabled,
+  linkRouteSnapshotToCase,
+} from "./approval-route";
+import { ParticipantError } from "./task-participant-error";
 
 export type ApprovalCaseType = "TASK_RESULT" | "PLAN" | "DEADLINE_REQUEST";
 export type ApprovalAction = "AGREE" | "REJECT" | "CLARIFY" | "RESPOND";
@@ -247,12 +254,43 @@ export interface ApprovalPreview {
   history: ApprovalPreviewHistoryEntry[];
   /** YC-10: mức chất lượng hiện tại/hiệu lực/lịch sử (null/visible=false nếu không có quyền). */
   quality: ApprovalQualityView;
+  /** YC-11: tuyến pre-check/final tại thời điểm nộp (flag tắt => enabled=false). */
+  precheck: ApprovalPreviewPrecheck | null;
   permissions: {
     canDecide: boolean;
     canRespond: boolean;
     reason: string | null;
   };
   warnings: string[];
+}
+
+export interface ApprovalPreviewPrecheck {
+  enabled: boolean;
+  routeStatus: string | null;
+  required: boolean;
+  allPrechecked: boolean;
+  canDecideFinal: boolean;
+  snapshotRound: number | null;
+  finalCandidates: Array<{
+    personId: string;
+    fullName: string;
+    role: string | null;
+    unitName: string | null;
+  }>;
+  participants: Array<{
+    personId: string;
+    fullName: string;
+    partStatus: string;
+    precheckStatus: string;
+    precheckedByName: string | null;
+    precheckedAt: string | null;
+    precheckNote: string | null;
+  }>;
+  snapshot: {
+    round: number;
+    routeStatus: string;
+    createdAt: string;
+  } | null;
 }
 
 /** Lấy hồ sơ + quyền, KHÔNG ghi bất cứ gì. */
@@ -514,21 +552,8 @@ export async function buildApprovalPreview(
   const caseOpen = caseStatus === "OPEN" || caseStatus === "NOT_CREATED";
 
   let canRespond = false;
-  let permissionReason: string | null = null;
   if (caseStatus === "CLARIFY_REQUESTED") {
     canRespond = isSubmitter;
-    if (isSubmitter) {
-      permissionReason = "Bạn được yêu cầu giải trình — bổ sung nội dung rồi gửi lại.";
-    }
-  } else if (isSubmitter && caseOpen) {
-    // Chặn tự duyệt ngay trên preview: người trình không được thấy nút quyết định.
-    permissionReason = "Bạn là người trình hồ sơ — cần lãnh đạo khác thẩm quyền quyết định.";
-  } else if (isDecider) {
-    permissionReason = null;
-  } else if (caseStatus === "AGREED" || caseStatus === "REJECTED") {
-    permissionReason = "Hồ sơ đã được xử lý.";
-  } else {
-    permissionReason = "Bạn không có thẩm quyền quyết định hồ sơ này.";
   }
 
   // Người xem trước phải thấy cảnh báo nếu hồ sơ đã xử lý
@@ -553,6 +578,93 @@ export async function buildApprovalPreview(
     ownerId: resourceOwnerId,
   });
 
+  // YC-11: tuyến pre-check/final và quyền final theo snapshot tại thời điểm nộp.
+  let precheck: ApprovalPreviewPrecheck | null = null;
+  let routeFinalAllowed = true;
+  let routeDeniedReason: string | null = null;
+  if (caseType === "TASK_RESULT" && isPrecheckEnabled()) {
+    const view = await getTaskPrecheckView(resourceId, user);
+    const snapshotJson: any = view.latestSnapshot?.routeJson ?? null;
+    const snapshotParticipants: any[] = Array.isArray(snapshotJson?.participants)
+      ? snapshotJson.participants
+      : [];
+    const currentParticipants = view.route?.participants ?? [];
+    const sourceParticipants = snapshotParticipants.length > 0 ? snapshotParticipants : currentParticipants;
+    const snapshotFinal: any[] = Array.isArray(snapshotJson?.final?.candidates)
+      ? snapshotJson.final.candidates
+      : [];
+    const currentFinal = (view.route?.finalCandidates ?? []).map((c) => ({
+      personId: c.personId,
+      fullName: c.fullName,
+      role: c.role,
+      unitName: c.unitName,
+    }));
+    const finalCandidates = snapshotFinal.length > 0 ? snapshotFinal : currentFinal;
+    const excluded: string[] = Array.isArray(snapshotJson?.final?.excludedPrecheckerIds)
+      ? snapshotJson.final.excludedPrecheckerIds
+      : [];
+    const routeStatus = view.latestSnapshot?.routeStatus ?? view.route?.status ?? null;
+    const required = view.route?.required ?? snapshotParticipants.length > 0;
+    const allPrechecked = view.latestSnapshot
+      ? true
+      : view.route?.allPrechecked ?? false;
+    routeFinalAllowed =
+      !!user.personId &&
+      finalCandidates.some((c) => c.personId === user.personId) &&
+      !excluded.includes(user.personId) &&
+      (!view.latestSnapshot || String(view.latestSnapshot.routeStatus) === "READY");
+    // Chưa có snapshot => hồ sơ nộp trước khi bật YC-11 (legacy final-only).
+    if (!view.latestSnapshot) routeFinalAllowed = true;
+    if (!routeFinalAllowed) {
+      routeDeniedReason = excluded.includes(String(user.personId))
+        ? "Bạn đã pre-check hồ sơ này — cần người có thẩm quyền khác quyết định cuối."
+        : "Bạn không thuộc tuyến quyết định cuối đã chốt tại thời điểm nộp hồ sơ.";
+    }
+    precheck = {
+      enabled: true,
+      routeStatus,
+      required,
+      allPrechecked,
+      canDecideFinal: routeFinalAllowed,
+      snapshotRound: view.latestSnapshot?.round ?? null,
+      finalCandidates,
+      participants: sourceParticipants.map((p: any) => ({
+        personId: String(p.personId),
+        fullName: String(p.fullName ?? "—"),
+        partStatus: String(p.partStatus ?? ""),
+        precheckStatus: String(p.precheckStatus ?? "PENDING"),
+        precheckedByName:
+          p.precheckedBy?.fullName ??
+          (p.precheckedBy && typeof p.precheckedBy === "string" ? p.precheckedBy : null),
+        precheckedAt: p.precheckedAt ?? null,
+        precheckNote: p.precheckNote ?? null,
+      })),
+      snapshot: view.latestSnapshot
+        ? {
+            round: view.latestSnapshot.round,
+            routeStatus: view.latestSnapshot.routeStatus,
+            createdAt: view.latestSnapshot.createdAt,
+          }
+        : null,
+    };
+  }
+
+  let permissionReason: string | null = null;
+  if (caseStatus === "CLARIFY_REQUESTED") {
+    if (isSubmitter) {
+      permissionReason = "Bạn được yêu cầu giải trình — bổ sung nội dung rồi gửi lại.";
+    }
+  } else if (isSubmitter && caseOpen) {
+    // Chặn tự duyệt ngay trên preview: người trình không được thấy nút quyết định.
+    permissionReason = "Bạn là người trình hồ sơ — cần lãnh đạo khác thẩm quyền quyết định.";
+  } else if (isDecider) {
+    permissionReason = routeDeniedReason;
+  } else if (caseStatus === "AGREED" || caseStatus === "REJECTED") {
+    permissionReason = "Hồ sơ đã được xử lý.";
+  } else {
+    permissionReason = "Bạn không có thẩm quyền quyết định hồ sơ này.";
+  }
+
   const preview: ApprovalPreview = {
     caseType,
     caseId: existingCase?.id ?? null,
@@ -576,10 +688,11 @@ export async function buildApprovalPreview(
     attachments,
     history,
     quality,
+    precheck,
     permissions: {
       // Hồ sơ chưa tạo (lần đầu) vẫn cho quyết định — case được tạo khi ghi quyết định.
       // Người trình KHÔNG bao giờ được quyết định hồ sơ của chính mình.
-      canDecide: isDecider && caseOpen && !isSubmitter,
+      canDecide: isDecider && caseOpen && !isSubmitter && routeFinalAllowed,
       canRespond,
       reason: permissionReason,
     },
@@ -760,6 +873,24 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
           : `Nhiệm vụ đang ở trạng thái "${resourceStatus}" — chỉ quyết định được khi đang chờ nghiệm thu.`,
     };
   }
+
+  // YC-11: quyết định cuối phải do người thuộc tuyến final đã chốt tại thời điểm nộp;
+  // pre-checker/participant không được final. Legacy không snapshot => final-only.
+  if (caseType === "TASK_RESULT" && taskId && isPrecheckEnabled()) {
+    try {
+      await assertFinalDecisionAllowed(user, taskId);
+    } catch (err: any) {
+      if (err instanceof ParticipantError) {
+        return {
+          success: false,
+          status: err.statusCode,
+          error: err.message,
+          data: err.data,
+        };
+      }
+      throw err;
+    }
+  }
   if (caseType === "PLAN" && resourceStatus !== "SUBMITTED") {
     return {
       success: false,
@@ -841,6 +972,10 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
       }
 
       const round = approvalCase.currentRound;
+
+      if (caseType === "TASK_RESULT" && taskId) {
+        await linkRouteSnapshotToCase(tx, taskId, round, approvalCase.id);
+      }
 
       await tx.approvalDecision.create({
         data: {
@@ -1141,6 +1276,23 @@ export async function respondToApproval(
       status: 403,
       error: "Chỉ người trình hồ sơ mới được phản hồi giải trình.",
     };
+  }
+
+  // YC-11: với Task có phần việc per-person, không cho "phản hồi giải trình" tắt
+  // đường pre-check. Chủ trì phải báo lại phần việc và nộp kết quả chung để tạo
+  // snapshot tuyến/vòng mới. Task legacy (không participant row) giữ hành vi cũ.
+  if (caseType === "TASK_RESULT" && isPrecheckEnabled()) {
+    const requiredRows = await prisma.taskParticipantResult.count({
+      where: { taskId: resourceId, legacy: false },
+    });
+    if (requiredRows > 0) {
+      return {
+        success: false,
+        status: 409,
+        error:
+          "Nhiệm vụ có phần việc per-person — hãy báo lại phần việc/nộp kết quả chung để kiểm tra sơ bộ lại, không phản hồi giải trình tắt bước.",
+      };
+    }
   }
 
   const round = approvalCase.currentRound;

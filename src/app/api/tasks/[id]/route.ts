@@ -16,6 +16,7 @@ import { ParticipantError, submitOverallResult } from "@/server/task-participant
 import { toClientAttachments } from "@/server/attachments";
 import { createNotification } from "@/server/notifications";
 import { isApprovalQualityEnabled } from "@/server/approval-quality";
+import { getTaskPrecheckView } from "@/server/approval-route";
 
 export async function GET(
   req: NextRequest,
@@ -229,6 +230,8 @@ export async function GET(
       participant_exempt: "Miễn phần việc",
       participant_accept_task: "Nhận phần việc",
       participant_owner_submit: "Chủ trì nộp kết quả chung",
+      participant_precheck_pass: "Kiểm tra sơ bộ đạt",
+      participant_precheck_return: "Kiểm tra sơ bộ trả lại",
     };
     for (const u of (task.updates as any[]) || []) {
       const notes = u.notes || "";
@@ -302,6 +305,8 @@ export async function GET(
 
     // YC-08: projection quyết định duyệt gần nhất (badge/người/thời gian/lý do)
     const approvalSummaries = await getTaskApprovalSummaries([taskId], user);
+    // YC-11: tuyến pre-check/final + trạng thái từng phần (flag tắt => enabled=false).
+    const precheck = await getTaskPrecheckView(taskId, user);
 
     return NextResponse.json({
       success: true,
@@ -313,6 +318,7 @@ export async function GET(
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
         approval: approvalSummaries.get(taskId) ?? null,
         qualityEnabled: isApprovalQualityEnabled(),
+        precheck,
         // YC-38 UAT fix: thong tin danh muc TX kem theo (ma, ten, he so)
     txSource: (() => {
       const ce = (task as any).workItem?.catalogEntry;
