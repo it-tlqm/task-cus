@@ -19,7 +19,7 @@
 3. **636 bản ghi** tháng 10/2026 đều là `RECORDED`; **0 bản ghi `CONFIRMED`**. Báo cáo tháng 10 đã có phiên bản lưu, nên logic hiện tại gắn `LOCKED` cho mọi chỉ tiêu có bản ghi — kể cả khi chưa ai xác nhận.
 4. Công thức `%` hiện tại có 4 lỗ hổng contract: không lọc chỉ tiêu giao theo đúng năm/kỳ; không phân biệt 0 với thiếu; không có chiều đánh giá; không có trạng thái nguồn/chỉ tiêu giao.
 5. **S0 đã phê duyệt toàn bộ contract** tại `docs/V3/S0_DECISION_LOG_2026-10-23.md` (Q1–Q12), theo hướng dẫn tại `S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md`.
-6. Đã triển khai phần được phép: **pure helper/state model + test 108/108 PASS** và **target UI draft độc lập (mock)**; chưa nối DB/API, chưa dùng Production.
+6. Đã triển khai phần được phép: **pure helper/state model + test 108/108 PASS**, **mapping layer B-C-2 + test 77/77 PASS** và **target UI draft độc lập (mock)**; chưa nối DB/API, chưa dùng Production.
 7. Phần còn chặn: schema target + `metrics.ts` + API `/api/metrics/*` + `/giao-ban` + `/giao-ban/cau-hinh` + migration shared thuộc S2; S3 chỉ làm target-only sau khi S2 công bố schema.
 
 ---
@@ -41,9 +41,11 @@
 | Phụ lục bảng 49 chỉ tiêu | `docs/evidence/multi-session/S3/catalog-appendix.md` |
 | Script rà soát read-only | `scripts/review-phase-c-catalog.ts` |
 | Pure helper/state model (APPROVED) | `src/lib/metrics-contract.ts` |
+| Mapping layer B-C-2 (D3–D7) | `src/lib/metrics-bc2-mapping.ts` |
 | Target UI draft mock | `src/components/metrics/MetricTargetDraftEditor.tsx` |
 | Mock data cho UI draft | `src/components/metrics/target-draft-mock.ts` |
 | Test contract APPROVED | `scripts/test-phase-c-contract.ts` |
+| Test mapping B-C-2 | `scripts/test-phase-c-bc2-mapping.ts` |
 | Quyết định S0 | `D:\thanhnx\OpenCode\talung-integration\docs\V3\S0_DECISION_LOG_2026-10-23.md` |
 | Câu hỏi contract gửi S0 (bản gốc) | `docs/evidence/multi-session/S3/S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md` |
 | Handoff APPROVED | `docs/evidence/multi-session/S3/S3_HANDOFF_APPROVED_2026-10-23.md` |
@@ -434,12 +436,23 @@ Các điểm đã khóa:
 
 ```powershell
 npx tsx scripts/test-phase-c-contract.ts
+npx tsx scripts/test-phase-c-bc2-mapping.ts
 npx tsc --noEmit
 ```
 
-### 7.5. Giới hạn
+### 7.5. Mapping layer B-C-2 (D3–D7)
 
-Helper/UI draft **chưa được nối** vào app. Đây là phần độc lập theo Q3=A; khi S2 công bố schema target, S3 mới thay mock bằng API target-only và chạy test tích hợp.
+`src/lib/metrics-bc2-mapping.ts` + `scripts/test-phase-c-bc2-mapping.ts` — **77/77 PASS**:
+
+- D3: `PROPOSED` → `DRAFT`, reverse `DRAFT` → `PROPOSED`.
+- D4: `BTC_YEAR`/`UBND_YEAR`/`MONTH_PLAN` → `BTC`/`UBND`/`KH_THANG`.
+- Q9: `dataSource=DEMO/REAL` thắng `isOfficial`.
+- D5: thiếu `direction`/`measureMode`/`baselineScope` → `NOT_SET`/`PENDING_BUSINESS_INPUT`.
+- Tích hợp: BTC 78,18%; UBND 77,49%; KH tháng 109,67%; PROPOSED/DEMO không tính chính thức.
+
+### 7.6. Giới hạn
+
+Helper/UI draft/mapping **chưa được nối** vào app. Đây là phần độc lập theo Q3=A/D7=A; khi S2 công bố B-C-2, S3 mới làm service/API target-only và chạy test tích hợp.
 
 ---
 
