@@ -222,13 +222,13 @@ Mọi thao tác ghi các trường sau (tối thiểu):
 
 | Hành động | Revision | AuditEvent action |
 |---|---|---|
-| Tạo chỉ tiêu giao | `MetricPlanTargetRevision(CREATE)` | `TARGET_CREATED` |
-| Sửa chỉ tiêu giao | `…(UPDATE)` lưu old/new value/status/source | `TARGET_UPDATED` |
-| Xác nhận chỉ tiêu | `…(CONFIRM)` | `TARGET_CONFIRMED` |
-| Chốt chỉ tiêu | `…(LOCK)` | `TARGET_LOCKED` |
-| Tạo mốc lũy kế | `MetricBaselineRevision(CREATE)` | `BASELINE_PROPOSED` |
-| Sửa mốc | `…(UPDATE)` | `BASELINE_UPDATED` |
-| Xác nhận/chốt mốc | `…(CONFIRM/LOCK)` | `BASELINE_CONFIRMED` / `BASELINE_LOCKED` |
+| Tạo chỉ tiêu giao | `MetricPlanTargetRevision(CREATE)` | `METRIC_ADMIN_TARGET_CREATED` |
+| Sửa chỉ tiêu giao | `…(UPDATE)` lưu old/new value/status/source | `METRIC_ADMIN_TARGET_UPDATED` |
+| Xác nhận chỉ tiêu | `…(CONFIRM)` | `METRIC_ADMIN_TARGET_CONFIRMED` |
+| Chốt chỉ tiêu | `…(LOCK)` | `METRIC_ADMIN_TARGET_LOCKED` |
+| Tạo mốc lũy kế | `MetricBaselineRevision(CREATE)` | `METRIC_ADMIN_BASELINE_PROPOSED` |
+| Sửa mốc | `…(UPDATE)` | `METRIC_ADMIN_BASELINE_UPDATED` |
+| Xác nhận/chốt mốc | `…(CONFIRM/LOCK)` | `METRIC_ADMIN_BASELINE_CONFIRMED` / `METRIC_ADMIN_BASELINE_LOCKED` |
 | Nhập/sửa/xóa bản ghi ngày | `MetricEntryRevision` (đã có) | `METRIC_ENTRIES_SAVED` / `METRIC_ENTRY_*` |
 
 Trường lưu vết: `metricId`, `classificationId` (phạm vi), `periodType/year/periodNo/asOfDate`, `valueNumeric` (đơn vị gốc), `unitLabel`, `sourceNote`, `status`, `proposedById/At`, `confirmedById/At`, `lockedById/At`, `reason`.

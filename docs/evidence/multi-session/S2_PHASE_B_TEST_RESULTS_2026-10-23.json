@@ -1,0 +1,101 @@
+{
+  "session": "S2",
+  "yc": [
+    "YC-01",
+    "YC-02"
+  ],
+  "contract": "B-C-1",
+  "timestamp": "2026-10-23T10:11:44.974Z",
+  "db": "talung_v3_phase_b",
+  "api": "http://localhost:3112",
+  "passed": 34,
+  "failed": 0,
+  "failures": [],
+  "evidence": {
+    "metric": {
+      "code": "THU_NSNN",
+      "id": "0a0e94dc-750f-470f-b7be-7deac016d7ab",
+      "classification": "Ô tô"
+    },
+    "permissions": {
+      "leader": [
+        "metrics.config",
+        "metrics.entry_all"
+      ],
+      "staff": [],
+      "systemAdmin": []
+    },
+    "comparison": {
+      "metricId": "0a0e94dc-750f-470f-b7be-7deac016d7ab",
+      "code": "THU_NSNN",
+      "name": "Thu NSNN (số thuế phát sinh)",
+      "unitType": "VND",
+      "unitLabel": "đồng",
+      "displayScale": 1,
+      "decimals": 0,
+      "yearCum": 115,
+      "monthCum": 15,
+      "latestDate": "2024-02-02",
+      "btc": {
+        "targetId": "9f9e1560-8450-4728-82c9-0c324c2c77e6",
+        "label": "[S2-PHASE-B-1792750286890] BTC 2024",
+        "comparisonKind": "BTC_YEAR",
+        "targetValue": 1000,
+        "percent": 11.5,
+        "periodLabel": "Năm 2024",
+        "basis": "YEAR_CUM",
+        "ruleState": "OFFICIAL",
+        "ambiguous": false,
+        "status": "CONFIRMED",
+        "sourceNote": "[S2-PHASE-B-1792750286890] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T10:11:38.830Z"
+      },
+      "ubnd": {
+        "targetId": "31b95ddc-852f-4d3a-9666-5c587cd76f11",
+        "label": "[S2-PHASE-B-1792750286890] UBND 2024",
+        "comparisonKind": "UBND_YEAR",
+        "targetValue": 500,
+        "percent": 23,
+        "periodLabel": "Năm 2024",
+        "basis": "YEAR_CUM",
+        "ruleState": "OFFICIAL",
+        "ambiguous": false,
+        "status": "CONFIRMED",
+        "sourceNote": "[S2-PHASE-B-1792750286890] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T10:11:38.884Z"
+      },
+      "monthPlan": {
+        "targetId": "670e964b-f004-4558-b28c-c9ebfdf7b59a",
+        "label": "[S2-PHASE-B-1792750286890] KH tháng 02/2024",
+        "comparisonKind": "MONTH_PLAN",
+        "targetValue": 100,
+        "percent": 15,
+        "periodLabel": "Tháng 2/2024",
+        "basis": "MONTH_CUM",
+        "ruleState": "OFFICIAL",
+        "ambiguous": false,
+        "status": "CONFIRMED",
+        "sourceNote": "[S2-PHASE-B-1792750286890] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T10:11:38.886Z"
+      },
+      "prevMonth": {
+        "value": 50,
+        "percent": null,
+        "label": "Tháng 1/2024",
+        "basis": "FULL_PREVIOUS_MONTH_CUM",
+        "ruleState": "PENDING_B1"
+      },
+      "samePeriodLastYear": {
+        "value": null,
+        "percent": null,
+        "label": "Tháng 2/2023",
+        "basis": "FULL_MONTH_LAST_YEAR_CUM",
+        "ruleState": "PENDING_B1"
+      }
+    },
+    "totals": {
+      "passed": 34,
+      "failed": 0
+    }
+  }
+}
