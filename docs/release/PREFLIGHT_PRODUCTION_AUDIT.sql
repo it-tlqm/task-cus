@@ -172,6 +172,30 @@ WHERE conname IN (
 )
 ORDER BY conname;
 
+\echo '=== 7b. S6 PHASE 3 — approval_route_snapshots ==='
+SELECT to_regclass('public.approval_route_snapshots') AS approval_route_snapshots;
+
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'approval_route_snapshots'
+ORDER BY ordinal_position;
+
+SELECT indexname
+FROM pg_indexes
+WHERE schemaname = 'public'
+  AND tablename = 'approval_route_snapshots'
+ORDER BY indexname;
+
+SELECT conname
+FROM pg_constraint
+WHERE conname IN (
+  'approval_route_snapshots_task_id_round_key',
+  'approval_route_snapshots_route_status_check',
+  'approval_route_snapshots_task_id_fkey'
+)
+ORDER BY conname;
+
 \echo '=== 8. KIỂM TRA DRIFT TỐI THIỂU ==='
 -- Các cột/tables lạ ngoài phạm vi không sửa; chỉ ghi nhận.
 SELECT table_name, column_name, data_type

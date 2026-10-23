@@ -7,7 +7,9 @@
 **Base:** `7ccdb6b` / tag `v3-rc-2026-10-23` (RC frozen — không sửa RC/integration)  
 **DB test:** `talung_v3_approval_impl_quality` (localhost) — port `3117`  
 **Production touched:** **NO**  
-**Merge/deploy:** **NO** — chỉ commit trên branch post-release, chờ S0 review.
+**Merge/deploy:** **MERGED V3.1** — branch `10c5a50` merged into integration `1765aab`; chưa deploy, flags OFF.
+
+> **S0 review 24/10/2026:** đã merge `10c5a50` vào integration `1765aab`; S0 rerun Phase3 80/80 + UI 21/21, quality 120/120 + 15/15, S4 40/40, per-person 42/42, no-self 5/5, e2e 40/40; migration 190000 applied to fixture_integration; tsc/build PASS. S0 bổ sung chặn final khi Task có participant row nhưng thiếu route snapshot (test D5–D6). Flags YC10/YC11 OFF; UAT supervision thật vẫn pending.
 
 ```text
 SESSION: S6-Impl Post-release

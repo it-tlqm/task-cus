@@ -8,14 +8,14 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `5e141cb` (RC) + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **RC FROZEN** — fast release package; **NO-GO** chờ Production access/backup/UAT/release order |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `1765aab` (V3.1 RC) + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **RC FROZEN V3.1** — **NO-GO** chờ Production access/backup/UAT/release order; flags YC10/YC11 OFF |
 | S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `2953aea` | 3111 | `talung_v3_phase_a_qa` | **MERGED — release readiness**; RC chưa freeze; production access blocked |
 | S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `236f7fb` | 3112 | `talung_v3_phase_b` | **MERGED** — Q9/Q11 PASS; S2 UI 17/17 sau S3 target tab; D5 deferred B-C-3 |
 | S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `7a25b6a` | 3113 | `talung_v3_phase_c` | **MERGED — target-only D7=A**; D5 pending B-C-3 |
 | S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED — STANDBY** — không code thêm |
 | S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED — STANDBY** — E13 PENDING |
 | S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `8242674` | — | — | **PLAN MERGED** — Phase 1/2 merged; Phase 3 PENDING |
-| S6-Impl | `D:\thanhnx\OpenCode\talung-approval-impl` | `codex/v3-approval-quality` | `0764830` | 3117 | `talung_v3_approval_impl_quality` | **MERGED — Phase 1/2**; Phase 3 PENDING; flag YC10 OFF |
+| S6-Impl | `D:\thanhnx\OpenCode\talung-approval-impl` | `codex/v3-post-release` | `10c5a50` | 3117 | `talung_v3_approval_impl_quality` | **MERGED — Phase 1/2/3**; flags YC10/YC11 OFF; UAT supervision pending |
 
 Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. S3 target-only không đổi schema/API chung; S6 Phase 2 thêm migration additive `20261023180000_v3_approval_quality`.
 
@@ -81,7 +81,8 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 | S3 | `7a25b6a` | Target-only service/API/UI (D7=A); không schema/migration | **110/110 + 80/80 + 26/26 + 18/18 PASS**, tsc/build PASS | **YES — target-only** `f46bd01`; D5 pending B-C-3 |
 | S6 | `8242674` | Docs-only; spec + 3-phase plan | **PLAN MERGED** | **YES — docs/plan** |
 | S6-Impl Phase 1 | `722d892` | Participant results/snapshots/approval integration | **42/42 + 40/40 + 5/5 + … PASS** | **YES — Phase 1** `e80a24f` |
-| S6-Impl Phase 2 | `0764830` | YC-10 quality 65–100 + adjustment + export annex | **120/120 + UI 15/15 + S4 40/40 + per-person 42/42 PASS** | **YES — Phase 2** `a94ce39`; flag OFF; Phase 3 PENDING |
+| S6-Impl Phase 2 | `0764830` | YC-10 quality 65–100 + adjustment + export annex | **120/120 + UI 15/15 + S4 40/40 + per-person 42/42 PASS** | **YES — Phase 2** `a94ce39`; flag OFF |
+| S6-Impl Phase 3 | `10c5a50` | YC-11 pre-check/final + quick approve | **80/80 + UI 21/21 + S4 40/40 + per-person 42/42 PASS** | **YES — Phase 3** `1765aab`; flags OFF; UAT supervision pending |
 
 Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
 

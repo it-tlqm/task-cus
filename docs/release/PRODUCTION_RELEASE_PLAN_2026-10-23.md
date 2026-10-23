@@ -1,7 +1,8 @@
 # KẾ HOẠCH RELEASE NHANH V3 — 23/10/2026
 
 **Trạng thái:** `READY_FOR_PRODUCTION_ACCESS` — **chưa phải lệnh deploy**  
-**RC SHA:** `5e141cb` (code/config runtime tương đương `ede75cb`; chỉ thêm test/evidence)  
+**Cập nhật:** 24/10/2026 — bổ sung V3.1 (Phase 3 + quick approve), YC-10/YC-11 vẫn OFF.  
+**RC SHA:** `1765aab` (V3.1 — Phase 3 + quick approve; runtime code)  
 **Nhánh:** `codex/v3-integration-yc01-13`  
 **Chế độ:** release nhanh, giữ nguyên phạm vi đã merge; các phần nghiệp vụ chưa chốt để sau.  
 **Production:** chưa ghi, chưa deploy, chưa merge `main`.
@@ -24,16 +25,18 @@
 | S5 | YC-13: ghi chú roster theo người, audit, UI desktop/mobile | Đã merge; biến thể E13 chưa chọn |
 | S6 Phase 1 | YC-09 per-person: participant result/event/snapshot, một ApprovalCase/Task | Đã merge, test PASS |
 | S6 Phase 2 | YC-10 quality 65–100 + adjustment + sheet phụ export | Đã merge; **flag `V3_YC10_QUALITY` mặc định OFF** |
+| S6 Phase 2b | Quick approve My Work có picker quality (khi YC-10 bật) | Đã merge; flag OFF giữ hành vi cũ |
+| S6 Phase 3 | YC-11 route resolver/pre-check/final theo `PersonSupervision` | Đã merge; **flag `V3_YC11_PRECHECK` mặc định OFF**; cần UAT dữ liệu thật trước khi bật |
 
 ### 1.2. Không đưa vào release này
 
 | Hạng mục | Lý do |
 |---|---|
-| S6 Phase 3 / YC-11 pre-check/final | Chưa triển khai; dữ liệu `person_supervisions` chưa đủ UAT |
 | D5 / B-C-3 (`direction`, `measureMode`, `baselineScope`) | Chưa có quyết định nghiệp vụ; không tự suy |
 | S5 E13 (ô trống, Excel note, “Đổi người”) | Chưa chọn A/B/C |
-| Quick approve quality picker ở My Work | Flag YC-10 OFF nên không bật; làm sau trước khi bật flag |
 | B1/B2/C1 (kỳ trước/cùng kỳ) | Vẫn `PENDING`; UI ghi “CHỜ CHỐT” |
+| E8/E12 | Quy tắc trả lại/lịch sử chưa chốt |
+| Bật YC-10/YC-11 trên Production | Phải UAT dữ liệu thật + quyết định riêng; release này để OFF |
 
 ---
 
@@ -46,7 +49,7 @@
 | G3 | Preflight schema audit + quyết định migration | **PENDING** — cần G1 |
 | G4 | UAT chủ dự án trên Preview/Staging đúng RC | **PENDING** |
 | G5 | Lệnh release Production riêng của chủ dự án | **CHƯA CÓ** |
-| G6 | Flag YC-10 OFF trên Production | Bắt buộc |
+| G6 | Flag YC-10 và YC-11 **OFF** trên Production | Bắt buộc |
 
 **Không có G1 + G5 thì không có ngày deploy.** Không dùng `prisma migrate deploy`, không `db push --accept-data-loss`, không reset tài khoản/dữ liệu Production.
 
@@ -64,7 +67,9 @@
 | S5 roster API + UI | 22/22 + 24/24 | trước RC |
 | S6 Phase 1 per-person + UI | 42/42 + 5/5 | trước RC |
 | S6 Phase 2 quality + UI | 120/120 + 15/15 | sau merge Phase 2 |
-| `tsc --noEmit`, `prisma validate`, `pnpm build` | PASS | sau merge Phase 2 |
+| S6 Phase 3 precheck + UI | 80/80 + 21/21 | sau merge V3.1; gồm chặn final khi thiếu snapshot |
+| Quick approve quality (trong YC-11 UI) | U1–U8 PASS | desktop + mobile |
+| `tsc --noEmit`, `prisma validate`, `pnpm build` | PASS | sau merge V3.1 |
 
 **Lưu ý:** S2/S3/S5 không bị sửa sau lần test tương ứng; S0 đã rerun S4/S6/Phase2 trên RC. S1 final regression vẫn cần chạy trên đúng `5e141cb` trước khi ký release.
 
@@ -78,7 +83,9 @@
 | S4 hardening + no-self + e2e | **40/40 + 5/5 + 40/40** | Chạy trên `talung_v3_fixture_integration`/3116, flag OFF |
 | S6 per-person | **42/42** | Chạy trên `talung_v3_fixture_integration`/3116, flag OFF |
 | S6 Phase 2 quality + UI | **120/120 + 15/15** | Chạy trên `talung_v3_fixture_integration`/3116, flag ON |
-| `tsc` / `prisma validate` / `build` | PASS | Code runtime không đổi sau `ede75cb` |
+| S6 Phase 3 precheck + UI | **80/80 + 21/21** | Chạy trên `talung_v3_fixture_integration`/3116, flag ON |
+| Quick approve quality | **U1–U8 PASS** | Desktop 1440 + mobile 390 |
+| `tsc` / `prisma validate` / `build` | PASS | Build integration V3.1 |
 
 **Lỗi môi trường đã loại trừ:** lần chạy song song 3 dev server trong cùng worktree gây hỏng cache `.next`/timeout; đã dừng, xóa `.next`, chạy tuần tự và PASS. Không phải lỗi sản phẩm.
 
@@ -95,6 +102,7 @@
 | 3 | `20261023160000_v3_phase_b_data_source` | `data_source` + backfill DEMO + check constraints | Backfill một lần; audit số DEMO |
 | 4 | `20261023170000_v3_task_participant_results` | Participant result/event/snapshot + cột `task_updates` | **Không idempotent** — chỉ chạy khi object chưa có |
 | 5 | `20261023180000_v3_approval_quality` | `quality_percent` + bảng adjustment | **Không idempotent** — chỉ chạy khi object chưa có |
+| 6 | `20261023190000_v3_approval_precheck_route` | Bảng `approval_route_snapshots` cho pre-check/final | **Không idempotent** — chỉ chạy khi object chưa có |
 
 ### 4.2. Checksum migration (đối chiếu trước khi chạy)
 
@@ -105,6 +113,7 @@
 | `20261023160000_v3_phase_b_data_source` | `ce09367c84bd3d25650b44f3b7d56952f93ea357d5b9cd56b7414e80e685c8bf` |
 | `20261023170000_v3_task_participant_results` | `1dc4160d9b9efec309c8166d8007cfb7a63b0bd622a6791ef1e72265c7158108` |
 | `20261023180000_v3_approval_quality` | `0e186f397b3cee67d76d27609b9421d7abd7087146c76b198f390affcdd0c9e8` |
+| `20261023190000_v3_approval_precheck_route` | `33c26117e2899804f87890c094b488028614ec57cecb7d5a557128f6896259ce` |
 
 **Thứ tự lệnh (chạy từng file, dừng ngay nếu lỗi):**
 
@@ -119,6 +128,8 @@ psql "$PROD_WRITE_URL" -v ON_ERROR_STOP=1 \
   -f prisma/migrations/20261023170000_v3_task_participant_results/migration.sql
 psql "$PROD_WRITE_URL" -v ON_ERROR_STOP=1 \
   -f prisma/migrations/20261023180000_v3_approval_quality/migration.sql
+psql "$PROD_WRITE_URL" -v ON_ERROR_STOP=1 \
+  -f prisma/migrations/20261023190000_v3_approval_precheck_route/migration.sql
 ```
 
 Sau mỗi file: chạy lại preflight đúng section, ghi kết quả; nếu lỗi/partial → STOP, restore backup.
@@ -128,7 +139,7 @@ Sau mỗi file: chạy lại preflight đúng section, ghi kết quả; nếu l�
 - **KHÔNG** chạy `prisma migrate deploy`: Production không có `_prisma_migrations`, sẽ chạy `0_init` và phá dữ liệu.
 - **KHÔNG** chạy `prisma db push` / `--accept-data-loss` trên Production.
 - Chỉ chạy SQL sau khi: backup → restore thử → preflight audit → S0/ops duyệt.
-- Migration 4 và 5: nếu preflight thấy **một phần object đã tồn tại**, **DỪNG**, không tự sửa; lập phương án riêng.
+- Migration 4, 5, 6: nếu preflight thấy **một phần object đã tồn tại**, **DỪNG**, không tự sửa; lập phương án riêng.
 - Không chạy migration trong transaction tự động nếu công cụ không hỗ trợ; theo runbook ops.
 - Ghi lại statement, thời gian, số dòng ảnh hưởng, người thực hiện.
 
@@ -184,6 +195,7 @@ Lưu kết quả vào biên bản release (không commit credential).
 - S5: roster desktop/mobile, ghi chú per-person, audit; không tràn ngang.
 - S6 Phase 1: collaborator báo phần việc; owner nộp chung; một ApprovalCase; participant summary.
 - S6 Phase 2: **flag OFF** — không thấy quality select/history; nếu bật thử trên Staging phải có picker và adjustment.
+- S6 Phase 3: **flag OFF** — luồng duyệt giữ hành vi cũ; nếu bật thử trên Staging phải có pre-check panel, route snapshot và final chặn pre-checker. Không bật Production khi `person_supervisions` chưa được xác minh read-only.
 - Mobile 390px: Dashboard, `/giao-ban`, task detail, roster, approvals không tràn ngang.
 
 ---
@@ -197,7 +209,7 @@ Lưu kết quả vào biên bản release (không commit credential).
 - [ ] Migration đã rehearsal trên snapshot gần Production.
 - [ ] UAT sign-off.
 - [ ] Lệnh release riêng.
-- [ ] `V3_YC10_QUALITY` OFF/unset trên Production.
+- [ ] `V3_YC10_QUALITY` và `V3_YC11_PRECHECK` OFF/unset trên Production.
 
 ### 8.2. Deploy
 
@@ -222,7 +234,7 @@ Lưu kết quả vào biên bản release (không commit credential).
 **Ưu tiên rollback code, giữ schema additive.**
 
 1. Rollback Vercel/deployment về commit Production trước release (xác minh `4c7eb52` hoặc SHA thực tế).
-2. Tắt `V3_YC10_QUALITY` ngay nếu có bật nhầm.
+2. Tắt `V3_YC10_QUALITY` và `V3_YC11_PRECHECK` ngay nếu có bật nhầm.
 3. Schema additive tương thích code cũ; **không drop bảng/cột** trừ khi có lệnh riêng + backup.
 4. Nếu migration lỗi giữa chừng: dừng, restore backup, rollback code; không chạy lại mù.
 5. Nếu phải rollback schema Phase 1/2: chấp nhận mất dữ liệu phát sinh sau release; chỉ làm khi có phê duyệt và backup đã kiểm tra.
@@ -252,5 +264,5 @@ Lưu kết quả vào biên bản release (không commit credential).
 1. URL/credential **read-only** Production DB hoặc người có quyền chạy preflight audit.
 2. Người/phê duyệt backup + restore thử.
 3. Lịch UAT 0,5 ngày trên Preview/Staging đúng RC.
-4. Xác nhận scope: chấp nhận S2 B1/B2/C1 “CHỜ CHỐT”, S3 không có % chính thức, YC-10 OFF.
+4. Xác nhận scope: chấp nhận S2 B1/B2/C1 “CHỜ CHỐT”, S3 không có % chính thức, YC-10 và YC-11 OFF.
 5. Lệnh release Production riêng (bằng văn bản) sau khi UAT PASS.
