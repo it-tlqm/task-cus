@@ -163,6 +163,30 @@ psql "$PROD_READONLY_URL" -f docs/release/PREFLIGHT_PRODUCTION_AUDIT.sql
 
 Lưu kết quả vào biên bản release (không commit credential).
 
+### 5.1. Cách cấp quyền nhanh
+
+**Cách A — không tạo role (nhanh nhất):**
+1. Supabase Dashboard → project Production → SQL Editor → New query.
+2. Dán toàn bộ `docs/release/PREFLIGHT_SUPABASE_2026-10-24.sql`.
+3. Run; copy kết quả (hoặc screenshot) gửi S0. Không gửi connection string/mật khẩu.
+
+**Cách B — cấp read-only URL cho S0:**
+1. Trong Supabase SQL Editor, tạo role tạm:
+```sql
+create role release_readonly login password 'MAT_KHAU_TAM_MANH';
+grant pg_read_all_data to release_readonly;
+grant connect on database postgres to release_readonly;
+```
+2. Lấy connection string **Direct** (port 5432) từ Supabase Dashboard → Connect; thay user bằng `release_readonly`, password vừa tạo.
+3. Lưu vào file ngoài repo, ví dụ
+`C:\Users\thanhnx\AppData\Local\Temp\opencode\prod-readonly.env`:
+```env
+PROD_READONLY_URL="postgresql://release_readonly:...@...:5432/postgres?sslmode=require"
+```
+4. Báo S0 “đã đặt file”; S0 dùng xong sẽ xóa file/role. Không commit, không gửi vào chat.
+
+**Cách C — ops chạy trực tiếp:** ops chạy `PREFLIGHT_PRODUCTION_AUDIT.sql` bằng `psql` và gửi output.
+
 **Ma trận quyết định:**
 
 | Kết quả audit | Hành động |
@@ -212,6 +236,9 @@ Lưu kết quả vào biên bản release (không commit credential).
 - [ ] `V3_YC10_QUALITY` và `V3_YC11_PRECHECK` OFF/unset trên Production.
 
 ### 8.2. Deploy
+
+**Production target:** Vercel project `tlqm/task-cus` — `https://task-cus.vercel.app` (health hiện tại `4c7eb52`, `env=production`, `db=up`).  
+**Lưu ý:** `DATABASE_URL`/`DIRECT_URL` là Vercel Sensitive, CLI không đọc được; phải dùng Cách A/B/C ở mục 5.1.
 
 - [ ] Dừng ghi/ thông báo cửa sổ bảo trì (nếu cần).
 - [ ] Chạy migration theo thứ tự mục 4.
