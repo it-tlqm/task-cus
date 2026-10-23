@@ -50,6 +50,19 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitForServer(): Promise<void> {
+  for (let i = 0; i < 60; i++) {
+    try {
+      const res = await fetch(`${BASE_URL}/login`, { cache: "no-store" });
+      if (res.ok || res.status === 307 || res.status === 308) return;
+    } catch {
+      /* server chưa lên */
+    }
+    await sleep(1000);
+  }
+  throw new Error(`Server ${BASE_URL} không sẵn sàng sau 60s.`);
+}
+
 async function loginToken(): Promise<string> {
   const res = await fetch(`${BASE_URL}/api/auth/login`, {
     method: "POST",
@@ -140,6 +153,7 @@ async function setControlledValue(page: Page, selector: string, value: string) {
 }
 
 async function main() {
+  await waitForServer();
   let token: string;
   try {
     token = await loginToken();
