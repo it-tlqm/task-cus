@@ -1,4 +1,7 @@
-# S3 — HANDOFF `WAIT_B_C_2` (YC-06 / YC-07)
+# S3 — HANDOFF `WAIT_B_C_2` (YC-06 / YC-07) — **SUPERSEDED**
+
+> **Đã thay thế bởi:** `S3_HANDOFF_TARGET_ONLY_2026-10-23.md` (target-only đã triển khai sau merge `75e5fae`).  
+> Giữ file này làm lịch sử trạng thái chờ B-C-2.
 
 - **Session:** S3 — Phase C
 - **Worktree:** `D:\thanhnx\OpenCode\talung-phase-c`

@@ -271,8 +271,8 @@ SESSION: S3
 YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
 BASE_SHA: 50daed3 (docs) / a68d31e (code)
-STATUS: WAIT_B_C_2 — helper/UI mock đã merge; chờ S2 sửa Q9/Q11 + B-C-2
-SCHEMA_OR_MIGRATION: NONE
+STATUS: TARGET_ONLY_IMPLEMENTED — WAIT_S0_REVIEW (D5 DEFERRED_B_C_3)
+SCHEMA_OR_MIGRATION: NONE (chỉ áp dụng migration B-C-2 của S2 lên DB test local)
 PRODUCTION_TOUCHED: NO
-READY_FOR_INTEGRATION: NO — target-only chờ B-C-2
+READY_FOR_INTEGRATION: YES — target-only; D5 pending
 ```
