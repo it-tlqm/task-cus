@@ -22,9 +22,14 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
 
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3100";
-const prisma = new PrismaClient({ datasources: { db: { url: process.env.DIRECT_URL || process.env.DATABASE_URL } } });
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-yc23-25-api"
+);
+const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
 const TAG = "[TEST-YC2325]";
 const YEAR = 2026;
@@ -45,16 +50,24 @@ function check(name: string, cond: boolean, detail = "") {
   }
 }
 
-/** Đọc mật khẩu tài khoản DEMO từ demo-ops/demo-secrets.json (không nhúng mật khẩu vào mã nguồn). */
+/**
+ * Đọc mật khẩu tài khoản DEMO: ưu tiên biến môi trường của phiên QA, sau đó mới
+ * đọc demo-ops/demo-secrets.json (file cục bộ, không commit). Nhờ vậy worktree
+ * kiểm thử có thể dùng fixture riêng mà không cần sao chép secret từ worktree khác.
+ */
 function demoSecret(username: string): string {
+  const fromEnv = process.env[`DEMO_${username.toUpperCase()}_PASSWORD`];
+  if (fromEnv) return fromEnv;
   const file = path.resolve("demo-ops/demo-secrets.json");
   if (!fs.existsSync(file)) {
-    throw new Error(`Thieu ${file} — mat khau tai khoan DEMO khong nam trong ma nguon`);
+    throw new Error(
+      `Thieu ${file} — dat bien DEMO_${username.toUpperCase()}_PASSWORD hoac tao demo-secrets.json cuc bo`
+    );
   }
   const json = JSON.parse(fs.readFileSync(file, "utf-8"));
   const acc = (json.accounts || []).find((a: any) => a.username === username);
   if (!acc) throw new Error(`Khong thay tai khoan DEMO ${username} trong demo-secrets.json`);
-  return process.env[`DEMO_${username.toUpperCase()}_PASSWORD`] || acc.password;
+  return acc.password;
 }
 
 async function login(username: string, password: string) {
@@ -122,13 +135,18 @@ async function main() {
   const unitB = await prisma.orgUnit.findUnique({ where: { code: "BP_GIAMSAT_B" } });
   if (!unitA || !unitB) throw new Error("Thiếu đơn vị test BP_NGHIEPVU_A / BP_GIAMSAT_B");
 
-  // Mật khẩu tài khoản DEMO đọc từ demo-ops/demo-secrets.json (không nhúng vào mã nguồn).
-  // Mật khẩu cb001/cb002 do scripts/demo-local-test-accounts.ts đặt (chỉ chạy với DB cục bộ).
+  // Tài khoản DEMO đọc từ biến môi trường của phiên QA hoặc demo-ops/demo-secrets.json.
+  // Hai trưởng bộ phận mặc định cb001/cb002 (tài khoản fixture gốc); phiên QA có thể
+  // trỏ sang tài khoản fixture riêng bằng DEPT_LEADER_A_USERNAME/B_USERNAME.
   const deptLeaderPassword = process.env.DEPT_LEADER_TEST_PASSWORD || "LocalTest@2026";
+  const leaderAUsername = process.env.DEPT_LEADER_A_USERNAME || "cb001";
+  const leaderBUsername = process.env.DEPT_LEADER_B_USERNAME || "cb002";
+  const leaderAPassword = process.env.DEPT_LEADER_A_PASSWORD || deptLeaderPassword;
+  const leaderBPassword = process.env.DEPT_LEADER_B_PASSWORD || deptLeaderPassword;
   const staffA = await login("democb01", demoSecret("democb01")); // STAFF @ BP_NGHIEPVU_A
   const staffB = await login("democb02", demoSecret("democb02")); // STAFF @ BP_GIAMSAT_B
-  const leaderA = await login("cb001", deptLeaderPassword); // DEPARTMENT_LEADER @ BP_NGHIEPVU_A
-  const leaderB = await login("cb002", deptLeaderPassword); // DEPARTMENT_LEADER @ BP_GIAMSAT_B
+  const leaderA = await login(leaderAUsername, leaderAPassword); // DEPARTMENT_LEADER @ BP_NGHIEPVU_A
+  const leaderB = await login(leaderBUsername, leaderBPassword); // DEPARTMENT_LEADER @ BP_GIAMSAT_B
   const unitLeader = await login("demold01", demoSecret("demold01")); // UNIT_LEADER
   console.log("• Đã đăng nhập: democb01, democb02, cb001, cb002, demold01\n");
 
@@ -211,6 +229,12 @@ async function main() {
   // =========================================================================
   // 4–5–7. Chọn mẫu thường xuyên / sản phẩm / danh mục bộ phận khi tạo đầu việc kế hoạch
   // =========================================================================
+  // YC-31: bộ phận đã chuyển sang Danh mục TX thì mẫu cũ (48 mẫu) bị chặn có chủ đích.
+  // Kiểm tra trạng thái thật để kỳ vọng đúng, không hạ thấp kiểm tra nghiệp vụ.
+  const catalogRes = await sA(`/api/work-catalog`);
+  const legacyTemplatesSelectable = catalogRes.json?.data?.legacyTemplatesSelectable !== false;
+  console.log(`• Mẫu cũ còn chọn được cho bộ phận A: ${legacyTemplatesSelectable ? "CÓ" : "KHÔNG (đã chuyển TX)"}\n`);
+
   const templatesRes = await sA(`/api/catalog/templates`);
   const templates = templatesRes.json?.data || templatesRes.json || [];
   check("4a. Danh mục 48 mẫu thường xuyên tải được", templatesRes.status === 200 && Array.isArray(templates) && templates.length >= 40, `${templates.length} mẫu`);
@@ -220,11 +244,19 @@ async function main() {
     method: "POST",
     body: JSON.stringify({ personId: staffA.user.personId, periodId: period.id, templateId: tpl.id, title: `${TAG} Đầu việc từ mẫu ${tpl.code}` }),
   });
-  check(
-    "4b. Tạo đầu việc từ mẫu thường xuyên → 201, liên kết mẫu đúng",
-    pwiTpl.status === 201 && pwiTpl.json?.data?.templateId === tpl.id,
-    `HTTP ${pwiTpl.status} ${pwiTpl.json?.error || ""}`
-  );
+  if (legacyTemplatesSelectable) {
+    check(
+      "4b. Tạo đầu việc từ mẫu thường xuyên → 201, liên kết mẫu đúng",
+      pwiTpl.status === 201 && pwiTpl.json?.data?.templateId === tpl.id,
+      `HTTP ${pwiTpl.status} ${pwiTpl.json?.error || ""}`
+    );
+  } else {
+    check(
+      "4b. Bộ phận đã chuyển TX ⇒ chặn mẫu cũ khi tạo mới (403), không tạo bản ghi",
+      pwiTpl.status === 403 && !pwiTpl.json?.data?.id,
+      `HTTP ${pwiTpl.status} ${pwiTpl.json?.error || ""}`
+    );
+  }
 
   const prodSearch = await sA(`/api/products?search=${encodeURIComponent("giám sát")}&page=1&pageSize=8`);
   check(
@@ -269,7 +301,15 @@ async function main() {
     method: "POST",
     body: JSON.stringify({ personId: staffA.user.personId, periodId: period.id, templateId: tpl.id, deptWorkItemId: deptItemId }),
   });
-  check("5c. Chọn đồng thời mẫu 48 + danh mục bộ phận → 400 (hai nguồn loại trừ nhau)", bothSources.status === 400, `HTTP ${bothSources.status}`);
+  if (legacyTemplatesSelectable) {
+    check("5c. Chọn đồng thời mẫu 48 + danh mục bộ phận → 400 (hai nguồn loại trừ nhau)", bothSources.status === 400, `HTTP ${bothSources.status}`);
+  } else {
+    check(
+      "5c. Bộ phận đã chuyển TX ⇒ mẫu cũ bị chặn trước kiểm tra loại trừ (403)",
+      bothSources.status === 403,
+      `HTTP ${bothSources.status}`
+    );
+  }
 
   const crossDeptPwi = await sB(`/api/personal-work-items`, {
     method: "POST",

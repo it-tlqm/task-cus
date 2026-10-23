@@ -59,6 +59,7 @@ backup-real-run-*.json
 # Local ops & evidence (chỉ lưu cục bộ — không commit)
 demo-ops/
 .local-storage/
+.local-storage-*/
 
 # Script tạm theo ngày (local-only)
 scripts/_tmp-*

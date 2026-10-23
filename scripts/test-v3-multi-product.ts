@@ -4,9 +4,14 @@
  * chống ghi trùng, khoá khi đã gửi/đã xác nhận (Q-B4/A-1..A-4).
  */
 import { createRequire } from "node:module";
-const require = createRequire("D:/thanhnx/OpenCode/talung-cus-work/package.json");
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
+const require = createRequire(import.meta.url);
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient({ datasources: { db: { url: process.env.DIRECT_URL } } });
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-multi-product"
+);
+const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";
 const PASSWORD = process.env.V3_DEMO_PASSWORD || "LocalTest@2026";

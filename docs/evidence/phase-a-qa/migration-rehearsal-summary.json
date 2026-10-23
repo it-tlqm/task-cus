@@ -1,0 +1,63 @@
+{
+  "session": "S1 — Phase A QA",
+  "date": "2026-10-23",
+  "scope": "YC-03/04/05 — migration A rehearsal",
+  "productionTouched": false,
+  "sourceDatabase": "talung_v3_phase_a_qa (localhost, test)",
+  "rehearsalDatabase": "talung_v3_phase_a_qa_rehearsal (localhost, test)",
+  "migration": {
+    "path": "prisma/migrations/20261023120000_v3_phase_a_planning/migration.sql",
+    "sha256": "BF93CA6EF2E6D42F1722942A97231D94D0BAC4F7FCD278155B08BD2902062A83",
+    "change": "CREATE UNIQUE INDEX IF NOT EXISTS + ghi chú quy trình phát hành; không đổi ngữ nghĩa dữ liệu"
+  },
+  "baseline": {
+    "personalWorkItems": 63,
+    "contentChecksumExcludingIdempotencyKey": "f4d53ae2b78473925f5b46852801390b",
+    "duplicateKeyGroups": 1,
+    "keysBackedUpBeforeNulling": 6
+  },
+  "afterMigration": {
+    "personalWorkItems": 63,
+    "contentChecksumExcludingIdempotencyKey": "f4d53ae2b78473925f5b46852801390b",
+    "olderDuplicateKeyNulled": true,
+    "newestDuplicateKeyKept": true,
+    "uniqueIndexValid": true,
+    "duplicateInsertBlocked": true
+  },
+  "rollback": {
+    "method": "DROP INDEX personal_work_items_person_idempotency_key",
+    "personalWorkItems": 63,
+    "contentChecksumExcludingIdempotencyKey": "f4d53ae2b78473925f5b46852801390b",
+    "dataPreserved": true,
+    "nulledKeysRestoredAutomatically": false
+  },
+  "reapply": {
+    "secondRunSucceeded": true,
+    "reason": "CREATE UNIQUE INDEX IF NOT EXISTS"
+  },
+  "checks": [
+    "Clone đúng database rehearsal",
+    "Mô phỏng schema trước Phase A (chưa có unique index)",
+    "Tạo cặp idempotency_key trùng trên cùng cán bộ",
+    "Backup idempotency key trước khi NULL hóa",
+    "Không mất dòng nào sau migration",
+    "Toàn bộ nội dung nghiệp vụ không đổi (trừ idempotency_key)",
+    "Bản ghi cũ hơn bị đặt idempotency_key = NULL",
+    "Bản ghi mới nhất giữ nguyên idempotency_key",
+    "Unique index tồn tại và hợp lệ",
+    "Unique index chặn ghi trùng (person, idempotency_key)",
+    "Rollback giữ nguyên số dòng",
+    "Rollback giữ nguyên nội dung nghiệp vụ",
+    "Khóa đã NULL không tự khôi phục sau rollback",
+    "Áp lại migration lần 2 thành công (IF NOT EXISTS)"
+  ],
+  "result": "14/14 PASS",
+  "releasePathFindings": [
+    "DB kiểu Production (db push) không có bảng _prisma_migrations.",
+    "prisma migrate deploy trên bản sao schema non-empty trả P3005 — không dùng được nếu chưa baseline.",
+    "prisma db push trên bản sao có khóa trùng yêu cầu --accept-data-loss; kể cả bật cờ vẫn lỗi P2002. Không dùng db push một mình để xử lý khóa trùng.",
+    "Sau khi chạy migration.sql thủ công (đã backup/dọn khóa trùng), prisma db push báo 'database is already in sync'.",
+    "prisma migrate diff sau migration: empty migration — schema khớp Prisma schema."
+  ],
+  "productionReadOnlySchemaCheck": "NOT PERFORMED — S1 worktree không có credential/quyền read-only tới Production. Không tự tìm hoặc dùng credential ngoài phạm vi."
+}

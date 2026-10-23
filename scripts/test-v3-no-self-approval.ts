@@ -8,11 +8,16 @@
  *     - POST /api/approvals/TASK_RESULT/{id}/decision (AGREE) của người TRÌNH bị chặn.
  */
 import { createRequire } from "node:module";
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
 
 const creq = createRequire(import.meta.url);
 const { PrismaClient } = creq("@prisma/client");
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-no-self-approval"
+);
 const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DIRECT_URL || process.env.DATABASE_URL } },
+  datasources: { db: { url: dbUrl } },
 });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";
