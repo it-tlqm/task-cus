@@ -6,9 +6,11 @@
 - **Merge nền:** `75e5fae` (integration: S2 B-C-2 + S4/S5) → merge `--no-ff` vào nhánh S3
 - **Database test:** `talung_v3_phase_c` (localhost)
 - **Port:** 3113
-- **Trạng thái:** `IMPLEMENTED_TARGET_ONLY — WAIT_S0_REVIEW`
+- **Trạng thái:** `MERGED — target-only` (S0 merge `f46bd01`; integration head `959c8c3`)
 - **D5:** `DEFERRED_B_C_3` — **không tính % chính thức**
 - **Ngày:** 23/10/2026
+
+> **S0 review 23/10/2026:** đã merge `7a25b6a` vào integration `f46bd01`. S0 rerun contract 110/110, mapping 80/80, target API 26/26, target UI 18/18, tsc/build PASS; S2 UI 17/17 sau khi cập nhật target tab. Không có schema/migration mới.
 
 ---
 

@@ -7,6 +7,8 @@
 **DB test:** `talung_v3_approval_impl` (localhost) — port `3116`  
 **Production touched:** **NO**
 
+> **S0 review 23/10/2026:** đã merge `722d892` vào integration `e80a24f`. S0 rerun 42/42 per-person + 40/40 hardening + 5/5 no-self + 38/38 review + 25/25 YC37 + 36/36 YC38 submit + 15/15 locked + 40/40 e2e + 10/10 transitions + 5/5 UI; build PASS. Migration đã đổi timestamp sang `20261023170000` để tránh trùng S2 và áp lên `talung_v3_fixture_integration`. Phase 2/3 vẫn PENDING.
+
 ```text
 SESSION: S6-Impl — Phase 1 (YC-09 per-person)
 YC: YC-09
