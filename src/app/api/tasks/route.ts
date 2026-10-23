@@ -22,6 +22,12 @@ import {
 } from "@/server/work-item-linkage";
 import { isSelfInitiated, resolveOriginKind } from "@/server/task-origin";
 import { decideApproval, reopenApprovalCaseOnResubmit, getTaskApprovalSummaries } from "@/server/approval-case";
+import {
+  ParticipantError,
+  acceptParticipantPart,
+  initializeTaskParticipants,
+  submitOverallResult,
+} from "@/server/task-participant";
 
 // YC-04: cửa sổ chống bấm trùng khi giao việc (giây)
 const CREATE_DEDUP_WINDOW_SEC = 120;
@@ -126,6 +132,7 @@ export async function GET(req: NextRequest) {
           orderBy: { createdAt: "desc" },
         },
         updates: {
+          where: { subjectPersonId: null },
           orderBy: { createdAt: "desc" },
           take: 3,
           include: { author: true },
@@ -483,6 +490,13 @@ export async function POST(req: NextRequest) {
       newData: { code: createdTask.code, title: createdTask.title, unitId: createdTask.unitId, ownerId, assignees: uniqueAssignees, workItemId: linkedWorkItem?.id || null },
     });
 
+    // YC-09 Phase 1: Task mới qua API có participant rows (legacy=false) để S-ALL áp dụng ngay.
+    try {
+      await initializeTaskParticipants(prisma, createdTask.id);
+    } catch (err) {
+      console.error("[TASK_PARTICIPANT_INIT]", err);
+    }
+
     // 1. Tạo thông báo giao việc đến người chủ trì thực hiện
     await createNotification({
       recipientId: createdTask.ownerId,
@@ -615,6 +629,19 @@ export async function PATCH(req: NextRequest) {
       if (!isOwner && !isAssignee) {
         return jsonError("Chỉ người chủ trì hoặc phối hợp mới xác nhận nhận việc này", 403);
       }
+      // YC-09 Phase 1: collaborator nhận phần việc, không đổi Task status chung.
+      if (!isOwner && isAssignee) {
+        await acceptParticipantPart(user, id);
+        const freshPart = await prisma.task.findUnique({
+          where: { id },
+          include: { owner: true, unit: true, assignees: { include: { person: true } } },
+        });
+        return NextResponse.json({
+          success: true,
+          data: freshPart,
+          message: "Đã xác nhận nhận phần việc của bạn.",
+        });
+      }
       if (currentTask.status !== "NOT_STARTED") {
         const fresh = await prisma.task.findUnique({
           where: { id },
@@ -705,19 +732,30 @@ export async function PATCH(req: NextRequest) {
       } catch (err: any) {
         return jsonError(err.message, err.statusCode || 403);
       }
-      // Cán bộ báo hoàn thành: Chuyển sang WAITING_REVIEW ("Chờ xác nhận hoàn thành")
-      updateData.status = "WAITING_REVIEW";
-      if (actualResultText) updateData.actualResultText = actualResultText;
-
-      await prisma.taskUpdate.create({
-        data: {
-          taskId: id,
-          authorId: user.personId,
-          statusBefore: currentTask.status,
-          statusAfter: "WAITING_REVIEW",
-          kind: "submit",
-          notes: `Cán bộ báo hoàn thành nhiệm vụ. Kết quả: ${actualResultText || "Đã xong theo yêu cầu"}`,
-        },
+      // YC-09 Phase 1: nộp chung qua S-ALL + snapshot; một ApprovalCase/Task.
+      const submitted = await submitOverallResult(user, id, {
+        actualResultText: actualResultText ?? null,
+        note: reason ?? null,
+      });
+      try {
+        await reopenApprovalCaseOnResubmit(
+          "TASK_RESULT",
+          id,
+          user.id,
+          "Nhiệm vụ đã được trình lại sau khi bổ sung nội dung."
+        );
+      } catch {
+        /* lần nộp đầu chưa có case — bình thường */
+      }
+      const freshSubmitted = await prisma.task.findUnique({
+        where: { id },
+        include: { owner: true, unit: true, assignees: { include: { person: true } } },
+      });
+      return NextResponse.json({
+        success: true,
+        message: "Đã nộp kết quả chung và trình Lãnh đạo phê duyệt.",
+        data: freshSubmitted,
+        snapshot: submitted.snapshot,
       });
     } else if (action === "CONFIRM_COMPLETION") {
       // Người giao việc hoặc Lãnh đạo xác nhận hoàn thành — qua ApprovalCase chung.
@@ -832,6 +870,12 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: updatedTask });
   } catch (error: any) {
+    if (error instanceof ParticipantError) {
+      return NextResponse.json(
+        { success: false, error: error.message, data: error.data ?? null },
+        { status: error.statusCode }
+      );
+    }
     return jsonError("Lỗi khi cập nhật nhiệm vụ: " + error.message, 500);
   }
 }

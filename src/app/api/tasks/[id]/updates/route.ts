@@ -11,6 +11,11 @@ import {
 import { advisoryLock, isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
+import {
+  ParticipantError,
+  recordParticipantProgress,
+  submitOverallResult,
+} from "@/server/task-participant";
 
 export async function GET(
   req: NextRequest,
@@ -108,6 +113,74 @@ export async function POST(
         earlySubmitIgnored = true;
         targetStatus = null;
       }
+    }
+
+    // YC-09 Phase 1 — Collaborator chỉ ghi phần việc, không ghi Task-level.
+    const isOwnerUser = access.task?.ownerId === user.personId;
+    const isCollaboratorUser = (access.task?.assignees || []).some(
+      (a: any) => a.personId === user.personId
+    );
+    const isLeaderUser = await isTaskLeader(user, access.task?.unitId || "");
+    if (isCollaboratorUser && !isOwnerUser && !isLeaderUser) {
+      if (wantsSubmit) {
+        return jsonError(
+          "Chỉ người chủ trì mới được nộp kết quả chung. Người phối hợp chỉ báo phần việc của mình.",
+          403
+        );
+      }
+      if (
+        explicitStatus ||
+        actualResultText !== undefined ||
+        hasIssue !== undefined ||
+        issueNotes !== undefined
+      ) {
+        return jsonError(
+          "Người phối hợp chỉ được báo tiến độ/kết quả phần việc của mình. Không được đổi trạng thái, kết quả chung hoặc cờ vướng mắc của nhiệm vụ.",
+          403
+        );
+      }
+      if (progress === null) {
+        return jsonError("Vui lòng nhập tiến độ phần việc (bước 5%).", 422);
+      }
+      const part = await recordParticipantProgress(user, taskId, {
+        progressPercent: progress,
+        notes: notes ?? null,
+      });
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Đã cập nhật tiến độ phần việc của bạn.",
+          data: { participant: part },
+        },
+        { status: 201 }
+      );
+    }
+
+    // YC-09 Phase 1 — Chủ trì nộp chung qua service S-ALL + snapshot.
+    if (isOwnerUser && targetStatus === "WAITING_REVIEW") {
+      const submitted = await submitOverallResult(user, taskId, {
+        actualResultText: actualResultText ?? null,
+        note: notes ?? null,
+      });
+      try {
+        await reopenApprovalCaseOnResubmit(
+          "TASK_RESULT",
+          taskId,
+          user.id,
+          "Nhiệm vụ đã được trình lại sau khi bổ sung nội dung."
+        );
+      } catch {
+        /* lần nộp đầu chưa có case — bình thường */
+      }
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Đã nộp kết quả chung và trình Lãnh đạo phê duyệt.",
+          data: { update: submitted.update, task: submitted.task, snapshot: submitted.snapshot },
+          submitted: true,
+        },
+        { status: 201 }
+      );
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -359,6 +432,12 @@ export async function POST(
       { status: 201 }
     );
   } catch (error: any) {
+    if (error instanceof ParticipantError) {
+      return NextResponse.json(
+        { success: false, error: error.message, data: error.data ?? null },
+        { status: error.statusCode }
+      );
+    }
     return jsonError("Lỗi khi lưu tiến độ: " + error.message, 500);
   }
 }

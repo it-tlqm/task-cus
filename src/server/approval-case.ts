@@ -20,6 +20,11 @@ import { SessionUser } from "./auth";
 import { getAuthorizedUnitIds, verifyTaskAccess } from "./guard";
 import { recordAuditEvent } from "./audit";
 import { createNotification } from "./notifications";
+import {
+  applyFinalDecisionToParticipants,
+  getEffectiveSubmitterId,
+  getParticipantSummary,
+} from "./task-participant";
 import { unaccentSearchIds } from "./search";
 
 export type ApprovalCaseType = "TASK_RESULT" | "PLAN" | "DEADLINE_REQUEST";
@@ -253,7 +258,7 @@ export async function buildApprovalPreview(
     code = task.code;
     title = task.title;
     unitId = task.unitId;
-    submitterId = task.ownerId;
+    submitterId = await getEffectiveSubmitterId(task.id);
     resourceStatus = task.status;
     resourceOwnerId = task.ownerId;
     // Thời điểm trình duyệt thực tế (không dùng updatedAt vì có thể bị thay đổi bởi thao tác khác)
@@ -281,6 +286,8 @@ export async function buildApprovalPreview(
       name: a.person?.fullName ?? "—",
       role: a.role,
     }));
+    content.participants = await getParticipantSummary(task.id);
+    content.participantSummary = content.participants;
     content.planLink = task.planLinks[0]?.planItem?.plan
       ? {
           planId: task.planLinks[0].planItem.plan.id,
@@ -537,6 +544,8 @@ export interface DecideParams {
   action: "AGREE" | "REJECT" | "CLARIFY";
   reason?: string | null;
   content?: string | null;
+  /** E9.3: các personId được chọn trả lại khi REJECT/CLARIFY. Rỗng = trả các phần chưa accepted. */
+  returnPersonIds?: string[];
 }
 
 export interface DecideResult {
@@ -585,7 +594,7 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
       return { success: false, status: 403, error: access.reason || "Không có quyền xử lý hồ sơ này" };
     }
     unitId = task.unitId;
-    submitterId = task.ownerId;
+    submitterId = await getEffectiveSubmitterId(task.id);
     code = task.code;
     title = task.title;
     resourceStatus = task.status;
@@ -699,24 +708,25 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     | { ok: false; status: number; error: string; data?: DecideResult["data"] };
   try {
     txResult = await prisma.$transaction(async (tx) => {
-      const approvalCase = await tx.approvalCase.upsert({
+      const existingCase = await tx.approvalCase.findUnique({
         where: { caseType_resourceId: { caseType, resourceId } },
-        update: {
-          title,
-          resourceCode: code,
-          unitId,
-          submittedById: submitterId,
-        },
-        create: {
-          caseType,
-          resourceId,
-          resourceCode: code,
-          title,
-          unitId,
-          submittedById: submitterId,
-          status: "OPEN",
-        },
       });
+      const approvalCase = existingCase
+        ? await tx.approvalCase.update({
+            where: { id: existingCase.id },
+            data: { title, resourceCode: code, unitId },
+          })
+        : await tx.approvalCase.create({
+            data: {
+              caseType,
+              resourceId,
+              resourceCode: code,
+              title,
+              unitId,
+              submittedById: submitterId,
+              status: "OPEN",
+            },
+          });
 
       const claimed = await tx.approvalCase.updateMany({
         where: { id: approvalCase.id, status: "OPEN" },
@@ -817,6 +827,14 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
               ? "Nhiệm vụ đã bị trả lại, giữ nguyên nội dung kết quả đã ghi."
               : "Nhiệm vụ đã chờ giải trình, giữ nguyên nội dung kết quả đã ghi.";
         }
+        // YC-09 Phase 1: cập nhật participant status theo E9.3 trong cùng transaction.
+        await applyFinalDecisionToParticipants(
+          tx,
+          taskId,
+          action,
+          user,
+          params.returnPersonIds || []
+        );
         updatedTask = await tx.task.findUnique({
           where: { id: taskId },
           include: {
@@ -1284,6 +1302,23 @@ export async function reopenApprovalCaseOnResubmit(
     where: { id: actorAccountId },
     select: { personId: true },
   });
+  // YC-09 Phase 1: chỉ owner/submitter được mở lại vòng của TASK_RESULT.
+  if (caseType === "TASK_RESULT") {
+    const task = await prisma.task.findUnique({
+      where: { id: resourceId },
+      select: { ownerId: true },
+    });
+    const snapshot = await prisma.taskSubmissionSnapshot.findFirst({
+      where: { taskId: resourceId },
+      orderBy: { round: "desc" },
+      select: { submittedById: true },
+    });
+    const actorPersonId = actor?.personId ?? null;
+    const allowed =
+      !!actorPersonId &&
+      (actorPersonId === task?.ownerId || actorPersonId === snapshot?.submittedById);
+    if (!allowed) return null;
+  }
   await prisma.approvalDecision.create({
     data: {
       caseId: approvalCase.id,

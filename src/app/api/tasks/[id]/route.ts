@@ -12,6 +12,7 @@ import {
 import { isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
 import { reopenApprovalCaseOnResubmit, decideApproval, getTaskApprovalSummaries } from "@/server/approval-case";
+import { ParticipantError, submitOverallResult } from "@/server/task-participant";
 import { toClientAttachments } from "@/server/attachments";
 import { createNotification } from "@/server/notifications";
 
@@ -49,7 +50,18 @@ export async function GET(
         },
         updates: {
           orderBy: { createdAt: "desc" },
-          include: { author: true },
+          include: {
+            author: true,
+            subjectPerson: { select: { id: true, fullName: true } },
+          },
+        },
+        participantResults: {
+          include: {
+            person: { select: { id: true, fullName: true, code: true } },
+            submittedBy: { select: { id: true, fullName: true } },
+            decidedBy: { select: { id: true, fullName: true } },
+          },
+          orderBy: [{ role: "asc" }, { createdAt: "asc" }],
         },
         attachments: {
           orderBy: { createdAt: "desc" },
@@ -79,10 +91,23 @@ export async function GET(
 
     if (!task) return jsonError("Không tìm thấy nhiệm vụ", 404);
 
+    // YC-09: owner hiển thị trước collaborator.
+    if (Array.isArray((task as any).participantResults)) {
+      (task as any).participantResults = [...(task as any).participantResults].sort(
+        (a: any, b: any) => {
+          if (a.role === "OWNER" && b.role !== "OWNER") return -1;
+          if (b.role === "OWNER" && a.role !== "OWNER") return 1;
+          return String(a.person?.fullName || "").localeCompare(String(b.person?.fullName || ""), "vi");
+        }
+      );
+    }
+
     const now = new Date();
     const isFinished = task.status === "COMPLETED" || task.status === "DONE" || task.status === "CANCELED";
     const isOverdue = !isFinished && new Date(task.currentDeadline) < now;
-    const latestProgress = (task.updates as any[])?.[0]?.progressPercent;
+    const latestProgress = (task.updates as any[])?.find(
+      (u) => !u.subjectPersonId && !String(u.kind || "").startsWith("participant_")
+    )?.progressPercent;
 
     // Nhật ký hợp nhất: tiến độ + toàn bộ lai lịch (ai giao/nhận/sửa/duyệt/gia hạn/đính kèm)
     // từ TaskUpdate, DeadlineRequest, Attachment và AuditEvent (bỏ các audit trùng với TaskUpdate)
@@ -196,6 +221,13 @@ export async function GET(
       cancel: "Loại nhiệm vụ trùng",
       extend: "Gia hạn",
       progress: "Cập nhật tiến độ",
+      participant_submit: "Báo phần việc",
+      participant_progress: "Cập nhật phần việc",
+      participant_return: "Trả lại phần việc",
+      participant_accept: "Chấp nhận phần việc",
+      participant_exempt: "Miễn phần việc",
+      participant_accept_task: "Nhận phần việc",
+      participant_owner_submit: "Chủ trì nộp kết quả chung",
     };
     for (const u of (task.updates as any[]) || []) {
       const notes = u.notes || "";
@@ -221,9 +253,9 @@ export async function GET(
         at: u.createdAt,
         actor: u.author?.fullName || "Cán bộ thụ lý",
         kind,
-        title,
+        title: u.subjectPerson?.fullName ? `${title} — ${u.subjectPerson.fullName}` : title,
         detail: notes || null,
-        progress: u.progressPercent,
+        progress: u.subjectPersonId ? null : u.progressPercent,
         statusFrom: u.statusBefore || null,
         statusTo: u.statusAfter || null,
       });
@@ -350,6 +382,16 @@ export async function PATCH(
     const isCollaborator = (currentTask.assignees || []).some(
       (a: any) => a.personId === user.personId
     );
+
+    // YC-09 Phase 1: collaborator không đổi trạng thái / cờ vướng mắc Task-level.
+    if (isCollaborator && !isOwner && !isLeader) {
+      if (status !== undefined || hasIssue !== undefined || issueNotes !== undefined) {
+        return jsonError(
+          "Người phối hợp chỉ được báo phần việc của mình; không được đổi trạng thái hoặc cờ vướng mắc chung của nhiệm vụ.",
+          403
+        );
+      }
+    }
 
     // Mọi quyết định nghiệm thu/trả lại đều đi qua ApprovalCase để thống nhất lịch sử.
     const decideTaskResult = async (
@@ -496,6 +538,32 @@ export async function PATCH(
       });
     } catch (err: any) {
       return jsonError(err.message, err.statusCode || 403);
+    }
+
+    // YC-09 Phase 1: chủ trì nộp chung qua S-ALL + snapshot (một case/Task).
+    if (status === "WAITING_REVIEW") {
+      if (!isOwner) {
+        return jsonError("Chỉ người chủ trì mới được nộp kết quả chung.", 403);
+      }
+      const submitted = await submitOverallResult(user, taskId, {
+        actualResultText: actualResultText ?? null,
+        note: notes ?? null,
+      });
+      try {
+        await reopenApprovalCaseOnResubmit(
+          "TASK_RESULT",
+          taskId,
+          user.id,
+          "Nhiệm vụ đã được trình lại sau khi bổ sung nội dung."
+        );
+      } catch {
+        /* lần nộp đầu chưa có case — bình thường */
+      }
+      return NextResponse.json({
+        success: true,
+        message: "Đã nộp kết quả chung và trình Lãnh đạo phê duyệt.",
+        data: submitted.task,
+      });
     }
 
     const updateData: any = {};
@@ -685,6 +753,12 @@ export async function PATCH(
       data: updatedTask,
     });
   } catch (error: any) {
+    if (error instanceof ParticipantError) {
+      return NextResponse.json(
+        { success: false, error: error.message, data: error.data ?? null },
+        { status: error.statusCode }
+      );
+    }
     return jsonError("Lỗi khi cập nhật nhiệm vụ: " + error.message, 500);
   }
 }

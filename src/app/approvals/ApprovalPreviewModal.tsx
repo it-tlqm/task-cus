@@ -135,12 +135,14 @@ export default function ApprovalPreviewModal({
   const [action, setAction] = useState<ApprovalDecisionAction>(initialAction);
   const [reason, setReason] = useState("");
   const [content, setContent] = useState("");
+  const [returnPersonIds, setReturnPersonIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
     setAction(initialAction);
     setReason("");
     setContent("");
+    setReturnPersonIds([]);
     setError(null);
     if (!caseType || !resourceId) return;
     let cancelled = false;
@@ -196,7 +198,7 @@ export default function ApprovalPreviewModal({
       const res = await fetch(`/api/approvals/${caseType}/${resourceId}/decision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, reason, content }),
+        body: JSON.stringify({ action, reason, content, returnPersonIds }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) {
@@ -404,6 +406,63 @@ export default function ApprovalPreviewModal({
                         <p className="text-on-surface">{c.priority || "—"}</p>
                       </div>
                     </div>
+                    {Array.isArray(c.participants) && c.participants.length > 0 && (
+                      <div className="rounded-lg border border-border-default p-2.5 space-y-1.5">
+                        <p className="text-[10px] uppercase text-outline font-semibold">
+                          Phần việc theo người
+                        </p>
+                        {c.participants.map((p: any) => {
+                          const canReturn =
+                            (action === "REJECT" || action === "CLARIFY") &&
+                            p.role !== "OWNER" &&
+                            ["SUBMITTED", "ACCEPTED"].includes(p.partStatus);
+                          return (
+                            <div key={p.personId} className="flex items-start justify-between gap-2 text-[11px]">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-on-surface">
+                                  {p.personName}
+                                  <span className="ml-1 font-normal text-outline">
+                                    ({p.role === "OWNER" ? "Chủ trì" : "Phối hợp"})
+                                  </span>
+                                </p>
+                                <p className="text-on-surface-variant">
+                                  {p.partStatusLabel || p.partStatus}
+                                  {p.partProgressPercent !== null && p.partProgressPercent !== undefined
+                                    ? ` · ${p.partProgressPercent}%`
+                                    : ""}
+                                </p>
+                                {p.partResultText && (
+                                  <p className="text-on-surface-variant whitespace-pre-wrap">
+                                    Kết quả: {p.partResultText}
+                                  </p>
+                                )}
+                              </div>
+                              {canReturn && (
+                                <label className="flex items-center gap-1 shrink-0 text-[10px] text-status-danger">
+                                  <input
+                                    type="checkbox"
+                                    checked={returnPersonIds.includes(p.personId)}
+                                    onChange={(e) => {
+                                      setReturnPersonIds((prev) =>
+                                        e.target.checked
+                                          ? [...prev, p.personId]
+                                          : prev.filter((id) => id !== p.personId)
+                                      );
+                                    }}
+                                  />
+                                  Trả phần này
+                                </label>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {(action === "REJECT" || action === "CLARIFY") && (
+                          <p className="text-[10px] text-outline">
+                            Không chọn phần nào = trả lại các phần chưa được chấp nhận; phần đã chấp nhận được giữ.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {Array.isArray(c.assignees) && c.assignees.length > 0 && (
                       <div>
                         <p className="text-[10px] uppercase text-outline font-semibold">
