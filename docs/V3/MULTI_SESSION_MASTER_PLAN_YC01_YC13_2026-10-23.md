@@ -357,12 +357,12 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 
 | Session | Trạng thái 23/10/2026 | Branch thực tế | SHA mới nhất | Test/UAT | Chặn / quyết định | Ready merge? |
 |---|---|---|---|---|---|---|
-| S0 — Integration | **Integration Manager**; đã chốt decision log S3/S6; baseline PASS | `codex/v3-integration-yc01-13` | `bd815f4` + decision log mới | Typecheck PASS, Prisma validate PASS, build PASS; Phase A 37/37, no-self 5/5, multi-product 36/36 | Theo dõi S1/S2/S4/S5; chưa release | N/A — không merge `main`/không release |
-| S1 — Phase A QA | **READY TO START**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `6cacc50` (start signal; code `a68d31e`) | 255 check báo cáo trước đó; 2 bộ còn chặn | Rehearsal migration; fixture/storage; UAT | NO |
-| S2 — Phase B | **READY TO START**; DB `talung_v3_phase_b`, port 3112; ưu tiên contract B/C | `codex/v3-phase-b-revenue` | `6cacc50` (start signal; code `a68d31e`) | Chưa implement | B1/B2; contract B/C; không hard-code Excel | NO |
-| S3 — Phase C | **CONTRACT APPROVED**; chỉ làm pure helper/test + target UI độc lập; shared schema/API chờ S2 | `codex/v3-phase-c-metrics` | `8af7a66` | **43/43 pure test PASS**, tsc PASS; không schema/API | Q1–Q12 đã chốt; Q3=A (S2 owns schema); Q6 per-code semantics PENDING; chờ S2 schema | NO |
-| S4 — Task Approval | **READY TO START**; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `6cacc50` (start signal; code `a68d31e`) | Chưa implement | E8/E9/E12; không quality/team/stage/per-assignee; S6 decisions approved nhưng implementation chờ S4 merge | NO |
-| S5 — Roster | **READY TO START**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `6cacc50` (start signal; code `a68d31e`) | Chưa implement | E13: notes ô trống, in Excel, giữ đổi người | NO |
+| S0 — Integration | **Integration Manager**; đã merge S1/S4/S5; S2 bị chặn contract | `codex/v3-integration-yc01-13` | `06c5d19` | Phase A 37/37, S4 hardening 40/40, no-self 5/5; typecheck/build/PASS trước đó | S2 Q9/Q11 blocker; chưa release | N/A — không merge `main`/không release |
+| S1 — Phase A QA | **MERGED**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `3708672` | Báo cáo 313/313; S0 rerun Phase A 37/37 + S4 40/40 + no-self 5/5; release gate pending | Production audit/backup + UAT + lệnh release | N/A — đã merge |
+| S2 — Phase B | **BLOCKED_BY_CONTRACT_ALIGNMENT**; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `207dcfc` | 34/34 API + 14/14 UI báo cáo; chưa merge | **Q9**: DEMO label phải thay bằng `isOfficial/dataSource`; **Q11/YC-02**: API 1 chữ số phải thành 2 chữ số; B1/B2/C1 PENDING | NO |
+| S3 — Phase C | **CONTRACT APPROVED**; chỉ pure helper/test + target UI độc lập; shared schema/API chờ S2 | `codex/v3-phase-c-metrics` | `8af7a66` | 43/43 pure test PASS, tsc PASS; không schema/API | Q1–Q12 đã chốt; Q3=A (S2 owns schema); Q6 per-code semantics PENDING; chờ S2 schema | NO |
+| S4 — Task Approval | **MERGED**; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `56a8d68` | Báo cáo 40/40 hardening + no-self 5/5 + transitions/YC37/YC38/e2e; S0 rerun 40/40 + 5/5 | E8/E9/E12 PENDING; không quality/team/stage | N/A — đã merge |
+| S5 — Roster | **MERGED**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `2bc645d` | Báo cáo 22/22 API + 24/24 UI; S0 rerun 22/22 + 24/24 trên nhánh | E13 ghi chú ô trống/Excel PENDING | N/A — đã merge |
 | S6 — Business Spec | **DECISIONS APPROVED — implementation planning**; không DB/port | `codex/v3-approval-rules-spec` | `af197d7` | Docs-only; spec đủ căn cứ | P1/Q1/R1 + E9/E10/E11/P-1..P-5 APPROVED; code chờ S4 merge + nhánh implementation riêng | NO |
 
 ### Nhật ký tích hợp (S0 điền sau, không xóa lịch sử)
@@ -374,12 +374,18 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 | 23/10/2026 | S0 — start signal S1–S6 | `244aa49` → `50daed3` | `50daed3` docs | DB từng worktree: localhost, đúng `talung_v3_*`, 24 accounts; docs hash identical; no Production | **READY** S1/S2/S4/S5/S6; **WAIT_CONTRACT** S3 | S0 |
 | 23/10/2026 | S0 — review S3/S6 handoff | `6cacc50` → `8af7a66` (S3), `af197d7` (S6) | Không merge | S3 pure test 43/43 + tsc PASS; S6 docs-only; không schema/API | **S3 WAIT_CONTRACT**; **S6 SPEC COMPLETE**; quyết định nghiệp vụ còn chờ | S0 |
 | 23/10/2026 | S0 — chủ dự án chốt decisions | — | Decision log `S0_DECISION_LOG_2026-10-23.md` | Không code; chỉ ghi nhận quyết định | **S3 CONTRACT APPROVED**; **S6 DECISIONS APPROVED**; implementation có cổng | S0 + chủ dự án |
+| 23/10/2026 | S5 — YC-13 roster | `6cacc50` → `2bc645d` | `532c3f6` merge `--no-ff` | S5 API 22/22 + UI 24/24; build integration PASS | **MERGED** | S0 |
+| 23/10/2026 | S4 — YC-08/09/12 | `6cacc50` → `56a8d68` | `5d5c299` merge `--no-ff` | S4 hardening 40/40 + no-self 5/5 trên integration; build PASS | **MERGED** | S0 |
+| 23/10/2026 | S1 — Phase A QA | `6cacc50` → `3708672` | `06c5d19` merge `--no-ff` | S0 rerun Phase A 37/37; S1 báo cáo 313/313 + migration rehearsal 14/14 | **MERGED — QA gate pending release** | S0 |
+| 23/10/2026 | S2 — Phase B | `6cacc50` → `207dcfc` | Chưa merge | S2 34/34 + 14/14 báo cáo; S0 thấy contract lệch Q9/Q11 | **BLOCKED** — sửa `isOfficial/dataSource` và 2 chữ số trước | S0 |
 
 > **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `50daed3` (master + runtime matrix + assignment cards + baseline results + start signal). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
 >
 > **Start signal 23/10/2026:** S1, S2, S4, S5, S6 = `READY TO START`; S3 = `WAIT_CONTRACT`. S0 đã kiểm tra kết nối DB từng worktree: tất cả trỏ `localhost:5432`, đúng database test `talung_v3_*`, không có Production. S6 SPEC ONLY không có DB. Prompt khởi động nằm trong `docs/V3/SESSION_ASSIGNMENTS_2026-10-23.md`.
 >
 > **Review handoff S3/S6:** S0 đã nhận, không merge code. S3 đạt 43/43 pure test + tsc, không schema/API, giữ `WAIT_CONTRACT`. S6 hoàn tất spec docs-only, chờ E9/E10/E11. Quyết định đã được chủ dự án chấp thuận: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
+>
+> **S2 blocker:** B-C-1 hiện lệch Q9 (dùng nhãn `[DEMO]` thay vì `isOfficial/dataSource`) và Q11 (API 1 chữ số thay vì 2). Không merge S2 `207dcfc`; chi tiết: `docs/V3/S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md`.
 
 ### Checklist phát hành cuối
 

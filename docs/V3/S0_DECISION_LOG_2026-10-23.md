@@ -23,13 +23,20 @@
 | **Q5** | **B — Hai trục `recordState + coverage`, map ra 6 nhãn YC-06.** Trạng thái phải tính trên nguồn giá trị đang hiển thị, không chỉ bản ghi trực tiếp; xử lý đúng DERIVED/BALANCE. |
 | **Q6** | **Approved approach:** thêm `measureMode`/`baselineScope` tường minh; không suy từ `valueKind`/tên. Riêng nghĩa lũy kế/snapshot của `PHI_LK_THU`, `PHI_CON`, `XOA_NO`, `NO_THUE`, `TV_CHO` tiếp tục **PENDING_BUSINESS_INPUT** cho tới khi có quy tắc nghiệp vụ chi tiết; khi đó hiển thị “chưa có quy tắc tổng hợp”, không tự tính. |
 | **Q7** | **S0 đã chốt:** chưa bật cảnh báo “Thiếu N ngày” khi chưa có lịch nghiệp vụ. Hiển thị “Số ngày có bản ghi” và khoảng dữ liệu thực tế; không đổi `expectDaily` hàng loạt. |
-| **Q8** | **B — Quyền nghiệp vụ riêng** cho target (`giao_ban.target.view/manage/confirm` hoặc tên tương đương do S0/S2 chốt trong implementation). `SYSTEM_ADMIN` không mặc nhiên có quyền nghiệp vụ; không dùng `system.config` làm quyền nhập liệu. |
+| **Q8** | **B — Quyền nghiệp vụ riêng**: dùng `metrics.config` cho cấu hình/chỉ tiêu giao và `metrics.entry_all` cho nhập toàn bộ; assignment `canEnter`/`canConfirm` cho phạm vi được phân công. Không dùng `system.config`; `SYSTEM_ADMIN` không mặc nhiên có quyền nghiệp vụ. Nếu cần quyền target-only chi tiết hơn, bổ sung ở migration sau, không chồng tên trong đợt này. |
 | **Q9** | **API trả cờ `isOfficial`/`dataSource`.** Chỉ target `isOfficial=true` mới tính % chính thức; DEMO hiển thị nhãn riêng, không vào báo cáo chính thức. Không dùng regex `[DEMO]` làm logic nghiệp vụ. |
 | **Q10** | **Tiếp tục `PENDING_C1`.** Chưa tự gán danh sách chỉ tiêu giao, chu kỳ, chiều đánh giá. UI hiển thị “Chưa có quy tắc đánh giá”; không tô đạt/vượt. |
 | **Q11** | **S0 đã chốt:** 2 chữ số thập phân, dấu `,` vi-VN; không tính hiển thị `—` + lý do, không `0%`; số 0 thật hiển thị `0` + đơn vị. |
 | **Q12** | **S0 đã chốt:** `/giao-ban` trước; Dashboard/báo cáo Word chỉ sau khi UX/lãnh đạo chốt, không tự thêm. |
 
-### 1.2. Điều kiện triển khai S3
+### 1.2. Đồng bộ với hợp đồng B-C-1 của S2
+
+- **Q8:** S0 chấp nhận `metrics.config` / `metrics.entry_all` là quyền nghiệp vụ riêng của B-C-1; S3 dùng các quyền này, không tự thêm `giao_ban.target.*` trong đợt này.
+- **Q9 — BLOCKER:** S2 hiện vẫn nhận diện DEMO bằng nhãn `[DEMO]` trong `src/server/metrics.ts` (dòng 424, 927) và hợp đồng B-C-1 dòng 190. Theo Q9 đã duyệt, phải dùng cờ `isOfficial`/`dataSource`; S2 phải sửa trước khi S0 merge S2.
+- **Q11/YC-02 — BLOCKER:** API B-C-1 đang làm tròn 1 chữ số; quyết định Q11/YC-02 là **2 chữ số thập phân**. S2 phải sửa API/test/UI và cập nhật acceptance (78,18 / 77,49 / 109,67) trước khi merge.
+- B1/B2/C1 vẫn PENDING; không hard-code.
+
+### 1.3. Điều kiện triển khai S3
 
 - **Được làm ngay:** pure helper/state model + test; chuẩn bị target UI component ở mức độc lập nếu không cần API/schema shared.
 - **Chưa được làm:** sửa `prisma/schema.prisma`, `src/server/metrics.ts`, `/api/metrics/*`, `/giao-ban`, `/giao-ban/cau-hinh` hoặc migration cho tới khi S2 công bố schema/contract.

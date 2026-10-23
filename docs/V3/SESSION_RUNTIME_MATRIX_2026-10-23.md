@@ -9,11 +9,11 @@
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
 | S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `6cacc50` (start signal) / `a68d31e` code | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
-| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `6cacc50` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
-| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `6cacc50` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
+| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `3708672` | 3111 | `talung_v3_phase_a_qa` | **MERGED** — QA gate release pending |
+| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `207dcfc` | 3112 | `talung_v3_phase_b` | **BLOCKED_BY_CONTRACT_ALIGNMENT** — Q9/Q11 |
 | S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `8af7a66` (handoff) / code `a68d31e` | 3113 | `talung_v3_phase_c` | **CONTRACT APPROVED** — pure helper/test + target UI độc lập; schema/API chờ S2 |
-| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `6cacc50` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12; không quality/team/stage |
-| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `6cacc50` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
+| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED** — hardening 40/40 + no-self 5/5 |
+| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED** — 22/22 API + 24/24 UI |
 | S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `af197d7` (handoff) / code `a68d31e` | — | — | **DECISIONS APPROVED** — implementation planning; chờ S4 merge + nhánh riêng |
 
 Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. Không có thay đổi schema/API trong S3/S6.
@@ -82,7 +82,18 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 
 Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
 
-## 8. Điều kiện handoff
+## 8. Handoff batch 2 (S1/S2/S4/S5)
+
+| Session | HEAD | Kết quả S0 | Merge |
+|---|---|---|---|
+| S1 | `3708672` | QA 313/313 báo cáo; S0 rerun Phase A 37/37; migration rehearsal 14/14 | **MERGED** `06c5d19` |
+| S2 | `207dcfc` | 34/34 API + 14/14 UI báo cáo; contract lệch Q9/Q11 | **BLOCKED** |
+| S4 | `56a8d68` | S0 rerun hardening 40/40 + no-self 5/5 | **MERGED** `5d5c299` |
+| S5 | `2bc645d` | S0 rerun API 22/22 + UI 24/24 | **MERGED** `532c3f6` |
+
+S2 blocker chi tiết: xem `docs/V3/S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md` và `docs/V3/S0_DECISION_LOG_2026-10-23.md` mục 1.2.
+
+## 9. Điều kiện handoff
 
 Mỗi session gửi S0 theo mẫu mục 7 của master plan, kèm:
 - commit SHA, file changed, schema/migration;
