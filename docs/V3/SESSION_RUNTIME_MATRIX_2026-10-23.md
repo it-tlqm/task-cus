@@ -11,10 +11,10 @@
 | S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `6cacc50` (start signal) / `a68d31e` code | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
 | S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `6cacc50` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
 | S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `6cacc50` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `8af7a66` (handoff) / code `a68d31e` | 3113 | `talung_v3_phase_c` | **WAIT_CONTRACT** — 43/43 pure test + tsc PASS |
-| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `6cacc50` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12 |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `8af7a66` (handoff) / code `a68d31e` | 3113 | `talung_v3_phase_c` | **CONTRACT APPROVED** — pure helper/test + target UI độc lập; schema/API chờ S2 |
+| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `6cacc50` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12; không quality/team/stage |
 | S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `6cacc50` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
-| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `af197d7` (handoff) / code `a68d31e` | — | — | **SPEC COMPLETE** — chờ E9/E10/E11 |
+| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `af197d7` (handoff) / code `a68d31e` | — | — | **DECISIONS APPROVED** — implementation planning; chờ S4 merge + nhánh riêng |
 
 Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. Không có thay đổi schema/API trong S3/S6.
 
@@ -77,10 +77,10 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 
 | Session | HEAD | Phạm vi | Kết quả S0 | Merge? |
 |---|---|---|---|---|
-| S3 | `8af7a66` | Docs + script DB read-only + pure test; không schema/API | 43/43 pure test PASS; `tsc --noEmit` PASS; `WAIT_CONTRACT` | **NO** |
-| S6 | `af197d7` | Docs-only; không code/schema/DB | Spec đầy đủ; chờ E9/E10/E11 | **NO** |
+| S3 | `8af7a66` | Docs + script DB read-only + pure test; không schema/API | 43/43 pure test PASS; `tsc --noEmit` PASS; **CONTRACT APPROVED** | **NO** — chờ S2 schema |
+| S6 | `af197d7` | Docs-only; không code/schema/DB | Spec đầy đủ; **DECISIONS APPROVED** | **NO** — implementation branch sau S4 |
 
-Quyết định cần chủ dự án chốt: `docs/V3/S0_DECISIONS_REQUIRED_2026-10-23.md`.
+Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
 
 ## 8. Điều kiện handoff
 
