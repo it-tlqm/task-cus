@@ -377,6 +377,7 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 | 23/10/2026 | S5 — YC-13 roster | `6cacc50` → `2bc645d` | `532c3f6` merge `--no-ff` | S5 API 22/22 + UI 24/24; build integration PASS | **MERGED** | S0 |
 | 23/10/2026 | S4 — YC-08/09/12 | `6cacc50` → `56a8d68` | `5d5c299` merge `--no-ff` | S4 hardening 40/40 + no-self 5/5 trên integration; build PASS | **MERGED** | S0 |
 | 23/10/2026 | S1 — Phase A QA | `6cacc50` → `3708672` | `06c5d19` merge `--no-ff` | S0 rerun Phase A 37/37; S1 báo cáo 313/313 + migration rehearsal 14/14 | **MERGED — QA gate pending release** | S0 |
+| 23/10/2026 | S0 — regression sau merge S1/S4/S5 | `06c5d19` | — | Phase A 37/37; S4 hardening 40/40; no-self 5/5; review-flow 38/38; YC37 25/25; e2e 40/40; tsc/prisma validate/build PASS | **PASS** — S2 vẫn blocked | S0 |
 | 23/10/2026 | S2 — Phase B | `6cacc50` → `207dcfc` | Chưa merge | S2 34/34 + 14/14 báo cáo; S0 thấy contract lệch Q9/Q11 | **BLOCKED** — sửa `isOfficial/dataSource` và 2 chữ số trước | S0 |
 
 > **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `50daed3` (master + runtime matrix + assignment cards + baseline results + start signal). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
