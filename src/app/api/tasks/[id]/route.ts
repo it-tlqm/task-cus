@@ -11,7 +11,7 @@ import {
 } from "@/server/task-transitions";
 import { isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
-import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
+import { reopenApprovalCaseOnResubmit, decideApproval, getTaskApprovalSummaries } from "@/server/approval-case";
 import { toClientAttachments } from "@/server/attachments";
 import { createNotification } from "@/server/notifications";
 
@@ -267,6 +267,9 @@ export async function GET(
     // Sắp xếp giảm dần theo thời gian (sự kiện mới nhất lên đầu)
     timeline.sort((x, y) => new Date(y.at).getTime() - new Date(x.at).getTime());
 
+    // YC-08: projection quyết định duyệt gần nhất (badge/người/thời gian/lý do)
+    const approvalSummaries = await getTaskApprovalSummaries([taskId]);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -275,6 +278,7 @@ export async function GET(
         attachments: toClientAttachments((task as any).attachments || [], task.id),
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
+        approval: approvalSummaries.get(taskId) ?? null,
     // YC-38 UAT fix: thong tin danh muc TX kem theo (ma, ten, he so)
     txSource: (() => {
       const ce = (task as any).workItem?.catalogEntry;
@@ -328,6 +332,7 @@ export async function PATCH(
       ownerId,
       assigneeIds,
       cancelReason,
+      notes,
     } = body;
 
     const currentTask = access.task;
@@ -341,6 +346,37 @@ export async function PATCH(
       );
     }
     const isLeader = await isTaskLeader(user, currentTask.unitId);
+    const isOwner = currentTask.ownerId === user.personId;
+    const isCollaborator = (currentTask.assignees || []).some(
+      (a: any) => a.personId === user.personId
+    );
+
+    // Mọi quyết định nghiệm thu/trả lại đều đi qua ApprovalCase để thống nhất lịch sử.
+    const decideTaskResult = async (
+      decision: "AGREE" | "REJECT" | "CLARIFY",
+      decisionReason: string | null,
+      decisionContent: string | null
+    ) => {
+      const result = await decideApproval({
+        user,
+        caseType: "TASK_RESULT",
+        resourceId: taskId,
+        action: decision,
+        reason: decisionReason,
+        content: decisionContent,
+      });
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error, data: result.data },
+          { status: result.status || 400 }
+        );
+      }
+      const fresh = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: { owner: true, unit: true, assignees: { include: { person: true } } },
+      });
+      return NextResponse.json({ success: true, message: result.message, data: fresh });
+    };
 
     // YC-08: lãnh đạo loại nhiệm vụ trùng khỏi danh sách thực hiện (xóa mềm CANCELED,
     // bảo toàn liên kết/lịch sử/Snapshot; công chức thường bị chặn 403)
@@ -392,6 +428,55 @@ export async function PATCH(
       });
     }
 
+    // YC-09: quyết định nghiệm thu / trả lại qua ApprovalCase chung (không ghi tắt).
+    if (status === "COMPLETED" || status === "DONE") {
+      return decideTaskResult("AGREE", notes || null, null);
+    }
+    if (currentTask.status === "WAITING_REVIEW" && status === "IN_PROGRESS") {
+      return decideTaskResult(
+        "REJECT",
+        (notes || actualResultText || issueNotes || "Yêu cầu hoàn thiện thêm trước khi nghiệm thu.").trim(),
+        null
+      );
+    }
+
+    // YC-09: người phối hợp không được ghi đè kết quả chung của nhiệm vụ.
+    if (actualResultText !== undefined && !isOwner && !isLeader) {
+      return jsonError(
+        "Bạn là người phối hợp — không được ghi đè kết quả chung; chỉ người chủ trì hoặc lãnh đạo thẩm quyền mới được cập nhật kết quả.",
+        403
+      );
+    }
+    if (
+      actualResultText !== undefined &&
+      currentTask.status === "WAITING_REVIEW" &&
+      actualResultText !== currentTask.actualResultText
+    ) {
+      return jsonError("Nhiệm vụ đang chờ Lãnh đạo phê duyệt — không thể sửa kết quả đã trình.", 409);
+    }
+    // YC-09: người phối hợp không được đổi danh sách người nhận việc.
+    if (assigneeIds !== undefined && !isLeader) {
+      return jsonError("Chỉ Lãnh đạo phụ trách mới được điều chỉnh danh sách người phối hợp.", 403);
+    }
+    // Nội dung chỉ đạo: chỉ chủ trì hoặc lãnh đạo phụ trách được sửa (người phối hợp chỉ ghi tiến độ).
+    const touchesContentInput =
+      title !== undefined ||
+      description !== undefined ||
+      priority !== undefined ||
+      currentDeadline !== undefined ||
+      expectedResultText !== undefined ||
+      ownerId !== undefined;
+    if (touchesContentInput && !isOwner && !isLeader) {
+      return jsonError(
+        "Bạn là người phối hợp — chỉ được cập nhật tiến độ/nhật ký, không được sửa nội dung, hạn hay phân công nhiệm vụ.",
+        403
+      );
+    }
+    // Nội dung đang chờ duyệt bị khóa TRƯỚC mọi thao tác ghi phụ (kể cả bảng phân công).
+    if (currentTask.status === "WAITING_REVIEW" && touchesContentInput) {
+      return jsonError("Nhiệm vụ đang chờ Lãnh đạo phê duyệt — nội dung đã khóa, không thể chỉnh sửa.", 409);
+    }
+
     // YC-09: chuẩn hóa bước 5% ngay tại API
     if (progressPercent !== undefined && !isValidProgressStep(Number(progressPercent))) {
       return jsonError("Tiến độ phải là bội số của 5% trong khoảng 0–100 (ví dụ 5%, 15%, 25%)", 400);
@@ -407,6 +492,7 @@ export async function PATCH(
         targetStatus: status ?? null,
         deadlineChanged,
         isLeader,
+        isOwner,
       });
     } catch (err: any) {
       return jsonError(err.message, err.statusCode || 403);
@@ -467,6 +553,10 @@ export async function PATCH(
     const contentFields = ["title", "description", "priority", "currentDeadline", "expectedResultText", "ownerId", "assignees"];
     const touchesContent = changedFields.some((f) => contentFields.includes(f));
     const onlyStatusChange = status !== undefined && !touchesContent;
+    // Đã trình duyệt: khóa nội dung cho đến khi lãnh đạo quyết định (tránh sửa lén hồ sơ đang xem).
+    if (currentTask.status === "WAITING_REVIEW" && touchesContent) {
+      return jsonError("Nhiệm vụ đang chờ Lãnh đạo phê duyệt — nội dung đã khóa, không thể chỉnh sửa.", 409);
+    }
     if (
       (currentTask.status === "COMPLETED" || currentTask.status === "DONE" || currentTask.status === "CANCELED") &&
       touchesContent &&
