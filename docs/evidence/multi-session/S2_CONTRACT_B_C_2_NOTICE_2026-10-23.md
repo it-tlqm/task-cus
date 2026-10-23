@@ -2,7 +2,7 @@
 
 - **Session:** S2 — Phase B
 - **Branch:** `codex/v3-phase-b-revenue`
-- **Code commit B-C-2:** `1e18886`
+- **Code commit B-C-2:** `1e18886` + `b396bf6` + `dc209eb`
 - **Hợp đồng:** `docs/V3/DATA_CONTRACT_B_C_2026-10-23.md` — phiên bản `B-C-2`
 - **Thay thế:** `B-C-1` (commit `8d4f076`) — chỉ giữ để tra lịch sử.
 

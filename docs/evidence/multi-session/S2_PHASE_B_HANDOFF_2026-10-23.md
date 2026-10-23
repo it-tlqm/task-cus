@@ -19,7 +19,7 @@
 | Thông báo S0 + S3 ban đầu | `1827fe7` |
 | Backend/schema/permission | `08e6521` |
 | UI Dashboard + `/giao-ban` + cấu hình | `df99460` |
-| **Q9 dataSource + Q11 2 chữ số thập phân (B-C-2)** | **`1e18886`** + `b396bf6` (isOfficial entry API/evidence) |
+| **Q9 dataSource + Q11 2 chữ số thập phân (B-C-2)** | **`1e18886`** + `b396bf6` + `dc209eb` (isOfficial entry API, không chặn REAL bởi DEMO, evidence cuối) |
 | Handoff/docs/tests (commit này) | xem branch head |
 
 Không merge `main`, không deploy, không chạy migration trên Production.
