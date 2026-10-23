@@ -37,7 +37,7 @@ SESSION: S3
 YC: YC-06 / YC-07
 BRANCH: codex/v3-phase-c-metrics
 BASE_SHA: 50daed3 (docs) / a68d31e (code)
-COMMIT_SHA: (cập nhật sau commit APPROVED)
+COMMIT_SHA: 979cfab (helper + test + target UI mock + docs APPROVED)
 FILES_CHANGED:
   - docs/evidence/multi-session/S3/S3_CATALOG_REVIEW_2026-10-23.md
   - docs/evidence/multi-session/S3/S3_CONTRACT_QUESTIONS_TO_S0_2026-10-23.md
@@ -53,9 +53,10 @@ SCHEMA_OR_MIGRATION: NONE
 TESTS_PASS:
   - scripts/test-phase-c-contract.ts: 96/96 PASS (pure + SSR smoke, không DB/API)
   - npx tsc --noEmit: PASS
+  - npx prisma validate: PASS
+  - pnpm build: PASS (98 trang; warning jose/Edge và themeColor là warning sẵn có)
 TESTS_NOT_RUN:
   - test-yc26-29-api.ts / test-yc26-29-ui.ts: chưa chạy; chưa nối API/UI thật, chờ S2 schema.
-  - prisma validate/build: sẽ chạy sau khi có schema/API target-only.
 UI_EVIDENCE:
   - SSR smoke render component mock: PASS (G1–G7).
   - Chưa có browser screenshot vì chưa nối route thật.
