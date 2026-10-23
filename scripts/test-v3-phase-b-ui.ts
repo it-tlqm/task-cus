@@ -325,7 +325,7 @@ async function main() {
       );
       (btn as HTMLButtonElement | undefined)?.click();
     });
-    await cfg.waitForFunction(() => document.body.innerText.includes("Chỉ tiêu giao (BTC"), { timeout: 60000 });
+    await cfg.waitForFunction(() => document.body.innerText.includes("Chỉ tiêu giao — target-only"), { timeout: 60000 });
     await sleep(300);
     // Chọn THU_NSNN trong ô "chọn chỉ tiêu" để thấy danh sách target/trạng thái/lịch sử.
     await cfg.evaluate(() => {
@@ -343,25 +343,35 @@ async function main() {
     await sleep(800);
     const cfgText = norm(await cfg.evaluate(() => document.body.innerText));
     const cfgHtml = await cfg.content();
-    check("UI9. Tab Chỉ tiêu giao mở được", cfgText.includes("Chỉ tiêu giao (BTC / UBND / KH tháng"));
+    const labelCodes = await cfg.evaluate(() => {
+      const select = [...document.querySelectorAll("select")].find((s) =>
+        [...s.options].some((o) => o.value === "BTC")
+      ) as HTMLSelectElement | undefined;
+      return select ? [...select.options].map((o) => o.value) : [];
+    });
+    check("UI9. Tab Chỉ tiêu giao mở được (target-only)", cfgText.includes("Chỉ tiêu giao — target-only"));
     check("UI10. Có ô nguồn/căn cứ khi nhập chỉ tiêu", cfgHtml.includes("Nguồn / căn cứ"));
     check(
-      "UI11. Có lựa chọn loại đối chiếu tường minh (BTC/UBND cho kỳ Năm)",
-      cfgHtml.includes("Chỉ tiêu BTC (năm)") && cfgHtml.includes("Chỉ tiêu UBND tỉnh (năm)")
+      "UI11. Có lựa chọn loại chỉ tiêu/đối chiếu tường minh (BTC/UBND/KH tháng)",
+      ["BTC", "UBND", "KH_THANG", "KHAC"].every((code) => labelCodes.includes(code))
     );
-    check("UI12. Có trạng thái Đã nhập/Đã xác nhận/Đã chốt", cfgText.includes("Đã nhập / chưa xác nhận") || cfgText.includes("Đã xác nhận") || cfgText.includes("Đã chốt"));
+    check("UI12. Có trạng thái Đã nhập/Đã xác nhận/Đã chốt", cfgText.includes("Chỉ tiêu nháp") || cfgText.includes("Đã xác nhận") || cfgText.includes("Đã chốt"));
     check("UI17. Target DEMO hiển thị nhãn riêng theo dataSource (không dò nhãn)", cfgText.includes("DEMO"));
     await shot(cfg, "giao-ban-cau-hinh-target.png");
 
-    // Mở lịch sử của target DEMO đầu tiên nếu có
-    const historyClicked = await cfg.evaluate(() => {
-      const btn = [...document.querySelectorAll("button")].find((b) => (b.textContent || "").trim() === "Lịch sử");
+    // Mở lịch sử của target vừa tạo (tránh bấm nhầm nút ở dòng khác).
+    const historyClicked = await cfg.evaluate((tag) => {
+      const row = [...document.querySelectorAll("tr")].find((tr) => (tr.textContent || "").includes(tag));
+      const btn = row ? [...row.querySelectorAll("button")].find((b) => (b.textContent || "").trim() === "Lịch sử") : null;
       if (!btn) return false;
       (btn as HTMLButtonElement).click();
       return true;
-    });
-    await sleep(800);
-    const hasHistory = (await cfg.$('[data-testid="metric-history-modal"]')) !== null;
+    }, TAG);
+    await cfg
+      .waitForFunction(() => document.body.innerText.includes("Lịch sử chỉ tiêu giao"), { timeout: 30000 })
+      .catch(() => null);
+    const historyText = norm(await cfg.evaluate(() => document.body.innerText));
+    const hasHistory = historyText.includes("Lịch sử chỉ tiêu giao");
     check("UI13. Mở được lịch sử thay đổi chỉ tiêu giao", !historyClicked || hasHistory);
     if (hasHistory) await shot(cfg, "giao-ban-target-history.png");
     await cfg.close();
