@@ -9,12 +9,12 @@
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
 | S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `origin/main` + Phase A | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
-| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `244aa49` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
-| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `244aa49` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `244aa49` docs / `a68d31e` code | 3113 | `talung_v3_phase_c` | **WAIT_CONTRACT** |
-| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `244aa49` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12 |
-| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `244aa49` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
-| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `244aa49` docs / `a68d31e` code | — | — | **READY TO START — SPEC ONLY** |
+| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `50daed3` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
+| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `50daed3` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `50daed3` docs / `a68d31e` code | 3113 | `talung_v3_phase_c` | **WAIT_CONTRACT** |
+| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `50daed3` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12 |
+| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `50daed3` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
+| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `50daed3` docs / `a68d31e` code | — | — | **READY TO START — SPEC ONLY** |
 
 Ghi chú: baseline `a68d31e` là commit merge Phase A vào integration. Session branches được tạo từ baseline này trước khi bổ sung tài liệu S0; S0 sẽ fast-forward tài liệu bootstrap khi hoàn tất.
 

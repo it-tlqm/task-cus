@@ -357,13 +357,13 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 
 | Session | Trạng thái 23/10/2026 | Branch thực tế | SHA mới nhất | Test/UAT | Chặn / quyết định | Ready merge? |
 |---|---|---|---|---|---|---|
-| S0 — Integration | **READY TO START — Integration Manager**; baseline PASS; DB/port cách ly | `codex/v3-integration-yc01-13` | `244aa49` (docs) + `a68d31e` (code baseline) | Typecheck PASS, Prisma validate PASS, build PASS; Phase A 37/37, no-self 5/5, multi-product 36/36 | Chưa có lệnh release; chờ handoff S1–S6 | N/A — không merge `main`/không release |
-| S1 — Phase A QA | **READY TO START**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `244aa49` (docs start; code `a68d31e`) | 255 check báo cáo trước đó; 2 bộ còn chặn | Rehearsal migration; fixture/storage; UAT | NO |
-| S2 — Phase B | **READY TO START**; DB `talung_v3_phase_b`, port 3112; ưu tiên contract B/C | `codex/v3-phase-b-revenue` | `244aa49` (docs start; code `a68d31e`) | Chưa implement | B1/B2; contract B/C; không hard-code Excel | NO |
-| S3 — Phase C | **WAIT_CONTRACT**; DB `talung_v3_phase_c`, port 3113 | `codex/v3-phase-c-metrics` | `244aa49` (docs start; code `a68d31e`) | Chưa implement | Chờ S2/S0 chốt contract; C1 chỉ tiêu/chu kỳ/chiều đánh giá | NO |
-| S4 — Task Approval | **READY TO START**; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `244aa49` (docs start; code `a68d31e`) | Chưa implement | E8/E9/E12; không quality/team/stage/per-assignee | NO |
-| S5 — Roster | **READY TO START**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `244aa49` (docs start; code `a68d31e`) | Chưa implement | E13: notes ô trống, in Excel, giữ đổi người | NO |
-| S6 — Business Spec | **READY TO START — SPEC ONLY**; không DB/port | `codex/v3-approval-rules-spec` | `244aa49` (docs start; code `a68d31e`) | N/A | E9/E10/E11 | NO |
+| S0 — Integration | **READY TO START — Integration Manager**; baseline PASS; DB/port cách ly | `codex/v3-integration-yc01-13` | `50daed3` (start signal) + `a68d31e` (code baseline) | Typecheck PASS, Prisma validate PASS, build PASS; Phase A 37/37, no-self 5/5, multi-product 36/36 | Chưa có lệnh release; chờ handoff S1–S6 | N/A — không merge `main`/không release |
+| S1 — Phase A QA | **READY TO START**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `50daed3` (start signal; code `a68d31e`) | 255 check báo cáo trước đó; 2 bộ còn chặn | Rehearsal migration; fixture/storage; UAT | NO |
+| S2 — Phase B | **READY TO START**; DB `talung_v3_phase_b`, port 3112; ưu tiên contract B/C | `codex/v3-phase-b-revenue` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | B1/B2; contract B/C; không hard-code Excel | NO |
+| S3 — Phase C | **WAIT_CONTRACT**; DB `talung_v3_phase_c`, port 3113 | `codex/v3-phase-c-metrics` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | Chờ S2/S0 chốt contract; C1 chỉ tiêu/chu kỳ/chiều đánh giá | NO |
+| S4 — Task Approval | **READY TO START**; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | E8/E9/E12; không quality/team/stage/per-assignee | NO |
+| S5 — Roster | **READY TO START**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | E13: notes ô trống, in Excel, giữ đổi người | NO |
+| S6 — Business Spec | **READY TO START — SPEC ONLY**; không DB/port | `codex/v3-approval-rules-spec` | `50daed3` (start signal; code `a68d31e`) | N/A | E9/E10/E11 | NO |
 
 ### Nhật ký tích hợp (S0 điền sau, không xóa lịch sử)
 
@@ -371,8 +371,9 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 |---|---|---|---|---|---|---|
 | 23/10/2026 | Khởi tạo kế hoạch | — | — | — | Chưa có merge theo tài liệu này | — |
 | 23/10/2026 | S0 — Phase A baseline | `origin/main 4c7eb52` + Phase A `9534c6a` → `a68d31e`; docs `c10c643` | `a68d31e` merge `--no-ff` | `tsc --noEmit` PASS; `prisma validate` PASS; `pnpm build` PASS; Phase A 37/37; no-self 5/5; multi-product 36/36 trên `talung_v3_fixture_integration` | **PASS baseline** — chưa release, 2 bộ test Phase A còn chặn theo báo cáo | S0 |
+| 23/10/2026 | S0 — start signal S1–S6 | `244aa49` → `50daed3` | `50daed3` docs | DB từng worktree: localhost, đúng `talung_v3_*`, 24 accounts; docs hash identical; no Production | **READY** S1/S2/S4/S5/S6; **WAIT_CONTRACT** S3 | S0 |
 
-> **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `244aa49` (master + runtime matrix + assignment cards + baseline results). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
+> **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `50daed3` (master + runtime matrix + assignment cards + baseline results + start signal). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
 >
 > **Start signal 23/10/2026:** S1, S2, S4, S5, S6 = `READY TO START`; S3 = `WAIT_CONTRACT`. S0 đã kiểm tra kết nối DB từng worktree: tất cả trỏ `localhost:5432`, đúng database test `talung_v3_*`, không có Production. S6 SPEC ONLY không có DB. Prompt khởi động nằm trong `docs/V3/SESSION_ASSIGNMENTS_2026-10-23.md`.
 
