@@ -138,6 +138,26 @@ export async function verifyTaskAccess(
     if (isUnitAuthorized || isOwner || isAssignee) {
       return { allowed: true, task };
     }
+
+    // YC-11: người phụ trách trực tiếp (PersonSupervision đang hiệu lực) được xem
+    // nhiệm vụ của người mình phụ trách để thực hiện pre-check — kể cả khác bộ phận.
+    // Chỉ mở quyền ĐỌC; quyền pre-check/final vẫn kiểm tra theo tuyến ở service.
+    if (user.personId) {
+      const now = new Date();
+      const supervised = await prisma.personSupervision.findFirst({
+        where: {
+          managerPersonId: user.personId,
+          status: "CONFIRMED",
+          effectiveFrom: { lte: now },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }],
+          subordinatePersonId: {
+            in: [task.ownerId, ...task.assignees.map((a: any) => a.personId)],
+          },
+        },
+        select: { id: true },
+      });
+      if (supervised) return { allowed: true, task };
+    }
   } else if (action === "WRITE") {
     // Được sửa nếu là Trưởng bộ phận của đơn vị đó, hoặc là chủ sở hữu / người được phân công
     const isDeptLeader = user.role === "DEPARTMENT_LEADER" && isUnitAuthorized;

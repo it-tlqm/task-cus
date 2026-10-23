@@ -13,6 +13,10 @@ import { isTaskLeader, isTerminalTaskStatus } from "./task-transitions";
 import { recordAuditEvent } from "./audit";
 import { createNotification } from "./notifications";
 import { advisoryLock, isValidProgressStep } from "./idempotency";
+import { ParticipantError } from "./task-participant-error";
+import { createRouteSnapshotForSubmission, isPrecheckEnabled } from "./approval-route";
+
+export { ParticipantError };
 
 export const PARTICIPANT_STATUSES = [
   "NOT_STARTED",
@@ -24,17 +28,6 @@ export const PARTICIPANT_STATUSES = [
 ] as const;
 
 export type ParticipantStatus = (typeof PARTICIPANT_STATUSES)[number];
-
-export class ParticipantError extends Error {
-  statusCode: number;
-  data?: any;
-  constructor(message: string, statusCode = 400, data?: any) {
-    super(message);
-    this.name = "ParticipantError";
-    this.statusCode = statusCode;
-    this.data = data;
-  }
-}
 
 const STATUS_LABEL: Record<string, string> = {
   NOT_STARTED: "Chưa bắt đầu",
@@ -458,6 +451,15 @@ export async function decideParticipantPart(
     });
     if (!row) throw new ParticipantError("Không tìm thấy phần việc.", 404);
 
+    // YC-11: khi bật pre-check, không cho ACCEPT trực tiếp để tránh bỏ qua bước 1.
+    // Legacy row (Task cũ) giữ hành vi Phase 1.
+    if (action === "ACCEPT" && !row.legacy && isPrecheckEnabled()) {
+      throw new ParticipantError(
+        "Đã bật kiểm tra sơ bộ — dùng thao tác Pre-check đạt/Trả lại thay vì chấp nhận phần việc.",
+        409
+      );
+    }
+
     const textNote = (note || "").trim();
     if ((action === "RETURN" || action === "EXEMPT") && textNote.length < 3) {
       throw new ParticipantError(
@@ -617,9 +619,17 @@ export async function submitOverallResult(
     const round = await getCurrentSubmissionRound(tx, taskId);
     const participants = await listParticipantResults(taskId, tx);
 
+    // YC-11: trước khi nộp chung, mọi phần bắt buộc phải được pre-check.
+    // Legacy (không có participant row / row legacy) giữ final-only.
+    const precheckEnabled = isPrecheckEnabled();
+
     // Owner cũng có phần việc: đánh dấu đã báo khi nộp chung.
+    // Khi bật pre-check, owner phải báo phần mình trước để pre-checker xử lý;
+    // không tự đánh dấu SUBMITTED tại bước nộp chung.
     const ownerRow = participants.find((p: any) => p.role === "OWNER");
-    if (ownerRow) {
+    const ownerAlreadyReported =
+      !!ownerRow && ["SUBMITTED", "ACCEPTED", "EXEMPT"].includes(String(ownerRow.partStatus));
+    if (ownerRow && (!precheckEnabled || !ownerAlreadyReported)) {
       await tx.taskParticipantResult.update({
         where: { id: ownerRow.id },
         data: {
@@ -668,6 +678,12 @@ export async function submitOverallResult(
         submittedById: user.personId,
       },
     });
+
+    // YC-11: chốt tuyến tại thời điểm nộp. Chỉ tạo được khi tất cả phần bắt buộc
+    // đã pre-check PASS và route READY; legacy trả null (final-only).
+    if (precheckEnabled) {
+      await createRouteSnapshotForSubmission(tx, { taskId, round, user });
+    }
 
     const updatedTask = await tx.task.update({
       where: { id: taskId },

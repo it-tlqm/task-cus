@@ -1,0 +1,46 @@
+{
+  "suite": "S6 post-release — YC-11 Phase 3 + YC-10 Phase 2b",
+  "date": "2026-10-24",
+  "branch": "codex/v3-post-release",
+  "database": "talung_v3_approval_impl_quality",
+  "baseUrl": "http://localhost:3117",
+  "productionTouched": false,
+  "qualityGates": {
+    "tsc": "PASS",
+    "prisma": "PASS",
+    "build": "PASS"
+  },
+  "flagsOn": {
+    "V3_YC11_PRECHECK": true,
+    "V3_YC10_QUALITY": true,
+    "tests": [
+      { "name": "test-v3-yc11-precheck", "pass": 78, "fail": 0 },
+      { "name": "test-yc11-ui", "pass": 21, "fail": 0 },
+      { "name": "test-v3-yc10-quality", "pass": 120, "fail": 0 },
+      { "name": "test-yc10-ui", "pass": 15, "fail": 0 }
+    ]
+  },
+  "flagsOffRegressions": [
+    { "name": "test-v3-yc09-per-person", "pass": 42, "fail": 0 },
+    { "name": "test-v3-task-approval-hardening", "pass": 40, "fail": 0 },
+    { "name": "test-v3-no-self-approval", "pass": 5, "fail": 0 },
+    { "name": "test-v3-review-flow", "pass": 38, "fail": 0 },
+    { "name": "test-yc37-approval-flow", "pass": 25, "fail": 0 },
+    { "name": "test-v3-e2e-flow", "pass": 40, "fail": 0 },
+    { "name": "test-yc38-submit-approval", "pass": 36, "fail": 0 },
+    { "name": "test-yc38-locked-task", "pass": 15, "fail": 0 },
+    { "name": "test-task-transitions", "pass": 10, "fail": 0 },
+    { "name": "test-yc09-phase1-ui", "pass": 5, "fail": 0 },
+    { "name": "test-monthly-score", "pass": 1, "fail": 0, "note": "SCORE-LOGIC-OK" },
+    { "name": "test-yc33-scoring-parity", "pass": 38, "fail": 0 },
+    { "name": "test-v3-permissions", "pass": 24, "fail": 0 }
+  ],
+  "migrationRehearsal": {
+    "status": "PASS",
+    "evidence": "docs/evidence/phase3/MIGRATION_REHEARSAL_2026-10-24.json",
+    "apply": true,
+    "rollback": true,
+    "reapply": true,
+    "dataUnchanged": true
+  }
+}
