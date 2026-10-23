@@ -7,6 +7,11 @@ import { getIsoWeekBounds, getVnDateParts } from "@/lib/period-helper";
 const D = Prisma.Decimal;
 export type Dec = Prisma.Decimal;
 
+/** B-C-2/Q11: API trả chuỗi tỷ lệ 2 chữ số thập phân, dấu phẩy vi-VN. */
+export function formatPercentText(value: number): string {
+  return value.toFixed(2).replace(".", ",");
+}
+
 // ============================================================
 // Ngày (date-only, mốc UTC 00:00 — khớp cột DATE trong Postgres)
 // ============================================================
@@ -46,8 +51,24 @@ export function daysInMonth(year: number, month: number): number {
 // Quyền cấu hình & nhập liệu
 // ============================================================
 
+/**
+ * YC-02/B-C-2 — tách quyền nghiệp vụ khỏi đặc quyền kỹ thuật `system.config`.
+ * `metrics.config`: cấu hình chỉ tiêu/chỉ tiêu giao/mốc/phân công.
+ * `metrics.entry_all`: nhập mọi chỉ tiêu không cần từng assignment.
+ * UNIT_LEADER được hưởng theo vai trò điều hành (checkPermission xử lý);
+ * SYSTEM_ADMIN chỉ có khi được cấp tường minh.
+ */
+export function isMetricsConfigurator(user: SessionUser): boolean {
+  return checkPermission(user, "metrics.config");
+}
+
+export function isMetricsEntryAdmin(user: SessionUser): boolean {
+  return checkPermission(user, "metrics.entry_all");
+}
+
+/** Giữ tên cũ cho các call-site cấu hình; KHÔNG còn phụ thuộc system.config. */
 export function isMetricsAdmin(user: SessionUser): boolean {
-  return user.role === "UNIT_LEADER" || checkPermission(user, "system.config");
+  return isMetricsConfigurator(user);
 }
 
 export interface ResolvedAssignment {
@@ -67,7 +88,7 @@ export interface ResolvedEntryPerms {
 }
 
 export async function resolveEntryPerms(user: SessionUser): Promise<ResolvedEntryPerms> {
-  if (isMetricsAdmin(user)) {
+  if (isMetricsEntryAdmin(user)) {
     return { all: true, assignments: [], allowBackdateDays: -1 };
   }
   const rows = await prisma.metricEntryAssignment.findMany({
@@ -195,6 +216,7 @@ interface EntryRow {
   entryDate: Date;
   valueNumeric: Prisma.Decimal;
   status: string;
+  dataSource: string;
   enteredById: string;
   updatedAt: Date;
 }
@@ -206,6 +228,7 @@ interface BaselineRow {
   asOfDate: Date;
   valueNumeric: Prisma.Decimal;
   status: string;
+  dataSource: string;
 }
 
 export interface MetricCols {
@@ -239,7 +262,23 @@ export interface MetricSummaryRow {
     cols: MetricCols;
     latestDate: string | null;
   }[];
-  targets: { label: string; periodType: string; periodNo: number | null; targetValue: number; percent: number | null }[];
+  targets: {
+    id: string;
+    label: string;
+    classificationId: string;
+    periodType: string;
+    year: number;
+    periodNo: number | null;
+    targetValue: number;
+    percent: number | null;
+    percentText: string | null;
+    comparisonKind: string;
+    status: string;
+    dataSource: string;
+    isOfficial: boolean;
+    sourceNote: string | null;
+    confirmedAt: string | null;
+  }[];
   latest: { date: string; value: number; status: string; byName: string | null } | null;
   missingDates: string[];
   latestDate: string | null;
@@ -261,13 +300,13 @@ export interface MetricSummaryGroup {
  * tại khu vực số liệu, tránh hiển thị số liệu dùng thử như số liệu chính thức.
  */
 export interface MetricDataQuality {
-  /** Số mốc lũy kế đã xác nhận có ghi chú [DEMO... */
+  /** Số mốc lũy kế có dataSource = DEMO. */
   demoBaselines: number;
   /** Số bản ghi nhập trong kỳ do tài khoản DEMO nhập (mã người bắt đầu bằng "DEMO") */
   demoEntries: number;
   /** Số bản ghi nhập trong kỳ do người thật nhập */
   realEntries: number;
-  /** Số chỉ tiêu giao gắn nhãn [DEMO... */
+  /** Số chỉ tiêu giao có dataSource = DEMO. */
   demoTargets: number;
   /** Có thành phần DEMO trong nguồn số liệu đang hiển thị */
   demoPresent: boolean;
@@ -336,7 +375,8 @@ export async function computeMetricSummary(
     }),
     prisma.metricPlanTarget.findMany({ where: { metricId: { in: metricIds } } }),
     prisma.metricBaseline.findMany({
-      where: { metricId: { in: metricIds }, status: "CONFIRMED" },
+      // B-C-2: mốc đã xác nhận hoặc đã chốt đều được dùng; PROPOSED thì không.
+      where: { metricId: { in: metricIds }, status: { in: ["CONFIRMED", "LOCKED"] } },
     }),
   ]);
 
@@ -359,6 +399,7 @@ export async function computeMetricSummary(
           entryDate: true,
           valueNumeric: true,
           status: true,
+          dataSource: true,
           enteredById: true,
           updatedAt: true,
         },
@@ -382,16 +423,15 @@ export async function computeMetricSummary(
   // Tên người nhập cho "latest" + mã người (YC-26: nhận diện DEMO)
   const personIds = Array.from(new Set(entries.map((e) => e.enteredById)));
   const persons = personIds.length
-    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true, code: true } })
+    ? await prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true } })
     : [];
   const personName = new Map(persons.map((p) => [p.id, p.fullName]));
-  const personCode = new Map(persons.map((p) => [p.id, p.code]));
 
-  // --- YC-26: cờ chất lượng dữ liệu — phát hiện DEMO lẫn trong nguồn số liệu ---
-  const demoBaselines = baselines.filter((b) => /\[DEMO/i.test(b.sourceNote || "")).length;
-  const demoEntries = entries.filter((e) => (personCode.get(e.enteredById) || "").toUpperCase().startsWith("DEMO")).length;
+  // --- B-C-2/Q9: cờ chất lượng dữ liệu đọc từ data_source, KHÔNG dò nhãn/tên tài khoản ---
+  const demoBaselines = baselines.filter((b) => b.dataSource === "DEMO").length;
+  const demoEntries = entries.filter((e) => e.dataSource === "DEMO").length;
   const realEntries = entries.length - demoEntries;
-  const demoTargets = targets.filter((t) => /^\s*\[DEMO/i.test(t.label)).length;
+  const demoTargets = targets.filter((t) => t.dataSource === "DEMO").length;
   const dataQuality: MetricDataQuality = {
     demoBaselines,
     demoEntries,
@@ -592,19 +632,48 @@ export async function computeMetricSummary(
         cols = calcCols(m.id, "");
       }
 
-      // % chỉ tiêu giao
-      const metricTargets = (targetsByMetric.get(m.id) || []).map((t) => {
-        const base =
-          t.classificationId && t.classificationId !== ""
-            ? calcCols(m.id, t.classificationId)
-            : cols;
-        const col =
-          t.periodType === "YEAR" ? base.year : t.periodType === "MONTH" ? base.month : base.quarter;
-        const targetValue = Number(t.valueNumeric);
-        const percent =
-          col !== null && targetValue > 0 ? Math.round((col / targetValue) * 1000) / 10 : null;
-        return { label: t.label, periodType: t.periodType, periodNo: t.periodNo, targetValue, percent };
-      });
+      // % chỉ tiêu giao — chỉ lấy chỉ tiêu áp dụng đúng kỳ đang xem, không trộn năm/kỳ khác.
+      const metricTargets = (targetsByMetric.get(m.id) || [])
+        .filter(
+          (t) =>
+            t.year === year &&
+            ((t.periodType === "YEAR") ||
+              (t.periodType === "QUARTER" && t.periodNo === quarter) ||
+              (t.periodType === "MONTH" && t.periodNo === month))
+        )
+        .map((t) => {
+          const base =
+            t.classificationId && t.classificationId !== ""
+              ? calcCols(m.id, t.classificationId)
+              : cols;
+          const col =
+            t.periodType === "YEAR" ? base.year : t.periodType === "MONTH" ? base.month : base.quarter;
+          const targetValue = Number(t.valueNumeric);
+          // B-C-2/Q9: chỉ target REAL + đã xác nhận/chốt mới công bố % chính thức.
+          const isOfficial = t.dataSource === "REAL";
+          const official = isOfficial && (t.status === "CONFIRMED" || t.status === "LOCKED");
+          const percent =
+            official && col !== null && targetValue > 0
+              ? Math.round((col / targetValue) * 10000) / 100
+              : null;
+          return {
+            id: t.id,
+            label: t.label,
+            classificationId: t.classificationId,
+            periodType: t.periodType,
+            year: t.year,
+            periodNo: t.periodNo,
+            targetValue,
+            percent,
+            percentText: percent === null ? null : formatPercentText(percent),
+            comparisonKind: t.comparisonKind,
+            status: t.status,
+            dataSource: t.dataSource,
+            isOfficial,
+            sourceNote: t.sourceNote,
+            confirmedAt: t.confirmedAt ? t.confirmedAt.toISOString() : null,
+          };
+        });
 
       // Lần nhập gần nhất
       const latest = latestUpTo(list, yearRange.end);
@@ -711,29 +780,47 @@ export function parseNumberInput(input: string | number): string | null {
 }
 
 // ============================================================
-// YC-26 — Bảng so sánh kết quả thu:
-//   Chỉ tiêu BTC năm · Chỉ tiêu UBND năm · Kế hoạch tháng ·
+// YC-01/B-C-2 — Bảng so sánh kết quả thu NSNN:
+//   Chỉ tiêu BTC năm · Chỉ tiêu UBND năm · Kế hoạch tháng HQTL ·
 //   So với tháng trước · So với cùng kỳ năm trước
 //
-// Quy ước nguồn (chờ Hải quan xác nhận, hiển thị minh bạch tử số/mẫu số):
-//   - Chỉ tiêu Bộ Tài chính: chỉ tiêu giao YEAR có nhãn chứa "BTC" / "tài chính".
-//   - Chỉ tiêu UBND tỉnh:    chỉ tiêu giao YEAR có nhãn chứa "UBND" / "uỷ ban".
-//   - Kế hoạch tháng:        chỉ tiêu giao MONTH đúng tháng đang xem; nếu nhiều
-//                            bản ghi thì ưu tiên nhãn chứa "KH"/"kế hoạch", còn lại
-//                            coi là chưa đủ quy tắc (ambiguous).
-//   - Tháng trước / cùng kỳ: so cột "Lũy kế tháng" với cột "Lũy kế tháng" của
-//                            tháng trước / tháng cùng kỳ năm trước (cùng quy tắc
-//                            mốc lũy kế đang dùng cho mọi bảng số liệu).
-//   - Chỉ hiển thị tỷ lệ khi có ĐỦ tử số và mẫu số hợp lệ; thiếu dữ liệu -> null
-//     (UI hiển thị "Chưa có dữ liệu đối chiếu").
+// Quy ước:
+//   - BTC/UBND/KH tháng chỉ lấy target có `comparisonKind` tường minh, đúng kỳ/năm,
+//     status CONFIRMED/LOCKED, dataSource REAL. KHÔNG dò chuỗi nhãn.
+//   - Tháng trước / cùng kỳ: B1 CHƯA CHỐT. API trả giá trị kỳ đối chiếu (nếu có)
+//     nhưng percent luôn null và ruleState=PENDING_B1 — không công bố % thiếu căn cứ.
+//   - Tỷ lệ chỉ tính khi đủ tử số, mẫu số > 0; thiếu -> null (UI "Chưa xác định").
 // ============================================================
 
+export const COMPARISON_CONTRACT_VERSION = "B-C-2";
+
+export type ComparisonRuleState = "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET";
+export type ComparisonDiffRuleState = "PENDING_B1";
+
 export interface ComparisonTargetBlock {
+  targetId: string | null;
   label: string | null;
+  comparisonKind: string | null;
   targetValue: number | null;
   percent: number | null;
+  percentText: string | null;
   periodLabel: string;
+  basis: "YEAR_CUM" | "MONTH_CUM";
+  ruleState: ComparisonRuleState;
   ambiguous: boolean;
+  status: string | null;
+  dataSource: string | null;
+  isOfficial: boolean;
+  sourceNote: string | null;
+  confirmedAt: string | null;
+}
+
+export interface ComparisonDiffBlock {
+  value: number | null;
+  percent: null;
+  label: string;
+  basis: "FULL_PREVIOUS_MONTH_CUM" | "FULL_MONTH_LAST_YEAR_CUM";
+  ruleState: ComparisonDiffRuleState;
 }
 
 export interface MetricComparisonRow {
@@ -746,23 +833,97 @@ export interface MetricComparisonRow {
   decimals: number;
   yearCum: number | null;
   monthCum: number | null;
+  latestDate: string | null;
   btc: ComparisonTargetBlock;
   ubnd: ComparisonTargetBlock;
   monthPlan: ComparisonTargetBlock;
-  prevMonth: { value: number | null; percent: number | null; label: string };
-  samePeriodLastYear: { value: number | null; percent: number | null; label: string };
+  prevMonth: ComparisonDiffBlock;
+  samePeriodLastYear: ComparisonDiffBlock;
 }
 
 export interface MetricComparisonResult {
+  version: string;
+  rule: {
+    targetSource: "EXPLICIT_COMPARISON_KIND";
+    prevMonth: "PENDING_B1";
+    samePeriodLastYear: "PENDING_B1";
+    notes: string;
+  };
   anchors: { year: number; month: number; monthLabel: string; prevMonthLabel: string; lastYearLabel: string };
   rows: MetricComparisonRow[];
 }
 
-const diffPercent = (num: number | null, den: number | null): number | null =>
-  num !== null && den !== null && den !== 0 ? Math.round(((num - den) / den) * 1000) / 10 : null;
-
 const ratioPercent = (num: number | null, den: number | null): number | null =>
-  num !== null && den !== null && den > 0 ? Math.round((num / den) * 1000) / 10 : null;
+  num !== null && den !== null && den > 0 ? Math.round((num / den) * 10000) / 100 : null;
+
+type TargetRow = MetricSummaryRow["targets"][number];
+
+function comparisonTargetBlock(
+  candidates: TargetRow[],
+  num: number | null,
+  periodLabel: string,
+  kind: string,
+  basis: "YEAR_CUM" | "MONTH_CUM"
+): ComparisonTargetBlock {
+  if (candidates.length === 0) {
+    return {
+      targetId: null,
+      label: null,
+      comparisonKind: kind,
+      targetValue: null,
+      percent: null,
+      percentText: null,
+      periodLabel,
+      basis,
+      ruleState: "NO_TARGET",
+      ambiguous: false,
+      status: null,
+      dataSource: null,
+      isOfficial: false,
+      sourceNote: null,
+      confirmedAt: null,
+    };
+  }
+  if (candidates.length > 1) {
+    return {
+      targetId: null,
+      label: null,
+      comparisonKind: kind,
+      targetValue: null,
+      percent: null,
+      percentText: null,
+      periodLabel,
+      basis,
+      ruleState: "AMBIGUOUS",
+      ambiguous: true,
+      status: null,
+      dataSource: null,
+      isOfficial: false,
+      sourceNote: null,
+      confirmedAt: null,
+    };
+  }
+  const t = candidates[0];
+  const official = t.isOfficial && (t.status === "CONFIRMED" || t.status === "LOCKED");
+  const percent = official ? ratioPercent(num, t.targetValue) : null;
+  return {
+    targetId: t.id,
+    label: t.label,
+    comparisonKind: kind,
+    targetValue: t.targetValue,
+    percent,
+    percentText: percent === null ? null : formatPercentText(percent),
+    periodLabel,
+    basis,
+    ruleState: official ? "OFFICIAL" : "PROPOSED",
+    ambiguous: false,
+    status: t.status,
+    dataSource: t.dataSource,
+    isOfficial: t.isOfficial,
+    sourceNote: t.sourceNote,
+    confirmedAt: t.confirmedAt,
+  };
+}
 
 export async function computeMetricComparison(
   anchors: SummaryAnchors,
@@ -783,40 +944,18 @@ export async function computeMetricComparison(
   const lyById = new Map<string, MetricSummaryRow>();
   for (const g of lastYearSummary.groups) for (const m of g.metrics) lyById.set(m.id, m);
 
-  const block = (
-    t: { label: string; targetValue: number } | null,
-    num: number | null,
-    periodLabel: string
-  ): ComparisonTargetBlock => ({
-    label: t?.label ?? null,
-    targetValue: t?.targetValue ?? null,
-    percent: t ? ratioPercent(num, t.targetValue) : null,
-    periodLabel,
-    ambiguous: false,
-  });
-
   const rows: MetricComparisonRow[] = [];
   for (const g of baseSummary.groups) {
     for (const m of g.metrics) {
-      // KHÔNG dùng chỉ tiêu giao gắn nhãn [DEMO...] làm nguồn đối chiếu chính thức
-      // (tránh hiển thị dữ liệu DEMO như số liệu thật — quy ước YC-24).
-      const officialTargets = m.targets.filter((t) => !/^\s*\[DEMO/i.test(t.label));
+      // B-C-2/Q9: chỉ dùng target REAL (cờ dữ liệu) — KHÔNG dò nhãn.
+      // Chỉ so sánh ở phạm vi TỔNG (classificationId rỗng) để khớp cột lũy kế tổng.
+      const officialTargets = m.targets.filter((t) => t.isOfficial && !t.classificationId);
       // Chỉ lấy chỉ tiêu có nguồn đối chiếu chính thức hoặc đang hiển thị trên Trang chủ.
       if (officialTargets.length === 0 && !m.showOnDashboard) continue;
 
-      const yearTargets = officialTargets.filter((t) => t.periodType === "YEAR");
-      const btcT = yearTargets.find((t) => /btc|tài chính/i.test(t.label)) || null;
-      const ubndT = yearTargets.find((t) => /ubnd|uỷ ban|ủy ban/i.test(t.label)) || null;
-
-      const monthTargets = officialTargets.filter((t) => t.periodType === "MONTH" && t.periodNo === month);
-      let monthT: { label: string; targetValue: number } | null = null;
-      let monthAmbiguous = false;
-      if (monthTargets.length === 1) monthT = monthTargets[0];
-      else if (monthTargets.length > 1) {
-        const kh = monthTargets.find((t) => /kh|kế hoạch/i.test(t.label));
-        if (kh) monthT = kh;
-        else monthAmbiguous = true;
-      }
+      const btcT = officialTargets.filter((t) => t.comparisonKind === "BTC_YEAR");
+      const ubndT = officialTargets.filter((t) => t.comparisonKind === "UBND_YEAR");
+      const monthT = officialTargets.filter((t) => t.comparisonKind === "MONTH_PLAN");
 
       const prevM = prevById.get(m.id);
       const lyM = lyById.get(m.id);
@@ -833,22 +972,37 @@ export async function computeMetricComparison(
         decimals: m.decimals,
         yearCum: m.cols.year,
         monthCum: m.cols.month,
-        btc: block(btcT, m.cols.year, `Năm ${year}`),
-        ubnd: block(ubndT, m.cols.year, `Năm ${year}`),
-        monthPlan: {
-          label: monthT?.label ?? null,
-          targetValue: monthT?.targetValue ?? null,
-          percent: monthT ? ratioPercent(m.cols.month, monthT.targetValue) : null,
-          periodLabel: `Tháng ${month}/${year}`,
-          ambiguous: monthAmbiguous,
+        latestDate: m.latestDate,
+        btc: comparisonTargetBlock(btcT, m.cols.year, `Năm ${year}`, "BTC_YEAR", "YEAR_CUM"),
+        ubnd: comparisonTargetBlock(ubndT, m.cols.year, `Năm ${year}`, "UBND_YEAR", "YEAR_CUM"),
+        monthPlan: comparisonTargetBlock(monthT, m.cols.month, `Tháng ${month}/${year}`, "MONTH_PLAN", "MONTH_CUM"),
+        // B1 CHƯA CHỐT: chỉ trả giá trị đối chiếu, KHÔNG trả phần trăm.
+        prevMonth: {
+          value: prevValue,
+          percent: null,
+          label: `Tháng ${prevMonth}/${prevYear}`,
+          basis: "FULL_PREVIOUS_MONTH_CUM",
+          ruleState: "PENDING_B1",
         },
-        prevMonth: { value: prevValue, percent: diffPercent(m.cols.month, prevValue), label: `Tháng ${prevMonth}/${prevYear}` },
-        samePeriodLastYear: { value: lyValue, percent: diffPercent(m.cols.month, lyValue), label: `Tháng ${month}/${year - 1}` },
+        samePeriodLastYear: {
+          value: lyValue,
+          percent: null,
+          label: `Tháng ${month}/${year - 1}`,
+          basis: "FULL_MONTH_LAST_YEAR_CUM",
+          ruleState: "PENDING_B1",
+        },
       });
     }
   }
 
   return {
+    version: COMPARISON_CONTRACT_VERSION,
+    rule: {
+      targetSource: "EXPLICIT_COMPARISON_KIND",
+      prevMonth: "PENDING_B1",
+      samePeriodLastYear: "PENDING_B1",
+      notes: "Chưa chốt so cùng số ngày hay cả tháng; API không trả % cho 2 dòng này.",
+    },
     anchors: {
       year,
       month,

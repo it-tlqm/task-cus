@@ -10,6 +10,7 @@ import {
   parseNumberInput,
   dateOnlyFromStr,
   dateOnlyToStr,
+  todayVnDateOnly,
   defaultUnitLabel,
 } from "@/server/metrics";
 
@@ -19,6 +20,9 @@ const VALUE_KINDS = ["FLOW", "BALANCE", "DERIVED"];
 const UNIT_TYPES = ["VND", "USD", "COUNT"];
 const PERIOD_TYPES = ["YEAR", "QUARTER", "MONTH"];
 const CUM_KINDS = ["MONTH", "QUARTER", "YEAR", "LEDGER"];
+// B-C-1: loại đối chiếu phải được cấu hình tường minh, không dò chuỗi nhãn.
+const COMPARISON_KINDS = ["NONE", "BTC_YEAR", "UBND_YEAR", "MONTH_PLAN"];
+const DATA_SOURCES = ["REAL", "DEMO"];
 
 function str(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -48,6 +52,72 @@ export async function GET(req: NextRequest) {
     const user = await authenticateRequest(req);
     if (!user) return jsonError("Yêu cầu đăng nhập", 401);
     if (!isMetricsAdmin(user)) return jsonError("Chỉ lãnh đạo/quản trị được xem cấu hình số liệu", 403);
+
+    // ---- Lịch sử chỉ tiêu giao / mốc lũy kế (YC-02) ----
+    const { searchParams } = new URL(req.url);
+    const historyType = searchParams.get("historyType");
+    const historyId = searchParams.get("historyId");
+    if (historyType && historyId) {
+      if (historyType === "target") {
+        const revisions = await prisma.metricPlanTargetRevision.findMany({
+          where: { targetId: historyId },
+          orderBy: { editedAt: "desc" },
+          take: 100,
+        });
+        const ids = Array.from(new Set(revisions.map((r) => r.editedById)));
+        const people = ids.length
+          ? await prisma.person.findMany({ where: { id: { in: ids } }, select: { id: true, fullName: true } })
+          : [];
+        const names = new Map(people.map((p) => [p.id, p.fullName]));
+        return NextResponse.json({
+          success: true,
+          historyType,
+          revisions: revisions.map((r) => ({
+            id: r.id,
+            action: r.action,
+            oldValue: r.oldValue === null ? null : Number(r.oldValue),
+            newValue: r.newValue === null ? null : Number(r.newValue),
+            oldStatus: r.oldStatus,
+            newStatus: r.newStatus,
+            oldSourceNote: r.oldSourceNote,
+            newSourceNote: r.newSourceNote,
+            reason: r.reason,
+            editedByName: names.get(r.editedById) || null,
+            editedAt: r.editedAt.toISOString(),
+          })),
+        });
+      }
+      if (historyType === "baseline") {
+        const revisions = await prisma.metricBaselineRevision.findMany({
+          where: { baselineId: historyId },
+          orderBy: { editedAt: "desc" },
+          take: 100,
+        });
+        const ids = Array.from(new Set(revisions.map((r) => r.editedById)));
+        const people = ids.length
+          ? await prisma.person.findMany({ where: { id: { in: ids } }, select: { id: true, fullName: true } })
+          : [];
+        const names = new Map(people.map((p) => [p.id, p.fullName]));
+        return NextResponse.json({
+          success: true,
+          historyType,
+          revisions: revisions.map((r) => ({
+            id: r.id,
+            action: r.action,
+            oldValue: r.oldValue === null ? null : Number(r.oldValue),
+            newValue: r.newValue === null ? null : Number(r.newValue),
+            oldStatus: r.oldStatus,
+            newStatus: r.newStatus,
+            oldSourceNote: r.oldSourceNote,
+            newSourceNote: r.newSourceNote,
+            reason: r.reason,
+            editedByName: names.get(r.editedById) || null,
+            editedAt: r.editedAt.toISOString(),
+          })),
+        });
+      }
+      return jsonError("Loại lịch sử không hợp lệ", 400);
+    }
 
     const groups = await prisma.metricGroup.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
     const metrics = await prisma.metricDefinition.findMany({
@@ -82,9 +152,16 @@ export async function GET(req: NextRequest) {
 
     const personIds = new Set<string>();
     for (const a of assignments) personIds.add(a.personId);
+    for (const t of targets) {
+      if (t.proposedById) personIds.add(t.proposedById);
+      if (t.confirmedById) personIds.add(t.confirmedById);
+      if (t.lockedById) personIds.add(t.lockedById);
+      if (t.updatedById) personIds.add(t.updatedById);
+    }
     for (const b of baselines) {
       if (b.proposedById) personIds.add(b.proposedById);
       if (b.confirmedById) personIds.add(b.confirmedById);
+      if (b.lockedById) personIds.add(b.lockedById);
     }
     const extraPersons = personIds.size
       ? await prisma.person.findMany({
@@ -114,6 +191,18 @@ export async function GET(req: NextRequest) {
         year: t.year,
         periodNo: t.periodNo,
         valueBase: Number(t.valueNumeric),
+        comparisonKind: t.comparisonKind,
+        sourceNote: t.sourceNote,
+        dataSource: t.dataSource,
+        isOfficial: t.dataSource === "REAL",
+        status: t.status,
+        proposedByName: t.proposedById ? nameById.get(t.proposedById) || null : null,
+        proposedAt: t.createdAt.toISOString(),
+        confirmedByName: t.confirmedById ? nameById.get(t.confirmedById) || null : null,
+        confirmedAt: t.confirmedAt ? t.confirmedAt.toISOString() : null,
+        lockedByName: t.lockedById ? nameById.get(t.lockedById) || null : null,
+        lockedAt: t.lockedAt ? t.lockedAt.toISOString() : null,
+        updatedByName: t.updatedById ? nameById.get(t.updatedById) || null : null,
         note: t.note,
       });
       targetsByMetric.set(t.metricId, arr);
@@ -129,10 +218,15 @@ export async function GET(req: NextRequest) {
         asOfDate: dateOnlyToStr(b.asOfDate),
         valueBase: Number(b.valueNumeric),
         sourceNote: b.sourceNote,
+        dataSource: b.dataSource,
+        isOfficial: b.dataSource === "REAL",
         status: b.status,
         proposedByName: b.proposedById ? nameById.get(b.proposedById) || null : null,
+        proposedAt: b.createdAt.toISOString(),
         confirmedByName: b.confirmedById ? nameById.get(b.confirmedById) || null : null,
         confirmedAt: b.confirmedAt ? b.confirmedAt.toISOString() : null,
+        lockedByName: b.lockedById ? nameById.get(b.lockedById) || null : null,
+        lockedAt: b.lockedAt ? b.lockedAt.toISOString() : null,
       });
       baselinesByMetric.set(b.metricId, arr);
     }
@@ -429,7 +523,49 @@ export async function POST(req: NextRequest) {
 
     // ---------- CHỈ TIÊU GIAO ----------
     if (entity === "target") {
-      const metricId = str(data.metricId);
+      // Xóa chỉ cần id; các thao tác khác cần metricId để kiểm tra phạm vi.
+      if (action === "delete") {
+        const id = str(data.id);
+        if (!id) return jsonError("Thiếu id chỉ tiêu giao", 400);
+        const existing = await prisma.metricPlanTarget.findUnique({ where: { id } });
+        if (!existing) return jsonError("Chỉ tiêu giao không tồn tại", 404);
+        const metricIdOfTarget = str(data.metricId);
+        if (metricIdOfTarget && existing.metricId !== metricIdOfTarget)
+          return jsonError("Chỉ tiêu giao không tồn tại", 404);
+        if (existing.status !== "PROPOSED")
+          return jsonError("Chỉ xóa được chỉ tiêu giao chưa xác nhận; bản ghi đã xác nhận/chốt phải giữ lịch sử", 400);
+        await prisma.$transaction(async (tx) => {
+          await tx.metricPlanTargetRevision.create({
+            data: {
+              targetId: id,
+              action: "DELETE",
+              oldValue: existing.valueNumeric,
+              oldStatus: existing.status,
+              oldSourceNote: existing.sourceNote,
+              reason: str(data.reason) || null,
+              editedById: user.personId,
+            },
+          });
+          await tx.metricPlanTarget.delete({ where: { id } });
+        });
+        await audit("TARGET_DELETED", id, {
+          metricId: existing.metricId,
+          label: existing.label,
+          year: existing.year,
+          valueBase: existing.valueNumeric.toString(),
+        });
+        return NextResponse.json({ success: true });
+      }
+
+      let metricId = str(data.metricId);
+      // Confirm/lock có thể chỉ gửi id; suy ra metricId từ bản ghi để kiểm tra phạm vi.
+      if (!metricId && (action === "confirm" || action === "lock")) {
+        const id = str(data.id);
+        if (id) {
+          const found = await prisma.metricPlanTarget.findUnique({ where: { id } });
+          metricId = found?.metricId || null;
+        }
+      }
       if (!metricId) return jsonError("Thiếu chỉ tiêu", 400);
       const metric = await prisma.metricDefinition.findUnique({ where: { id: metricId } });
       if (!metric) return jsonError("Chỉ tiêu không tồn tại", 400);
@@ -449,38 +585,218 @@ export async function POST(req: NextRequest) {
         if (parsed === null) return jsonError("Giá trị chỉ tiêu không hợp lệ", 400);
         const valueBase = new D(parsed).mul(metric.displayScale || 1);
         const classificationId = str(data.classificationId) || "";
+        const comparisonKind = (str(data.comparisonKind) || "NONE").toUpperCase();
+        if (!COMPARISON_KINDS.includes(comparisonKind))
+          return jsonError("Loại đối chiếu không hợp lệ", 400);
+        if ((comparisonKind === "BTC_YEAR" || comparisonKind === "UBND_YEAR") && periodType !== "YEAR")
+          return jsonError("Chỉ tiêu BTC/UBND phải là chỉ tiêu Năm", 400);
+        if (comparisonKind === "MONTH_PLAN" && periodType !== "MONTH")
+          return jsonError("Kế hoạch tháng HQTL phải là chỉ tiêu Tháng", 400);
+        const note = str(data.note);
+        const sourceNote = str(data.sourceNote);
+        const dataSource = (str(data.dataSource) || "REAL").toUpperCase();
+        if (!DATA_SOURCES.includes(dataSource))
+          return jsonError("Nguồn dữ liệu phải là REAL hoặc DEMO", 400);
 
-        if (action === "update") {
-          const id = str(data.id);
-          if (!id) return jsonError("Thiếu id chỉ tiêu giao", 400);
-          await prisma.metricPlanTarget.update({
-            where: { id },
-            data: { label, periodType, year, periodNo, valueNumeric: valueBase, note: str(data.note), updatedById: user.personId },
+        if (action === "create") {
+          const dup = await prisma.metricPlanTarget.findFirst({
+            where: { metricId, classificationId, label, periodType, year, periodNo },
           });
-          await audit("TARGET_UPDATED", id, { metricId, label, year, valueBase: valueBase.toString() });
-          return NextResponse.json({ success: true });
+          if (dup)
+            return jsonError(
+              `Đã có chỉ tiêu "${label}" cho ${periodType === "YEAR" ? year : `${periodType} ${periodNo}/${year}`} — sửa bản ghi cũ thay vì thêm mới`,
+              400
+            );
+          if (comparisonKind !== "NONE") {
+            const dupKind = await prisma.metricPlanTarget.findFirst({
+              // Chỉ chặn trùng trong cùng nguồn dữ liệu; DEMO không chặn REAL.
+              where: { metricId, classificationId, comparisonKind, year, periodNo, dataSource },
+            });
+            if (dupKind)
+              return jsonError("Đã có chỉ tiêu giao cùng loại đối chiếu cho kỳ này — sửa bản ghi cũ", 400);
+          }
+          const t = await prisma.$transaction(async (tx) => {
+            const created = await tx.metricPlanTarget.create({
+              data: {
+                metricId,
+                classificationId,
+                label,
+                periodType,
+                year,
+                periodNo,
+                valueNumeric: valueBase,
+                comparisonKind,
+                sourceNote,
+                dataSource,
+                note,
+                status: "PROPOSED",
+                proposedById: user.personId,
+                updatedById: user.personId,
+              },
+            });
+            await tx.metricPlanTargetRevision.create({
+              data: {
+                targetId: created.id,
+                action: "CREATE",
+                newValue: valueBase,
+                newStatus: "PROPOSED",
+                newSourceNote: sourceNote,
+                reason: note,
+                editedById: user.personId,
+              },
+            });
+            return created;
+          });
+          await audit("TARGET_CREATED", t.id, {
+            metricId,
+            label,
+            year,
+            comparisonKind,
+            dataSource,
+            valueBase: valueBase.toString(),
+            sourceNote,
+          });
+          return NextResponse.json({ success: true, id: t.id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
         }
-        const dup = await prisma.metricPlanTarget.findFirst({
-          where: { metricId, classificationId, label, periodType, year, periodNo },
-        });
-        if (dup)
-          return jsonError(
-            `Đã có chỉ tiêu "${label}" cho ${periodType === "YEAR" ? year : `${periodType} ${periodNo}/${year}`} — sửa bản ghi cũ thay vì thêm mới`,
-            400
-          );
-        const t = await prisma.metricPlanTarget.create({
-          data: { metricId, classificationId, label, periodType, year, periodNo, valueNumeric: valueBase, note: str(data.note), updatedById: user.personId },
-        });
-        await audit("TARGET_CREATED", t.id, { metricId, label, year, valueBase: valueBase.toString() });
-        return NextResponse.json({ success: true, id: t.id });
-      }
-      if (action === "delete") {
+
         const id = str(data.id);
         if (!id) return jsonError("Thiếu id chỉ tiêu giao", 400);
-        await prisma.metricPlanTarget.delete({ where: { id } });
-        await audit("TARGET_DELETED", id);
-        return NextResponse.json({ success: true });
+        const existing = await prisma.metricPlanTarget.findUnique({ where: { id } });
+        if (!existing || existing.metricId !== metricId)
+          return jsonError("Chỉ tiêu giao không tồn tại", 404);
+        if (existing.status === "LOCKED")
+          return jsonError("Chỉ tiêu giao đã chốt — không sửa trực tiếp", 400);
+        const dup = await prisma.metricPlanTarget.findFirst({
+          where: {
+            id: { not: id },
+            metricId,
+            classificationId,
+            label,
+            periodType,
+            year,
+            periodNo,
+          },
+        });
+        if (dup)
+          return jsonError("Đã có chỉ tiêu giao trùng tên/kỳ — kiểm tra lại", 400);
+        if (comparisonKind !== "NONE") {
+          const dupKind = await prisma.metricPlanTarget.findFirst({
+            where: { id: { not: id }, metricId, classificationId, comparisonKind, year, periodNo, dataSource },
+          });
+          if (dupKind)
+            return jsonError("Đã có chỉ tiêu giao cùng loại đối chiếu cho kỳ này — kiểm tra lại", 400);
+        }
+
+        await prisma.$transaction(async (tx) => {
+          await tx.metricPlanTarget.update({
+            where: { id },
+            data: {
+              label,
+              periodType,
+              year,
+              periodNo,
+              valueNumeric: valueBase,
+              comparisonKind,
+              sourceNote,
+              dataSource,
+              note,
+              // Sửa số/căn cứ đã xác nhận phải xác nhận lại.
+              status: "PROPOSED",
+              confirmedById: null,
+              confirmedAt: null,
+              lockedById: null,
+              lockedAt: null,
+              updatedById: user.personId,
+            },
+          });
+          await tx.metricPlanTargetRevision.create({
+            data: {
+              targetId: id,
+              action: "UPDATE",
+              oldValue: existing.valueNumeric,
+              newValue: valueBase,
+              oldStatus: existing.status,
+              newStatus: "PROPOSED",
+              oldSourceNote: existing.sourceNote,
+              newSourceNote: sourceNote,
+              reason: note,
+              editedById: user.personId,
+            },
+          });
+        });
+        await audit("TARGET_UPDATED", id, {
+          metricId,
+          label,
+          year,
+          comparisonKind,
+          dataSource,
+          oldDataSource: existing.dataSource,
+          oldValue: existing.valueNumeric.toString(),
+          newValue: valueBase.toString(),
+          oldStatus: existing.status,
+          newStatus: "PROPOSED",
+        });
+        return NextResponse.json({ success: true, id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
+
+      if (action === "confirm" || action === "lock") {
+        const id = str(data.id);
+        if (!id) return jsonError("Thiếu id chỉ tiêu giao", 400);
+        const existing = await prisma.metricPlanTarget.findUnique({ where: { id } });
+        if (!existing || existing.metricId !== metricId)
+          return jsonError("Chỉ tiêu giao không tồn tại", 404);
+        if (action === "confirm") {
+          if (existing.status === "LOCKED") return jsonError("Chỉ tiêu giao đã chốt", 400);
+          const next = "CONFIRMED";
+          await prisma.$transaction(async (tx) => {
+            await tx.metricPlanTarget.update({
+              where: { id },
+              data: {
+                status: next,
+                confirmedById: user.personId,
+                confirmedAt: new Date(),
+                lockedById: null,
+                lockedAt: null,
+                updatedById: user.personId,
+              },
+            });
+            await tx.metricPlanTargetRevision.create({
+              data: {
+                targetId: id,
+                action: "CONFIRM",
+                oldStatus: existing.status,
+                newStatus: next,
+                reason: str(data.reason) || null,
+                editedById: user.personId,
+              },
+            });
+          });
+          await audit("TARGET_CONFIRMED", id, { metricId, oldStatus: existing.status, newStatus: next });
+          return NextResponse.json({ success: true, status: next });
+        }
+        if (existing.status !== "CONFIRMED")
+          return jsonError("Chỉ chốt được chỉ tiêu giao đã xác nhận", 400);
+        const next = "LOCKED";
+        await prisma.$transaction(async (tx) => {
+          await tx.metricPlanTarget.update({
+            where: { id },
+            data: { status: next, lockedById: user.personId, lockedAt: new Date(), updatedById: user.personId },
+          });
+          await tx.metricPlanTargetRevision.create({
+            data: {
+              targetId: id,
+              action: "LOCK",
+              oldStatus: existing.status,
+              newStatus: next,
+              reason: str(data.reason) || null,
+              editedById: user.personId,
+            },
+          });
+        });
+        await audit("TARGET_LOCKED", id, { metricId, oldStatus: existing.status, newStatus: next });
+        return NextResponse.json({ success: true, status: next });
+      }
+
       return jsonError("Thao tác chỉ tiêu giao không hợp lệ", 400);
     }
 
@@ -492,48 +808,220 @@ export async function POST(req: NextRequest) {
         const asOf = dateOnlyFromStr(str(data.asOfDate) || "");
         if (!metricId || !asOf || !CUM_KINDS.includes(cumKind))
           return jsonError("Thiếu chỉ tiêu, ngày mốc hoặc loại mốc", 400);
+        const today = todayVnDateOnly();
+        if (asOf.getTime() > today.getTime()) return jsonError("Ngày mốc không được ở tương lai", 400);
         const metric = await prisma.metricDefinition.findUnique({ where: { id: metricId } });
         if (!metric) return jsonError("Chỉ tiêu không tồn tại", 400);
         const parsed = parseNumberInput(data.value);
         if (parsed === null) return jsonError("Giá trị mốc không hợp lệ", 400);
         const valueBase = new D(parsed).mul(metric.displayScale || 1);
         const classificationId = str(data.classificationId) || "";
+        const sourceNote = str(data.sourceNote);
+        const dataSource = (str(data.dataSource) || "REAL").toUpperCase();
+        if (!DATA_SOURCES.includes(dataSource))
+          return jsonError("Nguồn dữ liệu phải là REAL hoặc DEMO", 400);
         const dup = await prisma.metricBaseline.findUnique({
           where: {
             metricId_classificationId_cumKind_asOfDate: { metricId, classificationId, cumKind, asOfDate: asOf },
           },
         });
-        if (dup) return jsonError("Mốc này đã tồn tại — xóa mốc cũ trước khi tạo lại", 400);
-        const b = await prisma.metricBaseline.create({
-          data: {
-            metricId,
-            classificationId,
-            cumKind,
-            asOfDate: asOf,
-            valueNumeric: valueBase,
-            sourceNote: str(data.sourceNote),
-            status: "PROPOSED",
-            proposedById: user.personId,
-          },
+        if (dup) return jsonError("Mốc này đã tồn tại — sửa mốc cũ thay vì tạo trùng", 400);
+        const b = await prisma.$transaction(async (tx) => {
+          const created = await tx.metricBaseline.create({
+            data: {
+              metricId,
+              classificationId,
+              cumKind,
+              asOfDate: asOf,
+              valueNumeric: valueBase,
+              sourceNote,
+              dataSource,
+              status: "PROPOSED",
+              proposedById: user.personId,
+            },
+          });
+          await tx.metricBaselineRevision.create({
+            data: {
+              baselineId: created.id,
+              action: "CREATE",
+              newValue: valueBase,
+              newStatus: "PROPOSED",
+              newSourceNote: sourceNote,
+              editedById: user.personId,
+            },
+          });
+          return created;
         });
-        await audit("BASELINE_PROPOSED", b.id, { metricId, cumKind, asOfDate: str(data.asOfDate), valueBase: valueBase.toString() });
-        return NextResponse.json({ success: true, id: b.id });
+        await audit("BASELINE_PROPOSED", b.id, {
+          metricId,
+          cumKind,
+          asOfDate: str(data.asOfDate),
+          valueBase: valueBase.toString(),
+          sourceNote,
+          dataSource,
+        });
+        return NextResponse.json({ success: true, id: b.id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
-      if (action === "confirm") {
+
+      if (action === "update") {
         const id = str(data.id);
         if (!id) return jsonError("Thiếu id mốc", 400);
-        const b = await prisma.metricBaseline.update({
-          where: { id },
-          data: { status: "CONFIRMED", confirmedById: user.personId, confirmedAt: new Date() },
+        const existing = await prisma.metricBaseline.findUnique({ where: { id } });
+        if (!existing) return jsonError("Mốc không tồn tại", 404);
+        if (existing.status === "LOCKED") return jsonError("Mốc đã chốt — không sửa trực tiếp", 400);
+        const metric = await prisma.metricDefinition.findUnique({ where: { id: existing.metricId } });
+        if (!metric) return jsonError("Chỉ tiêu không tồn tại", 404);
+        const parsed = parseNumberInput(data.value);
+        if (parsed === null) return jsonError("Giá trị mốc không hợp lệ", 400);
+        const valueBase = new D(parsed).mul(metric.displayScale || 1);
+        const asOf = dateOnlyFromStr(str(data.asOfDate) || dateOnlyToStr(existing.asOfDate));
+        if (!asOf) return jsonError("Ngày mốc không hợp lệ", 400);
+        if (asOf.getTime() > todayVnDateOnly().getTime())
+          return jsonError("Ngày mốc không được ở tương lai", 400);
+        const dup = await prisma.metricBaseline.findUnique({
+          where: {
+            metricId_classificationId_cumKind_asOfDate: {
+              metricId: existing.metricId,
+              classificationId: existing.classificationId,
+              cumKind: existing.cumKind,
+              asOfDate: asOf,
+            },
+          },
         });
-        await audit("BASELINE_CONFIRMED", id, { metricId: b.metricId, valueBase: b.valueNumeric.toString() });
-        return NextResponse.json({ success: true });
+        if (dup && dup.id !== id)
+          return jsonError("Đã có mốc cùng ngày/loại cho chỉ tiêu này — kiểm tra lại", 400);
+        const sourceNote = str(data.sourceNote);
+        const dataSource = (str(data.dataSource) || existing.dataSource || "REAL").toUpperCase();
+        if (!DATA_SOURCES.includes(dataSource))
+          return jsonError("Nguồn dữ liệu phải là REAL hoặc DEMO", 400);
+        await prisma.$transaction(async (tx) => {
+          await tx.metricBaseline.update({
+            where: { id },
+            data: {
+              asOfDate: asOf,
+              valueNumeric: valueBase,
+              sourceNote,
+              dataSource,
+              // Sửa số/căn cứ đã xác nhận phải xác nhận lại.
+              status: "PROPOSED",
+              confirmedById: null,
+              confirmedAt: null,
+              lockedById: null,
+              lockedAt: null,
+            },
+          });
+          await tx.metricBaselineRevision.create({
+            data: {
+              baselineId: id,
+              action: "UPDATE",
+              oldValue: existing.valueNumeric,
+              newValue: valueBase,
+              oldStatus: existing.status,
+              newStatus: "PROPOSED",
+              oldSourceNote: existing.sourceNote,
+              newSourceNote: sourceNote,
+              reason: str(data.reason) || null,
+              editedById: user.personId,
+            },
+          });
+        });
+        await audit("BASELINE_UPDATED", id, {
+          metricId: existing.metricId,
+          dataSource,
+          oldDataSource: existing.dataSource,
+          oldValue: existing.valueNumeric.toString(),
+          newValue: valueBase.toString(),
+          oldStatus: existing.status,
+          newStatus: "PROPOSED",
+        });
+        return NextResponse.json({ success: true, id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
+
+      if (action === "confirm" || action === "lock") {
+        const id = str(data.id);
+        if (!id) return jsonError("Thiếu id mốc", 400);
+        const existing = await prisma.metricBaseline.findUnique({ where: { id } });
+        if (!existing) return jsonError("Mốc không tồn tại", 404);
+        if (action === "confirm") {
+          if (existing.status === "LOCKED") return jsonError("Mốc đã chốt", 400);
+          const next = "CONFIRMED";
+          await prisma.$transaction(async (tx) => {
+            await tx.metricBaseline.update({
+              where: { id },
+              data: { status: next, confirmedById: user.personId, confirmedAt: new Date() },
+            });
+            await tx.metricBaselineRevision.create({
+              data: {
+                baselineId: id,
+                action: "CONFIRM",
+                oldStatus: existing.status,
+                newStatus: next,
+                reason: str(data.reason) || null,
+                editedById: user.personId,
+              },
+            });
+          });
+          await audit("BASELINE_CONFIRMED", id, {
+            metricId: existing.metricId,
+            valueBase: existing.valueNumeric.toString(),
+            oldStatus: existing.status,
+            newStatus: next,
+          });
+          return NextResponse.json({ success: true, status: next });
+        }
+        if (existing.status !== "CONFIRMED")
+          return jsonError("Chỉ chốt được mốc đã xác nhận", 400);
+        const next = "LOCKED";
+        await prisma.$transaction(async (tx) => {
+          await tx.metricBaseline.update({
+            where: { id },
+            data: { status: next, lockedById: user.personId, lockedAt: new Date() },
+          });
+          await tx.metricBaselineRevision.create({
+            data: {
+              baselineId: id,
+              action: "LOCK",
+              oldStatus: existing.status,
+              newStatus: next,
+              reason: str(data.reason) || null,
+              editedById: user.personId,
+            },
+          });
+        });
+        await audit("BASELINE_LOCKED", id, {
+          metricId: existing.metricId,
+          valueBase: existing.valueNumeric.toString(),
+          oldStatus: existing.status,
+          newStatus: next,
+        });
+        return NextResponse.json({ success: true, status: next });
+      }
+
       if (action === "delete") {
         const id = str(data.id);
         if (!id) return jsonError("Thiếu id mốc", 400);
-        await prisma.metricBaseline.delete({ where: { id } });
-        await audit("BASELINE_DELETED", id);
+        const existing = await prisma.metricBaseline.findUnique({ where: { id } });
+        if (!existing) return jsonError("Mốc không tồn tại", 404);
+        if (existing.status !== "PROPOSED")
+          return jsonError("Chỉ xóa được mốc chưa xác nhận; mốc đã xác nhận/chốt phải giữ lịch sử", 400);
+        await prisma.$transaction(async (tx) => {
+          await tx.metricBaselineRevision.create({
+            data: {
+              baselineId: id,
+              action: "DELETE",
+              oldValue: existing.valueNumeric,
+              oldStatus: existing.status,
+              oldSourceNote: existing.sourceNote,
+              reason: str(data.reason) || null,
+              editedById: user.personId,
+            },
+          });
+          await tx.metricBaseline.delete({ where: { id } });
+        });
+        await audit("BASELINE_DELETED", id, {
+          metricId: existing.metricId,
+          valueBase: existing.valueNumeric.toString(),
+        });
         return NextResponse.json({ success: true });
       }
       return jsonError("Thao tác mốc lũy kế không hợp lệ", 400);

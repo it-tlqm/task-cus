@@ -28,6 +28,15 @@ export function baseToInput(value: number | null | undefined, style: MetricStyle
   return String(Number(v.toFixed(style.decimals)));
 }
 
+/** B-C-2/Q11: tỷ lệ 2 chữ số thập phân, dấu phẩy vi-VN; thiếu dữ liệu -> gạch dài. */
+export function fmtPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  return `${value.toLocaleString("vi-VN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}%`;
+}
+
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const [y, m, d] = iso.slice(0, 10).split("-");

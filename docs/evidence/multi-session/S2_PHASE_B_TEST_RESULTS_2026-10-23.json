@@ -1,0 +1,121 @@
+{
+  "session": "S2",
+  "yc": [
+    "YC-01",
+    "YC-02"
+  ],
+  "contract": "B-C-2",
+  "timestamp": "2026-10-23T11:37:35.116Z",
+  "db": "talung_v3_phase_b",
+  "api": "http://localhost:3112",
+  "passed": 43,
+  "failed": 0,
+  "failures": [],
+  "evidence": {
+    "metric": {
+      "code": "THU_NSNN",
+      "id": "0a0e94dc-750f-470f-b7be-7deac016d7ab",
+      "classification": "Ô tô"
+    },
+    "fixture": {
+      "year": 2023,
+      "month": 10,
+      "yearCum": 1317372334554,
+      "monthCum": 219341201856,
+      "baseline": 1098031132698,
+      "btc": 1685000000000,
+      "ubnd": 1700000000000,
+      "monthPlan": 200000000000,
+      "prevMonthEntry": 50
+    },
+    "permissions": {
+      "leader": [
+        "metrics.config",
+        "metrics.entry_all"
+      ],
+      "staff": [],
+      "systemAdmin": []
+    },
+    "comparison": {
+      "metricId": "0a0e94dc-750f-470f-b7be-7deac016d7ab",
+      "code": "THU_NSNN",
+      "name": "Thu NSNN (số thuế phát sinh)",
+      "unitType": "VND",
+      "unitLabel": "đồng",
+      "displayScale": 1,
+      "decimals": 0,
+      "yearCum": 1317372334554,
+      "monthCum": 219341201856,
+      "latestDate": "2023-10-31",
+      "btc": {
+        "targetId": "adb29b4c-2023-48e6-a62a-cb5682996622",
+        "label": "[S2-PHASE-B-1792755429724] BTC 2023",
+        "comparisonKind": "BTC_YEAR",
+        "targetValue": 1685000000000,
+        "percent": 78.18,
+        "percentText": "78,18",
+        "periodLabel": "Năm 2023",
+        "basis": "YEAR_CUM",
+        "ruleState": "OFFICIAL",
+        "ambiguous": false,
+        "status": "CONFIRMED",
+        "dataSource": "REAL",
+        "isOfficial": true,
+        "sourceNote": "[S2-PHASE-B-1792755429724] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:37:27.749Z"
+      },
+      "ubnd": {
+        "targetId": "335335e0-a574-44a9-996b-e858633237cc",
+        "label": "[S2-PHASE-B-1792755429724] UBND 2023",
+        "comparisonKind": "UBND_YEAR",
+        "targetValue": 1700000000000,
+        "percent": 77.49,
+        "percentText": "77,49",
+        "periodLabel": "Năm 2023",
+        "basis": "YEAR_CUM",
+        "ruleState": "OFFICIAL",
+        "ambiguous": false,
+        "status": "CONFIRMED",
+        "dataSource": "REAL",
+        "isOfficial": true,
+        "sourceNote": "[S2-PHASE-B-1792755429724] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:37:27.819Z"
+      },
+      "monthPlan": {
+        "targetId": "52580abd-9b82-4adf-aec1-9bb8ff86b731",
+        "label": "[S2-PHASE-B-1792755429724] KH tháng 10/2023",
+        "comparisonKind": "MONTH_PLAN",
+        "targetValue": 200000000000,
+        "percent": 109.67,
+        "percentText": "109,67",
+        "periodLabel": "Tháng 10/2023",
+        "basis": "MONTH_CUM",
+        "ruleState": "OFFICIAL",
+        "ambiguous": false,
+        "status": "CONFIRMED",
+        "dataSource": "REAL",
+        "isOfficial": true,
+        "sourceNote": "[S2-PHASE-B-1792755429724] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:37:27.820Z"
+      },
+      "prevMonth": {
+        "value": 50,
+        "percent": null,
+        "label": "Tháng 9/2023",
+        "basis": "FULL_PREVIOUS_MONTH_CUM",
+        "ruleState": "PENDING_B1"
+      },
+      "samePeriodLastYear": {
+        "value": null,
+        "percent": null,
+        "label": "Tháng 10/2022",
+        "basis": "FULL_MONTH_LAST_YEAR_CUM",
+        "ruleState": "PENDING_B1"
+      }
+    },
+    "totals": {
+      "passed": 43,
+      "failed": 0
+    }
+  }
+}

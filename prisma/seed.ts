@@ -201,6 +201,9 @@ async function main() {
     { code: "catalog.manage", name: "Quản lý danh mục mẫu", module: "CATALOG" },
     { code: "org.manage", name: "Quản trị cơ cấu tổ chức", module: "ORG" },
     { code: "audit.view", name: "Xem nhật ký kiểm toán", module: "AUDIT" },
+    // YC-02/B-C-1: quyền nghiệp vụ số liệu giao ban, tách khỏi system.config kỹ thuật.
+    { code: "metrics.config", name: "Cấu hình số liệu giao ban", module: "METRICS" },
+    { code: "metrics.entry_all", name: "Nhập số liệu giao ban toàn bộ", module: "METRICS" },
   ];
 
   const createdPerms: Record<string, string> = {};
@@ -223,13 +226,17 @@ async function main() {
   });
 
   // Assign permissions to roles
+  // Quyền nghiệp vụ số liệu chỉ thuộc lãnh đạo/người được cấp; SYSTEM_ADMIN không mặc nhiên có.
+  const metricsBusinessPerms = new Set(["metrics.config", "metrics.entry_all"]);
   for (const permCode of Object.keys(createdPerms)) {
     await prisma.rolePermission.create({
       data: { roleId: roleLeader.id, permissionId: createdPerms[permCode] },
     });
-    await prisma.rolePermission.create({
-      data: { roleId: roleAdmin.id, permissionId: createdPerms[permCode] },
-    });
+    if (!metricsBusinessPerms.has(permCode)) {
+      await prisma.rolePermission.create({
+        data: { roleId: roleAdmin.id, permissionId: createdPerms[permCode] },
+      });
+    }
   }
 
   // Dept leader permissions

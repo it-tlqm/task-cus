@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { fmtMetric, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
+import { RevenueComparisonSection, type ComparisonData } from "@/components/dashboard/RevenueComparisonSection";
 
 interface Cols {
   day: number | null;
@@ -60,15 +61,18 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
   const [groups, setGroups] = useState<DashGroup[] | null>(null);
   const [range, setRange] = useState<any>(null);
   const [quality, setQuality] = useState<MetricDataQuality | null>(null);
+  const [comparison, setComparison] = useState<ComparisonData | null>(null);
 
   useEffect(() => {
-    fetch("/api/metrics/summary?scope=dashboard")
+    // YC-01: lấy kèm khối so sánh Thu NSNN, dùng chung hợp đồng B-C-1 với /giao-ban.
+    fetch("/api/metrics/summary?scope=dashboard&comparison=1")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.success) {
           setGroups(json.groups || []);
           setRange(json.range);
           setQuality(json.dataQuality || null);
+          setComparison(json.comparison || null);
         }
       })
       .catch(() => setGroups([]));
@@ -196,6 +200,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
           </table>
         </div>
       </div>
+      <RevenueComparisonSection comparison={comparison} className="mt-3" />
       <p className="text-body-xs text-on-surface-variant mt-1.5">
         “—” là <b>chưa nhập</b> (khác với số 0 đã nhập). Trạng thái theo tháng: Đã nhập → Đã xác nhận → Đã chốt báo cáo.
         <span className="lg:hidden"> Bảng cuộn ngang trên điện thoại.</span>

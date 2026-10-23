@@ -283,7 +283,8 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         label: "Cấu hình số liệu giao ban",
         href: "/giao-ban/cau-hinh",
         icon: "tune",
-        access: { adminOnly: true },
+        // YC-02: quyền nghiệp vụ riêng, không dùng system.config kỹ thuật.
+        access: { permission: "metrics.config" },
       },
       {
         id: "admin-system",

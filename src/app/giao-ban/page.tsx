@@ -5,17 +5,24 @@ import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
-import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { fmtMetric, fmtPercent, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
+import { RevenueComparisonSection } from "@/components/dashboard/RevenueComparisonSection";
 
 type Mode = "WEEK" | "MONTH" | "QUARTER" | "YEAR";
 
 interface TargetRow {
+  id?: string;
   label: string;
   periodType: string;
   periodNo: number | null;
   targetValue: number;
   percent: number | null;
+  percentText?: string | null;
+  status?: string;
+  comparisonKind?: string;
+  dataSource?: string;
+  isOfficial?: boolean;
 }
 interface ClassCol {
   classificationId: string;
@@ -370,27 +377,31 @@ export default function GiaoBanPage() {
                                   ) : (
                                     <div className="flex items-center justify-center gap-1 flex-wrap">
                                       {m.targets.map((t, i) => {
-                                        // YC-26: chỉ tiêu gắn nhãn [DEMO... là chỉ tiêu MÔ PHỎNG —
-                                        // không hiển thị như chỉ tiêu chính thức (không khoe tỷ lệ đạt).
-                                        if (/^\s*\[DEMO/i.test(t.label)) {
-                                          const cleanLabel = t.label.replace(/^\s*\[DEMO[^\]]*\]\s*/i, "");
+                                        // B-C-2/Q9: DEMO nhận diện bằng dataSource, KHÔNG dò nhãn.
+                                        if (t.dataSource === "DEMO" || t.isOfficial === false) {
                                           return (
                                             <span
                                               key={i}
                                               data-testid={`target-demo-${m.code}`}
-                                              title={`${t.label}: ${fmtMetric(t.targetValue, m)}${
-                                                t.percent === null ? "" : ` — tỷ lệ tạm tính ${t.percent}%`
-                                              } · Chỉ tiêu MÔ PHỎNG dùng thử (DEMO), chưa phải chỉ tiêu chính thức được duyệt`}
+                                              title={`${t.label}: ${fmtMetric(t.targetValue, m)} · Dữ liệu MÔ PHỎNG (DEMO), không dùng tính tỷ lệ chính thức`}
                                               className="text-[11px] px-1.5 py-0.5 rounded border border-dashed border-slate-300 bg-slate-50 text-slate-500 font-semibold"
                                             >
-                                              Demo{cleanLabel ? ` · ${cleanLabel}` : ""}
+                                              DEMO · {t.label}
                                             </span>
                                           );
                                         }
+                                        const pending = t.percent === null && (t.status === "PROPOSED" || !t.status);
+                                        const percentLabel = t.percent === null ? null : t.percentText || fmtPercent(t.percent);
                                         return (
                                           <span
                                             key={i}
-                                            title={`${t.label}: ${fmtMetric(t.targetValue, m)}`}
+                                            title={`${t.label}: ${fmtMetric(t.targetValue, m)}${
+                                              t.percent === null
+                                                ? pending
+                                                  ? " — chưa xác nhận nên chưa công bố tỷ lệ"
+                                                  : " — chưa xác định tỷ lệ (thiếu dữ liệu hoặc mẫu số 0)"
+                                                : ` — ${percentLabel}`
+                                            }`}
                                             className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${
                                               t.percent === null
                                                 ? "border-border-default text-on-surface-variant"
@@ -399,7 +410,8 @@ export default function GiaoBanPage() {
                                                   : "border-amber-200 bg-amber-50 text-amber-700"
                                             }`}
                                           >
-                                            {t.label.replace(/^Chỉ tiêu\s*/i, "").replace(/^KH\s*/i, "KH ")} {t.percent === null ? "—" : `${t.percent}%`}
+                                            {t.label}{" "}
+                                            {t.percent === null ? (pending ? "chờ xác nhận" : "—") : `${percentLabel}%`}
                                           </span>
                                         );
                                       })}
@@ -452,7 +464,9 @@ export default function GiaoBanPage() {
                   )}
                 </div>
               ))}
-            {!loading && <ComparisonSection comparison={comparison} />}
+            {!loading && (
+              <RevenueComparisonSection comparison={comparison} showConfigureLink={showAdminMenu} />
+            )}
             <p className="text-body-xs text-on-surface-variant">
               Số liệu được cộng tự động từ các bản ghi nhập theo ngày. Cột lũy kế áp dụng "mốc đã xác nhận" (nếu có) để tránh cộng
               trùng. Đơn vị hiển thị theo cấu hình từng chỉ tiêu.
@@ -501,139 +515,6 @@ export default function GiaoBanPage() {
             )}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// YC-26 — Bảng so sánh kết quả thu (BTC / UBND / KH tháng / tháng trước / cùng kỳ)
-// Chỉ hiển thị tỷ lệ khi có đủ tử số + mẫu số; thiếu nguồn -> "Chưa có dữ liệu đối chiếu".
-// ============================================================
-
-function ComparisonSection({ comparison }: { comparison: any }) {
-  if (!comparison || !Array.isArray(comparison.rows) || comparison.rows.length === 0) return null;
-
-  const chipTarget = (percent: number | null) =>
-    percent === null
-      ? "border-border-default text-on-surface-variant"
-      : percent >= 100
-        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-        : "border-amber-200 bg-amber-50 text-amber-700";
-  const chipDiff = (percent: number | null) =>
-    percent === null
-      ? "border-border-default text-on-surface-variant"
-      : percent >= 0
-        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-        : "border-rose-200 bg-rose-50 text-rose-700";
-
-  const missing = <span className="text-on-surface-variant italic">Chưa có dữ liệu đối chiếu</span>;
-
-  return (
-    <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden" data-testid="comparison-section">
-      <div className="px-4 py-3 bg-surface-container-low border-b border-border-default/40 flex items-center gap-2">
-        <span className="material-symbols-outlined text-[18px] text-primary">compare_arrows</span>
-        <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide">So sánh kết quả thu</span>
-        <span className="text-body-xs text-on-surface-variant">
-          ({comparison.anchors?.monthLabel || ""} — tháng trước: {comparison.anchors?.prevMonthLabel || ""}, cùng kỳ:{" "}
-          {comparison.anchors?.lastYearLabel || ""})
-        </span>
-        <span
-          data-testid="comparison-rule-pending"
-          title="Quy tắc nguồn đối chiếu (BTC/UBND/KH tháng/tháng trước/cùng kỳ) đang chờ Hải quan xác nhận — chỉ hiển thị tỷ lệ khi có đủ nguồn."
-          className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold whitespace-nowrap"
-        >
-          Quy tắc đối chiếu: CHƯA XÁC NHẬN
-        </span>
-      </div>
-      <div className="p-4 flex flex-col gap-5">
-        {comparison.rows.map((r: any) => {
-          const targetRow = (label: string, block: any, current: number | null, currentLabel: string) => {
-            const hasData = block?.targetValue !== null && block?.targetValue !== undefined && current !== null && block?.percent !== null;
-            return (
-              <tr className="border-b border-border-default/20">
-                <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-                <td className="px-3 py-2 text-body-xs text-on-surface-variant">
-                  {block?.label ? `${block.label} · ${block.periodLabel}` : block?.periodLabel}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums">
-                  {hasData ? (
-                    <>
-                      {fmtMetric(current, r, { withUnit: false })} / {fmtMetric(block.targetValue, r, { withUnit: false })}
-                      <span className="text-body-xs text-on-surface-variant"> ({currentLabel}/{block.label})</span>
-                    </>
-                  ) : block?.ambiguous ? (
-                    <span className="text-on-surface-variant italic">Nhiều chỉ tiêu trùng kỳ — chưa xác định quy tắc đối chiếu</span>
-                  ) : (
-                    missing
-                  )}
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${chipTarget(block?.percent)}`}>
-                    {hasData ? `${block.percent}%` : "—"}
-                  </span>
-                </td>
-              </tr>
-            );
-          };
-
-          const diffRow = (label: string, block: any, current: number | null, currentLabel: string) => {
-            const hasData = block?.value !== null && block?.value !== undefined && current !== null && block?.percent !== null;
-            return (
-              <tr className="border-b border-border-default/20">
-                <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-                <td className="px-3 py-2 text-body-xs text-on-surface-variant">{block?.label}</td>
-                <td className="px-3 py-2 text-right tabular-nums">
-                  {hasData ? (
-                    <>
-                      {fmtMetric(current, r, { withUnit: false })} so với {fmtMetric(block.value, r, { withUnit: false })}
-                      <span className="text-body-xs text-on-surface-variant"> ({currentLabel}/{block.label})</span>
-                    </>
-                  ) : (
-                    missing
-                  )}
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${chipDiff(block?.percent)}`}>
-                    {hasData ? `${block.percent > 0 ? "+" : ""}${block.percent}%` : "—"}
-                  </span>
-                </td>
-              </tr>
-            );
-          };
-
-          return (
-            <div key={r.metricId} data-testid={`comparison-${r.code}`}>
-              <div className="font-semibold text-on-surface mb-1.5">
-                {r.name} {r.unitLabel ? <span className="text-body-xs text-on-surface-variant">({r.unitLabel})</span> : null}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-body-sm min-w-[720px] border-collapse">
-                  <thead>
-                    <tr className="text-body-xs text-on-surface-variant border-b border-border-default/40">
-                      <th className="px-3 py-1.5 font-semibold text-left">Nội dung đối chiếu</th>
-                      <th className="px-3 py-1.5 font-semibold text-left">Nguồn / Kỳ</th>
-                      <th className="px-3 py-1.5 font-semibold text-right">Số liệu đối chiếu</th>
-                      <th className="px-3 py-1.5 font-semibold text-center w-[110px]">Tỷ lệ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {targetRow("Chỉ tiêu Bộ Tài chính (năm)", r.btc, r.yearCum, "LK năm")}
-                    {targetRow("Chỉ tiêu UBND tỉnh (năm)", r.ubnd, r.yearCum, "LK năm")}
-                    {targetRow("Kế hoạch tháng", r.monthPlan, r.monthCum, "LK tháng")}
-                    {diffRow("So với tháng trước", r.prevMonth, r.monthCum, "LK tháng")}
-                    {diffRow("So với cùng kỳ năm trước", r.samePeriodLastYear, r.monthCum, "LK tháng")}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          );
-        })}
-        <p className="text-body-xs text-on-surface-variant">
-          Nguồn chỉ tiêu: Chỉ tiêu BTC/UBND nhận diện theo nhãn chứa “BTC”/“UBND” trong <b>Cấu hình → Chỉ tiêu giao</b> (kỳ Năm); Kế hoạch tháng
-          theo kỳ Tháng. Tỷ lệ chỉ hiển thị khi có đủ tử số và mẫu số hợp lệ; thiếu dữ liệu hiển thị “Chưa có dữ liệu đối chiếu”. Quy tắc đối
-          chiếu đang theo cột Lũy kế hiện hành — <b>chờ Hải quan xác nhận</b> trước khi dùng chính thức.
-        </p>
       </div>
     </div>
   );
