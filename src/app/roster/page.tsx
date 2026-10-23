@@ -12,6 +12,7 @@ import { isNoonDutyTitle, MAX_EXTRA_SLOTS_PER_POSITION } from "@/lib/duty-roster
  * - Desktop: bảng ma trận Vị trí × Ngày; bấm ô để mở phiếu phân công của ngày.
  * - Mobile: thẻ theo ngày, không tràn ngang; lãnh đạo vẫn phân công được trong quyền.
  * - Cảnh báo mềm: trùng đơn nghỉ đã duyệt, một cán bộ bị phân công nhiều vị trí trong ngày.
+ * - Ghi chú per-person trên DutyRoster.notes (lưu/sửa/xem, audit old/new); “Đổi người” tách riêng, bắt buộc lý do.
  * - Xuất Excel theo kỳ/ngày đúng cấu trúc biểu mẫu; sửa danh mục không đổi lịch sử phân công.
  */
 
@@ -888,7 +889,7 @@ export default function RosterPage() {
                                 return (
                                   <div className="space-y-1">
                                     {lines.map((ln) => (
-                                      <div key={ln.key} className="flex items-start gap-1">
+                                      <div key={ln.key} className="flex flex-wrap items-start gap-1">
                                         <span className={ln.row ? "font-medium leading-snug text-slate-800" : "text-slate-300"}>
                                           {ln.label && (ln.label.length <= 3 || g.kind === "legacy") ? `${ln.label}: ` : ""}
                                           {ln.row ? ln.row.person.fullName : "—"}
@@ -902,8 +903,19 @@ export default function RosterPage() {
                                           </span>
                                         )}
                                         {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
-                                          <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
-                                            error
+                                          <span
+                                            className="text-[10px] font-semibold leading-tight text-amber-700"
+                                            title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)"
+                                          >
+                                            Trùng phân công
+                                          </span>
+                                        )}
+                                        {ln.row?.notes && (
+                                          <span
+                                            className="block w-full truncate text-[10px] italic text-slate-500"
+                                            title={`Ghi chú: ${ln.row.notes}`}
+                                          >
+                                            Ghi chú: {ln.row.notes}
                                           </span>
                                         )}
                                       </div>
@@ -1002,7 +1014,7 @@ export default function RosterPage() {
                           </div>
                           <div className="mt-0.5 space-y-0.5">
                             {filled.map((ln) => (
-                              <div key={ln.key} className="flex items-center gap-1 text-xs text-slate-700">
+                              <div key={ln.key} className="flex flex-wrap items-center gap-1 text-xs text-slate-700">
                                 <span className="truncate">
                                   {(ln.label && ln.label.length <= 3 ? `${ln.label}: ` : "") + (ln.row?.person.fullName || "")}
                                 </span>
@@ -1012,8 +1024,13 @@ export default function RosterPage() {
                                   </span>
                                 )}
                                 {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
-                                  <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
-                                    error
+                                  <span className="text-[10px] font-semibold text-amber-700" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
+                                    Trùng phân công
+                                  </span>
+                                )}
+                                {ln.row?.notes && (
+                                  <span className="w-full break-words text-[10px] italic leading-snug text-slate-500">
+                                    Ghi chú: {ln.row.notes}
                                   </span>
                                 )}
                               </div>
@@ -1256,20 +1273,27 @@ function DayFormView({
                       <span className="text-slate-400">—</span>
                     ) : (
                       lines.map((ln) => (
-                        <div key={ln.key} className={ln.row ? "text-slate-800" : "text-slate-300"}>
-                          {ln.row
-                            ? `${ln.label && ln.label.length <= 3 ? ln.label + " " : ""}đ/c ${ln.row.person.fullName}`
-                            : ln.label && ln.label.length <= 3
-                              ? `${ln.label} đ/c………`
-                              : "đ/c………"}
+                        <div key={ln.key} className={`flex flex-wrap items-center gap-1 ${ln.row ? "text-slate-800" : "text-slate-300"}`}>
+                          <span>
+                            {ln.row
+                              ? `${ln.label && ln.label.length <= 3 ? ln.label + " " : ""}đ/c ${ln.row.person.fullName}`
+                              : ln.label && ln.label.length <= 3
+                                ? `${ln.label} đ/c………`
+                                : "đ/c………"}
+                          </span>
                           {ln.row?.leaveClash && (
-                            <span className="material-symbols-outlined text-[12px] text-amber-500 ml-1 align-middle" title="Trùng đơn nghỉ đã duyệt">
+                            <span className="material-symbols-outlined text-[12px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
                               warning
                             </span>
                           )}
                           {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
-                            <span className="material-symbols-outlined text-[12px] text-rose-500 ml-1 align-middle" title="Trùng phân công cùng nhóm trực trong ngày">
-                              error
+                            <span className="text-[10px] font-semibold text-amber-700" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
+                              Trùng phân công
+                            </span>
+                          )}
+                          {ln.row?.notes && (
+                            <span className="w-full text-[10px] font-normal italic text-slate-600">
+                              Ghi chú: {ln.row.notes}
                             </span>
                           )}
                         </div>
@@ -1547,16 +1571,16 @@ function DayEditorModal({
     }
   };
 
-  const handleChange = async (row: DutyRow, key: string) => {
+  const handleChange = async (row: DutyRow, key: string): Promise<boolean> => {
     const personId = sel[key];
     if (!personId || personId === row.personId) {
       toast.error("Chọn cán bộ khác để thay đổi người thực hiện.");
-      return;
+      return false;
     }
     const reason = (reasons[key] || "").trim();
     if (reason.length < 3) {
       toast.error("Đổi người thực hiện phải ghi lý do (tối thiểu 3 ký tự).");
-      return;
+      return false;
     }
     const isLeaderPerson = people.find((p) => p.id === personId)?.isLeader === true;
     setBusyKey(key);
@@ -1576,11 +1600,13 @@ function DayEditorModal({
         setSel((s) => ({ ...s, [key]: "" }));
         setReasons((s) => ({ ...s, [key]: "" }));
         onChanged();
-      } else {
-        toast.error(json.error || "Không thể đổi người thực hiện");
+        return true;
       }
+      toast.error(json.error || "Không thể đổi người thực hiện");
+      return false;
     } catch (err: any) {
       toast.error("Lỗi: " + err.message);
+      return false;
     } finally {
       setBusyKey(null);
     }
@@ -1610,6 +1636,31 @@ function DayEditorModal({
     }
   };
 
+  /** Ghi chú per-person nằm trên chính dòng phân công (DutyRoster.notes) — lưu là audit old/new. */
+  const handleSaveNotes = async (row: DutyRow, key: string, notes: string): Promise<boolean> => {
+    setBusyKey(key);
+    try {
+      const res = await fetch("/api/rosters", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: row.id, notes }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã lưu ghi chú cho người được phân công.");
+        onChanged();
+        return true;
+      }
+      toast.error(json.error || "Không thể lưu ghi chú");
+      return false;
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+      return false;
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-slate-900/50 p-0 lg:p-4">
       <div
@@ -1622,7 +1673,7 @@ function DayEditorModal({
               Phiếu phân công ngày {fmtDMY(dateISO)}{unitName ? ` — ${unitName}` : ""}
             </div>
             <div className="text-[11px] text-slate-500">
-              Chọn cán bộ cho từng ô; trực trưa tính riêng, không trùng với trực thường. Đổi người phải ghi lý do (lưu vết).
+              Chọn cán bộ cho từng ô; trực trưa tính riêng, không trùng với trực thường. Ghi chú theo từng người; “Đổi người” phải ghi lý do (lưu vết).
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1695,6 +1746,7 @@ function DayEditorModal({
                           onAssign={() => {}}
                           onChange={handleChange}
                           onRemove={handleRemove}
+                          onSaveNotes={handleSaveNotes}
                         />
                       ))
                     : (
@@ -1723,6 +1775,7 @@ function DayEditorModal({
                                 }}
                                 onChange={handleChange}
                                 onRemove={handleRemove}
+                                onSaveNotes={handleSaveNotes}
                                 selectKey={key}
                               />
                             );
@@ -1748,6 +1801,7 @@ function DayEditorModal({
                                 onAssign={() => handleAssign(g, ord, key)}
                                 onChange={handleChange}
                                 onRemove={handleRemove}
+                                onSaveNotes={handleSaveNotes}
                                 selectKey={key}
                               />
                             );
@@ -1797,7 +1851,7 @@ function DayEditorModal({
   );
 }
 
-/** Một ô phân công trong phiếu: chọn cán bộ, đổi người kèm lý do, gỡ ô. */
+/** Một ô phân công trong phiếu: xem/sửa ghi chú, đổi người kèm lý do, gỡ ô. */
 function SlotRow({
   testKey,
   label,
@@ -1815,6 +1869,7 @@ function SlotRow({
   onAssign,
   onChange,
   onRemove,
+  onSaveNotes,
   selectKey,
 }: {
   testKey: string;
@@ -1831,8 +1886,9 @@ function SlotRow({
   setSel: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   setReasons: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   onAssign: () => void;
-  onChange: (row: DutyRow, key: string) => void;
+  onChange: (row: DutyRow, key: string) => Promise<boolean>;
   onRemove: (row: DutyRow, key: string) => void;
+  onSaveNotes: (row: DutyRow, key: string, notes: string) => Promise<boolean>;
   selectKey?: string;
 }) {
   const key = selectKey || testKey;
@@ -1853,6 +1909,34 @@ function SlotRow({
       )
     : [];
 
+  /** "note" = mở ô ghi chú; "change" = mở thao tác đổi người tách riêng. */
+  const [panel, setPanel] = useState<"note" | "change" | null>(null);
+  const [noteDraft, setNoteDraft] = useState(row?.notes || "");
+
+  useEffect(() => {
+    setNoteDraft(row?.notes || "");
+    setPanel(null);
+    // Đổi ngày/đổi dòng phân công thì đóng nháp ghi chú của dòng cũ.
+  }, [dateISO, row?.id]);
+
+  const noteChanged = (noteDraft.trim() || "") !== (row?.notes?.trim() || "");
+
+  const saveNotes = async () => {
+    if (!row) return;
+    if (!noteChanged) {
+      setPanel(null);
+      return;
+    }
+    const ok = await onSaveNotes(row, key, noteDraft);
+    if (ok) setPanel(null);
+  };
+
+  const saveChange = async () => {
+    if (!row) return;
+    const ok = await onChange(row, key);
+    if (ok) setPanel(null);
+  };
+
   const options = useMemo(() => {
     const list = people.slice();
     if (row && !list.some((p) => p.id === row.person.id)) {
@@ -1863,26 +1947,42 @@ function SlotRow({
 
   return (
     <div className="px-3 py-2" data-testid={`slot-row-${testKey}`}>
-      <div className="flex flex-col lg:flex-row lg:items-center gap-2">
-        <div className="lg:w-[26%] text-[11px] font-semibold text-slate-600">
+      <div className="flex flex-col lg:flex-row lg:items-start gap-2">
+        <div className="lg:w-[24%] text-[11px] font-semibold text-slate-600">
           {label || "—"}
-          {occupied && <span className="block text-[10px] text-slate-400 font-normal">Lý do gần nhất: {row!.reason || "—"}</span>}
+          {occupied && row!.reason && (
+            <span className="block text-[10px] text-slate-400 font-normal">Lý do đổi gần nhất: {row!.reason}</span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           {occupied ? (
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="font-semibold text-slate-800 truncate">{row!.person.fullName}</span>
-              {row!.leaveClash && (
-                <span className="material-symbols-outlined text-[14px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
-                  warning
-                </span>
+            <>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="font-semibold text-slate-800 truncate">{row!.person.fullName}</span>
+                {row!.leaveClash && (
+                  <span className="material-symbols-outlined text-[14px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
+                    warning
+                  </span>
+                )}
+                {row!.overlapCount > 1 && !rowPersonIsLeader && (
+                  <span
+                    className="text-[10px] font-semibold text-amber-700"
+                    title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)"
+                  >
+                    Trùng phân công
+                  </span>
+                )}
+              </div>
+              {row!.notes ? (
+                <div className="mt-0.5 text-[10px] italic leading-snug text-slate-500" data-testid={`slot-notes-view-${testKey}`}>
+                  Ghi chú: {row!.notes}
+                </div>
+              ) : (
+                <div className="mt-0.5 text-[10px] italic text-slate-400" data-testid={`slot-notes-view-${testKey}`}>
+                  Chưa có ghi chú
+                </div>
               )}
-              {row!.overlapCount > 1 && !rowPersonIsLeader && (
-                <span className="material-symbols-outlined text-[14px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
-                  error
-                </span>
-              )}
-            </div>
+            </>
           ) : (
             <span className="text-xs text-slate-400 italic">— trống —</span>
           )}
@@ -1894,57 +1994,153 @@ function SlotRow({
             </div>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 lg:w-[52%]">
-          <select
-            data-testid={`slot-select-${testKey}`}
-            value={selected}
-            onChange={(e) => setSel((s) => ({ ...s, [key]: e.target.value }))}
-            className="flex-1 min-w-0 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
-          >
-            <option value="">{occupied ? "Chọn người thay thế…" : "Chọn cán bộ…"}</option>
-            {options.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.fullName}
-              </option>
-            ))}
-          </select>
-          {occupied && changed && (
-            <input
-              data-testid={`slot-reason-${testKey}`}
-              value={reasons[key] || ""}
-              onChange={(e) => setReasons((s) => ({ ...s, [key]: e.target.value }))}
-              placeholder="Lý do thay đổi (bắt buộc)"
-              className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-50/40 px-2 py-1.5 text-xs"
-            />
-          )}
+        <div className="flex flex-col gap-1.5 lg:w-[54%]">
           {occupied ? (
-            <div className="flex items-center gap-1">
+            <>
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  data-testid={`slot-notes-${testKey}`}
+                  disabled={busy}
+                  onClick={() => setPanel(panel === "note" ? null : "note")}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-[14px]">sticky_note_2</span>
+                  {row!.notes ? "Sửa ghi chú" : "Ghi chú"}
+                </button>
+                <button
+                  type="button"
+                  data-testid={`slot-change-${testKey}`}
+                  disabled={busy}
+                  onClick={() => setPanel(panel === "change" ? null : "change")}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
+                  Đổi người
+                </button>
+                <button
+                  type="button"
+                  data-testid={`slot-remove-${testKey}`}
+                  disabled={busy}
+                  onClick={() => onRemove(row!, key)}
+                  className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                >
+                  Gỡ
+                </button>
+              </div>
+
+              {panel === "note" && (
+                <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-2">
+                  <textarea
+                    data-testid={`slot-notes-input-${testKey}`}
+                    value={noteDraft}
+                    maxLength={1000}
+                    rows={2}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    placeholder="Ghi chú cho người/vị trí này (VD: bàn giao ca, kiêm nhiệm…)"
+                    className="w-full resize-y rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                  />
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
+                    <span className="text-[10px] text-slate-400">{noteDraft.trim().length}/1000 ký tự</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        data-testid={`slot-notes-save-${testKey}`}
+                        disabled={!noteChanged || busy}
+                        onClick={saveNotes}
+                        className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
+                      >
+                        {busy ? "…" : "Lưu ghi chú"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNoteDraft(row!.notes || "");
+                          setPanel(null);
+                        }}
+                        className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {panel === "change" && (
+                <div className="space-y-1.5 rounded-lg border border-amber-200 bg-amber-50/30 p-2">
+                  <select
+                    data-testid={`slot-select-${testKey}`}
+                    value={selected}
+                    onChange={(e) => setSel((s) => ({ ...s, [key]: e.target.value }))}
+                    className="w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                  >
+                    <option value="">Chọn người thay thế…</option>
+                    {options.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.fullName}
+                      </option>
+                    ))}
+                  </select>
+                  {changed && (
+                    <input
+                      data-testid={`slot-reason-${testKey}`}
+                      value={reasons[key] || ""}
+                      onChange={(e) => setReasons((s) => ({ ...s, [key]: e.target.value }))}
+                      placeholder="Lý do thay đổi (bắt buộc, tối thiểu 3 ký tự)"
+                      className="w-full min-w-0 rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs"
+                    />
+                  )}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      data-testid={`slot-save-${testKey}`}
+                      disabled={!changed || busy}
+                      onClick={saveChange}
+                      className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
+                    >
+                      {busy ? "…" : "Lưu đổi người"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSel((s) => ({ ...s, [key]: "" }));
+                        setReasons((s) => ({ ...s, [key]: "" }));
+                        setPanel(null);
+                      }}
+                      className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5">
+              <select
+                data-testid={`slot-select-${testKey}`}
+                value={selected}
+                onChange={(e) => setSel((s) => ({ ...s, [key]: e.target.value }))}
+                className="flex-1 min-w-0 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              >
+                <option value="">Chọn cán bộ…</option>
+                {options.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.fullName}
+                  </option>
+                ))}
+              </select>
               <button
+                type="button"
                 data-testid={`slot-save-${testKey}`}
-                disabled={!changed || busy}
-                onClick={() => onChange(row!, key)}
+                disabled={!selected || busy}
+                onClick={onAssign}
                 className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
               >
-                {busy ? "…" : "Lưu"}
-              </button>
-              <button
-                data-testid={`slot-remove-${testKey}`}
-                disabled={busy}
-                onClick={() => onRemove(row!, key)}
-                className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40"
-              >
-                Gỡ
+                {busy ? "…" : "Phân công"}
               </button>
             </div>
-          ) : (
-            <button
-              data-testid={`slot-save-${testKey}`}
-              disabled={!selected || busy}
-              onClick={onAssign}
-              className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
-            >
-              {busy ? "…" : "Phân công"}
-            </button>
           )}
         </div>
       </div>
