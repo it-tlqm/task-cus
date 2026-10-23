@@ -8,7 +8,7 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `a94ce39` + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline + Phase 1/2 merges PASS |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `5e141cb` (RC) + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **RC FROZEN** — fast release package; **NO-GO** chờ Production access/backup/UAT/release order |
 | S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `2953aea` | 3111 | `talung_v3_phase_a_qa` | **MERGED — release readiness**; RC chưa freeze; production access blocked |
 | S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `236f7fb` | 3112 | `talung_v3_phase_b` | **MERGED** — Q9/Q11 PASS; S2 UI 17/17 sau S3 target tab; D5 deferred B-C-3 |
 | S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `7a25b6a` | 3113 | `talung_v3_phase_c` | **MERGED — target-only D7=A**; D5 pending B-C-3 |
