@@ -119,6 +119,37 @@ interface RenderRow {
   centerTitle: boolean;
 }
 
+/**
+ * Ghép các ô danh mục với các dòng bổ sung riêng của ngày (slotOrder vượt số ô danh mục).
+ * Chỉ thêm những dòng THỰC SỰ có người — không sinh dòng trống cho các slotOrder bị khuyết.
+ */
+function slotsWithExtras(
+  slots: DutySlotDef[],
+  assigned: DutyExportAssignment[]
+): { slots: DutySlotDef[]; byIndex: Map<number, string> } {
+  const extraOrders = [
+    ...new Set(
+      assigned
+        .map((r) => r.slotOrder)
+        .filter((n): n is number => typeof n === "number" && n >= slots.length)
+    ),
+  ].sort((a, b) => a - b);
+  const displaySlots = slots.concat(
+    extraOrders.map((order) => {
+      const row = assigned.find((r) => r.slotOrder === order);
+      return { k: `x${order}`, l: row?.slotLabel ?? null };
+    })
+  );
+  const byIndex = new Map<number, string>();
+  for (const r of assigned) {
+    if (typeof r.slotOrder !== "number") continue;
+    const displayIdx =
+      r.slotOrder < slots.length ? r.slotOrder : slots.length + extraOrders.indexOf(r.slotOrder);
+    if (displayIdx >= 0 && !byIndex.has(displayIdx)) byIndex.set(displayIdx, r.personName);
+  }
+  return { slots: displaySlots, byIndex };
+}
+
 /** Dựng danh sách dòng in của 1 ngày từ dữ liệu phân công. */
 function buildDayRows(dayRows: DutyExportAssignment[], catalog: DutyExportCatalogPosition[]): RenderRow[] {
   const out: RenderRow[] = [];
@@ -158,12 +189,8 @@ function buildDayRows(dayRows: DutyExportAssignment[], catalog: DutyExportCatalo
     const firstSnap = assigned[0];
     const title = firstSnap?.positionTitle || p.title;
     const detail = firstSnap ? firstSnap.positionDetail : p.detail;
-    const map = new Map<number, string>();
-    for (const r of assigned) {
-      if (r.slotOrder === null || r.slotOrder === undefined) continue;
-      if (!map.has(r.slotOrder)) map.set(r.slotOrder, r.personName);
-    }
-    out.push(renderPosition(title, detail, p.slots, map, false));
+    const { slots: displaySlots, byIndex } = slotsWithExtras(p.slots, assigned);
+    out.push(renderPosition(title, detail, displaySlots, byIndex, false));
     renderedPositionIds.add(p.id);
   }
 
@@ -177,17 +204,13 @@ function buildDayRows(dayRows: DutyExportAssignment[], catalog: DutyExportCatalo
   }
   for (const [, arr] of orphanGroups) {
     const maxSlot = Math.max(...arr.map((r) => (r.slotOrder ?? 0)));
-    const slots: DutySlotDef[] = Array.from({ length: maxSlot + 1 }, (_, idx) => {
+    const baseSlots: DutySlotDef[] = Array.from({ length: maxSlot + 1 }, (_, idx) => {
       const row = arr.find((r) => r.slotOrder === idx);
       return { k: `s${idx + 1}`, l: row?.slotLabel ?? null };
     });
-    const map = new Map<number, string>();
-    for (const r of arr) {
-      if (r.slotOrder === null || r.slotOrder === undefined) continue;
-      if (!map.has(r.slotOrder)) map.set(r.slotOrder, r.personName);
-    }
+    const { slots: displaySlots, byIndex } = slotsWithExtras(baseSlots, arr);
     const title = arr[0].positionTitle || "(vị trí ngừng sử dụng)";
-    out.push(renderPosition(title, arr[0].positionDetail, slots, map, false));
+    out.push(renderPosition(title, arr[0].positionDetail, displaySlots, byIndex, false));
   }
 
   // 3) Bản ghi cũ không gắn vị trí — in nối tiếp, mỗi bản ghi một dòng

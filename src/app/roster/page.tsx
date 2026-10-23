@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { isNoonDutyTitle, MAX_EXTRA_SLOTS_PER_POSITION } from "@/lib/duty-roster";
 
 /**
  * YC-24 — Phân công nhiệm vụ & lịch trực theo biểu mẫu
@@ -112,6 +113,15 @@ interface MatrixGroup {
   sortOrder: number;
 }
 
+/** Một dòng hiển thị trong nhóm vị trí: ô danh mục hoặc dòng bổ sung riêng của ngày. */
+interface SlotLine {
+  key: string;
+  label: string | null;
+  row: DutyRow | null;
+  /** true = dòng bổ sung ngoài số ô danh mục (chỉ áp dụng cho ngày đang xem). */
+  isExtra?: boolean;
+}
+
 function toISODate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -202,24 +212,39 @@ function buildMatrixGroups(rows: DutyRow[], positions: CatalogPosition[]): Matri
   return groups.sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-/** Các dòng hiển thị của một nhóm trong một ngày: mỗi ô một dòng. */
-function slotLinesFor(group: MatrixGroup, dayRows: DutyRow[]): Array<{ key: string; label: string | null; row: DutyRow | null }> {
+/** Các dòng hiển thị của một nhóm trong một ngày: mỗi ô một dòng + dòng bổ sung ngoài danh mục. */
+function slotLinesFor(group: MatrixGroup, dayRows: DutyRow[]): SlotLine[] {
   if (group.kind === "legacy") {
     return dayRows
       .filter((r) => !r.positionId)
       .map((r) => ({ key: r.id, label: r.post?.trim() || SHIFT_LABELS[r.shift] || r.shift, row: r }));
   }
-  if (group.positionId) {
-    return group.slots.map((s, idx) => {
-      const row = dayRows.find((r) => r.positionId === group.positionId && r.slotOrder === idx) || null;
-      return { key: `${idx}`, label: s.l, row };
-    });
-  }
-  return [];
+  if (!group.positionId) return [];
+  const lines: SlotLine[] = group.slots.map((s, idx) => {
+    const row = dayRows.find((r) => r.positionId === group.positionId && r.slotOrder === idx) || null;
+    return { key: `${idx}`, label: s.l, row };
+  });
+  // Các dòng bổ sung riêng của ngày (slotOrder vượt số ô danh mục) — kể cả dữ liệu cũ
+  // còn lại sau khi danh mục bị rút bớt ô. Không để mất phân công đã ghi.
+  const matched = new Set(lines.filter((l) => l.row).map((l) => l.row!.id));
+  const extras = dayRows
+    .filter((r) => r.positionId === group.positionId && !matched.has(r.id))
+    .sort((a, b) => (a.slotOrder ?? 9999) - (b.slotOrder ?? 9999) || a.id.localeCompare(b.id))
+    .map((r) => ({ key: `x-${r.id}`, label: r.slotLabel, row: r, isExtra: true }));
+  return [...lines, ...extras];
 }
 
-/** Gợi ý cảnh báo trước khi lưu: nghỉ phép trùng ngày / đã phân công vị trí khác trong ngày. */
-function prewarnFor(personId: string, dateISO: string, dayRows: DutyRow[], leaves: LeaveLite[]): string[] {
+/**
+ * Gợi ý cảnh báo trước khi lưu: nghỉ phép trùng ngày / đã phân công CÙNG NHÓM TRỰC trong ngày.
+ * Trực thường và trực trưa là hai nhóm riêng — 1 thường + 1 trưa không phải trùng phân công.
+ */
+function prewarnFor(
+  personId: string,
+  dateISO: string,
+  dayRows: DutyRow[],
+  leaves: LeaveLite[],
+  positionTitle?: string | null
+): string[] {
   const out: string[] = [];
   const d = new Date(dateISO);
   const hit = leaves.find((l) => {
@@ -231,8 +256,16 @@ function prewarnFor(personId: string, dateISO: string, dayRows: DutyRow[], leave
     return d >= s && d <= e;
   });
   if (hit) out.push(`Cán bộ có đơn nghỉ đã duyệt (${hit.type}) trùng ngày — cân nhắc lại.`);
-  if (dayRows.some((r) => r.personId === personId)) {
-    out.push("Cán bộ đã được phân công vị trí khác trong ngày (trùng phân công).");
+  const targetNoon = isNoonDutyTitle(positionTitle);
+  const sameCategory = dayRows.filter(
+    (r) => r.personId === personId && isNoonDutyTitle(r.positionTitle) === targetNoon
+  );
+  if (sameCategory.length > 0) {
+    out.push(
+      targetNoon
+        ? "Cán bộ đã được phân công trực trưa ở vị trí khác trong ngày (trùng nhóm trực trưa)."
+        : "Cán bộ đã được phân công trực thường ở vị trí khác trong ngày (trùng nhóm trực thường)."
+    );
   }
   return out;
 }
@@ -379,12 +412,20 @@ export default function RosterPage() {
       byPersonDay.set(k, arr);
     }
     for (const [, arr] of byPersonDay) {
-      if (arr.length > 1) {
-        list.push(`${arr[0].person.fullName} — ngày ${fmtDM(arr[0].date)}: được phân công ${arr.length} vị trí trong ngày.`);
+      // Trực thường và trực trưa là hai nhóm riêng: chỉ cảnh báo khi CÙNG NHÓM có từ 2 phân công.
+      const normalCount = arr.filter((r) => !isNoonDutyTitle(r.positionTitle)).length;
+      const noonCount = arr.filter((r) => isNoonDutyTitle(r.positionTitle)).length;
+      const conflicts: string[] = [];
+      if (normalCount > 1) conflicts.push(`${normalCount} trực thường`);
+      if (noonCount > 1) conflicts.push(`${noonCount} trực trưa`);
+      if (conflicts.length > 0) {
+        list.push(
+          `${arr[0].person.fullName} — ngày ${fmtDM(arr[0].date)}: trùng phân công trong ngày (${conflicts.join(", ")}).`
+        );
       }
       if (arr.some((r) => (r.overlapOutsideCount || 0) > 0)) {
         list.push(
-          `${arr[0].person.fullName} — ngày ${fmtDM(arr[0].date)}: có phân công ở bộ phận khác trong cùng ngày — kiểm tra lại (chỉ cảnh báo, không chặn).`
+          `${arr[0].person.fullName} — ngày ${fmtDM(arr[0].date)}: có phân công cùng nhóm trực ở bộ phận khác trong cùng ngày — kiểm tra lại (chỉ cảnh báo, không chặn).`
         );
       }
     }
@@ -630,6 +671,15 @@ export default function RosterPage() {
         </div>
       )}
 
+      {/* Quy ước nhóm trực: trực trưa không tính trùng với trực thường */}
+      <div className="flex items-start gap-1.5 text-[11px] leading-snug text-slate-500" data-testid="roster-noon-note">
+        <span className="material-symbols-outlined text-[14px] text-slate-400">info</span>
+        <span>
+          Trực trưa là nhóm riêng: một cán bộ có thể vừa trực thường vừa trực trưa trong ngày. Hệ thống chỉ cảnh báo khi
+          trùng phân công trong <strong>cùng nhóm trực</strong>.
+        </span>
+      </div>
+
       {/* Bộ phận đang xem + trạng thái thiết lập của các bộ phận trong phạm vi (Lãnh đạo chuyển nhanh) */}
       <div className="flex flex-wrap items-center gap-1.5" data-testid="roster-unit-strip">
         <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Đang xem</span>
@@ -840,7 +890,7 @@ export default function RosterPage() {
                                           </span>
                                         )}
                                         {ln.row && ln.row.overlapCount > 1 && (
-                                          <span className="material-symbols-outlined text-[13px] text-rose-500" title="Cán bộ được phân công nhiều vị trí trong ngày">
+                                          <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
                                             error
                                           </span>
                                         )}
@@ -950,7 +1000,7 @@ export default function RosterPage() {
                                   </span>
                                 )}
                                 {ln.row && ln.row.overlapCount > 1 && (
-                                  <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công trong ngày">
+                                  <span className="material-symbols-outlined text-[13px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
                                     error
                                   </span>
                                 )}
@@ -1203,7 +1253,7 @@ function DayFormView({
                             </span>
                           )}
                           {ln.row && ln.row.overlapCount > 1 && (
-                            <span className="material-symbols-outlined text-[12px] text-rose-500 ml-1 align-middle" title="Trùng phân công trong ngày">
+                            <span className="material-symbols-outlined text-[12px] text-rose-500 ml-1 align-middle" title="Trùng phân công cùng nhóm trực trong ngày">
                               error
                             </span>
                           )}
@@ -1392,9 +1442,40 @@ function DayEditorModal({
   const [sel, setSel] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  /** Các dòng bổ sung chưa lưu, khóa theo positionId → danh sách slotOrder. */
+  const [extraLines, setExtraLines] = useState<Record<string, number[]>>({});
 
   const dayRows = rows.filter((r) => dateKey(r.date) === dateISO);
   const activeGroups = groups.filter((g) => g.kind !== "legacy" || dayRows.some((r) => !r.positionId));
+
+  // Đổi ngày thì bỏ lựa chọn/nháp của ngày cũ, tránh mang nhầm người sang ngày mới.
+  useEffect(() => {
+    setSel({});
+    setReasons({});
+    setExtraLines({});
+  }, [dateISO]);
+
+  /** Thêm một dòng trống bổ sung cho vị trí, chỉ áp dụng cho ngày đang xem. */
+  const addExtraLine = (g: MatrixGroup) => {
+    const pid = g.positionId;
+    if (!pid) return;
+    const current = extraLines[pid] || [];
+    const realExtras = dayRows.filter(
+      (r) => r.positionId === pid && typeof r.slotOrder === "number" && r.slotOrder >= g.slots.length
+    ).length;
+    if (realExtras + current.length >= MAX_EXTRA_SLOTS_PER_POSITION) {
+      toast.error(`Mỗi vị trí chỉ được thêm tối đa ${MAX_EXTRA_SLOTS_PER_POSITION} người cho một ngày.`);
+      return;
+    }
+    const used = new Set<number>();
+    for (const r of dayRows) {
+      if (r.positionId === pid && typeof r.slotOrder === "number") used.add(r.slotOrder);
+    }
+    for (const n of current) used.add(n);
+    let idx = g.slots.length;
+    while (used.has(idx)) idx++;
+    setExtraLines((prev) => ({ ...prev, [pid]: [...(prev[pid] || []), idx] }));
+  };
 
   // Bấm một ô trên ma trận → mở phiếu và cuộn tới đúng nhóm nhiệm vụ vừa chọn.
   useEffect(() => {
@@ -1429,6 +1510,14 @@ function DayEditorModal({
         if (json.warning) toast.warning(json.warning);
         if (json.crossWarning) toast.warning(json.crossWarning);
         setSel((s) => ({ ...s, [key]: "" }));
+        const pid = g.positionId;
+        if (pid) {
+          setExtraLines((prev) => {
+            const cur = prev[pid];
+            if (!cur?.includes(idx)) return prev;
+            return { ...prev, [pid]: cur.filter((n) => n !== idx) };
+          });
+        }
         onChanged();
       } else {
         toast.error(json.error || "Không thể phân công");
@@ -1512,7 +1601,7 @@ function DayEditorModal({
               Phiếu phân công ngày {fmtDMY(dateISO)}{unitName ? ` — ${unitName}` : ""}
             </div>
             <div className="text-[11px] text-slate-500">
-              Bảng phân công của bộ phận đang xem; chọn cán bộ cho từng ô, đổi người phải ghi lý do (lưu vết).
+              Chọn cán bộ cho từng ô; trực trưa tính riêng, không trùng với trực thường. Đổi người phải ghi lý do (lưu vết).
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1542,6 +1631,13 @@ function DayEditorModal({
           )}
           {activeGroups.map((g) => {
             const lines = slotLinesFor(g, dayRows);
+            const extraOrders = g.positionId ? extraLines[g.positionId] || [] : [];
+            const realExtras = g.positionId
+              ? dayRows.filter(
+                  (r) => r.positionId === g.positionId && typeof r.slotOrder === "number" && r.slotOrder >= g.slots.length
+                ).length
+              : 0;
+            const atExtraLimit = realExtras + extraOrders.length >= MAX_EXTRA_SLOTS_PER_POSITION;
             return (
               <div
                 key={g.code}
@@ -1564,6 +1660,7 @@ function DayEditorModal({
                           key={ln.key}
                           testKey={`CU-${idx}`}
                           label={ln.label}
+                          positionTitle={ln.row?.positionTitle ?? g.title}
                           row={ln.row}
                           people={people}
                           dateISO={dateISO}
@@ -1579,32 +1676,84 @@ function DayEditorModal({
                           onRemove={handleRemove}
                         />
                       ))
-                    : g.slots.map((s, idx) => {
-                        const key = `${g.positionId}#${idx}`;
-                        const row = dayRows.find((r) => r.positionId === g.positionId && r.slotOrder === idx) || null;
-                        return (
-                          <SlotRow
-                            key={key}
-                            testKey={`${g.code}-${idx}`}
-                            label={s.l ?? `Người ${idx + 1}`}
-                            row={row}
-                            people={people}
-                            dateISO={dateISO}
-                            dayRows={dayRows}
-                            leaves={leaves}
-                            sel={sel}
-                            reasons={reasons}
-                            busyKey={busyKey}
-                            setSel={setSel}
-                            setReasons={setReasons}
-                            onAssign={() => handleAssign(g, idx, key)}
-                            onChange={handleChange}
-                            onRemove={handleRemove}
-                            selectKey={key}
-                          />
-                        );
-                      })}
+                    : (
+                        <>
+                          {lines.map((ln, idx) => {
+                            const slotIdx = ln.isExtra ? ln.row?.slotOrder ?? null : idx;
+                            const key = `${g.positionId}#${ln.isExtra ? `extra-${ln.row?.id ?? idx}` : idx}`;
+                            return (
+                              <SlotRow
+                                key={key}
+                                testKey={`${g.code}-${idx}`}
+                                label={ln.label ?? (ln.isExtra ? "Bổ sung" : `Người ${idx + 1}`)}
+                                positionTitle={ln.row?.positionTitle ?? g.title}
+                                row={ln.row}
+                                people={people}
+                                dateISO={dateISO}
+                                dayRows={dayRows}
+                                leaves={leaves}
+                                sel={sel}
+                                reasons={reasons}
+                                busyKey={busyKey}
+                                setSel={setSel}
+                                setReasons={setReasons}
+                                onAssign={() => {
+                                  if (slotIdx !== null) handleAssign(g, slotIdx, key);
+                                }}
+                                onChange={handleChange}
+                                onRemove={handleRemove}
+                                selectKey={key}
+                              />
+                            );
+                          })}
+                          {extraOrders.map((ord) => {
+                            const key = `${g.positionId}#local-${ord}`;
+                            return (
+                              <SlotRow
+                                key={key}
+                                testKey={`${g.code}-local-${ord}`}
+                                label="Bổ sung"
+                                positionTitle={g.title}
+                                row={null}
+                                people={people}
+                                dateISO={dateISO}
+                                dayRows={dayRows}
+                                leaves={leaves}
+                                sel={sel}
+                                reasons={reasons}
+                                busyKey={busyKey}
+                                setSel={setSel}
+                                setReasons={setReasons}
+                                onAssign={() => handleAssign(g, ord, key)}
+                                onChange={handleChange}
+                                onRemove={handleRemove}
+                                selectKey={key}
+                              />
+                            );
+                          })}
+                        </>
+                      )}
                 </div>
+                {canAssign && g.kind === "catalog" && (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-teal-50/30 px-3 py-2">
+                    <button
+                      type="button"
+                      data-testid={`editor-add-person-${g.code}`}
+                      onClick={() => addExtraLine(g)}
+                      disabled={atExtraLimit}
+                      className="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      title={`Thêm một người vào vị trí này, chỉ áp dụng cho ngày ${fmtDMY(dateISO)}`}
+                    >
+                      <span className="material-symbols-outlined text-[15px]">person_add</span>
+                      Thêm người cho ngày này
+                    </button>
+                    <span className="text-[10px] text-slate-500">
+                      {atExtraLimit
+                        ? `Đã đạt tối đa ${MAX_EXTRA_SLOTS_PER_POSITION} dòng bổ sung.`
+                        : "Chỉ áp dụng ngày đang xem; muốn cố định, dùng “Danh mục vị trí”."}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1631,6 +1780,7 @@ function DayEditorModal({
 function SlotRow({
   testKey,
   label,
+  positionTitle,
   row,
   people,
   dateISO,
@@ -1648,6 +1798,7 @@ function SlotRow({
 }: {
   testKey: string;
   label: string | null;
+  positionTitle?: string | null;
   row: DutyRow | null;
   people: PersonLite[];
   dateISO: string;
@@ -1668,7 +1819,9 @@ function SlotRow({
   const busy = busyKey === key;
   const occupied = !!row;
   const changed = occupied && !!selected && selected !== row!.personId;
-  const prewarns = selected ? prewarnFor(selected, dateISO, dayRows.filter((r) => r.id !== row?.id), leaves) : [];
+  const prewarns = selected
+    ? prewarnFor(selected, dateISO, dayRows.filter((r) => r.id !== row?.id), leaves, positionTitle)
+    : [];
 
   const options = useMemo(() => {
     const list = people.slice();
@@ -1693,7 +1846,7 @@ function SlotRow({
                 </span>
               )}
               {row!.overlapCount > 1 && (
-                <span className="material-symbols-outlined text-[14px] text-rose-500" title="Trùng phân công trong ngày">
+                <span className="material-symbols-outlined text-[14px] text-rose-500" title="Trùng phân công cùng nhóm trực trong ngày">
                   error
                 </span>
               )}
@@ -1893,6 +2046,7 @@ function CatalogModal({
             <div className="text-sm font-bold text-slate-800">Danh mục vị trí/nhiệm vụ phân công</div>
             <div className="text-[11px] text-slate-500">
               Bộ phận: <span className="font-semibold text-slate-700">{unitName || "—"}</span>. Sửa/xếp lại danh mục không làm thay đổi phân công đã ghi.
+              Muốn thêm người riêng cho một ngày, dùng “Thêm người cho ngày này” trong phiếu phân công.
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100" aria-label="Đóng" data-testid="catalog-close">

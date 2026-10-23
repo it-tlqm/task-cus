@@ -5,6 +5,7 @@ import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { parseSlots, slotKeyOf } from "@/server/duty-catalog";
 import { primaryUnitOf, resolveDutyUnitId as resolveUnitId } from "@/server/duty-scope";
+import { isNoonDutyTitle, MAX_EXTRA_SLOTS_PER_POSITION } from "@/lib/duty-roster";
 
 /**
  * YC-24 PHƯƠNG ÁN B — Bảng phân công định danh theo (BỘ PHẬN + NGÀY + Ô).
@@ -66,14 +67,28 @@ async function leaveClashOf(personId: string, d: Date): Promise<{ type: string }
 
 /**
  * Cảnh báo cán bộ được phân công ở bảng khác trong cùng ngày (chỉ trả SỐ LƯỢNG — không lộ chi tiết ngoài quyền).
- * TheCross = số phân công ngoài bộ phận đang xét.
+ * Chỉ đếm CÙNG NHÓM TRỰC (trực thường / trực trưa): một người vừa trực thường vừa trực trưa
+ * trong ngày là hợp lệ, không phải trùng phân công.
+ * outside = số phân công cùng nhóm trực ngoài bộ phận đang xét.
  */
-async function crossCountOf(personId: string, d: Date, boardUnitId: string): Promise<{ total: number; board: number; outside: number }> {
+async function crossCountOf(
+  personId: string,
+  d: Date,
+  boardUnitId: string,
+  noon: boolean
+): Promise<{ total: number; board: number; outside: number }> {
   const { start, end } = dayBounds(d);
-  const [total, board] = await Promise.all([
-    prisma.dutyRoster.count({ where: { personId, date: { gte: start, lte: end } } }),
-    prisma.dutyRoster.count({ where: { personId, date: { gte: start, lte: end }, unitId: boardUnitId } }),
-  ]);
+  const rows = await prisma.dutyRoster.findMany({
+    where: { personId, date: { gte: start, lte: end } },
+    select: { unitId: true, positionTitle: true },
+  });
+  let total = 0;
+  let board = 0;
+  for (const r of rows) {
+    if (isNoonDutyTitle(r.positionTitle) !== noon) continue;
+    total++;
+    if (r.unitId === boardUnitId) board++;
+  }
   return { total, board, outside: Math.max(0, total - board) };
 }
 
@@ -138,28 +153,35 @@ export async function GET(req: NextRequest) {
       leaveByPerson.set(l.personId, arr);
     }
 
-    // Đếm phân công theo (cán bộ, ngày) TRONG bảng này — cảnh báo trùng phân công nội bộ bảng
+    // Đếm phân công theo (cán bộ, ngày) TRONG bảng này — tách riêng trực thường / trực trưa.
+    // Một người vừa trực thường vừa trực trưa trong ngày KHÔNG bị coi là trùng phân công.
     const dayKey = (d: Date | string) => {
       const x = new Date(d);
       return `${x.getFullYear()}-${x.getMonth() + 1}-${x.getDate()}`;
     };
-    const boardCount = new Map<string, number>();
+    const boardNormal = new Map<string, number>();
+    const boardNoon = new Map<string, number>();
     for (const r of rows) {
       const k = `${r.personId}|${dayKey(r.date)}`;
-      boardCount.set(k, (boardCount.get(k) || 0) + 1);
+      const bucket = isNoonDutyTitle(r.positionTitle) ? boardNoon : boardNormal;
+      bucket.set(k, (bucket.get(k) || 0) + 1);
     }
 
-    // Đếm phân công theo (cán bộ, ngày) TRÊN TOÀN HỆ THỐNG (chỉ số lượng) — cảnh báo phân công chéo bộ phận
+    // Đếm phân công theo (cán bộ, ngày, nhóm trực) TRÊN TOÀN HỆ THỐNG (chỉ số lượng)
+    // — cảnh báo phân công chéo bộ phận, cũng tách trực thường / trực trưa.
     const personIds = [...new Set(rows.map((r) => r.personId))];
-    const allCount = new Map<string, number>();
+    const allNormal = new Map<string, number>();
+    const allNoon = new Map<string, number>();
     if (personIds.length > 0) {
       const grouped = await prisma.dutyRoster.groupBy({
-        by: ["personId", "date"],
+        by: ["personId", "date", "positionTitle"],
         where: { personId: { in: personIds }, date: { gte: from, lte: to } },
         _count: { id: true },
       });
       for (const g of grouped) {
-        allCount.set(`${g.personId}|${dayKey(g.date)}`, g._count.id);
+        const k = `${g.personId}|${dayKey(g.date)}`;
+        const bucket = isNoonDutyTitle(g.positionTitle) ? allNoon : allNormal;
+        bucket.set(k, (bucket.get(k) || 0) + g._count.id);
       }
     }
 
@@ -171,9 +193,13 @@ export async function GET(req: NextRequest) {
         return rd >= new Date(s.setHours(0, 0, 0, 0)) && rd <= new Date(e.setHours(23, 59, 59, 999));
       });
       const k = `${r.personId}|${dayKey(r.date)}`;
-      const overlapCount = boardCount.get(k) || 1;
-      const outside = Math.max(0, (allCount.get(k) || overlapCount) - overlapCount);
-      return { ...r, leaveClash: clash ? { type: clash.type } : null, overlapCount, overlapOutsideCount: outside };
+      const noon = isNoonDutyTitle(r.positionTitle);
+      const boardCount = (noon ? boardNoon : boardNormal).get(k) || 1;
+      const allCount = (noon ? allNoon : allNormal).get(k) || boardCount;
+      const outside = Math.max(0, allCount - boardCount);
+      // overlapCount = số phân công CÙNG NHÓM TRỰC trong bảng này (kể cả chính dòng này).
+      // 1 trực thường + 1 trực trưa  -> mỗi dòng đều = 1, không cảnh báo.
+      return { ...r, leaveClash: clash ? { type: clash.type } : null, overlapCount: boardCount, overlapOutsideCount: outside };
     });
 
     const scopeUnitIds = units.map((u) => u.id);
@@ -281,10 +307,14 @@ export async function POST(req: NextRequest) {
       if (position.status !== "ACTIVE") return jsonError("Vị trí/nhiệm vụ đã ngừng sử dụng — không phân công mới", 400);
       const slots = parseSlots(position.slots);
       const idx = Number(slotOrder);
-      if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
-        return jsonError("Ô phân công không hợp lệ (ngoài phạm vi vị trí)", 400);
+      // Cho phép thêm người ngoài số ô danh mục, tối đa 12 dòng bổ sung/vị trí/ngày.
+      if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length + MAX_EXTRA_SLOTS_PER_POSITION) {
+        return jsonError(
+          `Ô phân công không hợp lệ (vị trí có ${slots.length} ô, chỉ được thêm tối đa ${MAX_EXTRA_SLOTS_PER_POSITION} ô bổ sung)`,
+          400
+        );
       }
-      const slot = slots[idx];
+      const slot = slots[idx] ?? null;
       const slotKey = slotKeyOf(position.id, idx);
 
       const dup = await prisma.dutyRoster.findFirst({ where: { unitId: targetUnitId, date: d, slotKey } });
@@ -304,7 +334,7 @@ export async function POST(req: NextRequest) {
           positionTitle: position.title,
           positionDetail: position.detail,
           positionOrder: position.sortOrder,
-          slotLabel: slot.l,
+          slotLabel: slot?.l ?? null,
           slotOrder: idx,
           slotKey,
           createdById: user.personId,
@@ -316,7 +346,7 @@ export async function POST(req: NextRequest) {
       });
 
       const clash = await leaveClashOf(personId, d);
-      const cross = await crossCountOf(personId, d, targetUnitId);
+      const cross = await crossCountOf(personId, d, targetUnitId, isNoonDutyTitle(position.title));
       await recordAuditEvent({
         actorId: user.id,
         action: "ROSTER_CREATE",
@@ -328,7 +358,7 @@ export async function POST(req: NextRequest) {
           personId,
           positionId: position.id,
           positionCode: position.code,
-          slotLabel: slot.l,
+          slotLabel: slot?.l ?? undefined,
           slotOrder: idx,
           reason: reason?.trim() || undefined,
         },
@@ -340,7 +370,7 @@ export async function POST(req: NextRequest) {
           warning: clash ? "Người này có đơn nghỉ đã duyệt trùng ngày — kiểm tra lại phân công!" : undefined,
           crossWarning:
             cross.outside > 0
-              ? `Cán bộ còn ${cross.outside} phân công khác trong cùng ngày (ngoài bảng này) — kiểm tra trùng.`
+              ? `Cán bộ còn ${cross.outside} phân công cùng nhóm trực trong cùng ngày (ngoài bảng này) — kiểm tra trùng.`
               : undefined,
         },
         { status: 201 }
@@ -366,7 +396,7 @@ export async function POST(req: NextRequest) {
       },
     });
     const clash = await leaveClashOf(personId, d);
-    const cross = await crossCountOf(personId, d, targetUnitId);
+    const cross = await crossCountOf(personId, d, targetUnitId, false);
     await recordAuditEvent({
       actorId: user.id,
       action: "ROSTER_CREATE",
@@ -381,7 +411,7 @@ export async function POST(req: NextRequest) {
         warning: clash ? "Người này có đơn nghỉ đã duyệt trùng ngày — kiểm tra lại phân công!" : undefined,
         crossWarning:
           cross.outside > 0
-            ? `Cán bộ còn ${cross.outside} phân công khác trong cùng ngày (ngoài bảng này) — kiểm tra trùng.`
+            ? `Cán bộ còn ${cross.outside} phân công cùng nhóm trực trong cùng ngày (ngoài bảng này) — kiểm tra trùng.`
             : undefined,
       },
       { status: 201 }
