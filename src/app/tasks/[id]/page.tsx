@@ -85,6 +85,18 @@ interface TaskDetail {
     statusFrom: string | null;
     statusTo: string | null;
   }>;
+  approval?: {
+    caseId: string;
+    caseStatus: string;
+    round: number;
+    action: "AGREE" | "REJECT" | "CLARIFY" | "RESPOND" | null;
+    actionLabel: string | null;
+    reason: string | null;
+    content: string | null;
+    decidedById: string | null;
+    decidedByName: string | null;
+    decidedAt: string | null;
+  } | null;
 }
 
 export default function TaskDetailPage() {
@@ -396,7 +408,7 @@ export default function TaskDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/tasks/${taskId}`);
+      const res = await fetch(`/api/tasks/${taskId}`, { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         setTask(json.data);
@@ -663,6 +675,9 @@ export default function TaskDetailPage() {
 
   const isCompleted = task.status === "COMPLETED";
   const isWaiting = task.status === "WAITING_REVIEW";
+  const isReturned =
+    task.status === "IN_PROGRESS" &&
+    (task.approval?.action === "REJECT" || task.approval?.action === "CLARIFY");
   const isOverdue = task.isOverdue;
 
   return (
@@ -730,6 +745,15 @@ export default function TaskDetailPage() {
                     : "Đang thực hiện"}
                 </span>
               </span>
+              {isReturned && (
+                <span
+                  data-testid="task-returned-badge"
+                  className="px-2.5 py-0.5 rounded font-bold text-xs inline-flex items-center gap-1 bg-status-danger-bg text-status-danger"
+                >
+                  <span className="material-symbols-outlined text-[14px]">undo</span>
+                  <span>Bị trả lại</span>
+                </span>
+              )}
             </div>
 
             <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight font-bold">
@@ -774,7 +798,7 @@ export default function TaskDetailPage() {
                 <span>Xóa nhiệm vụ trùng</span>
               </button>
             )}
-            {!isCompleted && (
+            {!isCompleted && !isWaiting && (
               <button
                 onClick={() => {
                   // YC-38 B4: reset trạng thái modal mỗi lần mở (không giữ checkbox/tiến độ cũ)
@@ -789,7 +813,7 @@ export default function TaskDetailPage() {
               </button>
             )}
 
-            {!isCompleted && (
+            {!isCompleted && !isWaiting && (
               <button
                 onClick={() => setShowExtRequestModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-subtle hover:bg-surface-container text-primary font-semibold text-sm border border-border-default active-press"
@@ -799,7 +823,7 @@ export default function TaskDetailPage() {
               </button>
             )}
 
-            {isWaiting && (
+            {isWaiting && canApprove && task.owner?.id !== permUser?.personId && (
               <button
                 onClick={() => setShowApproveModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-status-success text-white font-semibold text-sm shadow-sm active-press"
@@ -844,6 +868,43 @@ export default function TaskDetailPage() {
                 <div className="p-3 rounded-lg bg-status-success-bg/40 border border-status-success/30 text-xs flex flex-col gap-1">
                   <span className="font-bold text-status-success">Kết quả thực tế đã nghiệm thu:</span>
                   <span className="text-on-surface">{task.actualResultText}</span>
+                </div>
+              )}
+
+              {/* YC-08: quyết định duyệt gần nhất — người, thời gian, lý do */}
+              {task.approval && (task.approval.action || task.approval.caseStatus !== "OPEN") && (
+                <div
+                  data-testid="task-approval-summary"
+                  className={`p-3 rounded-lg border text-xs flex flex-col gap-1 ${
+                    isReturned
+                      ? "bg-status-danger-bg/40 border-status-danger/30"
+                      : task.approval.caseStatus === "AGREED"
+                        ? "bg-status-success-bg/40 border-status-success/30"
+                        : "bg-surface-subtle border-border-default"
+                  }`}
+                >
+                  <span
+                    className={`font-bold ${
+                      isReturned
+                        ? "text-status-danger"
+                        : task.approval.caseStatus === "AGREED"
+                          ? "text-status-success"
+                          : "text-primary"
+                    }`}
+                  >
+                    Quyết định của lãnh đạo: {task.approval.actionLabel || task.approval.caseStatus}
+                  </span>
+                  <span className="text-on-surface-variant">
+                    Người quyết định: <b className="text-on-surface">{task.approval.decidedByName || "—"}</b>
+                    {task.approval.decidedAt ? ` · ${formatDateTime(task.approval.decidedAt)}` : ""}
+                    {task.approval.round ? ` · Vòng ${task.approval.round}` : ""}
+                  </span>
+                  {task.approval.reason && (
+                    <span className="text-on-surface">Lý do: {task.approval.reason}</span>
+                  )}
+                  {task.approval.content && (
+                    <span className="text-on-surface">Nội dung: {task.approval.content}</span>
+                  )}
                 </div>
               )}
             </div>

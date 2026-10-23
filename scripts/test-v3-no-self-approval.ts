@@ -8,11 +8,16 @@
  *     - POST /api/approvals/TASK_RESULT/{id}/decision (AGREE) của người TRÌNH bị chặn.
  */
 import { createRequire } from "node:module";
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
 
 const creq = createRequire(import.meta.url);
 const { PrismaClient } = creq("@prisma/client");
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-no-self-approval"
+);
 const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DIRECT_URL || process.env.DATABASE_URL } },
+  datasources: { db: { url: dbUrl } },
 });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";
@@ -114,10 +119,15 @@ async function main() {
       where: { resourceId: task.id },
       orderBy: { createdAt: "desc" },
     });
+    const selfAgreeDecisions = caseRow
+      ? await prisma.approvalDecision.count({
+          where: { caseId: caseRow.id, action: "AGREE", actorPersonId: leader.personId },
+        })
+      : 0;
     check(
-      "B2. Ho so chua co quyet dinh tu duyet",
-      !caseRow || caseRow.status !== "APPROVED",
-      `status=${caseRow?.status}`
+      "B2. Ho so chua co quyet dinh tu duyet (status phai khac AGREED)",
+      (!caseRow || caseRow.status !== "AGREED") && selfAgreeDecisions === 0,
+      `status=${caseRow?.status}, selfAgree=${selfAgreeDecisions}`
     );
 
     // C. Cán bộ (không phải lãnh đạo) cũng không duyệt được

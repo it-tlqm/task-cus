@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
+import { formatVnDateTime } from "@/lib/datetime";
 import ApprovalPreviewModal, {
   type ApprovalCaseType,
   type ApprovalDecisionAction,
@@ -38,6 +39,26 @@ interface ApprovalItem {
   documentUrl?: string;
   reqId?: string;
   attachments?: ApprovalAttachment[];
+}
+
+interface DecidedCase {
+  id: string;
+  caseType: string;
+  resourceId: string;
+  code: string | null;
+  title: string;
+  status: string;
+  decidedAt: string | null;
+  decidedByName: string | null;
+  submittedByName: string | null;
+  latestDecision: {
+    action: string;
+    actionLabel: string;
+    reason: string | null;
+    content: string | null;
+    actorName: string | null;
+    at: string;
+  } | null;
 }
 
 function formatFileSize(bytes: number) {
@@ -119,6 +140,13 @@ export default function ApprovalsPage() {
   const [respondContent, setRespondContent] = useState("");
   const [responding, setResponding] = useState(false);
 
+  // YC-12 — "Đã xử lý": lịch sử quyết định theo thẩm quyền + lọc cán bộ/tháng/năm.
+  const [decidedCases, setDecidedCases] = useState<DecidedCase[]>([]);
+  const [decidedLoading, setDecidedLoading] = useState(false);
+  const [decidedPerson, setDecidedPerson] = useState("");
+  const [decidedMonth, setDecidedMonth] = useState("");
+  const [decidedYear, setDecidedYear] = useState("");
+
   const fetchMyCases = useCallback(async () => {
     setMyCasesLoading(true);
     try {
@@ -136,15 +164,36 @@ export default function ApprovalsPage() {
     fetchMyCases();
   }, [fetchMyCases]);
 
+  const fetchDecidedCases = useCallback(async () => {
+    setDecidedLoading(true);
+    try {
+      const params = new URLSearchParams({ scope: "decided" });
+      if (decidedPerson.trim()) params.set("person", decidedPerson.trim());
+      if (decidedMonth) params.set("month", decidedMonth);
+      if (decidedYear) params.set("year", decidedYear);
+      const res = await fetch("/api/approvals/cases?" + params.toString(), { cache: "no-store" });
+      const json = await res.json().catch(() => null);
+      if (res.ok) setDecidedCases(json?.data || []);
+    } catch {
+      // im lặng — khối lịch sử không chặn màn hình chính
+    } finally {
+      setDecidedLoading(false);
+    }
+  }, [decidedPerson, decidedMonth, decidedYear]);
+
+  useEffect(() => {
+    fetchDecidedCases();
+  }, [fetchDecidedCases]);
+
   // Tải danh sách hồ sơ thực tế từ PostgreSQL
   const fetchLiveApprovals = useCallback(async () => {
     try {
       // Chỉ lấy ĐÚNG hai nguồn cần duyệt (trước đây kéo 50 việc đầu về lọc —
       // hồ sơ chờ duyệt nằm ngoài 50 việc đó sẽ vô hình)
       const [tasksRes, delayRes, plansRes] = await Promise.all([
-        fetch("/api/tasks?status=WAITING_REVIEW&pageSize=100"),
-        fetch("/api/tasks?deadlinePending=1&pageSize=100"),
-        fetch("/api/plans"),
+        fetch("/api/tasks?status=WAITING_REVIEW&pageSize=100", { cache: "no-store" }),
+        fetch("/api/tasks?deadlinePending=1&pageSize=100", { cache: "no-store" }),
+        fetch("/api/plans", { cache: "no-store" }),
       ]);
 
       const liveItems: ApprovalItem[] = [];
@@ -792,7 +841,118 @@ export default function ApprovalsPage() {
         </div>
       </section>
 
-      {/* Modal YC-37 — bước XEM TRƯỚC bắt buộc trước khi quyết định */}
+      {/* =====================================================================
+          YC-12 — "ĐÃ XỬ LÝ": lịch sử quyết định theo thẩm quyền
+          ===================================================================== */}
+      <section className="max-w-2xl mx-auto px-margin pt-4">
+        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-[20px]">history</span>
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-primary font-bold">Đã xử lý</h3>
+                <p className="text-[11px] text-on-surface-variant">
+                  Lịch sử hồ sơ bạn đã quyết định hoặc thuộc phạm vi bạn được xem.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={fetchDecidedCases}
+              className="text-[11px] font-semibold text-secondary inline-flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[15px]">refresh</span>
+              Làm mới
+            </button>
+          </div>
+
+          <div className="px-4 py-2 flex flex-wrap items-center gap-2 border-b border-border-default">
+            <input
+              data-testid="decided-person-filter"
+              value={decidedPerson}
+              onChange={(e) => setDecidedPerson(e.target.value)}
+              placeholder="Mã hoặc tên cán bộ"
+              className="h-9 flex-1 min-w-[160px] rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+            />
+            <input
+              data-testid="decided-month-filter"
+              value={decidedMonth}
+              onChange={(e) => setDecidedMonth(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              placeholder="Tháng"
+              className="h-9 w-20 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+            />
+            <input
+              data-testid="decided-year-filter"
+              value={decidedYear}
+              onChange={(e) => setDecidedYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="Năm"
+              className="h-9 w-24 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+            />
+            {(decidedPerson || decidedMonth || decidedYear) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDecidedPerson("");
+                  setDecidedMonth("");
+                  setDecidedYear("");
+                }}
+                className="text-[11px] font-semibold text-status-primary hover:underline"
+              >
+                Xoá lọc
+              </button>
+            )}
+          </div>
+
+          {decidedLoading ? (
+            <div className="p-4 text-[11px] text-on-surface-variant">Đang tải lịch sử...</div>
+          ) : decidedCases.length === 0 ? (
+            <div className="p-4 text-[11px] text-on-surface-variant">Chưa có hồ sơ nào đã xử lý.</div>
+          ) : (
+            <ul className="divide-y divide-border-default">
+              {decidedCases.map((dc) => (
+                <li key={dc.id} className="px-4 py-3 space-y-1" data-testid={`decided-case-${dc.id}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[12px] font-semibold text-primary min-w-0">
+                      <span className="font-mono text-[11px] text-on-surface-variant">
+                        [{dc.code ?? dc.resourceId.slice(0, 8)}]
+                      </span>{" "}
+                      {dc.title}
+                    </p>
+                    <span
+                      className={`shrink-0 text-[10px] px-2 py-0.5 rounded border font-semibold whitespace-nowrap ${
+                        dc.status === "AGREED"
+                          ? "border-status-success/30 bg-status-success-bg text-status-success"
+                          : dc.status === "REJECTED"
+                            ? "border-status-danger/30 bg-status-danger-bg text-status-danger"
+                            : "border-status-warning/30 bg-status-warning-bg text-status-warning"
+                      }`}
+                    >
+                      {dc.status === "AGREED"
+                        ? "Đã chấp thuận"
+                        : dc.status === "REJECTED"
+                          ? "Đã từ chối"
+                          : dc.status === "CLARIFY_REQUESTED"
+                            ? "Yêu cầu giải trình"
+                            : dc.status}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-on-surface-variant">
+                    Người trình: <b className="text-on-surface">{dc.submittedByName || "—"}</b>
+                    {" · "}Người quyết định: <b className="text-on-surface">{dc.decidedByName || "—"}</b>
+                    {dc.decidedAt ? ` · ${formatVnDateTime(dc.decidedAt)}` : ""}
+                  </p>
+                  {dc.latestDecision?.reason && (
+                    <p className="text-[11px] text-on-surface-variant">Lý do: {dc.latestDecision.reason}</p>
+                  )}
+                  {dc.latestDecision?.content && (
+                    <p className="text-[11px] text-on-surface-variant">Nội dung: {dc.latestDecision.content}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
       <ApprovalPreviewModal
         open={previewOpen}
         caseType={previewCaseType}
@@ -802,6 +962,7 @@ export default function ApprovalsPage() {
         onDecided={() => {
           fetchLiveApprovals();
           fetchMyCases();
+          fetchDecidedCases();
         }}
       />
 

@@ -24,6 +24,15 @@ const SHIFTS: Record<string, string> = {
   CA_NGAY: "Cả ngày",
 };
 
+/** Ghi chú per-person (DutyRoster.notes) — giới hạn để tránh dữ liệu rác/ô quá dài. */
+const MAX_NOTES_LENGTH = 1000;
+
+function normalizeNotes(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text.length > 0 ? text : null;
+}
+
 function parseDayStart(raw: string | null): Date | null {
   if (!raw) return null;
   const d = new Date(raw);
@@ -289,6 +298,10 @@ export async function POST(req: NextRequest) {
     if (!unitId) return jsonError("Thiếu bộ phận của bảng phân công", 400);
     const d = parseDayStart(String(date));
     if (!d) return jsonError("Ngày phân công không hợp lệ", 400);
+    const noteText = normalizeNotes(notes);
+    if (noteText && noteText.length > MAX_NOTES_LENGTH) {
+      return jsonError(`Ghi chú tối đa ${MAX_NOTES_LENGTH} ký tự`, 400);
+    }
 
     const resolved = await resolveUnitId(user, String(unitId));
     if (!resolved.ok) return jsonError(resolved.error, resolved.status);
@@ -328,7 +341,7 @@ export async function POST(req: NextRequest) {
           shift: "CA_NGAY",
           personId,
           unitId: targetUnitId,
-          notes: notes?.trim() || null,
+          notes: noteText,
           reason: reason?.trim() || null,
           positionId: position.id,
           positionTitle: position.title,
@@ -361,6 +374,7 @@ export async function POST(req: NextRequest) {
           slotLabel: slot?.l ?? undefined,
           slotOrder: idx,
           reason: reason?.trim() || undefined,
+          notes: noteText ?? undefined,
         },
       });
       return NextResponse.json(
@@ -387,7 +401,7 @@ export async function POST(req: NextRequest) {
         post: post?.trim() || null,
         personId,
         unitId: targetUnitId,
-        notes: notes?.trim() || null,
+        notes: noteText,
         createdById: user.personId,
       },
       include: {
@@ -402,7 +416,7 @@ export async function POST(req: NextRequest) {
       action: "ROSTER_CREATE",
       resourceType: "DutyRoster",
       resourceId: created.id,
-      newData: { personId, date: d.toISOString().slice(0, 10), unitId: targetUnitId, shift, post: post || undefined },
+      newData: { personId, date: d.toISOString().slice(0, 10), unitId: targetUnitId, shift, post: post || undefined, notes: noteText ?? undefined },
     });
     return NextResponse.json(
       {
@@ -450,12 +464,19 @@ export async function PATCH(req: NextRequest) {
     }
 
     const data: any = {};
-    const auditOld: any = { personId: current.personId, unitId: current.unitId };
+    const auditOld: any = { personId: current.personId, unitId: current.unitId, notes: current.notes };
     const auditNew: any = {};
 
     if (notes !== undefined) {
-      data.notes = String(notes).trim() || null;
-      auditNew.notes = data.notes;
+      const nextNotes = normalizeNotes(notes);
+      if (nextNotes && nextNotes.length > MAX_NOTES_LENGTH) {
+        return jsonError(`Ghi chú tối đa ${MAX_NOTES_LENGTH} ký tự`, 400);
+      }
+      // Chỉ ghi audit khi giá trị thực sự thay đổi (old → new).
+      if (nextNotes !== current.notes) {
+        data.notes = nextNotes;
+        auditNew.notes = nextNotes;
+      }
     }
 
     let crossWarning: string | undefined;
@@ -545,6 +566,8 @@ export async function DELETE(req: NextRequest) {
         positionId: current.positionId,
         positionTitle: current.positionTitle,
         slotLabel: current.slotLabel,
+        notes: current.notes,
+        reason: current.reason,
       },
       newData: reason.trim() ? { reason: reason.trim() } : undefined,
     });

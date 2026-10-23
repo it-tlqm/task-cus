@@ -8,15 +8,16 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `origin/main` + Phase A | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
-| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `50daed3` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
-| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `50daed3` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `50daed3` docs / `a68d31e` code | 3113 | `talung_v3_phase_c` | **WAIT_CONTRACT** |
-| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `50daed3` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12 |
-| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `50daed3` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
-| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `50daed3` docs / `a68d31e` code | — | — | **READY TO START — SPEC ONLY** |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `352f078` + docs | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline + merges PASS |
+| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `2953aea` | 3111 | `talung_v3_phase_a_qa` | **MERGED — release readiness**; RC chưa freeze; production access blocked |
+| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `236f7fb` | 3112 | `talung_v3_phase_b` | **MERGED** — Q9/Q11 PASS; D5 deferred B-C-3 |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `cb093f4` | 3113 | `talung_v3_phase_c` | **READY_TARGET_ONLY** — B-C-2 merged; D5 pending |
+| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `56a8d68` | 3114 | `talung_v3_task_approval` | **MERGED — STANDBY** — không code thêm |
+| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `2bc645d` | 3115 | `talung_v3_roster` | **MERGED — STANDBY** — E13 PENDING |
+| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `8242674` | — | — | **PLAN MERGED** — Phase 1 ready |
+| S6-Impl | `D:\thanhnx\OpenCode\talung-approval-impl` | `codex/v3-approval-phase1` | `54d8c8c` | 3116 | `talung_v3_approval_impl` | **BRANCH CREATED** — chưa code |
 
-Ghi chú: baseline `a68d31e` là commit merge Phase A vào integration. Session branches được tạo từ baseline này trước khi bổ sung tài liệu S0; S0 sẽ fast-forward tài liệu bootstrap khi hoàn tất.
+Ghi chú: baseline code `a68d31e` là commit merge Phase A vào integration. Các commit `244aa49 → 50daed3 → 6cacc50` chỉ là tài liệu/start signal; S3/S6 đã tạo handoff riêng trên nhánh của mình. Không có thay đổi schema/API trong S3/S6.
 
 ## 2. Cô lập runtime
 
@@ -73,7 +74,27 @@ Không có host/DB Production trong cấu hình session. Không in credential ra
 - DB test: `talung_v3_fixture_integration`; không dùng Production.
 - Hai bộ Phase A vẫn chờ fixture/storage riêng: `test-yc23-25-api.ts` và `test-v3-evidence-adjustment.ts`; S1 xử lý theo gate, không hạ bảo mật.
 
-## 7. Điều kiện handoff
+## 7. Handoff S3/S6 đã review
+
+| Session | HEAD | Phạm vi | Kết quả S0 | Merge? |
+|---|---|---|---|---|
+| S3 | `860c10a` | Helper + target UI mock + target-only plan; không schema/API | **108/108 PASS**, tsc/build PASS; **WAIT_B_C_2** | **YES — plan/helper**; target-only chờ S2 |
+| S6 | `21c37ae` | Docs-only; spec + implementation/migration/test plan | **PLAN MERGED** | **YES — docs/plan**; code chờ nhánh implementation |
+
+Quyết định đã chốt: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
+
+## 8. Handoff batch 2 (S1/S2/S4/S5)
+
+| Session | HEAD | Kết quả S0 | Merge |
+|---|---|---|---|
+| S1 | `3708672` | QA 313/313 báo cáo; S0 rerun Phase A 37/37; migration rehearsal 14/14 | **MERGED** `06c5d19` |
+| S2 | `207dcfc` | 34/34 API + 14/14 UI báo cáo; contract lệch Q9/Q11 | **BLOCKED** |
+| S4 | `56a8d68` | S0 rerun hardening 40/40 + no-self 5/5 | **MERGED** `5d5c299` |
+| S5 | `2bc645d` | S0 rerun API 22/22 + UI 24/24 | **MERGED** `532c3f6` |
+
+S2 blocker chi tiết: xem `docs/V3/S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md` và `docs/V3/S0_DECISION_LOG_2026-10-23.md` mục 1.2.
+
+## 9. Điều kiện handoff
 
 Mỗi session gửi S0 theo mẫu mục 7 của master plan, kèm:
 - commit SHA, file changed, schema/migration;

@@ -13,11 +13,16 @@ import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
 
 const creq = createRequire(import.meta.url);
 const { PrismaClient } = creq("@prisma/client");
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-private-attachments"
+);
 const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DIRECT_URL || process.env.DATABASE_URL } },
+  datasources: { db: { url: dbUrl } },
 });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";

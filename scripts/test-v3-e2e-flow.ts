@@ -19,9 +19,14 @@
  * 10. Không phá luồng V1/V2 (hồi quy riêng) + F16/F17
  */
 import { createRequire } from "node:module";
-const req = createRequire("D:/thanhnx/OpenCode/talung-cus-work/package.json");
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
+const req = createRequire(import.meta.url);
 const { PrismaClient } = req("@prisma/client");
-const prisma = new PrismaClient({ datasources: { db: { url: process.env.DIRECT_URL } } });
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-e2e-flow"
+);
+const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";
 const PASSWORD = process.env.V3_DEMO_PASSWORD || "LocalTest@2026";

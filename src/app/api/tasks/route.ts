@@ -21,6 +21,7 @@ import {
   type ResolvedSource,
 } from "@/server/work-item-linkage";
 import { isSelfInitiated, resolveOriginKind } from "@/server/task-origin";
+import { decideApproval, reopenApprovalCaseOnResubmit, getTaskApprovalSummaries } from "@/server/approval-case";
 
 // YC-04: cửa sổ chống bấm trùng khi giao việc (giây)
 const CREATE_DEDUP_WINDOW_SEC = 120;
@@ -201,6 +202,7 @@ export async function GET(req: NextRequest) {
 
     // Tính toán cờ isOverdue độc lập với hasIssue + % tiến độ từ cập nhật mới nhất
     // (Task không lưu sẵn % — nguồn duy nhất là TaskUpdate)
+    const approvalMap = await getTaskApprovalSummaries(tasks.map((t) => t.id));
     const enrichedTasks = tasks.map((t) => {
       const isFinished = t.status === "COMPLETED" || t.status === "DONE" || t.status === "CANCELED";
       const isOverdue = !isFinished && new Date(t.currentDeadline) < now;
@@ -224,6 +226,7 @@ export async function GET(req: NextRequest) {
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
         txSource,
+        approval: approvalMap.get(t.id) ?? null,
         // KHÔNG phát URL công khai của kho lưu trữ.
         attachments: toClientAttachments((t as any).attachments || [], t.id),
       };
@@ -538,6 +541,7 @@ export async function PATCH(req: NextRequest) {
       hasIssue,
       issueNotes,
       assigneeIds,
+      reason,
     } = body;
 
     if (!id) {
@@ -561,6 +565,38 @@ export async function PATCH(req: NextRequest) {
       );
     }
     const updateData: any = {};
+    const isOwner = currentTask.ownerId === user.personId;
+    const isLeader = await isTaskLeader(user, currentTask.unitId);
+    const isCollaborator = (currentTask.assignees || []).some(
+      (a: any) => a.personId === user.personId
+    );
+
+    // Mọi quyết định nghiệm thu/trả lại đều đi qua ApprovalCase để thống nhất lịch sử.
+    const decideTaskResult = async (
+      decision: "AGREE" | "REJECT" | "CLARIFY",
+      decisionReason: string | null,
+      decisionContent: string | null
+    ) => {
+      const result = await decideApproval({
+        user,
+        caseType: "TASK_RESULT",
+        resourceId: id,
+        action: decision,
+        reason: decisionReason,
+        content: decisionContent,
+      });
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error, data: result.data },
+          { status: result.status || 400 }
+        );
+      }
+      const fresh = await prisma.task.findUnique({
+        where: { id },
+        include: { owner: true, unit: true, assignees: { include: { person: true } } },
+      });
+      return NextResponse.json({ success: true, message: result.message, data: fresh });
+    };
 
     // Xử lý các action chuyên biệt
     if (action === "ACCEPT_TASK") {
@@ -649,6 +685,26 @@ export async function PATCH(req: NextRequest) {
       } catch {}
       return NextResponse.json({ success: true, message: "Đã xác nhận nhận việc!", data: accepted });
     } else if (action === "SUBMIT_COMPLETION") {
+      // YC-09: CHỈ người chủ trì được nộp kết quả. Người phối hợp không được nộp thay.
+      if (!isOwner) {
+        return jsonError(
+          isCollaborator
+            ? "Bạn là người phối hợp — chỉ người chủ trì mới được nộp kết quả chung của nhiệm vụ."
+            : "Chỉ người chủ trì nhiệm vụ mới được nộp kết quả trình Lãnh đạo phê duyệt.",
+          403
+        );
+      }
+      try {
+        assertTaskStatusTransition({
+          currentStatus: currentTask.status,
+          targetStatus: "WAITING_REVIEW",
+          deadlineChanged: false,
+          isLeader,
+          isOwner,
+        });
+      } catch (err: any) {
+        return jsonError(err.message, err.statusCode || 403);
+      }
       // Cán bộ báo hoàn thành: Chuyển sang WAITING_REVIEW ("Chờ xác nhận hoàn thành")
       updateData.status = "WAITING_REVIEW";
       if (actualResultText) updateData.actualResultText = actualResultText;
@@ -664,74 +720,53 @@ export async function PATCH(req: NextRequest) {
         },
       });
     } else if (action === "CONFIRM_COMPLETION") {
-      // Người giao việc hoặc Lãnh đạo xác nhận hoàn thành: Chuyển sang COMPLETED
-      // Guard tập trung (Slice 1): chủ trì không tự nghiệm thu việc của mình
-      const canConfirm = await isTaskLeader(user, currentTask.unitId);
-
-      if (!canConfirm) {
-        return jsonError("Chỉ Lãnh đạo đơn vị hoặc Trưởng bộ phận phụ trách mới có thẩm quyền nghiệm thu xác nhận hoàn thành nhiệm vụ này", 403);
-      }
-      // Chống duyệt trùng: đã hoàn thành thì không duyệt lại
-      try {
-        assertTaskStatusTransition({
-          currentStatus: currentTask.status,
-          targetStatus: "COMPLETED",
-          deadlineChanged: false,
-          isLeader: true,
-        });
-      } catch (err: any) {
-        return jsonError(err.message, err.statusCode || 400);
-      }
-
-      updateData.status = "COMPLETED";
-
-      await prisma.taskUpdate.create({
-        data: {
-          taskId: id,
-          authorId: user.personId,
-          statusBefore: currentTask.status,
-          statusAfter: "COMPLETED",
-          kind: "approve",
-          notes: "Lãnh đạo / Người giao việc đã xác nhận hoàn thành nhiệm vụ.",
-        },
-      });
+      // Người giao việc hoặc Lãnh đạo xác nhận hoàn thành — qua ApprovalCase chung.
+      return decideTaskResult("AGREE", reason || null, null);
     } else if (action === "REJECT_COMPLETION") {
-      // Trả lại nhiệm vụ yêu cầu làm tiếp — qua guard tập trung (Slice 1)
-      try {
-        assertTaskStatusTransition({
-          currentStatus: currentTask.status,
-          targetStatus: "IN_PROGRESS",
-          deadlineChanged: false,
-          isLeader: await isTaskLeader(user, currentTask.unitId),
-        });
-      } catch (err: any) {
-        return jsonError(err.message, err.statusCode || 403);
+      // Trả lại nhiệm vụ yêu cầu làm tiếp — qua ApprovalCase chung (bắt buộc có lý do).
+      return decideTaskResult(
+        "REJECT",
+        (issueNotes || reason || "Yêu cầu hoàn thiện thêm trước khi nghiệm thu.").trim(),
+        null
+      );
+    } else {
+      // Nghiệm thu / trả lại qua status tự do → đi qua ApprovalCase chung, không ghi tắt.
+      if (status === "COMPLETED" || status === "DONE") {
+        return decideTaskResult("AGREE", reason || null, null);
       }
-      updateData.status = "IN_PROGRESS";
-      if (issueNotes) {
-        updateData.hasIssue = true;
-        updateData.issueNotes = issueNotes;
+      if (currentTask.status === "WAITING_REVIEW" && status === "IN_PROGRESS") {
+        return decideTaskResult(
+          "REJECT",
+          (issueNotes || reason || actualResultText || "Yêu cầu hoàn thiện thêm trước khi nghiệm thu.").trim(),
+          null
+        );
       }
 
-      await prisma.taskUpdate.create({
-        data: {
-          taskId: id,
-          authorId: user.personId,
-          statusBefore: currentTask.status,
-          statusAfter: "IN_PROGRESS",
-          kind: "return",
-          notes: `Trả lại nhiệm vụ yêu cầu hoàn thiện thêm: ${issueNotes || "Chưa đạt yêu cầu"}`,
-        },
-      });
-    } else {
-      // Cập nhật thông thường — qua guard tập trung (Slice 1): chặn tự set COMPLETED
-      // và chặn trả WAITING_REVIEW về IN_PROGRESS khi không phải lãnh đạo
+      // YC-09: người phối hợp không được ghi đè kết quả chung của nhiệm vụ.
+      if (actualResultText !== undefined && !isOwner && !isLeader) {
+        return jsonError(
+          "Bạn là người phối hợp — không được ghi đè kết quả chung; chỉ người chủ trì hoặc lãnh đạo thẩm quyền mới được cập nhật kết quả.",
+          403
+        );
+      }
+      // Kết quả đã trình duyệt thì bị khóa, tránh sửa lén sau khi lãnh đạo đang xem.
+      if (actualResultText !== undefined && currentTask.status === "WAITING_REVIEW" && actualResultText !== currentTask.actualResultText) {
+        return jsonError("Nhiệm vụ đang chờ Lãnh đạo phê duyệt — không thể sửa kết quả đã trình.", 409);
+      }
+      // Đổi danh sách người phối hợp: chỉ lãnh đạo phụ trách.
+      if (assigneeIds !== undefined && !isLeader) {
+        return jsonError("Chỉ Lãnh đạo phụ trách mới được điều chỉnh danh sách người phối hợp.", 403);
+      }
+
+      // Cập nhật thông thường — qua guard tập trung (Slice 1): chặn tự set COMPLETED,
+      // chặn người phối hợp nộp thay/đổi trạng thái nghiệp vụ, chặn tự hủy.
       try {
         assertTaskStatusTransition({
           currentStatus: currentTask.status,
           targetStatus: status ?? null,
           deadlineChanged: false,
-          isLeader: await isTaskLeader(user, currentTask.unitId),
+          isLeader,
+          isOwner: isOwner,
         });
       } catch (err: any) {
         return jsonError(err.message, err.statusCode || 403);
@@ -748,6 +783,9 @@ export async function PATCH(req: NextRequest) {
 
     // Cập nhật danh sách phối hợp nếu có (YC-01/YC-03: bỏ trùng, bỏ chủ trì)
     if (assigneeIds && Array.isArray(assigneeIds)) {
+      if (!isLeader) {
+        return jsonError("Chỉ Lãnh đạo phụ trách mới được điều chỉnh danh sách người phối hợp.", 403);
+      }
       const clean = [...new Set(assigneeIds.filter((x) => typeof x === "string").map((x) => x.trim()).filter(Boolean))].filter(
         (pId) => pId !== currentTask.ownerId
       );
@@ -781,6 +819,16 @@ export async function PATCH(req: NextRequest) {
       oldData: { status: currentTask.status },
       newData: { status: updatedTask.status, hasIssue: updatedTask.hasIssue },
     });
+
+    // Trình lại sau khi bị trả lại → mở lại vòng quyết định (không tạo hồ sơ trùng).
+    if (updatedTask.status === "WAITING_REVIEW") {
+      await reopenApprovalCaseOnResubmit(
+        "TASK_RESULT",
+        id,
+        user.id,
+        "Nhiệm vụ đã được trình lại sau khi bổ sung nội dung."
+      );
+    }
 
     return NextResponse.json({ success: true, data: updatedTask });
   } catch (error: any) {

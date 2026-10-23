@@ -86,7 +86,7 @@ async function waitForServer(): Promise<void> {
   throw new Error("Dev server không phản hồi sau 120 giây");
 }
 
-const round1 = (n: number) => Math.round(n * 10) / 10;
+const round2 = (n: number) => Math.round(n * 100) / 100;
 const todayVnStr = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 /** POST /api/metrics/entries trả về "items" — chuẩn hóa về danh sách entryId chuỗi. */
 const normEntryIds = (items: any[] | undefined): string[] =>
@@ -328,25 +328,49 @@ async function main() {
   );
 
   const scale = thu.displayScale || 1;
-  const mkTarget = async (label: string, periodType: string, periodNo: number | null, baseValue: number) => {
+  const mkTarget = async (
+    label: string,
+    periodType: string,
+    periodNo: number | null,
+    baseValue: number,
+    comparisonKind = "NONE"
+  ) => {
     const r = await api("POST", "/api/metrics/admin", leader, {
       entity: "target",
       action: "create",
-      data: { metricId: thu.id, classificationId: "", label, periodType, year: 2026, periodNo, value: String(baseValue / scale) },
+      data: {
+        metricId: thu.id,
+        classificationId: "",
+        label,
+        periodType,
+        year: 2026,
+        periodNo,
+        value: String(baseValue / scale),
+        comparisonKind,
+        sourceNote: "[TEST-YC26] căn cứ kiểm thử",
+      },
     });
     if (r.json?.id) cleanup.targetIds.push(r.json.id);
     return r;
   };
-  const tBtc = await mkTarget("[TEST-YC26] Chỉ tiêu BTC", "YEAR", null, 1_685_000_000_000);
-  const tUbnd = await mkTarget("[TEST-YC26] Chỉ tiêu UBND tỉnh", "YEAR", null, 1_700_000_000_000);
-  const tKh = await mkTarget("[TEST-YC26] KH tháng 10", "MONTH", 10, 200_000_000_000);
+  const confirmTarget = async (id: string) =>
+    api("POST", "/api/metrics/admin", leader, {
+      entity: "target",
+      action: "confirm",
+      data: { id, metricId: thu.id, reason: "Xác nhận kiểm thử" },
+    });
+  const tBtc = await mkTarget("[TEST-YC26] Chỉ tiêu BTC", "YEAR", null, 1_685_000_000_000, "BTC_YEAR");
+  const tUbnd = await mkTarget("[TEST-YC26] Chỉ tiêu UBND tỉnh", "YEAR", null, 1_700_000_000_000, "UBND_YEAR");
+  const tKh = await mkTarget("[TEST-YC26] KH tháng 10", "MONTH", 10, 200_000_000_000, "MONTH_PLAN");
   check("3.4 Tạo được 3 chỉ tiêu giao thử (BTC/UBND/KH tháng)", tBtc.json?.success && tUbnd.json?.success && tKh.json?.success);
+  const tConfirm = await Promise.all([confirmTarget(tBtc.json.id), confirmTarget(tUbnd.json.id), confirmTarget(tKh.json.id)]);
+  check("3.4b Xác nhận được 3 chỉ tiêu giao thử", tConfirm.every((r) => r.json?.status === "CONFIRMED"));
 
   const comp1 = await api("GET", `/api/metrics/summary?${anchors}&comparison=1`, leader);
   const thuRow = (comp1.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
-  const expectedBtcPct = round1((thuRow.yearCum / 1_685_000_000_000) * 100);
-  const expectedUbndPct = round1((thuRow.yearCum / 1_700_000_000_000) * 100);
-  const expectedKhPct = round1((thuRow.monthCum / 200_000_000_000) * 100);
+  const expectedBtcPct = round2((thuRow.yearCum / 1_685_000_000_000) * 100);
+  const expectedUbndPct = round2((thuRow.yearCum / 1_700_000_000_000) * 100);
+  const expectedKhPct = round2((thuRow.monthCum / 200_000_000_000) * 100);
   check(
     "3.5 Tỷ lệ BTC năm = LK năm / chỉ tiêu BTC (đủ tử số & mẫu số)",
     thuRow.btc.targetValue === 1_685_000_000_000 && thuRow.btc.percent === expectedBtcPct,
@@ -364,26 +388,15 @@ async function main() {
   );
   evidence["3_comparison"] = thuRow;
 
-  // Nhiều chỉ tiêu tháng trùng kỳ, không có nhãn KH → báo chưa đủ quy tắc
-  const delKh = await api("POST", "/api/metrics/admin", leader, {
-    entity: "target",
-    action: "delete",
-    data: { metricId: thu.id, id: cleanup.targetIds.pop() },
-  });
-  check("3.7b Xoá được chỉ tiêu KH thử nghiệm", delKh.status === 200 && delKh.json?.success === true, JSON.stringify(delKh.json));
-  const mkA = await mkTarget("[TEST-YC26] Mốc A", "MONTH", 10, 100_000_000_000);
-  const mkB = await mkTarget("[TEST-YC26] Mốc B", "MONTH", 10, 120_000_000_000);
-  check("3.7c Tạo được 2 mốc tháng thử", mkA.json?.success === true && mkB.json?.success === true);
+  // B-C-1: không cho tạo trùng loại đối chiếu trong cùng kỳ (tránh tự chọn bừa).
+  const dupKh = await mkTarget("[TEST-YC26] KH tháng 10 trùng", "MONTH", 10, 120_000_000_000, "MONTH_PLAN");
+  check("3.7b Chặn tạo trùng loại đối chiếu KH tháng", dupKh.status === 400, JSON.stringify(dupKh.json));
   const comp2 = await api("GET", `/api/metrics/summary?${anchors}&comparison=1`, leader);
   const thuRow2 = (comp2.json?.comparison?.rows || []).find((r: any) => r.code === "THU_NSNN");
   evidence["3_comp2_monthPlan"] = thuRow2?.monthPlan;
-  evidence["3_comp2_targetsDb"] = await prisma.metricPlanTarget.findMany({
-    where: { metricId: thu.id, periodType: "MONTH", periodNo: 10 },
-    select: { label: true, valueNumeric: true },
-  });
   check(
-    "3.8 Nhiều chỉ tiêu tháng mơ hồ → đánh dấu ambiguous, không tự chọn bừa",
-    thuRow2.monthPlan.ambiguous === true && thuRow2.monthPlan.targetValue === null && thuRow2.monthPlan.percent === null
+    "3.8 Không có chỉ tiêu trùng loại → dùng đúng chỉ tiêu KH đã cấu hình",
+    thuRow2.monthPlan.ambiguous === false && thuRow2.monthPlan.targetValue === 200_000_000_000
   );
 
   // YC-26 (bổ sung): cờ chất lượng dữ liệu — nhận diện DEMO trộn trong nguồn số liệu

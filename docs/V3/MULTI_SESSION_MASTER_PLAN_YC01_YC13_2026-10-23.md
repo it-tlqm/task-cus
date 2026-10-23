@@ -357,13 +357,14 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 
 | Session | Trạng thái 23/10/2026 | Branch thực tế | SHA mới nhất | Test/UAT | Chặn / quyết định | Ready merge? |
 |---|---|---|---|---|---|---|
-| S0 — Integration | **READY TO START — Integration Manager**; baseline PASS; DB/port cách ly | `codex/v3-integration-yc01-13` | `50daed3` (start signal) + `a68d31e` (code baseline) | Typecheck PASS, Prisma validate PASS, build PASS; Phase A 37/37, no-self 5/5, multi-product 36/36 | Chưa có lệnh release; chờ handoff S1–S6 | N/A — không merge `main`/không release |
-| S1 — Phase A QA | **READY TO START**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `50daed3` (start signal; code `a68d31e`) | 255 check báo cáo trước đó; 2 bộ còn chặn | Rehearsal migration; fixture/storage; UAT | NO |
-| S2 — Phase B | **READY TO START**; DB `talung_v3_phase_b`, port 3112; ưu tiên contract B/C | `codex/v3-phase-b-revenue` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | B1/B2; contract B/C; không hard-code Excel | NO |
-| S3 — Phase C | **WAIT_CONTRACT**; DB `talung_v3_phase_c`, port 3113 | `codex/v3-phase-c-metrics` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | Chờ S2/S0 chốt contract; C1 chỉ tiêu/chu kỳ/chiều đánh giá | NO |
-| S4 — Task Approval | **READY TO START**; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | E8/E9/E12; không quality/team/stage/per-assignee | NO |
-| S5 — Roster | **READY TO START**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `50daed3` (start signal; code `a68d31e`) | Chưa implement | E13: notes ô trống, in Excel, giữ đổi người | NO |
-| S6 — Business Spec | **READY TO START — SPEC ONLY**; không DB/port | `codex/v3-approval-rules-spec` | `50daed3` (start signal; code `a68d31e`) | N/A | E9/E10/E11 | NO |
+| S0 — Integration | **Integration Manager**; đã merge S1/S2/S3-partial/S4/S5/S6; S6-Impl running | `codex/v3-integration-yc01-13` | `352f078` | Phase A 37/37, S4 40/40, no-self 5/5, review 38/38, YC37 25/25, e2e 40/40, S3 108+77, S2 43/43 + 17/17, roster 22/22; build PASS | S1 RC chưa freeze; D5 deferred B-C-3; S3 target-only can start with D5 pending | N/A — không merge `main`/không release |
+| S1 — Phase A QA | **MERGED — release readiness**; DB `talung_v3_phase_a_qa`, port 3111 | `codex/v3-phase-a-qa` | `2953aea` | Báo cáo 313/313; S0 rerun Phase A 37/37; checklist RC đã merge | RC chưa freeze; Production DB/snapshot **BLOCKED_BY_PRODUCTION_ACCESS**; UAT/lệnh release | N/A — đã merge; release NO |
+| S2 — Phase B | **MERGED — B-C-2 Q9/Q11 PASS**; DB `talung_v3_phase_b`, port 3112 | `codex/v3-phase-b-revenue` | `236f7fb` | S0 rerun 43/43 API + 17/17 UI; migration backfill verified; build PASS | B1/B2/C1 PENDING; D5 deferred B-C-3 (`direction`/`measureMode`/`baselineScope`) | N/A — đã merge |
+| S3 — Phase C | **READY_TARGET_ONLY**; B-C-2 đã merge; mapping/helper/UI mock đã merge | `codex/v3-phase-c-metrics` | `cb093f4` | Contract 108/108 + mapping 77/77; tsc/build PASS | Được làm target-only; D5 hiển thị pending, không tính % chính thức; rebase/merge integration trước khi code | NO — target-only chưa code |
+| S4 — Task Approval | **MERGED — STANDBY**; không code thêm; DB `talung_v3_task_approval`, port 3114 | `codex/v3-task-approval-history` | `56a8d68` | S0 rerun 40/40 + 5/5; review 38/38; YC37 25/25; e2e 40/40; sẵn sàng rerun khi S0 yêu cầu | E8/E9/E12 PENDING; không quality/team/stage/per-assignee; không merge main/không Production | N/A — đã merge, standby |
+| S5 — Roster | **MERGED — STANDBY**; DB `talung_v3_roster`, port 3115 | `codex/v3-roster-notes` | `2bc645d` | Báo cáo 22/22 API + 24/24 UI; S0 rerun 22/22 + 24/24 | E13 PENDING: A0/A1/A2 ô trống, B0/B1 Excel, C0/C1/C2 đổi người; chưa code | N/A — đã merge, standby |
+| S6 — Business Spec | **PLAN MERGED**; docs + Phase 1 S4 review; không code trên nhánh spec | `codex/v3-approval-rules-spec` | `8242674` | Docs-only; S4 review + 3-phase plan/migration/test | Phase 1 **READY_FOR_PHASE1_BRANCH**; implementation branch đã tạo | N/A — plan merged |
+| S6-Impl — Phase 1 | **BRANCH CREATED — chưa code**; DB `talung_v3_approval_impl`, port 3116 | `codex/v3-approval-phase1` | `54d8c8c` | Base tsc PASS; test gate S4 40/40 đã có trên integration | Bắt đầu YC-09 per-person theo S6 plan; một ApprovalCase/Task; không quality/team/stage | NO — mới tạo branch |
 
 ### Nhật ký tích hợp (S0 điền sau, không xóa lịch sử)
 
@@ -372,10 +373,30 @@ Một số yếu tố cần nhớ: Production đã từng reset dữ liệu nghi
 | 23/10/2026 | Khởi tạo kế hoạch | — | — | — | Chưa có merge theo tài liệu này | — |
 | 23/10/2026 | S0 — Phase A baseline | `origin/main 4c7eb52` + Phase A `9534c6a` → `a68d31e`; docs `c10c643` | `a68d31e` merge `--no-ff` | `tsc --noEmit` PASS; `prisma validate` PASS; `pnpm build` PASS; Phase A 37/37; no-self 5/5; multi-product 36/36 trên `talung_v3_fixture_integration` | **PASS baseline** — chưa release, 2 bộ test Phase A còn chặn theo báo cáo | S0 |
 | 23/10/2026 | S0 — start signal S1–S6 | `244aa49` → `50daed3` | `50daed3` docs | DB từng worktree: localhost, đúng `talung_v3_*`, 24 accounts; docs hash identical; no Production | **READY** S1/S2/S4/S5/S6; **WAIT_CONTRACT** S3 | S0 |
+| 23/10/2026 | S0 — review S3/S6 handoff | `6cacc50` → `8af7a66` (S3), `af197d7` (S6) | Không merge | S3 pure test 43/43 + tsc PASS; S6 docs-only; không schema/API | **S3 WAIT_CONTRACT**; **S6 SPEC COMPLETE**; quyết định nghiệp vụ còn chờ | S0 |
+| 23/10/2026 | S0 — chủ dự án chốt decisions | — | Decision log `S0_DECISION_LOG_2026-10-23.md` | Không code; chỉ ghi nhận quyết định | **S3 CONTRACT APPROVED**; **S6 DECISIONS APPROVED**; implementation có cổng | S0 + chủ dự án |
+| 23/10/2026 | S5 — YC-13 roster | `6cacc50` → `2bc645d` | `532c3f6` merge `--no-ff` | S5 API 22/22 + UI 24/24; build integration PASS | **MERGED** | S0 |
+| 23/10/2026 | S4 — YC-08/09/12 | `6cacc50` → `56a8d68` | `5d5c299` merge `--no-ff` | S4 hardening 40/40 + no-self 5/5 trên integration; build PASS | **MERGED** | S0 |
+| 23/10/2026 | S1 — Phase A QA | `6cacc50` → `3708672` | `06c5d19` merge `--no-ff` | S0 rerun Phase A 37/37; S1 báo cáo 313/313 + migration rehearsal 14/14 | **MERGED — QA gate pending release** | S0 |
+| 23/10/2026 | S0 — regression sau merge S1/S4/S5 | `06c5d19` | — | Phase A 37/37; S4 hardening 40/40; no-self 5/5; review-flow 38/38; YC37 25/25; e2e 40/40; roster API 22/22; tsc/prisma validate/build PASS | **PASS** — S2 vẫn blocked | S0 |
+| 23/10/2026 | S3/S6 — cập nhật sau decisions | S3 `3ec7b9e`; S6 `21c37ae` | Chưa merge | S3 96/96 + tsc PASS; S6 docs/plan only | **PARTIAL/PLAN READY** — chờ S2 schema/S4 implementation branch | S0 |
+| 23/10/2026 | S3 — partial helper/UI mock | `f0d211c` → `3ec7b9e` | `a1076fd` merge `--no-ff` | S0 rerun 96/96, tsc/prisma/build PASS | **PARTIAL MERGED** — target-only waits S2 | S0 |
+| 23/10/2026 | S6 — spec + 3-phase plans | `f0d211c` → `21c37ae` | `7d86639` merge `--no-ff` | Docs-only; no runtime test | **PLAN MERGED** — implementation branch after S4 | S0 |
+| 23/10/2026 | S1 — release-readiness checklist | `3708672` → `2953aea` | `a465357` merge `--no-ff` | Docs-only; RC chưa freeze; Production DB access blocked | **MERGED — release gate pending** | S0 |
+| 23/10/2026 | S3 — target-only plan + dataSource tests | `3ec7b9e` → `860c10a` | `6824029` merge `--no-ff` | S0 rerun 108/108 + tsc/build PASS; không schema/API | **WAIT_B_C_2** — target-only chờ S2 | S0 |
+| 23/10/2026 | S3 — B-C-2 mapping layer | `860c10a` → `cb093f4` | `3f71651` merge `--no-ff` | S0 rerun mapping 77/77 + contract 108/108 + tsc PASS; không schema/API | **WAIT_B_C_2** — mapping merged | S0 |
+| 23/10/2026 | S6 — S4 review + Phase 1 gate | `21c37ae` → `8242674` | `54d8c8c` merge `--no-ff` | Docs-only; S4 review + migration/test plan | **PLAN MERGED** — Phase 1 branch created | S0 |
+| 23/10/2026 | S6-Impl — Phase 1 branch | `54d8c8c` | Worktree `D:\thanhnx\OpenCode\talung-approval-impl`, DB `talung_v3_approval_impl`, port 3116 | Base tsc PASS; chưa code | **BRANCH CREATED** | S0 |
+| 23/10/2026 | S2 — B-C-2 Q9/Q11 | `207dcfc` → `236f7fb` | `352f078` merge `--no-ff` | S0 rerun 43/43 API + 17/17 UI; migration applied to fixture_integration, 49 DEMO targets/47 baselines/622 entries; build PASS | **MERGED** — D5 deferred B-C-3 | S0 |
+| 23/10/2026 | S2 — Phase B | `6cacc50` → `207dcfc` | Chưa merge | S2 34/34 + 14/14 báo cáo; S0 thấy contract lệch Q9/Q11 | **BLOCKED** — sửa `isOfficial/dataSource` và 2 chữ số trước | S0 |
 
 > **Bootstrap 23/10/2026:** S1–S6 đã được fast-forward tới `50daed3` (master + runtime matrix + assignment cards + baseline results + start signal). Chưa session nào bắt đầu code. Chỉ S0 được merge vào `codex/v3-integration-yc01-13`; không có merge `main`, không có deploy Production.
 >
 > **Start signal 23/10/2026:** S1, S2, S4, S5, S6 = `READY TO START`; S3 = `WAIT_CONTRACT`. S0 đã kiểm tra kết nối DB từng worktree: tất cả trỏ `localhost:5432`, đúng database test `talung_v3_*`, không có Production. S6 SPEC ONLY không có DB. Prompt khởi động nằm trong `docs/V3/SESSION_ASSIGNMENTS_2026-10-23.md`.
+>
+> **Review handoff S3/S6:** S0 đã nhận, không merge code. S3 đạt 43/43 pure test + tsc, không schema/API, giữ `WAIT_CONTRACT`. S6 hoàn tất spec docs-only, chờ E9/E10/E11. Quyết định đã được chủ dự án chấp thuận: `docs/V3/S0_DECISION_LOG_2026-10-23.md`.
+>
+> **S2 blocker:** B-C-1 hiện lệch Q9 (dùng nhãn `[DEMO]` thay vì `isOfficial/dataSource`) và Q11 (API 1 chữ số thay vì 2). Không merge S2 `207dcfc`; chi tiết: `docs/V3/S2_CONTRACT_ALIGNMENT_BLOCKER_2026-10-23.md`.
 
 ### Checklist phát hành cuối
 

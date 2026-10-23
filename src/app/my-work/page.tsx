@@ -93,6 +93,18 @@ interface TaskItem {
     convertFactor?: number | null;
   } | null;
   originKind?: string | null;
+  approval?: {
+    caseId: string;
+    caseStatus: string;
+    round: number;
+    action: "AGREE" | "REJECT" | "CLARIFY" | "RESPOND" | null;
+    actionLabel: string | null;
+    reason: string | null;
+    content: string | null;
+    decidedById: string | null;
+    decidedByName: string | null;
+    decidedAt: string | null;
+  } | null;
 }
 
 export default function MyWorkPage() {
@@ -273,7 +285,7 @@ export default function MyWorkPage() {
     try {
       const params = new URLSearchParams({ page: String(p), pageSize: "50" });
       if (q.trim()) params.set("search", q.trim());
-      const res = await fetch(`/api/tasks?${params.toString()}`);
+      const res = await fetch(`/api/tasks?${params.toString()}`, { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         const data = Array.isArray(json) ? json : json.data || [];
@@ -1048,6 +1060,9 @@ export default function MyWorkPage() {
                     const isOverdue = task.isOverdue || task.hasIssue;
                     const isWaiting = task.status === "WAITING_REVIEW";
                     const isCompleted = task.status === "COMPLETED";
+                    const isReturned =
+                      task.status === "IN_PROGRESS" &&
+                      (task.approval?.action === "REJECT" || task.approval?.action === "CLARIFY");
 
                     return (
                       <tr
@@ -1150,9 +1165,24 @@ export default function MyWorkPage() {
                         </td>
 
                         <td className="py-3 px-space-sm align-top">
-                          {isWaiting ? (
+                          {isReturned ? (
+                            <div className="flex flex-col gap-1">
+                              <span
+                                data-testid={`task-returned-${task.id}`}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-danger-bg text-status-danger font-semibold"
+                                title={task.approval?.reason || task.approval?.content || ""}
+                              >
+                                <span className="material-symbols-outlined text-[14px]">undo</span> Bị trả lại
+                              </span>
+                              {task.approval?.reason && (
+                                <span className="text-[11px] text-on-surface-variant line-clamp-2">
+                                  {task.approval.reason}
+                                </span>
+                              )}
+                            </div>
+                          ) : isWaiting ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-unassigned-bg text-status-unassigned font-semibold">
-                              <span className="material-symbols-outlined text-[14px]">hourglass_top</span> Chờ ký duyệt
+                              <span className="material-symbols-outlined text-[14px]">hourglass_top</span> Đã báo hoàn thành — chờ duyệt
                             </span>
                           ) : isCompleted ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-success-bg text-status-success font-semibold">
@@ -1538,6 +1568,9 @@ export default function MyWorkPage() {
           {filteredTasks.map((task) => {
             const isOverdue = task.isOverdue || task.hasIssue;
             const isWaiting = task.status === "WAITING_REVIEW";
+            const isReturned =
+              task.status === "IN_PROGRESS" &&
+              (task.approval?.action === "REJECT" || task.approval?.action === "CLARIFY");
             const deadlineAt = new Date(task.currentDeadline).getTime();
             const overdueDays = isNaN(deadlineAt) ? 0 : Math.max(0, Math.floor((Date.now() - deadlineAt) / 86400000));
 
@@ -1556,6 +1589,11 @@ export default function MyWorkPage() {
                       {task.hasIssue && (
                         <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-0.5">
                           <span className="material-symbols-outlined text-[13px]">report_problem</span> Có vướng mắc
+                        </span>
+                      )}
+                      {isReturned && (
+                        <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[13px]">undo</span> Bị trả lại
                         </span>
                       )}
                     </div>
@@ -1650,15 +1688,6 @@ export default function MyWorkPage() {
                       <span className="material-symbols-outlined text-[17px]">visibility</span>
                       <span>Xem chi tiết hồ sơ nộp</span>
                     </Link>
-                    <button
-                      onClick={() => openDrawerForTask(task)}
-                      className="h-11 px-3 rounded-lg bg-surface-container text-status-danger hover:bg-status-danger-bg font-label-md text-label-md flex items-center justify-center gap-1 transition-all"
-                      title="Thu hồi để hiệu chỉnh"
-                      type="button"
-                    >
-                      <span className="material-symbols-outlined text-[17px]">undo</span>
-                      <span>Thu hồi</span>
-                    </button>
                   </div>
                 </div>
               );
@@ -1678,6 +1707,11 @@ export default function MyWorkPage() {
                       <span className="material-symbols-outlined text-[13px]">flag</span> {task.priority || "Cao"}
                     </span>
                     <span className="text-on-surface-variant font-label-sm text-[11px]">TTHQ</span>
+                    {isReturned && (
+                      <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
+                        <span className="material-symbols-outlined text-[13px]">undo</span> Bị trả lại
+                      </span>
+                    )}
                   </div>
                   <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-1 shrink-0">
                     <span className="material-symbols-outlined text-[13px]">schedule</span> {formatDateTime(task.currentDeadline)}
@@ -1705,6 +1739,12 @@ export default function MyWorkPage() {
                   </span>
                   <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
                 </div>
+                {isReturned && (task.approval?.reason || task.approval?.content) && (
+                  <div className="rounded-lg bg-status-danger-bg/50 border border-status-danger/30 px-3 py-2 text-[11px] text-on-surface">
+                    <b className="text-status-danger">Lý do trả lại:</b> {task.approval?.reason || task.approval?.content}
+                    {task.approval?.decidedByName ? ` · ${task.approval.decidedByName}` : ""}
+                  </div>
+                )}
                 {/* YC-38 UAT fix: khoi "Nguon cong viec" — ma TX + nguon phat sinh */}
                 <div className="bg-surface-container-lowest border border-border-default/50 rounded-lg p-2 flex flex-col gap-1">
                   <span className="text-[10px] uppercase tracking-wide text-on-surface-variant font-semibold">

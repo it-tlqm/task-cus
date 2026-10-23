@@ -121,11 +121,50 @@ export async function POST(
         select: { id: true, status: true, title: true, unitId: true, ownerId: true },
       });
       if (!fresh) return { kind: "notfound" as const };
+      const isOwner = fresh.ownerId === user.personId;
 
       // F2: nhiệm vụ đã nghiệm thu/kết thúc ⇒ KHÔNG cập nhật tiến độ, trạng thái,
       // ghi đè kết quả hay nộp lại. Chặn ở server, trả 409, KHÔNG ghi bản ghi nào.
       if (isTerminalTaskStatus(fresh.status)) {
         return { kind: "terminal" as const, status: fresh.status };
+      }
+
+      // YC-09: nghiệm thu chỉ qua hồ sơ phê duyệt (ApprovalCase), không ghi tắt qua tiến độ.
+      if (targetStatus === "COMPLETED" || targetStatus === "DONE") {
+        return {
+          kind: "guard" as const,
+          message:
+            "Không nghiệm thu trực tiếp qua cập nhật tiến độ. Vui lòng xử lý tại hồ sơ phê duyệt để lưu đúng lịch sử.",
+          statusCode: 403,
+        };
+      }
+
+      // YC-09: chỉ người chủ trì được nộp kết quả; người phối hợp không nộp thay.
+      if (targetStatus === "WAITING_REVIEW" && !isOwner) {
+        return {
+          kind: "guard" as const,
+          message:
+            "Chỉ người chủ trì nhiệm vụ mới được nộp kết quả trình Lãnh đạo phê duyệt. Người phối hợp chỉ ghi tiến độ phần việc của mình.",
+          statusCode: 403,
+        };
+      }
+
+      // YC-09: người phối hợp không được ghi đè kết quả chung — từ chối, KHÔNG báo thành công.
+      if (actualResultText !== undefined && actualResultText !== null && String(actualResultText).trim() !== "") {
+        if (!isOwner) {
+          return {
+            kind: "forbidden_result" as const,
+            message:
+              "Bạn là người phối hợp — không được ghi đè kết quả chung của nhiệm vụ. Phần việc của bạn vẫn được ghi nhận qua tiến độ/nhật ký.",
+          };
+        }
+        if (fresh.status === "WAITING_REVIEW") {
+          return {
+            kind: "guard" as const,
+            message: "Nhiệm vụ đang chờ Lãnh đạo phê duyệt — không thể sửa kết quả đã trình.",
+            statusCode: 409,
+          };
+        }
       }
 
       // Chống nộp trùng: đang chờ duyệt thì KHÔNG tạo thêm sự kiện submit
@@ -153,6 +192,7 @@ export async function POST(
           targetStatus,
           deadlineChanged: false,
           isLeader: await isTaskLeader(user, fresh.unitId),
+          isOwner,
         });
       } catch (err: any) {
         return {
@@ -202,13 +242,8 @@ export async function POST(
         updateData.issueNotes = issueNotes || null;
       }
       // YC-38 (F2/III): kết quả CHUNG của nhiệm vụ thuộc về người chủ trì.
-      // Người phối hợp được ghi nhận phần việc của mình (notes/progress) nhưng KHÔNG
-      // được ghi đè kết quả đã được người chủ trì/lãnh đạo xác nhận.
-      const isOwner = fresh.ownerId === user.personId;
-      const canWriteSharedResult = isOwner || (await isTaskLeader(user, fresh.unitId));
-      const sharedResultIgnored =
-        !!actualResultText && !canWriteSharedResult;
-      if (actualResultText && canWriteSharedResult) {
+      // Người phối hợp đã bị chặn ở trên nếu cố ghi đè; chỉ ghi khi đúng chủ trì.
+      if (actualResultText && isOwner) {
         updateData.actualResultText = actualResultText;
       }
 
@@ -228,7 +263,6 @@ export async function POST(
         task: updatedTask,
         statusBefore: fresh.status,
         submitted: targetStatus === "WAITING_REVIEW",
-        sharedResultIgnored,
       };
     });
 
@@ -238,6 +272,10 @@ export async function POST(
 
     if (result.kind === "guard") {
       return jsonError(result.message, result.statusCode);
+    }
+
+    if (result.kind === "forbidden_result") {
+      return jsonError(result.message, 403);
     }
 
     if (result.kind === "terminal") {
@@ -313,10 +351,6 @@ export async function POST(
           task: updatedTask,
         },
         submitted: result.submitted,
-        sharedResultIgnored: result.sharedResultIgnored,
-        sharedResultNote: result.sharedResultIgnored
-          ? "Bạn là cán bộ phối hợp: phần việc của bạn đã được ghi nhận, nhưng kết quả chung của nhiệm vụ do người chủ trì xác nhận nên không bị ghi đè."
-          : undefined,
         earlySubmitIgnored,
         earlySubmitNote: earlySubmitIgnored
           ? "Chưa triển khai luồng trình duyệt sớm khi tiến độ dưới 100% (đề xuất nghiệp vụ đang chờ xác nhận) — chỉ cập nhật nhật ký."

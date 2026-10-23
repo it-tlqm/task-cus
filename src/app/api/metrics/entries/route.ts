@@ -8,7 +8,6 @@ import {
   resolveEntryPerms,
   permForMetric,
   isEntryDateAllowed,
-  isMetricsAdmin,
   parseNumberInput,
   dateOnlyFromStr,
   dateOnlyToStr,
@@ -99,6 +98,7 @@ export async function GET(req: NextRequest) {
       id: string;
       valueNumeric: Prisma.Decimal;
       status: string;
+      dataSource: string;
       note: string | null;
       enteredById: string;
     }
@@ -111,6 +111,7 @@ export async function GET(req: NextRequest) {
             classificationId: true,
             valueNumeric: true,
             status: true,
+            dataSource: true,
             note: true,
             enteredById: true,
           },
@@ -165,6 +166,8 @@ export async function GET(req: NextRequest) {
             entryId: e?.id || null,
             valueBase: e ? Number(e.valueNumeric) : null,
             status,
+            dataSource: e?.dataSource || null,
+            isOfficial: e ? e.dataSource === "REAL" : false,
             note: e?.note || null,
             enteredByName: e ? nameById.get(e.enteredById) || null : null,
             canEdit,
@@ -227,6 +230,9 @@ export async function POST(req: NextRequest) {
 
     const perms = await resolveEntryPerms(user);
     const today = todayVnDateOnly();
+    // B-C-2/Q9: tài khoản DEMO tạo dữ liệu DEMO; tài khoản thật mặc định REAL.
+    // Không dò nhãn; bản ghi cũ giữ nguyên dataSource khi được sửa.
+    const entryDataSource = (user.personCode || "").toUpperCase().startsWith("DEMO") ? "DEMO" : "REAL";
 
     const metricIds: string[] = Array.from(new Set(items.map((it: any) => String(it.metricId || "")))).filter(Boolean);
     const metrics = await prisma.metricDefinition.findMany({ where: { id: { in: metricIds } } });
@@ -293,7 +299,14 @@ export async function POST(req: NextRequest) {
 
     // ---- Lưu (một giao dịch: hoặc tất cả, hoặc không gì) ----
     const savedIds = await prisma.$transaction(async (tx) => {
-      const out: { metricId: string; classificationId: string; entryId: string; status: string }[] = [];
+      const out: {
+        metricId: string;
+        classificationId: string;
+        entryId: string;
+        status: string;
+        dataSource: string;
+        isOfficial: boolean;
+      }[] = [];
       for (const p of prepared) {
         const existing = await tx.metricDailyEntry.findUnique({
           where: {
@@ -323,6 +336,7 @@ export async function POST(req: NextRequest) {
             data: {
               valueNumeric: p.valueBase,
               note: p.note,
+              dataSource: existing.dataSource,
               enteredById: user.personId,
               status: nextStatus,
               submittedAt: nextStatus === "CONFIRMED" ? existing.submittedAt : null,
@@ -350,6 +364,7 @@ export async function POST(req: NextRequest) {
               entryDate: p.entryDate,
               valueNumeric: p.valueBase,
               status: nextStatus,
+              dataSource: entryDataSource,
               note: p.note,
               enteredById: user.personId,
             },
@@ -365,7 +380,15 @@ export async function POST(req: NextRequest) {
             },
           });
         }
-        out.push({ metricId: p.metric.id, classificationId: p.classificationId, entryId, status: nextStatus });
+        const savedDataSource = existing?.dataSource || entryDataSource;
+        out.push({
+          metricId: p.metric.id,
+          classificationId: p.classificationId,
+          entryId,
+          status: nextStatus,
+          dataSource: savedDataSource,
+          isOfficial: savedDataSource === "REAL",
+        });
       }
       return out;
     });

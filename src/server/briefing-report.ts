@@ -151,7 +151,8 @@ export function reportColumns(periodType: ReportPeriodType, a: SummaryAnchors): 
 }
 
 function fmtPercent(v: number): string {
-  return `${v.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%`;
+  // B-C-2/Q11: 2 chữ số thập phân, dấu phẩy vi-VN.
+  return `${v.toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 }
 
 /** Ô giá trị: null = chưa nhập (không hiển thị 0 giả) */
@@ -166,12 +167,14 @@ function shortDay(iso: string): string {
 }
 
 function targetCell(m: MetricSummaryRow): string {
-  if (!m.targets.length) return "…";
-  return m.targets.map((t) => `${t.label}: ${fmtMetric(t.targetValue, m)}`).join("; ");
+  // B-C-2/Q9: không đưa target DEMO vào báo cáo chính thức.
+  const realTargets = m.targets.filter((t) => t.dataSource === "REAL");
+  if (!realTargets.length) return "…";
+  return realTargets.map((t) => `${t.label}: ${fmtMetric(t.targetValue, m)}`).join("; ");
 }
 
 function percentCell(m: MetricSummaryRow): string {
-  const withPct = m.targets.filter((t) => t.percent !== null);
+  const withPct = m.targets.filter((t) => t.dataSource === "REAL" && t.percent !== null);
   if (!withPct.length) return "…";
   if (withPct.length === 1) return fmtPercent(withPct[0].percent as number);
   return withPct.map((t) => `${t.label} ${fmtPercent(t.percent as number)}`).join("; ");

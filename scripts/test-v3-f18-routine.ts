@@ -7,9 +7,14 @@
  *   npx tsx scripts/test-v3-f18-routine.ts
  */
 import { createRequire } from "node:module";
-const creq = createRequire("D:/thanhnx/OpenCode/talung-cus-work/package.json");
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
+const creq = createRequire(import.meta.url);
 const { PrismaClient } = creq("@prisma/client");
-const prisma = new PrismaClient({ datasources: { db: { url: process.env.DIRECT_URL } } });
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-v3-f18-routine"
+);
+const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";
 const PASSWORD = process.env.V3_DEMO_PASSWORD || "LocalTest@2026";
