@@ -5,7 +5,7 @@
  * nhầm vào database không phải fixture của worktree.
  */
 const TEST_DB_PATTERN =
-  /^talung_v3_(fixture|phase_a_qa|integration|demo|phase_b|phase_c|task_approval|roster)(_[a-z0-9_]+)?$/;
+  /^talung_v3_(fixture|phase_a_qa|integration|demo|phase_b|phase_c|task_approval|roster|approval_impl)(_[a-z0-9_]+)?$/;
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 

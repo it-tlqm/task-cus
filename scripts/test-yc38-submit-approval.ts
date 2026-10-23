@@ -23,7 +23,7 @@
  */
 import fs from "fs";
 import { createRequire } from "node:module";
-const require = createRequire("D:/thanhnx/OpenCode/talung-cus-work/package.json");
+const require = createRequire(import.meta.url);
 const { PrismaClient } = require("@prisma/client");
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3100";
@@ -70,8 +70,24 @@ async function main() {
 
   const leaderToken = await login("demold01");
   const staffToken = await login("democb01");
-  const leader = await prisma.person.findFirst({ where: { code: "DEMO-LD-01" } });
-  const staff = await prisma.person.findFirst({ where: { code: "DEMO-CB-01" } });
+  const leaderAccount = await prisma.account.findUnique({
+    where: { username: "demold01" },
+    include: { person: { include: { assignments: true } } },
+  });
+  const staffAccount = await prisma.account.findUnique({
+    where: { username: "democb01" },
+    include: { person: { include: { assignments: true } } },
+  });
+  const leader =
+    (await prisma.person.findFirst({
+      where: { code: "DEMO-LD-01" },
+      include: { assignments: true },
+    })) || leaderAccount?.person;
+  const staff =
+    (await prisma.person.findFirst({
+      where: { code: "DEMO-CB-01" },
+      include: { assignments: true },
+    })) || staffAccount?.person;
   if (!leader || !staff) throw new Error("thiếu tài khoản DEMO");
 
   // ---------------------------------------------------------------- tạo nhiệm vụ

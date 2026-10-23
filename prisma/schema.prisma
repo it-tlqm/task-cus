@@ -111,6 +111,13 @@ model Person {
   workItemAssignments   WorkItemAssignment[]
   workItemReviews        WorkItemReview[]
   createdWorkItemSeries WorkItemSeries[]    @relation("WorkItemSeriesCreator")
+  participantResults TaskParticipantResult[] @relation("ParticipantResultPerson")
+  submittedParticipantResults TaskParticipantResult[] @relation("ParticipantResultSubmitter")
+  decidedParticipantResults TaskParticipantResult[] @relation("ParticipantResultDecider")
+  participantEvents TaskParticipantEvent[] @relation("ParticipantEventPerson")
+  actorParticipantEvents TaskParticipantEvent[] @relation("ParticipantEventActorPerson")
+  submissionSnapshots TaskSubmissionSnapshot[] @relation("SubmissionSnapshotSubmitter")
+  taskUpdateSubjects TaskUpdate[] @relation("TaskUpdateSubject")
   @@map("people")
 }
 
@@ -152,6 +159,7 @@ model Account {
   person     Person      @relation(fields: [personId], references: [id], onDelete: Cascade)
   roleGrants RoleGrant[]
   auditLogs  AuditEvent[]
+  participantEvents TaskParticipantEvent[] @relation("ParticipantEventActorAccount")
 
   @@map("accounts")
 }
@@ -673,6 +681,9 @@ model Task {
   attachments      TaskAttachment[]
   comments         TaskComment[]
   workItem         PersonalWorkItem? @relation("TaskWorkItem", fields: [workItemId], references: [id], onDelete: SetNull)
+  participantResults TaskParticipantResult[]
+  participantEvents TaskParticipantEvent[]
+  submissionSnapshots TaskSubmissionSnapshot[]
   @@index([workItemId])
   workItems        PersonalWorkItem[] @relation("WorkItemTask")
 
@@ -713,12 +724,95 @@ model TaskUpdate {
   statusAfter     String?  @map("status_after")
   kind            String? // accept, submit, approve, return, progress, extend, cancel (null = dữ liệu cũ, suy luận khi đọc)
   notes           String?
+  subjectPersonId String?  @map("subject_person_id")
+  participantEventId String? @map("participant_event_id")
   createdAt       DateTime @default(now()) @map("created_at")
 
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
   author Person @relation(fields: [authorId], references: [id])
+  subjectPerson Person? @relation("TaskUpdateSubject", fields: [subjectPersonId], references: [id], onDelete: SetNull)
 
+  @@index([taskId, subjectPersonId, createdAt])
   @@map("task_updates")
+}
+
+// ----------------------------------------------------
+// 6b. YC-09 — KET QUA PHAN VIEC THEO TUNG NGUOI
+// - Mot Task co owner + collaborators; moi nguoi co phan viec rieng.
+// - Van mot ApprovalCase/Task; khong tao case rieng cho participant.
+// ----------------------------------------------------
+
+model TaskParticipantResult {
+  id                 String    @id @default(uuid())
+  taskId             String    @map("task_id")
+  personId           String    @map("person_id")
+  role               String    @default("COLLABORATOR") // OWNER | COLLABORATOR
+  partStatus         String    @default("NOT_STARTED") @map("part_status") // NOT_STARTED | IN_PROGRESS | SUBMITTED | RETURNED | ACCEPTED | EXEMPT
+  partResultText     String?   @map("part_result_text")
+  partCompletedOn    DateTime? @map("part_completed_on") @db.Date
+  partProgressPercent Int?     @map("part_progress_percent")
+  submittedAt        DateTime? @map("submitted_at")
+  submittedById      String?   @map("submitted_by_id")
+  decidedAt          DateTime? @map("decided_at")
+  decidedById        String?   @map("decided_by_id")
+  decisionNote       String?   @map("decision_note")
+  round              Int       @default(1)
+  legacy             Boolean   @default(false)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  task        Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  person      Person                @relation("ParticipantResultPerson", fields: [personId], references: [id], onDelete: Cascade)
+  submittedBy Person?               @relation("ParticipantResultSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  decidedBy   Person?               @relation("ParticipantResultDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  events      TaskParticipantEvent[]
+
+  @@unique([taskId, personId])
+  @@index([taskId, partStatus])
+  @@index([personId, partStatus])
+  @@map("task_participant_results")
+}
+
+model TaskParticipantEvent {
+  id                  String    @id @default(uuid())
+  participantResultId String    @map("participant_result_id")
+  taskId              String    @map("task_id")
+  personId            String    @map("person_id")
+  eventType           String    @map("event_type") // SUBMIT | PROGRESS | RETURN | ACCEPT | EXEMPT | REOPEN | PRECHECK_PASS | PRECHECK_RETURN
+  round               Int       @default(1)
+  actorAccountId      String?   @map("actor_account_id")
+  actorPersonId       String?   @map("actor_person_id")
+  note                String?
+  resultTextSnapshot  String?   @map("result_text_snapshot")
+  completedOnSnapshot DateTime? @map("completed_on_snapshot") @db.Date
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  participantResult TaskParticipantResult @relation(fields: [participantResultId], references: [id], onDelete: Cascade)
+  task              Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  person            Person                @relation("ParticipantEventPerson", fields: [personId], references: [id], onDelete: Cascade)
+  actorAccount      Account?              @relation("ParticipantEventActorAccount", fields: [actorAccountId], references: [id], onDelete: SetNull)
+  actorPerson       Person?               @relation("ParticipantEventActorPerson", fields: [actorPersonId], references: [id], onDelete: SetNull)
+
+  @@index([participantResultId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([personId, createdAt])
+  @@map("task_participant_events")
+}
+
+model TaskSubmissionSnapshot {
+  id            String   @id @default(uuid())
+  taskId        String   @map("task_id")
+  round         Int
+  snapshotJson  Json     @map("snapshot_json")
+  submittedById String?  @map("submitted_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  task        Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  submittedBy Person? @relation("SubmissionSnapshotSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+
+  @@unique([taskId, round])
+  @@index([taskId, createdAt])
+  @@map("task_submission_snapshots")
 }
 
 model DeadlineRequest {

@@ -97,6 +97,20 @@ interface TaskDetail {
     decidedByName: string | null;
     decidedAt: string | null;
   } | null;
+  participantResults?: Array<{
+    id: string;
+    personId: string;
+    role: "OWNER" | "COLLABORATOR" | string;
+    partStatus: string;
+    partResultText?: string | null;
+    partCompletedOn?: string | null;
+    partProgressPercent?: number | null;
+    decisionNote?: string | null;
+    round?: number;
+    person?: { id: string; fullName: string; code?: string };
+    submittedBy?: { id: string; fullName: string } | null;
+    decidedBy?: { id: string; fullName: string } | null;
+  }>;
 }
 
 export default function TaskDetailPage() {
@@ -523,6 +537,7 @@ export default function TaskDetailPage() {
     !!task && !!permUser &&
     (task.owner?.id === permUser.personId ||
       (task.assignees || []).some((a: any) => (a.person?.id || a.personId) === permUser.personId));
+  const isTaskOwner = !!task && !!permUser && task.owner?.id === permUser.personId;
   const handleAcceptTask = async () => {
     if (!task || accepting) return;
     setAccepting(true);
@@ -546,18 +561,55 @@ export default function TaskDetailPage() {
     }
   };
 
-  const handleProgressSubmit = async (e: React.FormEvent) => {    e.preventDefault();
+  const handleProgressSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!task) return;
     setUpdating(true);
 
     try {
+      const isCollaboratorOnly = !isTaskOwner && !canApprove;
+      if (isCollaboratorOnly) {
+        if (newProgress === 100 && updateNotes.trim().length < 5) {
+          toast.error("Vui lòng nhập kết quả phần việc (ít nhất 5 ký tự) trước khi báo hoàn thành.");
+          return;
+        }
+        const body =
+          newProgress === 100
+            ? {
+                action: "SUBMIT",
+                partResultText: updateNotes,
+                partCompletedOn: new Date().toISOString().slice(0, 10),
+                partProgressPercent: 100,
+              }
+            : { action: "PROGRESS", progressPercent: newProgress, notes: updateNotes };
+        const res = await fetch(`/api/tasks/${task.id}/participant-results`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok) {
+          toast.success(
+            newProgress === 100
+              ? "Đã báo phần việc của bạn. Chủ trì sẽ tổng hợp và trình lãnh đạo."
+              : "Đã cập nhật tiến độ phần việc của bạn."
+          );
+          setShowUpdateModal(false);
+          setUpdateNotes("");
+          fetchTaskDetail();
+        } else {
+          toast.error(json.error || "Không thể cập nhật phần việc");
+        }
+        return;
+      }
+
       const res = await fetch(`/api/tasks/${task.id}/updates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           progressPercent: newProgress,
           notes: updateNotes,
-          actualResultText: updateNotes,
+          actualResultText: isTaskOwner || canApprove ? updateNotes : undefined,
           // YC-38 B4: 100% => tu dong trinh duyet; <100% => chi cap nhat nhat ky
           submitForReview: newProgress === 100,
         }),
@@ -580,6 +632,40 @@ export default function TaskDetailPage() {
       toast.error("Lỗi: " + err.message);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleParticipantDecision = async (
+    personId: string,
+    action: "ACCEPT" | "RETURN"
+  ) => {
+    if (!task) return;
+    let note: string | null = null;
+    if (action === "RETURN") {
+      note = window.prompt("Lý do trả lại phần việc (bắt buộc):") || "";
+      if (note.trim().length < 3) {
+        toast.error("Vui lòng ghi rõ lý do trả lại.");
+        return;
+      }
+    }
+    try {
+      const res = await fetch(
+        `/api/tasks/${task.id}/participant-results/${personId}/decision`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, note }),
+        }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(action === "ACCEPT" ? "Đã chấp nhận phần việc." : "Đã trả lại phần việc.");
+        fetchTaskDetail();
+      } else {
+        toast.error(json.error || "Không thể xử lý phần việc");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
     }
   };
 
@@ -809,7 +895,7 @@ export default function TaskDetailPage() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-semibold text-sm shadow-sm active-press"
               >
                 <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
-                <span>Báo cáo tiến độ / Nộp kết quả</span>
+                <span>{isTaskOwner || canApprove ? "Báo cáo tiến độ / Nộp kết quả" : "Báo phần việc của tôi"}</span>
               </button>
             )}
 
@@ -908,6 +994,100 @@ export default function TaskDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* YC-09 Phase 1: phần việc theo từng người */}
+            {!!task.participantResults?.length && (
+              <div
+                data-testid="task-participants"
+                className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-3"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-[20px]">groups</span>
+                    Phần việc theo người
+                  </h3>
+                  <span className="text-[11px] text-outline">
+                    Một nhiệm vụ — một hồ sơ duyệt chung
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {task.participantResults.map((p) => {
+                    const statusLabel: Record<string, string> = {
+                      NOT_STARTED: "Chưa bắt đầu",
+                      IN_PROGRESS: "Đang thực hiện",
+                      SUBMITTED: "Đã báo phần việc",
+                      RETURNED: "Bị trả lại",
+                      ACCEPTED: "Đã chấp nhận",
+                      EXEMPT: "Được miễn",
+                    };
+                    const canDecidePart =
+                      canApprove &&
+                      p.role !== "OWNER" &&
+                      p.personId !== permUser?.personId &&
+                      p.partStatus === "SUBMITTED";
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-3 rounded-lg bg-surface-subtle border border-border-default/60 flex flex-col gap-1"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-primary">
+                            {p.person?.fullName}
+                            <span className="ml-1 font-normal text-outline">
+                              ({p.role === "OWNER" ? "Chủ trì" : "Phối hợp"})
+                            </span>
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              p.partStatus === "ACCEPTED"
+                                ? "bg-status-success-bg text-status-success"
+                                : p.partStatus === "RETURNED"
+                                  ? "bg-status-danger-bg text-status-danger"
+                                  : p.partStatus === "SUBMITTED"
+                                    ? "bg-status-warning-bg text-status-warning"
+                                    : "bg-surface-container text-on-surface-variant"
+                            }`}
+                          >
+                            {statusLabel[p.partStatus] || p.partStatus}
+                            {p.partProgressPercent !== null && p.partProgressPercent !== undefined
+                              ? ` · ${p.partProgressPercent}%`
+                              : ""}
+                          </span>
+                        </div>
+                        {p.partResultText && (
+                          <p className="text-[11px] text-on-surface whitespace-pre-wrap">
+                            Kết quả: {p.partResultText}
+                          </p>
+                        )}
+                        {p.decisionNote && (
+                          <p className="text-[11px] text-status-danger">
+                            Ý kiến: {p.decisionNote}
+                          </p>
+                        )}
+                        {canDecidePart && (
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleParticipantDecision(p.personId, "ACCEPT")}
+                              className="px-2.5 py-1 rounded bg-status-success text-white text-[11px] font-semibold"
+                            >
+                              Chấp nhận phần
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleParticipantDecision(p.personId, "RETURN")}
+                              className="px-2.5 py-1 rounded bg-status-danger/10 text-status-danger text-[11px] font-semibold border border-status-danger/30"
+                            >
+                              Trả lại phần
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Timeline / Updates Card — nhật ký hợp nhất từ lúc giao việc */}
             <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-4">
@@ -1494,16 +1674,24 @@ export default function TaskDetailPage() {
                   className="rounded text-secondary"
                 />
                 <span>
-                  {newProgress === 100
-                    ? "Nộp kết quả chờ Lãnh đạo đơn vị ký phê duyệt"
-                    : "Nộp kết quả chờ Lãnh đạo đơn vị ký phê duyệt (đạt 100% tiến độ)"}
+                  {isTaskOwner || canApprove
+                    ? newProgress === 100
+                      ? "Nộp kết quả chờ Lãnh đạo đơn vị ký phê duyệt"
+                      : "Nộp kết quả chờ Lãnh đạo đơn vị ký phê duyệt (đạt 100% tiến độ)"
+                    : newProgress === 100
+                      ? "Báo phần việc của tôi (đạt 100%)"
+                      : "Cập nhật tiến độ phần việc của tôi"}
                 </span>
               </label>
               <p className="text-[11px] text-outline">
                 Kéo thanh theo mức 5%.{" "}
-                {newProgress === 100
-                  ? "Đạt 100% — khi bấm \"Xác nhận cập nhật\", hệ thống sẽ NỘP KẾT QUẢ chờ Lãnh đạo đơn vị phê duyệt. Cán bộ không tự kết luận hoàn thành."
-                  : "Dưới 100% — khi lưu chỉ cập nhật nhật ký, nhiệm vụ tiếp tục \"Đang thực hiện\". Trình duyệt sớm chưa triển khai (đề xuất nghiệp vụ đang chờ xác nhận)."}
+                {isTaskOwner || canApprove
+                  ? newProgress === 100
+                    ? "Đạt 100% — khi bấm \"Xác nhận cập nhật\", hệ thống sẽ NỘP KẾT QUẢ chờ Lãnh đạo đơn vị phê duyệt. Cán bộ không tự kết luận hoàn thành."
+                    : "Dưới 100% — khi lưu chỉ cập nhật nhật ký, nhiệm vụ tiếp tục \"Đang thực hiện\". Trình duyệt sớm chưa triển khai (đề xuất nghiệp vụ đang chờ xác nhận)."
+                  : newProgress === 100
+                    ? "Đạt 100% — bấm \"Xác nhận cập nhật\" để báo phần việc của bạn. Chủ trì sẽ tổng hợp và trình lãnh đạo; bạn không nộp thay kết quả chung."
+                    : "Dưới 100% — chỉ cập nhật tiến độ phần việc của bạn; không thay đổi tiến độ chung của nhiệm vụ."}
               </p>
               {task?.status === "WAITING_REVIEW" && (
                 <p className="text-[11px] font-semibold text-status-warning">

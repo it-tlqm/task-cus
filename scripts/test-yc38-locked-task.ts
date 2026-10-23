@@ -58,6 +58,7 @@ async function main() {
   console.log("=== YC-38 — Khóa nhiệm vụ đã nghiệm thu (F1–F5) ===\n");
   const leaderToken = await login("demold01");
   const staffToken = await login("democb01");
+  const staff2Token = await login("democb02");
   const leader = await prisma.person.findFirst({ where: { code: "DEMO-LD-01" } });
   const staff = await prisma.person.findFirst({ where: { code: "DEMO-CB-01" } });
   const staff2 = await prisma.person.findFirst({ where: { code: "DEMO-CB-02" } });
@@ -88,6 +89,17 @@ async function main() {
     method: "PATCH",
     headers: H(staffToken),
     body: JSON.stringify({ id: taskId, action: "ACCEPT_TASK" }),
+  });
+  // YC-09 Phase 1: collaborator báo phần việc trước khi owner nộp chung (S-ALL).
+  await fetch(`${BASE}/api/tasks/${taskId}/participant-results`, {
+    method: "POST",
+    headers: H(staff2Token),
+    body: JSON.stringify({
+      action: "SUBMIT",
+      partResultText: `${TAG} phần việc phối hợp`,
+      partCompletedOn: "2026-10-23",
+      partProgressPercent: 100,
+    }),
   });
   // nộp duyệt (100% → submit)
   await fetch(`${BASE}/api/tasks/${taskId}/updates`, {

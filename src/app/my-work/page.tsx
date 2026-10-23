@@ -449,6 +449,41 @@ export default function MyWorkPage() {
     setDrawerLoading(true);
     setActionError(null);
     try {
+      const isOwner = selectedTask.owner?.id === currentUser?.personId;
+      if (!isOwner && !canApprove) {
+        if (finalSubmit && drawerNotes.trim().length < 5) {
+          throw new Error("Vui lòng nhập kết quả phần việc (ít nhất 5 ký tự) trước khi báo hoàn thành.");
+        }
+        const partRes = await fetch(`/api/tasks/${selectedTask.id}/participant-results`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            finalSubmit
+              ? {
+                  action: "SUBMIT",
+                  partResultText: drawerNotes,
+                  partCompletedOn: new Date().toISOString().slice(0, 10),
+                  partProgressPercent: 100,
+                }
+              : {
+                  action: "PROGRESS",
+                  progressPercent: Math.round(drawerProgress / 5) * 5,
+                  notes: drawerNotes,
+                }
+          ),
+        });
+        const partJson = await partRes.json().catch(() => ({}));
+        if (!partRes.ok) throw new Error(partJson.error || "Không thể cập nhật phần việc");
+        const successMsg = finalSubmit
+          ? "Đã báo phần việc của bạn. Chủ trì sẽ tổng hợp và trình duyệt."
+          : "Đã cập nhật tiến độ phần việc của bạn.";
+        setActionSuccess(successMsg);
+        toast.success(successMsg);
+        await fetchTasks();
+        setTimeout(() => setIsDrawerOpen(false), 900);
+        return;
+      }
+
       // 1. Submit progress update (YC-09: làm tròn về bước 5% gần nhất)
       const steppedProgress = finalSubmit ? 100 : Math.round(drawerProgress / 5) * 5;
       const updateRes = await fetch(`/api/tasks/${selectedTask.id}/updates`, {
@@ -1935,7 +1970,9 @@ export default function MyWorkPage() {
               {/* Chuyển trạng thái */}
               <div className="flex flex-col gap-1.5">
                 <label className="font-body-semibold text-body-semibold text-primary">
-                  1. Chuyển trạng thái công việc
+                  {selectedTask?.owner?.id === currentUser?.personId
+                    ? "1. Chuyển trạng thái công việc"
+                    : "1. Trạng thái phần việc của tôi"}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <label
@@ -1955,29 +1992,31 @@ export default function MyWorkPage() {
                     />
                     <span className="font-label-md text-label-md">Đang xử lý (Tiếp tục)</span>
                   </label>
-                  <label
-                    onClick={() => {
-                      setDrawerStatus("COMPLETED");
-                      setDrawerProgress(100);
-                    }}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
-                      drawerStatus === "COMPLETED"
-                        ? "bg-status-success-bg border border-status-success text-status-success font-semibold"
-                        : "bg-surface-subtle hover:bg-surface-container text-on-surface"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="drawer-status"
-                      checked={drawerStatus === "COMPLETED"}
-                      onChange={() => {
+                  {selectedTask?.owner?.id === currentUser?.personId && (
+                    <label
+                      onClick={() => {
                         setDrawerStatus("COMPLETED");
                         setDrawerProgress(100);
                       }}
-                      className="accent-status-success"
-                    />
-                    <span className="font-label-md text-label-md">Hoàn thành (Đạt kết quả)</span>
-                  </label>
+                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
+                        drawerStatus === "COMPLETED"
+                          ? "bg-status-success-bg border border-status-success text-status-success font-semibold"
+                          : "bg-surface-subtle hover:bg-surface-container text-on-surface"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="drawer-status"
+                        checked={drawerStatus === "COMPLETED"}
+                        onChange={() => {
+                          setDrawerStatus("COMPLETED");
+                          setDrawerProgress(100);
+                        }}
+                        className="accent-status-success"
+                      />
+                      <span className="font-label-md text-label-md">Hoàn thành (Đạt kết quả)</span>
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -2201,16 +2240,22 @@ export default function MyWorkPage() {
                   onClick={() => handleDrawerSubmit(false)}
                   className="px-3 py-2 rounded-lg bg-surface-container text-primary font-label-md text-label-md hover:bg-surface-container-high transition-fast active-press"
                 >
-                  {drawerLoading ? "Đang lưu..." : "Lưu nháp"}
+                  {drawerLoading
+                    ? "Đang lưu..."
+                    : selectedTask?.owner?.id === currentUser?.personId
+                      ? "Lưu nháp"
+                      : "Lưu tiến độ phần việc"}
                 </button>
-                <button
-                  disabled={drawerLoading}
-                  onClick={() => handleDrawerSubmit(true)}
-                  className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:opacity-90 shadow-sm flex items-center gap-1.5 font-semibold transition-fast active-press"
-                >
-                  <span className="material-symbols-outlined text-[18px]">send_time_extension</span>
-                  <span>{drawerLoading ? "Đang gửi..." : "Báo hoàn thành & Trình duyệt"}</span>
-                </button>
+                {selectedTask?.owner?.id === currentUser?.personId && (
+                  <button
+                    disabled={drawerLoading}
+                    onClick={() => handleDrawerSubmit(true)}
+                    className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:opacity-90 shadow-sm flex items-center gap-1.5 font-semibold transition-fast active-press"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">send_time_extension</span>
+                    <span>{drawerLoading ? "Đang gửi..." : "Báo hoàn thành & Trình duyệt"}</span>
+                  </button>
+                )}
               </div>
             </div>
           </aside>

@@ -46,6 +46,9 @@ export async function POST(
       action: action as "AGREE" | "REJECT" | "CLARIFY",
       reason: body.reason ?? null,
       content: body.content ?? null,
+      returnPersonIds: Array.isArray(body.returnPersonIds)
+        ? body.returnPersonIds.filter((x: any) => typeof x === "string")
+        : [],
     });
 
     if (!result.success) {
