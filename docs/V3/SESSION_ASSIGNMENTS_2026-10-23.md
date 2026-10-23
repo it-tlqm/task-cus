@@ -1,8 +1,11 @@
 # S0 — PHÂN CÔNG S1 → S6
 
-**Baseline:** `1b856f1` (integration; Phase A đã merge)  
+**Baseline code:** `a68d31e` (Phase A đã merge); **docs/start:** `244aa49`  
 **Quy tắc:** mỗi session chỉ làm trong worktree của mình; không merge `main`; không deploy; không ghi Production.  
 **Bắt buộc đọc:** `docs/V3/MULTI_SESSION_MASTER_PLAN_YC01_YC13_2026-10-23.md`, `docs/V3/SESSION_RUNTIME_MATRIX_2026-10-23.md`, `docs/V3/REVIEW_YC08_YC13_2026-10-23.md` và tài liệu nguồn của nhóm.
+
+**Trạng thái khởi động 23/10/2026:** S1, S2, S4, S5, S6 = `READY TO START`; S3 = `WAIT_CONTRACT`.  
+**DB đã xác minh:** tất cả worktree có app đều trỏ `localhost:5432` và đúng database test `talung_v3_*`; S6 không DB. Không có Production.
 
 ---
 

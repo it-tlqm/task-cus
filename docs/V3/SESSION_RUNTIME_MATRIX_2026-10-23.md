@@ -8,13 +8,13 @@
 
 | Session | Worktree | Branch | Base | Port | Database test | Trạng thái |
 |---|---|---|---|---|---:|---|
-| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `origin/main` + Phase A | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | Baseline ready — tests PASS |
-| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `a68d31e` | 3111 | `talung_v3_phase_a_qa` | Ready for Phase A QA |
-| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `a68d31e` | 3112 | `talung_v3_phase_b` | Ready, contract B/C pending |
-| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `a68d31e` | 3113 | `talung_v3_phase_c` | Wait for B/C contract |
-| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `a68d31e` | 3114 | `talung_v3_task_approval` | Ready for YC-08/hotfix YC-09/YC-12 |
-| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `a68d31e` | 3115 | `talung_v3_roster` | Ready for YC-13 |
-| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `a68d31e` | — | — | SPEC ONLY |
+| S0 | `D:\thanhnx\OpenCode\talung-integration` | `codex/v3-integration-yc01-13` | `origin/main` + Phase A | 3100 | `talung_v3_integration` (dev) / `talung_v3_fixture_integration` (test) | **READY** — baseline tests PASS |
+| S1 | `D:\thanhnx\OpenCode\talung-phase-a-qa` | `codex/v3-phase-a-qa` | `244aa49` docs / `a68d31e` code | 3111 | `talung_v3_phase_a_qa` | **READY TO START** — Phase A QA |
+| S2 | `D:\thanhnx\OpenCode\talung-phase-b` | `codex/v3-phase-b-revenue` | `244aa49` docs / `a68d31e` code | 3112 | `talung_v3_phase_b` | **READY TO START** — contract B/C first |
+| S3 | `D:\thanhnx\OpenCode\talung-phase-c` | `codex/v3-phase-c-metrics` | `244aa49` docs / `a68d31e` code | 3113 | `talung_v3_phase_c` | **WAIT_CONTRACT** |
+| S4 | `D:\thanhnx\OpenCode\talung-task-approval` | `codex/v3-task-approval-history` | `244aa49` docs / `a68d31e` code | 3114 | `talung_v3_task_approval` | **READY TO START** — YC-08/hotfix YC-09/YC-12 |
+| S5 | `D:\thanhnx\OpenCode\talung-roster` | `codex/v3-roster-notes` | `244aa49` docs / `a68d31e` code | 3115 | `talung_v3_roster` | **READY TO START** — YC-13 |
+| S6 | `D:\thanhnx\OpenCode\talung-approval-spec` | `codex/v3-approval-rules-spec` | `244aa49` docs / `a68d31e` code | — | — | **READY TO START — SPEC ONLY** |
 
 Ghi chú: baseline `a68d31e` là commit merge Phase A vào integration. Session branches được tạo từ baseline này trước khi bổ sung tài liệu S0; S0 sẽ fast-forward tài liệu bootstrap khi hoàn tất.
 
@@ -46,7 +46,23 @@ Ghi chú: baseline `a68d31e` là commit merge Phase A vào integration. Session 
 5. S3 / YC-06/07.
 6. S6 chỉ chuyển implementation sau quyết định chính thức.
 
-## 5. Kết quả baseline S0
+## 5. Xác minh kết nối DB từng worktree (23/10/2026)
+
+Đã đọc `.env`/`.env.local` cục bộ, chỉ trích xuất host/port/database (không in mật khẩu) và chạy truy vấn read-only `current_database()` + đếm `accounts`:
+
+| Worktree | Host | DB thực tế | `.env` = `.env.local` | Kết quả |
+|---|---|---|---|---|
+| S0 integration | localhost:5432 | `talung_v3_integration` | Có | **SAFE_LOCAL_TEST** |
+| S1 phase-a-qa | localhost:5432 | `talung_v3_phase_a_qa` | Có | **SAFE_LOCAL_TEST** |
+| S2 phase-b | localhost:5432 | `talung_v3_phase_b` | Có | **SAFE_LOCAL_TEST** |
+| S3 phase-c | localhost:5432 | `talung_v3_phase_c` | Có | **SAFE_LOCAL_TEST** |
+| S4 task-approval | localhost:5432 | `talung_v3_task_approval` | Có | **SAFE_LOCAL_TEST** |
+| S5 roster | localhost:5432 | `talung_v3_roster` | Có | **SAFE_LOCAL_TEST** |
+| S6 approval-spec | — | Không cấu hình DB | — | **SPEC ONLY** |
+
+Không có host/DB Production trong cấu hình session. Không in credential ra log.
+
+## 6. Kết quả baseline S0
 
 - `npx tsc --noEmit`: PASS.
 - `npx prisma validate`: PASS.
@@ -57,7 +73,7 @@ Ghi chú: baseline `a68d31e` là commit merge Phase A vào integration. Session 
 - DB test: `talung_v3_fixture_integration`; không dùng Production.
 - Hai bộ Phase A vẫn chờ fixture/storage riêng: `test-yc23-25-api.ts` và `test-v3-evidence-adjustment.ts`; S1 xử lý theo gate, không hạ bảo mật.
 
-## 6. Điều kiện handoff
+## 7. Điều kiện handoff
 
 Mỗi session gửi S0 theo mẫu mục 7 của master plan, kèm:
 - commit SHA, file changed, schema/migration;
