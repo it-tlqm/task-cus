@@ -8,7 +8,6 @@ import {
   resolveEntryPerms,
   permForMetric,
   isEntryDateAllowed,
-  isMetricsAdmin,
   parseNumberInput,
   dateOnlyFromStr,
   dateOnlyToStr,

@@ -1529,6 +1529,8 @@ model MetricBaseline {
   proposedById     String?   @map("proposed_by_id")
   confirmedById    String?   @map("confirmed_by_id")
   confirmedAt      DateTime? @map("confirmed_at")
+  lockedById       String?   @map("locked_by_id")
+  lockedAt         DateTime? @map("locked_at")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
@@ -1538,26 +1540,77 @@ model MetricBaseline {
   @@map("metric_baselines")
 }
 
-// periodType: YEAR | QUARTER | MONTH — periodNo: tháng 1-12 / quý 1-4 / null nếu YEAR
+/// Lịch sử thay đổi mốc lũy kế (YC-02). Sửa mốc đã xác nhận phải quay về PROPOSED để xác nhận lại.
+model MetricBaselineRevision {
+  id            String    @id @default(uuid())
+  baselineId    String    @map("baseline_id")
+  action        String // CREATE | UPDATE | CONFIRM | LOCK | DELETE
+  oldValue      Decimal?  @map("old_value") @db.Decimal(24, 4)
+  newValue      Decimal?  @map("new_value") @db.Decimal(24, 4)
+  oldStatus     String?   @map("old_status")
+  newStatus     String?   @map("new_status")
+  oldSourceNote String?   @map("old_source_note")
+  newSourceNote String?   @map("new_source_note")
+  reason        String?
+  editedById    String    @map("edited_by_id")
+  editedAt      DateTime  @default(now()) @map("edited_at")
+
+  // Không dùng FK cascade: lịch sử phải còn lại kể cả khi bản ghi nguồn bị xóa.
+  @@index([baselineId, editedAt])
+  @@map("metric_baseline_revisions")
+}
+
+// periodType: YEAR | QUARTER | MONTH - periodNo: tháng 1-12 / quý 1-4 / null nếu YEAR
 // label: tên chỉ tiêu giao (VD: "Chỉ tiêu BTC", "Chỉ tiêu UBND", "KH tháng", "Chỉ tiêu giao")
+// comparisonKind (YC-01, B-C-1): NONE | BTC_YEAR | UBND_YEAR | MONTH_PLAN
+//   Chỉ tiêu dùng cho khối so sánh Thu NSNN phải được cấu hình TƯỜNG MINH; không dò chuỗi nhãn.
+// status (YC-02): PROPOSED (đã nhập) | CONFIRMED (đã xác nhận) | LOCKED (đã chốt)
 model MetricPlanTarget {
-  id               String   @id @default(uuid())
-  metricId         String   @map("metric_id")
-  classificationId String   @default("") @map("classification_id")
+  id               String    @id @default(uuid())
+  metricId         String    @map("metric_id")
+  classificationId String    @default("") @map("classification_id")
   label            String
-  periodType       String   @map("period_type")
+  periodType       String    @map("period_type")
   year             Int
-  periodNo         Int?     @map("period_no")
-  valueNumeric     Decimal  @map("value_numeric") @db.Decimal(24, 4)
+  periodNo         Int?      @map("period_no")
+  valueNumeric     Decimal   @map("value_numeric") @db.Decimal(24, 4)
+  comparisonKind   String    @default("NONE") @map("comparison_kind")
+  sourceNote       String?   @map("source_note")
+  status           String    @default("PROPOSED")
+  proposedById     String?   @map("proposed_by_id")
+  confirmedById    String?   @map("confirmed_by_id")
+  confirmedAt      DateTime? @map("confirmed_at")
+  lockedById       String?   @map("locked_by_id")
+  lockedAt         DateTime? @map("locked_at")
   note             String?
-  updatedById      String?  @map("updated_by_id")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  updatedById      String?   @map("updated_by_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   metric MetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
 
   @@unique([metricId, classificationId, label, periodType, year, periodNo])
   @@map("metric_plan_targets")
+}
+
+/// Lịch sử thay đổi chỉ tiêu giao (YC-02). Không ghi đè mất căn cứ đã chốt.
+model MetricPlanTargetRevision {
+  id            String    @id @default(uuid())
+  targetId      String    @map("target_id")
+  action        String // CREATE | UPDATE | CONFIRM | LOCK | DELETE
+  oldValue      Decimal?  @map("old_value") @db.Decimal(24, 4)
+  newValue      Decimal?  @map("new_value") @db.Decimal(24, 4)
+  oldStatus     String?   @map("old_status")
+  newStatus     String?   @map("new_status")
+  oldSourceNote String?   @map("old_source_note")
+  newSourceNote String?   @map("new_source_note")
+  reason        String?
+  editedById    String    @map("edited_by_id")
+  editedAt      DateTime  @default(now()) @map("edited_at")
+
+  // Không dùng FK cascade: lịch sử phải còn lại kể cả khi bản ghi nguồn bị xóa.
+  @@index([targetId, editedAt])
+  @@map("metric_plan_target_revisions")
 }
 
 // Phân công nhập liệu: hoặc theo NHÓM (groupId) hoặc theo CHỈ TIÊU (metricId).
