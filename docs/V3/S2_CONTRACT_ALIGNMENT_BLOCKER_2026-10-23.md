@@ -57,7 +57,18 @@ S0 đã đọc handoff, contract `B-C-1`, schema/migration và code S2. Phần l
 
 ---
 
-## 4. Điều kiện merge lại
+## 4. B-C-2 alignment bổ sung (S0 đã chốt)
+
+| Mã | Yêu cầu B-C-2 |
+|---|---|
+| **D3** | Giữ `PROPOSED` trong DB/API; S3 map nội bộ/UI sang `DRAFT`. Không đổi tên status schema. |
+| **D4** | Giữ `comparisonKind` tường minh; S3 map sang `labelCode`; không regex nhãn. |
+| **D5** | Cung cấp tường minh `direction` trên target và `measureMode`/`baselineScope` cho metric/baseline. S2 đề xuất field/read-model trong B-C-2; S3 không suy từ `valueKind`/tên. C1 vẫn PENDING. |
+| **D6** | Seed/kiểm tra `metrics.config` + `metrics.entry_all`; assignment `canEnter`/`canConfirm`; SYSTEM_ADMIN không mặc nhiên. |
+| **D7** | **D7=A:** S3 sở hữu service/route target-only mới (`src/server/metric-targets.ts`, `/api/metrics/targets/*`). S2 giữ schema + `metrics.ts`; S3 không sửa `/api/metrics/admin`, `/api/metrics/summary`, `/api/metrics/entries`, Dashboard. |
+| **D8** | Revision + audit old/new/status/source; proposed/confirmed/locked by/at. |
+
+## 5. Điều kiện merge lại
 
 1. Commit sửa Q9 + Q11 trên `codex/v3-phase-b-revenue`.
 2. Cập nhật contract/acceptance sang phiên bản mới.

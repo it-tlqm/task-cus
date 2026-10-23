@@ -36,7 +36,19 @@
 - **Q11/YC-02 — BLOCKER:** API B-C-1 đang làm tròn 1 chữ số; quyết định Q11/YC-02 là **2 chữ số thập phân**. S2 phải sửa API/test/UI và cập nhật acceptance (78,18 / 77,49 / 109,67) trước khi merge.
 - B1/B2/C1 vẫn PENDING; không hard-code.
 
-### 1.3. Điều kiện triển khai S3
+### 1.3. B-C-2 alignment — S0 chốt
+
+| Mã | Quyết định S0 |
+|---|---|
+| **D3** | B-C-2/DB/API **giữ `PROPOSED`**; S3 map nội bộ/UI sang `DRAFT` (nhãn “Dự thảo”). Không đổi tên schema/status chỉ để đồng nhất hiển thị. |
+| **D4** | B-C-2 giữ `comparisonKind` tường minh (`BTC_YEAR`/`UBND_YEAR`/`MONTH_PLAN`); S3 map sang `labelCode` (`BTC`/`UBND`/`KH_THANG`). **Không dùng regex nhãn**. |
+| **D5** | B-C-2 phải cung cấp tường minh: `direction` trên target (`HIGHER_IS_BETTER`/`LOWER_IS_BETTER`/`NEUTRAL`/`NOT_SET`) và `measureMode`/`baselineScope` cho metric/baseline. S2 đề xuất field vật lý/read-model trong B-C-2; S0 review. S3 không suy từ `valueKind`/tên. C1 vẫn PENDING. |
+| **D6** | S2 seed/kiểm tra `metrics.config` và `metrics.entry_all`; assignment `canEnter`/`canConfirm`; `SYSTEM_ADMIN` không mặc nhiên; không `system.config`. |
+| **D7** | **D7=A:** S3 sở hữu service/route target-only mới (`src/server/metric-targets.ts`, `/api/metrics/targets/*`). S2 sở hữu schema và `src/server/metrics.ts`. S3 không sửa `/api/metrics/admin`, `/api/metrics/summary`, `/api/metrics/entries`, Dashboard. |
+| **D8** | Mọi create/update/confirm/lock/void target ghi revision + audit old/new/status/source; lưu proposed/confirmed/locked by/at. |
+| **D9** | Chỉ S3 triển khai sau khi B-C-2 publish + migration rehearsal + S0 merge; không merge `main`/Production. |
+
+### 1.4. Điều kiện triển khai S3
 
 - **Được làm ngay:** pure helper/state model + test; chuẩn bị target UI component ở mức độc lập nếu không cần API/schema shared.
 - **Chưa được làm:** sửa `prisma/schema.prisma`, `src/server/metrics.ts`, `/api/metrics/*`, `/giao-ban`, `/giao-ban/cau-hinh` hoặc migration cho tới khi S2 công bố schema/contract.
