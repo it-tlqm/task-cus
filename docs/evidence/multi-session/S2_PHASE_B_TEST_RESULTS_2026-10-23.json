@@ -5,7 +5,7 @@
     "YC-02"
   ],
   "contract": "B-C-2",
-  "timestamp": "2026-10-23T11:30:48.745Z",
+  "timestamp": "2026-10-23T11:37:35.116Z",
   "db": "talung_v3_phase_b",
   "api": "http://localhost:3112",
   "passed": 43,
@@ -48,8 +48,8 @@
       "monthCum": 219341201856,
       "latestDate": "2023-10-31",
       "btc": {
-        "targetId": "b6f12a30-9276-462b-aca5-cb39126203a3",
-        "label": "[S2-PHASE-B-1792755031014] BTC 2023",
+        "targetId": "adb29b4c-2023-48e6-a62a-cb5682996622",
+        "label": "[S2-PHASE-B-1792755429724] BTC 2023",
         "comparisonKind": "BTC_YEAR",
         "targetValue": 1685000000000,
         "percent": 78.18,
@@ -61,12 +61,12 @@
         "status": "CONFIRMED",
         "dataSource": "REAL",
         "isOfficial": true,
-        "sourceNote": "[S2-PHASE-B-1792755031014] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T11:30:41.638Z"
+        "sourceNote": "[S2-PHASE-B-1792755429724] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:37:27.749Z"
       },
       "ubnd": {
-        "targetId": "a0941b66-dbf5-4014-93d3-3dde50f1ad74",
-        "label": "[S2-PHASE-B-1792755031014] UBND 2023",
+        "targetId": "335335e0-a574-44a9-996b-e858633237cc",
+        "label": "[S2-PHASE-B-1792755429724] UBND 2023",
         "comparisonKind": "UBND_YEAR",
         "targetValue": 1700000000000,
         "percent": 77.49,
@@ -78,12 +78,12 @@
         "status": "CONFIRMED",
         "dataSource": "REAL",
         "isOfficial": true,
-        "sourceNote": "[S2-PHASE-B-1792755031014] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T11:30:41.694Z"
+        "sourceNote": "[S2-PHASE-B-1792755429724] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:37:27.819Z"
       },
       "monthPlan": {
-        "targetId": "8b99cdd1-9a92-4fea-bc9d-2ebd7c226f34",
-        "label": "[S2-PHASE-B-1792755031014] KH tháng 10/2023",
+        "targetId": "52580abd-9b82-4adf-aec1-9bb8ff86b731",
+        "label": "[S2-PHASE-B-1792755429724] KH tháng 10/2023",
         "comparisonKind": "MONTH_PLAN",
         "targetValue": 200000000000,
         "percent": 109.67,
@@ -95,8 +95,8 @@
         "status": "CONFIRMED",
         "dataSource": "REAL",
         "isOfficial": true,
-        "sourceNote": "[S2-PHASE-B-1792755031014] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T11:30:41.696Z"
+        "sourceNote": "[S2-PHASE-B-1792755429724] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-23T11:37:27.820Z"
       },
       "prevMonth": {
         "value": 50,

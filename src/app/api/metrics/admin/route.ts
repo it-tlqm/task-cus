@@ -609,7 +609,8 @@ export async function POST(req: NextRequest) {
             );
           if (comparisonKind !== "NONE") {
             const dupKind = await prisma.metricPlanTarget.findFirst({
-              where: { metricId, classificationId, comparisonKind, year, periodNo },
+              // Chỉ chặn trùng trong cùng nguồn dữ liệu; DEMO không chặn REAL.
+              where: { metricId, classificationId, comparisonKind, year, periodNo, dataSource },
             });
             if (dupKind)
               return jsonError("Đã có chỉ tiêu giao cùng loại đối chiếu cho kỳ này — sửa bản ghi cũ", 400);
@@ -680,7 +681,7 @@ export async function POST(req: NextRequest) {
           return jsonError("Đã có chỉ tiêu giao trùng tên/kỳ — kiểm tra lại", 400);
         if (comparisonKind !== "NONE") {
           const dupKind = await prisma.metricPlanTarget.findFirst({
-            where: { id: { not: id }, metricId, classificationId, comparisonKind, year, periodNo },
+            where: { id: { not: id }, metricId, classificationId, comparisonKind, year, periodNo, dataSource },
           });
           if (dupKind)
             return jsonError("Đã có chỉ tiêu giao cùng loại đối chiếu cho kỳ này — kiểm tra lại", 400);
