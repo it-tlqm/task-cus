@@ -114,10 +114,15 @@ async function main() {
       where: { resourceId: task.id },
       orderBy: { createdAt: "desc" },
     });
+    const selfAgreeDecisions = caseRow
+      ? await prisma.approvalDecision.count({
+          where: { caseId: caseRow.id, action: "AGREE", actorPersonId: leader.personId },
+        })
+      : 0;
     check(
-      "B2. Ho so chua co quyet dinh tu duyet",
-      !caseRow || caseRow.status !== "APPROVED",
-      `status=${caseRow?.status}`
+      "B2. Ho so chua co quyet dinh tu duyet (status phai khac AGREED)",
+      (!caseRow || caseRow.status !== "AGREED") && selfAgreeDecisions === 0,
+      `status=${caseRow?.status}, selfAgree=${selfAgreeDecisions}`
     );
 
     // C. Cán bộ (không phải lãnh đạo) cũng không duyệt được

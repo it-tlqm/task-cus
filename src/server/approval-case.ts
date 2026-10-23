@@ -20,6 +20,7 @@ import { SessionUser } from "./auth";
 import { getAuthorizedUnitIds, verifyTaskAccess } from "./guard";
 import { recordAuditEvent } from "./audit";
 import { createNotification } from "./notifications";
+import { unaccentSearchIds } from "./search";
 
 export type ApprovalCaseType = "TASK_RESULT" | "PLAN" | "DEADLINE_REQUEST";
 export type ApprovalAction = "AGREE" | "REJECT" | "CLARIFY" | "RESPOND";
@@ -63,6 +64,71 @@ function diffDays(a: Date, b: Date) {
 function formatDateTime(v: Date | string | null | undefined) {
   if (!v) return null;
   return formatVnDateTime(v);
+}
+
+/** Lấy tên người từ danh sách personId (ApprovalDecision không khai báo relation Person). */
+async function personNamesByIds(ids: Array<string | null | undefined>): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(ids.filter((x): x is string => !!x)));
+  if (unique.length === 0) return new Map();
+  const people = await prisma.person.findMany({
+    where: { id: { in: unique } },
+    select: { id: true, fullName: true },
+  });
+  return new Map(people.map((p) => [p.id, p.fullName]));
+}
+
+export interface TaskApprovalSummary {
+  caseId: string;
+  caseStatus: string;
+  round: number;
+  action: "AGREE" | "REJECT" | "CLARIFY" | "RESPOND" | null;
+  actionLabel: string | null;
+  reason: string | null;
+  content: string | null;
+  decidedById: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+}
+
+/**
+ * YC-08 — projection phê duyệt cho nhiệm vụ (badge, người, thời gian, lý do).
+ * Trả về quyết định gần nhất của hồ sơ TASK_RESULT; không suy diễn COMPLETED thành "đã duyệt"
+ * nếu không có ApprovalDecision tương ứng.
+ */
+export async function getTaskApprovalSummaries(
+  taskIds: string[]
+): Promise<Map<string, TaskApprovalSummary>> {
+  const out = new Map<string, TaskApprovalSummary>();
+  if (taskIds.length === 0) return out;
+  const cases = await prisma.approvalCase.findMany({
+    where: { caseType: "TASK_RESULT", resourceId: { in: taskIds } },
+    include: {
+      decisions: {
+        where: { action: { in: ["AGREE", "REJECT", "CLARIFY"] } },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
+  });
+  const names = await personNamesByIds(cases.flatMap((c) => [c.decidedById, c.decisions[0]?.actorPersonId]));
+  for (const c of cases) {
+    const latest = c.decisions[0] || null;
+    out.set(c.resourceId, {
+      caseId: c.id,
+      caseStatus: c.status,
+      round: latest?.round ?? c.currentRound,
+      action: (latest?.action as TaskApprovalSummary["action"]) ?? null,
+      actionLabel: latest
+        ? APPROVAL_ACTION_LABELS[latest.action as ApprovalAction] ?? latest.action
+        : null,
+      reason: latest?.reason ?? null,
+      content: latest?.content ?? null,
+      decidedById: c.decidedById,
+      decidedByName: c.decidedById ? names.get(c.decidedById) ?? null : null,
+      decidedAt: (c.decidedAt ?? latest?.createdAt)?.toISOString() ?? null,
+    });
+  }
+  return out;
 }
 
 /** Người có quyền quyết định hồ sơ này không? */
@@ -190,7 +256,9 @@ export async function buildApprovalPreview(
     submitterId = task.ownerId;
     resourceStatus = task.status;
     resourceOwnerId = task.ownerId;
-    submittedAt = task.updatedAt.toISOString();
+    // Thời điểm trình duyệt thực tế (không dùng updatedAt vì có thể bị thay đổi bởi thao tác khác)
+    const lastSubmit = task.updates.find((u) => u.kind === "submit");
+    submittedAt = (lastSubmit?.createdAt ?? task.updatedAt).toISOString();
     deadline.original = formatDateTime(task.originalDeadline);
     deadline.current = formatDateTime(task.currentDeadline);
     const ext = diffDays(task.currentDeadline, task.originalDeadline);
@@ -366,10 +434,14 @@ export async function buildApprovalPreview(
     actionLabel: APPROVAL_ACTION_LABELS[d.action as ApprovalAction] ?? d.action,
     reason: d.reason,
     content: d.content,
-    actorName: d.actorPersonId ? String(d.actorPersonId) : "—",
+    actorName: "—",
     actorPersonId: d.actorPersonId,
     createdAt: d.createdAt.toISOString(),
   }));
+  const historyNames = await personNamesByIds(history.map((h) => h.actorPersonId));
+  for (const h of history) {
+    if (h.actorPersonId) h.actorName = historyNames.get(h.actorPersonId) ?? "—";
+  }
 
   const isDecider = await canDecide(user, unitId);
   const isSubmitter = !!submitterId && submitterId === user.personId;
@@ -386,6 +458,9 @@ export async function buildApprovalPreview(
     if (isSubmitter) {
       permissionReason = "Bạn được yêu cầu giải trình — bổ sung nội dung rồi gửi lại.";
     }
+  } else if (isSubmitter && caseOpen) {
+    // Chặn tự duyệt ngay trên preview: người trình không được thấy nút quyết định.
+    permissionReason = "Bạn là người trình hồ sơ — cần lãnh đạo khác thẩm quyền quyết định.";
   } else if (isDecider) {
     permissionReason = null;
   } else if (caseStatus === "AGREED" || caseStatus === "REJECTED") {
@@ -431,7 +506,8 @@ export async function buildApprovalPreview(
     history,
     permissions: {
       // Hồ sơ chưa tạo (lần đầu) vẫn cho quyết định — case được tạo khi ghi quyết định.
-      canDecide: isDecider && caseOpen,
+      // Người trình KHÔNG bao giờ được quyết định hồ sơ của chính mình.
+      canDecide: isDecider && caseOpen && !isSubmitter,
       canRespond,
       reason: permissionReason,
     },
@@ -493,11 +569,15 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
   let notifyUrl = "/approvals";
   let notifyLabel = "Xem hồ sơ";
   let taskId: string | null = null;
+  let collaboratorIds: string[] = [];
 
   if (caseType === "TASK_RESULT") {
     const task = await prisma.task.findUnique({
       where: { id: resourceId },
-      include: { owner: { select: { id: true, fullName: true } } },
+      include: {
+        owner: { select: { id: true, fullName: true } },
+        assignees: { select: { personId: true } },
+      },
     });
     if (!task) return { success: false, status: 404, error: "Nhiệm vụ không tồn tại" };
     const access = await verifyTaskAccess(user, task.id, "WRITE");
@@ -510,6 +590,9 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     title = task.title;
     resourceStatus = task.status;
     taskId = task.id;
+    collaboratorIds = task.assignees.map((a) => a.personId);
+    notifyUrl = `/tasks/${task.id}`;
+    notifyLabel = "Xem nhiệm vụ";
   } else if (caseType === "PLAN") {
     const plan = await prisma.plan.findUnique({
       where: { id: resourceId },
@@ -546,6 +629,8 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     title = `Gia hạn: ${req.task.title}`;
     resourceStatus = req.status;
     taskId = req.taskId;
+    notifyUrl = `/tasks/${req.taskId}`;
+    notifyLabel = "Xem nhiệm vụ";
   } else {
     return { success: false, status: 400, error: "Loại hồ sơ không hợp lệ" };
   }
@@ -595,169 +680,243 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     };
   }
 
-  // 3) Tạo/lấy case (khoá duy nhất caseType+resourceId → không tạo hồ sơ trùng)
-  const approvalCase = await prisma.approvalCase.upsert({
-    where: { caseType_resourceId: { caseType, resourceId } },
-    update: {
-      title,
-      resourceCode: code,
-      unitId,
-      submittedById: submitterId,
-    },
-    create: {
-      caseType,
-      resourceId,
-      resourceCode: code,
-      title,
-      unitId,
-      submittedById: submitterId,
-      status: "OPEN",
-    },
-  });
-
-  // 4) Chống bấm lặp: chỉ quyết định được khi case đang OPEN
   const targetStatus: ApprovalCaseStatus =
     action === "AGREE" ? "AGREED" : action === "REJECT" ? "REJECTED" : "CLARIFY_REQUESTED";
 
-  const claimed = await prisma.approvalCase.updateMany({
-    where: { id: approvalCase.id, status: "OPEN" },
-    data: {
-      status: targetStatus,
-      decidedById: user.personId ?? null,
-      decidedAt: new Date(),
-    },
-  });
-  if (claimed.count === 0) {
-    const current = await prisma.approvalCase.findUnique({ where: { id: approvalCase.id } });
-    return {
-      success: false,
-      status: 409,
-      error: "Hồ sơ này vừa được xử lý bởi người khác — không thể quyết định lại.",
-      data: {
-        caseId: approvalCase.id,
-        status: current?.status ?? "OPEN",
-        round: current?.currentRound ?? 1,
-        deduplicated: true,
-      },
-    };
+  class DecisionConflict extends Error {
+    statusCode: number;
+    constructor(message: string, statusCode = 409) {
+      super(message);
+      this.statusCode = statusCode;
+    }
   }
 
-  const round = approvalCase.currentRound;
+  // 3-6) Ghi hồ sơ + quyết định + hiệu ứng nghiệp vụ + nhật ký TaskUpdate trong CÙNG transaction.
+  // Nếu hiệu ứng thất bại (trạng thái vừa bị người khác đổi), toàn bộ quyết định được rollback
+  // — không để lại lịch sử duyệt "treo" trên hồ sơ chưa thực sự được xử lý.
+  let txResult:
+    | { ok: true; caseId: string; round: number; task: any | null; workflowMessage: string }
+    | { ok: false; status: number; error: string; data?: DecideResult["data"] };
+  try {
+    txResult = await prisma.$transaction(async (tx) => {
+      const approvalCase = await tx.approvalCase.upsert({
+        where: { caseType_resourceId: { caseType, resourceId } },
+        update: {
+          title,
+          resourceCode: code,
+          unitId,
+          submittedById: submitterId,
+        },
+        create: {
+          caseType,
+          resourceId,
+          resourceCode: code,
+          title,
+          unitId,
+          submittedById: submitterId,
+          status: "OPEN",
+        },
+      });
 
-  // 5) Ghi lịch sử quyết định
-  await prisma.approvalDecision.create({
-    data: {
-      caseId: approvalCase.id,
-      round,
-      action,
-      reason,
-      content,
-      actorId: user.id,
-      actorPersonId: user.personId ?? null,
-    },
-  });
+      const claimed = await tx.approvalCase.updateMany({
+        where: { id: approvalCase.id, status: "OPEN" },
+        data: {
+          status: targetStatus,
+          decidedById: user.personId ?? null,
+          decidedAt: new Date(),
+        },
+      });
+      if (claimed.count === 0) {
+        const current = await tx.approvalCase.findUnique({ where: { id: approvalCase.id } });
+        return {
+          ok: false as const,
+          status: 409,
+          error: "Hồ sơ này vừa được xử lý bởi người khác — không thể quyết định lại.",
+          data: {
+            caseId: approvalCase.id,
+            status: current?.status ?? "OPEN",
+            round: current?.currentRound ?? 1,
+            deduplicated: true,
+          },
+        };
+      }
 
-  // 6) Áp dụng hiệu ứng nghiệp vụ (có điều kiện để không duyệt sai trạng thái)
-  let workflowMessage = "";
-  if (caseType === "TASK_RESULT" && taskId) {
-    if (action === "AGREE") {
-      const r = await prisma.task.updateMany({
-        where: { id: taskId, status: "WAITING_REVIEW" },
-        data: { status: "COMPLETED" },
+      const round = approvalCase.currentRound;
+
+      await tx.approvalDecision.create({
+        data: {
+          caseId: approvalCase.id,
+          round,
+          action,
+          reason,
+          content,
+          actorId: user.id,
+          actorPersonId: user.personId ?? null,
+        },
       });
-      if (r.count === 0) {
-        await rollbackCase(approvalCase.id, "OPEN");
-        return {
-          success: false,
-          status: 409,
-          error: "Trạng thái nhiệm vụ đã thay đổi — không thể nghiệm thu lúc này.",
-        };
-      }
-      workflowMessage = "Nhiệm vụ đã được nghiệm thu hoàn thành.";
-    } else {
-      // REJECT / CLARIFY → trả nhiệm vụ về đang thực hiện, GIỮ NGUYÊN kết quả đã ghi
-      const r = await prisma.task.updateMany({
-        where: { id: taskId, status: "WAITING_REVIEW" },
-        data: { status: "IN_PROGRESS" },
-      });
-      if (r.count === 0) {
-        await rollbackCase(approvalCase.id, "OPEN");
-        return {
-          success: false,
-          status: 409,
-          error: "Trạng thái nhiệm vụ đã thay đổi — không thể trả lại lúc này.",
-        };
-      }
-      workflowMessage =
-        action === "REJECT"
-          ? "Nhiệm vụ đã bị trả lại, giữ nguyên nội dung kết quả đã ghi."
-          : "Nhiệm vụ đã chờ giải trình, giữ nguyên nội dung kết quả đã ghi.";
-    }
-  } else if (caseType === "PLAN") {
-    if (action === "AGREE") {
-      const r = await prisma.plan.updateMany({
-        where: { id: resourceId, status: "SUBMITTED" },
-        data: { status: "APPROVED", approvedBy: user.personId ?? null, approvedAt: new Date() },
-      });
-      if (r.count === 0) {
-        await rollbackCase(approvalCase.id, "OPEN");
-        return {
-          success: false,
-          status: 409,
-          error: "Kế hoạch đã được xử lý bởi người khác — không thể phê duyệt lại.",
-        };
-      }
-      workflowMessage = "Kế hoạch đã được phê duyệt.";
-    } else {
-      const r = await prisma.plan.updateMany({
-        where: { id: resourceId, status: "SUBMITTED" },
-        data: { status: "RETURNED" },
-      });
-      if (r.count === 0) {
-        await rollbackCase(approvalCase.id, "OPEN");
-        return {
-          success: false,
-          status: 409,
-          error: "Kế hoạch đã được xử lý bởi người khác.",
-        };
-      }
-      workflowMessage =
-        action === "REJECT"
-          ? "Kế hoạch đã bị trả lại yêu cầu hoàn thiện."
-          : "Kế hoạch đã được trả lại để bổ sung giải trình.";
-    }
-  } else if (caseType === "DEADLINE_REQUEST") {
-    const nextStatus = action === "AGREE" ? "APPROVED" : "REJECTED";
-    const r = await prisma.deadlineRequest.updateMany({
-      where: { id: resourceId, status: "PENDING" },
-      data: {
-        status: nextStatus,
-        reviewedById: user.personId ?? null,
-        reviewedAt: new Date(),
-        reviewNotes: content || reason,
-      },
-    });
-    if (r.count === 0) {
-      await rollbackCase(approvalCase.id, "OPEN");
-      return {
-        success: false,
-        status: 409,
-        error: "Đề nghị gia hạn đã được xử lý bởi người khác.",
-      };
-    }
-    if (action === "AGREE" && taskId) {
-      const req = await prisma.deadlineRequest.findUnique({ where: { id: resourceId } });
-      if (req) {
-        await prisma.task.updateMany({
-          where: { id: taskId },
-          data: { currentDeadline: req.requestedDeadline },
+
+      let workflowMessage = "";
+      let updatedTask: any | null = null;
+
+      if (caseType === "TASK_RESULT" && taskId) {
+        // Lấy tiến độ gần nhất để KHÔNG reset 100%/tiến độ đã báo khi trả lại (E8 chờ chốt).
+        const latest = await tx.taskUpdate.findFirst({
+          where: { taskId },
+          orderBy: { createdAt: "desc" },
+          select: { progressPercent: true },
         });
+        const progress = latest?.progressPercent ?? 0;
+
+        if (action === "AGREE") {
+          const r = await tx.task.updateMany({
+            where: { id: taskId, status: "WAITING_REVIEW" },
+            data: { status: "COMPLETED" },
+          });
+          if (r.count === 0) {
+            throw new DecisionConflict("Trạng thái nhiệm vụ đã thay đổi — không thể nghiệm thu lúc này.");
+          }
+          await tx.taskUpdate.create({
+            data: {
+              taskId,
+              authorId: user.personId,
+              progressPercent: progress,
+              statusBefore: "WAITING_REVIEW",
+              statusAfter: "COMPLETED",
+              kind: "approve",
+              notes: reason
+                ? `Lãnh đạo nghiệm thu hoàn thành. Ý kiến: ${reason}`
+                : "Lãnh đạo nghiệm thu hoàn thành nhiệm vụ.",
+            },
+          });
+          workflowMessage = "Nhiệm vụ đã được nghiệm thu hoàn thành.";
+        } else {
+          // REJECT / CLARIFY → trả nhiệm vụ về đang thực hiện, GIỮ NGUYÊN kết quả đã ghi.
+          const r = await tx.task.updateMany({
+            where: { id: taskId, status: "WAITING_REVIEW" },
+            data: { status: "IN_PROGRESS" },
+          });
+          if (r.count === 0) {
+            throw new DecisionConflict("Trạng thái nhiệm vụ đã thay đổi — không thể trả lại lúc này.");
+          }
+          await tx.taskUpdate.create({
+            data: {
+              taskId,
+              authorId: user.personId,
+              progressPercent: progress,
+              statusBefore: "WAITING_REVIEW",
+              statusAfter: "IN_PROGRESS",
+              kind: "return",
+              notes:
+                action === "REJECT"
+                  ? `Lãnh đạo trả lại nhiệm vụ. Lý do: ${reason}`
+                  : `Lãnh đạo yêu cầu giải trình: ${content}`,
+            },
+          });
+          workflowMessage =
+            action === "REJECT"
+              ? "Nhiệm vụ đã bị trả lại, giữ nguyên nội dung kết quả đã ghi."
+              : "Nhiệm vụ đã chờ giải trình, giữ nguyên nội dung kết quả đã ghi.";
+        }
+        updatedTask = await tx.task.findUnique({
+          where: { id: taskId },
+          include: {
+            owner: true,
+            unit: true,
+            assignees: { include: { person: true } },
+          },
+        });
+      } else if (caseType === "PLAN") {
+        if (action === "AGREE") {
+          const r = await tx.plan.updateMany({
+            where: { id: resourceId, status: "SUBMITTED" },
+            data: { status: "APPROVED", approvedBy: user.personId ?? null, approvedAt: new Date() },
+          });
+          if (r.count === 0) {
+            throw new DecisionConflict("Kế hoạch đã được xử lý bởi người khác — không thể phê duyệt lại.");
+          }
+          workflowMessage = "Kế hoạch đã được phê duyệt.";
+        } else {
+          const r = await tx.plan.updateMany({
+            where: { id: resourceId, status: "SUBMITTED" },
+            data: { status: "RETURNED" },
+          });
+          if (r.count === 0) {
+            throw new DecisionConflict("Kế hoạch đã được xử lý bởi người khác.");
+          }
+          workflowMessage =
+            action === "REJECT"
+              ? "Kế hoạch đã bị trả lại yêu cầu hoàn thiện."
+              : "Kế hoạch đã được trả lại để bổ sung giải trình.";
+        }
+      } else if (caseType === "DEADLINE_REQUEST") {
+        const nextStatus = action === "AGREE" ? "APPROVED" : "REJECTED";
+        const r = await tx.deadlineRequest.updateMany({
+          where: { id: resourceId, status: "PENDING" },
+          data: {
+            status: nextStatus,
+            reviewedById: user.personId ?? null,
+            reviewedAt: new Date(),
+            reviewNotes: content || reason,
+          },
+        });
+        if (r.count === 0) {
+          throw new DecisionConflict("Đề nghị gia hạn đã được xử lý bởi người khác.");
+        }
+        if (action === "AGREE" && taskId) {
+          const req = await tx.deadlineRequest.findUnique({ where: { id: resourceId } });
+          if (req) {
+            await tx.task.updateMany({
+              where: { id: taskId },
+              data: { currentDeadline: req.requestedDeadline },
+            });
+            await tx.taskUpdate.create({
+              data: {
+                taskId,
+                authorId: user.personId,
+                progressPercent: 0,
+                statusBefore: "IN_PROGRESS",
+                statusAfter: null,
+                kind: "extend",
+                notes: `Lãnh đạo phê duyệt gia hạn đến ${req.requestedDeadline.toLocaleDateString("vi-VN")}. Lý do: ${req.reason}`,
+              },
+            });
+          }
+        } else if (taskId) {
+          await tx.taskUpdate.create({
+            data: {
+              taskId,
+              authorId: user.personId,
+              progressPercent: 0,
+              statusBefore: "IN_PROGRESS",
+              statusAfter: null,
+              kind: "extend",
+              notes: `Lãnh đạo từ chối đề nghị gia hạn. Lý do: ${reason || content || "Không chấp thuận"}`,
+            },
+          });
+        }
+        workflowMessage =
+          action === "AGREE"
+            ? "Đề nghị gia hạn đã được chấp thuận."
+            : "Đề nghị gia hạn đã bị từ chối.";
       }
+
+      return {
+        ok: true as const,
+        caseId: approvalCase.id,
+        round,
+        task: updatedTask,
+        workflowMessage,
+      };
+    });
+  } catch (err: any) {
+    if (err instanceof DecisionConflict) {
+      return { success: false, status: err.statusCode, error: err.message };
     }
-    workflowMessage =
-      action === "AGREE"
-        ? "Đề nghị gia hạn đã được chấp thuận."
-        : "Đề nghị gia hạn đã bị từ chối.";
+    throw err;
+  }
+
+  if (!txResult.ok) {
+    return { success: false, status: txResult.status, error: txResult.error, data: txResult.data };
   }
 
   // 7) Audit + thông báo
@@ -765,7 +924,7 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     actorId: user.id,
     action: `APPROVAL_${action}`,
     resourceType: "ApprovalCase",
-    resourceId: approvalCase.id,
+    resourceId: txResult.caseId,
     oldData: { status: "OPEN" },
     newData: {
       caseType,
@@ -774,12 +933,21 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
       action,
       reason,
       content,
-      round,
-      effect: workflowMessage,
+      round: txResult.round,
+      effect: txResult.workflowMessage,
     },
   });
 
-  if (submitterId) {
+  const recipients = new Set<string>();
+  if (submitterId) recipients.add(submitterId);
+  if (caseType === "TASK_RESULT") {
+    // YC-08: thông báo cho chủ trì VÀ người phối hợp theo quyền.
+    for (const id of collaboratorIds) recipients.add(id);
+  }
+  recipients.delete(user.personId);
+
+  for (const recipientId of recipients) {
+    const isSubmitter = recipientId === submitterId;
     const notifyType =
       action === "AGREE" ? "APPROVAL_AGREED" : action === "REJECT" ? "APPROVAL_REJECTED" : "APPROVAL_CLARIFY";
     const tag =
@@ -792,7 +960,7 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
           ? `Lãnh đạo không đồng ý. Lý do: ${reason}`
           : `Lãnh đạo đã chấp thuận.`;
     await createNotification({
-      recipientId: submitterId,
+      recipientId,
       category: "approval",
       type: notifyType,
       title:
@@ -801,14 +969,14 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
           : action === "REJECT"
             ? `Hồ sơ không được đồng ý: [${code}] ${title}`
             : `Hồ sơ cần giải trình: [${code}] ${title}`,
-      content: detail,
+      content: isSubmitter ? detail : `Bạn là người phối hợp. ${detail}`,
       tag,
       tagType,
       entityType: "TASK",
       entityId: taskId || resourceId,
       actionUrl: notifyUrl,
       actionLabel: notifyLabel,
-      idempotencyKey: `EVENT_APPROVAL_${approvalCase.id}_${round}_${action}`,
+      idempotencyKey: `EVENT_APPROVAL_${txResult.caseId}_${txResult.round}_${action}_${recipientId}`,
     });
   }
 
@@ -816,11 +984,11 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     success: true,
     message:
       action === "AGREE"
-        ? `Đã chấp thuận hồ sơ [${code}]. ${workflowMessage}`
+        ? `Đã chấp thuận hồ sơ [${code}]. ${txResult.workflowMessage}`
         : action === "REJECT"
-          ? `Đã từ chối hồ sơ [${code}]. ${workflowMessage}`
-          : `Đã yêu cầu giải trình hồ sơ [${code}]. ${workflowMessage}`,
-    data: { caseId: approvalCase.id, status: targetStatus, round },
+          ? `Đã từ chối hồ sơ [${code}]. ${txResult.workflowMessage}`
+          : `Đã yêu cầu giải trình hồ sơ [${code}]. ${txResult.workflowMessage}`,
+    data: { caseId: txResult.caseId, status: targetStatus, round: txResult.round },
   };
 }
 
@@ -892,10 +1060,28 @@ export async function respondToApproval(
 
   // Đưa nhiệm vụ trở lại hàng đợi nghiệm thu (nếu là quy trình công việc)
   if (caseType === "TASK_RESULT") {
-    await prisma.task.updateMany({
+    const latest = await prisma.taskUpdate.findFirst({
+      where: { taskId: resourceId },
+      orderBy: { createdAt: "desc" },
+      select: { progressPercent: true },
+    });
+    const moved = await prisma.task.updateMany({
       where: { id: resourceId, status: "IN_PROGRESS" },
       data: { status: "WAITING_REVIEW" },
     });
+    if (moved.count > 0) {
+      await prisma.taskUpdate.create({
+        data: {
+          taskId: resourceId,
+          authorId: user.personId,
+          progressPercent: latest?.progressPercent ?? 0,
+          statusBefore: "IN_PROGRESS",
+          statusAfter: "WAITING_REVIEW",
+          kind: "submit",
+          notes: `Người chủ trì gửi giải trình và trình lại hồ sơ. Nội dung: ${text}`,
+        },
+      });
+    }
   }
 
   await recordAuditEvent({
@@ -941,6 +1127,7 @@ export async function listMyApprovalCases(user: SessionUser) {
     orderBy: { updatedAt: "desc" },
     take: 50,
   });
+  const names = await personNamesByIds(cases.flatMap((c) => c.decisions.map((d) => d.actorPersonId)));
   return cases.map((c) => ({
     id: c.id,
     caseType: c.caseType,
@@ -956,10 +1143,121 @@ export async function listMyApprovalCases(user: SessionUser) {
           action: c.decisions[0].action,
           reason: c.decisions[0].reason,
           content: c.decisions[0].content,
+          actorName: c.decisions[0].actorPersonId
+            ? names.get(c.decisions[0].actorPersonId) ?? null
+            : null,
           at: c.decisions[0].createdAt.toISOString(),
         }
       : null,
   }));
+}
+
+export interface DecidedApprovalFilters {
+  /** Tìm cán bộ theo mã hoặc tên (không dấu). */
+  person?: string;
+  /** Tháng 1–12. */
+  month?: number | string | null;
+  /** Năm, ví dụ 2026. */
+  year?: number | string | null;
+}
+
+/** Khoảng thời gian theo tháng dương lịch Việt Nam (UTC+7). */
+function vnMonthRange(month: number, year: number) {
+  const gte = new Date(Date.UTC(year, month - 1, 1) - 7 * 3600 * 1000);
+  const lt = new Date(Date.UTC(year, month, 1) - 7 * 3600 * 1000);
+  return { gte, lt };
+}
+
+/**
+ * YC-12 — "Đã xử lý": lịch sử hồ sơ đã có quyết định, lọc theo cán bộ + tháng/năm.
+ * Quyền xem:
+ *  - Người đã ra quyết định luôn thấy lịch sử của mình (kể cả tuyến phụ trách đã thay đổi).
+ *  - Lãnh đạo đơn vị / trưởng bộ phận thấy hồ sơ trong phạm vi đơn vị được cấp.
+ *  - SYSTEM_ADMIN không có quyền nghiệp vụ.
+ */
+export async function listDecidedApprovalCases(
+  user: SessionUser,
+  filters: DecidedApprovalFilters = {}
+) {
+  if (!user.personId || user.role === "SYSTEM_ADMIN") return [];
+
+  const where: any = {
+    status: { in: ["AGREED", "REJECTED", "CLARIFY_REQUESTED", "CLOSED"] },
+  };
+
+  if (user.role === "UNIT_LEADER") {
+    // Toàn đơn vị
+  } else if (user.role === "DEPARTMENT_LEADER") {
+    const units = await getAuthorizedUnitIds(user);
+    where.OR = [
+      { decidedById: user.personId },
+      ...(units === "ALL" ? [] : [{ unitId: { in: units } }]),
+    ];
+  } else {
+    where.decidedById = user.personId;
+  }
+
+  if (filters.person?.trim()) {
+    const personIds = await unaccentSearchIds("people", ["code", "full_name"], filters.person.trim(), 200);
+    if (!personIds || personIds.length === 0) return [];
+    where.submittedById = { in: personIds };
+  }
+
+  const monthNum = filters.month ? Number(filters.month) : null;
+  const yearNum = filters.year ? Number(filters.year) : null;
+  if (monthNum && monthNum >= 1 && monthNum <= 12) {
+    const { gte, lt } = vnMonthRange(monthNum, yearNum || new Date().getFullYear());
+    where.decidedAt = { gte, lt };
+  } else if (yearNum) {
+    where.decidedAt = {
+      gte: new Date(Date.UTC(yearNum, 0, 1) - 7 * 3600 * 1000),
+      lt: new Date(Date.UTC(yearNum + 1, 0, 1) - 7 * 3600 * 1000),
+    };
+  }
+
+  const cases = await prisma.approvalCase.findMany({
+    where,
+    include: {
+      decisions: { orderBy: { createdAt: "desc" }, take: 5 },
+    },
+    orderBy: [{ decidedAt: "desc" }, { updatedAt: "desc" }],
+    take: 100,
+  });
+
+  const names = await personNamesByIds([
+    ...cases.map((c) => c.submittedById),
+    ...cases.map((c) => c.decidedById),
+    ...cases.flatMap((c) => c.decisions.map((d) => d.actorPersonId)),
+  ]);
+
+  return cases.map((c) => {
+    const latest = c.decisions[0] || null;
+    return {
+      id: c.id,
+      caseType: c.caseType,
+      resourceId: c.resourceId,
+      code: c.resourceCode,
+      title: c.title,
+      status: c.status,
+      currentRound: c.currentRound,
+      unitId: c.unitId,
+      submittedById: c.submittedById,
+      submittedByName: c.submittedById ? names.get(c.submittedById) ?? null : null,
+      decidedById: c.decidedById,
+      decidedByName: c.decidedById ? names.get(c.decidedById) ?? null : null,
+      decidedAt: (c.decidedAt ?? latest?.createdAt)?.toISOString() ?? null,
+      latestDecision: latest
+        ? {
+            action: latest.action,
+            actionLabel: APPROVAL_ACTION_LABELS[latest.action as ApprovalAction] ?? latest.action,
+            reason: latest.reason,
+            content: latest.content,
+            actorName: latest.actorPersonId ? names.get(latest.actorPersonId) ?? null : null,
+            at: latest.createdAt.toISOString(),
+          }
+        : null,
+    };
+  });
 }
 
 /**
@@ -982,6 +1280,10 @@ export async function reopenApprovalCaseOnResubmit(
     return null;
   }
   const round = approvalCase.currentRound;
+  const actor = await prisma.account.findUnique({
+    where: { id: actorAccountId },
+    select: { personId: true },
+  });
   await prisma.approvalDecision.create({
     data: {
       caseId: approvalCase.id,
@@ -991,7 +1293,7 @@ export async function reopenApprovalCaseOnResubmit(
         note?.trim() ||
         "Đã trình lại hồ sơ sau khi bổ sung nội dung theo yêu cầu của cấp có thẩm quyền.",
       actorId: actorAccountId,
-      actorPersonId: null,
+      actorPersonId: actor?.personId ?? null,
     },
   });
   const reopened = await prisma.approvalCase.updateMany({

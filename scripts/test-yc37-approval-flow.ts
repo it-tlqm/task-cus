@@ -50,14 +50,19 @@ async function main() {
     process.exit(2);
   }
 
-  // Lấy tài khoản lãnh đạo + cán bộ
+  // Lấy tài khoản lãnh đạo + cán bộ (cán bộ phải KHÁC người duyệt để không tự duyệt)
   const leaderAcc = await prisma.account.findFirst({
     where: { person: { assignments: { some: { unit: { code: "BAN_LANH_DAO" } } } } },
     orderBy: { createdAt: "asc" },
     include: { person: { include: { assignments: true } } },
   });
   const staffAcc = await prisma.account.findFirst({
-    where: { person: { code: { not: "CB-001" } } },
+    where: {
+      id: { not: leaderAcc?.id },
+      personId: { not: leaderAcc?.personId },
+      roleGrants: { some: { role: { code: "STAFF" } } },
+      person: { assignments: { some: {} } },
+    },
     orderBy: { createdAt: "asc" },
     include: { person: { include: { assignments: true } } },
   });

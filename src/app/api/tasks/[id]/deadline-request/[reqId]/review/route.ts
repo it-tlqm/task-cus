@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
-import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
-import { recordAuditEvent } from "@/server/audit";
-import { createNotification } from "@/server/notifications";
+import { jsonError } from "@/server/guard";
+import { decideApproval } from "@/server/approval-case";
 
+/**
+ * Duyệt/từ chối đề nghị lùi hạn.
+ *
+ * YC-09: mọi quyết định đi qua `decideApproval` để thống nhất ApprovalCase +
+ * ApprovalDecision + TaskUpdate + thông báo. Người đề nghị không được tự duyệt
+ * yêu cầu của chính mình (kể cả khi là lãnh đạo).
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; reqId: string }> }
@@ -33,96 +39,37 @@ export async function POST(
       return jsonError(`Đề nghị này đã được xử lý trước đó (${deadlineReq.status})`, 400);
     }
 
-    // Quyền duyệt: Lãnh đạo đơn vị hoặc Trưởng bộ phận phụ trách
-    const authorizedUnits = await getAuthorizedUnitIds(user);
-    const canReview =
-      user.role === "UNIT_LEADER" ||
-      (user.role === "DEPARTMENT_LEADER" && (authorizedUnits === "ALL" || authorizedUnits.includes(task.unitId)));
-
-    if (!canReview) {
-      return jsonError("Bạn không có thẩm quyền phê duyệt đề nghị lùi hạn này", 403);
+    // Chặn tự duyệt rõ ràng trước khi vào service (service cũng kiểm tra lại).
+    if (deadlineReq.requestedById === user.personId) {
+      return jsonError(
+        "Bạn không được tự quyết định đề nghị gia hạn do chính mình trình — cần lãnh đạo khác thẩm quyền xử lý.",
+        403
+      );
     }
 
     const isApproved = action === "APPROVE";
+    const note = typeof reviewNotes === "string" ? reviewNotes.trim() : "";
 
-    // Chống duyệt trùng đồng thời: chỉ request còn PENDING mới chuyển được
-    const claimRes = await prisma.deadlineRequest.updateMany({
-      where: { id: reqId, status: "PENDING" },
-      data: {
-        status: isApproved ? "APPROVED" : "REJECTED",
-        reviewedById: user.personId,
-        reviewedAt: new Date(),
-        reviewNotes: reviewNotes || null,
-      },
-    });
-    if (claimRes.count === 0) {
-      const current = await prisma.deadlineRequest.findUnique({ where: { id: reqId } });
-      return NextResponse.json({
-        success: true,
-        message: `Đề nghị này đã được xử lý trước đó (${current?.status || "?"}) — không tạo tác dụng phụ mới`,
-        data: { request: current },
-        deduplicated: true,
-      });
-    }
-    const updatedReq = await prisma.deadlineRequest.findUnique({ where: { id: reqId } });
-
-    // Nếu phê duyệt -> cập nhật currentDeadline của Task sang thời hạn mới
-    let updatedTask = task;
-    if (isApproved) {
-      updatedTask = await prisma.task.update({
-        where: { id: taskId },
-        data: {
-          currentDeadline: deadlineReq.requestedDeadline,
-        },
-      });
-
-      // Ghi log cập nhật tiến độ
-      await prisma.taskUpdate.create({
-        data: {
-          taskId,
-          authorId: user.personId,
-          kind: "extend",
-          notes: `Lãnh đạo phê duyệt gia hạn nhiệm vụ đến ngày ${deadlineReq.requestedDeadline.toLocaleDateString("vi-VN")}. Lý do: ${deadlineReq.reason}`,
-        },
-      });
-    } else {
-      await prisma.taskUpdate.create({
-        data: {
-          taskId,
-          authorId: user.personId,
-          kind: "extend",
-          notes: `Lãnh đạo từ chối đề nghị gia hạn nhiệm vụ. Lý do: ${reviewNotes || "Không chấp thuận"}`,
-        },
-      });
-    }
-
-    await recordAuditEvent({
-      actorId: user.id,
-      action: isApproved ? "TASK_DEADLINE_REQUEST_APPROVED" : "TASK_DEADLINE_REQUEST_REJECTED",
-      resourceType: "DeadlineRequest",
+    const result = await decideApproval({
+      user,
+      caseType: "DEADLINE_REQUEST",
       resourceId: reqId,
-      oldData: { deadline: task.currentDeadline },
-      newData: { newDeadline: isApproved ? deadlineReq.requestedDeadline : task.currentDeadline, reviewNotes },
+      action: isApproved ? "AGREE" : "REJECT",
+      reason: isApproved ? note || null : note || "Không chấp thuận đề nghị gia hạn.",
+      content: null,
     });
 
-    // Thông báo cho cán bộ đã đề xuất gia hạn
-    await createNotification({
-      recipientId: deadlineReq.requestedById,
-      category: "deadline",
-      type: isApproved ? "DEADLINE_REQUEST_APPROVED" : "DEADLINE_REQUEST_REJECTED",
-      title: isApproved ? `Gia hạn đã được phê duyệt: [${task.code}]` : `Đề nghị gia hạn bị từ chối: [${task.code}]`,
-      content: isApproved
-        ? `Lãnh đạo đã phê duyệt gia hạn nhiệm vụ '${task.title}' đến ngày ${deadlineReq.requestedDeadline.toLocaleDateString("vi-VN")}.`
-        : `Lãnh đạo không chấp thuận đề xuất gia hạn nhiệm vụ '${task.title}'. Lý do: ${reviewNotes || "Không phê duyệt"}.`,
-      tag: isApproved ? "ĐÃ GIA HẠN" : "TỪ CHỐI GIA HẠN",
-      tagType: isApproved ? "success" : "danger",
-      entityType: "TASK",
-      entityId: taskId,
-      actionUrl: `/tasks/${taskId}`,
-      actionLabel: "Xem chi tiết nhiệm vụ",
-      taskCode: task.code,
-      idempotencyKey: `EVENT_DR_REV_${reqId}`,
-    });
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error, data: result.data },
+        { status: result.status || 400 }
+      );
+    }
+
+    const [updatedReq, updatedTask] = await Promise.all([
+      prisma.deadlineRequest.findUnique({ where: { id: reqId } }),
+      prisma.task.findUnique({ where: { id: taskId } }),
+    ]);
 
     return NextResponse.json({
       success: true,

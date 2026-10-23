@@ -15,6 +15,7 @@ interface QueueItem {
   id: string;
   title: string;
   reviewState: string;
+  canDecide?: boolean;
   resultText?: string | null;
   completedDate?: string | null;
   submittedAt?: string | null;
@@ -26,6 +27,8 @@ interface QueueItem {
   evidenceCount: number;
   reviewNote?: string | null;
   reviewedAt?: string | null;
+  reviewedById?: string | null;
+  reviewedBy?: { id: string; code: string; fullName: string } | null;
   products?: Array<{ id: string; code: string; taskName: string; factor: number | null; factorSnapshot: number | null; quantity: number | null; quantityUnit: string | null; reviewState: string | null }>;
   history?: Array<{ id: string; action: string; note: string | null; actor: { fullName: string }; createdAt: string }>;
 }
@@ -64,6 +67,7 @@ export default function WorkItemReviewsPage() {
   const [tab, setTab] = useState<"pending" | "confirmed" | "returned" | "all">("pending");
   const [staffFilter, setStaffFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
   const [expanded, setExpanded] = useState<string | null>(null);
   const [lastDecided, setLastDecided] = useState<{ id: string; title: string; action: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,9 +79,12 @@ export default function WorkItemReviewsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ status: tab });
-      if (staffFilter) params.set("personId", staffFilter);
+      if (staffFilter) params.set("person", staffFilter);
       if (monthFilter) params.set("month", monthFilter);
-      const res = await fetch("/api/personal-work-items/review-queue?" + params.toString());
+      if (yearFilter) params.set("year", yearFilter);
+      const res = await fetch("/api/personal-work-items/review-queue?" + params.toString(), {
+        cache: "no-store",
+      });
       if (res.status === 401) {
         router.push("/login");
         return;
@@ -89,7 +96,7 @@ export default function WorkItemReviewsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, tab, staffFilter, monthFilter]);
+  }, [router, tab, staffFilter, monthFilter, yearFilter]);
 
   useEffect(() => {
     load();
@@ -180,12 +187,20 @@ export default function WorkItemReviewsPage() {
           placeholder="Tháng (1-12)"
           className="h-9 w-28 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
         />
-        {(staffFilter || monthFilter) && (
+        <input
+          data-testid="review-year-filter"
+          value={yearFilter}
+          onChange={(e) => setYearFilter(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          placeholder="Năm"
+          className="h-9 w-24 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+        />
+        {(staffFilter || monthFilter || yearFilter) && (
           <button
             type="button"
             onClick={() => {
               setStaffFilter("");
               setMonthFilter("");
+              setYearFilter("");
             }}
             className="text-[11px] font-semibold text-status-primary hover:underline"
           >
@@ -216,10 +231,18 @@ export default function WorkItemReviewsPage() {
         <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-8 text-center">
           <span className="material-symbols-outlined text-[32px] text-on-surface-variant">task_alt</span>
           <p className="mt-2 text-sm font-semibold text-on-surface">
-            Không có công việc nào đang chờ bạn xác nhận
+            {tab === "pending"
+              ? "Không có công việc nào đang chờ bạn xác nhận"
+              : tab === "confirmed"
+                ? "Chưa có hồ sơ nào đã xác nhận"
+                : tab === "returned"
+                  ? "Chưa có hồ sơ nào bị trả lại"
+                  : "Chưa có lịch sử xử lý"}
           </p>
           <p className="mt-1 text-xs text-on-surface-variant">
-            Khi cán bộ gửi công việc lên, hồ sơ sẽ xuất hiện tại đây.
+            {tab === "pending"
+              ? "Khi cán bộ gửi công việc lên, hồ sơ sẽ xuất hiện tại đây."
+              : "Lịch sử chỉ hiển thị hồ sơ bạn có quyền xem hoặc đã trực tiếp xử lý."}
           </p>
         </div>
       ) : (
@@ -240,11 +263,39 @@ export default function WorkItemReviewsPage() {
                     {it.submitCount && it.submitCount > 1 ? ` (lần ${it.submitCount})` : ""}
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-warning/30 bg-status-warning-bg text-status-warning">
-                  <span className="material-symbols-outlined text-[14px]">hourglass_top</span>
-                  Chờ xác nhận
-                </span>
+                {it.reviewState === "CONFIRMED" ? (
+                  <span
+                    data-testid={"review-badge-" + it.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-success/30 bg-status-success-bg text-status-success"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">verified</span>
+                    Đã xác nhận
+                  </span>
+                ) : it.reviewState === "RETURNED" ? (
+                  <span
+                    data-testid={"review-badge-" + it.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-danger/30 bg-status-danger-bg text-status-danger"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">undo</span>
+                    Đã trả lại
+                  </span>
+                ) : (
+                  <span
+                    data-testid={"review-badge-" + it.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-warning/30 bg-status-warning-bg text-status-warning"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">hourglass_top</span>
+                    Chờ xác nhận
+                  </span>
+                )}
               </div>
+              {(it.reviewState === "CONFIRMED" || it.reviewState === "RETURNED") && it.reviewedBy && (
+                <p className="text-[11px] text-on-surface-variant mt-1">
+                  Người xử lý: <b className="text-on-surface">{it.reviewedBy.fullName}</b>
+                  {it.reviewedAt ? ` · ${fmtTime(it.reviewedAt)}` : ""}
+                  {it.reviewNote ? ` · Lý do: ${it.reviewNote}` : ""}
+                </p>
+              )}
 
               <div className="mt-3 rounded-lg bg-surface-container p-3">
                 <p className="text-[11px] font-semibold text-on-surface-variant mb-1">
@@ -300,31 +351,41 @@ export default function WorkItemReviewsPage() {
 
               <WorkItemProductsPanel workItemId={it.id} canPropose={false} />
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  data-testid={`review-confirm-${it.id}`}
-                  disabled={busyId === it.id}
-                  onClick={() => decide(it, "CONFIRM")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-status-success bg-status-success text-on-error hover:opacity-90 disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-[16px]">verified</span>
-                  Xác nhận hoàn thành
-                </button>
-                <button
-                  type="button"
-                  data-testid={`review-return-${it.id}`}
-                  disabled={busyId === it.id}
-                  onClick={() => {
-                    setReturning(it);
-                    setReturnNote("");
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-default bg-surface-container-lowest hover:bg-surface-container disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-[16px]">assignment_return</span>
-                  Trả lại để chỉnh sửa
-                </button>
-              </div>
+              {it.reviewState === "SUBMITTED" && it.canDecide !== false ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    data-testid={`review-confirm-${it.id}`}
+                    disabled={busyId === it.id}
+                    onClick={() => decide(it, "CONFIRM")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-status-success bg-status-success text-on-error hover:opacity-90 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">verified</span>
+                    Xác nhận hoàn thành
+                  </button>
+                  <button
+                    type="button"
+                    data-testid={`review-return-${it.id}`}
+                    disabled={busyId === it.id}
+                    onClick={() => {
+                      setReturning(it);
+                      setReturnNote("");
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-default bg-surface-container-lowest hover:bg-surface-container disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">assignment_return</span>
+                    Trả lại để chỉnh sửa
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-3 rounded-lg bg-surface-container px-3 py-2 text-[11px] text-on-surface-variant">
+                  {it.reviewState === "CONFIRMED"
+                    ? "Hồ sơ đã được xác nhận — chỉ xem lịch sử, không còn thao tác duyệt."
+                    : it.reviewState === "RETURNED"
+                      ? "Hồ sơ đã bị trả lại — cán bộ cần chỉnh sửa và gửi lại trước khi xác nhận."
+                      : "Bạn không có thẩm quyền xử lý hồ sơ này."}
+                </div>
+              )}
             </article>
           ))}
         </div>
