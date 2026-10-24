@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { syncOperationalAlerts } from "@/server/notifications";
+import { formatVnDate } from "@/lib/datetime";
 
 function formatRelativeOrDateTime(d: Date): string {
   const now = new Date();
@@ -16,7 +17,7 @@ function formatRelativeOrDateTime(d: Date): string {
   if (diffMin < 60) return `${diffMin} phút trước`;
   if (diffHour < 24) return `${diffHour} giờ trước`;
   if (diffDay < 7) return `${diffDay} ngày trước`;
-  return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return formatVnDate(d);
 }
 
 export async function GET(req: NextRequest) {

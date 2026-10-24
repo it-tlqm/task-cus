@@ -80,6 +80,59 @@ function main() {
     check("00:00 VN ngày 25/10 chuyển sang ngày 25", atMidnight.date === VN_DAY, atMidnight.date);
   }
 
+  // 1b. Task 1.2b — tuần/tháng theo lịch Việt Nam tại đúng mốc lỗi.
+  if (typeof workDates.vietnamWeekRange !== "function") {
+    check("vietnamWeekRange tồn tại", false, "chưa implement helper");
+  } else {
+    const week = workDates.vietnamWeekRange(FIXED_NOW);
+    check("vietnamWeekRange(fixed).date = 2026-10-25", week.date === VN_DAY, week.date);
+    check(
+      "vietnamWeekRange(fixed).start = 2026-10-18T17:00:00.000Z",
+      week.start.toISOString() === "2026-10-18T17:00:00.000Z",
+      week.start.toISOString()
+    );
+    check(
+      "vietnamWeekRange(fixed).end = 2026-10-25T16:59:59.999Z",
+      week.end.toISOString() === "2026-10-25T16:59:59.999Z",
+      week.end.toISOString()
+    );
+    check("vietnamWeekRange(fixed).weekNumber = 43", week.weekNumber === 43, String(week.weekNumber));
+    check("vietnamWeekRange(fixed).year = 2026", week.year === 2026, String(week.year));
+
+    const weekBefore = workDates.vietnamWeekRange(new Date("2026-10-18T16:59:59.999Z"));
+    check(
+      "23:59:59.999 VN Chủ nhật 18/10 vẫn thuộc tuần trước (kết thúc 2026-10-18T16:59:59.999Z)",
+      weekBefore.end.toISOString() === "2026-10-18T16:59:59.999Z",
+      weekBefore.end.toISOString()
+    );
+  }
+
+  if (typeof workDates.vietnamMonthRange !== "function") {
+    check("vietnamMonthRange tồn tại", false, "chưa implement helper");
+  } else {
+    const month = workDates.vietnamMonthRange(FIXED_NOW);
+    check("vietnamMonthRange(fixed).date = 2026-10-25", month.date === VN_DAY, month.date);
+    check(
+      "vietnamMonthRange(fixed).start = 2026-09-30T17:00:00.000Z",
+      month.start.toISOString() === "2026-09-30T17:00:00.000Z",
+      month.start.toISOString()
+    );
+    check(
+      "vietnamMonthRange(fixed).end = 2026-10-31T16:59:59.999Z",
+      month.end.toISOString() === "2026-10-31T16:59:59.999Z",
+      month.end.toISOString()
+    );
+    check("vietnamMonthRange(fixed).month = 10", month.month === 10, String(month.month));
+    check("vietnamMonthRange(fixed).year = 2026", month.year === 2026, String(month.year));
+
+    const monthStart = workDates.vietnamMonthRange(new Date("2026-09-30T17:00:00.000Z"));
+    check(
+      "00:00 VN 01/10 chuyển sang tháng 10",
+      monthStart.date === "2026-10-01" && monthStart.month === 10,
+      `${monthStart.date}/${monthStart.month}`
+    );
+  }
+
   // 2. Hiển thị ngày theo VN tại đúng mốc lỗi (06:00 sáng VN).
   check("formatVnDate(fixed) = 25/10/2026", formatVnDate(FIXED_NOW) === "25/10/2026", formatVnDate(FIXED_NOW));
   check("formatVnDate(date-only) = 25/10/2026", formatVnDate(VN_DAY) === "25/10/2026", formatVnDate(VN_DAY));
@@ -96,6 +149,37 @@ function main() {
     "Dashboard không còn toLocaleDateString('vi-VN') thiếu timeZone",
     !/toLocaleDateString\(\s*["']vi-VN["']\s*\)/.test(dashboard)
   );
+
+  const weekBranch = branch(dashboard, "week");
+  check("Dashboard week dùng vietnamWeekRange()", /vietnamWeekRange\(/.test(weekBranch), weekBranch ? "" : "không thấy nhánh");
+  check(
+    "Dashboard week không còn getDay/getFullYear/getMonth trên server-local",
+    !/getDay\(|getFullYear\(|getMonth\(/.test(weekBranch)
+  );
+  check(
+    "Dashboard week vẫn ưu tiên kỳ WEEK trong DB",
+    /p\.type === "WEEK"/.test(weekBranch) && /containing/.test(weekBranch)
+  );
+
+  const monthBranch = branch(dashboard, "month");
+  check("Dashboard month dùng vietnamMonthRange()", /vietnamMonthRange\(/.test(monthBranch), monthBranch ? "" : "không thấy nhánh");
+  check(
+    "Dashboard month không còn getDay/getFullYear/getMonth trên server-local",
+    !/getDay\(|getFullYear\(|getMonth\(/.test(monthBranch)
+  );
+  check(
+    "Dashboard month vẫn ưu tiên kỳ MONTH trong DB",
+    /p\.type === "MONTH"/.test(monthBranch) && /containingM/.test(monthBranch)
+  );
+
+  // 3b. Notification list + header Excel dùng ngày VN.
+  const notificationList = read("src/app/api/notifications/route.ts");
+  check("Notification list dùng formatVnDate(d)", /return formatVnDate\(d\)/.test(notificationList));
+  check("Notification list không còn toLocaleDateString", !/toLocaleDateString/.test(notificationList));
+
+  const detailedExporter = read("src/lib/excel/detailed-exporter.ts");
+  check("Excel header dùng formatVnDate(new Date())", /formatVnDate\(new Date\(\)\)/.test(detailedExporter));
+  check("Excel header không còn toLocaleDateString", !/toLocaleDateString/.test(detailedExporter));
 
   // 4. AI: quota theo ngày VN, nhãn summary theo ngày VN.
   const ai = read("src/app/api/ai/route.ts");
@@ -192,6 +276,59 @@ async function checkDashboardApi() {
     `Dashboard API title = Hôm nay (${formatVnDate(expected.date)})`,
     json.selectedPeriod?.title === `Hôm nay (${formatVnDate(expected.date)})`,
     String(json.selectedPeriod?.title)
+  );
+
+  // week/month: ưu tiên kỳ trong DB, nếu không có thì dùng helper VN.
+  const weekNow = new Date();
+  const weekRes = await fetch(`${base}/api/dashboard/kpi?period=week`, {
+    headers: { Authorization: `Bearer ${loginJson.token}` },
+  });
+  const weekJson: any = await weekRes.json().catch(() => ({}));
+  const weekHelper = workDates.vietnamWeekRange(weekNow);
+  const weekDb = (weekJson.availablePeriods || []).find(
+    (p: any) => p.type === "WEEK" && new Date(p.startAt) <= weekNow && weekNow <= new Date(p.endAt)
+  );
+  check("Dashboard API period=week HTTP 200", weekRes.status === 200, `HTTP ${weekRes.status}`);
+  check(
+    "Dashboard API week startAt = kỳ DB hoặc vietnamWeekRange().start",
+    weekJson.selectedPeriod?.startAt === (weekDb?.startAt ?? weekHelper.start.toISOString()),
+    String(weekJson.selectedPeriod?.startAt)
+  );
+  check(
+    "Dashboard API week endAt = kỳ DB hoặc vietnamWeekRange().end",
+    weekJson.selectedPeriod?.endAt === (weekDb?.endAt ?? weekHelper.end.toISOString()),
+    String(weekJson.selectedPeriod?.endAt)
+  );
+  check(
+    "Dashboard API week title = kỳ DB hoặc Tuần WW/YYYY",
+    weekJson.selectedPeriod?.title === (weekDb?.title ?? `Tuần ${weekHelper.weekNumber}/${weekHelper.year}`),
+    String(weekJson.selectedPeriod?.title)
+  );
+
+  const monthNow = new Date();
+  const monthRes = await fetch(`${base}/api/dashboard/kpi?period=month`, {
+    headers: { Authorization: `Bearer ${loginJson.token}` },
+  });
+  const monthJson: any = await monthRes.json().catch(() => ({}));
+  const monthHelper = workDates.vietnamMonthRange(monthNow);
+  const monthDb = (monthJson.availablePeriods || []).find(
+    (p: any) => p.type === "MONTH" && new Date(p.startAt) <= monthNow && monthNow <= new Date(p.endAt)
+  );
+  check("Dashboard API period=month HTTP 200", monthRes.status === 200, `HTTP ${monthRes.status}`);
+  check(
+    "Dashboard API month startAt = kỳ DB hoặc vietnamMonthRange().start",
+    monthJson.selectedPeriod?.startAt === (monthDb?.startAt ?? monthHelper.start.toISOString()),
+    String(monthJson.selectedPeriod?.startAt)
+  );
+  check(
+    "Dashboard API month endAt = kỳ DB hoặc vietnamMonthRange().end",
+    monthJson.selectedPeriod?.endAt === (monthDb?.endAt ?? monthHelper.end.toISOString()),
+    String(monthJson.selectedPeriod?.endAt)
+  );
+  check(
+    "Dashboard API month title = kỳ DB hoặc Tháng M/YYYY",
+    monthJson.selectedPeriod?.title === (monthDb?.title ?? `Tháng ${monthHelper.month}/${monthHelper.year}`),
+    String(monthJson.selectedPeriod?.title)
   );
 }
 

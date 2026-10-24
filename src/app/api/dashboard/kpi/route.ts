@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
-import { getIsoWeekFromDate } from "@/lib/period-helper";
-import { vietnamDayRange } from "@/server/work-dates";
+import { vietnamDayRange, vietnamMonthRange, vietnamWeekRange } from "@/server/work-dates";
 import { formatVnDate } from "@/lib/datetime";
 
 export async function GET(req: NextRequest) {
@@ -130,11 +129,10 @@ export async function GET(req: NextRequest) {
           selectedPeriodTitle = containing.title;
           matchedPeriodId = containing.id;
         } else {
-          const dow = (nowW.getDay() + 6) % 7; // Thứ 2 = 0
-          periodStart = new Date(nowW.getFullYear(), nowW.getMonth(), nowW.getDate() - dow, 0, 0, 0);
-          periodEnd = new Date(periodStart.getTime() + 6 * 86400000 + 86399999);
-          const iso = getIsoWeekFromDate(nowW);
-          selectedPeriodTitle = `Tuần ${iso.weekNumber}/${iso.year}`;
+          const range = vietnamWeekRange(nowW);
+          periodStart = range.start;
+          periodEnd = range.end;
+          selectedPeriodTitle = `Tuần ${range.weekNumber}/${range.year}`;
         }
       } else if (targetPeriodKey === "month") {
         // Tháng hiện tại theo lịch (động)
@@ -148,9 +146,10 @@ export async function GET(req: NextRequest) {
           selectedPeriodTitle = containingM.title;
           matchedPeriodId = containingM.id;
         } else {
-          periodStart = new Date(nowM.getFullYear(), nowM.getMonth(), 1, 0, 0, 0);
-          periodEnd = new Date(nowM.getFullYear(), nowM.getMonth() + 1, 0, 23, 59, 59, 999);
-          selectedPeriodTitle = `Tháng ${nowM.getMonth() + 1}/${nowM.getFullYear()}`;
+          const range = vietnamMonthRange(nowM);
+          periodStart = range.start;
+          periodEnd = range.end;
+          selectedPeriodTitle = `Tháng ${range.month}/${range.year}`;
         }
       } else if (targetPeriodKey === "custom" && startDateParam && endDateParam) {
         periodStart = new Date(startDateParam);

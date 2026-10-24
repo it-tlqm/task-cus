@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { sanitizeFormula } from '../formula-sanitizer';
+import { formatVnDate } from '../datetime';
 
 export interface DetailedReportItem {
   id: string;
@@ -74,7 +75,7 @@ export async function generateDetailedReportWorkbook(options: DetailedReportOpti
   // Subtitle / Filters info
   const subText = `Kỳ: ${options.periodTitle} | Đơn vị: ${options.unitName}${
     options.departmentFilter ? ` | Lọc bộ phận: ${options.departmentFilter}` : ''
-  }${options.statusFilter ? ` | Lọc trạng thái: ${options.statusFilter}` : ''} | Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`;
+  }${options.statusFilter ? ` | Lọc trạng thái: ${options.statusFilter}` : ''} | Xuất ngày: ${formatVnDate(new Date())}`;
   const subRow = sheet.addRow([subText]);
   sheet.mergeCells('A2:M2');
   const subCell = sheet.getCell('A2');
