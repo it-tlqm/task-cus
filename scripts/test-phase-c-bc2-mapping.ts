@@ -57,7 +57,7 @@ const BASE_DTO: Bc2TargetDto = {
   status: "PROPOSED",
   direction: "HIGHER_IS_BETTER",
   measureMode: "PERIOD_FLOW",
-  baselineScope: "NONE",
+  baselineScope: "YEAR_START",
   sourceNote: "Mock: quyết định giao chỉ tiêu",
   note: "",
   proposedByName: "Người đề xuất",
@@ -122,7 +122,7 @@ check("C3. direction lạ → NOT_SET", mapDirection("BAD") === "NOT_SET");
 check("C4. measureMode hợp lệ giữ nguyên", mapMeasureMode("CUMULATIVE") === "CUMULATIVE");
 check("C5. measureMode thiếu → PENDING_BUSINESS_INPUT", mapMeasureMode(null) === "PENDING_BUSINESS_INPUT");
 check("C6. measureMode lạ → PENDING_BUSINESS_INPUT", mapMeasureMode("BAD") === "PENDING_BUSINESS_INPUT");
-check("C7. baselineScope hợp lệ giữ nguyên", mapBaselineScope("LEDGER") === "LEDGER");
+check("C7. baselineScope hợp lệ giữ nguyên", mapBaselineScope("YEAR_START") === "YEAR_START");
 check("C8. baselineScope thiếu → PENDING_BUSINESS_INPUT", mapBaselineScope(undefined) === "PENDING_BUSINESS_INPUT");
 check("C9. baselineScope lạ → PENDING_BUSINESS_INPUT", mapBaselineScope("BAD") === "PENDING_BUSINESS_INPUT");
 
@@ -138,7 +138,7 @@ check("D4. valueBase string → number", mapped.value?.value === 1685000000000);
 check("D5. dataSource REAL → official", mapped.value?.isOfficial === true);
 check("D6. direction giữ nguyên", mapped.value?.direction === "HIGHER_IS_BETTER");
 check("D7. measureMode giữ nguyên", mapped.value?.measureMode === "PERIOD_FLOW");
-check("D8. baselineScope giữ nguyên", mapped.value?.baselineScope === "NONE");
+check("D8. baselineScope giữ nguyên", mapped.value?.baselineScope === "YEAR_START");
 check("D9. sourceNote/revision giữ nguyên", mapped.value?.sourceNote === BASE_DTO.sourceNote && mapped.value?.revisionNo === 1);
 
 const demoTarget = mapBc2TargetToS3({ ...BASE_DTO, dataSource: "DEMO", isOfficial: true });
@@ -190,7 +190,7 @@ const validDraft = draft.value!;
 const create = mapTargetDraftToBc2CreateInput(validDraft, {
   unitType: "VND",
   measureMode: "PERIOD_FLOW",
-  baselineScope: "NONE",
+  baselineScope: "YEAR_START",
 });
 check("F1. Map được create input", create.value !== null);
 check("F2. DRAFT → PROPOSED", create.value?.status === "PROPOSED");
@@ -198,7 +198,7 @@ check("F3. BTC → BTC_YEAR", create.value?.comparisonKind === "BTC_YEAR");
 check("F4. isOfficial true → dataSource REAL", create.value?.dataSource === "REAL");
 check("F5. Value number", create.value?.valueBase === 1685000000000);
 check("F6. direction giữ nguyên", create.value?.direction === "HIGHER_IS_BETTER");
-check("F7. measureMode/baselineScope lấy context", create.value?.measureMode === "PERIOD_FLOW" && create.value?.baselineScope === "NONE");
+check("F7. measureMode/baselineScope lấy context", create.value?.measureMode === "PERIOD_FLOW" && create.value?.baselineScope === "YEAR_START");
 
 const createDemo = mapTargetDraftToBc2CreateInput({ ...validDraft, isOfficial: false }, { unitType: "VND" });
 check("F8. isOfficial false → dataSource DEMO", createDemo.value?.dataSource === "DEMO");
@@ -243,6 +243,7 @@ function percentFor(dto: Bc2TargetDto, actualValue: number) {
     actualUnitType: target.unitType,
     direction: target.direction,
     measureMode: target.measureMode ?? "PERIOD_FLOW",
+    baselineScope: target.baselineScope ?? "PERIOD_START",
     policy: { ...OFFICIAL_PERCENT_POLICY, metricRequiresConfirm: false },
     mode: "OFFICIAL",
   });

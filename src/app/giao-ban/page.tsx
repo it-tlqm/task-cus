@@ -6,6 +6,7 @@ import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
 import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { PERCENT_REASON_LABELS } from "@/lib/metrics-contract";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 import { RevenueComparisonSection } from "@/components/dashboard/RevenueComparisonSection";
 
@@ -19,10 +20,16 @@ interface TargetRow {
   targetValue: number;
   percent: number | null;
   percentText?: string | null;
+  percentState?: "COMPUTED" | "NOT_COMPUTED";
+  percentReason?: keyof typeof PERCENT_REASON_LABELS | null;
   status?: string;
   comparisonKind?: string;
   dataSource?: string;
   isOfficial?: boolean;
+  direction?: string;
+  measureMode?: string;
+  baselineScope?: string;
+  officialPercentAllowed?: boolean;
 }
 interface ClassCol {
   classificationId: string;
@@ -45,6 +52,14 @@ interface SummaryMetric {
   cols: { week: number | null; month: number | null; quarter: number | null; year: number | null };
   classCols: ClassCol[];
   targets: TargetRow[];
+  targetPolicy?: {
+    configured: boolean;
+    targetApplicable: boolean;
+    direction: string;
+    measureMode: string;
+    baselineScope: string;
+    officialPercentAllowed: boolean;
+  };
   latest: { date: string; value: number; status: string; byName: string | null } | null;
   missingDates: string[];
 }
@@ -343,7 +358,7 @@ export default function GiaoBanPage() {
                             ))}
                             <th
                               className="px-2 py-2 font-semibold text-center"
-                              title="D5 DEFERRED_B_C_3: chưa có quy tắc %, chỉ hiển thị chỉ tiêu và trạng thái; không công bố % chính thức"
+                              title="V3.2/D5-A + C1-A: chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đánh giá đã duyệt; chưa có quy tắc thì hiển thị lý do, không tô đạt/vượt."
                             >
                               % chỉ tiêu giao
                             </th>
@@ -377,8 +392,20 @@ export default function GiaoBanPage() {
                                   </td>
                                 ))}
                                 <td className="px-2 py-2 text-center">
-                                  {m.targets.length === 0 ? (
-                                    <span className="text-on-surface-variant">—</span>
+                                  {m.targetPolicy && !m.targetPolicy.targetApplicable ? (
+                                    <span
+                                      data-testid={`target-policy-${m.code}`}
+                                      className="text-[11px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold"
+                                      title={
+                                        m.targetPolicy.configured
+                                          ? "V3.2/C1-A: chỉ tiêu/kỳ này chưa được duyệt gán chỉ tiêu; không tính % và không tô đạt/vượt."
+                                          : "V3.2/C1-A: chưa có cấu hình quy tắc gán chỉ tiêu; không tự gán cho mọi chỉ tiêu."
+                                      }
+                                    >
+                                      Chưa có quy tắc gán chỉ tiêu
+                                    </span>
+                                  ) : m.targets.length === 0 ? (
+                                    <span className="text-on-surface-variant">Chưa giao chỉ tiêu</span>
                                   ) : (
                                     <div className="flex items-center justify-center gap-1 flex-wrap">
                                       {m.targets.map((t, i) => {
@@ -395,22 +422,41 @@ export default function GiaoBanPage() {
                                             </span>
                                           );
                                         }
-                                        // D5 = DEFERRED_B_C_3: chưa có direction/measureMode/baselineScope.
-                                        // Không công bố % chính thức; chỉ hiển thị target + trạng thái.
                                         const statusLabel =
                                           t.status === "LOCKED"
                                             ? "Đã chốt"
                                             : t.status === "CONFIRMED"
                                               ? "Đã xác nhận"
                                               : "Đề xuất";
+                                        const ruleText = `${t.direction ?? "NOT_SET"} · ${t.measureMode ?? "PENDING_BUSINESS_INPUT"} · ${t.baselineScope ?? "PENDING_BUSINESS_INPUT"}`;
+                                        if (t.percentState === "COMPUTED" && t.percent !== null) {
+                                          // D5-A: chỉ tô đạt/vượt khi chiều HIGHER_IS_BETTER; NEUTRAL trung tính.
+                                          const tone =
+                                            t.direction === "HIGHER_IS_BETTER"
+                                              ? t.percent >= 100
+                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                : "border-amber-200 bg-amber-50 text-amber-700"
+                                              : "border-border-default text-on-surface-variant";
+                                          return (
+                                            <span
+                                              key={i}
+                                              data-testid={`target-percent-${m.code}`}
+                                              title={`${t.label}: ${fmtMetric(t.targetValue, m)} · ${statusLabel} · ${ruleText}`}
+                                              className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${tone}`}
+                                            >
+                                              {t.label} · {fmtMetric(t.targetValue, m, { withUnit: false })} · {t.percentText}%
+                                            </span>
+                                          );
+                                        }
+                                        const reasonLabel = t.percentReason ? PERCENT_REASON_LABELS[t.percentReason] : "Chưa có quy tắc đánh giá";
                                         return (
                                           <span
                                             key={i}
                                             data-testid={`target-status-${m.code}`}
-                                            title={`${t.label}: ${fmtMetric(t.targetValue, m)} · ${statusLabel} · D5 chưa có quy tắc % (chờ B-C-3), không công bố tỷ lệ chính thức`}
+                                            title={`${t.label}: ${fmtMetric(t.targetValue, m)} · ${statusLabel} · ${ruleText}`}
                                             className="text-[11px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold"
                                           >
-                                            {t.label} · {fmtMetric(t.targetValue, m, { withUnit: false })} · {statusLabel} · % chờ B-C-3
+                                            {t.label} · {fmtMetric(t.targetValue, m, { withUnit: false })} · {statusLabel} · {reasonLabel}
                                           </span>
                                         );
                                       })}

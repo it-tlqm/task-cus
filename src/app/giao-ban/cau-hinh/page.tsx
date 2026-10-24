@@ -175,7 +175,7 @@ export default function CauHinhSoLieuPage() {
 
   // ------------------- BASELINE -------------------
   const [selBaseMetricId, setSelBaseMetricId] = useState("");
-  const [baseDraft, setBaseDraft] = useState<any>({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", classificationId: "" });
+  const [baseDraft, setBaseDraft] = useState<any>({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", reason: "", classificationId: "" });
   const [editBaseId, setEditBaseId] = useState("");
 
   // ------------------- ASSIGN -------------------
@@ -747,6 +747,7 @@ export default function CauHinhSoLieuPage() {
                                     value: String(b.valueBase / (selBaseMetric.displayScale || 1)),
                                     dataSource: b.dataSource || "REAL",
                                     sourceNote: b.sourceNote || "",
+                                    reason: "",
                                     classificationId: b.classificationId || "",
                                   });
                                 }}
@@ -756,7 +757,11 @@ export default function CauHinhSoLieuPage() {
                               </button>
                             )}
                             {st === "PROPOSED" && (
-                              <button onClick={() => post("baseline", "confirm", { id: b.id }, "Đã xác nhận mốc")} className="px-2 py-1 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 text-body-xs font-semibold hover:bg-emerald-100">
+                              <button onClick={() => {
+                                const reason = window.prompt("Lý do xác nhận mốc lũy kế (bắt buộc):");
+                                if (!reason?.trim()) return;
+                                post("baseline", "confirm", { id: b.id, reason }, "Đã xác nhận mốc");
+                              }} className="px-2 py-1 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 text-body-xs font-semibold hover:bg-emerald-100">
                                 Xác nhận mốc
                               </button>
                             )}
@@ -796,6 +801,7 @@ export default function CauHinhSoLieuPage() {
                     <option value="DEMO">DEMO (mô phỏng)</option>
                   </select>
                   <input value={baseDraft.sourceNote} onChange={(e) => setBaseDraft({ ...baseDraft, sourceNote: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Nguồn (VD: báo cáo tuần 41)" />
+                  <input value={baseDraft.reason || ""} onChange={(e) => setBaseDraft({ ...baseDraft, reason: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm sm:col-span-2" placeholder="Lý do nhập bổ sung/điều chỉnh (bắt buộc)" />
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -809,7 +815,7 @@ export default function CauHinhSoLieuPage() {
                       );
                       if (ok) {
                         setEditBaseId("");
-                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", classificationId: baseDraft.classificationId || "" });
+                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", reason: "", classificationId: baseDraft.classificationId || "" });
                       }
                     }}
                     className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
@@ -820,7 +826,7 @@ export default function CauHinhSoLieuPage() {
                     <button
                       onClick={() => {
                         setEditBaseId("");
-                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", classificationId: baseDraft.classificationId || "" });
+                        setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", reason: "", classificationId: baseDraft.classificationId || "" });
                       }}
                       className="px-3 py-2 rounded-lg border border-border-default text-label-sm font-semibold"
                     >

@@ -1,0 +1,27 @@
+{
+  "session": "S2/S3 V3.2",
+  "date": "2026-10-24",
+  "branch": "codex/v3.2-metrics",
+  "baseSha": "a721fe7",
+  "database": "talung_v3_fixture_integration (localhost) - requested phase_c schema mismatch",
+  "apiBase": "http://localhost:3118 (target UI); http://localhost:3112 (S2 regression)",
+  "results": {
+    "test-phase-c-contract": { "pass": 125, "fail": 0 },
+    "test-phase-c-bc2-mapping": { "pass": 80, "fail": 0 },
+    "test-phase-c-target-api": { "pass": 31, "fail": 0 },
+    "test-phase-c-target-ui": { "pass": 18, "fail": 0 },
+    "test-phase-c-v32-metrics": { "pass": 37, "fail": 0 },
+    "test-v3-phase-b-revenue": { "pass": 43, "fail": 0 },
+    "test-v3-phase-b-ui": { "pass": 17, "fail": 0 },
+    "tsc": "PASS",
+    "prismaValidate": "PASS",
+    "build": "PASS"
+  },
+  "migrationRehearsal": "docs/evidence/multi-session/V32_METRICS_MIGRATION_REHEARSAL_2026-10-24.json",
+  "productionTouched": false,
+  "notes": [
+    "talung_v3_phase_c và talung_v3_phase_b thiếu lịch sử/thân bảng approval 170000-190000; dùng talung_v3_fixture_integration (schema hiện hành) cho test DB/service/UI.",
+    "Mọi test DB đều localhost; không đọc/ghi Production/Vercel/Supabase.",
+    "S2 revenue regression chạy trên talung_v3_phase_b/3112 với migration V3.2 đã áp dụng local."
+  ]
+}

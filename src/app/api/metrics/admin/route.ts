@@ -13,6 +13,8 @@ import {
   todayVnDateOnly,
   defaultUnitLabel,
 } from "@/server/metrics";
+import { canAssignTarget, ruleKey, ruleOf } from "@/lib/metric-target-rules";
+import { loadMetricTargetRules } from "@/server/metric-target-rules";
 
 const D = Prisma.Decimal;
 
@@ -125,7 +127,7 @@ export async function GET(req: NextRequest) {
     });
     const metricIds = metrics.map((m) => m.id);
 
-    const [classifications, targets, baselines, assignments, sections, people, reportBlocks] = await Promise.all([
+    const [classifications, targets, baselines, assignments, sections, people, reportBlocks, targetRules] = await Promise.all([
       prisma.metricClassification.findMany({ orderBy: [{ sortOrder: "asc" }, { label: "asc" }] }),
       prisma.metricPlanTarget.findMany({ where: { metricId: { in: metricIds } } }),
       prisma.metricBaseline.findMany({ where: { metricId: { in: metricIds } } }),
@@ -148,6 +150,7 @@ export async function GET(req: NextRequest) {
         take: 500,
       }),
       prisma.reportBlock.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
+      loadMetricTargetRules(metricIds),
     ]);
 
     const personIds = new Set<string>();
@@ -262,6 +265,19 @@ export async function GET(req: NextRequest) {
             active: m.active,
             note: m.note,
             sortOrder: m.sortOrder,
+            targetRules: ["YEAR", "QUARTER", "MONTH"].map((pt) => {
+              const rule = ruleOf(targetRules, m.id, pt);
+              return {
+                periodType: pt,
+                configured: rule.configured,
+                targetApplicable: rule.configured && rule.targetApplicable,
+                direction: rule.direction,
+                measureMode: rule.measureMode,
+                baselineScope: rule.baselineScope,
+                officialPercentAllowed: canAssignTarget(rule),
+                sourceNote: targetRules.get(ruleKey(m.id, pt))?.sourceNote ?? null,
+              };
+            }),
             classifications: classByMetric.get(m.id) || [],
             targets: targetsByMetric.get(m.id) || [],
             baselines: baselinesByMetric.get(m.id) || [],
@@ -581,6 +597,19 @@ export async function POST(req: NextRequest) {
           return jsonError("Tháng phải từ 1-12", 400);
         if (periodType === "QUARTER" && (!periodNo || periodNo < 1 || periodNo > 4))
           return jsonError("Quý phải từ 1-4", 400);
+        // V3.2/C1-A: chỉ metric+kỳ đã có quy tắc được duyệt mới được gán chỉ tiêu.
+        const targetRule = await prisma.metricTargetRule.findUnique({
+          where: { metricId_periodType: { metricId, periodType } },
+        });
+        if (
+          !targetRule ||
+          !targetRule.targetApplicable ||
+          targetRule.direction === "NOT_SET" ||
+          targetRule.measureMode === "PENDING_BUSINESS_INPUT" ||
+          targetRule.baselineScope === "PENDING_BUSINESS_INPUT"
+        ) {
+          return jsonError("Chưa có quy tắc gán chỉ tiêu cho chỉ tiêu/kỳ này.", 400);
+        }
         const parsed = parseNumberInput(data.value);
         if (parsed === null) return jsonError("Giá trị chỉ tiêu không hợp lệ", 400);
         const valueBase = new D(parsed).mul(metric.displayScale || 1);
@@ -806,8 +835,11 @@ export async function POST(req: NextRequest) {
         const metricId = str(data.metricId);
         const cumKind = str(data.cumKind) || "YEAR";
         const asOf = dateOnlyFromStr(str(data.asOfDate) || "");
+        const reason = str(data.reason);
         if (!metricId || !asOf || !CUM_KINDS.includes(cumKind))
           return jsonError("Thiếu chỉ tiêu, ngày mốc hoặc loại mốc", 400);
+        // V3.2/B2-A: nhập bổ sung lũy kế bắt buộc lý do, lưu revision + audit old/new.
+        if (!reason) return jsonError("Nhập bổ sung/điều chỉnh mốc lũy kế phải có lý do.", 400);
         const today = todayVnDateOnly();
         if (asOf.getTime() > today.getTime()) return jsonError("Ngày mốc không được ở tương lai", 400);
         const metric = await prisma.metricDefinition.findUnique({ where: { id: metricId } });
@@ -847,6 +879,7 @@ export async function POST(req: NextRequest) {
               newValue: valueBase,
               newStatus: "PROPOSED",
               newSourceNote: sourceNote,
+              reason,
               editedById: user.personId,
             },
           });
@@ -859,6 +892,7 @@ export async function POST(req: NextRequest) {
           valueBase: valueBase.toString(),
           sourceNote,
           dataSource,
+          reason,
         });
         return NextResponse.json({ success: true, id: b.id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
@@ -869,6 +903,8 @@ export async function POST(req: NextRequest) {
         const existing = await prisma.metricBaseline.findUnique({ where: { id } });
         if (!existing) return jsonError("Mốc không tồn tại", 404);
         if (existing.status === "LOCKED") return jsonError("Mốc đã chốt — không sửa trực tiếp", 400);
+        const reason = str(data.reason);
+        if (!reason) return jsonError("Điều chỉnh mốc lũy kế phải có lý do.", 400);
         const metric = await prisma.metricDefinition.findUnique({ where: { id: existing.metricId } });
         if (!metric) return jsonError("Chỉ tiêu không tồn tại", 404);
         const parsed = parseNumberInput(data.value);
@@ -920,7 +956,7 @@ export async function POST(req: NextRequest) {
               newStatus: "PROPOSED",
               oldSourceNote: existing.sourceNote,
               newSourceNote: sourceNote,
-              reason: str(data.reason) || null,
+              reason,
               editedById: user.personId,
             },
           });
@@ -933,6 +969,9 @@ export async function POST(req: NextRequest) {
           newValue: valueBase.toString(),
           oldStatus: existing.status,
           newStatus: "PROPOSED",
+          oldSourceNote: existing.sourceNote,
+          newSourceNote: sourceNote,
+          reason,
         });
         return NextResponse.json({ success: true, id, status: "PROPOSED", dataSource, isOfficial: dataSource === "REAL" });
       }
@@ -944,6 +983,8 @@ export async function POST(req: NextRequest) {
         if (!existing) return jsonError("Mốc không tồn tại", 404);
         if (action === "confirm") {
           if (existing.status === "LOCKED") return jsonError("Mốc đã chốt", 400);
+          const reason = str(data.reason);
+          if (!reason) return jsonError("Xác nhận mốc lũy kế phải có lý do.", 400);
           const next = "CONFIRMED";
           await prisma.$transaction(async (tx) => {
             await tx.metricBaseline.update({
@@ -956,16 +997,18 @@ export async function POST(req: NextRequest) {
                 action: "CONFIRM",
                 oldStatus: existing.status,
                 newStatus: next,
-                reason: str(data.reason) || null,
+                reason,
                 editedById: user.personId,
               },
             });
           });
           await audit("BASELINE_CONFIRMED", id, {
             metricId: existing.metricId,
-            valueBase: existing.valueNumeric.toString(),
+            oldValue: existing.valueNumeric.toString(),
+            newValue: existing.valueNumeric.toString(),
             oldStatus: existing.status,
             newStatus: next,
+            reason,
           });
           return NextResponse.json({ success: true, status: next });
         }

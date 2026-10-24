@@ -22,8 +22,8 @@ import {
 } from "../src/server/metric-targets";
 
 const DB = process.env.DIRECT_URL || process.env.DATABASE_URL || "";
-if (!DB.includes("talung_v3_phase_c")) {
-  throw new Error("TỪ CHỐI CHẠY: chỉ dùng database test talung_v3_phase_c.");
+if (!DB.includes("talung_v3_phase_c") && !DB.includes("talung_v3_fixture_integration")) {
+  throw new Error("TỪ CHỐI CHẠY: chỉ dùng database test talung_v3_phase_c hoặc talung_v3_fixture_integration.");
 }
 
 let passed = 0;
@@ -103,7 +103,8 @@ async function main() {
     labels.push(base.label);
     check("A1. Create trả PROPOSED", base.status === "PROPOSED");
     check("A2. dataSource REAL → isOfficial true", base.isOfficial === true && base.dataSource === "REAL");
-    check("A3. D5 rules: chưa cho % chính thức", base.rules.officialPercentAllowed === false && base.rules.direction === "NOT_SET" && base.rules.measureMode === "PENDING_BUSINESS_INPUT");
+    check("A3. D5 rules THU_NSNN năm: HIGHER/CUMULATIVE/YEAR_START", base.rules.officialPercentAllowed === true && base.rules.direction === "HIGHER_IS_BETTER" && base.rules.measureMode === "CUMULATIVE" && base.rules.baselineScope === "YEAR_START");
+    check("A3b. D5 semantics có top-level trên target view", base.direction === "HIGHER_IS_BETTER" && base.measureMode === "CUMULATIVE" && base.baselineScope === "YEAR_START" && base.targetApplicable === true);
     check("A4. valueBase đúng đơn vị gốc", base.valueBase === 1000);
     check("A5. Có revision CREATE", base.revisionCount === 1);
 
@@ -124,7 +125,7 @@ async function main() {
 
     const confirmed = await confirmMetricTarget(manager, base.id, { reason: "test confirm" });
     check("A9. Confirm → CONFIRMED", confirmed.status === "CONFIRMED" && confirmed.confirmedByName === account.person.fullName);
-    check("A10. Confirm vẫn D5 pending", confirmed.rules.officialPercentAllowed === false);
+    check("A10. Confirm giữ rules D5-A đã duyệt", confirmed.rules.officialPercentAllowed === true && confirmed.rules.baselineScope === "YEAR_START");
 
     const locked = await lockMetricTarget(manager, base.id, { reason: "test lock" });
     check("A11. Lock → LOCKED", locked.status === "LOCKED" && Boolean(locked.lockedAt));
@@ -214,6 +215,33 @@ async function main() {
     // Validation cơ bản
     check("A25. BTC_YEAR + kỳ THÁNG → 400", await expectError(() => createMetricTarget(manager, { metricId: metric.id, label: `${tag}-BAD-PERIOD`, periodType: "MONTH", year: 2026, periodNo: 10, value: "1", comparisonKind: "BTC_YEAR", dataSource: "REAL", sourceNote: "x" }), 400, "Năm"));
     check("A26. value âm → 400", await expectError(() => createMetricTarget(manager, { metricId: metric.id, label: `${tag}-NEG`, periodType: "YEAR", year: 2026, periodNo: null, value: "-1", comparisonKind: "NONE", dataSource: "REAL" }), 400, "âm"));
+
+    // V3.2/C1-A: chỉ THU_NSNN được gán chỉ tiêu; các mã chưa duyệt bị chặn.
+    const pendingMetric = await prisma.metricDefinition.findFirstOrThrow({ where: { code: "PHI_LK_THU" } });
+    check("A27. PHI_LK_THU (chưa có quy tắc) không được tạo target", await expectError(() => createMetricTarget(manager, {
+      metricId: pendingMetric.id, label: `${tag}-PENDING`, periodType: "YEAR", year: 2026, periodNo: null, value: "1", comparisonKind: "NONE", dataSource: "REAL",
+    }), 400, "quy tắc gán"));
+    const unconfigured = await prisma.metricDefinition.findFirstOrThrow({ where: { code: "XNK_TK" } });
+    check("A28. XNK_TK (không có dòng quy tắc) không được tạo target", await expectError(() => createMetricTarget(manager, {
+      metricId: unconfigured.id, label: `${tag}-UNCONFIG`, periodType: "MONTH", year: 2026, periodNo: 10, value: "1", comparisonKind: "NONE", dataSource: "REAL",
+    }), 400, "quy tắc"));
+    const thuMonth = await createMetricTarget(manager, {
+      metricId: metric.id,
+      label: `${tag}-MONTH`,
+      periodType: "MONTH",
+      year: 2026,
+      periodNo: 10,
+      value: "100",
+      comparisonKind: "MONTH_PLAN",
+      dataSource: "REAL",
+      sourceNote: "month rule test",
+    });
+    createdIds.push(thuMonth.id);
+    labels.push(thuMonth.label);
+    check("A29. THU_NSNN tháng: MONTH_START + officialPercentAllowed", thuMonth.rules.direction === "HIGHER_IS_BETTER" && thuMonth.rules.measureMode === "CUMULATIVE" && thuMonth.rules.baselineScope === "MONTH_START" && thuMonth.rules.officialPercentAllowed === true);
+    check("A30. THU_NSNN quý chưa có quy tắc → 400", await expectError(() => createMetricTarget(manager, {
+      metricId: metric.id, label: `${tag}-QUARTER`, periodType: "QUARTER", year: 2026, periodNo: 4, value: "1", comparisonKind: "NONE", dataSource: "REAL",
+    }), 400, "quy tắc"));
   } finally {
     // Dọn revision trước (không FK), rồi target, rồi audit test.
     if (createdIds.length) {

@@ -8,9 +8,11 @@
  * - Chờ S2 công bố schema target; sau đó mới thay mock bằng API target-only.
  */
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
+  BASELINE_SCOPE_LABELS,
   DIRECTION_LABELS,
+  MEASURE_MODE_LABELS,
   OFFICIAL_PERCENT_POLICY,
   PERCENT_REASON_LABELS,
   TARGET_LABEL_CODES,
@@ -20,6 +22,7 @@ import {
   deriveActualState,
   deriveTargetState,
   formatNumberVi,
+  metricRuleFor,
   nextTargetStatus,
   parseMetricInput,
   targetDraftErrors,
@@ -102,6 +105,7 @@ export function MetricTargetDraftEditor({
   const [busy, setBusy] = useState(false);
 
   const selectedMetric = metrics.find((m) => m.id === draft.metricId) ?? metrics[0];
+  const selectedRule = metricRuleFor(selectedMetric, draft.periodType);
   const existingKeys: ExistingTargetKey[] = targets.map((t) => ({
     id: t.id,
     labelCode: t.labelCode,
@@ -119,16 +123,24 @@ export function MetricTargetDraftEditor({
   const errors = targetDraftErrors(issues);
   const warnings = issues.filter((i) => i.severity === "warning");
 
+  // V3.2/D5-A: direction lấy từ quy tắc đã duyệt, không cho người dùng tự đổi.
+  useEffect(() => {
+    setDraft((current) =>
+      current.direction === selectedRule.direction ? current : { ...current, direction: selectedRule.direction }
+    );
+  }, [selectedRule.direction]);
+
   const preview = useMemo(() => {
     const value = parseMetricInput(draft.value);
     if (!selectedMetric || value === null || value <= 0 || !draft.year) return null;
+    if (!selectedRule.officialPercentAllowed) return null;
     const mockActualValue = value * 0.8;
     const actual = deriveActualState({
       applicable: true,
       value: mockActualValue,
       valueSource: "ENTRY",
       unitType: selectedMetric.unitType,
-      measureMode: selectedMetric.measureMode,
+      measureMode: selectedRule.measureMode,
       locked: false,
       noActivityConfirmed: false,
       expectedSlots: 1,
@@ -147,7 +159,9 @@ export function MetricTargetDraftEditor({
         periodNo: draft.periodNo,
         value,
         unitType: draft.unitType,
-        direction: draft.direction,
+        direction: selectedRule.direction,
+        measureMode: selectedRule.measureMode,
+        baselineScope: selectedRule.baselineScope,
       },
       { year: draft.year, periodType: draft.periodType, periodNo: draft.periodNo }
     );
@@ -157,12 +171,13 @@ export function MetricTargetDraftEditor({
       targetValue: value,
       targetUnitType: draft.unitType,
       actualUnitType: selectedMetric.unitType,
-      direction: draft.direction,
-      measureMode: selectedMetric.measureMode,
+      direction: selectedRule.direction,
+      measureMode: selectedRule.measureMode,
+      baselineScope: selectedRule.baselineScope,
       policy: { ...OFFICIAL_PERCENT_POLICY, metricRequiresConfirm: false },
       mode: "PREVIEW",
     });
-  }, [draft, selectedMetric]);
+  }, [draft, selectedMetric, selectedRule]);
 
   function patch(patchValue: Partial<TargetDraftInput>) {
     setDraft((current) => ({ ...current, ...patchValue }));
@@ -182,6 +197,10 @@ export function MetricTargetDraftEditor({
 
   async function save(status: TargetStatus) {
     if (busy) return;
+    if (!selectedRule.officialPercentAllowed) {
+      setMessage("Chưa có quy tắc gán/đánh giá chỉ tiêu cho chỉ tiêu và kỳ này — không thể lưu chỉ tiêu.");
+      return;
+    }
     const next: TargetDraftInput = {
       ...draft,
       status,
@@ -207,7 +226,7 @@ export function MetricTargetDraftEditor({
       setMessage(
         status === "CONFIRMED"
           ? apiMode
-            ? "Đã gửi xác nhận chỉ tiêu. Hệ thống chưa tính % chính thức cho tới B-C-3."
+            ? "Đã gửi xác nhận chỉ tiêu. % chính thức chỉ tính khi đủ quy tắc D5-A."
             : "Đã xác nhận (mock). Chỉ target CONFIRMED mới đủ điều kiện tính % chính thức."
           : apiMode
             ? "Đã lưu nháp/đề xuất (PROPOSED). Chỉ hiển thị tạm tính."
@@ -271,7 +290,7 @@ export function MetricTargetDraftEditor({
             </span>
           </div>
           <p className="mt-1 text-body-sm text-on-surface-variant">
-            Chỉ tiêu cấp Cục (Q1=A). Target <b>DRAFT</b> chỉ tạm tính. D5 đang <b>DEFERRED_B_C_3</b>: chưa có quy tắc %, không tô đạt/vượt.
+            Chỉ tiêu cấp Cục (Q1=A). Target <b>DRAFT</b> chỉ tạm tính. V3.2/D5-A: chiều/đo lường/baseline lấy từ quy tắc đã duyệt; chưa có quy tắc thì không tính % và không tô đạt/vượt.
           </p>
         </div>
         <span className="rounded border border-border-default bg-surface-container-low px-2 py-1 text-[11px] font-semibold text-on-surface-variant">
@@ -279,10 +298,17 @@ export function MetricTargetDraftEditor({
         </span>
       </div>
 
-      <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
-        {apiMode
-          ? "Đã nối API target-only (/api/metrics/targets). D5 chưa có: direction/measureMode/baselineScope hiển thị “chưa có quy tắc”; không tính % chính thức cho tới B-C-3."
-          : "Bản nháp độc lập: không gọi API, không ghi DB, không sửa schema/metrics. Dữ liệu dưới đây là mock."}
+      <div className={`rounded-lg border px-3 py-2 text-body-xs ${selectedRule.officialPercentAllowed ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-300 bg-amber-50 text-amber-900"}`}>
+        {apiMode ? "Đã nối API target-only (/api/metrics/targets). " : "Bản nháp độc lập: không gọi API/DB; dữ liệu dưới đây là mock. "}
+        {selectedRule.officialPercentAllowed ? (
+          <>
+            <b>Quy tắc D5-A đã duyệt:</b> {DIRECTION_LABELS[selectedRule.direction]} · {MEASURE_MODE_LABELS[selectedRule.measureMode]} · {BASELINE_SCOPE_LABELS[selectedRule.baselineScope]}.
+          </>
+        ) : (
+          <>
+            <b>Chưa có quy tắc gán/đánh giá chỉ tiêu</b> cho {draft.periodType === "YEAR" ? "kỳ năm" : draft.periodType === "MONTH" ? "kỳ tháng" : "kỳ quý"} — không lưu chỉ tiêu, không tính %, không tô đạt/vượt.
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -380,18 +406,11 @@ export function MetricTargetDraftEditor({
         </label>
 
         <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
-          Chiều đánh giá (C1)
-          <select
-            className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
-            value={draft.direction}
-            onChange={(e) => patch({ direction: e.target.value as Direction })}
-          >
-            {(Object.keys(DIRECTION_LABELS) as Direction[]).map((d) => (
-              <option key={d} value={d}>
-                {DIRECTION_LABELS[d]}
-              </option>
-            ))}
-          </select>
+          Chiều đánh giá (D5-A/C1)
+          <div className="rounded border border-border-default bg-surface-container-low px-2 py-1.5 text-body-sm font-normal text-on-surface">
+            {DIRECTION_LABELS[selectedRule.direction]}
+            <span className="ml-1 text-[10px] text-on-surface-variant">(theo quy tắc đã duyệt — không sửa tại đây)</span>
+          </div>
         </label>
 
         {selectedMetric && selectedMetric.classifications.length > 0 && (
@@ -448,9 +467,9 @@ export function MetricTargetDraftEditor({
         )}
       </div>
 
-      {rulesPending ? (
+      {rulesPending || !selectedRule.officialPercentAllowed ? (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-sm text-amber-900">
-          <b>Chưa có quy tắc đánh giá (D5 — DEFERRED_B_C_3):</b> direction = NOT_SET; measureMode/baselineScope = PENDING_BUSINESS_INPUT. Không tính % chính thức.
+          <b>Chưa có quy tắc đánh giá (D5-A):</b> chưa đủ direction/measureMode/baselineScope cho chỉ tiêu/kỳ này. Không tính % chính thức.
         </div>
       ) : (
         preview && (

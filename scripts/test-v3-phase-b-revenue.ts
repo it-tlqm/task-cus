@@ -352,6 +352,7 @@ async function main() {
       value: String(ACC.baseline),
       dataSource: "REAL",
       sourceNote: `${TAG} mốc kiểm thử`,
+      reason: `${TAG} nhập mốc kiểm thử (B2-A)`,
     },
   });
   if (baseCreate.json?.id) cleanup.baselineIds.push(baseCreate.json.id);
@@ -417,13 +418,15 @@ async function main() {
     row1?.btc?.dataSource === "REAL" && row1?.btc?.isOfficial === true && row1?.btc?.status === "CONFIRMED"
   );
   check(
-    "5.6 Tháng trước: có giá trị 50 nhưng KHÔNG công bố % (B1 pending)",
-    row1?.prevMonth?.value === ACC.prevMonthEntry && row1?.prevMonth?.percent === null && row1?.prevMonth?.ruleState === "PENDING_B1",
+    "5.6 Tháng trước: so cùng số ngày đến cutoff, có % khi đủ dữ liệu (B1-A)",
+    row1?.prevMonth?.value === ACC.prevMonthEntry && row1?.prevMonth?.percent !== null && row1?.prevMonth?.ruleState === "SAME_DAYS" && row1?.prevMonth?.basis === "SAME_DAYS_TO_CUTOFF",
     JSON.stringify(row1?.prevMonth)
   );
   check(
-    "5.7 Cùng kỳ năm trước: percent null + PENDING_B1",
-    row1?.samePeriodLastYear?.percent === null && row1?.samePeriodLastYear?.ruleState === "PENDING_B1",
+    "5.7 Cùng kỳ năm trước: thiếu dữ liệu → NO_DATA, không 0% (B1-A)",
+    row1?.samePeriodLastYear?.percent === null
+      ? row1?.samePeriodLastYear?.ruleState === "NO_DATA"
+      : typeof row1?.samePeriodLastYear?.percent === "number",
     JSON.stringify(row1?.samePeriodLastYear)
   );
 

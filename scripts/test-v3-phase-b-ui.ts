@@ -107,6 +107,7 @@ async function setupAcceptanceFixture(token: string) {
       value: String(ACC.baseline),
       dataSource: "REAL",
       sourceNote: `${TAG} mốc UI`,
+      reason: `${TAG} nhập mốc UI (B2-A)`,
     },
   });
   if (base.json?.id) {
@@ -244,7 +245,7 @@ async function main() {
         dashText.includes(x)
       )
     );
-    check("UI3. Dashboard ghi rõ kỳ trước/cùng kỳ CHỜ CHỐT (B1)", dashText.includes("CHỜ CHỐT (B1)"));
+    check("UI3. Dashboard ghi rõ kỳ trước/cùng kỳ SO CÙNG SỐ NGÀY (B1-A)", dashText.includes("SO CÙNG SỐ NGÀY (B1-A)"));
     check("UI4. Dashboard không hiện nhãn [DEMO] trong khối so sánh", !dashText.includes("[DEMO]"));
     await shot(dash, "dashboard-comparison-desktop.png");
     await dash.close();

@@ -1551,9 +1551,38 @@ model MetricDefinition {
   entries         MetricDailyEntry[]
   baselines       MetricBaseline[]
   targets         MetricPlanTarget[]
+  targetRules     MetricTargetRule[]
 
   @@index([groupId, sortOrder])
   @@map("metric_definitions")
+}
+
+// D5/C1 (V3.2) — quy tắc đánh giá & khả năng gán chỉ tiêu, TƯỜNG MINH theo chỉ tiêu + kỳ.
+// Không suy từ tên/valueKind. Thiếu dòng = chưa có quy tắc (NOT_CONFIGURED), không tự gán.
+// direction: HIGHER_IS_BETTER | LOWER_IS_BETTER | NEUTRAL | NOT_SET
+// measureMode: PERIOD_FLOW | CUMULATIVE | SNAPSHOT | DERIVED | PENDING_BUSINESS_INPUT
+// baselineScope: YEAR_START | MONTH_START | PERIOD_START | PENDING_BUSINESS_INPUT
+// targetApplicable = true CHỈ khi nghiệp vụ đã duyệt gán chỉ tiêu cho chỉ tiêu/kỳ này.
+model MetricTargetRule {
+  id               String    @id @default(uuid())
+  metricId         String    @map("metric_id")
+  periodType       String    @map("period_type")
+  targetApplicable Boolean   @map("target_applicable")
+  direction        String
+  measureMode      String    @map("measure_mode")
+  baselineScope    String    @map("baseline_scope")
+  sourceNote       String?   @map("source_note")
+  approvedById     String?   @map("approved_by_id")
+  approvedAt       DateTime? @map("approved_at")
+  note             String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  metric MetricDefinition @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([metricId, periodType])
+  @@index([targetApplicable])
+  @@map("metric_target_rules")
 }
 
 model MetricClassification {

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { baseToInput, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { MetricCumulativeAdjustmentPanel } from "@/components/metrics/MetricCumulativeAdjustmentPanel";
 import { getVnDateParts } from "@/lib/period-helper";
 
 interface EntryValue {
@@ -398,6 +399,24 @@ export default function NhapSoLieuPage() {
               </div>
             </div>
           ))}
+
+        {!loading && data && (
+          <MetricCumulativeAdjustmentPanel
+            metrics={data.groups.flatMap((g) =>
+              g.metrics.map((m) => ({
+                id: m.id,
+                code: m.code,
+                name: m.name,
+                unitLabel: m.unitLabel,
+                displayScale: m.displayScale,
+                decimals: m.decimals,
+                canEnter: m.canEnter,
+                canConfirm: m.canConfirm,
+                values: m.values.map((v) => ({ classificationId: v.classificationId, label: v.label })),
+              }))
+            )}
+          />
+        )}
       </div>
 
       {/* Thanh lưu */}
