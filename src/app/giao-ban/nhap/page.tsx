@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import BackButton from "@/components/ui/BackButton";
 import { baseToInput, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { MetricCumulativeAdjustmentPanel } from "@/components/metrics/MetricCumulativeAdjustmentPanel";
 import { getVnDateParts } from "@/lib/period-helper";
@@ -215,13 +215,7 @@ export default function NhapSoLieuPage() {
               Nhập số liệu theo ngày — chỉ hiện các chỉ tiêu bạn được phân công. Số đã gửi/xác nhận chỉ lãnh đạo sửa được.
             </p>
           </div>
-          <Link
-            href="/giao-ban"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-default text-primary text-label-md font-semibold hover:bg-surface-container"
-          >
-            <span className="material-symbols-outlined text-[18px]">monitoring</span>
-            Xem tổng hợp
-          </Link>
+          <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
         </div>
 
         <div className="flex items-center gap-2">

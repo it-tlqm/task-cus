@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
 
 interface AuditEntry {
   id: string;
@@ -112,6 +112,10 @@ export default function AdminAuditPage() {
 
   return (
     <div className="flex flex-col w-full p-space-md lg:p-space-lg gap-space-lg pb-16">
+      <div>
+        <BackButton href="/admin/system" label="Cấu hình hệ thống" />
+      </div>
+
       {/* Top Breadcrumb & Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
         <div className="flex items-center gap-space-md">
@@ -131,16 +135,6 @@ export default function AdminAuditPage() {
               Theo dõi 100% thao tác thay đổi dữ liệu, cấp phát quyền, trích xuất tệp XLSX và cảnh báo truy cập trái phép.
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/admin/system"
-            className="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-subtle hover:bg-surface-container text-primary font-label-md text-label-md transition-colors active-press"
-          >
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Về Cấu hình Hệ thống</span>
-          </Link>
         </div>
       </div>
 

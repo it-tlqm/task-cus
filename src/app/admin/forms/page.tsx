@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
+import BackButton from "@/components/ui/BackButton";
 
 interface FormFieldDef {
   key: string;
@@ -170,6 +170,10 @@ export default function DynamicFormBuilderPage() {
 
   return (
     <div className="flex flex-col w-full p-space-md lg:p-space-lg gap-space-lg pb-16">
+      <div>
+        <BackButton href="/admin/system" label="Cấu hình hệ thống" />
+      </div>
+
       {/* Top Header Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
         <div className="flex items-center gap-space-md">
@@ -192,13 +196,6 @@ export default function DynamicFormBuilderPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/admin/system"
-            className="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-subtle hover:bg-surface-container text-primary font-label-md transition-colors active-press"
-          >
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Về Admin Core</span>
-          </Link>
           <button
             onClick={handlePublishVersion}
             disabled={isPublishing}

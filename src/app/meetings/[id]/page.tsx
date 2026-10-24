@@ -5,6 +5,7 @@ import { vnDateToDeadlineIso } from "@/lib/datetime";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
+import BackButton from "@/components/ui/BackButton";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 
@@ -186,11 +187,17 @@ export default function MeetingDetailPage() {
   };
 
   if (loading) return <div className="p-6 text-sm text-slate-500">Đang tải biên bản...</div>;
-  if (!meeting) return <div className="p-6 text-sm text-slate-500">Không tìm thấy biên bản. <Link href="/meetings" className="text-teal-800 font-semibold">Quay lại</Link></div>;
+  if (!meeting)
+    return (
+      <div className="p-6 flex flex-col items-start gap-3">
+        <BackButton href="/meetings" label="Danh sách biên bản" />
+        <p className="text-sm text-slate-500">Không tìm thấy biên bản.</p>
+      </div>
+    );
 
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
-      <Link href="/meetings" className="text-xs text-slate-500 font-semibold">‹ Danh sách biên bản</Link>
+      <BackButton href="/meetings" label="Danh sách biên bản" />
       <div>
         <h1 className="text-xl font-bold text-slate-900">{meeting.title}</h1>
         <p className="text-sm text-slate-500">

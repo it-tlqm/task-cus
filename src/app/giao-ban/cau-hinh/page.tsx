@@ -5,6 +5,7 @@ import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { fmtMetric, fmtDate } from "@/lib/metric-format";
 import { MetricTargetManager } from "@/components/metrics/MetricTargetManager";
+import BackButton from "@/components/ui/BackButton";
 
 type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION" | "REPORT";
 
@@ -282,27 +283,41 @@ export default function CauHinhSoLieuPage() {
   const selBaseMetric = metricById.get(selBaseMetricId);
 
   if (permLoading) {
-    return <div className="p-8 text-body-sm text-on-surface-variant text-center">Đang tải cấu hình…</div>;
+    return (
+      <div className="p-8 flex flex-col items-start gap-3">
+        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
+        <div className="text-body-sm text-on-surface-variant">Đang tải cấu hình…</div>
+      </div>
+    );
   }
   if (!canConfigMetrics) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-8 flex flex-col items-center gap-3 text-center">
+        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
         <span className="material-symbols-outlined text-[40px] text-on-surface-variant">lock</span>
-        <p className="text-body-md text-on-surface mt-2">Chỉ người được cấp quyền cấu hình số liệu giao ban mới được truy cập.</p>
+        <p className="text-body-md text-on-surface">Chỉ người được cấp quyền cấu hình số liệu giao ban mới được truy cập.</p>
       </div>
     );
   }
   if (loading) {
-    return <div className="p-8 text-body-sm text-on-surface-variant text-center">Đang tải cấu hình…</div>;
+    return (
+      <div className="p-8 flex flex-col items-start gap-3">
+        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
+        <div className="text-body-sm text-on-surface-variant">Đang tải cấu hình…</div>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-surface-container-low">
-      <div className="px-margin pt-space-md pb-space-sm">
-        <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Cấu hình số liệu giao ban</h1>
-        <p className="text-body-sm text-on-surface-variant">
-          Mọi thay đổi (chỉ tiêu, đơn vị, quy trình kiểm tra, chỉ tiêu giao, mốc lũy kế, phân công) thực hiện tại đây — không cần sửa code.
-        </p>
+      <div className="px-margin pt-space-md pb-space-sm flex flex-col gap-3">
+        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
+        <div>
+          <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Cấu hình số liệu giao ban</h1>
+          <p className="text-body-sm text-on-surface-variant">
+            Mọi thay đổi (chỉ tiêu, đơn vị, quy trình kiểm tra, chỉ tiêu giao, mốc lũy kế, phân công) thực hiện tại đây — không cần sửa code.
+          </p>
+        </div>
       </div>
 
       <div className="px-margin pb-3 flex gap-2 overflow-x-auto">

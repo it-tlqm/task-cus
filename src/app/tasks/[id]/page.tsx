@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { isSelfInitiated, originLabel } from "@/lib/task-origin";
 import TxSourceBadge from "@/components/work/TxSourceBadge";
 import { formatVnDateTime, utcIsoToVnInputValue, vnLocalToUtcIso } from "@/lib/datetime";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import BackButton from "@/components/ui/BackButton";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
@@ -1086,24 +1086,12 @@ export default function TaskDetailPage() {
   return (
     <div className="w-full min-h-screen bg-app-bg pb-16">
       <div className="flex flex-col w-full p-space-lg gap-space-lg max-w-7xl mx-auto">
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
-            <Link href="/tasks" className="hover:text-primary transition-colors flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              <span>Nhiệm vụ chỉ đạo</span>
-            </Link>
-            <span className="text-outline">/</span>
-            <span className="text-primary font-bold">{task.code}</span>
-          </div>
-
-          <Link
-            href="/tasks"
-            className="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-semibold text-xs transition-fast flex items-center gap-1"
-          >
-            <span className="material-symbols-outlined text-[16px]">list</span>
-            <span>Về danh sách</span>
-          </Link>
+        {/* Nút quay lại nổi bật + mã nhiệm vụ */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <BackButton href="/tasks" label="Danh sách nhiệm vụ" />
+          <span className="font-label-sm text-label-sm text-on-surface-variant">
+            Mã nhiệm vụ: <span className="text-primary font-bold">{task.code}</span>
+          </span>
         </div>
 
         {/* Task Header Banner */}
