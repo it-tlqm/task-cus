@@ -324,7 +324,7 @@ content: `... Hạn xử lý: ${formatVnDate(t.currentDeadline)} ...`
    - `style-src 'self' 'unsafe-inline'`;
    - `img-src 'self' data: blob: https://*.supabase.co`;
    - `connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com`;
-   - `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`.
+   - `frame-ancestors 'self'` (bắt buộc để iframe xem PDF đính kèm cùng origin hoạt động; website bên ngoài vẫn bị chặn nhúng), `base-uri 'self'`, `form-action 'self'`.
 5. Test Preview trước khi lên Production; CSP không được chặn logo/font/AI/Supabase.
 
 **Test bắt buộc:**
@@ -454,7 +454,7 @@ const leaveApproved = await prisma.leaveRequest.count({
 - Thêm vào checklist release, không chỉ chạy thủ công.
 - Chạy tối thiểu:
   - `pnpm typecheck`
-  - `pnpm lint`
+  - `pnpm lint` — **có điều kiện:** repo hiện chưa có ESLint config/devDependency, nên bỏ qua và thay bằng typecheck + build (xem giới hạn trong file bằng chứng)
   - `pnpm build`
   - `npx prisma validate`
   - các test P0/P1
@@ -502,7 +502,7 @@ const leaveApproved = await prisma.leaveRequest.count({
 | Test | Lệnh | Gate |
 |---|---|---|
 | Typecheck | `pnpm typecheck` | P0/P1 |
-| Lint | `pnpm lint` | P0/P1 |
+| Lint (chỉ khi repo có ESLint config) | `pnpm lint` | P0/P1 |
 | Prisma validate | `npx prisma validate` | P0/P1 |
 | Build | `pnpm build` | P0/P1 |
 | E12 history cũ | `TEST_BASE_URL=$TEST_BASE_URL DATABASE_URL=$TEST_DATABASE_URL npx tsx scripts/test-v3-e12-unified-history.ts` | P0 |

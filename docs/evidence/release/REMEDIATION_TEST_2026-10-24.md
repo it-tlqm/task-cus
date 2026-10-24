@@ -1,9 +1,11 @@
 # KẾT QUẢ REGRESSION REMEDIATION — 24/10/2026
 
 - **Trạng thái:** `PASS WITH LIMITATIONS`
-- **Commit test:** `5c4c0cfa9e0a4a0055e6c95b36205cc09bf1edaf` (`codex/v3-remediation-p0`)
-- **Commit bằng chứng:** `9a5278f` (chỉ thêm tài liệu, không đổi source/test)
-- **Thời điểm chạy:** 24/10/2026, khoảng 15:19–15:26 (+07); bổ sung YC-10 quality lúc 15:36–15:37 (+07)
+- **Commit test (bộ 501):** `5c4c0cfa9e0a4a0055e6c95b36205cc09bf1edaf` (`codex/v3-remediation-p0`)
+- **Commit head khi bổ sung health:** `17988c6` (chỉ thêm release-info/health + test; xem mục 6.1)
+- **Commit head sau fix wave hậu review:** `4ffd436` (xem mục 6.2)
+- **Commit bằng chứng:** `9a5278f` (bản đầu) → `c840816` (bổ sung quality, bản đầy đủ trước fix wave) → `__EVIDENCE_COMMIT__` (bản này; commit metadata ghi ở lần cập nhật kế tiếp, không đổi source/test)
+- **Thời điểm chạy:** 24/10/2026, khoảng 15:19–15:26 (+07); bổ sung YC-10 quality lúc 15:36–15:37 (+07); addendum/fix wave hậu review trong cùng ngày
 - **Môi trường:** Windows 10.0.26200, Node `v24.20.0`, pnpm `12.11.2`, Next.js `15.5.27`
 - **Database:** PostgreSQL local, fixture `talung_v3_fixture_integration` (không ghi connection string/token)
 - **Server:** dùng dev server local sẵn có ở cổng `3100`; sau đó dừng và tự khởi động server `3117` với `V3_YC10_QUALITY=true`; đã dừng toàn bộ trước khi build
@@ -60,6 +62,10 @@ Các fail trên là **cấu hình môi trường**, không phải lỗi sản ph
 4. **Browser E2E:** dùng Brave có sẵn trên máy; không lưu screenshot trong bằng chứng này.
 5. **Build:** chỉ chạy sau khi dừng dev server để tránh khoá `.next`/Prisma DLL trên Windows; build thật đã hoàn tất, không có EPERM.
 6. **Không kiểm tra:** Production/Supabase, migration, backup/PITR, Vercel deploy — ngoài phạm vi Task 2.5.
+7. **Lint không chạy được:** repo không có ESLint config và không có `eslint` trong devDependencies; `pnpm lint` (`next lint`) sẽ dừng để hỏi cài đặt nên không dùng được trong CI non-interactive. Fix wave **không thêm** bộ ESLint lớn; thay thế bằng `npx tsc --noEmit` + `pnpm build`. Vì vậy "final gate" trong kế hoạch chỉ áp dụng `pnpm lint` khi repo có cấu hình ESLint.
+8. **Purge script:** đã sửa để đệ quy thư mục `task-<code>/...` và bỏ đường dẫn worktree hardcode; kiểm chứng bằng Storage giả lập cục bộ (75 pass), **không** chạy xoá thật trên Supabase bucket. Chưa có bằng chứng bucket thật sạch sau khi chạy.
+9. **Quality history test:** thiếu fixture giờ **thoát mã 1** thay vì exit 0; cờ `--allow-missing-fixtures` chỉ dùng khi chấp nhận bỏ qua có chủ đích. Sau fix wave chưa chạy lại đủ 25/25 vì không có server 3117 + fixture đúng; kết quả 25/0 ở mục 1 vẫn là lần chạy đầy đủ duy nhất.
+10. **Phạm vi số liệu:** bộ **501** ở mục 1 giữ nguyên cho commit `5c4c0cf`; các lượt chạy ở mục 6 là kiểm chứng bổ sung cho fix wave, không cộng dồn hay tuyên bố lại toàn bộ suite.
 
 ---
 
@@ -71,4 +77,49 @@ Các fail trên là **cấu hình môi trường**, không phải lỗi sản ph
 
 ## 5. Kết luận
 
-`PASS WITH LIMITATIONS` — toàn bộ typecheck, Prisma validate, 7 test mới, 3 regression liên quan (E12 unified history, approval hardening, YC-10 existing quality) và production build đều pass trong điều kiện fixture đã nêu. Giới hạn chính là quality phụ thuộc flag `V3_YC10_QUALITY` (mặc định OFF ở Production), phạm vi chỉ local/fixture, và các suite legacy ngoài phạm vi không được chạy (liệt kê ở mục 3).
+`PASS WITH LIMITATIONS` — toàn bộ typecheck, Prisma validate, 7 test mới, 3 regression liên quan (E12 unified history, approval hardening, YC-10 existing quality) và production build đều pass trong điều kiện fixture đã nêu. Giới hạn chính là quality phụ thuộc flag `V3_YC10_QUALITY` (mặc định OFF ở Production), phạm vi chỉ local/fixture, và các suite legacy ngoài phạm vi không được chạy (liệt kê ở mục 3). Fix wave hậu review (mục 6) bổ sung kiểm chứng cho các thay đổi code sau mốc 501 và siết thêm giới hạn lint/purge/quality fixture.
+
+---
+
+## 6. Bổ sung sau review toàn nhánh (24/10/2026)
+
+### 6.1 Addendum cho head `17988c6`
+
+Sau bộ 501 tại `5c4c0cf`, head `17988c6` chỉ thay đổi: `src/server/release-info.ts`, `src/app/api/health/route.ts`, `scripts/test-v3-health-commit.ts` và tài liệu. Không đổi dependency, schema Prisma hay cấu hình build, nên build ghi ở mục 1 vẫn đúng cho phần source còn lại; riêng health helper/route được kiểm chứng lại như sau:
+
+| # | Lệnh | Kết quả | Exit |
+|---|---|---|---|
+| 1 | `npx tsc --noEmit` | **PASS** — không lỗi type | 0 |
+| 2 | `npx tsx scripts/test-v3-health-commit.ts` | **PASS** — 15 pass / 0 fail (Git SHA thắng, fallback `RELEASE_SHA`, không lộ secret) | 0 |
+| 3 | `pnpm build` | **Không chạy lại riêng cho `17988c6`**; build ở mục 1 chạy trên `5c4c0cf`. Sau mốc đó chỉ health helper/route + test thay đổi. Fix wave sau đó đã build lại đầy đủ (mục 6.2) | — |
+
+### 6.2 Fix wave hậu review — head `4ffd436`
+
+Các thay đổi code (không chạm Production, không migration/reset):
+
+- `scripts/purge-storage.mjs`: liệt kê **đệ quy** thư mục (`it.id == null && it.metadata == null` → recurse với prefix đầy đủ), giữ phân trang, chặn dot-segment, chặn `work-evidence`, mặc định dry-run; bỏ `REPO = "D:/..."`/`createRequire`, lấy gốc repo từ `import.meta.url`; usage comment có dạng POSIX và PowerShell hợp lệ.
+- `next.config.mjs`: `isDev = NODE_ENV === "development"` — `NODE_ENV` rỗng/không rõ nhận CSP production nghiêm.
+- `src/middleware.ts`: public path/API so khớp **chính xác** (`/login`, `/api/auth/login`, `/api/auth/me`, `/api/health`, `/favicon.ico`, `/manifest.webmanifest`, `/sw.js`); chỉ `/_next`, `/images`, `/fonts` dùng prefix theo segment.
+- `src/app/api/health/route.ts`: khi 503 chỉ trả `error: "database_unavailable"`, chi tiết lỗi ghi log server.
+- `scripts/test-v3-quality-history-visibility.ts`: thiếu fixture ⇒ **exit 1**; chỉ bỏ qua khi có cờ `--allow-missing-fixtures`.
+- `scripts/test-v3-purge-safety.ts`: thêm kiểm tra source + hành vi đệ quy bằng Storage giả lập cục bộ (**không** gọi Supabase thật).
+- `scripts/test-v3-middleware-paths.ts`: thêm case `/api/auth/me`, `/api/health` và các path tiền tố giả (`/login-abc`, `/api/auth/login-extra`, `/api/healthz`, `/manifest.webmanifest.bak`).
+
+Kết quả tại head `4ffd436` (trước commit tài liệu này):
+
+| # | Lệnh / kiểm tra | Kết quả | Exit |
+|---|---|---|---|
+| 1 | `npx tsc --noEmit` | **PASS** | 0 |
+| 2 | `npx tsx scripts/test-v3-purge-safety.ts` | **PASS** — 75 pass / 0 fail (tăng từ 69; gồm F17–F19, I1–I3) | 0 |
+| 3 | `npx tsx scripts/test-v3-middleware-paths.ts` | **PASS** — 20 pass / 0 fail (tăng từ 12) | 0 |
+| 4 | `npx tsx scripts/test-v3-health-commit.ts` | **PASS** — 15 pass / 0 fail | 0 |
+| 5 | `pnpm build` | **PASS** — `prisma generate` + compile + type check + route table; không EPERM/DLL lock lần này | 0 |
+| 6 | Kiểm tra CSP với `NODE_ENV` rỗng | **PASS** — không có `unsafe-eval`, không có `ws://`; `frame-ancestors 'self'` | 0 |
+
+**Quality history visibility:** không chạy lại đủ 25/25 sau fix wave. Đã thử hai điều kiện và cả hai đều **exit 1** (không còn "xanh im lặng"): (a) fixture `talung_v3_integration` + server đóng cổng `3199` → login `ECONNREFUSED`; (b) `talung_v3_demo` (thiếu tài khoản demo nhưng schema cũ) → Prisma `P2022` trước khi tới nhánh kiểm tra fixture. Không có database fixture đúng schema mà thiếu tài khoản demo để chạy đúng nhánh; vì vậy nhánh `--allow-missing-fixtures` chỉ được xác nhận bằng code, chưa có lần chạy thật. Kết quả 25/0 ở mục 1 vẫn là lần chạy đầy đủ duy nhất.
+
+### 6.3 Đồng bộ tài liệu
+
+- `docs/V3/V3_PRODUCTION_REMEDIATION_PLAN_2026-10-24.md`: `frame-ancestors 'none'` → `'self'` kèm ghi chú iframe PDF same-origin (chặn nhúng từ website ngoài vẫn giữ); `pnpm lint` ghi rõ là gate **có điều kiện** vì repo chưa có ESLint config.
+- Không sửa `.superpowers/**`; `progress.md` không nhắc lint nên không cần chỉnh.
+- Metadata commit bằng chứng của bản này: `__EVIDENCE_COMMIT__`; commit metadata kế tiếp chỉ cập nhật đúng hash đó, không đổi source/test.
