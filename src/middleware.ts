@@ -14,7 +14,9 @@ function requireJwtSecret(): Uint8Array {
   return new TextEncoder().encode(configured || JWT_FALLBACK_SECRET);
 }
 
-// Danh sách các đường dẫn công khai không cần session
+// Danh sách các đường dẫn công khai không cần session.
+// Danh sách ĐÓNG: không dùng regex đuôi file chung (mọi path có dấu chấm từng bị bỏ qua auth).
+// Chỉ các tệp gốc thật sự tồn tại trong public/ mới được liệt kê.
 const PUBLIC_PATHS = [
   "/login",
   "/api/auth/login",
@@ -22,6 +24,8 @@ const PUBLIC_PATHS = [
   "/favicon.ico",
   "/images",
   "/fonts",
+  "/manifest.webmanifest",
+  "/sw.js",
 ];
 
 // Danh sách các API công khai hoặc tự xử lý kiểm tra
@@ -34,12 +38,9 @@ const PUBLIC_API_PREFIXES = [
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Cho phép tài nguyên tĩnh và trang login
-  if (
-    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
-    pathname.startsWith("/_next") ||
-    pathname.includes(".")
-  ) {
+  // 1. Cho phép tài nguyên tĩnh và trang login (chỉ các prefix trong PUBLIC_PATHS).
+  // KHÔNG bypass theo dấu chấm: `/admin/system/foo.bar` và `/api/tasks/foo.json` vẫn phải qua auth.
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
