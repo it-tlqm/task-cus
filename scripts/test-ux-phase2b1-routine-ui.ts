@@ -86,10 +86,78 @@ async function main() {
     await page.goto(`${BASE}/routine`, { waitUntil: "networkidle2", timeout: 120000 });
     await page.waitForSelector('[data-testid="routine-catalog-picker"]', { timeout: 120000 });
 
-    const dateValue = await page.$eval('[data-testid="routine-work-date"]', (el: any) => el.value);
+    const today = todayInVietnam();
+    const entryDateValue = await page.$eval('[data-testid="routine-entry-date"]', (el: any) => el.value);
+    const filterDateValue = await page.$eval('[data-testid="routine-filter-date"]', (el: any) => el.value);
     const shiftValue = await page.$eval('[data-testid="routine-work-shift"]', (el: any) => el.value);
-    check("1. Ngày mặc định là hôm nay theo giờ VN", dateValue === todayInVietnam(), `${dateValue}`);
+    check("1. Ngày ghi nhận mặc định là hôm nay theo giờ VN", entryDateValue === today, `${entryDateValue}`);
+    check("1. Bộ lọc danh sách mặc định hôm nay", filterDateValue === today, `${filterDateValue}`);
     check("1. Ca mặc định là CA_NGAY", shiftValue === "CA_NGAY", shiftValue);
+
+    const listTitle = await page.$eval('[data-testid="routine-list-title"]', (el) => el.textContent || "");
+    check(
+      "1b. Tiêu đề danh sách không gộp ca (ca chỉ hiển thị trên từng dòng)",
+      listTitle.includes("Ngày") && !/·\s*Ca\b/.test(listTitle),
+      listTitle.trim()
+    );
+    const filterAllChecked = await page.$eval(
+      '[data-testid="routine-filter-all"]',
+      (el: any) => el.checked
+    );
+    check("1b. Mặc định không bật 'Tất cả ngày'", filterAllChecked === false);
+
+    // Đổi ngày ghi nhận KHÔNG được tự đổi bộ lọc xem danh sách.
+    const [todayYear, todayMonth, todayDay] = today.split("-").map(Number);
+    const yesterday = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay - 1))
+      .toISOString()
+      .slice(0, 10);
+    await page.evaluate((value) => {
+      const input = document.querySelector('[data-testid="routine-entry-date"]') as HTMLInputElement;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+      setter.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, yesterday);
+    await page.waitForSelector('[data-testid="routine-entry-date-warning"]', { timeout: 30000 });
+    const filterAfterEntryDateChange = await page.$eval(
+      '[data-testid="routine-filter-date"]',
+      (el: any) => el.value
+    );
+    check(
+      "1c. Đổi ngày ghi nhận không đổi ngày lọc; có cảnh báo backdate",
+      filterAfterEntryDateChange === today,
+      `filter=${filterAfterEntryDateChange}`
+    );
+    await page.evaluate(() => {
+      document.querySelector<HTMLButtonElement>('[data-testid="routine-entry-date-today"]')?.click();
+    });
+    await page.waitForFunction(
+      () => !document.querySelector('[data-testid="routine-entry-date-warning"]'),
+      { timeout: 30000 }
+    );
+
+    // "Tất cả ngày": xem lịch sử, khóa ô ngày lọc.
+    await page.evaluate(() => {
+      document.querySelector<HTMLInputElement>('[data-testid="routine-filter-all"]')?.click();
+    });
+    await page.waitForFunction(
+      () =>
+        (document.querySelector('[data-testid="routine-filter-date"]') as HTMLInputElement)?.disabled === true,
+      { timeout: 30000 }
+    );
+    const allDatesTitle = await page.$eval(
+      '[data-testid="routine-list-title"]',
+      (el) => el.textContent || ""
+    );
+    check("1d. Có chế độ 'Tất cả ngày' khi xem lịch sử", allDatesTitle.includes("Tất cả ngày"));
+    await page.evaluate(() => {
+      document.querySelector<HTMLInputElement>('[data-testid="routine-filter-all"]')?.click();
+    });
+    await page.waitForFunction(
+      () =>
+        (document.querySelector('[data-testid="routine-filter-date"]') as HTMLInputElement)?.disabled === false,
+      { timeout: 30000 }
+    );
 
     for (const entry of txEntries) {
       await page.click('[data-testid="routine-tx-search"]');

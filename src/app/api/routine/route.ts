@@ -7,6 +7,8 @@ import { recordAuditEvent } from "@/server/audit";
 import { getIsoWeekFromDate } from "@/lib/period-helper";
 import { parseDateOnly, todayInVietnam } from "@/server/work-dates";
 import { getCatalogEntrySelectionError } from "@/server/work-catalog";
+import { resolveReportingPeriod } from "@/server/reporting-period";
+import { isDateWithinPeriod } from "@/lib/period-helper";
 
 export async function GET(req: NextRequest) {
   try {
@@ -360,8 +362,12 @@ export async function POST(req: NextRequest) {
     // Ngày/ca làm việc: mặc định ngày VN hôm nay + CA_NGAY; không suy đoán ca thực tế.
     const parsedWorkDate = parseDateOnly(inputWorkDate);
     if (!parsedWorkDate.ok) return jsonError(parsedWorkDate.message, 400);
+    // Chỉ coi là "ngày do client chọn" khi thực sự có giá trị; bỏ trống vẫn giữ
+    // hành vi cũ (kỳ do client gửi hoặc kỳ tuần gần nhất).
+    const hasExplicitWorkDate = !!parsedWorkDate.value;
     const workDate =
       parsedWorkDate.value ?? new Date(`${todayInVietnam()}T00:00:00.000Z`);
+    const workDateIso = workDate.toISOString().slice(0, 10);
     const normalizedShift =
       inputShift === null || inputShift === undefined || String(inputShift).trim() === ""
         ? "CA_NGAY"
@@ -468,7 +474,34 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Xác định kỳ báo cáo
+    // UX 2B1: khi client gửi ngày làm việc, kỳ PHẢI tương ứng với ngày đó.
+    // - Có periodId: chấp nhận nếu ngày nằm trong kỳ, ngược lại từ chối.
+    // - Không có periodId: phân giải kỳ tuần từ chính ngày đó bằng helper hiện hành.
+    // - Không gửi workDate: giữ nguyên hành vi cũ để backward-compatible.
     let periodId = inputPeriodId;
+    if (hasExplicitWorkDate) {
+      if (inputPeriodId) {
+        const suppliedPeriod = await prisma.reportingPeriod.findUnique({
+          where: { id: inputPeriodId },
+          select: { id: true, title: true, startAt: true, endAt: true },
+        });
+        if (!suppliedPeriod) return jsonError("Kỳ báo cáo không tồn tại", 400);
+        if (!isDateWithinPeriod(workDate, suppliedPeriod.startAt, suppliedPeriod.endAt)) {
+          return jsonError(
+            `Ngày làm việc ${workDateIso} không thuộc kỳ "${suppliedPeriod.title}" — vui lòng chọn kỳ tương ứng`,
+            400
+          );
+        }
+        periodId = suppliedPeriod.id;
+      } else {
+        const resolvedPeriod = await resolveReportingPeriod({
+          type: "WEEK",
+          date: workDateIso,
+        });
+        periodId = resolvedPeriod.id;
+      }
+    }
+
     if (!periodId) {
       const activePeriod = await prisma.reportingPeriod.findFirst({
         where: { type: "WEEK" },
@@ -582,12 +615,15 @@ export async function POST(req: NextRequest) {
 
     // 4. Thực thi Prisma Transaction nguyên tử
     const result = await prisma.$transaction(async (tx) => {
-      // 4.1 Chống trùng lặp gửi liên tục cho CÙNG một nội dung công việc (title)
+      // 4.1 Chống trùng lặp gửi liên tục cho CÙNG một nội dung công việc
+      // trong CÙNG ngày/ca (gửi hộ ngày khác không bị chặn nhầm).
       const duplicateRecent = await tx.routineEntry.findFirst({
         where: {
           personId: targetPersonId,
           periodId,
           occurrenceStatus,
+          workDate,
+          shift: normalizedShift,
           workItem: {
             title: String(finalTitle || "").trim(),
           },
@@ -603,22 +639,26 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 4.2 Chống trùng lặp xác nhận KHÔNG PHÁT SINH cho cùng nghiệp vụ trong kỳ
+      // 4.2 Chống trùng lặp xác nhận KHÔNG PHÁT SINH cho cùng nghiệp vụ
+      // trong CÙNG NGÀY + CÙNG CA (không chặn nhầm ngày khác trong cùng kỳ tuần).
       if (occurrenceStatus === "NOT_OCCURRED") {
+        const notOccurredTitle = String(finalTitle || "").trim();
         const existingNotOccurred = await tx.routineEntry.findFirst({
           where: {
             personId: targetPersonId,
             periodId,
             occurrenceStatus: "NOT_OCCURRED",
+            workDate,
+            shift: normalizedShift,
             workItem: {
-              title: title.trim(),
+              title: notOccurredTitle,
             },
           },
         });
 
         if (existingNotOccurred) {
           throw new Error(
-            `NOT_OCCURRED_EXISTS: Nghiệp vụ '${title.trim()}' đã được xác nhận không phát sinh trong kỳ này`
+            `NOT_OCCURRED_EXISTS: Nghiệp vụ '${notOccurredTitle}' đã được xác nhận không phát sinh trong cùng ngày và ca này`
           );
         }
       }
@@ -848,7 +888,7 @@ export async function POST(req: NextRequest) {
         periodId,
         formVersionId: targetFormVersion?.id || null,
         catalogEntryIds: txEntries.map((entry) => entry.id),
-        workDate: workDate.toISOString().slice(0, 10),
+        workDate: workDateIso,
         shift: normalizedShift,
       },
     });

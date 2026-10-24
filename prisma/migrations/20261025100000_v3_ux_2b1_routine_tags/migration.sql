@@ -32,15 +32,24 @@ CREATE INDEX IF NOT EXISTS "routine_entry_catalog_tags_routine_entry_id_idx"
 CREATE INDEX IF NOT EXISTS "routine_entry_catalog_tags_catalog_entry_id_idx"
   ON "routine_entry_catalog_tags"("catalog_entry_id");
 
-ALTER TABLE "routine_entry_catalog_tags"
-  ADD CONSTRAINT "routine_entry_catalog_tags_routine_entry_id_fkey"
-  FOREIGN KEY ("routine_entry_id") REFERENCES "routine_entries"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+-- Guard duplicate_object: chạy lại migration bằng tay vẫn an toàn.
+DO $$
+BEGIN
+  ALTER TABLE "routine_entry_catalog_tags"
+    ADD CONSTRAINT "routine_entry_catalog_tags_routine_entry_id_fkey"
+    FOREIGN KEY ("routine_entry_id") REFERENCES "routine_entries"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE "routine_entry_catalog_tags"
-  ADD CONSTRAINT "routine_entry_catalog_tags_catalog_entry_id_fkey"
-  FOREIGN KEY ("catalog_entry_id") REFERENCES "work_catalog_entries"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "routine_entry_catalog_tags"
+    ADD CONSTRAINT "routine_entry_catalog_tags_catalog_entry_id_fkey"
+    FOREIGN KEY ("catalog_entry_id") REFERENCES "work_catalog_entries"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- 3) Backfill ngay/ca cho du lieu cu
 UPDATE "routine_entries"

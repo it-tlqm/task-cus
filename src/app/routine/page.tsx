@@ -80,9 +80,12 @@ interface ActiveFormVersion {
 
 export default function RoutinePage() {
   const [activeTab, setActiveTab] = useState<"tab1" | "tab2" | "tab3">("tab1");
-  // Ngày ghi nhận mặc định theo lịch Việt Nam (không dùng ngày UTC của trình duyệt/máy chủ).
-  const [logDate, setLogDate] = useState(() => vnDateOnly());
+  // Ngày ghi nhận của bản ghi mới (mặc định theo lịch Việt Nam) — tách khỏi bộ lọc xem danh sách.
+  const [entryWorkDate, setEntryWorkDate] = useState(() => vnDateOnly());
   const [logShift, setLogShift] = useState<"SANG" | "CHIEU" | "CA_NGAY">("CA_NGAY");
+  // Bộ lọc danh sách: mặc định hôm nay, có thể chuyển "Tất cả ngày" để xem lịch sử.
+  const [filterDate, setFilterDate] = useState(() => vnDateOnly());
+  const [filterAllDates, setFilterAllDates] = useState(false);
   const [entries, setEntries] = useState<WorkLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{
@@ -137,12 +140,14 @@ export default function RoutinePage() {
   const [auditLoading, setAuditLoading] = useState(false);
 
   // 1. Fetch Routine entries and Active Form Version from PostgreSQL
-  const fetchRoutineData = async () => {
+  const fetchRoutineData = async (view?: { date?: string; allDates?: boolean }) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({ hideDemo: hideDemo ? "1" : "0" });
-      // UX 2B1: danh sách bám đúng ngày/ca đang chọn.
-      if (logDate) params.set("workDate", logDate);
+      // UX 2B1: bộ lọc xem danh sách độc lập với ngày ghi nhận của bản ghi mới.
+      const viewAll = view?.allDates ?? filterAllDates;
+      const viewDate = view?.date ?? filterDate;
+      if (!viewAll && viewDate) params.set("workDate", viewDate);
       const res = await fetch(`/api/routine?${params.toString()}`);
       if (!res.ok) throw new Error("Không thể tải danh sách nhật ký tác nghiệp");
       const data = await res.json();
@@ -208,11 +213,11 @@ export default function RoutinePage() {
     }
   };
 
-  // Tải lại danh sách khi đổi ngày ghi nhận (workDate là bộ lọc chính của màn hình).
+  // Tải lại danh sách khi đổi bộ lọc xem (ngày hoặc tất cả ngày).
   useEffect(() => {
     fetchRoutineData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logDate]);
+  }, [filterDate, filterAllDates]);
 
   useEffect(() => {
     // Fetch Catalog Templates (chỉ lấy các mẫu đang áp dụng)
@@ -283,7 +288,7 @@ export default function RoutinePage() {
           // F18 / UX 2B1: N tag TX + ngay/ca + danh sach SP QD1277 de xuat
           catalogEntryIds: selectedTxs.map((tag) => tag.id),
           catalogEntryId: selectedTxs[0]?.id || null, // backward compatibility
-          workDate: logDate,
+          workDate: entryWorkDate,
           shift: logShift,
           productItemId: proposedProducts[0]?.productItemId || null,
           proposedProducts,
@@ -303,8 +308,11 @@ export default function RoutinePage() {
         // UX 2B1: xóa lựa chọn sau khi lưu để bản ghi kế tiếp không bị dính tag/SP cũ.
         setSelectedTxs([]);
         setProposedProducts([]);
-        // Reload data from PostgreSQL
-        await fetchRoutineData();
+        // Chuyển bộ lọc về đúng ngày vừa lưu để thấy bản ghi mới (không đổi ngày ghi nhận).
+        const viewChanged = filterAllDates || filterDate !== entryWorkDate;
+        setFilterAllDates(false);
+        setFilterDate(entryWorkDate);
+        if (!viewChanged) await fetchRoutineData({ date: entryWorkDate, allDates: false });
       } else {
         // KEEP USER INPUT on error so user can correct and retry
         toast.error(data.error || "Không thể lưu nhật ký vào cơ sở dữ liệu");
@@ -341,7 +349,7 @@ export default function RoutinePage() {
           templateId: null,
           catalogEntryId: null,
           catalogEntryIds: [],
-          workDate: logDate,
+          workDate: entryWorkDate,
           shift: logShift,
           productItemId: null,
           proposedProducts: [],
@@ -352,7 +360,10 @@ export default function RoutinePage() {
 
       if (res.ok && data.success) {
         toast.success(`Đã ghi nhận: ${isNoActivity ? "Ca không có hoạt động tác nghiệp" : "Ca không phát sinh vụ việc vi phạm/tồn đọng"}!`);
-        await fetchRoutineData();
+        const viewChanged = filterAllDates || filterDate !== entryWorkDate;
+        setFilterAllDates(false);
+        setFilterDate(entryWorkDate);
+        if (!viewChanged) await fetchRoutineData({ date: entryWorkDate, allDates: false });
       } else {
         toast.error(data.error || "Không thể ghi nhận xác nhận không phát sinh");
       }
@@ -435,7 +446,9 @@ export default function RoutinePage() {
                   <span className="material-symbols-outlined text-[20px]">task_alt</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Đầu việc đã nạp DB</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    {filterAllDates ? "Tổng bản ghi đã nạp" : "Bản ghi trong ngày"}
+                  </span>
                   <span className="font-headline-sm text-headline-sm text-primary font-bold">
                     {entries.length} <span className="font-body-md text-label-sm text-on-surface-variant font-normal">Bản ghi</span>
                   </span>
@@ -446,7 +459,9 @@ export default function RoutinePage() {
                   <span className="material-symbols-outlined text-[20px]">assignment_turned_in</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Không phát sinh</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    Không phát sinh {filterAllDates ? "(tất cả)" : "(trong ngày)"}
+                  </span>
                   <span className="font-headline-sm text-headline-sm text-status-warning flex items-center gap-1 font-bold">
                     {entries.filter((e) => e.occurrenceStatus === "NOT_OCCURRED").length} việc
                   </span>
@@ -469,7 +484,7 @@ export default function RoutinePage() {
                 <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
                 <span>1. Ghi nhận nhật ký hàng ngày (Cán bộ)</span>
                 <span className="px-2 py-0.2 rounded-full bg-secondary-fixed text-on-secondary-fixed text-label-sm font-label-sm font-bold">
-                  {entries.length} việc
+                  {entries.length} việc đang xem
                 </span>
               </button>
               {canManageForms && (
@@ -519,15 +534,35 @@ export default function RoutinePage() {
                   <span className="material-symbols-outlined text-secondary text-[20px]">calendar_today</span>
                   <div className="flex flex-col">
                     <span className="font-label-sm text-[11px] text-on-surface-variant uppercase font-bold">
-                      Ngày ghi nhận
+                      Ngày ghi nhận (quyết định kỳ)
                     </span>
-                    <input
-                      type="date"
-                      data-testid="routine-work-date"
-                      value={logDate}
-                      onChange={(e) => setLogDate(e.target.value)}
-                      className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        data-testid="routine-entry-date"
+                        value={entryWorkDate}
+                        onChange={(e) => setEntryWorkDate(e.target.value)}
+                        className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
+                      />
+                      {entryWorkDate !== vnDateOnly() && (
+                        <button
+                          type="button"
+                          data-testid="routine-entry-date-today"
+                          onClick={() => setEntryWorkDate(vnDateOnly())}
+                          className="text-[10px] font-semibold text-secondary hover:underline"
+                        >
+                          Hôm nay
+                        </button>
+                      )}
+                    </div>
+                    {entryWorkDate !== vnDateOnly() && (
+                      <span
+                        data-testid="routine-entry-date-warning"
+                        className="text-[10px] text-status-warning"
+                      >
+                        Đang ghi cho ngày khác hôm nay — bản ghi vào kỳ của ngày đã chọn.
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -792,11 +827,47 @@ export default function RoutinePage() {
 
             {/* Bảng Danh Sách Nhật Ký Đã Ghi Nhận */}
             <div data-tour="log-list" className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
-              <div className="p-space-md bg-surface-subtle border-b border-border-default flex items-center justify-between">
-                <span className="font-headline-sm text-primary font-bold">
-                  Nhật Ký Đã Khai Báo — Ngày {formatVnDate(logDate)} · Ca {SHIFT_LABELS[logShift]}
+              <div className="p-space-md bg-surface-subtle border-b border-border-default flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+                <span data-testid="routine-list-title" className="font-headline-sm text-primary font-bold">
+                  Nhật Ký Đã Khai Báo —{" "}
+                  {filterAllDates ? "Tất cả ngày" : `Ngày ${formatVnDate(filterDate)}`}
                 </span>
-                <span className="text-xs text-outline">{entries.length} bản ghi thực tế</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-on-surface-variant font-semibold">Lọc danh sách</span>
+                  <input
+                    type="date"
+                    data-testid="routine-filter-date"
+                    value={filterDate}
+                    disabled={filterAllDates}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!value) {
+                        setFilterAllDates(true);
+                      } else {
+                        setFilterAllDates(false);
+                        setFilterDate(value);
+                      }
+                    }}
+                    className="h-8 px-2 rounded bg-surface-container-lowest text-xs border border-border-subtle disabled:opacity-50"
+                  />
+                  <label className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer">
+                    <input
+                      type="checkbox"
+                      data-testid="routine-filter-all"
+                      checked={filterAllDates}
+                      onChange={(e) => {
+                        const all = e.target.checked;
+                        setFilterAllDates(all);
+                        if (!all && !filterDate) setFilterDate(entryWorkDate || vnDateOnly());
+                      }}
+                      className="w-3.5 h-3.5 rounded accent-[#006a62]"
+                    />
+                    Tất cả ngày
+                  </label>
+                  <span className="text-xs text-outline">
+                    {entries.length} bản ghi {filterAllDates ? "đã nạp" : "trong ngày"}
+                  </span>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -823,7 +894,10 @@ export default function RoutinePage() {
                         <td colSpan={6} className="py-12 text-center text-on-surface-variant">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[36px] text-outline">history_edu</span>
-                            <p className="font-semibold text-primary">Chưa có nhật ký nào được ghi nhận cho ngày đã chọn</p>
+                            <p className="font-semibold text-primary">
+                              Chưa có nhật ký nào được ghi nhận cho{" "}
+                              {filterAllDates ? "bất kỳ ngày nào" : "ngày đang lọc"}
+                            </p>
                             <p className="text-xs text-outline">
                               Đồng chí có thể nhập nội dung thực tế ở form trên hoặc bấm "Xác nhận 1-chạm không phát sinh".
                             </p>

@@ -12,6 +12,7 @@ import { createRequire } from "node:module";
 import { assertLocalTestDatabase } from "./lib/test-db-safety";
 import { todayInVietnam } from "../src/server/work-dates";
 import { computeScorePreview } from "../src/server/monthly-score";
+import { getIsoWeekFromDate, isDateWithinPeriod } from "../src/lib/period-helper";
 
 const creq = createRequire(import.meta.url);
 const { PrismaClient } = creq("@prisma/client");
@@ -58,6 +59,8 @@ const H = (token: string) => ({
 
 const createdEntryIds: string[] = [];
 const createdWorkItemIds: string[] = [];
+const createdWeekPeriodIds: string[] = [];
+let lockedPeriodBackup: { id: string; isLocked: boolean } | null = null;
 
 async function postRoutine(token: string, body: Record<string, unknown>) {
   const res = await fetch(`${BASE}/api/routine`, {
@@ -102,6 +105,20 @@ async function main() {
         )
       ),
     `legacy=${legacyEntries.length}`
+  );
+
+  // Cùng biểu thức backfill của migration: timestamp UTC gần 23:00Z phải sang NGÀY KẾ TIẾP ở VN.
+  const vnDateNearMidnight = await prisma.$queryRawUnsafe<Array<{ vn_date: string }>>(
+    `SELECT (('2026-10-15 23:30:00'::timestamp AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh')::date::text AS vn_date`
+  );
+  const vnDateBeforeMidnight = await prisma.$queryRawUnsafe<Array<{ vn_date: string }>>(
+    `SELECT (('2026-10-15 16:30:00'::timestamp AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh')::date::text AS vn_date`
+  );
+  check(
+    "0. Backfill dùng ngày VN: 23:30Z → hôm sau, 16:30Z → cùng ngày",
+    vnDateNearMidnight[0]?.vn_date === "2026-10-16" &&
+      vnDateBeforeMidnight[0]?.vn_date === "2026-10-15",
+    `${vnDateNearMidnight[0]?.vn_date} / ${vnDateBeforeMidnight[0]?.vn_date}`
   );
 
   // ---- Chuẩn bị người dùng/kỳ/danh mục ----
@@ -416,6 +433,130 @@ async function main() {
       score.score70 === 56.38 &&
       score.official === false
   );
+
+  // ---- 8. workDate quyết định kỳ báo cáo (không dùng kỳ tuần mới nhất) ----
+  const periodDate = "2025-03-10";
+  const periodDateNextDay = "2025-03-11";
+  const expectedWeek = getIsoWeekFromDate(new Date(`${periodDate}T12:00:00+07:00`));
+  const periodBefore = await prisma.reportingPeriod.findFirst({
+    where: { type: "WEEK", startAt: expectedWeek.startAt },
+    select: { id: true },
+  });
+
+  const periodCreate = await postRoutine(token, {
+    title: `${TMP} kỳ theo ngày ${Date.now()}`,
+    occurrenceStatus: "OCCURRED",
+    workDate: periodDate,
+    shift: "SANG",
+  });
+  const periodEntryId = periodCreate.json?.routineEntry?.id;
+  if (periodEntryId) createdEntryIds.push(periodEntryId);
+  const periodEntry = periodEntryId
+    ? await prisma.routineEntry.findUnique({
+        where: { id: periodEntryId },
+        include: { workItem: true },
+      })
+    : null;
+  if (periodEntry?.workItemId) createdWorkItemIds.push(periodEntry.workItemId);
+  const resolvedPeriod = periodEntry
+    ? await prisma.reportingPeriod.findUnique({ where: { id: periodEntry.periodId } })
+    : null;
+  check(
+    "8. workDate lịch sử tự phân giải đúng kỳ TUẦN tương ứng",
+    periodCreate.res.status === 201 &&
+      resolvedPeriod?.type === "WEEK" &&
+      resolvedPeriod.startAt.getTime() === expectedWeek.startAt.getTime() &&
+      resolvedPeriod.endAt.getTime() === expectedWeek.endInclusive.getTime(),
+    `HTTP ${periodCreate.res.status} period=${resolvedPeriod?.title || "?"}`
+  );
+  check(
+    "8. Ngày làm việc nằm trong kỳ đã phân giải",
+    !!periodEntry &&
+      !!resolvedPeriod &&
+      isDateWithinPeriod(periodEntry.workDate!, resolvedPeriod.startAt, resolvedPeriod.endAt)
+  );
+  if (!periodBefore && resolvedPeriod && resolvedPeriod.startAt.getTime() === expectedWeek.startAt.getTime()) {
+    createdWeekPeriodIds.push(resolvedPeriod.id);
+  }
+
+  // Kỳ do client gửi nhưng KHÔNG chứa workDate → từ chối, không ghi sai kỳ.
+  const mismatchPeriod = await postRoutine(token, {
+    periodId: period!.id,
+    title: `${TMP} sai kỳ ${Date.now()}`,
+    occurrenceStatus: "OCCURRED",
+    workDate: periodDate,
+  });
+  check("8. Từ chối workDate nằm ngoài periodId client gửi", mismatchPeriod.res.status === 400, `HTTP ${mismatchPeriod.res.status}`);
+
+  // Kỳ đã chốt (isLocked) phải chặn ghi, kể cả khi ngày tự phân giải.
+  if (resolvedPeriod) {
+    lockedPeriodBackup = { id: resolvedPeriod.id, isLocked: resolvedPeriod.isLocked };
+    await prisma.reportingPeriod.update({
+      where: { id: resolvedPeriod.id },
+      data: { isLocked: true },
+    });
+    const lockedRes = await postRoutine(token, {
+      title: `${TMP} kỳ khóa ${Date.now()}`,
+      occurrenceStatus: "OCCURRED",
+      workDate: periodDate,
+    });
+    check("8. Kỳ đã chốt trả 423 khi workDate tự phân giải vào kỳ đó", lockedRes.res.status === 423, `HTTP ${lockedRes.res.status}`);
+    await prisma.reportingPeriod.update({
+      where: { id: resolvedPeriod.id },
+      data: { isLocked: resolvedPeriod.isLocked },
+    });
+    lockedPeriodBackup = null;
+  }
+
+  // ---- 9. NOT_OCCURRED: cùng kỳ nhưng khác ngày/ca được phép ----
+  const notOccurredTitle = `${TMP} không phát sinh theo ngày ${Date.now()}`;
+  const notOccurredBase = {
+    title: notOccurredTitle,
+    occurrenceStatus: "NOT_OCCURRED",
+    shift: "CA_NGAY",
+  };
+  const monday = await postRoutine(token, { ...notOccurredBase, workDate: periodDate });
+  const tuesday = await postRoutine(token, { ...notOccurredBase, workDate: periodDateNextDay });
+  for (const created of [monday, tuesday]) {
+    const id = created.json?.routineEntry?.id;
+    if (id) createdEntryIds.push(id);
+  }
+  check(
+    "9. NOT_OCCURRED thứ Hai + thứ Ba trong cùng kỳ đều được ghi",
+    monday.res.status === 201 && tuesday.res.status === 201,
+    `HTTP ${monday.res.status}/${tuesday.res.status}`
+  );
+
+  const duplicateImmediate = await postRoutine(token, { ...notOccurredBase, workDate: periodDate });
+  check("9. NOT_OCCURRED trùng ngày/ca bị chặn ngay", duplicateImmediate.res.status === 409, `HTTP ${duplicateImmediate.res.status}`);
+
+  await new Promise((resolve) => setTimeout(resolve, 3200));
+  const duplicateAfterWindow = await postRoutine(token, { ...notOccurredBase, workDate: periodDate });
+  check(
+    "9. Unique NOT_OCCURRED theo ngày/ca vẫn chặn sau cửa sổ 3 giây",
+    duplicateAfterWindow.res.status === 409 &&
+      String(duplicateAfterWindow.json?.error || "").includes("cùng ngày và ca"),
+    `HTTP ${duplicateAfterWindow.res.status} ${duplicateAfterWindow.json?.error || ""}`
+  );
+
+  const otherShift = await postRoutine(token, { ...notOccurredBase, workDate: periodDate, shift: "SANG" });
+  const otherShiftId = otherShift.json?.routineEntry?.id;
+  if (otherShiftId) createdEntryIds.push(otherShiftId);
+  check("9. NOT_OCCURRED cùng ngày nhưng khác ca được phép", otherShift.res.status === 201, `HTTP ${otherShift.res.status}`);
+
+  // Gắn workItemId của các entry NOT_OCCURRED vào cleanup (không xóa work item của người khác).
+  const notOccurredIds = [monday, tuesday, otherShift]
+    .map((created) => created.json?.routineEntry?.id)
+    .filter(Boolean);
+  if (notOccurredIds.length > 0) {
+    const rows = await prisma.routineEntry.findMany({
+      where: { id: { in: notOccurredIds } },
+      select: { workItemId: true },
+    });
+    for (const row of rows) {
+      if (row.workItemId) createdWorkItemIds.push(row.workItemId);
+    }
+  }
 }
 
 async function cleanup() {
@@ -427,11 +568,26 @@ async function cleanup() {
       })
       .catch(() => {});
   }
+  if (lockedPeriodBackup) {
+    await prisma.reportingPeriod
+      .update({
+        where: { id: lockedPeriodBackup.id },
+        data: { isLocked: lockedPeriodBackup.isLocked },
+      })
+      .catch(() => {});
+  }
   if (createdEntryIds.length) {
     await prisma.routineEntry.deleteMany({ where: { id: { in: createdEntryIds } } }).catch(() => {});
   }
   if (createdWorkItemIds.length) {
     await prisma.personalWorkItem.deleteMany({ where: { id: { in: createdWorkItemIds } } }).catch(() => {});
+  }
+  // Chỉ xóa kỳ tuần do test tạo và đã không còn bản ghi nào tham chiếu.
+  for (const periodId of createdWeekPeriodIds) {
+    const refs = await prisma.routineEntry.count({ where: { periodId } }).catch(() => 1);
+    if (refs === 0) {
+      await prisma.reportingPeriod.delete({ where: { id: periodId } }).catch(() => {});
+    }
   }
 }
 
