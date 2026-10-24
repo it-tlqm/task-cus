@@ -15,7 +15,9 @@ const contentSecurityPolicy = [
   `connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com${
     isDev ? " ws://localhost:* ws://127.0.0.1:*" : ""
   }`,
-  "frame-ancestors 'none'",
+  // Cho phép nhúng cùng origin (xem PDF đính kèm trong iframe) nhưng chặn
+  // website bên ngoài nhúng ứng dụng để clickjacking.
+  "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
@@ -45,7 +47,7 @@ const nextConfig = {
         headers: [
           { key: "Content-Security-Policy", value: contentSecurityPolicy },
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         ],

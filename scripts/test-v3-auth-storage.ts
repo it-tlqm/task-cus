@@ -71,10 +71,26 @@ function sourceLevelChecks() {
     "login page imports clearPermissionsCache",
     /import\s*\{[^}]*clearPermissionsCache[^}]*\}\s*from\s*["']@\/hooks\/usePermissions["']/.test(login)
   );
+  check(
+    "login page removes legacy auth keys after success",
+    login.includes('localStorage.removeItem("token")') && login.includes('localStorage.removeItem("currentUser")')
+  );
 
-  check("change-password page does not use localStorage", !/localStorage\s*[.\[]/.test(changePassword));
   check("change-password page does not set localStorage.token", !WRITE_TOKEN.test(changePassword));
   check("change-password page does not set localStorage.currentUser", !WRITE_CURRENT_USER.test(changePassword));
+  check(
+    "change-password page removes legacy auth keys",
+    changePassword.includes('localStorage.removeItem("token")') &&
+      changePassword.includes('localStorage.removeItem("currentUser")')
+  );
+
+  const appShell = read("src/components/layout/AppShell.tsx");
+  check(
+    "AppShell purges legacy auth keys on mount",
+    appShell.includes('localStorage.removeItem("token")') &&
+      appShell.includes('localStorage.removeItem("currentUser")') &&
+      /useEffect\(\(\)\s*=>\s*\{[\s\S]{0,400}?removeItem\("token"\)/.test(appShell)
+  );
 
   const offenders: string[] = [];
   for (const file of walk(path.join(ROOT, "src"))) {
@@ -92,7 +108,9 @@ function sourceLevelChecks() {
   check("next.config.mjs configures Content-Security-Policy", config.includes('"Content-Security-Policy"'));
   check("next.config.mjs configures Strict-Transport-Security", config.includes('"Strict-Transport-Security"'));
   check("CSP keeps default-src 'self'", config.includes('"default-src \'self\'"'));
-  check("CSP keeps frame-ancestors 'none'", config.includes('"frame-ancestors \'none\'"'));
+  check("CSP allows same-origin framing for PDF preview", config.includes('"frame-ancestors \'self\'"'));
+  check("CSP does not deny same-origin framing", !config.includes('"frame-ancestors \'none\'"'));
+  check("X-Frame-Options allows same-origin preview", config.includes('"X-Frame-Options", value: "SAMEORIGIN"'));
   check("CSP keeps base-uri 'self'", config.includes('"base-uri \'self\'"'));
   check("CSP keeps form-action 'self'", config.includes('"form-action \'self\'"'));
   check("CSP allows Supabase Storage images", config.includes("https://*.supabase.co"));
@@ -104,6 +122,15 @@ function sourceLevelChecks() {
     "CSP only relaxes unsafe-eval in development",
     /isDev\s*\?\s*"\s*'unsafe-eval'"/.test(config) || config.includes(`isDev ? " 'unsafe-eval'"`)
   );
+
+  const attachmentFileRoute = read("src/app/api/tasks/[id]/attachments/[attachmentId]/file/route.ts");
+  check(
+    "attachment file route serves PDF inline (iframe-safe)",
+    attachmentFileRoute.includes("application\\/pdf") && attachmentFileRoute.includes('"inline"')
+  );
+  for (const pagePath of ["src/app/approvals/page.tsx", "src/app/my-work/page.tsx", "src/app/tasks/[id]/page.tsx"]) {
+    check(`${pagePath} previews attachments in an iframe`, read(pagePath).includes("<iframe"));
+  }
 }
 
 async function fetchServer(pathname: string, init: RequestInit = {}) {
@@ -130,19 +157,29 @@ async function headerChecks(): Promise<boolean> {
   check("/login has Content-Security-Policy", csp.length > 0);
   check("CSP has default-src 'self'", csp.includes("default-src 'self'"));
   check("CSP has script-src 'self' 'unsafe-inline'", /script-src[^;]*'self'[^;]*'unsafe-inline'/.test(csp));
-  check("CSP has frame-ancestors 'none'", csp.includes("frame-ancestors 'none'"));
+  check("CSP has frame-ancestors 'self'", csp.includes("frame-ancestors 'self'"));
   check("CSP has base-uri 'self'", csp.includes("base-uri 'self'"));
   check("CSP has form-action 'self'", csp.includes("form-action 'self'"));
   check("CSP allows Supabase images", /img-src[^;]*https:\/\/\*\.supabase\.co/.test(csp));
   check("CSP allows Google Fonts", /font-src[^;]*https:\/\/fonts\.gstatic\.com/.test(csp) && /style-src[^;]*https:\/\/fonts\.googleapis\.com/.test(csp));
   check("CSP allows AI + Supabase connect", /connect-src[^;]*https:\/\/\*\.supabase\.co/.test(csp) && csp.includes("https://generativelanguage.googleapis.com"));
   check("/login has Strict-Transport-Security", hsts.includes("max-age="));
-  check("X-Frame-Options is preserved", res.headers.get("x-frame-options") === "DENY");
+  check("X-Frame-Options allows same-origin preview", res.headers.get("x-frame-options") === "SAMEORIGIN");
   check("X-Content-Type-Options is preserved", res.headers.get("x-content-type-options") === "nosniff");
   check("Referrer-Policy is preserved", !!res.headers.get("referrer-policy"));
 
   const me = await fetchServer("/api/auth/me");
   check("/api/auth/me responds 401 without cookie", me.status === 401, `status ${me.status}`);
+
+  // Tuyến tệp đính kèm được nhúng iframe trên approvals/my-work/tasks — header
+  // toàn cục phải cho phép cùng origin (401 khi không có cookie là bình thường).
+  const attachmentFile = await fetchServer("/api/tasks/__test__/attachments/__test__/file");
+  const attachmentCsp = attachmentFile.headers.get("content-security-policy") || "";
+  check(
+    "attachment file route is frameable same-origin",
+    attachmentFile.headers.get("x-frame-options") === "SAMEORIGIN" && attachmentCsp.includes("frame-ancestors 'self'"),
+    `status ${attachmentFile.status}, xfo=${attachmentFile.headers.get("x-frame-options")}`
+  );
 
   console.log(`[INFO] CSP: ${csp}`);
   return true;
@@ -193,6 +230,15 @@ async function browserChecks(serverAvailable: boolean) {
     if (response.status() >= 400) failedResponses.push(`${response.status()} ${response.url()}`);
   });
   await page.evaluateOnNewDocument(() => {
+    // Gieo khoá phiên kiểu "bản cũ" đúng một lần cho mỗi tab (sessionStorage
+    // sống qua điều hướng) để kiểm tra purge khi mount và khi đăng nhập.
+    try {
+      if (!sessionStorage.getItem("__task21_legacy_seeded")) {
+        sessionStorage.setItem("__task21_legacy_seeded", "1");
+        localStorage.setItem("token", "legacy-token-task-2.1");
+        localStorage.setItem("currentUser", JSON.stringify({ username: "legacy" }));
+      }
+    } catch {}
     (window as any).__cspViolations = [];
     document.addEventListener("securitypolicyviolation", (event: any) => {
       (window as any).__cspViolations.push({
@@ -211,9 +257,20 @@ async function browserChecks(serverAvailable: boolean) {
     await page.setViewport({ width: 1440, height: 900 });
     await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle2", timeout: 60_000 });
     await page.waitForSelector("#usernameInput", { timeout: 30_000 });
+    // AppShell purge chạy trong useEffect sau khi mount.
+    await page
+      .waitForFunction(
+        () => localStorage.getItem("token") === null && localStorage.getItem("currentUser") === null,
+        { timeout: 5_000 }
+      )
+      .catch(() => {});
 
     const loginStorage = await page.evaluate(() => Object.keys(localStorage));
-    check("plain /login load stores no token/currentUser", !loginStorage.includes("token") && !loginStorage.includes("currentUser"));
+    check(
+      "legacy token/currentUser are purged on mount (even on /login)",
+      !loginStorage.includes("token") && !loginStorage.includes("currentUser"),
+      JSON.stringify(loginStorage)
+    );
 
     const logo = await page.evaluate(() => {
       const img = Array.from(document.images).find((i) => i.src.includes("logo-haiquan"));
@@ -233,6 +290,12 @@ async function browserChecks(serverAvailable: boolean) {
     if (!TEST_USERNAME || !TEST_PASSWORD) {
       skip("login flow", "set TEST_USERNAME/TEST_PASSWORD (local test account) to enable");
     } else {
+      // Gieo lại khoá "bản cũ" ngay trước khi đăng nhập để chứng minh chính
+      // luồng login dọn chúng (AppShell đã mount nên effect purge không chạy lại).
+      await page.evaluate(() => {
+        localStorage.setItem("token", "legacy-token-before-login");
+        localStorage.setItem("currentUser", JSON.stringify({ username: "legacy" }));
+      });
       await page.type("#usernameInput", TEST_USERNAME);
       await page.type("#passwordInput", TEST_PASSWORD);
       await page.click("#submitBtn");

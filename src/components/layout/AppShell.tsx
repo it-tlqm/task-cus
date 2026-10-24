@@ -27,6 +27,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  // Dọn khoá phiên do bản cũ để lại: token từng được lưu trong localStorage nên
+  // trình duyệt đã đăng nhập trước bản vá vẫn có thể còn bearer token đọc được
+  // qua XSS. Chạy một lần khi app mount (bao gồm cả /login).
+  useEffect(() => {
+    try {
+      localStorage.removeItem("token");
+      localStorage.removeItem("currentUser");
+    } catch {}
+  }, []);
+
   // Đổi trang thì đóng drawer mobile, tránh che nội dung mới.
   useEffect(() => {
     setMobileMenuOpen(false);

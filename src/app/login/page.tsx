@@ -41,6 +41,9 @@ export default function LoginPage() {
       // Phiên đăng nhập chỉ dùng cookie HttpOnly do API đặt — KHÔNG lưu JWT/người dùng
       // vào localStorage (tránh lộ token qua XSS). Chỉ xóa cache quyền của tài khoản cũ.
       clearPermissionsCache();
+      // Dọn khoá phiên do bản cũ để lại (nếu người dùng chưa tải lại trang).
+      localStorage.removeItem("token");
+      localStorage.removeItem("currentUser");
 
       toast.success("Đăng nhập thành công! Đang chuyển hướng...");
       // Tài khoản khởi tạo: bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
