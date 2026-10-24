@@ -38,14 +38,9 @@ export default function LoginPage() {
         throw new Error(data.error || "Thông tin tài khoản hoặc mật khẩu không chính xác");
       }
 
-      if (data.token) {
-        // Xóa cache quyền của tài khoản cũ (cùng tab) trước khi lưu phiên mới
-        clearPermissionsCache();
-        localStorage.removeItem("token");
-        localStorage.removeItem("currentUser");
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("currentUser", JSON.stringify(data.user));
-      }
+      // Phiên đăng nhập chỉ dùng cookie HttpOnly do API đặt — KHÔNG lưu JWT/người dùng
+      // vào localStorage (tránh lộ token qua XSS). Chỉ xóa cache quyền của tài khoản cũ.
+      clearPermissionsCache();
 
       toast.success("Đăng nhập thành công! Đang chuyển hướng...");
       // Tài khoản khởi tạo: bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.

@@ -93,8 +93,7 @@ export default function ChangePasswordPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Không đổi được mật khẩu.");
       // Đã đổi mật khẩu → phiên cũ không còn giá trị: đăng nhập lại.
-      localStorage.removeItem("token");
-      localStorage.removeItem("currentUser");
+      // Không cần dọn localStorage vì ứng dụng không còn lưu token/người dùng ở đó.
       router.push("/login?changed=1");
       router.refresh();
     } catch (err: any) {

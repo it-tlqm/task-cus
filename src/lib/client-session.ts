@@ -14,6 +14,7 @@ export async function clearClientSession(): Promise<void> {
   clearPermissionsCache();
 
   if (typeof window !== "undefined") {
+    // Dọn khoá phiên do bản cũ để lại (bản hiện tại chỉ dùng cookie HttpOnly).
     localStorage.removeItem("token");
     localStorage.removeItem("currentUser");
   }
