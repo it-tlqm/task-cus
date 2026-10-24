@@ -1,9 +1,10 @@
 # KẾ HOẠCH RELEASE NHANH V3 — 23/10/2026
 
-**Trạng thái:** `DEPLOYED — TECHNICAL SMOKE PASS — UAT OWNER PENDING` (24/10/2026)  
-**Bằng chứng deploy:** `docs/evidence/release/PRODUCTION_DEPLOY_2026-10-24.md`  
-**Cập nhật:** 24/10/2026 — bổ sung V3.1 (Phase 3 + quick approve), YC-10/YC-11 vẫn OFF.  
-**RC SHA:** `1765aab` (V3.1 — Phase 3 + quick approve; runtime code)  
+**Trạng thái:** `V3.2 DEPLOYED — TECHNICAL SMOKE PASS — UAT OWNER PENDING` (24/10/2026)  
+**Bằng chứng deploy V3.2:** `docs/evidence/release/PRODUCTION_DEPLOY_V32_2026-10-24.md`  
+**Bằng chứng deploy V3.1:** `docs/evidence/release/PRODUCTION_DEPLOY_2026-10-24.md`  
+**Cập nhật:** 24/10/2026 — V3.2 decisions (D5-A/B1-A/B2-A/C1-A/E8-A/E12-A/E13) đã deploy; YC-10/YC-11 vẫn OFF.  
+**RC SHA:** `3ff30aa` (V3.2; V3.1 runtime `1765aab`)  
 **Nhánh:** `codex/v3-integration-yc01-13`  
 **Chế độ:** release nhanh, giữ nguyên phạm vi đã merge; các phần nghiệp vụ chưa chốt để sau.  
 **Production:** chưa ghi, chưa deploy, chưa merge `main`.
@@ -12,6 +13,8 @@
 > Điều kiện bắt buộc: có quyền đọc Production DB/snapshot, backup đã kiểm tra restore, UAT sign-off và lệnh release riêng.
 
 ---
+
+> **V3.2 production (24/10/2026):** deployment `dpl_HjAkRQJT7iHQ6szfzNxxRfqLvj9V`; migration `20261023200000_v32_metrics_decisions` PASS; 17 target rules; counts unchanged; flags YC-10/YC-11 OFF. Bằng chứng: `docs/evidence/release/PRODUCTION_DEPLOY_V32_2026-10-24.md`. Rollback code: `dpl_Gg2qYjXRYzu9tw3ZUry2LLQy89Yw` (V3.1).
 
 ## 1. PHẠM VI RELEASE
 
@@ -104,6 +107,7 @@
 | 4 | `20261023170000_v3_task_participant_results` | Participant result/event/snapshot + cột `task_updates` | **Không idempotent** — chỉ chạy khi object chưa có |
 | 5 | `20261023180000_v3_approval_quality` | `quality_percent` + bảng adjustment | **Không idempotent** — chỉ chạy khi object chưa có |
 | 6 | `20261023190000_v3_approval_precheck_route` | Bảng `approval_route_snapshots` cho pre-check/final | **Không idempotent** — chỉ chạy khi object chưa có |
+| 7 | `20261023200000_v32_metrics_decisions` | Bảng `metric_target_rules` + 17 quy tắc D5/C1 | Đã áp Production 24/10/2026; additive |
 
 ### 4.2. Checksum migration (đối chiếu trước khi chạy)
 
@@ -115,6 +119,7 @@
 | `20261023170000_v3_task_participant_results` | `1dc4160d9b9efec309c8166d8007cfb7a63b0bd622a6791ef1e72265c7158108` |
 | `20261023180000_v3_approval_quality` | `0e186f397b3cee67d76d27609b9421d7abd7087146c76b198f390affcdd0c9e8` |
 | `20261023190000_v3_approval_precheck_route` | `33c26117e2899804f87890c094b488028614ec57cecb7d5a557128f6896259ce` |
+| `20261023200000_v32_metrics_decisions` | `bc969a193edf37a396f35f0511b8d86183d7b9c7fec4014a1ed6d3d0fe9fea0d` |
 
 **Thứ tự lệnh (chạy từng file, dừng ngay nếu lỗi):**
 
@@ -131,6 +136,8 @@ psql "$PROD_WRITE_URL" -v ON_ERROR_STOP=1 \
   -f prisma/migrations/20261023180000_v3_approval_quality/migration.sql
 psql "$PROD_WRITE_URL" -v ON_ERROR_STOP=1 \
   -f prisma/migrations/20261023190000_v3_approval_precheck_route/migration.sql
+psql "$PROD_WRITE_URL" -v ON_ERROR_STOP=1 \
+  -f prisma/migrations/20261023200000_v32_metrics_decisions/migration.sql
 ```
 
 Sau mỗi file: chạy lại preflight đúng section, ghi kết quả; nếu lỗi/partial → STOP, restore backup.
