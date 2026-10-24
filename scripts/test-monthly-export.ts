@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import fs from "fs";
 import { buildMonthlyWorkbook } from "../src/server/monthly-export";
 import { buildMonthlyPlan02C } from "../src/server/monthly-plan-02c";
+import { buildEvaluationWorkbook } from "../src/server/evaluation-export";
 import { MISSING_TEXT, pickPrimaryAssignment } from "../src/server/person-assignment";
 
 const OUT_DIR = "C:\\Users\\thanhnx\\AppData\\Local\\Temp\\opencode";
@@ -207,6 +208,138 @@ async function main() {
     "02C R11 điền vị trí riêng (không trùng chức vụ)",
     p11b === "Vị trí việc làm/nhiệm vụ được phân công chuyên trách: Giám sát quản lý hải quan",
     p11b
+  );
+
+  // ---------------------------------------------------------------- evaluation-export (01A/01B/02A/02B)
+  const routeSrc = fs.readFileSync("src/app/api/evaluation-export/route.ts", "utf8");
+  check(
+    "evaluation-export route dùng helper phân công chính",
+    routeSrc.includes("pickPrimaryAssignment(person.assignments")
+  );
+  check(
+    "evaluation-export route không còn assignments[0]",
+    !routeSrc.includes("assignments[0]")
+  );
+
+  const evalAssignments = [
+    { id: "secondary-newest", isPrimary: false, effectiveFrom: "2026-10-19", effectiveTo: null, position: { title: "Chức vụ thứ cấp" }, unit: { name: "Đơn vị thứ cấp" } },
+    { id: "expired", isPrimary: true, effectiveFrom: "2025-01-01", effectiveTo: "2026-09-30", position: { title: "Chức vụ hết hạn" }, unit: { name: "Đơn vị hết hạn" } },
+    { id: "active-old", isPrimary: true, effectiveFrom: "2026-01-01", effectiveTo: null, position: { title: "Chức vụ cũ" }, unit: { name: "Đơn vị cũ" } },
+    { id: "active-new", isPrimary: true, effectiveFrom: "2026-10-01", effectiveTo: null, position: { title: "Công chức nghiệp vụ Hải quan" }, unit: { name: "Hải quan cửa khẩu Quốc tế Tà Lùng" } },
+  ];
+  const evalPick = pickPrimaryAssignment(evalAssignments, asOf);
+  check("Evaluation: assignment chính mới nhất thắng", evalPick?.id === "active-new", evalPick?.id);
+
+  const evalPerson = {
+    fullName: "NGƯỜI KIỂM THỬ",
+    positionTitle: evalPick?.position.title || null,
+    unitName: evalPick?.unit.name || null,
+    commonCriteriaScore: null,
+    commonCriteriaSuggested: null,
+    selfGradeChoice: null,
+    selfGradeSuggestion: null,
+    strengths: null,
+    weaknesses: null,
+    reviewerComment: null,
+    evaluationStatus: "DRAFT",
+  };
+  const evalOut = `${OUT_DIR}\\test-evaluation-export-assignment.xlsx`;
+  const evalBuf = await buildEvaluationWorkbook({
+    template: "01A",
+    periodType: "MONTH",
+    year: 2026,
+    number: 10,
+    person: evalPerson,
+    tasks: [],
+    score: null,
+  });
+  fs.writeFileSync(evalOut, evalBuf);
+  const evalWb = new ExcelJS.Workbook();
+  await evalWb.xlsx.readFile(evalOut);
+  const eval01a = evalWb.getWorksheet("Biểu 01A (CC)")!;
+  const evalB1 = evalWb.getWorksheet("Bảng 1 (tính điểm)")!;
+  const eB8 = cellText(eval01a.getCell("B8").value);
+  const eB9 = cellText(eval01a.getCell("B9").value);
+  const eB10 = cellText(eval01a.getCell("B10").value);
+  check("Evaluation 01A B8 = họ tên", eB8 === `Họ và tên: ${evalPerson.fullName}`, eB8);
+  check(
+    "Evaluation 01A B9 = vị trí chính",
+    eB9 === `Vị trí việc làm/nhiệm vụ được phân công chuyên trách: ${evalPerson.positionTitle}`,
+    eB9
+  );
+  check(
+    "Evaluation 01A B10 = đơn vị chính",
+    eB10 === `Đơn vị công tác: ${evalPerson.unitName}`,
+    eB10
+  );
+  check(
+    "Evaluation 01A không lấy assignment thứ cấp/hết hạn/cũ",
+    ![eB9, eB10].some(
+      (text) =>
+        text.includes("thứ cấp") || text.includes("hết hạn") || text.includes("Chức vụ cũ") || text.includes("Đơn vị cũ")
+    ),
+    { eB9, eB10 }
+  );
+  check(
+    "Evaluation Bảng 1 A2 = đơn vị chính",
+    cellText(evalB1.getCell("A2").value) === evalPerson.unitName
+  );
+
+  const evalLeaderBuf = await buildEvaluationWorkbook({
+    template: "01B",
+    periodType: "MONTH",
+    year: 2026,
+    number: 10,
+    person: evalPerson,
+    tasks: [],
+    score: null,
+  });
+  const evalLeaderWb = new ExcelJS.Workbook();
+  await evalLeaderWb.xlsx.load(evalLeaderBuf);
+  const eval01b = evalLeaderWb.getWorksheet("01B tháng")!;
+  check(
+    "Evaluation 01B B9 = chức vụ chính",
+    cellText(eval01b.getCell("B9").value) === `Chức vụ, chức danh: ${evalPerson.positionTitle}`,
+    cellText(eval01b.getCell("B9").value)
+  );
+
+  const missingAssignments = [
+    { id: "expired", isPrimary: true, effectiveFrom: "2025-01-01", effectiveTo: "2026-09-30", position: { title: "Chức vụ hết hạn" }, unit: { name: "Đơn vị hết hạn" } },
+    { id: "future", isPrimary: true, effectiveFrom: "2026-11-01", effectiveTo: null, position: { title: "Chức vụ tương lai" }, unit: { name: "Đơn vị tương lai" } },
+  ];
+  const missingPick = pickPrimaryAssignment(missingAssignments, asOf);
+  check("Evaluation: không có assignment hiệu lực → null", missingPick === null, missingPick?.id);
+  const evalMissingBuf = await buildEvaluationWorkbook({
+    template: "01A",
+    periodType: "MONTH",
+    year: 2026,
+    number: 10,
+    person: {
+      ...evalPerson,
+      positionTitle: missingPick?.position.title || null,
+      unitName: missingPick?.unit.name || null,
+    },
+    tasks: [],
+    score: null,
+  });
+  const evalMissingWb = new ExcelJS.Workbook();
+  await evalMissingWb.xlsx.load(evalMissingBuf);
+  const missing01a = evalMissingWb.getWorksheet("Biểu 01A (CC)")!;
+  const missingB1 = evalMissingWb.getWorksheet("Bảng 1 (tính điểm)")!;
+  const missingB9 = cellText(missing01a.getCell("B9").value);
+  const missingB10 = cellText(missing01a.getCell("B10").value);
+  check("Evaluation thiếu vị trí → —", missingB9.endsWith(`: ${MISSING_TEXT}`), missingB9);
+  check("Evaluation thiếu đơn vị → —", missingB10.endsWith(`: ${MISSING_TEXT}`), missingB10);
+  check(
+    "Evaluation Bảng 1 thiếu dữ liệu → —, không bịa đơn vị",
+    cellText(missingB1.getCell("A2").value) === MISSING_TEXT &&
+      cellText(missingB1.getCell("A5").value).endsWith(`: ${MISSING_TEXT}`) &&
+      cellText(missingB1.getCell("A6").value).endsWith(`: ${MISSING_TEXT}`),
+    {
+      a2: cellText(missingB1.getCell("A2").value),
+      a5: cellText(missingB1.getCell("A5").value),
+      a6: cellText(missingB1.getCell("A6").value),
+    }
   );
 
   // ---------------------------------------------------------------- chẩn đoán số liệu cũ

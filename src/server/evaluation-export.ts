@@ -18,6 +18,7 @@ import ExcelJS from "exceljs";
 import { computeBang1, type ScoreResult } from "./scoring/bang1";
 import { computeForm01A } from "./scoring/bang1";
 import type { ApprovalQualityExportRow } from "./approval-quality";
+import { MISSING_TEXT } from "./person-assignment";
 
 export type EvaluationTemplate = "01A" | "01B" | "02A" | "02B";
 
@@ -134,13 +135,13 @@ function buildBang1Sheet(wb: ExcelJS.Workbook, p: ExportParams): void {
   ws.getCell("A1").value = "CHI CỤC HẢI QUAN KHU VỰC XVI";
   ws.getCell("A1").alignment = { horizontal: "center" };
   ws.mergeCells("A2:N2");
-  ws.getCell("A2").value = p.person.unitName || "HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG";
+  ws.getCell("A2").value = p.person.unitName || MISSING_TEXT;
   ws.getCell("A2").alignment = { horizontal: "center" };
   ws.getCell("A4").value = `Họ và tên: ${p.person.fullName}`;
   ws.getCell("A5").value = `Vị trí việc làm/nhiệm vụ được phân công chuyên trách: ${
-    p.person.positionTitle || "—"
+    p.person.positionTitle || MISSING_TEXT
   }`;
-  ws.getCell("A6").value = `Đơn vị công tác: ${p.person.unitName || "—"}`;
+  ws.getCell("A6").value = `Đơn vị công tác: ${p.person.unitName || MISSING_TEXT}`;
 
   ws.mergeCells("E7:N7");
   ws.getCell("E7").value = "Bảng 1. Cách tính điểm số lượng, tiến độ, chất lượng";
@@ -275,11 +276,11 @@ function buildFormSheet(wb: ExcelJS.Workbook, p: ExportParams): void {
 
   ws.getCell("B8").value = `Họ và tên: ${p.person.fullName}`;
   ws.getCell("B9").value = leader
-    ? `Chức vụ, chức danh: ${p.person.positionTitle || "—"}`
+    ? `Chức vụ, chức danh: ${p.person.positionTitle || MISSING_TEXT}`
     : `Vị trí việc làm/nhiệm vụ được phân công chuyên trách: ${
-        p.person.positionTitle || "—"
+        p.person.positionTitle || MISSING_TEXT
       }`;
-  ws.getCell("B10").value = `Đơn vị công tác: ${p.person.unitName || "—"}`;
+  ws.getCell("B10").value = `Đơn vị công tác: ${p.person.unitName || MISSING_TEXT}`;
 
   // ---------------- I. Tiêu chí chung ----------------
   ws.mergeCells("B12:E12");

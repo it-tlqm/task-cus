@@ -5,12 +5,9 @@ import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { computeScoreForPeriod } from "@/server/scoring";
 import { computeLeaderDimensions } from "@/server/scoring/leader-average";
-import {
-  buildEvaluationWorkbook,
-  type EvaluationTemplate,
-  type ExportTaskRow,
-} from "@/server/evaluation-export";
+import { buildEvaluationWorkbook, type EvaluationTemplate, type ExportTaskRow } from "@/server/evaluation-export";
 import { getApprovalQualityExportRows, isApprovalQualityEnabled } from "@/server/approval-quality";
+import { pickPrimaryAssignment } from "@/server/person-assignment";
 
 export const runtime = "nodejs";
 
@@ -76,7 +73,7 @@ export async function GET(req: NextRequest) {
       },
     });
     if (!person) return jsonError("Không tìm thấy cán bộ", 404);
-    const a0 = person.assignments[0];
+    const primaryAssignment = pickPrimaryAssignment(person.assignments, now);
 
     // Điểm kết quả thực hiện (YC-33)
     const computation = await computeScoreForPeriod({
@@ -167,8 +164,8 @@ export async function GET(req: NextRequest) {
 
     const exportPerson = {
       fullName: person.fullName,
-      positionTitle: a0?.position?.title || null,
-      unitName: a0?.unit?.name || null,
+      positionTitle: primaryAssignment?.position?.title || null,
+      unitName: primaryAssignment?.unit?.name || null,
       commonCriteriaScore: evaluation?.commonCriteriaScore ?? null,
       commonCriteriaSuggested: evaluation?.commonCriteriaSuggested ?? null,
       selfGradeChoice: evaluation?.selfGradeChoice ?? null,
