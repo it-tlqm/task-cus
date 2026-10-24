@@ -21,6 +21,7 @@ function parseDay(raw: string | null, endOfDay = false): Date | null {
  * - Bắt buộc có unitId khi tài khoản có nhiều bộ phận trong phạm vi; một bộ phận thì mặc định chính bộ phận đó.
  * - Tiêu đề biểu/trang bìa/tên tệp thể hiện ĐÚNG bộ phận được xuất — không hardcode "Bộ phận Nghiệp vụ".
  * - Không trộn dữ liệu giữa các bộ phận (mọi truy vấn lọc theo unitId + phạm vi quyền).
+ * - E13/B2: ghi chú per-person chỉ in ở sheet phụ lục "Ghi chú lịch trực"; biểu in chính thức giữ nguyên.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -78,6 +79,8 @@ export async function GET(req: NextRequest) {
       slotOrder: r.slotOrder,
       post: r.post,
       shift: r.shift,
+      // E13/B2: ghi chú chỉ đi vào sheet phụ lục "Ghi chú lịch trực".
+      notes: r.notes,
     }));
 
     const buf = await buildDutyRosterWorkbook({
@@ -116,6 +119,7 @@ export async function GET(req: NextRequest) {
         unitId,
         unitCode: unit.code,
         rows: rows.length,
+        notesRows: assignments.filter((a) => (a.notes || "").trim().length > 0).length,
         skipEmpty,
         by: user.username,
       },

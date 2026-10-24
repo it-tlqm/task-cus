@@ -24,6 +24,8 @@ export interface DutyExportAssignment {
   post: string | null;
   /** Dữ liệu cũ: ca */
   shift: string;
+  /** E13/B2: ghi chú per-person — chỉ in ở sheet phụ lục, KHÔNG chèn vào biểu chính thức. */
+  notes?: string | null;
 }
 
 export interface DutyExportCatalogPosition {
@@ -389,6 +391,112 @@ function setupPrint(ws: ExcelJS.Worksheet) {
   } as any;
 }
 
+/**
+ * E13 / B2 — Sheet PHỤ LỤC ghi chú lịch trực.
+ *
+ * Quyết định B2: ghi chú được in ở một sheet RIÊNG, không sửa các sheet/biểu in chính thức
+ * của mẫu Hải quan (Bìa + Phân công N). Chỉ tạo sheet khi kỳ xuất thực sự có ghi chú.
+ */
+export const DUTY_NOTES_ANNEX_SHEET_NAME = "Ghi chú lịch trực";
+
+interface DutyExportNoteRow {
+  date: Date;
+  personName: string;
+  position: string;
+  slot: string;
+  note: string;
+}
+
+function fmtDMY(d: Date): string {
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+/** Gom các dòng có ghi chú (đã trim) — giữ đúng thứ tự ngày/vị trí/ô của file xuất. */
+function noteRowsOf(assignments: DutyExportAssignment[]): DutyExportNoteRow[] {
+  return assignments
+    .filter((a) => (a.notes || "").trim().length > 0)
+    .map((a) => ({
+      date: new Date(a.date),
+      personName: a.personName,
+      position: (a.positionTitle || a.post || SHIFT_LABEL[a.shift] || a.shift || "").trim(),
+      slot: a.slotLabel?.trim() || (typeof a.slotOrder === "number" ? `Ô ${a.slotOrder + 1}` : ""),
+      note: (a.notes || "").trim(),
+    }))
+    // Giữ thứ tự ngày/vị trí/ô của dữ liệu xuất (route đã sắp xếp); chỉ gom theo ngày.
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+function writeNotesAnnex(
+  ws: ExcelJS.Worksheet,
+  args: { unitLine: string; from: Date; to: Date; rows: DutyExportNoteRow[] }
+) {
+  const widths = [5.5, 12, 26, 24, 32, 16, 50];
+  widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
+
+  const mergeRow = (r: number) => ws.mergeCells(r, 1, r, 7);
+  ws.getRow(1).height = 18.75;
+  ws.getCell(1, 1).value = ORG_LINE;
+  mergeRow(1);
+  styleCell(ws.getCell(1, 1), { size: 11, bold: true, h: "center", v: "middle" });
+
+  ws.getRow(2).height = 22;
+  ws.getCell(2, 1).value = "PHỤ LỤC GHI CHÚ LỊCH TRỰC";
+  mergeRow(2);
+  styleCell(ws.getCell(2, 1), { size: 14, bold: true, h: "center", v: "middle" });
+
+  ws.getRow(3).height = 18.75;
+  ws.getCell(3, 1).value = args.unitLine;
+  mergeRow(3);
+  styleCell(ws.getCell(3, 1), { size: 12, bold: true, h: "center", v: "middle" });
+
+  ws.getRow(4).height = 18.75;
+  ws.getCell(4, 1).value = `Kỳ: từ ngày ${fmtDMY(args.from)} đến ngày ${fmtDMY(args.to)}`;
+  mergeRow(4);
+  styleCell(ws.getCell(4, 1), { size: 11, italic: true, h: "center", v: "middle" });
+
+  ws.getRow(5).height = 18.75;
+  ws.getCell(5, 1).value =
+    "Phụ lục tổng hợp ghi chú theo người được phân công — không thay đổi nội dung biểu in chính thức.";
+  mergeRow(5);
+  styleCell(ws.getCell(5, 1), { size: 10, italic: true, h: "center", v: "middle" });
+
+  const head = ["STT", "Ngày", "Bộ phận", "Người thực hiện", "Vị trí / nhiệm vụ", "Ô / điểm trực", "Ghi chú"];
+  ws.getRow(6).height = 24;
+  head.forEach((t, i) => {
+    ws.getCell(6, i + 1).value = t;
+    styleCell(ws.getCell(6, i + 1), { size: 11, bold: true, h: "center", v: "middle", wrap: true, border: true });
+  });
+
+  args.rows.forEach((row, idx) => {
+    const r = 7 + idx;
+    const values = [idx + 1, fmtDMY(row.date), args.unitLine, row.personName, row.position, row.slot, row.note];
+    values.forEach((v, i) => {
+      ws.getCell(r, i + 1).value = v as any;
+      styleCell(ws.getCell(r, i + 1), {
+        size: 11,
+        bold: i === 0,
+        h: i === 0 ? "center" : "left",
+        v: "middle",
+        wrap: true,
+        border: true,
+      });
+    });
+    ws.getRow(r).height = Math.max(20, Math.ceil(row.note.length / 55) * 15 + 5);
+  });
+
+  // Trang phụ lục có thiết lập in riêng, không dùng chung vùng in của biểu chính thức.
+  ws.pageSetup = {
+    paperSize: 9, // A4
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    horizontalCentered: false,
+    verticalCentered: false,
+    printTitlesRow: "6:6",
+  } as any;
+}
+
 const DAY_COL_WIDTHS = [
   [4.57, 29.57, 30],
   [4.57, 29.43, 30],
@@ -457,6 +565,14 @@ export async function buildDutyRosterWorkbook(opts: DutyExportOptions): Promise<
     });
     setupPrint(ws);
   });
+
+  // E13 / B2: phụ lục ghi chú là SHEET RIÊNG, in sau các trang chính thức.
+  // Không tạo sheet khi kỳ xuất không có ghi chú (giữ nguyên số trang in hiện có).
+  const noteRows = noteRowsOf(opts.assignments);
+  if (noteRows.length > 0) {
+    const annex = wb.addWorksheet(DUTY_NOTES_ANNEX_SHEET_NAME);
+    writeNotesAnnex(annex, { unitLine: coverUnit, from: opts.from, to: opts.to, rows: noteRows });
+  }
 
   const buf = await wb.xlsx.writeBuffer();
   return Buffer.from(buf);
