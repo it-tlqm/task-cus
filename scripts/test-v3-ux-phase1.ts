@@ -95,6 +95,14 @@ check(
   "Chủ trì + IN_PROGRESS → không chờ nhận",
   !isMyPendingAcceptance({ ...ownerPending, status: "IN_PROGRESS" }, ME)
 );
+check(
+  "Chủ trì + CANCELED → không chờ nhận",
+  !isMyPendingAcceptance({ ...ownerPending, status: "CANCELED" }, ME)
+);
+check(
+  "Chủ trì + COMPLETED → không chờ nhận",
+  !isMyPendingAcceptance({ ...ownerPending, status: "COMPLETED" }, ME)
+);
 // Finding 1: lãnh đạo thấy việc toàn đơn vị nhưng không được hiện việc của người khác.
 check(
   "Việc của người khác (không chủ trì/phối hợp) → không chờ nhận",
@@ -129,6 +137,30 @@ check(
 check(
   "Phối hợp vẫn chờ nhận khi chủ trì đã nhận (Task IN_PROGRESS)",
   isMyPendingAcceptance({ ...collaboratorTask, status: "IN_PROGRESS" }, ME)
+);
+check(
+  "Phối hợp + việc tự khởi tạo → không chờ nhận (server trả 400)",
+  !isMyPendingAcceptance({ ...collaboratorTask, originKind: "SELF_INITIATED" }, ME)
+);
+check(
+  "Phối hợp + tự ghi nhận chỉ đạo ngoài → không chờ nhận",
+  !isMyPendingAcceptance({ ...collaboratorTask, originKind: "OUTSIDE_DIRECTIVE" }, ME)
+);
+check(
+  "Phối hợp + Task CANCELED → không chờ nhận",
+  !isMyPendingAcceptance({ ...collaboratorTask, status: "CANCELED" }, ME)
+);
+check(
+  "Phối hợp + Task COMPLETED → không chờ nhận",
+  !isMyPendingAcceptance({ ...collaboratorTask, status: "COMPLETED" }, ME)
+);
+check(
+  "Phối hợp + Task DONE → không chờ nhận",
+  !isMyPendingAcceptance({ ...collaboratorTask, status: "DONE" }, ME)
+);
+check(
+  "Phối hợp + Task WAITING_REVIEW → không chờ nhận (server 409)",
+  !isMyPendingAcceptance({ ...collaboratorTask, status: "WAITING_REVIEW" }, ME)
 );
 
 // ---------------------------------------------------------------- 3. /my-work + API
