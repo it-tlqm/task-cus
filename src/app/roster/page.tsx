@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
-import { isNoonDutyTitle, MAX_EXTRA_SLOTS_PER_POSITION } from "@/lib/duty-roster";
+import { isNoonDutyTitle, MAX_EXTRA_SLOTS_PER_POSITION, NOTES_REQUIRE_PERSON_MESSAGE, hasAssignedPerson } from "@/lib/duty-roster";
 
 /**
  * YC-24 — Phân công nhiệm vụ & lịch trực theo biểu mẫu
@@ -1638,6 +1638,11 @@ function DayEditorModal({
 
   /** Ghi chú per-person nằm trên chính dòng phân công (DutyRoster.notes) — lưu là audit old/new. */
   const handleSaveNotes = async (row: DutyRow, key: string, notes: string): Promise<boolean> => {
+    // E13 / A0: ô chưa có người thì không có ghi chú — không gửi request "ghi chú mồ côi".
+    if (!row || !hasAssignedPerson(row.personId)) {
+      toast.error(NOTES_REQUIRE_PERSON_MESSAGE);
+      return false;
+    }
     setBusyKey(key);
     try {
       const res = await fetch("/api/rosters", {
@@ -1673,7 +1678,7 @@ function DayEditorModal({
               Phiếu phân công ngày {fmtDMY(dateISO)}{unitName ? ` — ${unitName}` : ""}
             </div>
             <div className="text-[11px] text-slate-500">
-              Chọn cán bộ cho từng ô; trực trưa tính riêng, không trùng với trực thường. Ghi chú theo từng người; “Đổi người” phải ghi lý do (lưu vết).
+              Chọn cán bộ cho từng ô; trực trưa tính riêng, không trùng với trực thường. Ghi chú chỉ lưu cho ô đã có người; “Đổi người” phải ghi lý do (lưu vết).
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1922,7 +1927,11 @@ function SlotRow({
   const noteChanged = (noteDraft.trim() || "") !== (row?.notes?.trim() || "");
 
   const saveNotes = async () => {
-    if (!row) return;
+    // E13 / A0: chỉ ô ĐÃ CÓ NGƯỜI mới có ghi chú; ô trống không mở được panel này.
+    if (!row || !hasAssignedPerson(row.personId)) {
+      toast.error(NOTES_REQUIRE_PERSON_MESSAGE);
+      return;
+    }
     if (!noteChanged) {
       setPanel(null);
       return;
