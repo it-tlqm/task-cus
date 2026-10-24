@@ -11,6 +11,7 @@
  *  C. Ngoài trường quality, response của collaborator giống owner (không đổi shape).
  *  D. Fail closed: gọi service không truyền `access` => quality null.
  *  E. Flag `V3_YC10_QUALITY` OFF => mọi người null (kiểm tra trực tiếp service).
+ *  G. Thông báo duyệt: collaborator không nhận câu "Mức chất lượng", người trình nhận đủ.
  *
  * Chạy (server port 3117, DB fixture, flag ON):
  *   $env:DATABASE_URL="postgresql://postgres:***@localhost:5432/talung_v3_approval_impl_quality"
@@ -85,7 +86,7 @@ function toSessionUser(account: any, person: any): any {
   };
 }
 
-let createdTaskId: string | null = null;
+const createdTaskIds: string[] = [];
 
 async function main() {
   console.log(`=== E12-QUALITY HISTORY VISIBILITY — ${BASE} ===\n`);
@@ -127,7 +128,7 @@ async function main() {
       assignees: { create: [{ personId: collaborator.personId, role: "COLLABORATOR" }] },
     },
   });
-  createdTaskId = task.id;
+  createdTaskIds.push(task.id);
 
   const approvalCase = await prisma.approvalCase.create({
     data: {
@@ -205,6 +206,94 @@ async function main() {
       JSON.stringify(collab.json?.data?.sources) === JSON.stringify(ownerHistory.json?.data?.sources) &&
       collab.json?.data?.limit === ownerHistory.json?.data?.limit);
 
+  // ---------------------------------------------------------------- notification
+  // E10.6 — thông báo duyệt không được chứa quality cho collaborator.
+  const notifyTask = await prisma.task.create({
+    data: {
+      code: `E12QN-${Date.now().toString().slice(-5)}`,
+      title: `${TAG} nhiệm vụ thông báo duyệt`,
+      ownerId: owner.personId,
+      unitId,
+      status: "WAITING_REVIEW",
+      priority: "Trung bình",
+      originalDeadline: new Date("2026-12-31T00:00:00.000Z"),
+      currentDeadline: new Date("2026-12-31T00:00:00.000Z"),
+      description: TAG,
+      actualResultText: `${TAG} kết quả chờ duyệt`,
+      assignees: { create: [{ personId: collaborator.personId, role: "COLLABORATOR" }] },
+    },
+  });
+  createdTaskIds.push(notifyTask.id);
+
+  const notifyDecisionRes = await fetch(
+    `${BASE}/api/approvals/TASK_RESULT/${notifyTask.id}/decision`,
+    {
+      method: "POST",
+      headers: H(tokLeader),
+      body: JSON.stringify({
+        action: "AGREE",
+        qualityPercent: QUALITY,
+        reason: `${TAG} nghiệm thu cho thông báo`,
+      }),
+    }
+  );
+  check("G1. Lãnh đạo AGREE kèm quality 80 => 200", notifyDecisionRes.status === 200,
+    `HTTP ${notifyDecisionRes.status}`);
+
+  const notifyCase = await prisma.approvalCase.findUnique({
+    where: { caseType_resourceId: { caseType: "TASK_RESULT", resourceId: notifyTask.id } },
+    include: { decisions: true },
+  });
+  const notifications = await prisma.notification.findMany({
+    where: { entityType: "TASK", entityId: notifyTask.id, category: "approval" },
+    orderBy: { createdAt: "asc" },
+  });
+  const notifByRecipient = new Map(notifications.map((n) => [n.recipientId, n]));
+  const submitterNotif = notifByRecipient.get(owner.personId);
+  const collabNotif = notifByRecipient.get(collaborator.personId);
+
+  check("G2. Có thông báo duyệt cho người trình + collaborator, không cho người quyết định",
+    notifications.length === 2 &&
+      !!submitterNotif &&
+      !!collabNotif &&
+      !notifByRecipient.has(leader.personId),
+    `n=${notifications.length}: ${notifications.map((n) => n.recipientId).join(",")}`);
+  check("G3. Notification người trình có 'Mức chất lượng: 80%'",
+    !!submitterNotif && submitterNotif.content.includes(`Mức chất lượng: ${QUALITY}%`),
+    submitterNotif?.content);
+  check("G4. Notification collaborator KHÔNG có 'Mức chất lượng' và không lộ 80",
+    !!collabNotif &&
+      !collabNotif.content.includes("Mức chất lượng") &&
+      !collabNotif.content.includes(`${QUALITY}%`),
+    collabNotif?.content);
+  check("G5. Notification collaborator giữ nội dung dành cho người phối hợp",
+    !!collabNotif && collabNotif.content.startsWith("Bạn là người phối hợp."),
+    collabNotif?.content);
+
+  const expectedTitle = `Hồ sơ đã được chấp thuận: [${notifyTask.code}] ${notifyTask.title}`;
+  const expectedIdem = (recipientId: string) =>
+    `EVENT_APPROVAL_${notifyCase?.id}_1_AGREE_${recipientId}`;
+  check("G6. Giữ nguyên title/tag/actionUrl/actionLabel cho cả 2 người nhận",
+    [submitterNotif, collabNotif].every(
+      (n) =>
+        !!n &&
+        n.type === "APPROVAL_AGREED" &&
+        n.title === expectedTitle &&
+        n.tag === "ĐÃ CHẤP THUẬN" &&
+        n.tagType === "success" &&
+        n.actionUrl === `/tasks/${notifyTask.id}` &&
+        n.actionLabel === "Xem nhiệm vụ" &&
+        n.entityType === "TASK" &&
+        n.entityId === notifyTask.id
+    ),
+    `title=${submitterNotif?.title}`);
+  check("G7. Giữ nguyên idempotencyKey theo người nhận",
+    !!submitterNotif &&
+      !!collabNotif &&
+      submitterNotif.idempotencyKey === expectedIdem(owner.personId) &&
+      collabNotif.idempotencyKey === expectedIdem(collaborator.personId),
+    `${submitterNotif?.idempotencyKey} | ${collabNotif?.idempotencyKey}`);
+
   // ---------------------------------------------------------------- service (fail closed + flag OFF)
   process.env.V3_YC10_QUALITY = "true";
   const historySvc = await import("../src/server/task-history");
@@ -277,11 +366,12 @@ main()
   })
   .finally(async () => {
     try {
-      if (createdTaskId) {
+      if (createdTaskIds.length > 0) {
+        await prisma.notification.deleteMany({ where: { entityId: { in: createdTaskIds } } });
         await prisma.approvalCase.deleteMany({
-          where: { caseType: "TASK_RESULT", resourceId: createdTaskId },
+          where: { caseType: "TASK_RESULT", resourceId: { in: createdTaskIds } },
         });
-        await prisma.task.delete({ where: { id: createdTaskId } }).catch(() => {});
+        await prisma.task.deleteMany({ where: { id: { in: createdTaskIds } } });
       }
     } catch (e) {
       console.error("[CLEANUP]", e);

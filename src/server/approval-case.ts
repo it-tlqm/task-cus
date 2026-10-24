@@ -1248,13 +1248,16 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
     const tag =
       action === "AGREE" ? "ĐÃ CHẤP THUẬN" : action === "REJECT" ? "KHÔNG ĐỒNG Ý" : "YÊU CẦU GIẢI TRÌNH";
     const tagType = action === "AGREE" ? "success" : action === "REJECT" ? "danger" : "warning";
+    // E10.6 — quality chỉ dành cho người trình hồ sơ. Collaborator nhận thông báo
+    // không kèm quality (fail closed nếu người trình không xác định được).
+    const canShowQuality = isSubmitter && qualityPercent !== null;
     const detail =
       action === "CLARIFY"
         ? `Lãnh đạo yêu cầu giải trình: ${content}`
         : action === "REJECT"
           ? `Lãnh đạo không đồng ý. Lý do: ${reason}`
           : `Lãnh đạo đã chấp thuận.${
-              qualityPercent !== null ? ` Mức chất lượng: ${qualityPercent}%.` : ""
+              canShowQuality ? ` Mức chất lượng: ${qualityPercent}%.` : ""
             }`;
     await createNotification({
       recipientId,
