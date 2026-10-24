@@ -5,10 +5,12 @@
  *
  * Lệnh:
  *   node scripts/purge-storage.mjs --bucket=task-attachments --dry-run     (xem danh sach)
- *   node scripts/purge-storage.mjs --bucket=task-attachments --confirm=PURGE-2026-10-22
+ *   STORAGE_PURGE_TOKEN=<bi-mat> node scripts/purge-storage.mjs --bucket=task-attachments --confirm="$STORAGE_PURGE_TOKEN"
  *
- * Yêu cầu khóa service-role (SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY).
- * KHÔNG in khoá ra log. KHÔNG xoá nếu chưa có --confirm.
+ * Yêu cầu khóa service-role (SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY)
+ * và STORAGE_PURGE_TOKEN cho lượt xoá thật. KHÔNG in khoá/token ra log.
+ * KHÔNG xoá nếu chưa có --confirm; mặc định dry-run.
+ * Bucket work-evidence bị chặn cứng (cần quy trình riêng có backup/phê duyệt).
  */
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -21,12 +23,32 @@ const arg = (k, d = null) => {
   const hit = process.argv.find((a) => a.startsWith(`--${k}=`));
   return hit ? hit.slice(k.length + 3) : d;
 };
-const BUCKET = arg("bucket", process.env.SUPABASE_STORAGE_BUCKET || "task-attachments");
+// Không cho `.`/`..`/segment rỗng trong key: tránh DELETE thoát khỏi bucket.
+const isSafeKey = (key) =>
+  typeof key === "string" &&
+  key.length > 0 &&
+  key.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
+const BUCKET = String(arg("bucket", process.env.SUPABASE_STORAGE_BUCKET || "task-attachments")).trim();
+const EXPECTED_CONFIRM = (process.env.STORAGE_PURGE_TOKEN || "").trim();
 const CONFIRM = arg("confirm", "");
 const DRY = process.argv.includes("--dry-run") || !CONFIRM;
 const KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "").trim();
 const URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/$/, "");
 
+// Tên bucket là MỘT segment URL: chặn separator/dot-segment và mọi biến thể work-evidence.
+if (
+  !BUCKET ||
+  BUCKET === "." ||
+  BUCKET === ".." ||
+  BUCKET.includes("/") ||
+  BUCKET.includes("\\") ||
+  BUCKET.toLowerCase().includes("work-evidence")
+) {
+  console.error(
+    "Bucket không hợp lệ hoặc bị chặn: work-evidence (và biến thể) phải được dọn bằng quy trình riêng có backup và phê duyệt."
+  );
+  process.exit(2);
+}
 if (!URL) {
   console.error("Thiếu NEXT_PUBLIC_SUPABASE_URL");
   process.exit(2);
@@ -38,8 +60,14 @@ if (!KEY) {
   );
   process.exit(2);
 }
-if (!DRY && CONFIRM !== "PURGE-2026-10-22") {
-  console.error("Cần --confirm=PURGE-2026-10-22 để thực thi xoá.");
+if (!DRY && !EXPECTED_CONFIRM) {
+  console.error(
+    "Thiếu STORAGE_PURGE_TOKEN — chỉ cho phép dry-run. Đặt biến môi trường này trên máy chạy lệnh rồi dùng --confirm=\"$STORAGE_PURGE_TOKEN\"."
+  );
+  process.exit(2);
+}
+if (!DRY && CONFIRM !== EXPECTED_CONFIRM) {
+  console.error("Xác nhận không khớp STORAGE_PURGE_TOKEN — chỉ cho phép dry-run.");
   process.exit(2);
 }
 
@@ -49,7 +77,7 @@ async function listObjects(prefix = "") {
   const out = [];
   let cursor = "";
   do {
-    const r = await fetch(`${URL}/storage/v1/object/list/${BUCKET}`, {
+    const r = await fetch(`${URL}/storage/v1/object/list/${encodeURIComponent(BUCKET)}`, {
       method: "POST",
       headers: { ...H, "Content-Type": "application/json" },
       body: JSON.stringify({ prefix, limit: 1000, ...(cursor ? { cursor } : {}) }),
@@ -57,8 +85,11 @@ async function listObjects(prefix = "") {
     if (!r.ok) throw new Error(`list khong duoc (HTTP ${r.status}): ${(await r.text()).slice(0, 200)}`);
     const items = await r.json();
     for (const it of items) {
-      if (it.name && it.name.includes("/")) out.push(it.name); // thư mục con → đệ quy
-      else if (it.name) out.push(it.name);
+      if (!it?.name) continue;
+      if (!isSafeKey(it.name)) {
+        throw new Error("Tên object không an toàn (dot-segment/rỗng) — dừng để tránh xoá ngoài bucket");
+      }
+      out.push(it.name);
     }
     cursor = items.length === 1000 ? items[items.length - 1].name : "";
     if (items.length === 0) break;
@@ -68,7 +99,12 @@ async function listObjects(prefix = "") {
 }
 
 async function remove(key) {
-  const r = await fetch(`${URL}/storage/v1/object/${BUCKET}/${key}`, { method: "DELETE", headers: H });
+  if (!isSafeKey(key)) return false;
+  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
+  const r = await fetch(`${URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodedKey}`, {
+    method: "DELETE",
+    headers: H,
+  });
   return r.ok;
 }
 
@@ -84,7 +120,9 @@ async function remove(key) {
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, JSON.stringify({ bucket: BUCKET, objects, generatedAt: new Date().toISOString() }, null, 2));
     console.log(`  KE HOACH: ${path.relative(REPO, out)}`);
-    console.log("  (chua xoa gi — them --confirm=PURGE-2026-10-22 de thuc thi)");
+    console.log(
+      '  (chua xoa gi — dat STORAGE_PURGE_TOKEN va them --confirm="$STORAGE_PURGE_TOKEN" de thuc thi)'
+    );
     return;
   }
 

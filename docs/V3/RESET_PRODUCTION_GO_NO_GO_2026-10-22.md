@@ -93,9 +93,11 @@ KET QUA: GO
 ## 7. LỆNH EXECUTE (chưa chạy — chờ lệnh riêng của chủ dự án)
 
 ```bash
-# BƯỚC 1 — dọn kho tệp Storage SAU khi đã lưu trữ (cần service-role key trên máy chủ)
+# BƯỚC 1 — dọn kho tệp Storage SAU khi đã lưu trữ
+# (cần service-role key + STORAGE_PURGE_TOKEN trên máy chủ; work-evidence bị chặn cứng)
+export STORAGE_PURGE_TOKEN='<bí mật chỉ đặt trên máy chạy lệnh>'
 node scripts/purge-storage.mjs --bucket=task-attachments --dry-run     # xem kế hoạch
-node scripts/purge-storage.mjs --bucket=task-attachments --confirm=PURGE-2026-10-22
+node scripts/purge-storage.mjs --bucket=task-attachments --confirm="$STORAGE_PURGE_TOKEN"
 
 # BƯỚC 2 — làm sạch + nạp dữ liệu nền (lệnh xoá, có mã xác nhận)
 node scripts/reset-and-init.mjs \

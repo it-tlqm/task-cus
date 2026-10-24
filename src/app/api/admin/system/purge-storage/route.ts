@@ -22,6 +22,7 @@ import { recordAuditEvent } from "@/server/audit";
 import { getSupabaseBaseUrl } from "@/server/storage";
 import {
   isPurgeExecutionRequested,
+  isSafeStorageObjectPath,
   resolveStoragePurgeRequest,
 } from "@/server/storage-purge-policy";
 
@@ -79,9 +80,13 @@ export async function POST(req: NextRequest) {
           const items = await r.json().catch(() => null);
           if (!Array.isArray(items)) return false;
           for (const it of items) {
-            const entry = typeof it?.name === "string" ? it.name.trim() : "";
-            if (!entry) continue;
+            // KHÔNG trim: giữ nguyên tên thật; chỉ bỏ entry rỗng/không phải chuỗi.
+            const entry = typeof it?.name === "string" ? it.name : "";
+            if (entry.length === 0) continue;
+            // Tên chứa segment `.`/`..`/rỗng là bất thường → dừng cả lượt liệt kê.
+            if (!isSafeStorageObjectPath(entry)) return false;
             const objectPath = prefix ? `${prefix}/${entry}` : entry;
+            if (!isSafeStorageObjectPath(objectPath)) return false;
             // Supabase Storage: thư mục con có id/metadata null → đệ quy.
             if (it?.id == null && it?.metadata == null) {
               if (!(await walk(objectPath))) return false;
@@ -101,6 +106,14 @@ export async function POST(req: NextRequest) {
     if (objects === null) {
       return jsonError(
         `Không truy cập được bucket "${bucketUsed}" — endpoint không tự chuyển sang bucket khác.`,
+        502
+      );
+    }
+
+    // Phòng thủ nhiều lớp trước khi xoá: từ chối TOÀN BỘ nếu có dot-segment.
+    if (objects.some((objectPath) => !isSafeStorageObjectPath(objectPath))) {
+      return jsonError(
+        "Danh sách object chứa đường dẫn không an toàn ('.'/'..'/segment rỗng) — không xoá object nào.",
         502
       );
     }
@@ -130,6 +143,11 @@ export async function POST(req: NextRequest) {
       });
 
       for (const objectPath of objects) {
+        // Kiểm tra lại ngay trước DELETE (không phụ thuộc hoàn toàn vào bước list).
+        if (!isSafeStorageObjectPath(objectPath)) {
+          failed.push(objectPath);
+          continue;
+        }
         const encodedPath = objectPath.split("/").map(encodeURIComponent).join("/");
         const r = await fetch(
           `${base}/storage/v1/object/${encodeURIComponent(bucketUsed)}/${encodedPath}`,

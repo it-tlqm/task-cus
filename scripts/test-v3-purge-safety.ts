@@ -13,12 +13,14 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   isBucketAllowed,
   isHardBlockedBucket,
   isPurgeExecutionRequested,
   isPurgeTokenValid,
+  isSafeStorageObjectPath,
   loadStoragePurgeConfig,
   resolveStoragePurgeRequest,
 } from "../src/server/storage-purge-policy";
@@ -27,6 +29,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROUTE_REL = "src/app/api/admin/system/purge-storage/route.ts";
 const POLICY_REL = "src/server/storage-purge-policy.ts";
 const TEST_REL = "scripts/test-v3-purge-safety.ts";
+const SCRIPT_REL = "scripts/purge-storage.mjs";
+const DOC_SETUP_REL = "docs/V3/PRIVATE_STORAGE_SETUP.md";
+const DOC_RESET_REL = "docs/V3/RESET_PRODUCTION_GO_NO_GO_2026-10-22.md";
 
 /** Token tĩnh cũ — ghép chuỗi để chính file test không chứa literal bị cấm. */
 const FORBIDDEN_STATIC_TOKEN = ["PURGE", "2026", "10", "22"].join("-");
@@ -238,12 +243,14 @@ function main() {
   const route = read(ROUTE_REL);
   const policy = read(POLICY_REL);
   const testSrc = read(TEST_REL);
+  const script = read(SCRIPT_REL);
 
   check(
-    "F1. Không còn token tĩnh trong route/policy/test",
+    "F1. Không còn token tĩnh trong route/policy/test/script",
     !route.includes(FORBIDDEN_STATIC_TOKEN) &&
       !policy.includes(FORBIDDEN_STATIC_TOKEN) &&
-      !testSrc.includes(FORBIDDEN_STATIC_TOKEN)
+      !testSrc.includes(FORBIDDEN_STATIC_TOKEN) &&
+      !script.includes(FORBIDDEN_STATIC_TOKEN)
   );
   check(
     "F2. Route không còn CONFIRM_TOKEN/body.confirm",
@@ -300,6 +307,125 @@ function main() {
     "F12. Chặn policy (tắt/token/bucket) trước khi liệt kê Storage",
     denyIdx >= 0 && listCallIdx > denyIdx,
     `deny=${denyIdx}, list=${listCallIdx}`
+  );
+  check(
+    "F13. Script purge yêu cầu STORAGE_PURGE_TOKEN cho lượt xoá",
+    script.includes("STORAGE_PURGE_TOKEN") &&
+      script.includes("EXPECTED_CONFIRM") &&
+      script.includes("CONFIRM !== EXPECTED_CONFIRM")
+  );
+  check(
+    "F14. Script purge chặn work-evidence và separator trong tên bucket",
+    script.includes("work-evidence") &&
+      script.includes("BUCKET.includes") &&
+      script.includes("process.exit(2)")
+  );
+  const docSetup = read(DOC_SETUP_REL);
+  const docReset = read(DOC_RESET_REL);
+  check(
+    "F15. Docs purge dùng STORAGE_PURGE_TOKEN, không còn token tĩnh",
+    !docSetup.includes(FORBIDDEN_STATIC_TOKEN) &&
+      !docReset.includes(FORBIDDEN_STATIC_TOKEN) &&
+      docSetup.includes("STORAGE_PURGE_TOKEN") &&
+      docReset.includes("STORAGE_PURGE_TOKEN")
+  );
+  check(
+    "F16. Script kiểm tra và encode object key trước DELETE",
+    script.includes("isSafeKey") && script.includes("map(encodeURIComponent)")
+  );
+
+  // ---------------------------------------------------------------------------
+  // G. Dot-segment object paths — không thể thoát bucket allowlist.
+  // ---------------------------------------------------------------------------
+  check(
+    "G1. Đường dẫn thường nhiều cấp được phép",
+    isSafeStorageObjectPath("tasks/2026/bao-cao.pdf") === true
+  );
+  check(
+    "G2. Tên có khoảng trắng/tiếng Việt được phép",
+    isSafeStorageObjectPath("tasks/báo cáo tháng 10.pdf") === true
+  );
+  check(
+    "G3. '../work-evidence/foo' bị chặn",
+    isSafeStorageObjectPath("../work-evidence/foo") === false
+  );
+  check(
+    "G4. 'tasks/../../work-evidence/foo' bị chặn",
+    isSafeStorageObjectPath("tasks/../../work-evidence/foo") === false
+  );
+  check(
+    "G5. '.' và '..' bị chặn",
+    isSafeStorageObjectPath(".") === false && isSafeStorageObjectPath("..") === false
+  );
+  check(
+    "G6. Segment rỗng bị chặn",
+    ["a//b", "/a", "a/"].every((value) => isSafeStorageObjectPath(value) === false)
+  );
+  check(
+    "G7. Tên bắt đầu bằng '..' nhưng không phải dot-segment vẫn an toàn",
+    isSafeStorageObjectPath("tasks/..hidden/file.pdf") === true
+  );
+  check(
+    "G8. Tên rỗng/không phải chuỗi bị chặn",
+    isSafeStorageObjectPath("") === false &&
+      isSafeStorageObjectPath(null) === false &&
+      isSafeStorageObjectPath(undefined) === false
+  );
+  const pathGuardIdx = route.indexOf(
+    "objects.some((objectPath) => !isSafeStorageObjectPath(objectPath))"
+  );
+  check(
+    "G9. Route kiểm tra dot-segment trước DELETE",
+    pathGuardIdx >= 0 && pathGuardIdx < deleteIdx,
+    `guard=${pathGuardIdx}, delete=${deleteIdx}`
+  );
+  check("G10. Route không trim tên object từ API", !route.includes("it.name.trim()"));
+
+  // ---------------------------------------------------------------------------
+  // H. Hành vi script CLI: các nhánh từ chối chạy trước mọi lời gọi mạng.
+  // ---------------------------------------------------------------------------
+  const runScript = (args: string[], env: NodeJS.ProcessEnv = {}) =>
+    spawnSync(process.execPath, [path.join(ROOT, SCRIPT_REL), ...args], {
+      cwd: ROOT,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        NEXT_PUBLIC_SUPABASE_URL: "https://example.invalid",
+        SUPABASE_SERVICE_ROLE_KEY: "dummy-not-real",
+        SUPABASE_SECRET_KEY: "",
+        STORAGE_PURGE_TOKEN: "",
+        ...env,
+      },
+    });
+
+  const blockedBucket = runScript(["--bucket=work-evidence"]);
+  check(
+    "H1. Script từ chối --bucket=work-evidence",
+    blockedBucket.status === 2 && String(blockedBucket.stderr).includes("work-evidence"),
+    `exit=${blockedBucket.status}`
+  );
+
+  const traversalBucket = runScript(["--bucket=../work-evidence"]);
+  check(
+    "H2. Script từ chối bucket traversal ../work-evidence",
+    traversalBucket.status === 2 && String(traversalBucket.stderr).includes("không hợp lệ"),
+    `exit=${traversalBucket.status}`
+  );
+
+  const missingToken = runScript(["--bucket=task-attachments", "--confirm=wrong"]);
+  check(
+    "H3. Script từ chối xoá khi thiếu STORAGE_PURGE_TOKEN",
+    missingToken.status === 2 && String(missingToken.stderr).includes("STORAGE_PURGE_TOKEN"),
+    `exit=${missingToken.status}`
+  );
+
+  const wrongToken = runScript(["--bucket=task-attachments", "--confirm=wrong"], {
+    STORAGE_PURGE_TOKEN: "local-test-secret",
+  });
+  check(
+    "H4. Script từ chối --confirm không khớp STORAGE_PURGE_TOKEN",
+    wrongToken.status === 2 && String(wrongToken.stderr).includes("không khớp"),
+    `exit=${wrongToken.status}`
   );
 
   console.log(`\n=== KẾT QUẢ: ${pass} pass / ${fail} fail ===`);

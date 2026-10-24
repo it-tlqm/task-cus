@@ -64,10 +64,12 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
 Tệp cũ đã được lưu trữ tại `demo-ops/archive/prod-2026-10-22/files/` (checksum đã kiểm chứng) → xoá khỏi bucket:
 
 ```bash
+export STORAGE_PURGE_TOKEN='<bí mật chỉ đặt trên máy chạy lệnh>'
 node scripts/purge-storage.mjs --bucket=task-attachments --dry-run          # xem kế hoạch
-node scripts/purge-storage.mjs --bucket=task-attachments --confirm=PURGE-2026-10-22
+node scripts/purge-storage.mjs --bucket=task-attachments --confirm="$STORAGE_PURGE_TOKEN"
 ```
-Cần `SUPABASE_SERVICE_ROLE_KEY` trên máy chạy lệnh (không dùng publishable key).
+Cần `SUPABASE_SERVICE_ROLE_KEY` và `STORAGE_PURGE_TOKEN` trên máy chạy lệnh (không dùng publishable key).
+Bucket `work-evidence` bị script chặn cứng — dọn minh chứng phải có quy trình riêng, backup và phê duyệt.
 
 ## Vì sao cần tự thực hiện
 

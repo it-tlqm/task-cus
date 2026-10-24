@@ -51,6 +51,20 @@ export function normalizeBucketName(value: unknown): string {
 }
 
 /**
+ * Đường dẫn object an toàn: không rỗng và không có segment rỗng, `.` hoặc `..`.
+ *
+ * `encodeURIComponent("..")` vẫn trả `..`, nên nếu không chặn trước khi ghép URL
+ * thì `../work-evidence/foo` có thể bị chuẩn hoá ra ngoài bucket đã allowlist.
+ * Tên thường có khoảng trắng hoặc dấu `/` (thư mục) vẫn được phép.
+ */
+export function isSafeStorageObjectPath(value: unknown): boolean {
+  if (typeof value !== "string" || value.length === 0) return false;
+  return value
+    .split("/")
+    .every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
+}
+
+/**
  * Đọc cấu hình từ env với mặc định an toàn:
  * disabled, token rỗng, allowlist rỗng.
  */
