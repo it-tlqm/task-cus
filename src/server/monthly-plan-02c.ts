@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import fs from "fs";
 import path from "path";
+import { MISSING_TEXT } from "./person-assignment";
 
 export interface Plan02CRow {
   title: string;
@@ -11,8 +12,38 @@ export interface Plan02CRow {
   notes: string | null;
 }
 
+export interface Plan02CPerson {
+  fullName: string;
+  /** Chức vụ, chức danh (Position.title). */
+  positionTitle?: string | null;
+  /** Vị trí việc làm — nguồn riêng; chưa có thì không lặp lại chức vụ. */
+  jobPositionTitle?: string | null;
+  unitName?: string | null;
+}
+
 const TEMPLATE_REL = ["public", "templates", "kehoach-thang-02c-template.xlsx"];
 const BAND_CAP = 25;
+
+/** Đọc text hiển thị của ô, kể cả ô công thức (dùng cache result của mẫu). */
+function cellText(value: ExcelJS.CellValue): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") {
+    if ("richText" in value) {
+      return value.richText.map((part) => part.text ?? "").join("");
+    }
+    if ("formula" in value || "sharedFormula" in value) {
+      const result = (value as { result?: unknown }).result;
+      return result === null || result === undefined ? "" : String(result);
+    }
+    if ("text" in value) return String((value as { text?: unknown }).text ?? "");
+  }
+  return String(value);
+}
+
+function displayValue(value: string | null | undefined): string {
+  const text = value?.trim();
+  return text ? text : MISSING_TEXT;
+}
 
 /**
  * Điền Kế hoạch tháng (Mẫu 02C): STT, Nội dung, Sản phẩm, Thời gian, Ghi chú.
@@ -21,7 +52,7 @@ const BAND_CAP = 25;
  */
 export async function buildMonthlyPlan02C(
   items: Plan02CRow[],
-  person: { fullName: string; positionTitle?: string | null; unitName?: string | null },
+  person: Plan02CPerson,
   year: number,
   month: number
 ): Promise<Buffer> {
@@ -50,26 +81,37 @@ export async function buildMonthlyPlan02C(
 
   if (monthRow > 0) ws.getRow(monthRow).getCell(1).value = `Tháng ${month} năm ${year}`;
 
-  // Thông tin cán bộ: null mọi công thức sang Bảng1 (file xuất độc lập),
-  // rồi điền giá trị thuần. Template cố định: R8 = họ tên.
+  // Thông tin cán bộ: chụp nhãn từ mẫu TRƯỚC khi bỏ công thức sang Bảng1
+  // (file xuất độc lập), rồi ghi giá trị thuần — tránh cache mẫu cũ.
+  const infoFields: Array<{ match: RegExp; value: string | null | undefined }> = [
+    { match: /^Họ và tên/i, value: person.fullName },
+    { match: /^Chức vụ/i, value: person.positionTitle },
+    { match: /^Đơn vị công tác/i, value: person.unitName },
+    // Chưa có nguồn "vị trí việc làm" riêng ⇒ không lặp lại chức vụ.
+    { match: /^Vị trí việc làm/i, value: person.jobPositionTitle },
+  ];
+  const infoRows: Array<{ row: number; label: string; value: string | null | undefined }> = [];
+  for (let r = 1; r <= 12; r++) {
+    const text = cellText(ws.getRow(r).getCell(1).value).trim();
+    if (!text) continue;
+    const field = infoFields.find((f) => f.match.test(text));
+    if (!field) continue;
+    const label = text.split(":")[0].trim();
+    infoRows.push({ row: r, label: label || text, value: field.value });
+  }
+
   for (let r = 1; r <= 12; r++) {
     const cell = ws.getRow(r).getCell(1);
     const v: any = cell.value;
-    if (v && typeof v === "object" && "formula" in v) cell.value = null;
+    if (v && typeof v === "object" && ("formula" in v || "sharedFormula" in v)) cell.value = null;
   }
-  ws.getRow(8).getCell(1).value = `Họ và tên: ${person.fullName}`;
-  // R9/R10/R11: chức vụ + đơn vị (ghi đè nhãn kèm giá trị để không lẫn mẫu cũ)
-  const setInfo = (match: RegExp, value: string) => {
-    for (let r = 1; r <= 12; r++) {
-      if (match.test(textOf(r, 1))) {
-        const label = textOf(r, 1).split(":")[0];
-        ws.getRow(r).getCell(1).value = value ? `${label}: ${value}` : label;
-      }
-    }
-  };
-  setInfo(/Chức vụ/, person.positionTitle || "");
-  setInfo(/Đơn vị công tác/, person.unitName || "");
-  setInfo(/Vị trí việc làm/, person.positionTitle || "");
+  for (const info of infoRows) {
+    ws.getRow(info.row).getCell(1).value = `${info.label}: ${displayValue(info.value)}`;
+  }
+  // Mẫu cố định R8 = họ tên; nếu nhãn mẫu bị thiếu thì vẫn phải có tên.
+  if (!infoRows.some((info) => /^Họ và tên/i.test(info.label))) {
+    ws.getRow(8).getCell(1).value = `Họ và tên: ${person.fullName}`;
+  }
 
   items.forEach((it, idx) => {
     const r = d0 + idx;
