@@ -1,8 +1,9 @@
 # KẾT QUẢ REGRESSION REMEDIATION — 24/10/2026
 
 - **Trạng thái:** `PASS WITH LIMITATIONS`
-- **Commit:** `5c4c0cfa9e0a4a0055e6c95b36205cc09bf1edaf` (`codex/v3-remediation-p0`)
-- **Thời điểm chạy:** 24/10/2026, khoảng 15:19–15:26 (+07)
+- **Commit test:** `5c4c0cfa9e0a4a0055e6c95b36205cc09bf1edaf` (`codex/v3-remediation-p0`)
+- **Commit bằng chứng:** `9a5278f` (chỉ thêm tài liệu, không đổi source/test)
+- **Thời điểm chạy:** 24/10/2026, khoảng 15:19–15:26 (+07); bổ sung YC-10 quality lúc 15:36–15:37 (+07)
 - **Môi trường:** Windows 10.0.26200, Node `v24.20.0`, pnpm `12.11.2`, Next.js `15.5.27`
 - **Database:** PostgreSQL local, fixture `talung_v3_fixture_integration` (không ghi connection string/token)
 - **Server:** dùng dev server local sẵn có ở cổng `3100`; sau đó dừng và tự khởi động server `3117` với `V3_YC10_QUALITY=true`; đã dừng toàn bộ trước khi build
@@ -16,7 +17,7 @@
 |---|---|---|---|---|
 | 1 | `npx tsc --noEmit` | — | **PASS** — không lỗi type | 0 |
 | 2 | `npx prisma validate` | schema local | **PASS** — schema hợp lệ | 0 |
-| 3 | `TZ=UTC npx tsx scripts/test-v3-timezone.ts` | server 3117 + fixture account | **PASS** — 65 pass / 0 fail | 0 |
+| 3 | `$env:TZ="UTC"; npx tsx scripts/test-v3-timezone.ts` (PowerShell) | server 3117 + fixture account | **PASS** — 65 pass / 0 fail | 0 |
 | 4 | `npx tsx scripts/test-v3-purge-safety.ts` | static | **PASS** — 69 pass / 0 fail | 0 |
 | 5 | `npx tsx scripts/test-v3-auth-storage.ts` | server 3100 + Brave | **PASS** — 61 pass / 0 fail / 0 skip (gồm browser E2E) | 0 |
 | 6 | `npx tsx scripts/test-v3-auth-revocation.ts` | server 3100, đúng fixture DB | **PASS** — 62 pass / 0 fail / 0 skip | 0 |
@@ -25,9 +26,16 @@
 | 9 | `npx tsx scripts/test-v3-quality-history-visibility.ts` | server 3117, `V3_YC10_QUALITY=true` | **PASS** — 25 pass / 0 fail | 0 |
 | 10 | `npx tsx scripts/test-v3-e12-unified-history.ts` | server 3100 | **PASS** — 24 pass / 0 fail | 0 |
 | 11 | `npx tsx scripts/test-v3-task-approval-hardening.ts` | server 3100 | **PASS** — 40 pass / 0 fail | 0 |
-| 12 | `pnpm build` | dev server đã dừng | **PASS** — `prisma generate` + compile + type check thành công | 0 |
+| 12 | `npx tsx scripts/test-v3-yc10-quality.ts` (bổ sung) | server 3117, `V3_YC10_QUALITY=true`, fixture DB | **PASS** — 120 pass / 0 fail | 0 |
+| 13 | `pnpm build` | dev server đã dừng | **PASS** — `prisma generate` + compile + type check thành công | 0 |
 
-Tổng test chạy lại trong điều kiện đúng: **381 lượt kiểm tra pass, 0 fail, 0 skip** (65 + 69 + 61 + 62 + 23 + 12 + 25 + 24 + 40 = 381).
+Tổng test chạy lại trong điều kiện đúng: **501 lượt kiểm tra pass, 0 fail, 0 skip** (65 + 69 + 61 + 62 + 23 + 12 + 25 + 24 + 40 + 120 = 501).
+
+### Tóm tắt output (đã lược thông tin nhạy cảm)
+
+- `test-v3-quality-history-visibility.ts`: `25 PASS / 0 FAIL`; collaborator thấy quality `null`, owner/UNIT_LEADER thấy `80`, flag OFF trả `null`.
+- `test-v3-yc10-quality.ts`: `120 PASS / 0 FAIL`; gồm validation 65..100 bước 5, điều chỉnh quality, flag ON/OFF, export 01A có/không sheet "Đánh giá chất lượng", DB CHECK constraint, và xác nhận không sinh điểm/monthly ngoài fixture.
+- `pnpm build`: `✓ Compiled successfully in 21.6s`; type check và toàn bộ route table hoàn tất, exit 0.
 
 ---
 
@@ -47,10 +55,11 @@ Các fail trên là **cấu hình môi trường**, không phải lỗi sản ph
 ## 3. Giới hạn / lưu ý
 
 1. **Quality flag:** các assertion dương tính của quality chỉ đúng khi `V3_YC10_QUALITY=true`. File `.env.production.example` không đặt biến này, mặc định OFF — gate này chứng minh code path, không chứng minh Production đang bật quality.
-2. **Phạm vi dữ liệu:** test ghi/xoá fixture có tag trên database local; đã dùng `talung_v3_fixture_integration`, không dùng dữ liệu thật.
-3. **Browser E2E:** dùng Brave có sẵn trên máy; không lưu screenshot trong bằng chứng này.
-4. **Build:** chỉ chạy sau khi dừng dev server để tránh khoá `.next`/Prisma DLL trên Windows; build thật đã hoàn tất, không có EPERM.
-5. **Không kiểm tra:** Production/Supabase, migration, backup/PITR, Vercel deploy — ngoài phạm vi Task 2.5.
+2. **Phạm vi dữ liệu:** test ghi/xoá fixture có tag trên database local; đã dùng `talung_v3_fixture_integration`, không dùng dữ liệu thật. `test-v3-yc10-quality.ts` được chạy trên cùng DB/server với test quality history (header test gợi ý `talung_v3_approval_impl_quality`, nhưng cùng schema và tài khoản demo); 120/120 kiểm tra pass, gồm cả kiểm tra DB constraint.
+3. **Không chạy:** các suite legacy ngoài phạm vi remediation (`test-v3-e2e-flow.ts`, `test-v3-f01-f05.ts`, `test-v3-f18-routine.ts`, `test-v3-e8-return-progress.ts`, `test-v3-evidence-adjustment.ts`, `test-v3-multi-product.ts`, `test-v3-permissions.ts`, `test-v3-private-attachments.ts`, `test-v3-review-flow.ts`, `test-v3-yc09-per-person.ts`, `test-v3-yc11-precheck.ts`, `test-v3-phase-a/*`, `test-v3-phase-b/*`, các test YC-37/YC-38 và approvals cũ) — không có trong brief Task 2.5 hoặc cần fixture chuyên biệt; không tuyên bố pass cho các suite này.
+4. **Browser E2E:** dùng Brave có sẵn trên máy; không lưu screenshot trong bằng chứng này.
+5. **Build:** chỉ chạy sau khi dừng dev server để tránh khoá `.next`/Prisma DLL trên Windows; build thật đã hoàn tất, không có EPERM.
+6. **Không kiểm tra:** Production/Supabase, migration, backup/PITR, Vercel deploy — ngoài phạm vi Task 2.5.
 
 ---
 
@@ -62,4 +71,4 @@ Các fail trên là **cấu hình môi trường**, không phải lỗi sản ph
 
 ## 5. Kết luận
 
-`PASS WITH LIMITATIONS` — toàn bộ typecheck, Prisma validate, 7 test mới, 2 regression liên quan (E12 unified history, approval hardening) và production build đều pass trong điều kiện fixture đã nêu. Giới hạn chính là quality phụ thuộc flag `V3_YC10_QUALITY` (mặc định OFF ở Production) và phạm vi chỉ local/fixture.
+`PASS WITH LIMITATIONS` — toàn bộ typecheck, Prisma validate, 7 test mới, 3 regression liên quan (E12 unified history, approval hardening, YC-10 existing quality) và production build đều pass trong điều kiện fixture đã nêu. Giới hạn chính là quality phụ thuộc flag `V3_YC10_QUALITY` (mặc định OFF ở Production), phạm vi chỉ local/fixture, và các suite legacy ngoài phạm vi không được chạy (liệt kê ở mục 3).
