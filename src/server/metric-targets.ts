@@ -86,6 +86,11 @@ export interface MetricTargetView {
   lockedByName: string | null;
   lockedAt: string | null;
   revisionCount: number;
+  /** D5-A: quy tắc tường minh của metric+kỳ (top-level để consumer không phải đọc rules). */
+  targetApplicable: boolean;
+  direction: Direction;
+  measureMode: MeasureMode;
+  baselineScope: BaselineScope;
   rules: MetricTargetRules;
 }
 
@@ -242,6 +247,10 @@ async function toViews(rows: TargetRow[]): Promise<MetricTargetView[]> {
       lockedByName: r.lockedById ? personName.get(r.lockedById) ?? null : null,
       lockedAt: r.lockedAt ? r.lockedAt.toISOString() : null,
       revisionCount: counts.get(r.id) ?? 0,
+      targetApplicable: rule.configured && rule.targetApplicable,
+      direction: rule.direction,
+      measureMode: rule.measureMode,
+      baselineScope: rule.baselineScope,
       rules: rulesFrom(rule, sourceNote),
     };
   });

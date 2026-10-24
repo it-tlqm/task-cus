@@ -104,6 +104,7 @@ async function main() {
     check("A1. Create trả PROPOSED", base.status === "PROPOSED");
     check("A2. dataSource REAL → isOfficial true", base.isOfficial === true && base.dataSource === "REAL");
     check("A3. D5 rules THU_NSNN năm: HIGHER/CUMULATIVE/YEAR_START", base.rules.officialPercentAllowed === true && base.rules.direction === "HIGHER_IS_BETTER" && base.rules.measureMode === "CUMULATIVE" && base.rules.baselineScope === "YEAR_START");
+    check("A3b. D5 semantics có top-level trên target view", base.direction === "HIGHER_IS_BETTER" && base.measureMode === "CUMULATIVE" && base.baselineScope === "YEAR_START" && base.targetApplicable === true);
     check("A4. valueBase đúng đơn vị gốc", base.valueBase === 1000);
     check("A5. Có revision CREATE", base.revisionCount === 1);
 
