@@ -4,7 +4,7 @@
 - **Commit test (bộ 501):** `5c4c0cfa9e0a4a0055e6c95b36205cc09bf1edaf` (`codex/v3-remediation-p0`)
 - **Commit head khi bổ sung health:** `17988c6` (chỉ thêm release-info/health + test; xem mục 6.1)
 - **Commit head sau fix wave hậu review:** `4ffd436` (xem mục 6.2)
-- **Commit bằng chứng:** `9a5278f` (bản đầu) → `c840816` (bổ sung quality, bản đầy đủ trước fix wave) → `__EVIDENCE_COMMIT__` (bản này; commit metadata ghi ở lần cập nhật kế tiếp, không đổi source/test)
+- **Commit bằng chứng:** `9a5278f` (bản đầu) → `c840816` (bổ sung quality, bản đầy đủ trước fix wave) → `898549b` (bản này; commit metadata ngay sau chỉ cập nhật hash, không đổi source/test)
 - **Thời điểm chạy:** 24/10/2026, khoảng 15:19–15:26 (+07); bổ sung YC-10 quality lúc 15:36–15:37 (+07); addendum/fix wave hậu review trong cùng ngày
 - **Môi trường:** Windows 10.0.26200, Node `v24.20.0`, pnpm `12.11.2`, Next.js `15.5.27`
 - **Database:** PostgreSQL local, fixture `talung_v3_fixture_integration` (không ghi connection string/token)
@@ -122,4 +122,4 @@ Kết quả tại head `4ffd436` (trước commit tài liệu này):
 
 - `docs/V3/V3_PRODUCTION_REMEDIATION_PLAN_2026-10-24.md`: `frame-ancestors 'none'` → `'self'` kèm ghi chú iframe PDF same-origin (chặn nhúng từ website ngoài vẫn giữ); `pnpm lint` ghi rõ là gate **có điều kiện** vì repo chưa có ESLint config.
 - Không sửa `.superpowers/**`; `progress.md` không nhắc lint nên không cần chỉnh.
-- Metadata commit bằng chứng của bản này: `__EVIDENCE_COMMIT__`; commit metadata kế tiếp chỉ cập nhật đúng hash đó, không đổi source/test.
+- Metadata commit bằng chứng của bản này: `898549b`; commit metadata kế tiếp chỉ cập nhật đúng hash đó, không đổi source/test.
