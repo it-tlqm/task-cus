@@ -13,6 +13,7 @@
  *  4. Kết luận chưa có task sửa được; kết luận đã có taskId trả 400.
  *  5. Thêm kết luận, chuyển/xóa giữ nguyên hành vi lãnh đạo.
  *  6. UNIT_LEADER phạm vi DEPARTMENT/SUBTREE không sửa chéo đơn vị khác.
+ *  7. Biên bản cũ không có unitId: lãnh đạo ORGANIZATION xem/sửa được; STAFF vẫn 403.
  *
  * Script tự tạo fixture (1 biên bản + 2 kết luận) và dọn sạch trong finally.
  */
@@ -56,6 +57,7 @@ async function main() {
   const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
   const now = new Date();
   let meetingId = "";
+  let nullUnitMeetingId = "";
   let tempGrantId = "";
 
   try {
@@ -101,6 +103,9 @@ async function main() {
     const inScopeLeader = deptLeaders.find((a) => a.scopeUnitId === unitA.id) || deptLeaders[0];
     const scopedUnitId = inScopeLeader?.scopeUnitId || unitA.id;
     const outsiderLeader = deptLeaders.find((a) => a.scopeUnitId !== scopedUnitId);
+    const orgLeader = mapped.find(
+      (a) => a.roleCode === "UNIT_LEADER" && a.scopeType === "ORGANIZATION" && a.person
+    );
 
     const staffAccounts = mapped.filter((a) => a.roleCode === "STAFF" && a.person);
     const creator = staffAccounts.find((a) => a.unitId !== scopedUnitId) || staffAccounts[0];
@@ -116,10 +121,18 @@ async function main() {
         ![creator, sameUnitStaff, outsiderStaff].some((x) => x?.person?.id === a.person!.id)
     );
 
-    if (!inScopeLeader || !outsiderLeader || !creator || !sameUnitStaff || !outsiderStaff || !assigneeStaff) {
+    if (
+      !inScopeLeader ||
+      !outsiderLeader ||
+      !orgLeader ||
+      !creator ||
+      !sameUnitStaff ||
+      !outsiderStaff ||
+      !assigneeStaff
+    ) {
       throw new Error(
         "Fixture thiếu tài khoản phù hợp (cần 1 trưởng bộ phận trong đơn vị, 1 ngoài đơn vị, " +
-          "1 STAFF cùng đơn vị, 2 STAFF ngoài đơn vị)"
+          "1 UNIT_LEADER phạm vi ORGANIZATION, 1 STAFF cùng đơn vị, 2 STAFF ngoài đơn vị)"
       );
     }
 
@@ -136,6 +149,7 @@ async function main() {
 
     const tokenInScope = token(inScopeLeader);
     const tokenOutsider = token(outsiderLeader);
+    const tokenOrgLeader = token(orgLeader);
     const tokenCreator = token(creator);
     const tokenSameUnitStaff = token(sameUnitStaff);
     const tokenOutsiderStaff = token(outsiderStaff);
@@ -174,6 +188,18 @@ async function main() {
       },
     });
 
+    // Biên bản cũ có thể không gắn unitId — dùng cho kiểm thử quyền xem của lãnh đạo ORGANIZATION.
+    nullUnitMeetingId = (
+      await prisma.meeting.create({
+        data: {
+          title: "[TEST-2A1] Giao ban không đơn vị",
+          meetingAt: new Date("2026-10-22T00:00:00.000Z"),
+          unitId: null,
+          createdById: creator.person!.id,
+        },
+      })
+    ).id;
+
     const request = (tok: string, method: string, payload?: any) =>
       new Request(`http://localhost/api/meetings/${meetingId}`, {
         method,
@@ -187,6 +213,21 @@ async function main() {
     const params = { params: Promise.resolve({ id: meetingId }) };
     const call = async (fn: any, tok: string, method: string, payload?: any) => {
       const res = await fn(request(tok, method, payload) as any, params as any);
+      const json = await res.json().catch(() => ({}));
+      return { status: res.status, json };
+    };
+
+    // Gọi handler cho biên bản khác (biên bản không có unitId).
+    const callAt = async (mid: string, fn: any, tok: string, method: string, payload?: any) => {
+      const req = new Request(`http://localhost/api/meetings/${mid}`, {
+        method,
+        headers: {
+          authorization: `Bearer ${tok}`,
+          ...(payload ? { "content-type": "application/json" } : {}),
+        },
+        body: payload ? JSON.stringify(payload) : undefined,
+      });
+      const res = await fn(req as any, { params: Promise.resolve({ id: mid }) } as any);
       const json = await res.json().catch(() => ({}));
       return { status: res.status, json };
     };
@@ -355,8 +396,26 @@ async function main() {
       title: "Sửa chéo đơn vị",
     });
     check("UNIT_LEADER phạm vi DEPARTMENT khác đơn vị PATCH bị 403", crossUnitUpdate.status === 403, `status=${crossUnitUpdate.status}`);
+
+    // --- 7. Biên bản cũ không có unitId: lãnh đạo ORGANIZATION xem + sửa được
+    const nullOrgGet = await callAt(nullUnitMeetingId, GET, tokenOrgLeader, "GET");
+    check("UNIT_LEADER ORGANIZATION GET biên bản không đơn vị", nullOrgGet.status === 200, `status=${nullOrgGet.status}`);
+    check("UNIT_LEADER ORGANIZATION nhận canEdit=true cho biên bản không đơn vị", nullOrgGet.json?.data?.canEdit === true);
+
+    const nullCreatorGet = await callAt(nullUnitMeetingId, GET, tokenCreator, "GET");
+    check("Người tạo GET biên bản không đơn vị", nullCreatorGet.status === 200, `status=${nullCreatorGet.status}`);
+    check("Người tạo nhận canEdit=true cho biên bản không đơn vị", nullCreatorGet.json?.data?.canEdit === true);
+
+    const nullStaffGet = await callAt(nullUnitMeetingId, GET, tokenSameUnitStaff, "GET");
+    check("STAFF cùng đơn vị GET biên bản không đơn vị bị 403", nullStaffGet.status === 403, `status=${nullStaffGet.status}`);
+
+    const nullOutsiderGet = await callAt(nullUnitMeetingId, GET, tokenOutsiderStaff, "GET");
+    check("STAFF ngoài đơn vị GET biên bản không đơn vị bị 403", nullOutsiderGet.status === 403, `status=${nullOutsiderGet.status}`);
   } finally {
     if (tempGrantId) await prisma.roleGrant.delete({ where: { id: tempGrantId } }).catch(() => {});
+    if (nullUnitMeetingId) {
+      await prisma.meeting.delete({ where: { id: nullUnitMeetingId } }).catch(() => {});
+    }
     if (meetingId) {
       await prisma.auditEvent.deleteMany({ where: { resourceId: meetingId } }).catch(() => {});
       await prisma.meeting.delete({ where: { id: meetingId } }).catch(() => {});

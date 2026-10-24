@@ -40,14 +40,16 @@ type MeetingScopeRow = {
 async function canViewMeeting(user: SessionUser, meeting: MeetingScopeRow): Promise<boolean> {
   // Danh sách biên bản chặn SYSTEM_ADMIN — chi tiết phải khớp để không lộ dữ liệu nghiệp vụ.
   if (user.role === "SYSTEM_ADMIN") return false;
+  const authorizedUnits = await getAuthorizedUnitIds(user);
+  // "ALL" (lãnh đạo toàn tổ chức) xem được cả biên bản cũ không gắn unitId.
+  if (authorizedUnits === "ALL") return true;
   if (meeting.createdById && meeting.createdById === user.personId) return true;
   const isConclusionMember = (meeting.conclusions || []).some(
     (c) => c.ownerId === user.personId || (c.assigneeIds || []).includes(user.personId)
   );
   if (isConclusionMember) return true;
   if (!meeting.unitId) return false;
-  const authorizedUnits = await getAuthorizedUnitIds(user);
-  return authorizedUnits === "ALL" || authorizedUnits.includes(meeting.unitId);
+  return authorizedUnits.includes(meeting.unitId);
 }
 
 /** Quyền SỬA: người tạo hoặc lãnh đạo trong đúng phạm vi đơn vị của biên bản. */
