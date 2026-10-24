@@ -7,12 +7,24 @@
  * - Kế hoạch đã trình duyệt (SUBMITTED) hoặc đã duyệt/có hiệu lực thì khóa nội dung;
  *   đã duyệt/có hiệu lực tiếp tục dùng luồng bổ sung theo quy định hiện hành.
  */
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { SessionUser } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { checkPermission, getAuthorizedUnitIds } from "@/server/guard";
+import { normalizeTitle } from "@/server/idempotency";
 
 export const PLAN_CONTENT_EDITABLE = ["DRAFT", "RETURNED"] as const;
 export const PLAN_CONTENT_LOCKED = ["SUBMITTED", "APPROVED", "IN_EFFECT"] as const;
+
+/**
+ * Task 3C — trạng thái được phép hủy mềm kế hoạch trùng.
+ * SUBMITTED/APPROVED/IN_EFFECT phải đi theo quy trình trả lại/điều chỉnh,
+ * không xóa/hủy trực tiếp.
+ */
+export const PLAN_CANCELABLE_STATUSES = ["DRAFT", "RETURNED"] as const;
+
+/** Trạng thái đánh dấu kế hoạch trùng đã được hủy mềm (không xóa cứng). */
+export const PLAN_CANCELED_STATUS = "CANCELED";
 
 export type PlanAccessShape = {
   id: string;
@@ -33,6 +45,11 @@ export function planContentLockMessage(plan: { status: string; title: string }):
   }
   if (plan.status === "APPROVED" || plan.status === "IN_EFFECT") {
     return `Kế hoạch "${plan.title}" đã phê duyệt — hãy dùng “Trình duyệt bổ sung” thay vì sửa trực tiếp.`;
+  }
+  // Task 3C: kế hoạch đã hủy mềm là trạng thái cuối, không được thêm/sửa
+  // hạng mục hay gắn liên kết mới.
+  if (plan.status === "CANCELED") {
+    return `Kế hoạch "${plan.title}" đã được hủy — không thể thay đổi nội dung.`;
   }
   return null;
 }
@@ -75,6 +92,86 @@ export async function canEditPlanTitle(
   if (user.role === "SYSTEM_ADMIN") return false;
   if (plan.creatorId === user.personId) return true;
   return canManagePlanContent(user, plan);
+}
+
+/** Thông báo lý do không thể hủy mềm kế hoạch (null = được phép). */
+export function planCancelStatusMessage(plan: { status: string; title: string }): string | null {
+  if ((PLAN_CANCELABLE_STATUSES as readonly string[]).includes(plan.status)) return null;
+  if (plan.status === "SUBMITTED") {
+    return `Kế hoạch "${plan.title}" đang chờ phê duyệt — không thể hủy. Hãy yêu cầu trả lại trước khi xử lý.`;
+  }
+  if (plan.status === "APPROVED" || plan.status === "IN_EFFECT") {
+    return `Kế hoạch "${plan.title}" đã phê duyệt/có hiệu lực — không thể hủy trực tiếp. Hãy dùng quy trình điều chỉnh.`;
+  }
+  if (plan.status === PLAN_CANCELED_STATUS) {
+    return `Kế hoạch "${plan.title}" đã được hủy trước đó.`;
+  }
+  return `Kế hoạch "${plan.title}" ở trạng thái "${plan.status}" — chỉ hủy được kế hoạch DRAFT hoặc RETURNED.`;
+}
+
+/**
+ * Quyền hủy mềm kế hoạch trùng.
+ *
+ * - Người tạo được hủy bản nháp của chính mình, trong phạm vi đơn vị được xem.
+ * - Lãnh đạo/Trưởng bộ phận hủy theo policy quản lý nội dung (`plans.create` + phạm vi).
+ * - Luôn chặn SYSTEM_ADMIN và người ngoài phạm vi đơn vị của kế hoạch.
+ */
+export async function canCancelPlan(
+  user: SessionUser,
+  plan: PlanAccessShape
+): Promise<boolean> {
+  if (user.role === "SYSTEM_ADMIN") return false;
+
+  const authorizedUnits = await getAuthorizedUnitIds(user);
+  if (authorizedUnits !== "ALL" && !authorizedUnits.includes(plan.unitId)) {
+    return false;
+  }
+
+  if (plan.creatorId === user.personId) return true;
+  if (user.role === "UNIT_LEADER" || user.role === "DEPARTMENT_LEADER") {
+    return checkPermission(user, "plans.create");
+  }
+  return false;
+}
+
+export interface DuplicatePlanSummary {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: Date;
+}
+
+type PlanReadClient = Pick<PrismaClient, "plan"> | Prisma.TransactionClient;
+
+/**
+ * Tìm kế hoạch trùng: cùng đơn vị + cùng kỳ + tiêu đề chuẩn hóa
+ * (trim/gộp khoảng trắng/lowercase qua `normalizeTitle`).
+ *
+ * Kế hoạch đã hủy mềm (CANCELED) không tính là trùng — cho phép tạo lại bản đúng.
+ * Không dùng unique index vì dữ liệu cũ có thể đã trùng; chỉ chặn phát sinh mới.
+ */
+export async function findDuplicatePlan(
+  args: {
+    unitId: string;
+    periodId: string;
+    title: string;
+    excludePlanId?: string;
+  },
+  client: PlanReadClient = prisma
+): Promise<DuplicatePlanSummary | null> {
+  const candidates = await client.plan.findMany({
+    where: {
+      unitId: args.unitId,
+      periodId: args.periodId,
+      status: { not: PLAN_CANCELED_STATUS },
+      ...(args.excludePlanId ? { id: { not: args.excludePlanId } } : {}),
+    },
+    select: { id: true, title: true, status: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const normalized = normalizeTitle(args.title);
+  return candidates.find((plan) => normalizeTitle(plan.title) === normalized) || null;
 }
 
 export interface PlanItemLinkValidation {

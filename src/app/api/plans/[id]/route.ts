@@ -4,11 +4,19 @@ import { jsonError } from "@/server/guard";
 import { prisma } from "@/server/db";
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
-import { canEditPlanTitle, planContentLockMessage } from "@/server/planning";
+import {
+  PLAN_CANCELABLE_STATUSES,
+  PLAN_CANCELED_STATUS,
+  canCancelPlan,
+  canEditPlanTitle,
+  planCancelStatusMessage,
+  planContentLockMessage,
+} from "@/server/planning";
 
 export const runtime = "nodejs";
 
 const PLAN_TITLE_MAX_LENGTH = 300;
+const PLAN_CANCEL_REASON_MAX_LENGTH = 500;
 
 // Các trường không được phép đổi qua PATCH cấp kế hoạch trong phạm vi task này.
 const READ_ONLY_FIELDS = ["unitId", "periodId", "status", "creatorId"] as const;
@@ -145,5 +153,132 @@ export async function PATCH(
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
     return jsonError("Lỗi khi sửa kế hoạch công tác: " + error.message, 500);
+  }
+}
+
+/**
+ * DELETE /api/plans/[id] — hủy mềm kế hoạch trùng.
+ *
+ * Task 3C:
+ * - Bắt buộc `reason`; không xóa cứng, không cascade.
+ * - Chỉ DRAFT/RETURNED; SUBMITTED/APPROVED/IN_EFFECT trả 409.
+ * - Chặn nếu còn hạng mục/nhiệm vụ liên kết/đầu việc để không mất dữ liệu.
+ * - Chỉ người tạo hoặc lãnh đạo trong phạm vi đơn vị.
+ * - Ghi audit `PLAN_CANCEL_DUPLICATE`.
+ */
+export async function DELETE(
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await authenticateRequest(req);
+    if (!user) return jsonError("Yêu cầu đăng nhập", 401);
+
+    const { id: planId } = await ctx.params;
+    const plan = await prisma.plan.findUnique({
+      where: { id: planId },
+      select: {
+        id: true,
+        unitId: true,
+        creatorId: true,
+        status: true,
+        title: true,
+        periodId: true,
+      },
+    });
+    if (!plan) return jsonError("Kế hoạch công tác không tồn tại", 404);
+
+    if (!(await canCancelPlan(user, plan))) {
+      return jsonError("Bạn không có quyền hủy kế hoạch này", 403);
+    }
+
+    // Trạng thái khóa phải trả 409 kể cả khi thiếu lý do: đây là quy tắc
+    // nghiệp vụ mạnh hơn validation body.
+    const statusMessage = planCancelStatusMessage(plan);
+    if (statusMessage) return jsonError(statusMessage, 409);
+
+    const body: any = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonError("Dữ liệu gửi lên không hợp lệ", 400);
+    }
+    if (typeof body.reason !== "string" || !body.reason.trim()) {
+      return jsonError("Lý do hủy kế hoạch là bắt buộc", 400);
+    }
+    const reason = body.reason.trim();
+    if (reason.length > PLAN_CANCEL_REASON_MAX_LENGTH) {
+      return jsonError(
+        `Lý do hủy kế hoạch không được vượt quá ${PLAN_CANCEL_REASON_MAX_LENGTH} ký tự`,
+        400
+      );
+    }
+
+    // Không xóa cứng: còn bất kỳ liên kết nào thì chặn và yêu cầu xử lý trước.
+    const [itemCount, taskLinkCount, workItemCount] = await Promise.all([
+      prisma.planItem.count({ where: { planId } }),
+      prisma.planTaskLink.count({ where: { planItem: { planId } } }),
+      prisma.personalWorkItem.count({ where: { planItem: { planId } } }),
+    ]);
+    if (itemCount > 0 || taskLinkCount > 0 || workItemCount > 0) {
+      const blockers = [
+        itemCount > 0 ? `${itemCount} hạng mục` : null,
+        taskLinkCount > 0 ? `${taskLinkCount} nhiệm vụ liên kết` : null,
+        workItemCount > 0 ? `${workItemCount} đầu việc` : null,
+      ].filter(Boolean);
+      return NextResponse.json(
+        {
+          success: false,
+          code: "PLAN_HAS_LINKS",
+          error:
+            `Kế hoạch "${plan.title}" còn ${blockers.join(", ")} — không thể hủy. ` +
+            "Hãy xử lý/xóa các liên kết trước.",
+          blockers: { itemCount, taskLinkCount, workItemCount },
+        },
+        { status: 409 }
+      );
+    }
+
+    // Cập nhật có điều kiện trạng thái: nếu kế hoạch vừa được trình duyệt trong
+    // lúc request đang xử lý thì không hủy bản đã khóa.
+    const updatedCount = await prisma.plan.updateMany({
+      where: {
+        id: planId,
+        status: { in: [...PLAN_CANCELABLE_STATUSES] },
+      },
+      data: { status: PLAN_CANCELED_STATUS },
+    });
+    if (updatedCount.count === 0) {
+      const current = await prisma.plan.findUnique({
+        where: { id: planId },
+        select: { id: true, unitId: true, creatorId: true, status: true, title: true },
+      });
+      if (!current) return jsonError("Kế hoạch công tác không tồn tại", 404);
+      return jsonError(
+        planCancelStatusMessage(current) ||
+          `Kế hoạch ở trạng thái "${current.status}" không thể hủy`,
+        409
+      );
+    }
+
+    await recordAuditEvent({
+      actorId: user.id,
+      action: "PLAN_CANCEL_DUPLICATE",
+      resourceType: "Plan",
+      resourceId: planId,
+      oldData: {
+        status: plan.status,
+        title: plan.title,
+        unitId: plan.unitId,
+        periodId: plan.periodId,
+      },
+      newData: { status: PLAN_CANCELED_STATUS, reason },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: { id: planId, status: PLAN_CANCELED_STATUS, reason },
+      message: "Đã hủy mềm kế hoạch trùng. Dữ liệu vẫn được lưu để đối soát.",
+    });
+  } catch (error: any) {
+    return jsonError("Lỗi khi hủy kế hoạch công tác: " + error.message, 500);
   }
 }
