@@ -53,11 +53,6 @@ export function verifyToken(token: string): SessionUser | null {
   }
 }
 
-interface CachedAuth {
-  user: SessionUser;
-  expiresAt: number;
-}
-
 /** Thứ tự ưu tiên vai trò (cao = quyền rộng hơn). */
 const ROLE_PRIORITY: Record<string, number> = {
   SYSTEM_ADMIN: 4,
@@ -90,16 +85,6 @@ export function pickPrimaryGrant<T extends { role: { code: string }; scopeType: 
     return (SCOPE_WIDTH[b.scopeType] ?? 0) - (SCOPE_WIDTH[a.scopeType] ?? 0);
   })[0];
 }
-const authMemoryCache = new Map<string, CachedAuth>();
-const AUTH_CACHE_MAX = 1000;
-
-function pruneAuthCache(nowMs: number) {
-  if (authMemoryCache.size <= AUTH_CACHE_MAX) return;
-  for (const [k, v] of authMemoryCache) {
-    if (v.expiresAt <= nowMs) authMemoryCache.delete(k);
-    if (authMemoryCache.size <= AUTH_CACHE_MAX / 2) break;
-  }
-}
 
 export async function authenticateRequest(req: NextRequest): Promise<SessionUser | null> {
   let token: string | undefined;
@@ -115,12 +100,12 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
   const decoded = verifyToken(token);
   if (!decoded) return null;
 
-  const nowMs = Date.now();
-  const cached = authMemoryCache.get(token);
-  if (cached && cached.expiresAt > nowMs) {
-    return cached.user;
-  }
-
+  // Đọc thẳng PostgreSQL MỖI request — không cache kết quả xác thực.
+  // Trước đây kết quả được giữ 60 giây trong bộ nhớ nên tài khoản bị vô hiệu hóa,
+  // grant bị thu hồi hoặc cán bộ bị điều chuyển vẫn giữ quyền cũ tới hết TTL.
+  // Hiệu năng: ~37 tài khoản, truy vấn account theo khóa chính (đã có index);
+  // theo dõi p95 sau deploy. Nếu p95 tăng bất thường mới cân nhắc cache ngắn
+  // CÓ invalidation, tuyệt đối không quay lại TTL 60 giây mặc định.
   // Kiểm tra thời gian thực trong PostgreSQL:
   // 1. Tài khoản và Cán bộ phải ở trạng thái ACTIVE (thu hồi token ngay nếu bị vô hiệu hóa)
   // 2. Đồng bộ phân công đơn vị và phạm vi quyền hiện hành để triệt tiêu lỗ hổng dùng token cũ truy cập đơn vị cũ sau khi điều chuyển
@@ -187,8 +172,6 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
     permissions: permissions.size > 0 ? Array.from(permissions) : decoded.permissions,
   };
 
-  authMemoryCache.set(token, { user: sessionUser, expiresAt: nowMs + 60_000 });
-  pruneAuthCache(nowMs);
   return sessionUser;
 }
 
