@@ -12,8 +12,9 @@
  * Chạy: npx tsx scripts/test-v3-purge-safety.ts
  */
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   isBucketAllowed,
@@ -64,7 +65,7 @@ function read(rel: string): string {
   return fs.readFileSync(path.join(ROOT, rel), "utf8");
 }
 
-function main() {
+async function main() {
   console.log("=== V3 TASK 1.3 — PURGE STORAGE AN TOÀN ===\n");
 
   // ---------------------------------------------------------------------------
@@ -333,6 +334,24 @@ function main() {
     "F16. Script kiểm tra và encode object key trước DELETE",
     script.includes("isSafeKey") && script.includes("map(encodeURIComponent)")
   );
+  check(
+    "F17. Script đệ quy thư mục (id/metadata null) và dựng key đầy đủ",
+    script.includes("it?.id == null && it?.metadata == null") &&
+      script.includes("await listObjects(objectPath)") &&
+      script.includes("prefix ? `${prefix}/${name}` : name")
+  );
+  check(
+    "F18. Script không hardcode worktree, không createRequire",
+    !script.includes("D:/thanhnx") &&
+      !script.includes("talung-cus-work") &&
+      !script.includes("createRequire") &&
+      script.includes("import.meta.url")
+  );
+  check(
+    "F19. Usage comment có dạng POSIX và PowerShell hợp lệ",
+    script.includes("export STORAGE_PURGE_TOKEN") &&
+      script.includes("$env:STORAGE_PURGE_TOKEN")
+  );
 
   // ---------------------------------------------------------------------------
   // G. Dot-segment object paths — không thể thoát bucket allowlist.
@@ -428,6 +447,100 @@ function main() {
     `exit=${wrongToken.status}`
   );
 
+  // ---------------------------------------------------------------------------
+  // I. Hành vi đệ quy: Storage giả lập cục bộ (KHÔNG gọi Supabase thật).
+  //    Cây: root-file.pdf + task-ABC/evidence/bao-cao.pdf (2 cấp thư mục).
+  // ---------------------------------------------------------------------------
+  const runScriptAsync = (args: string[], env: NodeJS.ProcessEnv = {}) =>
+    new Promise<{ status: number | null; stdout: string; stderr: string }>((resolve) => {
+      const child = spawn(process.execPath, [path.join(ROOT, SCRIPT_REL), ...args], {
+        cwd: ROOT,
+        env: {
+          ...process.env,
+          SUPABASE_SECRET_KEY: "",
+          STORAGE_PURGE_TOKEN: "",
+          SUPABASE_SERVICE_ROLE_KEY: "dummy-not-real",
+          ...env,
+        },
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (d) => (stdout += String(d)));
+      child.stderr.on("data", (d) => (stderr += String(d)));
+      child.on("close", (status) => resolve({ status, stdout, stderr }));
+    });
+
+  const FAKE_TREE: Record<string, unknown[]> = {
+    "": [
+      { name: "task-ABC", id: null, metadata: null },
+      { name: "root-file.pdf", id: "obj-root", metadata: { size: 1 } },
+    ],
+    "task-ABC": [{ name: "evidence", id: null, metadata: null }],
+    "task-ABC/evidence": [{ name: "bao-cao.pdf", id: "obj-nested", metadata: { size: 2 } }],
+  };
+  const seenPrefixes: string[] = [];
+  const fakeStorage = http.createServer((req, res) => {
+    let body = "";
+    req.on("data", (chunk) => (body += String(chunk)));
+    req.on("end", () => {
+      let prefix = "";
+      try {
+        const parsed = JSON.parse(body || "{}");
+        prefix = typeof parsed.prefix === "string" ? parsed.prefix : "";
+      } catch {
+        prefix = "";
+      }
+      seenPrefixes.push(prefix);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(FAKE_TREE[prefix] ?? []));
+    });
+  });
+  await new Promise<void>((resolve) => fakeStorage.listen(0, "127.0.0.1", resolve));
+  const fakeAddress = fakeStorage.address();
+  const fakePort = typeof fakeAddress === "object" && fakeAddress ? fakeAddress.port : 0;
+
+  const planPath = path.join(ROOT, "demo-ops", "reset", "storage-purge-plan.json");
+  const planBefore = fs.existsSync(planPath) ? fs.readFileSync(planPath, "utf8") : null;
+  let recursiveRun: { status: number | null; stdout: string; stderr: string } = {
+    status: null,
+    stdout: "",
+    stderr: "",
+  };
+  let planAfter: { objects?: string[] } | null = null;
+  try {
+    recursiveRun = await runScriptAsync(["--bucket=task-attachments", "--dry-run"], {
+      NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${fakePort}`,
+    });
+    planAfter = JSON.parse(fs.readFileSync(planPath, "utf8"));
+  } finally {
+    await new Promise<void>((resolve) => fakeStorage.close(() => resolve()));
+    if (planBefore !== null) fs.writeFileSync(planPath, planBefore);
+    else if (fs.existsSync(planPath)) fs.unlinkSync(planPath);
+  }
+
+  check(
+    "I1. Dry-run liệt kê key đệ quy đầy đủ (root + 2 cấp thư mục)",
+    recursiveRun.status === 0 &&
+      recursiveRun.stdout.includes("root-file.pdf") &&
+      recursiveRun.stdout.includes("task-ABC/evidence/bao-cao.pdf"),
+    `exit=${recursiveRun.status}`
+  );
+  check(
+    "I2. Kế hoạch JSON chỉ chứa object thật, không chứa tên thư mục",
+    !!planAfter &&
+      JSON.stringify((planAfter.objects ?? []).sort()) ===
+        JSON.stringify(["root-file.pdf", "task-ABC/evidence/bao-cao.pdf"]) &&
+      !(planAfter.objects ?? []).includes("task-ABC"),
+    JSON.stringify(planAfter?.objects)
+  );
+  check(
+    "I3. Script thực sự đệ quy qua prefix thư mục con",
+    seenPrefixes.includes("") &&
+      seenPrefixes.includes("task-ABC") &&
+      seenPrefixes.includes("task-ABC/evidence"),
+    seenPrefixes.join(" | ")
+  );
+
   console.log(`\n=== KẾT QUẢ: ${pass} pass / ${fail} fail ===`);
   if (fail > 0) {
     console.log("Thất bại:");
@@ -436,4 +549,7 @@ function main() {
   process.exit(fail === 0 ? 0 : 1);
 }
 
-main();
+main().catch((err) => {
+  console.error("LỖI KHÔNG MONG ĐỢI:", err);
+  process.exit(1);
+});

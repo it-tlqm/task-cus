@@ -3,21 +3,27 @@
  *
  * Mục đích: sau khi làm sạch dữ liệu nghiệp vụ, KHÔNG còn tệp cũ tải được công khai.
  *
- * Lệnh:
- *   node scripts/purge-storage.mjs --bucket=task-attachments --dry-run     (xem danh sach)
- *   STORAGE_PURGE_TOKEN=<bi-mat> node scripts/purge-storage.mjs --bucket=task-attachments --confirm="$STORAGE_PURGE_TOKEN"
+ * Lệnh (POSIX) — đặt biến ở lệnh RIÊNG rồi mới dùng, để shell kịp nạp giá trị:
+ *   export STORAGE_PURGE_TOKEN='<bi-mat>'
+ *   node scripts/purge-storage.mjs --bucket=task-attachments --dry-run
+ *   node scripts/purge-storage.mjs --bucket=task-attachments --confirm="$STORAGE_PURGE_TOKEN"
+ *
+ * Lệnh (PowerShell):
+ *   $env:STORAGE_PURGE_TOKEN = '<bi-mat>'
+ *   node scripts/purge-storage.mjs --bucket=task-attachments --dry-run
+ *   node scripts/purge-storage.mjs --bucket=task-attachments "--confirm=$env:STORAGE_PURGE_TOKEN"
  *
  * Yêu cầu khóa service-role (SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY)
  * và STORAGE_PURGE_TOKEN cho lượt xoá thật. KHÔNG in khoá/token ra log.
  * KHÔNG xoá nếu chưa có --confirm; mặc định dry-run.
  * Bucket work-evidence bị chặn cứng (cần quy trình riêng có backup/phê duyệt).
  */
-import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const REPO = "D:/thanhnx/OpenCode/talung-cus-work/";
-const creq = createRequire(path.join(REPO, "package.json"));
+// Gốc repo lấy từ vị trí script (scripts/..) — không phụ thuộc cwd hay ổ đĩa cục bộ.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const arg = (k, d = null) => {
   const hit = process.argv.find((a) => a.startsWith(`--${k}=`));
@@ -73,6 +79,8 @@ if (!DRY && CONFIRM !== EXPECTED_CONFIRM) {
 
 const H = { apikey: KEY, Authorization: "Bearer " + KEY };
 
+// Liệt kê ĐỆ QUY như route purge: Supabase trả thư mục con với id/metadata null.
+// Key đẩy ra ngoài luôn là đường dẫn đầy đủ từ gốc bucket (vd. task-ABC/evidence/x.pdf).
 async function listObjects(prefix = "") {
   const out = [];
   let cursor = "";
@@ -84,12 +92,24 @@ async function listObjects(prefix = "") {
     });
     if (!r.ok) throw new Error(`list khong duoc (HTTP ${r.status}): ${(await r.text()).slice(0, 200)}`);
     const items = await r.json();
+    if (!Array.isArray(items)) throw new Error("Phản hồi list không phải mảng — dừng để tránh xoá sai");
     for (const it of items) {
-      if (!it?.name) continue;
-      if (!isSafeKey(it.name)) {
+      // KHÔNG trim: giữ nguyên tên thật; chỉ bỏ entry rỗng/không phải chuỗi.
+      const name = typeof it?.name === "string" ? it.name : "";
+      if (name.length === 0) continue;
+      if (!isSafeKey(name)) {
         throw new Error("Tên object không an toàn (dot-segment/rỗng) — dừng để tránh xoá ngoài bucket");
       }
-      out.push(it.name);
+      const objectPath = prefix ? `${prefix}/${name}` : name;
+      if (!isSafeKey(objectPath)) {
+        throw new Error("Đường dẫn object không an toàn (dot-segment/rỗng) — dừng để tránh xoá ngoài bucket");
+      }
+      // Thư mục con: id/metadata null → đệ quy; còn lại là object thật.
+      if (it?.id == null && it?.metadata == null) {
+        out.push(...(await listObjects(objectPath)));
+      } else {
+        out.push(objectPath);
+      }
     }
     cursor = items.length === 1000 ? items[items.length - 1].name : "";
     if (items.length === 0) break;
