@@ -4,7 +4,7 @@
 - **Worktree:** `D:\thanhnx\OpenCode\talung-phase-c`
 - **Branch:** `codex/v3.2-metrics`
 - **Base:** `a721fe7` (tag `v3.1-production-2026-10-24`)
-- **Commits:** `43b7b30` (D5/C1/B1) · `0ba1e21` (B2) · `9dcfec3` (tests/evidence) · `f0ee7b9` (top-level semantics) · docs commit
+- **Commits:** `43b7b30` (D5/C1/B1) · `0ba1e21` (B2) · `9dcfec3` (tests/evidence) · `f0ee7b9` (top-level semantics) · `1720e25` + `4ff4b90` (docs)
 - **Date:** 24/10/2026
 - **Production touched:** **NO**
 - **Merge/deploy:** **NO** (không merge integration/main, không Vercel/Supabase)
