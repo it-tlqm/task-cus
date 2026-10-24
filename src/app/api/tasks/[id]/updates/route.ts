@@ -10,7 +10,7 @@ import {
 } from "@/server/task-transitions";
 import { advisoryLock, isValidProgressStep } from "@/server/idempotency";
 import { recordAuditEvent } from "@/server/audit";
-import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
+import { reopenApprovalCaseOnResubmit, decideApproval } from "@/server/approval-case";
 import {
   ParticipantError,
   recordParticipantProgress,
@@ -154,6 +154,43 @@ export async function POST(
         },
         { status: 201 }
       );
+    }
+
+    // E8-A: trả lại hồ sơ qua endpoint tiến độ PHẢI đi qua ApprovalCase và phải có ghi chú.
+    // Đi thẳng vào transaction cũ sẽ ghi kind="progress", không có quyết định duyệt và có thể
+    // ghi đè tiến độ bằng giá trị client gửi lên — không được phép.
+    if (access.task?.status === "WAITING_REVIEW" && targetStatus === "IN_PROGRESS") {
+      const returnNote = (notes || "").trim();
+      if (!returnNote) {
+        return jsonError(
+          "Vui lòng nêu lý do trả lại/yêu cầu hoàn thiện. Tiến độ hiện tại (kể cả 100%) được giữ nguyên.",
+          400
+        );
+      }
+      const result = await decideApproval({
+        user,
+        caseType: "TASK_RESULT",
+        resourceId: taskId,
+        action: "REJECT",
+        reason: returnNote,
+        content: null,
+      });
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error, data: result.data },
+          { status: result.status || 400 }
+        );
+      }
+      const fresh = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: { owner: true, unit: true, assignees: { include: { person: true } } },
+      });
+      return NextResponse.json({
+        success: true,
+        message: result.message,
+        data: { task: fresh },
+        returned: true,
+      });
     }
 
     // YC-09 Phase 1 — Chủ trì nộp chung qua service S-ALL + snapshot.

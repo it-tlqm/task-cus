@@ -230,6 +230,9 @@ export interface ApprovalPreviewHistoryEntry {
   actorName: string;
   actorPersonId: string | null;
   createdAt: string;
+  /** E12-A: nhãn nguồn để không trộn lịch sử duyệt với TaskUpdate/phần việc. */
+  source: "APPROVAL_DECISION";
+  sourceLabel: string;
 }
 
 export interface ApprovalPreview {
@@ -538,6 +541,8 @@ export async function buildApprovalPreview(
     actorName: "—",
     actorPersonId: d.actorPersonId,
     createdAt: d.createdAt.toISOString(),
+    source: "APPROVAL_DECISION" as const,
+    sourceLabel: "Quyết định duyệt",
   }));
   const historyNames = await personNamesByIds(history.map((h) => h.actorPersonId));
   for (const h of history) {
@@ -743,7 +748,31 @@ export interface DecideResult {
   message?: string;
   status?: number;
   error?: string;
-  data?: { caseId: string; status: string; round: number; deduplicated?: boolean };
+  data?: {
+    caseId: string;
+    status: string;
+    round: number;
+    deduplicated?: boolean;
+    /** E8-A: tiến độ được giữ nguyên khi trả lại (kể cả 100%). */
+    progressPercent?: number | null;
+  };
+}
+
+/**
+ * E8-A — tiến độ hiện tại của Task là bản ghi TaskUpdate cấp nhiệm vụ gần nhất.
+ *
+ * Bỏ qua bản ghi phần việc phối hợp (`subject_person_id`/`participant_event_id`):
+ * các bản ghi này luôn ghi 0% và không đại diện cho tiến độ chung của nhiệm vụ.
+ * Nếu không lọc, một cập nhật phần việc chen giữa có thể làm "trôi" tiến độ 100%
+ * khi lãnh đạo trả lại hồ sơ.
+ */
+async function latestTaskLevelProgress(tx: any, taskId: string): Promise<number> {
+  const latest = await tx.taskUpdate.findFirst({
+    where: { taskId, subjectPersonId: null, participantEventId: null },
+    orderBy: { createdAt: "desc" },
+    select: { progressPercent: true },
+  });
+  return latest?.progressPercent ?? 0;
 }
 
 /** Ghi quyết định + áp dụng hiệu ứng nghiệp vụ, chống bấm lặp bằng update có điều kiện. */
@@ -934,7 +963,14 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
   // Nếu hiệu ứng thất bại (trạng thái vừa bị người khác đổi), toàn bộ quyết định được rollback
   // — không để lại lịch sử duyệt "treo" trên hồ sơ chưa thực sự được xử lý.
   let txResult:
-    | { ok: true; caseId: string; round: number; task: any | null; workflowMessage: string }
+    | {
+        ok: true;
+        caseId: string;
+        round: number;
+        task: any | null;
+        workflowMessage: string;
+        progressPercent: number | null;
+      }
     | { ok: false; status: number; error: string; data?: DecideResult["data"] };
   try {
     txResult = await prisma.$transaction(async (tx) => {
@@ -1002,15 +1038,13 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
 
       let workflowMessage = "";
       let updatedTask: any | null = null;
+      let preservedProgress: number | null = null;
 
       if (caseType === "TASK_RESULT" && taskId) {
-        // Lấy tiến độ gần nhất để KHÔNG reset 100%/tiến độ đã báo khi trả lại (E8 chờ chốt).
-        const latest = await tx.taskUpdate.findFirst({
-          where: { taskId },
-          orderBy: { createdAt: "desc" },
-          select: { progressPercent: true },
-        });
-        const progress = latest?.progressPercent ?? 0;
+        // E8-A: trả lại GIỮ NGUYÊN tiến độ hiện tại (kể cả 100%), không tự reset.
+        // Chỉ lấy bản ghi cấp nhiệm vụ, không lấy bản ghi phần việc phối hợp.
+        const progress = await latestTaskLevelProgress(tx, taskId);
+        preservedProgress = progress;
 
         if (action === "AGREE") {
           const r = await tx.task.updateMany({
@@ -1159,6 +1193,7 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
         round,
         task: updatedTask,
         workflowMessage,
+        progressPercent: preservedProgress,
       };
     });
   } catch (err: any) {
@@ -1189,6 +1224,12 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
       qualityPercent,
       round: txResult.round,
       effect: txResult.workflowMessage,
+      // E8-A: bằng chứng tiến độ được giữ nguyên khi trả lại (không reset ngầm).
+      progressPercent: txResult.progressPercent,
+      progressPolicy:
+        action !== "AGREE" && txResult.progressPercent !== null
+          ? "PRESERVED_ON_RETURN"
+          : null,
     },
   });
 
@@ -1244,7 +1285,12 @@ export async function decideApproval(params: DecideParams): Promise<DecideResult
         : action === "REJECT"
           ? `Đã từ chối hồ sơ [${code}]. ${txResult.workflowMessage}`
           : `Đã yêu cầu giải trình hồ sơ [${code}]. ${txResult.workflowMessage}`,
-    data: { caseId: txResult.caseId, status: targetStatus, round: txResult.round },
+    data: {
+      caseId: txResult.caseId,
+      status: targetStatus,
+      round: txResult.round,
+      progressPercent: txResult.progressPercent,
+    },
   };
 }
 
@@ -1420,6 +1466,8 @@ export async function listMyApprovalCases(user: SessionUser) {
             ? names.get(c.decisions[0].actorPersonId) ?? null
             : null,
           at: c.decisions[0].createdAt.toISOString(),
+          source: "APPROVAL_DECISION" as const,
+          sourceLabel: "Quyết định duyệt",
         }
       : null,
   }));
@@ -1505,6 +1553,19 @@ export async function listDecidedApprovalCases(
 
   return cases.map((c) => {
     const latest = c.decisions[0] || null;
+    const history = c.decisions.map((d) => ({
+      id: d.id,
+      round: d.round,
+      action: d.action,
+      actionLabel: APPROVAL_ACTION_LABELS[d.action as ApprovalAction] ?? d.action,
+      reason: d.reason,
+      content: d.content,
+      qualityPercent: d.qualityPercent ?? null,
+      actorName: d.actorPersonId ? names.get(d.actorPersonId) ?? null : null,
+      at: d.createdAt.toISOString(),
+      source: "APPROVAL_DECISION" as const,
+      sourceLabel: "Quyết định duyệt",
+    }));
     return {
       id: c.id,
       caseType: c.caseType,
@@ -1527,8 +1588,12 @@ export async function listDecidedApprovalCases(
             content: latest.content,
             actorName: latest.actorPersonId ? names.get(latest.actorPersonId) ?? null : null,
             at: latest.createdAt.toISOString(),
+            source: "APPROVAL_DECISION" as const,
+            sourceLabel: "Quyết định duyệt",
           }
         : null,
+      /** E12-A: đủ các vòng đã quyết định, kèm nhãn nguồn. */
+      history,
     };
   });
 }

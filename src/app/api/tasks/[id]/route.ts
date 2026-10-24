@@ -485,11 +485,15 @@ export async function PATCH(
       return decideTaskResult("AGREE", notes || null, null);
     }
     if (currentTask.status === "WAITING_REVIEW" && status === "IN_PROGRESS") {
-      return decideTaskResult(
-        "REJECT",
-        (notes || actualResultText || issueNotes || "Yêu cầu hoàn thiện thêm trước khi nghiệm thu.").trim(),
-        null
-      );
+      // E8-A: trả lại phải có ghi chú/lý do rõ ràng; KHÔNG tự sinh lý do thay người quyết định.
+      const returnNote = (notes || actualResultText || issueNotes || "").trim();
+      if (!returnNote) {
+        return jsonError(
+          "Vui lòng nêu lý do trả lại/yêu cầu hoàn thiện. Tiến độ hiện tại (kể cả 100%) được giữ nguyên.",
+          400
+        );
+      }
+      return decideTaskResult("REJECT", returnNote, null);
     }
 
     // YC-09: người phối hợp không được ghi đè kết quả chung của nhiệm vụ.

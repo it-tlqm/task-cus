@@ -1260,6 +1260,7 @@ export default function MyWorkPage() {
                                   {task.approval.reason}
                                 </span>
                               )}
+                              <span className="text-[10px] text-outline">Giữ nguyên tiến độ</span>
                             </div>
                           ) : isWaiting ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-unassigned-bg text-status-unassigned font-semibold">
@@ -1837,6 +1838,9 @@ export default function MyWorkPage() {
                   <div className="rounded-lg bg-status-danger-bg/50 border border-status-danger/30 px-3 py-2 text-[11px] text-on-surface">
                     <b className="text-status-danger">Lý do trả lại:</b> {task.approval?.reason || task.approval?.content}
                     {task.approval?.decidedByName ? ` · ${task.approval.decidedByName}` : ""}
+                    <span className="block text-outline mt-0.5">
+                      Tiến độ hiện tại (kể cả 100%) được giữ nguyên khi trả lại.
+                    </span>
                   </div>
                 )}
                 {/* YC-38 UAT fix: khoi "Nguon cong viec" — ma TX + nguon phat sinh */}
