@@ -142,6 +142,14 @@ export async function GET(req: NextRequest) {
         assignees: {
           include: { person: true },
         },
+        // UX Phase 1: trạng thái phần việc của CHÍNH người dùng hiện tại.
+        // Danh sách có thể trả việc toàn đơn vị (lãnh đạo), nên tab "Chờ nhận việc"
+        // chỉ được dựa trên dữ liệu của chính mình.
+        participantResults: {
+          where: { personId: user.personId },
+          select: { partStatus: true, role: true },
+          take: 1,
+        },
         planLinks: {
           include: {
             planItem: {
@@ -257,6 +265,8 @@ export async function GET(req: NextRequest) {
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
         txSource,
         approval: approvalMap.get(t.id) ?? null,
+        // UX Phase 1: trạng thái phần việc của chính người dùng (null nếu không tham gia).
+        myPartStatus: (t as any).participantResults?.[0]?.partStatus ?? null,
         // YC-10 quick approve: client cần biết có bắt buộc chọn quality hay không.
         qualityEnabled,
         // KHÔNG phát URL công khai của kho lưu trữ.

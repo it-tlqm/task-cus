@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { isAwaitingAcceptance, isSelfInitiated, originLabel } from "@/lib/task-origin";
+import { isSelfInitiated, originLabel } from "@/lib/task-origin";
+import { isMyPendingAcceptance } from "@/lib/task-acceptance";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
@@ -12,6 +13,7 @@ import WorkSourcePicker from "@/components/work/WorkSourcePicker";
 import TxSourceBadge from "@/components/work/TxSourceBadge";
 import MyWorkItemsSection from "./MyWorkItemsSection";
 import {
+  ALL_TIME_JOURNAL_FILTER,
   DEFAULT_JOURNAL_FILTER,
   JournalFilterBar,
   journalDateInRange,
@@ -107,6 +109,8 @@ interface TaskItem {
   } | null;
   // YC-10: bắt buộc chọn mức chất lượng khi duyệt AGREE (flag server-side).
   qualityEnabled?: boolean;
+  // UX Phase 1: trạng thái phần việc của CHÍNH người dùng hiện tại (nếu là phối hợp).
+  myPartStatus?: string | null;
 }
 
 export default function MyWorkPage() {
@@ -138,6 +142,19 @@ export default function MyWorkPage() {
     maxOverdueDays: number;
   } | null>(null);
 
+  const [currentUser, setCurrentUser] = useState<{
+    personId?: string;
+    fullName: string;
+    personCode?: string;
+    positionTitle?: string;
+    unitName?: string;
+  }>({
+    fullName: "Công chức",
+    personCode: "—",
+    positionTitle: "Cán bộ",
+    unitName: "Hải quan cửa khẩu Quốc tế Tà Lùng",
+  });
+
   // Số liệu thật: ưu tiên bộ đếm server, fallback tính từ tasks đã tải (không hardcode)
   const derivedStats = React.useMemo(() => {
     const now = Date.now();
@@ -159,11 +176,13 @@ export default function MyWorkPage() {
   }, [tasks]);
   const myStats = serverStats ?? derivedStats;
 
-  // Công việc được giao đang chờ chính người dùng xác nhận nhận việc.
+  // Công việc đang chờ CHÍNH người dùng xác nhận nhận việc.
+  // Chỉ tính việc mình chủ trì/phối hợp — lãnh đạo có thể thấy việc toàn đơn vị.
   // Đếm trên danh sách đã tải (API trả 50/trang); dữ liệu nghiệp vụ hiện nhỏ.
   const waitingAcceptCount = React.useMemo(
-    () => tasks.filter((t) => isAwaitingAcceptance(t.status, t.originKind)).length,
-    [tasks]
+    () =>
+      tasks.filter((t) => isMyPendingAcceptance(t, currentUser.personId)).length,
+    [tasks, currentUser.personId]
   );
 
   // Hoạt động gần nhất từ TaskUpdate thật (tối đa 2)
@@ -204,7 +223,12 @@ export default function MyWorkPage() {
   // giống nhau ở lần render đầu (tránh hydration mismatch).
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get("tab");
-    if (tab === "WAITING_ACCEPT") setActiveTab("WAITING_ACCEPT");
+    if (tab === "WAITING_ACCEPT") {
+      setActiveTab("WAITING_ACCEPT");
+      // Mặc định "Hôm nay" sẽ ẩn việc chờ nhận có hạn ngày khác → mở toàn thời gian
+      // để số đếm trên tab và danh sách luôn khớp nhau.
+      setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+    }
   }, []);
 
   // Drawer & Modal States
@@ -281,19 +305,6 @@ export default function MyWorkPage() {
       ? crypto.randomUUID()
       : `k-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
   );
-
-  const [currentUser, setCurrentUser] = useState<{
-    personId?: string;
-    fullName: string;
-    personCode?: string;
-    positionTitle?: string;
-    unitName?: string;
-  }>({
-    fullName: "Công chức",
-    personCode: "—",
-    positionTitle: "Cán bộ",
-    unitName: "Hải quan cửa khẩu Quốc tế Tà Lùng",
-  });
 
   // YC-38 UAT fix: hiển thị thời hạn theo giờ Việt Nam, KHÔNG phụ thuộc múi giờ thiết bị
   const formatDateTime = (iso?: string) => (iso ? formatVnDateTime(iso) : "--");
@@ -790,7 +801,7 @@ export default function MyWorkPage() {
 
     if (activeTab === "ALL") return true;
     if (activeTab === "WAITING_ACCEPT") {
-      return isAwaitingAcceptance(task.status, task.originKind);
+      return isMyPendingAcceptance(task, currentUser.personId);
     }
     if (activeTab === "IN_PROGRESS") return task.status === "IN_PROGRESS" || task.status === "NOT_STARTED";
     if (activeTab === "WAITING_REVIEW") return task.status === "WAITING_REVIEW";
@@ -1171,9 +1182,9 @@ export default function MyWorkPage() {
                     const isReturned =
                       task.status === "IN_PROGRESS" &&
                       (task.approval?.action === "REJECT" || task.approval?.action === "CLARIFY");
-                    const isPendingAccept = isAwaitingAcceptance(
-                      task.status,
-                      task.originKind
+                    const isPendingAccept = isMyPendingAcceptance(
+                      task,
+                      currentUser.personId
                     );
 
                     return (
@@ -1908,7 +1919,7 @@ export default function MyWorkPage() {
                   <div className="rounded-lg bg-surface-container px-3 py-2 text-[12px] text-on-surface-variant">
                     Nhiệm vụ đã được nghiệm thu — bạn có thể xem kết quả và lịch sử, nhưng không thể cập nhật hoặc nộp lại.
                   </div>
-                ) : isAwaitingAcceptance(task.status, task.originKind) ? (
+                ) : isMyPendingAcceptance(task, currentUser.personId) ? (
                   <div className="grid grid-cols-1 gap-2 pt-1">
                     <button
                       onClick={() => handleAcceptTask(task)}

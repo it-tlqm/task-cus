@@ -29,6 +29,14 @@ export const DEFAULT_JOURNAL_FILTER: JournalFilterState = {
   query: "",
 };
 
+/** Bộ lọc toàn thời gian — dùng khi mở deep-link cần thấy đủ việc đang chờ. */
+export const ALL_TIME_JOURNAL_FILTER: JournalFilterState = {
+  period: "all",
+  source: "all",
+  status: "all",
+  query: "",
+};
+
 export const JOURNAL_PERIOD_LABELS: Record<JournalPeriod, string> = {
   today: "Hôm nay",
   week: "Tuần này",

@@ -18,7 +18,8 @@ import {
   filterNavigation,
   type NavigationAccessContext,
 } from "../src/config/navigation";
-import { isAwaitingAcceptance } from "../src/lib/task-origin";
+import { ALL_TIME_JOURNAL_FILTER, DEFAULT_JOURNAL_FILTER } from "../src/components/work/JournalFilterBar";
+import { isMyPendingAcceptance } from "../src/lib/task-acceptance";
 
 let passed = 0;
 let failed = 0;
@@ -64,14 +65,73 @@ check(
 );
 
 // ---------------------------------------------------------------- 2. điều kiện chờ nhận
-check("NOT_STARTED + lãnh đạo giao → chờ nhận", isAwaitingAcceptance("NOT_STARTED", "LEADER_ASSIGNED"));
-check("NOT_STARTED + từ kế hoạch → chờ nhận", isAwaitingAcceptance("NOT_STARTED", "PLAN"));
-check("NOT_STARTED + chưa xác định nguồn → chờ nhận (dữ liệu lịch sử)", isAwaitingAcceptance("NOT_STARTED", null));
-check("NOT_STARTED + tự khởi tạo → không chờ nhận", !isAwaitingAcceptance("NOT_STARTED", "SELF_INITIATED"));
-check("NOT_STARTED + tự ghi nhận chỉ đạo ngoài → không chờ nhận", !isAwaitingAcceptance("NOT_STARTED", "OUTSIDE_DIRECTIVE"));
-check("IN_PROGRESS → không chờ nhận", !isAwaitingAcceptance("IN_PROGRESS", "LEADER_ASSIGNED"));
+const ME = "person-me";
+const OTHER = "person-other";
+const ownerPending = {
+  status: "NOT_STARTED",
+  originKind: "LEADER_ASSIGNED",
+  owner: { id: ME },
+  assignees: [],
+  myPartStatus: null,
+};
+check("Chủ trì + NOT_STARTED + lãnh đạo giao → chờ nhận", isMyPendingAcceptance(ownerPending, ME));
+check(
+  "Chủ trì + NOT_STARTED + từ kế hoạch → chờ nhận",
+  isMyPendingAcceptance({ ...ownerPending, originKind: "PLAN" }, ME)
+);
+check(
+  "Chủ trì + NOT_STARTED + chưa xác định nguồn → chờ nhận (dữ liệu lịch sử)",
+  isMyPendingAcceptance({ ...ownerPending, originKind: null }, ME)
+);
+check(
+  "Chủ trì + tự khởi tạo → không chờ nhận",
+  !isMyPendingAcceptance({ ...ownerPending, originKind: "SELF_INITIATED" }, ME)
+);
+check(
+  "Chủ trì + tự ghi nhận chỉ đạo ngoài → không chờ nhận",
+  !isMyPendingAcceptance({ ...ownerPending, originKind: "OUTSIDE_DIRECTIVE" }, ME)
+);
+check(
+  "Chủ trì + IN_PROGRESS → không chờ nhận",
+  !isMyPendingAcceptance({ ...ownerPending, status: "IN_PROGRESS" }, ME)
+);
+// Finding 1: lãnh đạo thấy việc toàn đơn vị nhưng không được hiện việc của người khác.
+check(
+  "Việc của người khác (không chủ trì/phối hợp) → không chờ nhận",
+  !isMyPendingAcceptance(ownerPending, OTHER)
+);
+check(
+  "Không có personId → không chờ nhận",
+  !isMyPendingAcceptance(ownerPending, null)
+);
 
-// ---------------------------------------------------------------- 3. /my-work
+// Finding 2: phối hợp nhận theo phần việc, không theo trạng thái chung của Task.
+const collaboratorTask = {
+  status: "NOT_STARTED",
+  originKind: "LEADER_ASSIGNED",
+  owner: { id: OTHER },
+  assignees: [{ person: { id: ME } }, { person: { id: "person-3" } }],
+  myPartStatus: "NOT_STARTED",
+};
+check("Phối hợp + phần việc NOT_STARTED → chờ nhận", isMyPendingAcceptance(collaboratorTask, ME));
+check(
+  "Phối hợp + phần việc IN_PROGRESS → không chờ nhận (đã nhận)",
+  !isMyPendingAcceptance({ ...collaboratorTask, myPartStatus: "IN_PROGRESS" }, ME)
+);
+check(
+  "Phối hợp + phần việc SUBMITTED → không chờ nhận",
+  !isMyPendingAcceptance({ ...collaboratorTask, myPartStatus: "SUBMITTED" }, ME)
+);
+check(
+  "Phối hợp + chưa có dòng phần việc (dữ liệu cũ) → không chờ nhận",
+  !isMyPendingAcceptance({ ...collaboratorTask, myPartStatus: null }, ME)
+);
+check(
+  "Phối hợp vẫn chờ nhận khi chủ trì đã nhận (Task IN_PROGRESS)",
+  isMyPendingAcceptance({ ...collaboratorTask, status: "IN_PROGRESS" }, ME)
+);
+
+// ---------------------------------------------------------------- 3. /my-work + API
 const myWork = fs.readFileSync(path.resolve("src/app/my-work/page.tsx"), "utf8");
 check("Có tab WAITING_ACCEPT", myWork.includes('"WAITING_ACCEPT"'));
 check("Hiển thị chip Chờ nhận việc", myWork.includes("Chờ nhận việc ({waitingAcceptCount})"));
@@ -90,6 +150,43 @@ check(
   "Nhánh nhận việc đứng trước Tác nghiệp 1 chạm (không hiện trùng)",
   acceptBranch > 0 && oneTouch > 0 && acceptBranch < oneTouch,
   `accept=${acceptBranch} oneTouch=${oneTouch}`
+);
+check(
+  "Badge/tab đếm theo predicate của chính người dùng",
+  /waitingAcceptCount[\s\S]{0,250}isMyPendingAcceptance\(t, currentUser\.personId\)/.test(myWork)
+);
+check(
+  "Bộ lọc tab dùng cùng predicate",
+  /activeTab === "WAITING_ACCEPT"[\s\S]{0,200}isMyPendingAcceptance\(task, currentUser\.personId\)/.test(myWork)
+);
+check(
+  "Nút nhận trên bảng/mobile dùng cùng predicate",
+  (myWork.match(/isMyPendingAcceptance\(/g) || []).length >= 4,
+  String((myWork.match(/isMyPendingAcceptance\(/g) || []).length)
+);
+check("Không còn predicate cũ chỉ theo trạng thái Task", !myWork.includes("isAwaitingAcceptance"));
+check(
+  "Deep-link chờ nhận mở bộ lọc toàn thời gian",
+  myWork.includes("setJournalFilter(ALL_TIME_JOURNAL_FILTER)")
+);
+check(
+  "Mặc định thường vẫn là Hôm nay",
+  DEFAULT_JOURNAL_FILTER.period === "today" &&
+    ALL_TIME_JOURNAL_FILTER.period === "all" &&
+    ALL_TIME_JOURNAL_FILTER.status === "all" &&
+    ALL_TIME_JOURNAL_FILTER.source === "all" &&
+    ALL_TIME_JOURNAL_FILTER.query === ""
+);
+check("Có type myPartStatus trên TaskItem", myWork.includes("myPartStatus?: string | null"));
+
+const tasksApi = fs.readFileSync(path.resolve("src/app/api/tasks/route.ts"), "utf8");
+check(
+  "API list trả participantResults của chính người dùng",
+  /participantResults:\s*\{\s*where:\s*\{\s*personId:\s*user\.personId\s*\}[\s\S]{0,150}partStatus:\s*true/.test(tasksApi)
+);
+check(
+  "API trả cờ myPartStatus cho client",
+  tasksApi.includes("myPartStatus:")
 );
 
 // ---------------------------------------------------------------- 4. nhắc ca trực

@@ -60,17 +60,6 @@ export function isSelfInitiated(originKind?: string | null): boolean {
   return originKind === ORIGIN_KIND.SELF_INITIATED || originKind === ORIGIN_KIND.OUTSIDE_DIRECTIVE;
 }
 
-/**
- * Công việc được giao đang chờ người được giao xác nhận "Nhận việc".
- * Việc tự khởi tạo/tự ghi nhận không có bước này.
- */
-export function isAwaitingAcceptance(
-  status?: string | null,
-  originKind?: string | null
-): boolean {
-  return status === "NOT_STARTED" && !isSelfInitiated(originKind);
-}
-
 export function originLabel(originKind?: string | null): string {
   if (!originKind || !isOriginKind(originKind)) return ORIGIN_LABEL.UNKNOWN;
   return ORIGIN_LABEL[originKind];
