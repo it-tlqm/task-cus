@@ -59,6 +59,24 @@ export async function canManagePlanContent(
   return plan.creatorId === user.personId;
 }
 
+/**
+ * Quyền sửa thông tin cấp kế hoạch (hiện chỉ tiêu đề).
+ *
+ * - Người tạo được sửa kế hoạch của chính mình kể cả khi không còn quyền
+ *   `plans.create` (quyền sửa gắn với chính bản ghi họ đã lập).
+ * - Lãnh đạo/Trưởng bộ phận theo đúng policy quản lý nội dung hiện hành
+ *   (`canManagePlanContent`: có `plans.create` + trong phạm vi đơn vị).
+ * - Trạng thái được sửa do route kiểm tra: chỉ DRAFT/RETURNED.
+ */
+export async function canEditPlanTitle(
+  user: SessionUser,
+  plan: PlanAccessShape
+): Promise<boolean> {
+  if (user.role === "SYSTEM_ADMIN") return false;
+  if (plan.creatorId === user.personId) return true;
+  return canManagePlanContent(user, plan);
+}
+
 export interface PlanItemLinkValidation {
   ok: boolean;
   status?: number;

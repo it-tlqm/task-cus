@@ -226,6 +226,10 @@ export default function PlansPage() {
     (isLeaderRole || !!currentUser?.personId);
   const isActivePlanCreator =
     !!activePlan?.creatorId && activePlan.creatorId === currentUser?.personId;
+  const canEditActivePlanTitle =
+    planContentEditable &&
+    !!activePlan &&
+    (isActivePlanCreator || (isLeaderRole && !!planOptions?.canCreatePlan));
   const canApproveActivePlan =
     activePlan?.status === "SUBMITTED" && isLeaderRole && !isActivePlanCreator;
   const canEffectActivePlan = activePlan?.status === "APPROVED" && isLeaderRole;
@@ -333,6 +337,13 @@ export default function PlansPage() {
   const [planFormFieldErrors, setPlanFormFieldErrors] = useState<Record<string, string>>({});
   const [planSubmitting, setPlanSubmitting] = useState(false);
   const planSubmittingRef = useRef(false);
+
+  // Phase 2A/2A2 — sửa tiêu đề kế hoạch (không mở rộng sang hạng mục/đầu việc)
+  const [showPlanTitleModal, setShowPlanTitleModal] = useState(false);
+  const [planTitleDraft, setPlanTitleDraft] = useState("");
+  const [planTitleError, setPlanTitleError] = useState<string | null>(null);
+  const [planTitleBusy, setPlanTitleBusy] = useState(false);
+  const planTitleBusyRef = useRef(false);
 
   const [showPlanItemsModal, setShowPlanItemsModal] = useState(false);
   const [planItemEditingId, setPlanItemEditingId] = useState<string | null>(null);
@@ -1019,6 +1030,64 @@ export default function PlansPage() {
     }
   };
 
+  const openPlanTitleModal = () => {
+    if (!activePlan) {
+      toast.warning("Chưa chọn kế hoạch công tác");
+      return;
+    }
+    if (!canEditActivePlanTitle) {
+      toast.warning("Kế hoạch đang khóa hoặc bạn không có quyền sửa");
+      return;
+    }
+    setPlanTitleDraft(activePlan.title);
+    setPlanTitleError(null);
+    setShowPlanTitleModal(true);
+  };
+
+  const handleUpdatePlanTitle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (planTitleBusyRef.current || !activePlan) return;
+    const title = planTitleDraft.trim();
+    if (!title) {
+      setPlanTitleError("Nhập tiêu đề kế hoạch");
+      return;
+    }
+    if (title.length > 300) {
+      setPlanTitleError("Tiêu đề kế hoạch không được vượt quá 300 ký tự");
+      return;
+    }
+
+    planTitleBusyRef.current = true;
+    setPlanTitleBusy(true);
+    setPlanTitleError(null);
+    try {
+      const res = await fetch(`/api/plans/${activePlan.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = json.error || "Không thể sửa kế hoạch";
+        setPlanTitleError(message);
+        toast.error(message);
+        return;
+      }
+      setShowPlanTitleModal(false);
+      toast.success("Đã cập nhật tiêu đề kế hoạch");
+      setWorkflowMessage("Đã cập nhật tiêu đề kế hoạch");
+      setTimeout(() => setWorkflowMessage(null), 3000);
+      await fetchPlans();
+    } catch (err: any) {
+      const message = "Lỗi kết nối: " + err.message;
+      setPlanTitleError(message);
+      toast.error(message);
+    } finally {
+      planTitleBusyRef.current = false;
+      setPlanTitleBusy(false);
+    }
+  };
+
   const openPlanItemsManager = () => {
     if (!activePlan) {
       toast.warning("Chưa chọn kế hoạch công tác");
@@ -1385,6 +1454,18 @@ export default function PlansPage() {
                 >
                   <span className="material-symbols-outlined text-[18px]">note_add</span>
                   <span>Tạo kế hoạch</span>
+                </button>
+              )}
+
+              {canEditActivePlanTitle && (
+                <button
+                  type="button"
+                  data-testid="edit-plan-title-btn"
+                  onClick={openPlanTitleModal}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-secondary">edit</span>
+                  <span>Sửa kế hoạch</span>
                 </button>
               )}
 
@@ -2342,9 +2423,23 @@ export default function PlansPage() {
                   <span className="font-body-semibold text-primary">
                     {activePlan?.unit?.name || "Chưa xác định đơn vị"}
                   </span>
-                  <span className="text-xs text-on-surface-variant">
-                    {activePlan?.title || "Chưa có kế hoạch công tác"}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-on-surface-variant">
+                      {activePlan?.title || "Chưa có kế hoạch công tác"}
+                    </span>
+                    {canEditActivePlanTitle && (
+                      <button
+                        type="button"
+                        data-testid="edit-plan-title-btn-mobile"
+                        onClick={openPlanTitleModal}
+                        title="Sửa tiêu đề kế hoạch"
+                        aria-label="Sửa tiêu đề kế hoạch"
+                        className="p-1 rounded text-secondary hover:bg-surface-container transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded text-xs font-bold ${
@@ -3363,6 +3458,91 @@ export default function PlansPage() {
                 >
                   <span className="material-symbols-outlined text-[18px]">save</span>
                   <span>{planSubmitting ? "Đang tạo..." : "Tạo kế hoạch"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: SỬA TIÊU ĐỀ KẾ HOẠCH (Phase 2A/2A2 — chỉ field title)
+          ========================================================================= */}
+      {showPlanTitleModal && activePlan && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-white">Sửa kế hoạch công tác</h3>
+                <p className="text-xs text-on-primary-container">
+                  {activePlan.unit?.name || "Chưa xác định đơn vị"}
+                  {activePlan.period?.name ? ` • ${activePlan.period.name}` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlanTitleModal(false)}
+                className="text-on-primary-container hover:text-white transition-fast"
+                aria-label="Đóng"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdatePlanTitle}>
+              <div className="p-space-md flex flex-col gap-space-md">
+                {planTitleError && (
+                  <div
+                    role="alert"
+                    data-testid="plan-title-error"
+                    className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    <span>{planTitleError}</span>
+                  </div>
+                )}
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-primary">
+                  Tiêu đề kế hoạch *
+                  <input
+                    data-testid="plan-title-input"
+                    type="text"
+                    maxLength={300}
+                    autoFocus
+                    value={planTitleDraft}
+                    onChange={(e) => {
+                      setPlanTitleDraft(e.target.value);
+                      setPlanTitleError(null);
+                    }}
+                    placeholder="VD: Kế hoạch công tác tuần 43"
+                    className="h-10 px-3 rounded bg-surface-container-low text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                  <span className="text-[10px] text-outline font-normal">
+                    {planTitleDraft.trim().length}/300 ký tự
+                  </span>
+                </label>
+
+                <p className="text-xs text-outline">
+                  Chỉ tiêu đề được sửa. Đơn vị, kỳ công tác và trạng thái kế hoạch giữ nguyên.
+                </p>
+              </div>
+
+              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+                <button
+                  type="button"
+                  onClick={() => setShowPlanTitleModal(false)}
+                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                >
+                  Hủy
+                </button>
+                <button
+                  data-testid="plan-title-submit"
+                  type="submit"
+                  disabled={planTitleBusy}
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[18px]">save</span>
+                  <span>{planTitleBusy ? "Đang lưu..." : "Lưu thay đổi"}</span>
                 </button>
               </div>
             </form>
