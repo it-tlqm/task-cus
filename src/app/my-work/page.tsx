@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { isSelfInitiated, originLabel } from "@/lib/task-origin";
+import { isAwaitingAcceptance, isSelfInitiated, originLabel } from "@/lib/task-origin";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
@@ -113,7 +113,7 @@ export default function MyWorkPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    "ALL" | "IN_PROGRESS" | "WAITING_REVIEW" | "OVERDUE" | "COMPLETED"
+    "ALL" | "WAITING_ACCEPT" | "IN_PROGRESS" | "WAITING_REVIEW" | "OVERDUE" | "COMPLETED"
   >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   // YC-30 (bổ sung) — bộ lọc "Nhật ký công việc" dùng chung cho nhiệm vụ giao + đầu việc kế hoạch.
@@ -159,6 +159,13 @@ export default function MyWorkPage() {
   }, [tasks]);
   const myStats = serverStats ?? derivedStats;
 
+  // Công việc được giao đang chờ chính người dùng xác nhận nhận việc.
+  // Đếm trên danh sách đã tải (API trả 50/trang); dữ liệu nghiệp vụ hiện nhỏ.
+  const waitingAcceptCount = React.useMemo(
+    () => tasks.filter((t) => isAwaitingAcceptance(t.status, t.originKind)).length,
+    [tasks]
+  );
+
   // Hoạt động gần nhất từ TaskUpdate thật (tối đa 2)
   const recentActivity = React.useMemo(() => {
     const all: Array<{ taskCode: string; taskTitle: string; notes: string; at: string; author: string }> = [];
@@ -191,6 +198,13 @@ export default function MyWorkPage() {
     setTodayShort(
       new Date().toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
     );
+  }, []);
+
+  // Deep-link "Công chức nhận việc": đọc query SAU khi mount để HTML server/client
+  // giống nhau ở lần render đầu (tránh hydration mismatch).
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "WAITING_ACCEPT") setActiveTab("WAITING_ACCEPT");
   }, []);
 
   // Drawer & Modal States
@@ -775,6 +789,9 @@ export default function MyWorkPage() {
     if (journalFilter.status === "done") return task.status === "COMPLETED";
 
     if (activeTab === "ALL") return true;
+    if (activeTab === "WAITING_ACCEPT") {
+      return isAwaitingAcceptance(task.status, task.originKind);
+    }
     if (activeTab === "IN_PROGRESS") return task.status === "IN_PROGRESS" || task.status === "NOT_STARTED";
     if (activeTab === "WAITING_REVIEW") return task.status === "WAITING_REVIEW";
     if (activeTab === "OVERDUE") return task.isOverdue || task.hasIssue;
@@ -1052,6 +1069,16 @@ export default function MyWorkPage() {
                 Tất cả ({tasks.length})
               </button>
               <button
+                onClick={() => setActiveTab("WAITING_ACCEPT")}
+                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                  activeTab === "WAITING_ACCEPT"
+                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
+                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                }`}
+              >
+                Chờ nhận việc ({waitingAcceptCount})
+              </button>
+              <button
                 onClick={() => setActiveTab("IN_PROGRESS")}
                 className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
                   activeTab === "IN_PROGRESS"
@@ -1144,6 +1171,10 @@ export default function MyWorkPage() {
                     const isReturned =
                       task.status === "IN_PROGRESS" &&
                       (task.approval?.action === "REJECT" || task.approval?.action === "CLARIFY");
+                    const isPendingAccept = isAwaitingAcceptance(
+                      task.status,
+                      task.originKind
+                    );
 
                     return (
                       <tr
@@ -1315,6 +1346,16 @@ export default function MyWorkPage() {
                                   </button>
                                 )}
                               </>
+                            ) : isPendingAccept ? (
+                              <button
+                                onClick={() => handleAcceptTask(task)}
+                                disabled={acceptingId === task.id}
+                                className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-label-sm text-label-sm hover:bg-secondary/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
+                                title="Xác nhận đã nhận việc được giao"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">how_to_reg</span>
+                                <span>{acceptingId === task.id ? "Đang nhận..." : "Nhận việc"}</span>
+                              </button>
                             ) : !isTaskTerminal(task.status) ? (
                               <button
                                 onClick={() => openDrawerForTask(task)}
@@ -1625,6 +1666,16 @@ export default function MyWorkPage() {
               <span>Tất cả</span>
             </button>
             <button
+              onClick={() => setActiveTab("WAITING_ACCEPT")}
+              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+                activeTab === "WAITING_ACCEPT"
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container text-on-surface-variant"
+              }`}
+            >
+              <span>Chờ nhận việc ({waitingAcceptCount})</span>
+            </button>
+            <button
               onClick={() => setActiveTab("IN_PROGRESS")}
               className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
                 activeTab === "IN_PROGRESS"
@@ -1857,7 +1908,7 @@ export default function MyWorkPage() {
                   <div className="rounded-lg bg-surface-container px-3 py-2 text-[12px] text-on-surface-variant">
                     Nhiệm vụ đã được nghiệm thu — bạn có thể xem kết quả và lịch sử, nhưng không thể cập nhật hoặc nộp lại.
                   </div>
-                ) : task.status === "NOT_STARTED" && !isSelfInitiated(task.originKind) ? (
+                ) : isAwaitingAcceptance(task.status, task.originKind) ? (
                   <div className="grid grid-cols-1 gap-2 pt-1">
                     <button
                       onClick={() => handleAcceptTask(task)}

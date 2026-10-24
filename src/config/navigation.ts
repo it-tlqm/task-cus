@@ -111,6 +111,13 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         description: "Hôm nay, theo kỳ, từ kế hoạch hoặc phát sinh — kèm hạn, kết quả và minh chứng",
       },
       {
+        id: "my-work-receive",
+        label: "Công chức nhận việc",
+        href: "/my-work?tab=WAITING_ACCEPT",
+        icon: "how_to_reg",
+        description: "Công việc được giao đang chờ bạn xác nhận nhận việc",
+      },
+      {
         id: "plans",
         label: "Lập kế hoạch",
         href: "/plans",

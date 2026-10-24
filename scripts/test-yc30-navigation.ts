@@ -73,11 +73,14 @@ const NON_MENU_ROUTES: Record<string, string> = {
 const DYNAMIC_ROUTES = ["/tasks/[id]", "/meetings/[id]"];
 
 const menuHrefs = NAVIGATION_SECTIONS.flatMap((s) => s.items.map((i) => i.href));
+// Mục menu có thể mang query deep-link (vd /my-work?tab=WAITING_ACCEPT);
+// route thật chỉ tính phần pathname.
+const hrefPath = (href: string) => href.split("?")[0].split("#")[0];
 
 // ---------------------------------------------------------------- 1. href có route thật
 const routeSet = new Set(pageRoutes);
 for (const href of menuHrefs) {
-  const exists = routeSet.has(href);
+  const exists = routeSet.has(hrefPath(href));
   check(`Menu có route thật: ${href}`, exists);
 }
 
@@ -85,7 +88,7 @@ for (const href of menuHrefs) {
 for (const route of pageRoutes) {
   if (route in NON_MENU_ROUTES) continue;
   if (DYNAMIC_ROUTES.includes(route)) continue;
-  const covered = menuHrefs.some((href) => route === href);
+  const covered = menuHrefs.some((href) => route === hrefPath(href));
   check(`Route được menu bao phủ: ${route}`, covered);
 }
 
@@ -285,6 +288,28 @@ check(
   "Số nhóm điều hướng = 6 (gộp Công việc cá nhân + Công việc bộ phận thành Nhật ký công việc)",
   NAVIGATION_SECTIONS.length === 6,
   String(NAVIGATION_SECTIONS.length)
+);
+
+// ---------------------------------------------------------------- 9. UX Phase 1 — Công chức nhận việc
+const journalSection = NAVIGATION_SECTIONS.find((s) => s.id === "journal");
+const receiveItem = journalSection?.items.find((i) => i.id === "my-work-receive");
+check(
+  "Có mục 'Công chức nhận việc' trong nhóm Nhật ký công việc",
+  !!receiveItem && journalSection?.label === "Nhật ký công việc"
+);
+check(
+  "Mục 'Công chức nhận việc' trỏ đúng tab chờ nhận",
+  receiveItem?.href === "/my-work?tab=WAITING_ACCEPT" && receiveItem?.icon === "how_to_reg",
+  receiveItem?.href || ""
+);
+check(
+  "Mục 'Công chức nhận việc' hiển thị cho STAFF (việc của chính mình)",
+  staffHrefs.includes("/my-work?tab=WAITING_ACCEPT")
+);
+check(
+  "Mục 'Công chức nhận việc' nằm ngay sau Nhật ký công việc",
+  journalSection?.items.findIndex((i) => i.id === "my-work-receive") ===
+    (journalSection?.items.findIndex((i) => i.id === "my-work") ?? -1) + 1
 );
 
 console.log("\n========================================");
