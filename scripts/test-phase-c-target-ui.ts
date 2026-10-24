@@ -12,9 +12,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 const DB_URL = process.env.DIRECT_URL || process.env.DATABASE_URL || "";
-if (!DB_URL.includes("talung_v3_phase_c")) throw new Error("TỪ CHỐI: chỉ dùng talung_v3_phase_c.");
+if (!DB_URL.includes("talung_v3_phase_c") && !DB_URL.includes("talung_v3_fixture_integration")) {
+  throw new Error("TỪ CHỐI: chỉ dùng talung_v3_phase_c hoặc talung_v3_fixture_integration.");
+}
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3113";
-if (!/^http:\/\/localhost:3113\/?$/.test(BASE_URL)) throw new Error("TỪ CHỐI: TEST_BASE_URL phải là http://localhost:3113.");
+if (!/^http:\/\/localhost:(3113|3118)\/?$/.test(BASE_URL)) throw new Error("TỪ CHỐI: TEST_BASE_URL phải là localhost:3113 hoặc localhost:3118.");
 const PASSWORD = process.env.TEST_PASSWORD || "LocalTest@2026";
 const USERNAME = process.env.TEST_USERNAME || "cb016";
 const HASH_FILE = process.env.TEST_OLD_HASH_FILE || "C:\\Users\\thanhnx\\AppData\\Local\\Temp\\opencode\\s3-cb016-hash.json";
@@ -185,7 +187,7 @@ async function main() {
 
     const cfgText = await cfg.evaluate(() => document.body.innerText);
     check("UI1. Target tab dùng manager target-only", cfgText.includes("API /api/metrics/targets") || cfgText.includes("/api/metrics/targets"));
-    check("UI2. D5 hiển thị chưa có quy tắc", cfgText.includes("DEFERRED_B_C_3") && cfgText.includes("direction=NOT_SET"));
+    check("UI2. V3.2/D5-A hiển thị quy tắc THU_NSNN", cfgText.includes("V3.2/D5-A") && cfgText.includes("THU_NSNN"));
     check("UI3. Quyền metrics.config được ghi rõ", cfgText.includes("metrics.config"));
 
     // Chọn THU_NSNN trong select của manager.
@@ -254,7 +256,7 @@ async function main() {
     );
     targetId = created?.id || null;
     check("UI7. Target tạo qua UI có trong API", Boolean(targetId));
-    check("UI8. Target PROPOSED + D5 rules pending", created?.status === "PROPOSED" && created?.rules?.officialPercentAllowed === false);
+    check("UI8. Target PROPOSED + D5-A THU_NSNN đã duyệt", created?.status === "PROPOSED" && created?.rules?.officialPercentAllowed === true && created?.rules?.direction === "HIGHER_IS_BETTER" && created?.rules?.baselineScope === "YEAR_START");
     await shot(cfg, "01-cau-hinh-target.png");
 
     // Confirm row.
@@ -310,7 +312,7 @@ async function main() {
     const gbText = await gb.evaluate(() => document.body.innerText);
     check("UI13. /giao-ban hiển thị target test", gbText.includes(`${tag} KHAC`));
     check("UI14. /giao-ban hiển thị trạng thái Đã chốt", gbText.includes("Đã chốt"));
-    check("UI15. /giao-ban ghi % chờ B-C-3 (không % chính thức)", gbText.includes("% chờ B-C-3"));
+    check("UI15. /giao-ban không còn '% chờ B-C-3'; chỉ tiêu chưa duyệt ghi lý do", !gbText.includes("% chờ B-C-3") && gbText.includes("Chưa có quy tắc gán chỉ tiêu"));
     await shot(gb, "03-giao-ban-target.png");
     await gb.close();
 

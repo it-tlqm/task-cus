@@ -1,0 +1,46 @@
+{
+  "session": "S2/S3 V3.2",
+  "date": "2026-10-24",
+  "database": "postgresql://***:***@localhost:5432/talung_v3_fixture_integration",
+  "migration": "20261023200000_v32_metrics_decisions",
+  "before": {
+    "metrics": 49,
+    "entries": 636,
+    "targets": 49,
+    "baselines": 47,
+    "targetRevisions": 0,
+    "baselineRevisions": 0,
+    "rules": 17
+  },
+  "beforeRules": 17,
+  "afterRollback": {
+    "metrics": 49,
+    "entries": 636,
+    "targets": 49,
+    "baselines": 47,
+    "targetRevisions": 0,
+    "baselineRevisions": 0,
+    "rules": null
+  },
+  "tableAfterRollback": 0,
+  "afterApply": {
+    "metrics": 49,
+    "entries": 636,
+    "targets": 49,
+    "baselines": 47,
+    "targetRevisions": 0,
+    "baselineRevisions": 0,
+    "rules": 17
+  },
+  "rules": {
+    "total": 17,
+    "thu": [
+      "MONTH:HIGHER_IS_BETTER/CUMULATIVE/MONTH_START/true",
+      "YEAR:HIGHER_IS_BETTER/CUMULATIVE/YEAR_START/true"
+    ],
+    "pendingCount": 15
+  },
+  "businessUnchanged": true,
+  "pass": true,
+  "productionTouched": false
+}

@@ -5,7 +5,7 @@
     "YC-02"
   ],
   "contract": "B-C-2",
-  "timestamp": "2026-10-23T16:39:06.371Z",
+  "timestamp": "2026-10-24T01:18:06.429Z",
   "db": "talung_v3_phase_b",
   "api": "http://localhost:3112",
   "passed": 43,
@@ -48,8 +48,8 @@
       "monthCum": 219341201856,
       "latestDate": "2023-10-31",
       "btc": {
-        "targetId": "4c9cd259-a7dc-4772-98b5-c9d4d0ce7fd1",
-        "label": "[S2-PHASE-B-1792773530702] BTC 2023",
+        "targetId": "196ec6c8-039f-42cc-abfd-f78af9f01c4b",
+        "label": "[S2-PHASE-B-1792804679807] BTC 2023",
         "comparisonKind": "BTC_YEAR",
         "targetValue": 1685000000000,
         "percent": 78.18,
@@ -61,12 +61,15 @@
         "status": "CONFIRMED",
         "dataSource": "REAL",
         "isOfficial": true,
-        "sourceNote": "[S2-PHASE-B-1792773530702] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T16:38:58.546Z"
+        "sourceNote": "[S2-PHASE-B-1792804679807] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-24T01:18:02.118Z",
+        "direction": "HIGHER_IS_BETTER",
+        "measureMode": "CUMULATIVE",
+        "baselineScope": "YEAR_START"
       },
       "ubnd": {
-        "targetId": "231fa0fc-1edc-4026-987a-2ebd39af364c",
-        "label": "[S2-PHASE-B-1792773530702] UBND 2023",
+        "targetId": "3b68e868-ac0b-4174-a2eb-cb50f210007e",
+        "label": "[S2-PHASE-B-1792804679807] UBND 2023",
         "comparisonKind": "UBND_YEAR",
         "targetValue": 1700000000000,
         "percent": 77.49,
@@ -78,12 +81,15 @@
         "status": "CONFIRMED",
         "dataSource": "REAL",
         "isOfficial": true,
-        "sourceNote": "[S2-PHASE-B-1792773530702] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T16:38:58.648Z"
+        "sourceNote": "[S2-PHASE-B-1792804679807] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-24T01:18:02.232Z",
+        "direction": "HIGHER_IS_BETTER",
+        "measureMode": "CUMULATIVE",
+        "baselineScope": "YEAR_START"
       },
       "monthPlan": {
-        "targetId": "49704439-3cd9-441b-80ca-8359f7a0c224",
-        "label": "[S2-PHASE-B-1792773530702] KH tháng 10/2023",
+        "targetId": "748cef87-6496-4e13-8ed0-b61b15f343a2",
+        "label": "[S2-PHASE-B-1792804679807] KH tháng 10/2023",
         "comparisonKind": "MONTH_PLAN",
         "targetValue": 200000000000,
         "percent": 109.67,
@@ -95,22 +101,35 @@
         "status": "CONFIRMED",
         "dataSource": "REAL",
         "isOfficial": true,
-        "sourceNote": "[S2-PHASE-B-1792773530702] căn cứ kiểm thử",
-        "confirmedAt": "2026-10-23T16:38:58.649Z"
+        "sourceNote": "[S2-PHASE-B-1792804679807] căn cứ kiểm thử",
+        "confirmedAt": "2026-10-24T01:18:02.234Z",
+        "direction": "HIGHER_IS_BETTER",
+        "measureMode": "CUMULATIVE",
+        "baselineScope": "MONTH_START"
       },
       "prevMonth": {
         "value": 50,
-        "percent": null,
+        "percent": 438682403612,
+        "percentText": "438682403612,00",
         "label": "Tháng 9/2023",
-        "basis": "FULL_PREVIOUS_MONTH_CUM",
-        "ruleState": "PENDING_B1"
+        "basis": "SAME_DAYS_TO_CUTOFF",
+        "ruleState": "SAME_DAYS",
+        "cutoffDate": "2023-10-31",
+        "dayCount": 30,
+        "periodComplete": true,
+        "note": "So cùng 30 ngày (01–30/09/2023)."
       },
       "samePeriodLastYear": {
         "value": null,
         "percent": null,
+        "percentText": null,
         "label": "Tháng 10/2022",
-        "basis": "FULL_MONTH_LAST_YEAR_CUM",
-        "ruleState": "PENDING_B1"
+        "basis": "SAME_DAYS_TO_CUTOFF",
+        "ruleState": "NO_DATA",
+        "cutoffDate": "2023-10-31",
+        "dayCount": 30,
+        "periodComplete": true,
+        "note": "Chưa có dữ liệu đối chiếu — không hiển thị 0%."
       }
     },
     "totals": {

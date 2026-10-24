@@ -12,21 +12,26 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
+  BASELINE_SCOPE_LABELS,
   DIRECTION_LABELS,
   DISPLAY_STATE_LABELS,
+  MEASURE_MODE_LABELS,
   OFFICIAL_PERCENT_POLICY,
   PERCENT_REASON_LABELS,
   TARGET_STATE_LABELS,
+  UNCONFIGURED_TARGET_RULE,
   aggregateClassifications,
   canConfirmTarget,
   computePercent,
   deriveActualState,
   deriveTargetState,
   formatPercentVi,
+  metricRuleFor,
   nextTargetStatus,
   parseMetricInput,
   resolveOfficialFlag,
   targetDraftErrors,
+  targetRuleBlockReason,
   validateTargetDraft,
   type ActualSnapshot,
   type ActualStateResult,
@@ -35,6 +40,7 @@ import {
   type PercentResult,
   type Period,
   type TargetDraftInput,
+  type TargetRuleSnapshot,
   type TargetSnapshot,
   type TargetStateResult,
 } from "../src/lib/metrics-contract";
@@ -90,7 +96,8 @@ const BASE_TARGET: TargetSnapshot = {
   unitType: "COUNT",
   direction: "HIGHER_IS_BETTER",
   labelCode: "KH_THANG",
-  measureMode: "PERIOD_FLOW",
+  measureMode: "CUMULATIVE",
+  baselineScope: "MONTH_START",
 };
 
 function actualOf(patch: Partial<ActualSnapshot> = {}): ActualStateResult {
@@ -107,6 +114,7 @@ interface PercentOpts {
   actualUnitType?: string;
   direction?: Direction;
   measureMode?: MeasureMode;
+  baselineScope?: "YEAR_START" | "MONTH_START" | "PERIOD_START" | "PENDING_BUSINESS_INPUT";
   mode?: "OFFICIAL" | "PREVIEW";
   metricRequiresConfirm?: boolean;
 }
@@ -123,7 +131,8 @@ function percentOf(
     targetUnitType: opts.targetUnitType ?? "COUNT",
     actualUnitType: opts.actualUnitType ?? "COUNT",
     direction: opts.direction ?? "HIGHER_IS_BETTER",
-    measureMode: opts.measureMode ?? "PERIOD_FLOW",
+    measureMode: opts.measureMode ?? "CUMULATIVE",
+    baselineScope: opts.baselineScope ?? "PERIOD_START",
     policy: {
       ...OFFICIAL_PERCENT_POLICY,
       metricRequiresConfirm: opts.metricRequiresConfirm ?? false,
@@ -312,6 +321,11 @@ check("C31. 0 đã xác nhận + target 100 → 0,00% (không phải null)", (()
   const r = percentOf(actualOf({ value: 0, noActivityConfirmed: true, entries: [], expectedSlots: 1, coveredSlots: 0 }), targetOf());
   return r.state === "COMPUTED" && r.displayValue === "0,00%";
 })());
+check("C32. baselineScope PENDING_BUSINESS_INPUT → BUSINESS_RULE_PENDING", percentOf(actualOf(), targetOf(), { baselineScope: "PENDING_BUSINESS_INPUT" }).reason === "BUSINESS_RULE_PENDING");
+check("C33. baselineScope YEAR_START được tính", (() => {
+  const r = percentOf(actualOf(), targetOf(), { baselineScope: "YEAR_START" });
+  return r.state === "COMPUTED" && r.value === 50;
+})());
 
 // ============================================================
 // D. GỘP PHÂN LOẠI
@@ -404,7 +418,7 @@ check("G2. Có nhãn MOCK / chưa nối API", html.includes("MOCK") && html.incl
 check("G3. Có nút lưu nháp/xác nhận", html.includes("Lưu nháp (mock)") && html.includes("Xác nhận (mock)"));
 check("G4. Có ghi chú target DRAFT chỉ tạm tính", html.includes("Target") && html.includes("DRAFT") && html.includes("tạm tính"));
 check("G5. Có nguồn/căn cứ bắt buộc", html.includes("Nguồn / căn cứ") && html.includes("bắt buộc khi xác nhận"));
-check("G6. Có chiều đánh giá C1", html.includes("Chiều đánh giá (C1)") && html.includes("Chưa có quy tắc đánh giá"));
+check("G6. Có chiều đánh giá D5-A và quy tắc đã duyệt", html.includes("Chiều đánh giá (D5-A/C1)") && html.includes("theo quy tắc đã duyệt"));
 check("G7. Có thông báo chỉ tiêu cấp Cục (Q1)", html.includes("Chỉ tiêu cấp Cục"));
 
 // ============================================================
@@ -417,6 +431,40 @@ check("H3. Có nhãn Chưa đủ kỳ", DISPLAY_STATE_LABELS.CHUA_DU_KY === "Ch�
 check("H4. Có nhãn Chưa giao chỉ tiêu", TARGET_STATE_LABELS.NOT_ASSIGNED === "Chưa giao chỉ tiêu");
 check("H5. Có nhãn chiều chưa chốt", DIRECTION_LABELS.NOT_SET === "Chưa có quy tắc đánh giá");
 check("H6. Có lý do mẫu số 0", PERCENT_REASON_LABELS.TARGET_ZERO.includes("Mẫu số"));
+check("H7. Có nhãn chưa có quy tắc gán chỉ tiêu", PERCENT_REASON_LABELS.TARGET_RULE_NOT_APPROVED === "Chưa có quy tắc gán chỉ tiêu");
+check("H8. Có nhãn baseline chưa có quy tắc", BASELINE_SCOPE_LABELS.PENDING_BUSINESS_INPUT === "Chưa có quy tắc");
+check("H9. Có nhãn đo lường lũy kế", MEASURE_MODE_LABELS.CUMULATIVE === "Lũy kế");
+
+// ============================================================
+// I. D5-A / C1-A — QUY TẮC ĐÁNH GIÁ & GÁN CHỈ TIÊU
+// ============================================================
+console.log("\n[I] D5-A / C1-A — QUY TẮC TƯỜNG MINH");
+const THU_YEAR_RULE: TargetRuleSnapshot = {
+  configured: true,
+  targetApplicable: true,
+  direction: "HIGHER_IS_BETTER",
+  measureMode: "CUMULATIVE",
+  baselineScope: "YEAR_START",
+};
+check("I1. Thiếu dòng quy tắc → UNCONFIGURED/NOT_SET/PENDING", (() => {
+  const r = UNCONFIGURED_TARGET_RULE;
+  return !r.configured && !r.targetApplicable && r.direction === "NOT_SET" && r.measureMode === "PENDING_BUSINESS_INPUT" && r.baselineScope === "PENDING_BUSINESS_INPUT";
+})());
+check("I2. THU_NSNN năm HIGHER/CUMULATIVE/YEAR_START đủ điều kiện %", targetRuleBlockReason(THU_YEAR_RULE) === null);
+check("I3. THU_NSNN tháng MONTH_START đủ điều kiện %", targetRuleBlockReason({ ...THU_YEAR_RULE, baselineScope: "MONTH_START" }) === null);
+check("I4. NOT_APPLICABLE → TARGET_RULE_NOT_APPROVED", targetRuleBlockReason({ ...UNCONFIGURED_TARGET_RULE, configured: true }) === "TARGET_RULE_NOT_APPROVED");
+check("I5. direction NOT_SET → DIRECTION_PENDING", targetRuleBlockReason({ ...THU_YEAR_RULE, direction: "NOT_SET" }) === "DIRECTION_PENDING");
+check("I6. LOWER_IS_BETTER → DIRECTION_RULE_PENDING", targetRuleBlockReason({ ...THU_YEAR_RULE, direction: "LOWER_IS_BETTER" }) === "DIRECTION_RULE_PENDING");
+check("I7. measureMode pending → TARGET_RULE_PENDING", targetRuleBlockReason({ ...THU_YEAR_RULE, measureMode: "PENDING_BUSINESS_INPUT" }) === "TARGET_RULE_PENDING");
+check("I8. baselineScope pending → TARGET_RULE_PENDING", targetRuleBlockReason({ ...THU_YEAR_RULE, baselineScope: "PENDING_BUSINESS_INPUT" }) === "TARGET_RULE_PENDING");
+check("I9. metricRuleFor lấy đúng kỳ MONTH", (() => {
+  const rule = metricRuleFor(MOCK_METRICS[0], "MONTH");
+  return rule.targetApplicable && rule.baselineScope === "MONTH_START";
+})());
+check("I10. metricRuleFor metric chưa cấu hình → không applicable", (() => {
+  const rule = metricRuleFor(undefined, "YEAR");
+  return !rule.configured && !rule.targetApplicable && !rule.officialPercentAllowed;
+})());
 
 // ============================================================
 // TỔNG HỢP
