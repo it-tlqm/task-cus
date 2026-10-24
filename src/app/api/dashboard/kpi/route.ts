@@ -3,6 +3,8 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { getIsoWeekFromDate } from "@/lib/period-helper";
+import { vietnamDayRange } from "@/server/work-dates";
+import { formatVnDate } from "@/lib/datetime";
 
 export async function GET(req: NextRequest) {
   try {
@@ -87,10 +89,10 @@ export async function GET(req: NextRequest) {
         selectedPeriodTitle = matchedPeriod.title;
         matchedPeriodId = matchedPeriod.id;
       } else if (targetPeriodKey === "today") {
-        const now = new Date();
-        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-        selectedPeriodTitle = `Hôm nay (${now.toLocaleDateString("vi-VN")})`;
+        const range = vietnamDayRange();
+        periodStart = range.start;
+        periodEnd = range.end;
+        selectedPeriodTitle = `Hôm nay (${formatVnDate(range.date)})`;
       } else if (targetPeriodKey === "w41") {
         const pW41 = availablePeriods.find((p) => p.title.includes("Tuần 41"));
         if (pW41) {
@@ -153,7 +155,7 @@ export async function GET(req: NextRequest) {
       } else if (targetPeriodKey === "custom" && startDateParam && endDateParam) {
         periodStart = new Date(startDateParam);
         periodEnd = new Date(endDateParam);
-        selectedPeriodTitle = `Từ ${new Date(startDateParam).toLocaleDateString("vi-VN")} đến ${new Date(endDateParam).toLocaleDateString("vi-VN")}`;
+        selectedPeriodTitle = `Từ ${formatVnDate(startDateParam)} đến ${formatVnDate(endDateParam)}`;
       }
     }
 
@@ -475,7 +477,7 @@ export async function GET(req: NextRequest) {
           message:
             t.issueNotes ||
             (isOver
-              ? `Hạn xử lý: ${new Date(t.currentDeadline).toLocaleDateString("vi-VN")}`
+              ? `Hạn xử lý: ${formatVnDate(t.currentDeadline)}`
               : "Cần tập trung giải quyết dứt điểm"),
         };
       });

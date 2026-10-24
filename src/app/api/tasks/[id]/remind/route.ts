@@ -4,6 +4,8 @@ import { authenticateRequest } from "@/server/auth";
 import { verifyTaskAccess, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
+import { todayInVietnam } from "@/server/work-dates";
+import { formatVnDate } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -100,13 +102,13 @@ export async function POST(
     }
 
     // 2. Tạo thông báo cho từng lãnh đạo (idempotency theo ngày: mỗi người chỉ nhắc 1 lần/ngày/task)
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = todayInVietnam();
     const notifyPromises = targetPersonIds.map((leaderPersonId) =>
       createNotification({
         recipientId: leaderPersonId,
         type: "TASK_REVIEW_REMIND",
         title: `Nhắc duyệt: ${task.code} - ${task.title.slice(0, 45)}...`,
-        content: `Cán bộ ${user.fullName} (${user.personCode || user.username}) vừa gửi nhắc duyệt kết quả hoàn thành nhiệm vụ "${task.title}".`,
+        content: `Cán bộ ${user.fullName} (${user.personCode || user.username}) vừa gửi nhắc duyệt kết quả hoàn thành nhiệm vụ "${task.title}". Hạn xử lý: ${formatVnDate(task.currentDeadline)}.`,
         category: "approval",
         actionUrl: "/approvals",
         actionLabel: "Xem phê duyệt",

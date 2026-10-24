@@ -4,12 +4,14 @@ import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { aiEnabled, draftDirective, summarizePeriod } from "@/server/ai";
 import { recordAuditEvent } from "@/server/audit";
+import { vietnamDayRange } from "@/server/work-dates";
+import { formatVnDate } from "@/lib/datetime";
 
 const DAILY_LIMIT = 20;
 
 async function checkQuota(user: any, action: string): Promise<boolean> {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const range = vietnamDayRange();
+  const start = range.start;
   const used = await prisma.auditEvent.count({
     where: { actorId: user.id, action, timestamp: { gte: start } },
   });
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
       ]);
       const leaveApproved = await prisma.leaveRequest.count({ where: { status: "APPROVED" } });
       const now = new Date();
-      const label = `tuần ${now.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+      const label = `tuần ${formatVnDate(now)}`;
       const text = await summarizePeriod({ label, total, completed, inProgress, overdue, waiting, leaveApproved });
       await recordAuditEvent({
         actorId: user.id, action: "AI_SUMMARY", resourceType: "ReportSnapshot", newData: { total, completed, overdue },

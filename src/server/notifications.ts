@@ -2,6 +2,8 @@ import { prisma } from "@/server/db";
 import { getAuthorizedUnitIds } from "@/server/guard";
 import { SessionUser } from "@/server/auth";
 import { getSystemConfigNumber } from "@/server/system-config";
+import { formatVnDate, formatVnDateTime, vnDateOnly } from "@/lib/datetime";
+import { todayInVietnam, vietnamDayRange } from "@/server/work-dates";
 
 export interface CreateNotificationInput {
   recipientId: string;
@@ -87,7 +89,7 @@ export async function syncOperationalAlerts(user: SessionUser) {
     if (!personId) return;
 
     const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
+    const todayStr = todayInVietnam(now);
     const dueSoonHours = await getSystemConfigNumber("taskDueSoonHours", 24);
     const maxWarningItems = await getSystemConfigNumber("taskMaxWarningItems", 10);
     const inDueSoonWindow = new Date(now.getTime() + dueSoonHours * 60 * 60 * 1000);
@@ -112,13 +114,13 @@ export async function syncOperationalAlerts(user: SessionUser) {
     });
 
     for (const t of overdueTasks) {
-      const deadlineDateStr = t.currentDeadline.toISOString().slice(0, 10);
+      const deadlineDateStr = vnDateOnly(t.currentDeadline);
       await createNotification({
         recipientId: personId,
         category: "deadline",
         type: "TASK_OVERDUE",
         title: `Cảnh báo quá hạn thực hiện: [${t.code}]`,
-        content: `${t.title} • Hạn xử lý: ${t.currentDeadline.toLocaleDateString("vi-VN")} đã quá hạn. Cần khẩn trương giải quyết.`,
+        content: `${t.title} • Hạn xử lý: ${formatVnDate(t.currentDeadline)} đã quá hạn. Cần khẩn trương giải quyết.`,
         tag: "QUÁ HẠN",
         tagType: "danger",
         entityType: "TASK",
@@ -150,13 +152,13 @@ export async function syncOperationalAlerts(user: SessionUser) {
     });
 
     for (const t of dueSoonTasks) {
-      const deadlineDateStr = t.currentDeadline.toISOString().slice(0, 10);
+      const deadlineDateStr = vnDateOnly(t.currentDeadline);
       await createNotification({
         recipientId: personId,
         category: "deadline",
         type: "TASK_DUE_SOON",
         title: `Nhắc nhở sắp đến hạn: [${t.code}]`,
-        content: `${t.title} • Hạn chót: ${t.currentDeadline.toLocaleDateString("vi-VN")} ${t.currentDeadline.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}.`,
+        content: `${t.title} • Hạn chót: ${formatVnDateTime(t.currentDeadline)}.`,
         tag: "SẮP ĐẾN HẠN",
         tagType: "warning",
         entityType: "TASK",
@@ -245,7 +247,7 @@ export async function syncOperationalAlerts(user: SessionUser) {
           category: "approval",
           type: "DEADLINE_REQUEST_PENDING",
           title: `Đề xuất gia hạn thời hạn: [${dr.task.code}]`,
-          content: `Cán bộ ${dr.requestedBy.fullName} đề xuất gia hạn đến ${dr.requestedDeadline.toLocaleDateString("vi-VN")}. Lý do: ${dr.reason}`,
+          content: `Cán bộ ${dr.requestedBy.fullName} đề xuất gia hạn đến ${formatVnDate(dr.requestedDeadline)}. Lý do: ${dr.reason}`,
           tag: "XIN GIA HẠN",
           tagType: "warning",
           entityType: "DEADLINE_REQUEST",
@@ -259,11 +261,11 @@ export async function syncOperationalAlerts(user: SessionUser) {
     }
 
     // 4. NHẮC NHỞ NHẬT KÝ CA TRỰC HÔM NAY (Trước 17:00)
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const todayRange = vietnamDayRange(now);
     const todayRoutine = await prisma.routineEntry.findFirst({
       where: {
         personId,
-        createdAt: { gte: todayStart },
+        createdAt: { gte: todayRange.start, lte: todayRange.end },
       },
     });
 

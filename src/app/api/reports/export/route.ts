@@ -12,6 +12,18 @@ import {
 import { getReportSnapshotById } from "@/server/snapshots";
 import { formatPeriodRangeFromDates } from "@/lib/period-helper";
 import { UNIT_OFFICIAL_NAME } from "@/lib/unit-info";
+import { formatVnDate, formatVnDateTimeParts } from "@/lib/datetime";
+import { todayInVietnam } from "@/server/work-dates";
+
+const VN_WEEKDAY_NAMES = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+
+/** Thứ trong tuần theo lịch Việt Nam (không phụ thuộc múi giờ máy chủ). */
+function formatVnWeekday(value: Date | string): string {
+  const datePart = formatVnDateTimeParts(value)?.date;
+  if (!datePart) return "";
+  const [y, m, d] = datePart.split("-").map(Number);
+  return VN_WEEKDAY_NAMES[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -124,7 +136,7 @@ export async function GET(req: NextRequest) {
           departmentName: t.unitName,
           collaborators: "Cán bộ phân công",
           priority: t.priority === "HIGH" || t.priority === "Cao" ? "Cao" : "Trung bình",
-          deadlineText: t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "Đúng hạn",
+          deadlineText: t.currentDeadline ? formatVnDate(t.currentDeadline) : "Đúng hạn",
           progressPercent: t.status === "COMPLETED" || t.status === "DONE" ? 100 : t.hasIssue ? 40 : 75,
           status:
             t.status === "COMPLETED" || t.status === "DONE"
@@ -159,7 +171,7 @@ export async function GET(req: NextRequest) {
               expectedResult: "Theo kế hoạch đã chốt",
               actualResult: t.actualResultText || (t.status === "COMPLETED" ? "Đã nghiệm thu hoàn thành" : "Đang thực hiện"),
               status: t.status === "COMPLETED" ? "Hoàn thành" : "Đang thực hiện",
-              dateText: t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "Hàng ngày",
+              dateText: t.currentDeadline ? formatVnDate(t.currentDeadline) : "Hàng ngày",
             })),
           },
         ];
@@ -423,7 +435,7 @@ export async function GET(req: NextRequest) {
 
         const collabs = t.assignees.map((a: any) => a.person.fullName).join(", ");
         const deadlineStr = t.currentDeadline
-          ? new Date(t.currentDeadline).toLocaleDateString("vi-VN")
+          ? formatVnDate(t.currentDeadline)
           : "Đúng hạn kỳ";
 
         detailedItems.push({
@@ -475,7 +487,7 @@ export async function GET(req: NextRequest) {
         items: detailedItems,
       });
 
-      fileName = `BaoCao_ChiTiet_DauViec_MauB_HQTL_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      fileName = `BaoCao_ChiTiet_DauViec_MauB_HQTL_${todayInVietnam()}.xlsx`;
     } else {
       // -------------------------------------------------------------
       // MẪU A: BÁO CÁO TRUYỀN THỐNG (Biểu Kế Hoạch Tuần 8 Cột Gốc)
@@ -525,7 +537,7 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          const deadlineStr = t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "";
+          const deadlineStr = t.currentDeadline ? formatVnDate(t.currentDeadline) : "";
           const displayTitleWithDeadline = deadlineStr ? `${itemTitle} (Hạn: ${deadlineStr})` : itemTitle;
           const displayExpected = t.expectedResultText
             ? `${t.expectedResultText}${deadlineStr ? ` [Hạn chót: ${deadlineStr}]` : ""}`
@@ -549,9 +561,7 @@ export async function GET(req: NextRequest) {
         matchedWorkItems.forEach((w) => {
           let dateStr = w.dateText;
           if (!dateStr && w.workDate) {
-            const d = new Date(w.workDate);
-            const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
-            dateStr = `${dayNames[d.getDay()]} (${d.toLocaleDateString("vi-VN")})`;
+            dateStr = `${formatVnWeekday(w.workDate)} (${formatVnDate(w.workDate)})`;
           }
           if (!dateStr) dateStr = "Cả tuần";
 
@@ -621,7 +631,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        const deadlineStr = t.currentDeadline ? new Date(t.currentDeadline).toLocaleDateString("vi-VN") : "";
+        const deadlineStr = t.currentDeadline ? formatVnDate(t.currentDeadline) : "";
         const displayTitleWithDeadline = deadlineStr ? `${itemTitle} (Hạn: ${deadlineStr})` : itemTitle;
         const displayExpected = t.expectedResultText
           ? `${t.expectedResultText}${deadlineStr ? ` [Hạn chót: ${deadlineStr}]` : ""}`
@@ -645,9 +655,7 @@ export async function GET(req: NextRequest) {
       unassignedWorkItems.forEach((w: any) => {
         let dateStr = w.dateText;
         if (!dateStr && w.workDate) {
-          const d = new Date(w.workDate);
-          const dayNames = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
-          dateStr = `${dayNames[d.getDay()]} (${d.toLocaleDateString("vi-VN")})`;
+          dateStr = `${formatVnWeekday(w.workDate)} (${formatVnDate(w.workDate)})`;
         }
         if (!dateStr) dateStr = "Cả tuần";
 
@@ -678,7 +686,7 @@ export async function GET(req: NextRequest) {
         unassignedItems: unassignedItems.length > 0 ? unassignedItems : undefined,
       });
 
-      fileName = `BaoCao_KeHoachTuan_MauA_HQTL_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      fileName = `BaoCao_KeHoachTuan_MauA_HQTL_${todayInVietnam()}.xlsx`;
     }
 
     // 6. Ghi Audit Log xuất file báo cáo
