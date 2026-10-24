@@ -3,6 +3,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { aiEnabled, draftDirective, summarizePeriod } from "@/server/ai";
+import { getAiSummaryStats } from "@/server/ai-summary";
 import { recordAuditEvent } from "@/server/audit";
 import { vietnamDayRange } from "@/server/work-dates";
 import { formatVnDate } from "@/lib/datetime";
@@ -55,19 +56,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: { items } });
     }
 
-    if (op === "summarize") {      if (!(await checkQuota(user, "AI_SUMMARY"))) return jsonError(`Hết lượt tóm tắt hôm nay (${DAILY_LIMIT} lượt)`, 429);
-      // Chỉ dùng số tổng hợp theo phạm vi của người gọi — không gửi chi tiết cá nhân
+    if (op === "summarize") {
+      if (!(await checkQuota(user, "AI_SUMMARY"))) return jsonError(`Hết lượt tóm tắt hôm nay (${DAILY_LIMIT} lượt)`, 429);
+      // Chỉ dùng số tổng hợp theo phạm vi của người gọi — không gửi chi tiết cá nhân.
+      // Task và nghỉ phép dùng CÙNG một phạm vi đơn vị (getAiSummaryStats).
       const authorizedUnits = await getAuthorizedUnitIds(user);
-      const scopeWhere =
-        authorizedUnits === "ALL" ? {} : { unitId: { in: authorizedUnits } };
-      const [total, completed, inProgress, overdue, waiting] = await Promise.all([
-        prisma.task.count({ where: { ...scopeWhere, status: { not: "CANCELED" } } }),
-        prisma.task.count({ where: { ...scopeWhere, status: { in: ["COMPLETED", "DONE"] } } }),
-        prisma.task.count({ where: { ...scopeWhere, status: "IN_PROGRESS" } }),
-        prisma.task.count({ where: { ...scopeWhere, status: { in: ["IN_PROGRESS", "WAITING_REVIEW"] }, currentDeadline: { lt: new Date() } } }),
-        prisma.task.count({ where: { ...scopeWhere, status: "WAITING_REVIEW" } }),
-      ]);
-      const leaveApproved = await prisma.leaveRequest.count({ where: { status: "APPROVED" } });
+      const { total, completed, inProgress, overdue, waiting, leaveApproved } =
+        await getAiSummaryStats(authorizedUnits);
       const now = new Date();
       const label = `tuần ${formatVnDate(now)}`;
       const text = await summarizePeriod({ label, total, completed, inProgress, overdue, waiting, leaveApproved });
