@@ -17,9 +17,11 @@ export async function GET() {
       latencyMs: Date.now() - started,
       time: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Chi tiết lỗi (chuỗi kết nối, host...) chỉ ghi log phía server, không trả ra ngoài.
+    console.error("[health] database check failed:", error instanceof Error ? error.message : error);
     return NextResponse.json(
-      { success: false, status: "degraded", db: "down", ...build, error: error.message },
+      { success: false, status: "degraded", db: "down", ...build, error: "database_unavailable" },
       { status: 503 }
     );
   }
