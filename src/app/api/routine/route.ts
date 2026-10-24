@@ -8,7 +8,9 @@ import { getIsoWeekFromDate } from "@/lib/period-helper";
 import { parseDateOnly, todayInVietnam } from "@/server/work-dates";
 import { getCatalogEntrySelectionError } from "@/server/work-catalog";
 import {
+  isReportingPeriodLocked,
   isVnDateWithinReportingPeriod,
+  periodRepresentsIsoWeek,
   ReportingPeriodError,
   resolveReportingWeekContainingVnDate,
 } from "@/server/reporting-period";
@@ -598,40 +600,61 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Xác định kỳ báo cáo SAU khi đã validate form/ngày/bộ phận/tag.
-    // UX 2B1: khi client gửi ngày làm việc, kỳ PHẢI chứa đúng ngày đó theo lịch VN.
-    // - Có periodId: chấp nhận nếu ngày thực sự thuộc kỳ, ngược lại từ chối.
-    // - Không có periodId: phân giải kỳ tuần ISO đúng ngày bằng helper hiện hành.
+    // N1: khi client gửi ngày làm việc, LUÔN dùng kỳ TUẦN ISO chuẩn (canonical).
+    // - periodId client gửi chỉ dùng để kiểm tra cùng tuần/khóa, KHÔNG ghi vào sibling legacy.
+    // - Mọi kỳ cùng tuần ISO (kể cả legacy lệch múi giờ) đều được kiểm tra khóa.
     // - Không gửi workDate: giữ nguyên hành vi cũ để backward-compatible.
     let periodId = inputPeriodId;
     if (hasExplicitWorkDate) {
       if (inputPeriodId) {
         const suppliedPeriod = await prisma.reportingPeriod.findUnique({
           where: { id: inputPeriodId },
-          select: { id: true, type: true, title: true, startAt: true, endAt: true },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            startAt: true,
+            endAt: true,
+            isLocked: true,
+            snapshots: { where: { status: "LOCKED" }, select: { id: true } },
+          },
         });
         if (!suppliedPeriod) return jsonError("Kỳ báo cáo không tồn tại", 400);
-        if (!isVnDateWithinReportingPeriod(suppliedPeriod, workDateIso)) {
+        if (suppliedPeriod.type === "WEEK") {
+          const expectedWeek = getIsoWeekFromDate(
+            new Date(`${workDateIso}T12:00:00+07:00`)
+          );
+          if (!periodRepresentsIsoWeek(suppliedPeriod, expectedWeek)) {
+            return jsonError(
+              `Kỳ đã chọn thuộc tuần khác với ngày làm việc ${workDateIso} — vui lòng kiểm tra lại`,
+              400
+            );
+          }
+        } else if (!isVnDateWithinReportingPeriod(suppliedPeriod, workDateIso)) {
           return jsonError(
             `Ngày làm việc ${workDateIso} không thuộc kỳ "${suppliedPeriod.title}" theo lịch VN — vui lòng chọn kỳ tương ứng`,
             400
           );
         }
-        periodId = suppliedPeriod.id;
-      } else {
-        try {
-          const resolvedPeriod = await resolveReportingWeekContainingVnDate(workDateIso);
-          periodId = resolvedPeriod.id;
-        } catch (error: any) {
-          // P5: chỉ lỗi nghiệp vụ đã biết mới trả message/4xx; lỗi hệ thống → 500 generic.
-          if (error instanceof ReportingPeriodError) {
-            return jsonError(
-              error.message,
-              error.statusCode || 400
-            );
-          }
-          console.error("Error resolving routine reporting period:", error);
-          return jsonError("Không thể xác định kỳ báo cáo cho ngày đã chọn", 500);
+        if (isReportingPeriodLocked(suppliedPeriod)) {
+          return jsonError(
+            `Kỳ "${suppliedPeriod.title}" đã chốt số liệu — không thể ghi nhật ký`,
+            423
+          );
         }
+      }
+
+      try {
+        // Canonical: helper quét toàn bộ kỳ cùng tuần và chặn nếu bất kỳ kỳ nào đã khóa.
+        const canonicalPeriod = await resolveReportingWeekContainingVnDate(workDateIso);
+        periodId = canonicalPeriod.id;
+      } catch (error: any) {
+        // P5: chỉ lỗi nghiệp vụ đã biết mới trả message/4xx; lỗi hệ thống → 500 generic.
+        if (error instanceof ReportingPeriodError) {
+          return jsonError(error.message, error.statusCode || 400);
+        }
+        console.error("Error resolving routine reporting period:", error);
+        return jsonError("Không thể xác định kỳ báo cáo cho ngày đã chọn", 500);
       }
     }
 
@@ -700,7 +723,8 @@ export async function POST(req: NextRequest) {
         const existingNotOccurred = await tx.routineEntry.findFirst({
           where: {
             personId: targetPersonId,
-            periodId,
+            // N1: không scope theo periodId — sibling legacy cùng tuần không được
+            // tạo đường tránh trùng. workDate đã xác định tuần VN.
             occurrenceStatus: "NOT_OCCURRED",
             workDate,
             shift: normalizedShift,

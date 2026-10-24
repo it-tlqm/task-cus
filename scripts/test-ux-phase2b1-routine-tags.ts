@@ -161,7 +161,7 @@ async function main() {
   const otherDate = "2026-10-16";
   const uniqueTitle = `${TMP} một bản ghi nhiều tag ${Date.now()}`;
   const entriesBefore = await prisma.routineEntry.count({
-    where: { personId: person.personId, periodId: period!.id },
+    where: { personId: person.personId },
   });
   const monthlyBefore = await prisma.monthlyWorkResult.count({ where: { personId: person.personId } });
 
@@ -191,7 +191,7 @@ async function main() {
   );
 
   const entriesAfter = await prisma.routineEntry.count({
-    where: { personId: person.personId, periodId: period!.id },
+    where: { personId: person.personId },
   });
   check(
     "2. Chỉ tăng ĐÚNG 1 RoutineEntry (không sinh 3 bản ghi)",
@@ -209,6 +209,17 @@ async function main() {
       })
     : null;
   if (created?.workItemId) createdWorkItemIds.push(created.workItemId);
+
+  const targetWeek = getIsoWeekFromDate(new Date(`${targetDate}T12:00:00+07:00`));
+  const targetCanonicalPeriod = await prisma.reportingPeriod.findFirst({
+    where: { type: "WEEK", startAt: targetWeek.startAt, endAt: targetWeek.endInclusive },
+    select: { id: true },
+  });
+  check(
+    "2. periodId tháng client gửi được canonical hóa về tuần ISO của workDate",
+    created?.periodId === targetCanonicalPeriod?.id && created?.periodId !== period!.id,
+    `entryPeriod=${created?.periodId} canonical=${targetCanonicalPeriod?.id}`
+  );
 
   check("2. Lưu đúng 3 tag TX", created?.catalogTags.length === 3, `tags=${created?.catalogTags.length}`);
   check(
@@ -732,10 +743,17 @@ async function main() {
       })
     : null;
   if (acceptedEntry?.workItemId) createdWorkItemIds.push(acceptedEntry.workItemId);
+  const week43Expected = getIsoWeekFromDate(new Date("2026-10-20T12:00:00+07:00"));
+  const canonicalWeek43 = await prisma.reportingPeriod.findFirst({
+    where: { type: "WEEK", startAt: week43Expected.startAt, endAt: week43Expected.endInclusive },
+    select: { id: true },
+  });
   check(
-    "11. Chấp nhận periodId legacy 19–25/10 cho ngày 20/10 (cùng tuần ISO)",
-    acceptedLegacy.res.status === 201 && acceptedEntry?.periodId === legacyWeek.id,
-    `HTTP ${acceptedLegacy.res.status}`
+    "11. periodId legacy 19–25/10 cho ngày 20/10 được canonical hóa về tuần 43",
+    acceptedLegacy.res.status === 201 &&
+      acceptedEntry?.periodId === canonicalWeek43?.id &&
+      acceptedEntry?.periodId !== legacyWeek.id,
+    `HTTP ${acceptedLegacy.res.status} period=${acceptedEntry?.periodId || "?"}`
   );
 
   const rejectedLegacy = await postRoutine(token, {
@@ -748,6 +766,49 @@ async function main() {
     "11. Từ chối periodId legacy 19–25/10 cho ngày 26/10 (tuần kế tiếp)",
     rejectedLegacy.res.status === 400,
     `HTTP ${rejectedLegacy.res.status}`
+  );
+
+  // ---- 11b. NOT_OCCURRED không được lách bằng sibling periodId ----
+  const siblingNotOccurredTitle = `${TMP} NOT_OCCURRED sibling ${Date.now()}`;
+  const firstSiblingNotOccurred = await postRoutine(token, {
+    title: siblingNotOccurredTitle,
+    occurrenceStatus: "NOT_OCCURRED",
+    workDate: "2026-10-20",
+    shift: "CA_NGAY",
+  });
+  const firstSiblingId = firstSiblingNotOccurred.json?.routineEntry?.id;
+  if (firstSiblingId) createdEntryIds.push(firstSiblingId);
+  const firstSiblingEntry = firstSiblingId
+    ? await prisma.routineEntry.findUnique({
+        where: { id: firstSiblingId },
+        include: { workItem: true },
+      })
+    : null;
+  if (firstSiblingEntry?.workItemId) createdWorkItemIds.push(firstSiblingEntry.workItemId);
+  check(
+    "11b. Tạo NOT_OCCURRED canonical trước khi giả lập sibling",
+    firstSiblingNotOccurred.res.status === 201 && !!firstSiblingId,
+    `HTTP ${firstSiblingNotOccurred.res.status}`
+  );
+  if (firstSiblingId) {
+    // Giả lập dữ liệu lịch sử đang nằm ở legacy sibling cùng tuần.
+    await prisma.routineEntry.update({
+      where: { id: firstSiblingId },
+      data: { periodId: legacyWeek.id },
+    });
+  }
+  const siblingDup = await postRoutine(token, {
+    periodId: legacyWeek.id,
+    title: siblingNotOccurredTitle,
+    occurrenceStatus: "NOT_OCCURRED",
+    workDate: "2026-10-20",
+    shift: "CA_NGAY",
+  });
+  check(
+    "11b. NOT_OCCURRED trùng ngày/ca bị chặn dù periodId sibling khác",
+    siblingDup.res.status === 409 &&
+      String(siblingDup.json?.error || "").includes("cùng ngày và ca"),
+    `HTTP ${siblingDup.res.status} ${siblingDup.json?.error || ""}`
   );
 
   // ---- 12. Không được bypass tuần đã khóa qua kỳ legacy misaligned ----
@@ -777,6 +838,56 @@ async function main() {
     "12. Tuần khóa không tạo thêm kỳ song song",
     (await prisma.reportingPeriod.count()) === periodsBeforeLockedWrite
   );
+
+  // ---- 12b. N1: supplied periodId không được bypass khóa của sibling cùng tuần ----
+  const week44Expected = getIsoWeekFromDate(new Date("2026-10-28T12:00:00+07:00"));
+  const canonicalWeek44 = await prisma.reportingPeriod.findFirst({
+    where: { type: "WEEK", startAt: week44Expected.startAt, endAt: week44Expected.endInclusive },
+    select: { id: true, isLocked: true },
+  });
+  check("12b. Có canonical week44 để kiểm thử", !!canonicalWeek44);
+
+  if (canonicalWeek44) {
+    lockedPeriodBackup = { id: canonicalWeek44.id, isLocked: canonicalWeek44.isLocked };
+    await prisma.reportingPeriod.update({
+      where: { id: canonicalWeek44.id },
+      data: { isLocked: true },
+    });
+    const entriesBeforeLockedCanonical = await prisma.routineEntry.count();
+    const periodsBeforeLockedCanonical = await prisma.reportingPeriod.count();
+    const legacySuppliedWithCanonicalLocked = await postRoutine(token, {
+      periodId: legacyWeek44.id,
+      title: `${TMP} legacy supplied canonical locked ${Date.now()}`,
+      occurrenceStatus: "OCCURRED",
+      workDate: "2026-10-28",
+    });
+    check(
+      "12b. Canonical khóa + legacy supplied → 423, không ghi",
+      legacySuppliedWithCanonicalLocked.res.status === 423 &&
+        (await prisma.routineEntry.count()) === entriesBeforeLockedCanonical &&
+        (await prisma.reportingPeriod.count()) === periodsBeforeLockedCanonical,
+      `HTTP ${legacySuppliedWithCanonicalLocked.res.status}`
+    );
+    await prisma.reportingPeriod.update({
+      where: { id: canonicalWeek44.id },
+      data: { isLocked: canonicalWeek44.isLocked },
+    });
+    lockedPeriodBackup = null;
+
+    const entriesBeforeLockedLegacy = await prisma.routineEntry.count();
+    const canonicalSuppliedWithLegacyLocked = await postRoutine(token, {
+      periodId: canonicalWeek44.id,
+      title: `${TMP} canonical supplied legacy locked ${Date.now()}`,
+      occurrenceStatus: "OCCURRED",
+      workDate: "2026-10-28",
+    });
+    check(
+      "12b. Legacy khóa + canonical supplied → 423, không ghi",
+      canonicalSuppliedWithLegacyLocked.res.status === 423 &&
+        (await prisma.routineEntry.count()) === entriesBeforeLockedLegacy,
+      `HTTP ${canonicalSuppliedWithLegacyLocked.res.status}`
+    );
+  }
 
   // ---- 13. P2002 title conflict: đọc lại, không trả lỗi 400 giả khi kỳ đúng ----
   // Tạo kỳ cùng title chuẩn nhưng khoảng ngày sai → helper phải 400, không crash 500.
