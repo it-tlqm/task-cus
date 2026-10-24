@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { isSelfInitiated, originLabel } from "@/lib/task-origin";
 import { isMyPendingAcceptance } from "@/lib/task-acceptance";
 import Link from "next/link";
@@ -113,7 +114,9 @@ interface TaskItem {
   myPartStatus?: string | null;
 }
 
-export default function MyWorkPage() {
+function MyWorkPageContent() {
+  const searchParams = useSearchParams();
+  const tabQuery = searchParams.get("tab");
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
@@ -124,6 +127,12 @@ export default function MyWorkPage() {
   const [journalFilter, setJournalFilter] = useState<JournalFilterState>(
     DEFAULT_JOURNAL_FILTER
   );
+  // Mở tab "Chờ nhận việc": luôn mở bộ lọc toàn thời gian để số đếm trên tab và
+  // danh sách dùng cùng một phạm vi (mặc định "Hôm nay" ẩn việc có hạn ngày khác).
+  const openWaitingAcceptTab = React.useCallback(() => {
+    setActiveTab("WAITING_ACCEPT");
+    setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+  }, []);
   // UX: tìm kiếm + phân trang server (API giới hạn 50/trang)
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -219,17 +228,19 @@ export default function MyWorkPage() {
     );
   }, []);
 
-  // Deep-link "Công chức nhận việc": đọc query SAU khi mount để HTML server/client
-  // giống nhau ở lần render đầu (tránh hydration mismatch).
+  // Deep-link/sidebar theo query "tab" (useSearchParams + Suspense để Next build tĩnh được):
+  // - tab=WAITING_ACCEPT → mở tab chờ nhận kèm bộ lọc toàn thời gian.
+  // - không có query → sidebar "Nhật ký công việc": đưa tab chờ nhận về "Tất cả",
+  //   nhưng KHÔNG reset tab người dùng tự chọn khác.
   useEffect(() => {
-    const tab = new URLSearchParams(window.location.search).get("tab");
-    if (tab === "WAITING_ACCEPT") {
-      setActiveTab("WAITING_ACCEPT");
-      // Mặc định "Hôm nay" sẽ ẩn việc chờ nhận có hạn ngày khác → mở toàn thời gian
-      // để số đếm trên tab và danh sách luôn khớp nhau.
-      setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+    if (tabQuery === "WAITING_ACCEPT") {
+      openWaitingAcceptTab();
+      return;
     }
-  }, []);
+    if (!tabQuery) {
+      setActiveTab((prev) => (prev === "WAITING_ACCEPT" ? "ALL" : prev));
+    }
+  }, [tabQuery, openWaitingAcceptTab]);
 
   // Drawer & Modal States
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -775,6 +786,17 @@ export default function MyWorkPage() {
       task.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.title.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
+
+    // Tab "Chờ nhận việc": dùng ĐÚNG predicate của badge, xét TRƯỚC mọi bộ lọc
+    // ngày/nguồn/trạng thái của Nhật ký. Mặc định "Hôm nay" không được phép làm
+    // danh sách rỗng trong khi badge vẫn đếm việc có hạn ngày khác.
+    if (activeTab === "WAITING_ACCEPT") {
+      return (
+        isMyPendingAcceptance(task, currentUser.personId) &&
+        journalTextMatches(journalFilter.query, task.code, task.title, task.description)
+      );
+    }
+
     if (!inTimeRange(task)) return false;
 
     // Bộ lọc Nhật ký công việc
@@ -800,9 +822,6 @@ export default function MyWorkPage() {
     if (journalFilter.status === "done") return task.status === "COMPLETED";
 
     if (activeTab === "ALL") return true;
-    if (activeTab === "WAITING_ACCEPT") {
-      return isMyPendingAcceptance(task, currentUser.personId);
-    }
     if (activeTab === "IN_PROGRESS") return task.status === "IN_PROGRESS" || task.status === "NOT_STARTED";
     if (activeTab === "WAITING_REVIEW") return task.status === "WAITING_REVIEW";
     if (activeTab === "OVERDUE") return task.isOverdue || task.hasIssue;
@@ -1080,7 +1099,7 @@ export default function MyWorkPage() {
                 Tất cả ({tasks.length})
               </button>
               <button
-                onClick={() => setActiveTab("WAITING_ACCEPT")}
+                onClick={openWaitingAcceptTab}
                 className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
                   activeTab === "WAITING_ACCEPT"
                     ? "bg-secondary text-on-secondary shadow-sm font-semibold"
@@ -1677,7 +1696,7 @@ export default function MyWorkPage() {
               <span>Tất cả</span>
             </button>
             <button
-              onClick={() => setActiveTab("WAITING_ACCEPT")}
+              onClick={openWaitingAcceptTab}
               className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
                 activeTab === "WAITING_ACCEPT"
                   ? "bg-primary text-on-primary"
@@ -1927,7 +1946,7 @@ export default function MyWorkPage() {
                       className="h-11 px-3 rounded-lg bg-secondary text-on-secondary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[18px]">handshake</span>
+                      <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
                       <span>{acceptingId === task.id ? "Đang xác nhận..." : "Nhận việc"}</span>
                     </button>
                   </div>
@@ -2711,6 +2730,25 @@ export default function MyWorkPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MyWorkPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen w-full items-center justify-center bg-app-bg">
+          <div className="flex items-center gap-2 rounded-xl border border-border-default/50 bg-surface-container-lowest px-4 py-3 text-label-md text-on-surface-variant shadow-sm">
+            <span className="material-symbols-outlined text-[20px] text-secondary animate-spin">
+              progress_activity
+            </span>
+            <span>Đang tải không gian tác nghiệp...</span>
+          </div>
+        </div>
+      }
+    >
+      <MyWorkPageContent />
+    </Suspense>
   );
 }
 

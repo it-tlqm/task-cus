@@ -1,9 +1,9 @@
 # UX PHASE 1 — KẾT QUẢ KIỂM THỬ (24/10/2026)
 
-**Trạng thái:** `PASS WITH LIMITATIONS — CHƯA DEPLOY`  
-**Branch:** `codex/v3-ux-phase1`  
-**Base:** `bdf45ae` (production remediation)  
-**Code head:** `09d3982`  
+**Trạng thái:** `PASS WITH LIMITATIONS — CHƯA DEPLOY`
+**Branch:** `codex/v3-ux-phase1`
+**Base:** `bdf45ae` (production remediation)
+**Code head:** `09d3982`
 **Phạm vi:** 4 việc UI Đợt 1; không đổi schema/API nghiệp vụ/Production.
 
 ---

@@ -171,8 +171,28 @@ const myWork = fs.readFileSync(path.resolve("src/app/my-work/page.tsx"), "utf8")
 check("Có tab WAITING_ACCEPT", myWork.includes('"WAITING_ACCEPT"'));
 check("Hiển thị chip Chờ nhận việc", myWork.includes("Chờ nhận việc ({waitingAcceptCount})"));
 check(
-  "Đọc query tab sau khi mount",
-  myWork.includes('new URLSearchParams(window.location.search).get("tab")')
+  "Đọc query tab bằng useSearchParams (build tĩnh được)",
+  myWork.includes("useSearchParams()") && !myWork.includes("window.location.search")
+);
+check(
+  "Bọc nội dung trang trong Suspense",
+  myWork.includes("<Suspense") && myWork.includes("<MyWorkPageContent />")
+);
+check(
+  "Effect deep-link chạy lại khi query tab đổi",
+  /\}, \[tabQuery, openWaitingAcceptTab\]\)/.test(myWork)
+);
+check(
+  "Mở tab chờ nhận kèm bộ lọc toàn thời gian (desktop + mobile)",
+  /const openWaitingAcceptTab = React\.useCallback\(\(\) => \{\s*setActiveTab\("WAITING_ACCEPT"\);\s*setJournalFilter\(ALL_TIME_JOURNAL_FILTER\);\s*\}, \[\]\)/.test(
+    myWork
+  ) && (myWork.match(/onClick=\{openWaitingAcceptTab\}/g) || []).length === 2
+);
+check(
+  "Không có query tab → đưa tab chờ nhận về Tất cả (không reset tab khác)",
+  /if \(!tabQuery\) \{\s*setActiveTab\(\(prev\) => \(prev === "WAITING_ACCEPT" \? "ALL" : prev\)\);\s*\}/.test(
+    myWork
+  )
 );
 check("Có nút Nhận việc nhanh trên bảng", myWork.includes("Nhận việc"));
 check(
@@ -193,6 +213,38 @@ check(
 check(
   "Bộ lọc tab dùng cùng predicate",
   /activeTab === "WAITING_ACCEPT"[\s\S]{0,200}isMyPendingAcceptance\(task, currentUser\.personId\)/.test(myWork)
+);
+// Invariant: tab "Chờ nhận việc" phải xét TRƯỚC bộ lọc ngày/trạng thái của Nhật ký,
+// nếu không mặc định "Hôm nay" sẽ làm danh sách rỗng trong khi badge vẫn đếm.
+const myWorkFilterStart = myWork.indexOf("const filteredTasks = tasks.filter");
+const myWorkFilterEnd = myWork.indexOf("const overdueTask");
+const myWorkFilterBlock =
+  myWorkFilterStart >= 0 && myWorkFilterEnd > myWorkFilterStart
+    ? myWork.slice(myWorkFilterStart, myWorkFilterEnd)
+    : "";
+const waitingBranchAt = myWorkFilterBlock.indexOf('if (activeTab === "WAITING_ACCEPT")');
+const journalDateAt = myWorkFilterBlock.indexOf("journalDateInRange(");
+const journalStatusAt = myWorkFilterBlock.indexOf('journalFilter.status === "active"');
+check(
+  "Invariant: tab chờ nhận xét trước bộ lọc ngày của Nhật ký",
+  waitingBranchAt > 0 && journalDateAt > waitingBranchAt,
+  `branch=${waitingBranchAt} date=${journalDateAt}`
+);
+check(
+  "Invariant: tab chờ nhận xét trước bộ lọc trạng thái của Nhật ký",
+  waitingBranchAt > 0 && journalStatusAt > waitingBranchAt,
+  `branch=${waitingBranchAt} status=${journalStatusAt}`
+);
+check(
+  "Invariant: danh sách tab chờ nhận dùng đúng predicate của badge",
+  /if \(activeTab === "WAITING_ACCEPT"\) \{\s*return \(\s*isMyPendingAcceptance\(task, currentUser\.personId\)/.test(
+    myWorkFilterBlock
+  )
+);
+check(
+  "Invariant: tab chờ nhận xét trước bộ lọc thời gian (nút kỳ) để không rỗng oan",
+  waitingBranchAt > 0 && myWorkFilterBlock.indexOf("inTimeRange(task)") > waitingBranchAt,
+  `branch=${waitingBranchAt} time=${myWorkFilterBlock.indexOf("inTimeRange(task)")}`
 );
 check(
   "Nút nhận trên bảng/mobile dùng cùng predicate",
@@ -223,6 +275,16 @@ check(
   "API trả cờ myPartStatus cho client",
   tasksApi.includes("myPartStatus:")
 );
+check(
+  "API chỉ chọn partStatus cho phần việc của chính người dùng",
+  tasksApi.includes("select: { partStatus: true }") &&
+    !tasksApi.includes("partStatus: true, role: true")
+);
+check(
+  "API không trả nguyên participantResults trong payload",
+  /const \{ participantResults, \.\.\.taskPayload \} = t as any;/.test(tasksApi) &&
+    tasksApi.includes("...taskPayload")
+);
 
 // ---------------------------------------------------------------- 4. nhắc ca trực
 const notifications = fs.readFileSync(path.resolve("src/server/notifications.ts"), "utf8");
@@ -248,6 +310,10 @@ check(
 const routinePage = fs.readFileSync(path.resolve("src/app/routine/page.tsx"), "utf8");
 check("T3. /routine có cột NGƯỜI THỰC HIỆN", routinePage.includes("NGƯỜI THỰC HIỆN"));
 check(
+  "T3. /routine giữ bề rộng tối thiểu để cuộn ngang thay vì nén cột",
+  routinePage.includes("min-w-[1100px]")
+);
+check(
   "T3. /routine hiển thị tên người thực hiện, fallback —",
   routinePage.includes("entry.person?.fullName || \"—\"")
 );
@@ -269,8 +335,17 @@ check(
 );
 check("T3. Giữ data-testid roster-warnings trên khối cảnh báo", rosterPage.includes('data-testid="roster-warnings"'));
 check(
-  "T3. Danh sách cảnh báo chỉ render khi mở (tối đa 8 + phần còn lại)",
-  /showWarnings && \([\s\S]{0,600}warnings\.slice\(0, 8\)[\s\S]{0,300}warnings\.length - 8/.test(rosterPage)
+  "T3. Danh sách cảnh báo luôn có id và ẩn bằng hidden khi đóng",
+  /<ul id="roster-warnings-list" hidden=\{!showWarnings\}/.test(rosterPage)
+);
+check(
+  "T3. Nút cảnh báo đủ vùng chạm + icon aria-hidden",
+  rosterPage.includes("flex min-h-6 w-full") &&
+    (rosterPage.match(/aria-hidden="true" className="material-symbols-outlined/g) || []).length >= 2
+);
+check(
+  "T3. Giữ giới hạn 8 cảnh báo + phần còn lại",
+  /warnings\.slice\(0, 8\)[\s\S]{0,300}warnings\.length - 8/.test(rosterPage)
 );
 check("T3. Giữ dòng đếm cảnh báo trong ngày ở day view", rosterPage.includes("cảnh báo trong ngày"));
 

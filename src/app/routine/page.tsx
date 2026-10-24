@@ -752,7 +752,7 @@ export default function RoutinePage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse table-dense">
+                <table className="w-full min-w-[1100px] text-left border-collapse table-dense">
                   <thead>
                     <tr className="bg-surface-subtle text-primary font-table-header border-b border-border-default">
                       <th className="py-3 px-space-md w-[80px]">MÃ</th>

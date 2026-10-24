@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
         // chỉ được dựa trên dữ liệu của chính mình.
         participantResults: {
           where: { personId: user.personId },
-          select: { partStatus: true, role: true },
+          select: { partStatus: true },
           take: 1,
         },
         planLinks: {
@@ -242,6 +242,9 @@ export async function GET(req: NextRequest) {
     const qualityEnabled = isApprovalQualityEnabled();
     const approvalMap = await getTaskApprovalSummaries(tasks.map((t) => t.id));
     const enrichedTasks = tasks.map((t) => {
+      // UX Phase 1: chỉ dùng participantResults để suy ra myPartStatus — không trả
+      // nguyên quan hệ này trong payload (tránh lộ dữ liệu thừa).
+      const { participantResults, ...taskPayload } = t as any;
       const isFinished = t.status === "COMPLETED" || t.status === "DONE" || t.status === "CANCELED";
       const isOverdue = !isFinished && new Date(t.currentDeadline) < now;
       const latestProgress = (t.updates as any[])?.[0]?.progressPercent;
@@ -260,13 +263,13 @@ export async function GET(req: NextRequest) {
           }
         : null;
       return {
-        ...t,
+        ...taskPayload,
         isOverdue,
         progressPercent: typeof latestProgress === "number" ? latestProgress : isFinished ? 100 : 0,
         txSource,
         approval: approvalMap.get(t.id) ?? null,
         // UX Phase 1: trạng thái phần việc của chính người dùng (null nếu không tham gia).
-        myPartStatus: (t as any).participantResults?.[0]?.partStatus ?? null,
+        myPartStatus: participantResults?.[0]?.partStatus ?? null,
         // YC-10 quick approve: client cần biết có bắt buộc chọn quality hay không.
         qualityEnabled,
         // KHÔNG phát URL công khai của kho lưu trữ.
