@@ -8,7 +8,7 @@
   "results": {
     "test-phase-c-contract": { "pass": 125, "fail": 0 },
     "test-phase-c-bc2-mapping": { "pass": 80, "fail": 0 },
-    "test-phase-c-target-api": { "pass": 30, "fail": 0 },
+    "test-phase-c-target-api": { "pass": 31, "fail": 0 },
     "test-phase-c-target-ui": { "pass": 18, "fail": 0 },
     "test-phase-c-v32-metrics": { "pass": 37, "fail": 0 },
     "test-v3-phase-b-revenue": { "pass": 43, "fail": 0 },

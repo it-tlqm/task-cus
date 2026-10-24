@@ -4,7 +4,7 @@
 - **Worktree:** `D:\thanhnx\OpenCode\talung-phase-c`
 - **Branch:** `codex/v3.2-metrics`
 - **Base:** `a721fe7` (tag `v3.1-production-2026-10-24`)
-- **Commits:** `43b7b30` (D5/C1/B1) · `0ba1e21` (B2) · `9dcfec3` (tests/evidence)
+- **Commits:** `43b7b30` (D5/C1/B1) · `0ba1e21` (B2) · `9dcfec3` (tests/evidence) · `f0ee7b9` (top-level semantics) · docs commit
 - **Date:** 24/10/2026
 - **Production touched:** **NO**
 - **Merge/deploy:** **NO** (không merge integration/main, không Vercel/Supabase)
@@ -98,7 +98,7 @@ Kết quả rehearsal trên `talung_v3_fixture_integration`:
 |---|---|
 | `scripts/test-phase-c-contract.ts` | **125/125 PASS** |
 | `scripts/test-phase-c-bc2-mapping.ts` | **80/80 PASS** |
-| `scripts/test-phase-c-target-api.ts` | **30/30 PASS** |
+| `scripts/test-phase-c-target-api.ts` | **31/31 PASS** |
 | `scripts/test-phase-c-target-ui.ts` | **18/18 PASS** (desktop + 390px) |
 | `scripts/test-phase-c-v32-metrics.ts` | **37/37 PASS** |
 | `scripts/test-v3-phase-b-revenue.ts` | **43/43 PASS** |
