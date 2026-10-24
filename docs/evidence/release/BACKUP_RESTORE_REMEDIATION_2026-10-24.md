@@ -1,8 +1,8 @@
 # BIÊN BẢN BACKUP / RESTORE PRODUCTION — 24/10/2026
 
-- **Trạng thái:** `LOGICAL BACKUP + RESTORE REHEARSAL PASS — PROVIDER BACKUP/PITR CHƯA XÁC MINH`
+- **Trạng thái:** `BACKUP THỦ CÔNG (SCHEMA + DATA) + RESTORE REHEARSAL PASS — PROVIDER BACKUP/PITR CHƯA XÁC MINH`
 - **Production:** `tlqm/task-cus` — `https://task-cus.vercel.app`
-- **Phạm vi:** backup trước migration V3.1 và V3.2; diễn tập restore trên database local
+- **Phạm vi:** backup trước migration V3.1 và V3.2; restore rehearsal theo biên bản (V3.1 ghi database clone; V3.2 chỉ ghi tên DB đích `talung_v3_v32_rehearsal`, không ghi chi tiết môi trường)
 - **Nguồn:** `PRODUCTION_DEPLOY_2026-10-24.md` mục 2 · `PRODUCTION_DEPLOY_V32_2026-10-24.md` mục 2 · audit `sbc backups list` ngày 24/10/2026
 - **Liên quan:** [`PRODUCTION_MIGRATION_LEDGER_2026-10-24.md`](../../release/PRODUCTION_MIGRATION_LEDGER_2026-10-24.md) · [`MIGRATION_RULES.md`](../../release/MIGRATION_RULES.md)
 
@@ -17,7 +17,7 @@
 | Trước V3.1 | 24/10/2026 | `f6a41ba1ac26a51a1e33aa188ba7a6b23477315f977e044141db16e4ed0635e0` | `1ba3e8496b3caebaf44b57c6e50ddbbfec79e06fe7f62db3bbc8e4c1431656fe` | `talung_v3_prod_rehearsal_20261024` | **PASS** | 6 migration V3.1 **PASS** | **No difference** |
 | Trước V3.2 | 24/10/2026 | `a948a1440d6147c2358cbd734cb4c351dc3be2d28b1a926a862d06e0b645af5e` | `9fbad61f560cf91c1865a8780f469ce1101d851f45b87cf44d1e1d452fb1c306` | `talung_v3_v32_rehearsal` | **PASS** | migration `20261023200000_v32_metrics_decisions` **PASS** | **No difference** |
 
-- Công cụ: logical backup bằng Supabase CLI (schema + data), theo biên bản V3.1.
+- Công cụ: biên bản V3.1 ghi logical backup bằng Supabase CLI (schema + data); biên bản V3.2 không ghi công cụ.
 - Lưu trữ: **ngoài repo**, ACL chỉ user hiện tại.
 - Không dùng `prisma migrate deploy`, không `db push`, không reset.
 - Đường dẫn file backup, kích thước, backup ID và thời hạn lưu **không được ghi trong repo** — thuộc quyền quản lý của ops.
@@ -39,7 +39,7 @@
 
 ## 3. CHI TIẾT V3.2
 
-1. Backup logical schema + data trước migration 7.
+1. Backup schema + data trước migration 7.
 2. SHA-256:
    - schema `a948a1440d6147c2358cbd734cb4c351dc3be2d28b1a926a862d06e0b645af5e`
    - data `9fbad61f560cf91c1865a8780f469ce1101d851f45b87cf44d1e1d452fb1c306`
@@ -54,8 +54,8 @@
 
 **Đã chứng minh tại thời điểm 24/10/2026:**
 
-- Có backup logical đọc được cho cả hai lần, có SHA-256 schema và data.
-- Restore vào database clone **PASS**; V3.1 counts khớp Production, V3.2 counts sau rehearsal không đổi.
+- Có backup schema + data cho cả hai lần, có SHA-256 schema và data.
+- Restore **PASS** (V3.1: database clone, counts khớp Production; V3.2: chỉ ghi tên DB đích, counts sau rehearsal không đổi).
 - Migration rehearsal trên bản restore **PASS**; `prisma migrate diff` **No difference**.
 - Migration Production **PASS** 7/7, không partial apply, counts nghiệp vụ không đổi.
 
@@ -83,7 +83,7 @@ Task 1.4 **không chạy lại** audit này. Trạng thái hiện tại:
 |---|---|---|
 | PITR | **CHƯA XÁC NHẬN** | Audit ghi nhận tắt; ops phải xác nhận lại và quyết định |
 | Backup provider | **CHƯA XÁC NHẬN** | Audit ghi nhận trống; không có backup ID để ghi |
-| Backup logical thủ công | CÓ (V3.1, V3.2) | Ngoài repo, ACL user; không có đường dẫn trong repo |
+| Backup thủ công (schema + data) | CÓ (V3.1, V3.2) | Ngoài repo, ACL user; không có đường dẫn trong repo |
 
 **Không ghi “PITR đã bật” hay “đã có backup tự động” ở bất kỳ tài liệu release nào** cho đến khi ops cung cấp bằng chứng.
 
@@ -91,7 +91,7 @@ Task 1.4 **không chạy lại** audit này. Trạng thái hiện tại:
 
 ## 6. RỦI RO HIỆN TẠI
 
-1. **Không có lớp backup thứ hai:** nếu file logical backup ngoài repo bị mất/hỏng, không có backup provider để fallback.
+1. **Không có lớp backup thứ hai:** nếu file backup ngoài repo bị mất/hỏng, không có backup provider để fallback.
 2. **Cửa sổ mất dữ liệu:** dữ liệu phát sinh sau lần backup 24/10/2026 (đặc biệt sau V3.2/UAT) chưa có bản backup mới theo biên bản.
 3. **Chưa có restore định kỳ:** backup chỉ được chứng minh dùng được một lần cho mỗi phiên.
 4. **PITR tắt (theo audit):** không có khả năng tua về thời điểm trước sự cố.
@@ -114,6 +114,6 @@ Task 1.4 **không chạy lại** audit này. Trạng thái hiện tại:
 
 ## 8. KẾT LUẬN
 
-- Backup/restore **đã diễn tập thành công** cho V3.1 và V3.2; đây là bằng chứng đủ để nói “có thể restore từ backup logical tại 24/10/2026”.
+- Backup/restore **đã diễn tập thành công** cho V3.1 và V3.2; đây là bằng chứng đủ để nói “có thể restore từ backup thủ công tại 24/10/2026”.
 - **Không** đủ để nói “Production đã có backup tự động/PITR”. Trạng thái đó vẫn là **CHƯA XÁC MINH** và phải được ops chốt trước release/migration tiếp theo.
 - Không xóa bộ backup V3.1/V3.2 cho đến khi có UAT sign-off **và** có lớp backup thay thế đã được xác minh.

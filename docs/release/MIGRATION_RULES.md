@@ -161,8 +161,9 @@ Nếu **không thể** idempotent (ví dụ `CREATE TABLE` có FK/index đi kèm
 
 ### R13 — Ghi sổ migration
 
-- Thêm dòng vào `PRODUCTION_MIGRATION_LEDGER_2026-10-24.md`:
+- **Sau khi áp** migration (đã có kết quả + counts), thêm dòng vào `PRODUCTION_MIGRATION_LEDGER_2026-10-24.md`:
   tên migration, SHA-256, ngày + giờ Việt Nam, người thực hiện, kết quả, counts, ghi chú.
+- Commit dòng ledger cùng biên bản release trước khi đóng release.
 - Không sửa dòng cũ; đính chính bằng ghi chú mới.
 
 ### R14 — Theo dõi sau release

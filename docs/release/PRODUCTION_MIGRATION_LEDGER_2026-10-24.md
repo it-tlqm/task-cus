@@ -16,10 +16,10 @@
 | Hạng mục | Thực tế ghi nhận | Nguồn |
 |---|---|---|
 | Bảng lịch sử Prisma | **Không tồn tại** (`NULL` tại preflight V3.1) | Biên bản V3.1 mục 1 |
-| Công cụ áp migration | `psql -v ON_ERROR_STOP=1`, từng file, thủ công | Kế hoạch release mục 4.2; biên bản V3.1 mục 3 |
+| Công cụ áp migration | Theo kế hoạch release: `psql -v ON_ERROR_STOP=1`, từng file; biên bản V3.1 chỉ ghi áp thủ công, tuần tự | Kế hoạch release mục 4.2; biên bản V3.1 mục 3 |
 | Phạm vi đã áp | 6 migration V3.1 + 1 migration V3.2 = **7** | Biên bản V3.1 mục 3; biên bản V3.2 mục 3 |
 | Kết quả | **7/7 PASS**, không partial apply | Biên bản V3.1/V3.2 |
-| Rollback schema | **Chưa thực hiện lần nào** | Không có ghi nhận trong biên bản |
+| Rollback schema | **Không có ghi nhận** rollback schema | Biên bản không ghi nhận |
 | Baseline Prisma | Không có tại preflight V3.1; release dùng `psql` thủ công, không dùng Prisma Migrate | Biên bản V3.1 mục 1 |
 
 ---
@@ -99,7 +99,7 @@ Theo **audit ngày 24/10/2026**, `sbc backups list` trả **danh sách trống**
 |---|---|---|
 | PITR | **CHƯA XÁC NHẬN** — audit ghi nhận đang tắt | Ops phải xác nhận lại và quyết định bật/chấp nhận rủi ro bằng văn bản |
 | Danh sách backup provider | **CHƯA XÁC NHẬN** — audit ghi nhận trống | Không có backup ID để ghi vào sổ |
-| Backup logical thủ công | **CÓ** cho V3.1 và V3.2, lưu ngoài repo | Xem biên bản backup/restore; không có đường dẫn trong repo |
+| Backup thủ công (schema + data) | **CÓ** cho V3.1 và V3.2, lưu ngoài repo | Xem biên bản backup/restore; không có đường dẫn trong repo |
 | Restore rehearsal | **PASS** cho V3.1 và V3.2 | Xem biên bản backup/restore |
 
 **Không được coi Production đã có PITR/backup tự động** cho đến khi ops xác nhận và ghi bằng chứng (thời điểm, backup ID, retention).
@@ -121,7 +121,7 @@ Theo **audit ngày 24/10/2026**, `sbc backups list` trả **danh sách trống**
 
 ## 8. QUY ƯỚC CẬP NHẬT SỔ
 
-- Mỗi migration mới: thêm **một dòng** vào mục 2 **trước khi** commit migration đó.
+- Mỗi migration mới: **sau khi áp** migration (đã có kết quả + counts trước/sau), thêm **một dòng** vào mục 2, rồi commit dòng đó cùng biên bản release trước khi đóng release.
 - Không sửa/xóa dòng cũ; nếu sai, thêm dòng đính chính hoặc ghi chú có ngày.
 - Dòng mới phải có: tên migration, SHA-256, ngày + giờ (giờ Việt Nam), người thực hiện, kết quả, counts trước/sau, ghi chú partial/rollback nếu có.
 - Sổ chỉ có giá trị khi đi kèm biên bản backup/restore và preflight read-only tương ứng.
