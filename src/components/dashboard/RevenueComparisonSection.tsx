@@ -13,21 +13,29 @@ export interface ComparisonTargetBlock {
   percentText: string | null;
   periodLabel: string;
   basis: "YEAR_CUM" | "MONTH_CUM";
-  ruleState: "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET";
+  ruleState: "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET" | "NOT_APPROVED";
   ambiguous: boolean;
   status: string | null;
   dataSource: string | null;
   isOfficial: boolean;
   sourceNote: string | null;
   confirmedAt: string | null;
+  direction?: string;
+  measureMode?: string;
+  baselineScope?: string;
 }
 
 export interface ComparisonDiffBlock {
   value: number | null;
-  percent: null;
+  percent: number | null;
+  percentText: string | null;
   label: string;
-  basis: "FULL_PREVIOUS_MONTH_CUM" | "FULL_MONTH_LAST_YEAR_CUM";
-  ruleState: "PENDING_B1";
+  basis: "SAME_DAYS_TO_CUTOFF";
+  ruleState: "SAME_DAYS" | "INCOMPLETE_PERIOD" | "NO_DATA";
+  cutoffDate: string | null;
+  dayCount: number;
+  periodComplete: boolean;
+  note: string;
 }
 
 export interface ComparisonRow {
@@ -68,10 +76,10 @@ export interface ComparisonData {
 
 /**
  * YC-01 — Khối "So sánh kết quả thu NSNN" dùng CHUNG cho Dashboard và /giao-ban.
- * - BTC/UBND/KH tháng: chỉ tính % khi target đã CONFIRMED/LOCKED; target PROPOSED
- *   hiển thị số gốc kèm nhãn "Chưa xác nhận" (không coi là chính thức).
- * - Tháng trước/cùng kỳ: B1 chưa chốt, không hiển thị phần trăm.
- * - Thiếu dữ liệu/mẫu số 0: "Chưa xác định", không tự hiện 0%.
+ * - BTC/UBND/KH tháng: chỉ tính % khi target đã CONFIRMED/LOCKED + quy tắc D5 đã duyệt;
+ *   target PROPOSED hiển thị số gốc kèm nhãn "Chưa xác nhận" (không coi là chính thức).
+ * - Tháng trước/cùng kỳ (B1-A): so CÙNG SỐ NGÀY đến data cutoff; tháng chưa đủ kỳ ghi
+ *   "Chưa đủ kỳ"; thiếu dữ liệu/mẫu số 0 hiển thị "Chưa xác định", không tự hiện 0%.
  */
 export function RevenueComparisonSection({
   comparison,
@@ -90,14 +98,19 @@ export function RevenueComparisonSection({
       return <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold">Nhiều chỉ tiêu trùng kỳ</span>;
     if (block.ruleState === "NO_TARGET")
       return <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">Chưa cấu hình</span>;
+    if (block.ruleState === "NOT_APPROVED")
+      return <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">Chưa có quy tắc gán chỉ tiêu</span>;
     if (block.ruleState === "PROPOSED")
       return <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold">Chưa xác nhận</span>;
     if (block.percent === null)
       return <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">Chưa xác định</span>;
+    // D5-A: chỉ tô xanh/đỏ khi chiều đánh giá đã duyệt; NEUTRAL/khác giữ trung tính.
     const cls =
-      block.percent >= 100
-        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-        : "border-amber-200 bg-amber-50 text-amber-700";
+      block.direction === "HIGHER_IS_BETTER"
+        ? block.percent >= 100
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-border-default text-on-surface-variant";
     // B-C-2/Q11: API trả percentText 2 chữ số thập phân, dấu phẩy vi-VN.
     return (
       <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${cls}`}>
@@ -155,10 +168,21 @@ export function RevenueComparisonSection({
     rowStyle: { displayScale: number; decimals: number; unitLabel: string }
   ) => {
     const hasData = current !== null && block.value !== null;
+    const percentTone =
+      block.percent === null
+        ? "border-border-default text-on-surface-variant"
+        : block.percent > 0
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : block.percent < 0
+            ? "border-rose-200 bg-rose-50 text-rose-700"
+            : "border-border-default text-on-surface-variant";
     return (
       <tr className="border-b border-border-default/20 align-top">
         <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-        <td className="px-3 py-2 text-body-xs text-on-surface-variant">{block.label}</td>
+        <td className="px-3 py-2 text-body-xs text-on-surface-variant">
+          {block.label}
+          <span className="block text-[10px] text-on-surface-variant">{block.note}</span>
+        </td>
         <td className="px-3 py-2 text-right tabular-nums">
           {hasData ? (
             <>
@@ -170,12 +194,29 @@ export function RevenueComparisonSection({
           )}
         </td>
         <td className="px-3 py-2 text-center">
-          <span
-            className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold whitespace-nowrap"
-            title="B1 chưa chốt: chưa xác định so cùng số ngày hay cả tháng"
-          >
-            Chờ chốt quy tắc
-          </span>
+          <div className="flex flex-col items-center gap-1">
+            {block.percent !== null ? (
+              <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${percentTone}`}>
+                {block.percentText}%
+              </span>
+            ) : (
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">
+                {block.ruleState === "NO_DATA" ? "Chưa xác định" : "Không %"}
+              </span>
+            )}
+            {block.ruleState === "INCOMPLETE_PERIOD" ? (
+              <span
+                data-testid="comparison-incomplete"
+                className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold whitespace-nowrap"
+                title="B1-A: tháng hiện tại chưa đủ kỳ; chỉ so cùng số ngày đến data cutoff, không hiển thị 0% khi thiếu."
+              >
+                Chưa đủ kỳ
+              </span>
+            ) : null}
+            {block.ruleState === "SAME_DAYS" ? (
+              <span className="text-[10px] text-on-surface-variant whitespace-nowrap">{block.dayCount} ngày</span>
+            ) : null}
+          </div>
         </td>
       </tr>
     );
@@ -191,11 +232,11 @@ export function RevenueComparisonSection({
           {comparison?.anchors?.lastYearLabel || ""})
         </span>
         <span
-          data-testid="comparison-rule-pending"
-          title="B1 chưa chốt: chưa xác định 'tháng trước/cùng kỳ' so cùng số ngày hay cả tháng. API không trả phần trăm cho 2 dòng này."
-          className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold whitespace-nowrap"
+          data-testid="comparison-rule-same-days"
+          title="B1-A: tháng trước/cùng kỳ so CÙNG SỐ NGÀY đến data cutoff; tháng chưa đủ kỳ ghi 'Chưa đủ kỳ'; thiếu dữ liệu không hiển thị 0%."
+          className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-sky-300 bg-sky-50 text-sky-800 font-semibold whitespace-nowrap"
         >
-          Kỳ trước/cùng kỳ: CHỜ CHỐT (B1)
+          Kỳ trước/cùng kỳ: SO CÙNG SỐ NGÀY (B1-A)
         </span>
         {showConfigureLink && (
           <Link href="/giao-ban/cau-hinh" className="text-label-sm font-semibold text-primary hover:underline whitespace-nowrap">
@@ -239,9 +280,10 @@ export function RevenueComparisonSection({
 
         <p className="text-body-xs text-on-surface-variant">
           Công thức: % BTC/UBND = lũy kế năm / chỉ tiêu năm × 100; % KH tháng = lũy kế tháng / kế hoạch tháng × 100. Chỉ tiêu BTC/UBND/KH
-          tháng phải được cấu hình tường minh trong <b>Cấu hình → Chỉ tiêu giao</b>, có nguồn dữ liệu <b>REAL</b> (không dùng DEMO) và ở
-          trạng thái Đã xác nhận/Đã chốt. Tỷ lệ hiển thị 2 chữ số thập phân; thiếu dữ liệu hoặc mẫu số bằng 0 hiển thị “Chưa xác định”,
-          không tự hiện 0%. Hai dòng kỳ trước/cùng kỳ đang chờ quyết định B1.
+          tháng phải được cấu hình tường minh trong <b>Cấu hình → Chỉ tiêu giao</b>, có nguồn dữ liệu <b>REAL</b> (không dùng DEMO), ở
+          trạng thái Đã xác nhận/Đã chốt và chỉ tiêu/kỳ phải có <b>quy tắc đánh giá đã duyệt</b> (V3.2/D5-A). Tỷ lệ hiển thị 2 chữ số
+          thập phân; thiếu dữ liệu hoặc mẫu số bằng 0 hiển thị “Chưa xác định”, không tự hiện 0%. Hai dòng kỳ trước/cùng kỳ so{" "}
+          <b>cùng số ngày đến data cutoff</b> (B1-A); tháng chưa đủ kỳ ghi “Chưa đủ kỳ”.
         </p>
       </div>
     </div>

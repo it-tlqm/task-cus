@@ -8,7 +8,8 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
-import type { MetricOption, TargetDraftInput, TargetLabelCode } from "../../lib/metrics-contract";
+import type { MetricOption, MetricRuleOption, TargetDraftInput, TargetLabelCode } from "../../lib/metrics-contract";
+import { metricRuleFor } from "../../lib/metrics-contract";
 import {
   mapBc2TargetToTargetDraft,
   mapTargetDraftToBc2CreateInput,
@@ -26,6 +27,7 @@ interface ConfigMetric {
   displayScale?: number | null;
   decimals?: number | null;
   classifications?: { id: string; code: string; label: string }[];
+  targetRules?: MetricRuleOption[];
 }
 
 interface ConfigGroup {
@@ -63,16 +65,24 @@ export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
   const metricOptions: MetricOption[] = useMemo(
     () =>
       groups.flatMap((g) =>
-        g.metrics.map((m) => ({
-          id: m.id,
-          code: m.code,
-          name: m.name,
-          unitType: m.unitType,
-          unitLabel: m.unitLabelEffective || m.unitLabel || m.unitType,
-          measureMode: "PENDING_BUSINESS_INPUT" as const,
-          direction: "NOT_SET" as const,
-          classifications: m.classifications || [],
-        }))
+        g.metrics.map((m) => {
+          const rule =
+            m.targetRules?.find((r) => r.targetApplicable) ??
+            m.targetRules?.find((r) => r.configured) ??
+            metricRuleFor(undefined, "YEAR");
+          return {
+            id: m.id,
+            code: m.code,
+            name: m.name,
+            unitType: m.unitType,
+            unitLabel: m.unitLabelEffective || m.unitLabel || m.unitType,
+            measureMode: rule.measureMode,
+            direction: rule.direction,
+            baselineScope: rule.baselineScope,
+            targetRules: m.targetRules,
+            classifications: m.classifications || [],
+          };
+        })
       ),
     [groups]
   );
@@ -184,7 +194,7 @@ export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
         sourceNote: draft.sourceNote,
         reason: "Xác nhận từ UI target-only",
       });
-      toast.success("Đã xác nhận chỉ tiêu giao. Chưa tính % chính thức cho tới B-C-3.");
+      toast.success("Đã xác nhận chỉ tiêu giao. % chính thức chỉ tính khi đủ quy tắc D5-A.");
       refresh();
       return true;
     } catch (e) {
@@ -242,7 +252,7 @@ export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
           <div>
             <div className="font-label-md text-label-md text-primary font-bold">Chỉ tiêu giao — target-only</div>
             <div className="text-body-xs text-on-surface-variant">
-              D7=A · API <code>/api/metrics/targets</code> · quyền <code>metrics.config</code> · D5 DEFERRED_B_C_3
+              D7=A · API <code>/api/metrics/targets</code> · quyền <code>metrics.config</code> · V3.2/D5-A + C1-A
             </div>
           </div>
           <button
@@ -272,7 +282,8 @@ export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
           </select>
         </label>
         <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
-          D5 chưa có: <b>direction=NOT_SET</b>, <b>measureMode/baselineScope=PENDING_BUSINESS_INPUT</b>. Không tính % chính thức cho tới B-C-3; không tô đạt/vượt.
+          <b>V3.2/D5-A + C1-A:</b> chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đã duyệt (hiện chỉ <b>THU_NSNN</b>); chỉ tiêu khác hiển thị
+          “Chưa có quy tắc gán chỉ tiêu” và không tô đạt/vượt. Không tự gán chỉ tiêu cho mọi chỉ tiêu.
         </div>
         {error && <div className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-body-xs text-rose-800">{error}</div>}
         {loading && <div className="text-body-xs text-on-surface-variant">Đang tải chỉ tiêu giao…</div>}
@@ -286,7 +297,6 @@ export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
           apiMode
           showMetricSelect={false}
           labelCodes={TARGET_LABEL_CODES_BC2}
-          rulesPending
           onSaveDraft={handleSaveDraft}
           onConfirm={handleConfirm}
           onLock={handleLock}

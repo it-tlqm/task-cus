@@ -21,7 +21,7 @@ export type MeasureMode =
   | "DERIVED"
   | "PENDING_BUSINESS_INPUT";
 
-export type BaselineScope = "NONE" | "PERIOD" | "LEDGER" | "PENDING_BUSINESS_INPUT";
+export type BaselineScope = "YEAR_START" | "MONTH_START" | "PERIOD_START" | "PENDING_BUSINESS_INPUT";
 
 export type DataRecordState =
   | "NOT_ENTERED"
@@ -64,6 +64,8 @@ export type PercentState = "COMPUTED" | "NOT_COMPUTED";
 
 export type PercentReason =
   | "NOT_APPLICABLE"
+  | "TARGET_RULE_NOT_APPROVED"
+  | "TARGET_RULE_PENDING"
   | "TARGET_NOT_ASSIGNED"
   | "TARGET_DRAFT"
   | "TARGET_INACTIVE"
@@ -108,6 +110,8 @@ export const DIRECTION_LABELS: Record<Direction, string> = {
 
 export const PERCENT_REASON_LABELS: Record<PercentReason, string> = {
   NOT_APPLICABLE: "Không áp dụng",
+  TARGET_RULE_NOT_APPROVED: "Chưa có quy tắc gán chỉ tiêu",
+  TARGET_RULE_PENDING: "Chưa có quy tắc đánh giá",
   TARGET_NOT_ASSIGNED: "Chưa giao chỉ tiêu",
   TARGET_DRAFT: "Chỉ tiêu nháp — chưa tính chính thức",
   TARGET_INACTIVE: "Chỉ tiêu đã hủy/thay thế",
@@ -123,6 +127,48 @@ export const PERCENT_REASON_LABELS: Record<PercentReason, string> = {
   DIRECTION_RULE_PENDING: "Chưa có quy tắc cho chỉ tiêu thấp hơn tốt",
   BUSINESS_RULE_PENDING: "Chưa có quy tắc tổng hợp lũy kế/số dư",
 };
+
+export const MEASURE_MODE_LABELS: Record<MeasureMode, string> = {
+  PERIOD_FLOW: "Phát sinh trong kỳ",
+  CUMULATIVE: "Lũy kế",
+  SNAPSHOT: "Số dư thời điểm",
+  DERIVED: "Tự tính",
+  PENDING_BUSINESS_INPUT: "Chưa có quy tắc",
+};
+
+export const BASELINE_SCOPE_LABELS: Record<BaselineScope, string> = {
+  YEAR_START: "Từ đầu năm",
+  MONTH_START: "Từ đầu tháng",
+  PERIOD_START: "Từ đầu kỳ",
+  PENDING_BUSINESS_INPUT: "Chưa có quy tắc",
+};
+
+/** D5/C1 — quy tắc đánh giá tường minh theo chỉ tiêu + kỳ; thiếu dòng = chưa cấu hình. */
+export interface TargetRuleSnapshot {
+  configured: boolean;
+  targetApplicable: boolean;
+  direction: Direction;
+  measureMode: MeasureMode;
+  baselineScope: BaselineScope;
+}
+
+export const UNCONFIGURED_TARGET_RULE: TargetRuleSnapshot = {
+  configured: false,
+  targetApplicable: false,
+  direction: "NOT_SET",
+  measureMode: "PENDING_BUSINESS_INPUT",
+  baselineScope: "PENDING_BUSINESS_INPUT",
+};
+
+/** Trả lý do chặn % chính thức khi quy tắc chưa đủ; null = đủ điều kiện tính. */
+export function targetRuleBlockReason(rule: TargetRuleSnapshot): PercentReason | null {
+  if (!rule.configured || !rule.targetApplicable) return "TARGET_RULE_NOT_APPROVED";
+  if (rule.direction === "NOT_SET") return "DIRECTION_PENDING";
+  if (rule.direction === "LOWER_IS_BETTER") return "DIRECTION_RULE_PENDING";
+  if (rule.measureMode === "PENDING_BUSINESS_INPUT") return "TARGET_RULE_PENDING";
+  if (rule.baselineScope === "PENDING_BUSINESS_INPUT") return "TARGET_RULE_PENDING";
+  return null;
+}
 
 export const TARGET_LABEL_CODES = ["BTC", "UBND", "KH_THANG", "KH_QUY", "KH_NAM", "KHAC"] as const;
 export type TargetLabelCode = (typeof TARGET_LABEL_CODES)[number];
@@ -189,6 +235,7 @@ export interface TargetSnapshot {
   direction: Direction;
   labelCode?: TargetLabelCode | "";
   measureMode?: MeasureMode;
+  baselineScope?: BaselineScope;
 }
 
 export interface TargetStateResult {
@@ -222,6 +269,7 @@ export interface PercentInput {
   actualUnitType: string;
   direction: Direction;
   measureMode: MeasureMode;
+  baselineScope?: BaselineScope;
   policy: PercentPolicy;
   /** OFFICIAL: chỉ tính chính thức. PREVIEW: cho phép tạm tính có nhãn. */
   mode?: "OFFICIAL" | "PREVIEW";
@@ -476,6 +524,9 @@ export function computePercent(input: PercentInput): PercentResult {
 
   if (input.actual.value === null) return blocked("ACTUAL_MISSING");
   if (input.measureMode === "PENDING_BUSINESS_INPUT") return blocked("BUSINESS_RULE_PENDING");
+  if ((input.baselineScope ?? "PENDING_BUSINESS_INPUT") === "PENDING_BUSINESS_INPUT") {
+    return blocked("BUSINESS_RULE_PENDING");
+  }
 
   if (mode === "OFFICIAL" && input.policy.requireCompleteActual && input.actual.coverage === "PARTIAL") {
     return blocked("ACTUAL_PARTIAL");
@@ -530,6 +581,16 @@ export interface ClassificationOption {
   label: string;
 }
 
+export interface MetricRuleOption {
+  periodType: "YEAR" | "QUARTER" | "MONTH";
+  configured: boolean;
+  targetApplicable: boolean;
+  direction: Direction;
+  measureMode: MeasureMode;
+  baselineScope: BaselineScope;
+  officialPercentAllowed: boolean;
+}
+
 export interface MetricOption {
   id: string;
   code: string;
@@ -538,7 +599,27 @@ export interface MetricOption {
   unitLabel?: string | null;
   measureMode: MeasureMode;
   direction: Direction;
+  baselineScope?: BaselineScope;
+  targetRules?: MetricRuleOption[];
   classifications: ClassificationOption[];
+}
+
+/** Quy tắc đang áp dụng cho metric + kỳ; thiếu dòng = chưa cấu hình. */
+export function metricRuleFor(
+  metric: Pick<MetricOption, "direction" | "measureMode" | "baselineScope" | "targetRules"> | undefined,
+  periodType: "YEAR" | "QUARTER" | "MONTH"
+): MetricRuleOption {
+  const found = metric?.targetRules?.find((r) => r.periodType === periodType);
+  if (found) return found;
+  return {
+    periodType,
+    configured: Boolean(metric?.targetRules?.length),
+    targetApplicable: false,
+    direction: metric?.direction ?? "NOT_SET",
+    measureMode: metric?.measureMode ?? "PENDING_BUSINESS_INPUT",
+    baselineScope: metric?.baselineScope ?? "PENDING_BUSINESS_INPUT",
+    officialPercentAllowed: false,
+  };
 }
 
 export interface TargetDraftInput {

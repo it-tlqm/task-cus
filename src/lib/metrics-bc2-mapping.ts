@@ -99,7 +99,12 @@ const VALID_MEASURE_MODES: MeasureMode[] = [
   "DERIVED",
   "PENDING_BUSINESS_INPUT",
 ];
-const VALID_BASELINE_SCOPES: BaselineScope[] = ["NONE", "PERIOD", "LEDGER", "PENDING_BUSINESS_INPUT"];
+const VALID_BASELINE_SCOPES: BaselineScope[] = [
+  "YEAR_START",
+  "MONTH_START",
+  "PERIOD_START",
+  "PENDING_BUSINESS_INPUT",
+];
 
 function issue(
   field: string,

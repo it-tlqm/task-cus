@@ -3,6 +3,17 @@ import { prisma } from "./db";
 import type { SessionUser } from "./auth";
 import { checkPermission } from "./guard";
 import { getIsoWeekBounds, getVnDateParts } from "@/lib/period-helper";
+import {
+  UNCONFIGURED_TARGET_RULE,
+  targetRuleBlockReason,
+  type BaselineScope,
+  type Direction,
+  type MeasureMode,
+  type PercentReason,
+  type TargetRuleSnapshot,
+} from "@/lib/metrics-contract";
+import { canAssignTarget, ruleOf } from "@/lib/metric-target-rules";
+import { loadMetricTargetRules } from "./metric-target-rules";
 
 const D = Prisma.Decimal;
 export type Dec = Prisma.Decimal;
@@ -272,13 +283,28 @@ export interface MetricSummaryRow {
     targetValue: number;
     percent: number | null;
     percentText: string | null;
+    percentState: "COMPUTED" | "NOT_COMPUTED";
+    percentReason: PercentReason | null;
     comparisonKind: string;
     status: string;
     dataSource: string;
     isOfficial: boolean;
     sourceNote: string | null;
     confirmedAt: string | null;
+    direction: Direction;
+    measureMode: MeasureMode;
+    baselineScope: BaselineScope;
+    officialPercentAllowed: boolean;
   }[];
+  /** D5-A/C1-A: quy tắc đánh giá/gán chỉ tiêu của metric (theo kỳ đã duyệt nếu có). */
+  targetPolicy: {
+    configured: boolean;
+    targetApplicable: boolean;
+    direction: Direction;
+    measureMode: MeasureMode;
+    baselineScope: BaselineScope;
+    officialPercentAllowed: boolean;
+  };
   latest: { date: string; value: number; status: string; byName: string | null } | null;
   missingDates: string[];
   latestDate: string | null;
@@ -368,7 +394,7 @@ export async function computeMetricSummary(
   });
   const metricIds = metrics.map((m) => m.id);
 
-  const [classifications, targets, baselines] = await Promise.all([
+  const [classifications, targets, baselines, targetRules] = await Promise.all([
     prisma.metricClassification.findMany({
       where: { metricId: { in: metricIds }, active: true },
       orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
@@ -378,6 +404,7 @@ export async function computeMetricSummary(
       // B-C-2: mốc đã xác nhận hoặc đã chốt đều được dùng; PROPOSED thì không.
       where: { metricId: { in: metricIds }, status: { in: ["CONFIRMED", "LOCKED"] } },
     }),
+    loadMetricTargetRules(metricIds),
   ]);
 
   // --- 2. Tải bản ghi một lần ---
@@ -603,6 +630,31 @@ export async function computeMetricSummary(
     targetsByMetric.set(t.metricId, arr);
   }
 
+  const policyForMetric = (metricId: string): TargetRuleSnapshot => {
+    const candidates = ["YEAR", "MONTH", "QUARTER"].map((pt) => ruleOf(targetRules, metricId, pt));
+    return (
+      candidates.find((r) => r.configured && r.targetApplicable) ??
+      candidates.find((r) => r.configured) ??
+      UNCONFIGURED_TARGET_RULE
+    );
+  };
+
+  const evaluationReason = (
+    rule: TargetRuleSnapshot,
+    target: { dataSource: string; status: string },
+    targetValue: number,
+    col: number | null
+  ): PercentReason | null => {
+    const ruleReason = targetRuleBlockReason(rule);
+    if (ruleReason) return ruleReason;
+    if (target.dataSource !== "REAL") return "TARGET_NOT_OFFICIAL";
+    if (target.status !== "CONFIRMED" && target.status !== "LOCKED") return "TARGET_DRAFT";
+    if (targetValue < 0) return "TARGET_NEGATIVE";
+    if (targetValue === 0) return "TARGET_ZERO";
+    if (col === null) return "ACTUAL_MISSING";
+    return null;
+  };
+
   const resultGroups: MetricSummaryGroup[] = [];
   for (const g of groups) {
     const gMetrics = metrics.filter((m) => m.groupId === g.id);
@@ -651,9 +703,10 @@ export async function computeMetricSummary(
           const targetValue = Number(t.valueNumeric);
           // B-C-2/Q9: chỉ target REAL + đã xác nhận/chốt mới công bố % chính thức.
           const isOfficial = t.dataSource === "REAL";
-          const official = isOfficial && (t.status === "CONFIRMED" || t.status === "LOCKED");
+          const rule = ruleOf(targetRules, t.metricId, t.periodType);
+          const reason = evaluationReason(rule, t, targetValue, col);
           const percent =
-            official && col !== null && targetValue > 0
+            reason === null && col !== null && targetValue > 0
               ? Math.round((col / targetValue) * 10000) / 100
               : null;
           return {
@@ -666,14 +719,21 @@ export async function computeMetricSummary(
             targetValue,
             percent,
             percentText: percent === null ? null : formatPercentText(percent),
+            percentState: percent === null ? ("NOT_COMPUTED" as const) : ("COMPUTED" as const),
+            percentReason: percent === null ? reason : null,
             comparisonKind: t.comparisonKind,
             status: t.status,
             dataSource: t.dataSource,
             isOfficial,
             sourceNote: t.sourceNote,
             confirmedAt: t.confirmedAt ? t.confirmedAt.toISOString() : null,
+            direction: rule.direction,
+            measureMode: rule.measureMode,
+            baselineScope: rule.baselineScope,
+            officialPercentAllowed: canAssignTarget(rule),
           };
         });
+      const metricPolicy = policyForMetric(m.id);
 
       // Lần nhập gần nhất
       const latest = latestUpTo(list, yearRange.end);
@@ -721,6 +781,14 @@ export async function computeMetricSummary(
         cols,
         classCols,
         targets: metricTargets,
+        targetPolicy: {
+          configured: metricPolicy.configured,
+          targetApplicable: metricPolicy.configured && metricPolicy.targetApplicable,
+          direction: metricPolicy.direction,
+          measureMode: metricPolicy.measureMode,
+          baselineScope: metricPolicy.baselineScope,
+          officialPercentAllowed: canAssignTarget(metricPolicy),
+        },
         latest: latestMeta,
         missingDates,
         latestDate: latest ? dateOnlyToStr(latest.entryDate) : null,
@@ -786,16 +854,16 @@ export function parseNumberInput(input: string | number): string | null {
 //
 // Quy ước:
 //   - BTC/UBND/KH tháng chỉ lấy target có `comparisonKind` tường minh, đúng kỳ/năm,
-//     status CONFIRMED/LOCKED, dataSource REAL. KHÔNG dò chuỗi nhãn.
-//   - Tháng trước / cùng kỳ: B1 CHƯA CHỐT. API trả giá trị kỳ đối chiếu (nếu có)
-//     nhưng percent luôn null và ruleState=PENDING_B1 — không công bố % thiếu căn cứ.
+//     status CONFIRMED/LOCKED, dataSource REAL + quy tắc D5-A đã duyệt. KHÔNG dò chuỗi nhãn.
+//   - Tháng trước / cùng kỳ (B1-A): so CÙNG SỐ NGÀY đến data cutoff; tháng chưa đủ kỳ
+//     ghi INCOMPLETE_PERIOD, không hiển thị 0% khi thiếu dữ liệu.
 //   - Tỷ lệ chỉ tính khi đủ tử số, mẫu số > 0; thiếu -> null (UI "Chưa xác định").
 // ============================================================
 
 export const COMPARISON_CONTRACT_VERSION = "B-C-2";
 
-export type ComparisonRuleState = "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET";
-export type ComparisonDiffRuleState = "PENDING_B1";
+export type ComparisonRuleState = "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET" | "NOT_APPROVED";
+export type ComparisonDiffRuleState = "SAME_DAYS" | "INCOMPLETE_PERIOD" | "NO_DATA";
 
 export interface ComparisonTargetBlock {
   targetId: string | null;
@@ -813,14 +881,24 @@ export interface ComparisonTargetBlock {
   isOfficial: boolean;
   sourceNote: string | null;
   confirmedAt: string | null;
+  direction: Direction;
+  measureMode: MeasureMode;
+  baselineScope: BaselineScope;
 }
 
 export interface ComparisonDiffBlock {
+  /** Giá trị kỳ đối chiếu, tính đúng số ngày đến data cutoff. */
   value: number | null;
-  percent: null;
+  /** % thay đổi (kỳ này - kỳ trước) / kỳ trước; null khi thiếu dữ liệu/mẫu số 0. */
+  percent: number | null;
+  percentText: string | null;
   label: string;
-  basis: "FULL_PREVIOUS_MONTH_CUM" | "FULL_MONTH_LAST_YEAR_CUM";
+  basis: "SAME_DAYS_TO_CUTOFF";
   ruleState: ComparisonDiffRuleState;
+  cutoffDate: string | null;
+  dayCount: number;
+  periodComplete: boolean;
+  note: string;
 }
 
 export interface MetricComparisonRow {
@@ -845,8 +923,8 @@ export interface MetricComparisonResult {
   version: string;
   rule: {
     targetSource: "EXPLICIT_COMPARISON_KIND";
-    prevMonth: "PENDING_B1";
-    samePeriodLastYear: "PENDING_B1";
+    prevMonth: "SAME_DAYS_TO_CUTOFF";
+    samePeriodLastYear: "SAME_DAYS_TO_CUTOFF";
     notes: string;
   };
   anchors: { year: number; month: number; monthLabel: string; prevMonthLabel: string; lastYearLabel: string };
@@ -882,6 +960,9 @@ function comparisonTargetBlock(
       isOfficial: false,
       sourceNote: null,
       confirmedAt: null,
+      direction: "NOT_SET",
+      measureMode: "PENDING_BUSINESS_INPUT",
+      baselineScope: "PENDING_BUSINESS_INPUT",
     };
   }
   if (candidates.length > 1) {
@@ -901,10 +982,14 @@ function comparisonTargetBlock(
       isOfficial: false,
       sourceNote: null,
       confirmedAt: null,
+      direction: "NOT_SET",
+      measureMode: "PENDING_BUSINESS_INPUT",
+      baselineScope: "PENDING_BUSINESS_INPUT",
     };
   }
   const t = candidates[0];
-  const official = t.isOfficial && (t.status === "CONFIRMED" || t.status === "LOCKED");
+  const official =
+    t.officialPercentAllowed && t.isOfficial && (t.status === "CONFIRMED" || t.status === "LOCKED");
   const percent = official ? ratioPercent(num, t.targetValue) : null;
   return {
     targetId: t.id,
@@ -915,13 +1000,16 @@ function comparisonTargetBlock(
     percentText: percent === null ? null : formatPercentText(percent),
     periodLabel,
     basis,
-    ruleState: official ? "OFFICIAL" : "PROPOSED",
+    ruleState: official ? "OFFICIAL" : t.officialPercentAllowed ? "PROPOSED" : "NOT_APPROVED",
     ambiguous: false,
     status: t.status,
     dataSource: t.dataSource,
     isOfficial: t.isOfficial,
     sourceNote: t.sourceNote,
     confirmedAt: t.confirmedAt,
+    direction: t.direction,
+    measureMode: t.measureMode,
+    baselineScope: t.baselineScope,
   };
 }
 
@@ -934,15 +1022,97 @@ export async function computeMetricComparison(
 
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevYear = month === 1 ? year - 1 : year;
-  const prevSummary = await computeMetricSummary(
-    { year: prevYear, weekNumber: anchors.weekNumber, month: prevMonth, quarter: Math.ceil(prevMonth / 3) },
-    "full"
-  );
-  const lastYearSummary = await computeMetricSummary({ ...anchors, year: year - 1 }, "full");
-  const prevById = new Map<string, MetricSummaryRow>();
-  for (const g of prevSummary.groups) for (const m of g.metrics) prevById.set(m.id, m);
-  const lyById = new Map<string, MetricSummaryRow>();
-  for (const g of lastYearSummary.groups) for (const m of g.metrics) lyById.set(m.id, m);
+  const today = todayVnDateOnly();
+
+  const monthStart = dateOnly(year, month, 1);
+  const monthEnd = dateOnly(year, month, daysInMonth(year, month));
+  const effectiveMonthEnd = monthEnd.getTime() > today.getTime() ? today : monthEnd;
+
+  const prevStart = dateOnly(prevYear, prevMonth, 1);
+  const prevEnd = dateOnly(prevYear, prevMonth, daysInMonth(prevYear, prevMonth));
+  const lyStart = dateOnly(year - 1, month, 1);
+  const lyEnd = dateOnly(year - 1, month, daysInMonth(year - 1, month));
+
+  const metricIds = Array.from(new Set(baseSummary.groups.flatMap((g) => g.metrics.map((m) => m.id))));
+  const [currentEntries, comparisonEntries, rules] = await Promise.all([
+    metricIds.length
+      ? prisma.metricDailyEntry.findMany({
+          where: { metricId: { in: metricIds }, entryDate: { gte: monthStart, lte: effectiveMonthEnd } },
+          select: { metricId: true, entryDate: true },
+        })
+      : Promise.resolve([]),
+    metricIds.length
+      ? prisma.metricDailyEntry.findMany({
+          where: {
+            metricId: { in: metricIds },
+            OR: [
+              { entryDate: { gte: prevStart, lte: prevEnd } },
+              { entryDate: { gte: lyStart, lte: lyEnd } },
+            ],
+          },
+          select: { metricId: true, entryDate: true, valueNumeric: true },
+        })
+      : Promise.resolve([]),
+    loadMetricTargetRules(metricIds),
+  ]);
+
+  const latestByMetric = new Map<string, Date>();
+  for (const e of currentEntries) {
+    const prev = latestByMetric.get(e.metricId);
+    if (!prev || e.entryDate.getTime() > prev.getTime()) latestByMetric.set(e.metricId, e.entryDate);
+  }
+
+  const sumRange = (metricId: string, from: Date, to: Date): number | null => {
+    let total = 0;
+    let any = false;
+    for (const e of comparisonEntries) {
+      if (e.metricId !== metricId) continue;
+      const t = e.entryDate.getTime();
+      if (t < from.getTime() || t > to.getTime()) continue;
+      total += Number(e.valueNumeric);
+      any = true;
+    }
+    return any ? total : null;
+  };
+
+  const diffBlock = (params: {
+    current: number | null;
+    previous: number | null;
+    label: string;
+    cutoffDate: string | null;
+    dayCount: number;
+    periodComplete: boolean;
+    compareLabel: string;
+  }): ComparisonDiffBlock => {
+    const { current, previous, label, cutoffDate, dayCount, periodComplete, compareLabel } = params;
+    const hasData = current !== null && previous !== null;
+    const percent =
+      hasData && previous !== null && previous > 0
+        ? Math.round(((current - previous) / previous) * 10000) / 100
+        : null;
+    const ruleState: ComparisonDiffRuleState = !hasData
+      ? "NO_DATA"
+      : periodComplete
+        ? "SAME_DAYS"
+        : "INCOMPLETE_PERIOD";
+    const note = !hasData
+      ? "Chưa có dữ liệu đối chiếu — không hiển thị 0%."
+      : periodComplete
+        ? `So cùng ${dayCount} ngày (${compareLabel}).`
+        : `Chưa đủ kỳ: dữ liệu đến ${cutoffDate ? fmtDateShort(cutoffDate) : `${dayCount} ngày`}; so cùng ${dayCount} ngày (${compareLabel}).`;
+    return {
+      value: previous,
+      percent,
+      percentText: percent === null ? null : formatPercentText(percent),
+      label,
+      basis: "SAME_DAYS_TO_CUTOFF",
+      ruleState,
+      cutoffDate,
+      dayCount,
+      periodComplete,
+      note,
+    };
+  };
 
   const rows: MetricComparisonRow[] = [];
   for (const g of baseSummary.groups) {
@@ -957,10 +1127,24 @@ export async function computeMetricComparison(
       const ubndT = officialTargets.filter((t) => t.comparisonKind === "UBND_YEAR");
       const monthT = officialTargets.filter((t) => t.comparisonKind === "MONTH_PLAN");
 
-      const prevM = prevById.get(m.id);
-      const lyM = lyById.get(m.id);
-      const prevValue = prevM?.cols.month ?? null;
-      const lyValue = lyM?.cols.month ?? null;
+      const latest = latestByMetric.get(m.id) ?? null;
+      const cutoffDay = latest ? latest.getUTCDate() : null;
+      const dayCount = cutoffDay
+        ? Math.min(cutoffDay, daysInMonth(prevYear, prevMonth), daysInMonth(year - 1, month))
+        : 0;
+      const periodComplete = cutoffDay !== null && cutoffDay >= daysInMonth(year, month);
+      const cutoffDate = latest ? dateOnlyToStr(latest) : null;
+      const currentValue = m.cols.month;
+      const prevValue =
+        cutoffDay !== null
+          ? sumRange(m.id, prevStart, dateOnly(prevYear, prevMonth, dayCount || 1))
+          : null;
+      const lyValue =
+        cutoffDay !== null
+          ? sumRange(m.id, lyStart, dateOnly(year - 1, month, dayCount || 1))
+          : null;
+      const dayLabel = cutoffDay !== null ? `${String(dayCount).padStart(2, "0")}/${String(prevMonth).padStart(2, "0")}` : "—";
+      const lyLabel = cutoffDay !== null ? `${String(dayCount).padStart(2, "0")}/${String(month).padStart(2, "0")}` : "—";
 
       rows.push({
         metricId: m.id,
@@ -976,21 +1160,24 @@ export async function computeMetricComparison(
         btc: comparisonTargetBlock(btcT, m.cols.year, `Năm ${year}`, "BTC_YEAR", "YEAR_CUM"),
         ubnd: comparisonTargetBlock(ubndT, m.cols.year, `Năm ${year}`, "UBND_YEAR", "YEAR_CUM"),
         monthPlan: comparisonTargetBlock(monthT, m.cols.month, `Tháng ${month}/${year}`, "MONTH_PLAN", "MONTH_CUM"),
-        // B1 CHƯA CHỐT: chỉ trả giá trị đối chiếu, KHÔNG trả phần trăm.
-        prevMonth: {
-          value: prevValue,
-          percent: null,
+        prevMonth: diffBlock({
+          current: currentValue,
+          previous: prevValue,
           label: `Tháng ${prevMonth}/${prevYear}`,
-          basis: "FULL_PREVIOUS_MONTH_CUM",
-          ruleState: "PENDING_B1",
-        },
-        samePeriodLastYear: {
-          value: lyValue,
-          percent: null,
+          cutoffDate,
+          dayCount,
+          periodComplete,
+          compareLabel: `01–${dayLabel}/${prevYear}`,
+        }),
+        samePeriodLastYear: diffBlock({
+          current: currentValue,
+          previous: lyValue,
           label: `Tháng ${month}/${year - 1}`,
-          basis: "FULL_MONTH_LAST_YEAR_CUM",
-          ruleState: "PENDING_B1",
-        },
+          cutoffDate,
+          dayCount,
+          periodComplete,
+          compareLabel: `01–${lyLabel}/${year - 1}`,
+        }),
       });
     }
   }
@@ -999,9 +1186,10 @@ export async function computeMetricComparison(
     version: COMPARISON_CONTRACT_VERSION,
     rule: {
       targetSource: "EXPLICIT_COMPARISON_KIND",
-      prevMonth: "PENDING_B1",
-      samePeriodLastYear: "PENDING_B1",
-      notes: "Chưa chốt so cùng số ngày hay cả tháng; API không trả % cho 2 dòng này.",
+      prevMonth: "SAME_DAYS_TO_CUTOFF",
+      samePeriodLastYear: "SAME_DAYS_TO_CUTOFF",
+      notes:
+        "Tháng trước/cùng kỳ so CÙNG SỐ NGÀY đến data cutoff của kỳ hiện tại; tháng chưa đủ kỳ ghi 'Chưa đủ kỳ'; thiếu dữ liệu/mẫu số 0 trả null, không 0%.",
     },
     anchors: {
       year,
@@ -1012,6 +1200,11 @@ export async function computeMetricComparison(
     },
     rows,
   };
+}
+
+function fmtDateShort(isoDate: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : isoDate;
 }
 
 // ============================================================

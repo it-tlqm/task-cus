@@ -14,7 +14,9 @@ import { prisma } from "./db";
 import { checkPermission } from "./guard";
 import { recordAuditEvent } from "./audit";
 import type { SessionUser } from "./auth";
-import { parseMetricInput } from "@/lib/metrics-contract";
+import { parseMetricInput, type BaselineScope, type Direction, type MeasureMode, type TargetRuleSnapshot } from "@/lib/metrics-contract";
+import { canAssignTarget, ruleKey, ruleOf } from "@/lib/metric-target-rules";
+import { loadMetricTargetRules } from "./metric-target-rules";
 
 const PERIOD_TYPES = ["YEAR", "QUARTER", "MONTH"] as const;
 const COMPARISON_KINDS = ["NONE", "BTC_YEAR", "UBND_YEAR", "MONTH_PLAN"] as const;
@@ -30,21 +32,31 @@ export class MetricTargetError extends Error {
   }
 }
 
+/** D5-A/C1-A — quy tắc đánh giá/gán chỉ tiêu tường minh của metric + kỳ. */
 export interface MetricTargetRules {
-  direction: "NOT_SET";
-  measureMode: "PENDING_BUSINESS_INPUT";
-  baselineScope: "PENDING_BUSINESS_INPUT";
-  officialPercentAllowed: false;
-  pending: "DEFERRED_B_C_3";
+  targetApplicable: boolean;
+  direction: Direction;
+  measureMode: MeasureMode;
+  baselineScope: BaselineScope;
+  officialPercentAllowed: boolean;
+  configured: boolean;
+  pending: string | null;
+  sourceNote: string | null;
 }
 
-const D5_RULES: MetricTargetRules = {
-  direction: "NOT_SET",
-  measureMode: "PENDING_BUSINESS_INPUT",
-  baselineScope: "PENDING_BUSINESS_INPUT",
-  officialPercentAllowed: false,
-  pending: "DEFERRED_B_C_3",
-};
+function rulesFrom(rule: TargetRuleSnapshot, sourceNote: string | null): MetricTargetRules {
+  const officialPercentAllowed = canAssignTarget(rule);
+  return {
+    targetApplicable: rule.configured && rule.targetApplicable,
+    direction: rule.direction,
+    measureMode: rule.measureMode,
+    baselineScope: rule.baselineScope,
+    officialPercentAllowed,
+    configured: rule.configured,
+    pending: officialPercentAllowed ? null : "V32_TARGET_RULE_PENDING",
+    sourceNote,
+  };
+}
 
 export interface MetricTargetView {
   id: string;
@@ -182,7 +194,8 @@ async function toViews(rows: TargetRow[]): Promise<MetricTargetView[]> {
     )
   );
   const classificationIds = Array.from(new Set(rows.map((r) => r.classificationId).filter(Boolean)));
-  const [people, classifications, counts] = await Promise.all([
+  const metricIds = Array.from(new Set(rows.map((r) => r.metricId)));
+  const [people, classifications, counts, rules] = await Promise.all([
     personIds.length
       ? prisma.person.findMany({ where: { id: { in: personIds } }, select: { id: true, fullName: true } })
       : Promise.resolve([]),
@@ -193,40 +206,45 @@ async function toViews(rows: TargetRow[]): Promise<MetricTargetView[]> {
         })
       : Promise.resolve([]),
     revisionCounts(rows.map((r) => r.id)),
+    loadMetricTargetRules(metricIds),
   ]);
   const personName = new Map(people.map((p) => [p.id, p.fullName]));
   const classLabel = new Map(classifications.map((c) => [c.id, c.label]));
 
-  return rows.map((r) => ({
-    id: r.id,
-    metricId: r.metricId,
-    metricCode: r.metric.code,
-    metricName: r.metric.name,
-    classificationId: r.classificationId,
-    classificationLabel: r.classificationId ? classLabel.get(r.classificationId) ?? null : null,
-    label: r.label,
-    periodType: r.periodType,
-    year: r.year,
-    periodNo: r.periodNo,
-    valueBase: Number(r.valueNumeric),
-    unitType: r.metric.unitType,
-    unitLabel: r.metric.unitLabel || r.metric.unitType,
-    displayScale: r.metric.displayScale || 1,
-    comparisonKind: r.comparisonKind,
-    dataSource: r.dataSource,
-    isOfficial: r.dataSource === "REAL",
-    status: normalizeStatus(r.status),
-    sourceNote: r.sourceNote,
-    note: r.note,
-    proposedByName: r.proposedById ? personName.get(r.proposedById) ?? null : null,
-    proposedAt: r.createdAt.toISOString(),
-    confirmedByName: r.confirmedById ? personName.get(r.confirmedById) ?? null : null,
-    confirmedAt: r.confirmedAt ? r.confirmedAt.toISOString() : null,
-    lockedByName: r.lockedById ? personName.get(r.lockedById) ?? null : null,
-    lockedAt: r.lockedAt ? r.lockedAt.toISOString() : null,
-    revisionCount: counts.get(r.id) ?? 0,
-    rules: D5_RULES,
-  }));
+  return rows.map((r) => {
+    const rule = ruleOf(rules, r.metricId, r.periodType);
+    const sourceNote = rules.get(ruleKey(r.metricId, r.periodType))?.sourceNote ?? null;
+    return {
+      id: r.id,
+      metricId: r.metricId,
+      metricCode: r.metric.code,
+      metricName: r.metric.name,
+      classificationId: r.classificationId,
+      classificationLabel: r.classificationId ? classLabel.get(r.classificationId) ?? null : null,
+      label: r.label,
+      periodType: r.periodType,
+      year: r.year,
+      periodNo: r.periodNo,
+      valueBase: Number(r.valueNumeric),
+      unitType: r.metric.unitType,
+      unitLabel: r.metric.unitLabel || r.metric.unitType,
+      displayScale: r.metric.displayScale || 1,
+      comparisonKind: r.comparisonKind,
+      dataSource: r.dataSource,
+      isOfficial: r.dataSource === "REAL",
+      status: normalizeStatus(r.status),
+      sourceNote: r.sourceNote,
+      note: r.note,
+      proposedByName: r.proposedById ? personName.get(r.proposedById) ?? null : null,
+      proposedAt: r.createdAt.toISOString(),
+      confirmedByName: r.confirmedById ? personName.get(r.confirmedById) ?? null : null,
+      confirmedAt: r.confirmedAt ? r.confirmedAt.toISOString() : null,
+      lockedByName: r.lockedById ? personName.get(r.lockedById) ?? null : null,
+      lockedAt: r.lockedAt ? r.lockedAt.toISOString() : null,
+      revisionCount: counts.get(r.id) ?? 0,
+      rules: rulesFrom(rule, sourceNote),
+    };
+  });
 }
 
 export async function listMetricTargets(
@@ -270,6 +288,7 @@ async function resolveInput(
   dataSource: string;
   sourceNote: string | null;
   note: string | null;
+  rule: TargetRuleSnapshot;
 }> {
   const metricId = existingMetricId || str(input.metricId);
   if (!metricId) throw new MetricTargetError("Thiếu chỉ tiêu.", 400);
@@ -297,6 +316,34 @@ async function resolveInput(
   }
   if (periodType === "QUARTER" && (!periodNo || periodNo < 1 || periodNo > 4)) {
     throw new MetricTargetError("Quý phải từ 1–4.", 400);
+  }
+
+  // D5-A/C1-A: chỉ metric+kỳ đã có quy tắc được duyệt mới được gán chỉ tiêu.
+  const rule = await prisma.metricTargetRule.findUnique({
+    where: { metricId_periodType: { metricId, periodType } },
+  });
+  const ruleSnapshot: TargetRuleSnapshot = rule
+    ? {
+        configured: true,
+        targetApplicable: rule.targetApplicable === true,
+        direction: rule.direction as Direction,
+        measureMode: rule.measureMode as MeasureMode,
+        baselineScope: rule.baselineScope as BaselineScope,
+      }
+    : {
+        configured: false,
+        targetApplicable: false,
+        direction: "NOT_SET",
+        measureMode: "PENDING_BUSINESS_INPUT",
+        baselineScope: "PENDING_BUSINESS_INPUT",
+      };
+  if (!canAssignTarget(ruleSnapshot)) {
+    throw new MetricTargetError(
+      ruleSnapshot.configured && !ruleSnapshot.targetApplicable
+        ? "Chưa có quy tắc gán chỉ tiêu cho chỉ tiêu/kỳ này."
+        : "Chỉ tiêu/kỳ này chưa đủ quy tắc đánh giá để gán chỉ tiêu.",
+      400
+    );
   }
 
   const parsed = parseMetricInput(input.value as string | number);
@@ -341,6 +388,7 @@ async function resolveInput(
     dataSource,
     sourceNote: str(input.sourceNote),
     note: str(input.note),
+    rule: ruleSnapshot,
   };
 }
 
@@ -547,6 +595,13 @@ export async function confirmMetricTarget(
   const existing = await getTargetRow(id);
   if (existing.status === "LOCKED") throw new MetricTargetError("Chỉ tiêu giao đã chốt.", 400);
   if (existing.status === "CONFIRMED") return getMetricTarget(user, id);
+
+  const rule = await prisma.metricTargetRule.findUnique({
+    where: { metricId_periodType: { metricId: existing.metricId, periodType: existing.periodType } },
+  });
+  if (!rule?.targetApplicable) {
+    throw new MetricTargetError("Chưa có quy tắc gán chỉ tiêu cho chỉ tiêu/kỳ này.", 400);
+  }
 
   const sourceNote = str(input.sourceNote) ?? existing.sourceNote;
   if (!sourceNote) throw new MetricTargetError("Xác nhận chỉ tiêu phải có nguồn/căn cứ.", 400);
