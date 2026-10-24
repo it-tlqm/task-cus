@@ -54,10 +54,18 @@ export async function GET(
       return jsonError("limit phải là số nguyên dương (tối đa 500).", 400);
     }
 
-    const history = await getTaskUnifiedHistory(taskId, {
-      sources: rawSources as TaskHistorySource[],
-      limit: rawLimit === null ? null : Number(rawLimit),
-    });
+    const history = await getTaskUnifiedHistory(
+      taskId,
+      {
+        sources: rawSources as TaskHistorySource[],
+        limit: rawLimit === null ? null : Number(rawLimit),
+      },
+      {
+        viewer: user,
+        ownerId: access.task?.ownerId ?? null,
+        unitId: access.task?.unitId ?? null,
+      }
+    );
 
     return NextResponse.json({
       success: true,

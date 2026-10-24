@@ -14,7 +14,9 @@
  */
 
 import { prisma } from "./db";
+import type { SessionUser } from "./auth";
 import { APPROVAL_ACTION_LABELS, type ApprovalAction } from "./approval-case";
+import { canViewApprovalQuality } from "./approval-quality";
 
 export const TASK_HISTORY_SOURCES = [
   "TASK_UPDATE",
@@ -59,6 +61,18 @@ export interface TaskHistoryFilters {
   sources?: TaskHistorySource[];
   /** Số bản ghi tối đa sau khi lọc (mặc định 200, tối đa 500). */
   limit?: number | null;
+}
+
+/**
+ * Ngữ cảnh người xem lịch sử. Dùng để quyết định có hiển thị `qualityPercent`
+ * của quyết định duyệt hay không (E10.6).
+ *
+ * Không truyền `access` => ẩn quality (fail closed).
+ */
+export interface TaskHistoryAccess {
+  viewer: SessionUser;
+  ownerId?: string | null;
+  unitId?: string | null;
 }
 
 export interface TaskHistoryResult {
@@ -116,10 +130,13 @@ async function namesByIds(ids: Array<string | null | undefined>): Promise<Map<st
 /**
  * Đọc lịch sử hợp nhất. Người gọi PHẢI tự kiểm tra quyền READ trên Task trước
  * (route dùng `verifyTaskAccess(..., "READ")`).
+ *
+ * `access` quyết định quyền xem `qualityPercent`. Bỏ trống => ẩn quality (fail closed).
  */
 export async function getTaskUnifiedHistory(
   taskId: string,
-  filters: TaskHistoryFilters = {}
+  filters: TaskHistoryFilters = {},
+  access?: TaskHistoryAccess
 ): Promise<TaskHistoryResult> {
   const limit = clampLimit(filters.limit);
   const requestedSources = (filters.sources ?? []).filter(isTaskHistorySource);
@@ -160,6 +177,17 @@ export async function getTaskUnifiedHistory(
   const decisionNames = await namesByIds(
     (approvalCase?.decisions ?? []).map((d) => d.actorPersonId)
   );
+
+  // E10.6 — collaborator không thuộc tuyến duyệt không được thấy quality trong lịch sử.
+  // Không truyền viewer => ẩn (fail closed).
+  const canSeeQuality = access?.viewer
+    ? await canViewApprovalQuality(access.viewer, {
+        ownerId: access.ownerId ?? null,
+        submitterId: approvalCase?.submittedById ?? null,
+        deciderId: approvalCase?.decidedById ?? null,
+        unitId: approvalCase?.unitId ?? access.unitId ?? null,
+      })
+    : false;
 
   const entries: TaskHistoryEntry[] = [];
 
@@ -210,7 +238,7 @@ export async function getTaskUnifiedHistory(
       round: d.round,
       action: d.action,
       actionLabel,
-      qualityPercent: d.qualityPercent ?? null,
+      qualityPercent: canSeeQuality ? d.qualityPercent ?? null : null,
     });
   }
 
