@@ -253,12 +253,19 @@ PROD_READONLY_URL="postgresql://release_readonly:...@...:5432/postgres?sslmode=r
 
 **Production target:** Vercel project `tlqm/task-cus` — `https://task-cus.vercel.app` (health hiện tại `4c7eb52`, `env=production`, `db=up`).  
 **Lưu ý:** `DATABASE_URL`/`DIRECT_URL` là Vercel Sensitive, CLI không đọc được; phải dùng Cách A/B/C ở mục 5.1.
+**Commit trên `/api/health`:** deploy qua Git tự có `VERCEL_GIT_COMMIT_SHA`. Deploy bằng Vercel CLI **bắt buộc** truyền `RELEASE_SHA` (lấy từ `git rev-parse --short HEAD`), nếu không health sẽ trả `commit=dev`:
+
+```bash
+vercel deploy --prod -e RELEASE_SHA=$(git rev-parse --short HEAD)
+```
+
+`VERCEL_DEPLOYMENT_ID` (nếu có) chỉ là trường đối chiếu, không bao giờ được dùng thay commit.
 
 - [ ] Dừng ghi/ thông báo cửa sổ bảo trì (nếu cần).
 - [ ] Chạy migration theo thứ tự mục 4.
 - [ ] Xác minh schema: cột/bảng/index/FK; `prisma migrate diff` nếu có thể.
 - [ ] Deploy code `ede75cb`.
-- [ ] `/api/health`: `status=ok`, `db=up`, `commit=ede75cb`, `env=production`.
+- [ ] `/api/health`: `status=ok`, `db=up`, `commit=ede75cb` (khớp SHA vừa deploy, không phải `dev`), `env=production`.
 - [ ] Đăng nhập 3 vai trò; smoke các màn hình chính.
 - [ ] Kiểm tra log 5xx, auth, storage, notification.
 

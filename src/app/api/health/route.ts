@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db";
+import { getReleaseInfo } from "@/server/release-info";
 
 /** Sức khỏe hệ thống cho giám sát/uptime (không cần đăng nhập, không lộ dữ liệu).
  *  Kèm thông tin phiên bản đang chạy trên Vercel để đối chiếu khi nghiệm thu/triển khai. */
 export async function GET() {
   const started = Date.now();
-  const build = {
-    commit: (process.env.VERCEL_GIT_COMMIT_SHA || "dev").slice(0, 7),
-    env: process.env.VERCEL_ENV || "local",
-  };
+  const build = getReleaseInfo();
   try {
     await prisma.$queryRawUnsafe("SELECT 1");
     return NextResponse.json({
