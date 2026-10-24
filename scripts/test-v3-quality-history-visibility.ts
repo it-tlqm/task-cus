@@ -20,6 +20,9 @@
  *   $env:TEST_BASE_URL="http://localhost:3117"
  *   npx tsx scripts/test-v3-quality-history-visibility.ts
  *
+ * Thiếu tài khoản fixture ⇒ THOÁT MÃ 1 (không được "xanh im lặng"). Chỉ khi chấp nhận
+ * bỏ qua có chủ đích mới thêm cờ `--allow-missing-fixtures`.
+ *
  * Phần flag OFF kiểm tra trực tiếp service (không cần restart server), theo cách
  * `scripts/test-v3-yc10-quality.ts` đã làm.
  */
@@ -41,6 +44,7 @@ const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3117";
 const PASSWORD = process.env.TEST_PASSWORD || "LocalTest@2026";
+const ALLOW_MISSING_FIXTURES = process.argv.includes("--allow-missing-fixtures");
 const TAG = `[E12Q-${Date.now().toString().slice(-6)}]`;
 const QUALITY = 80;
 
@@ -103,7 +107,14 @@ async function main() {
   const owner = accounts.find((a) => a.username === "democb01");
   const collaborator = accounts.find((a) => a.username === "democb02");
   if (!leader || !owner || !collaborator) {
-    console.log("  THIẾU tài khoản fixture (demold01/democb01/democb02) — bỏ qua.");
+    const missing = "THIẾU tài khoản fixture (demold01/democb01/democb02)";
+    if (ALLOW_MISSING_FIXTURES) {
+      console.log(`  ${missing} — bỏ qua theo cờ --allow-missing-fixtures.`);
+      return;
+    }
+    // Không được exit 0 khi chưa kiểm chứng gì: fail rõ ràng để không ai nhầm là PASS.
+    console.error(`  ${missing} — FAIL. Nạp fixture hoặc dùng --allow-missing-fixtures nếu thật sự muốn bỏ qua.`);
+    fail++;
     return;
   }
   const unitId = owner.person.assignments[0]?.unitId || leader.person.assignments[0]!.unitId;
