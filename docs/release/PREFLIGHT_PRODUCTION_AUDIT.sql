@@ -14,6 +14,8 @@ SELECT current_database() AS database,
 \echo '=== 1. LỊCH SỬ MIGRATION ==='
 SELECT to_regclass('public._prisma_migrations') AS prisma_migrations_table;
 -- Kỳ vọng: NULL (Production dựng bằng db push). Nếu khác: STOP, lập phương án baseline.
+-- PITR/backup provider KHÔNG kiểm tra được bằng file SQL này (dùng `sbc backups list`/Dashboard).
+-- Trạng thái backup: docs/evidence/release/BACKUP_RESTORE_REMEDIATION_2026-10-24.md.
 
 \echo '=== 2. BASELINE COUNTS (KHÔNG GHI) ==='
 SELECT 'people' AS table_name, count(*) AS rows FROM "people"
@@ -195,6 +197,19 @@ WHERE conname IN (
   'approval_route_snapshots_task_id_fkey'
 )
 ORDER BY conname;
+
+\echo '=== 7c. V3.2 — metric_target_rules (migration 200000) ==='
+SELECT to_regclass('public.metric_target_rules') AS metric_target_rules;
+
+SELECT count(*) AS total_rules FROM "metric_target_rules";
+
+SELECT period_type, target_applicable, count(*) AS rules
+FROM "metric_target_rules"
+GROUP BY period_type, target_applicable
+ORDER BY period_type, target_applicable;
+
+-- Kỳ vọng sau V3.2: 17 rules; chỉ THU_NSNN YEAR/MONTH có target_applicable = true.
+-- Nếu bảng chưa tồn tại, các SELECT trên sẽ lỗi: ghi nhận "chưa áp dụng", không sửa dữ liệu.
 
 \echo '=== 8. KIỂM TRA DRIFT TỐI THIỂU ==='
 -- Các cột/tables lạ ngoài phạm vi không sửa; chỉ ghi nhận.

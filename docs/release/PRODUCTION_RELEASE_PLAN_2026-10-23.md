@@ -9,6 +9,8 @@
 **Chế độ:** release nhanh, giữ nguyên phạm vi đã merge; các phần nghiệp vụ chưa chốt để sau.  
 **Production:** chưa ghi, chưa deploy, chưa merge `main`.
 
+**Kiểm soát migration/backup:** sổ [`PRODUCTION_MIGRATION_LEDGER_2026-10-24.md`](./PRODUCTION_MIGRATION_LEDGER_2026-10-24.md) · quy tắc [`MIGRATION_RULES.md`](./MIGRATION_RULES.md) · biên bản [`BACKUP_RESTORE_REMEDIATION_2026-10-24.md`](../evidence/release/BACKUP_RESTORE_REMEDIATION_2026-10-24.md)
+
 > Mục tiêu: đưa các kết quả đã hoàn thành lên Production sớm, nhưng không hạ gate bảo mật/migration/UAT.
 > Điều kiện bắt buộc: có quyền đọc Production DB/snapshot, backup đã kiểm tra restore, UAT sign-off và lệnh release riêng.
 
@@ -109,6 +111,8 @@
 | 6 | `20261023190000_v3_approval_precheck_route` | Bảng `approval_route_snapshots` cho pre-check/final | **Không idempotent** — chỉ chạy khi object chưa có |
 | 7 | `20261023200000_v32_metrics_decisions` | Bảng `metric_target_rules` + 17 quy tắc D5/C1 | Đã áp Production 24/10/2026; additive |
 
+> Sổ ghi nhận thực tế (thời điểm, người, kết quả, counts): [`PRODUCTION_MIGRATION_LEDGER_2026-10-24.md`](./PRODUCTION_MIGRATION_LEDGER_2026-10-24.md). Checksum ở mục 4.2 đã được băm lại **khớp 7/7** tại HEAD `ddc6f22`.
+
 ### 4.2. Checksum migration (đối chiếu trước khi chạy)
 
 | Migration | SHA-256 |
@@ -150,6 +154,7 @@ Sau mỗi file: chạy lại preflight đúng section, ghi kết quả; nếu l�
 - Migration 4, 5, 6: nếu preflight thấy **một phần object đã tồn tại**, **DỪNG**, không tự sửa; lập phương án riêng.
 - Không chạy migration trong transaction tự động nếu công cụ không hỗ trợ; theo runbook ops.
 - Ghi lại statement, thời gian, số dòng ảnh hưởng, người thực hiện.
+- Quy tắc đầy đủ (backup, preflight, idempotent, partial apply, ledger): [`MIGRATION_RULES.md`](./MIGRATION_RULES.md).
 
 ### 4.4. Thứ tự triển khai
 
@@ -209,6 +214,7 @@ PROD_READONLY_URL="postgresql://release_readonly:...@...:5432/postgres?sslmode=r
 
 ## 6. BACKUP / RESTORE
 
+- Biên bản backup/restore V3.1/V3.2: [`BACKUP_RESTORE_REMEDIATION_2026-10-24.md`](../evidence/release/BACKUP_RESTORE_REMEDIATION_2026-10-24.md). PITR/backup provider **chưa xác minh** (audit 24/10/2026 ghi nhận PITR tắt, danh sách trống).
 - Backup full bằng công cụ ops được duyệt (`pg_dump` custom format hoặc script chuẩn).
 - Lưu ngoài repo; ghi kích thước, SHA-256, thời điểm, người thực hiện.
 - Restore thử vào database clone **không phải Production**; đối chiếu số bảng/dòng/FK.
