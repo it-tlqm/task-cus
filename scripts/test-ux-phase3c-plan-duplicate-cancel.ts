@@ -59,6 +59,7 @@ async function main() {
   const { GET, POST } = await import("../src/app/api/plans/route");
   const { DELETE } = await import("../src/app/api/plans/[id]/route");
   const { POST: POST_PLAN_ITEM } = await import("../src/app/api/plans/[id]/items/route");
+  const { POST: POST_PLAN_WORKFLOW } = await import("../src/app/api/plans/[id]/workflow/route");
 
   const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
   const now = new Date();
@@ -67,6 +68,7 @@ async function main() {
   const taskIds: string[] = [];
   const workItemIds: string[] = [];
   let tempPeriodId = "";
+  let tempLockedPeriodId = "";
 
   try {
     const accounts = await prisma.account.findMany({
@@ -239,6 +241,23 @@ async function main() {
         body: JSON.stringify({ title }),
       });
       const res = await POST_PLAN_ITEM(req as any, {
+        params: Promise.resolve({ id: planId }),
+      } as any);
+      const json = await res.json().catch(() => ({}));
+      return { status: res.status, json };
+    };
+
+    const callWorkflow = async (
+      tok: string,
+      planId: string,
+      payload: Record<string, unknown>
+    ) => {
+      const req = new NextRequest(`http://localhost/api/plans/${planId}/workflow`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${tok}`, "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const res = await POST_PLAN_WORKFLOW(req as any, {
         params: Promise.resolve({ id: planId }),
       } as any);
       const json = await res.json().catch(() => ({}));
@@ -447,6 +466,38 @@ async function main() {
     });
     check("Hủy kế hoạch SUBMITTED bị 409", submittedDelete.status === 409, `status=${submittedDelete.status}`);
 
+    // ---- 7b. Kỳ đã chốt: không được hủy, đồng bộ với PATCH/items
+    const lockedPeriod = await prisma.reportingPeriod.create({
+      data: {
+        type: "WEEK",
+        title: `[TEST-3C] Kỳ đã chốt ${stamp}`,
+        startAt: new Date("2027-05-03T00:00:00.000Z"),
+        endAt: new Date("2027-05-09T00:00:00.000Z"),
+        isLocked: true,
+      },
+    });
+    tempLockedPeriodId = lockedPeriod.id;
+    const lockedPeriodPlan = await createDirectPlan({
+      status: "DRAFT",
+      title: `[TEST-3C] Kế hoạch trong kỳ đã chốt ${stamp}`,
+      periodId: lockedPeriod.id,
+    });
+    const lockedPeriodDelete = await callDelete(leaderToken, lockedPeriodPlan.id, {
+      reason: "Thử hủy kế hoạch trong kỳ đã chốt",
+    });
+    check(
+      "Hủy kế hoạch trong kỳ đã chốt bị 423",
+      lockedPeriodDelete.status === 423,
+      `status=${lockedPeriodDelete.status}`
+    );
+    const lockedPeriodAfter = await prisma.plan.findUnique({
+      where: { id: lockedPeriodPlan.id },
+    });
+    check(
+      "Kế hoạch trong kỳ đã chốt giữ nguyên DRAFT",
+      lockedPeriodAfter?.status === "DRAFT"
+    );
+
     // ---- 8. Có liên kết thì chặn, không làm mất dữ liệu
     const linkedPlan = await createDirectPlan({
       status: "DRAFT",
@@ -507,6 +558,35 @@ async function main() {
     check(
       "Nhiệm vụ liên kết còn nguyên",
       (await prisma.planTaskLink.count({ where: { planItem: { planId: linkedPlan.id } } })) === 1
+    );
+
+    // ---- 8b. LINK_TASK không được gắn nhiệm vụ vào kế hoạch đã hủy
+    const canceledWithItem = await createDirectPlan({
+      status: "CANCELED",
+      title: `[TEST-3C] Kế hoạch hủy có hạng mục ${stamp}`,
+    });
+    const canceledWithItemItem = await prisma.planItem.create({
+      data: {
+        planId: canceledWithItem.id,
+        title: `[TEST-3C] Hạng mục của bản đã hủy ${stamp}`,
+        sortOrder: 1,
+      },
+    });
+    const linkToCanceled = await callWorkflow(leaderToken, canceledWithItem.id, {
+      action: "LINK_TASK",
+      planItemId: canceledWithItemItem.id,
+      taskId: linkedTask.id,
+    });
+    check(
+      "LINK_TASK vào kế hoạch CANCELED bị 409",
+      linkToCanceled.status === 409,
+      `status=${linkToCanceled.status}`
+    );
+    check(
+      "Không phát sinh liên kết trên kế hoạch đã hủy",
+      (await prisma.planTaskLink.count({
+        where: { planItem: { planId: canceledWithItem.id } },
+      })) === 0
     );
 
     // ---- 9. Hủy mềm thành công + audit
@@ -595,6 +675,56 @@ async function main() {
     );
     const staffOwnAfter = await prisma.plan.findUnique({ where: { id: staffOwnPlan.id } });
     check("Bản nháp của STAFF chuyển CANCELED", staffOwnAfter?.status === "CANCELED");
+
+    // ---- 12. Bất biến khi hủy và thêm hạng mục chạy đồng thời
+    // Cả hai cùng lấy khóa `plan-content:<planId>`; một bên thắng, bên còn lại
+    // phải thấy trạng thái/đếm mới. Không được tồn tại CANCELED + hạng mục mới.
+    for (let i = 0; i < 3; i++) {
+      const racePlan = await createDirectPlan({
+        status: "DRAFT",
+        title: `[TEST-3C] Race hủy/tạo hạng mục ${stamp}-${i}`,
+      });
+      const [itemRes, cancelRes] = await Promise.all([
+        callAddItem(leaderToken, racePlan.id, `[TEST-3C] Race item ${stamp}-${i}`),
+        callDelete(leaderToken, racePlan.id, { reason: `Race hủy ${i}` }),
+      ]);
+      const itemCount = await prisma.planItem.count({ where: { planId: racePlan.id } });
+      const raceStatus = (
+        await prisma.plan.findUnique({
+          where: { id: racePlan.id },
+          select: { status: true },
+        })
+      )?.status;
+
+      check(
+        `Race ${i + 1}: không đồng thời hủy thành công và tạo hạng mục`,
+        !(cancelRes.status === 200 && itemRes.status === 201),
+        `item=${itemRes.status} cancel=${cancelRes.status}`
+      );
+      check(
+        `Race ${i + 1}: có ít nhất một thao tác thắng`,
+        itemRes.status === 201 || cancelRes.status === 200,
+        `item=${itemRes.status} cancel=${cancelRes.status}`
+      );
+
+      if (cancelRes.status === 200) {
+        check(
+          `Race ${i + 1}: hủy thắng thì không còn hạng mục`,
+          itemCount === 0 && raceStatus === "CANCELED",
+          `items=${itemCount} status=${raceStatus}`
+        );
+      } else {
+        check(
+          `Race ${i + 1}: tạo hạng mục thắng thì hủy bị 409 PLAN_HAS_LINKS`,
+          itemRes.status === 201 &&
+            cancelRes.status === 409 &&
+            cancelRes.json?.code === "PLAN_HAS_LINKS" &&
+            itemCount === 1 &&
+            raceStatus === "DRAFT",
+          `item=${itemRes.status} cancel=${cancelRes.status} code=${cancelRes.json?.code} items=${itemCount} status=${raceStatus}`
+        );
+      }
+    }
   } finally {
     if (workItemIds.length > 0) {
       await prisma.personalWorkItem.deleteMany({ where: { id: { in: workItemIds } } }).catch(() => {});
@@ -608,6 +738,9 @@ async function main() {
     }
     if (tempPeriodId) {
       await prisma.reportingPeriod.delete({ where: { id: tempPeriodId } }).catch(() => {});
+    }
+    if (tempLockedPeriodId) {
+      await prisma.reportingPeriod.delete({ where: { id: tempLockedPeriodId } }).catch(() => {});
     }
     await prisma.$disconnect();
   }

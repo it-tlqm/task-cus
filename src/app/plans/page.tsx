@@ -231,11 +231,13 @@ export default function PlansPage() {
     !!activePlan &&
     (isActivePlanCreator || (isLeaderRole && !!planOptions?.canCreatePlan));
   // Task 3C: chỉ hủy mềm kế hoạch DRAFT/RETURNED chưa có hạng mục/liên kết.
+  // Người tạo được hủy bản nháp của mình (khớp API `canCancelPlan`); lãnh đạo
+  // cần quyền lập kế hoạch trong phạm vi.
   const canCancelActivePlan =
     planContentEditable &&
     !!activePlan &&
     (activePlan.items?.length || 0) === 0 &&
-    canManageActivePlan;
+    (isActivePlanCreator || (isLeaderRole && !!planOptions?.canCreatePlan));
   const canApproveActivePlan =
     activePlan?.status === "SUBMITTED" && isLeaderRole && !isActivePlanCreator;
   const canEffectActivePlan = activePlan?.status === "APPROVED" && isLeaderRole;

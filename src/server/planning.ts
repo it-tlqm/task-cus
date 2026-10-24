@@ -14,7 +14,16 @@ import { checkPermission, getAuthorizedUnitIds } from "@/server/guard";
 import { normalizeTitle } from "@/server/idempotency";
 
 export const PLAN_CONTENT_EDITABLE = ["DRAFT", "RETURNED"] as const;
-export const PLAN_CONTENT_LOCKED = ["SUBMITTED", "APPROVED", "IN_EFFECT"] as const;
+export const PLAN_CONTENT_LOCKED = ["SUBMITTED", "APPROVED", "IN_EFFECT", "CANCELED"] as const;
+
+/**
+ * Khóa tư vấn dùng chung cho mọi ghi nội dung của một kế hoạch.
+ * Item create, LINK_TASK và hủy mềm phải lấy cùng khóa này để kiểm tra
+ * trạng thái + đếm liên kết + ghi dữ liệu là một khối tuần tự.
+ */
+export function planContentLockKey(planId: string): string {
+  return `plan-content:${planId}`;
+}
 
 /**
  * Task 3C — trạng thái được phép hủy mềm kế hoạch trùng.

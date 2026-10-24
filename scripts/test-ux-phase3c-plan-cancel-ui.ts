@@ -35,7 +35,9 @@ async function main() {
   const { normalizeTitle } = await import("../src/server/idempotency");
   const {
     PLAN_CANCELABLE_STATUSES,
+    PLAN_CONTENT_LOCKED,
     planCancelStatusMessage,
+    planContentLockKey,
     planContentLockMessage,
   } = await import("../src/server/planning");
 
@@ -65,6 +67,14 @@ async function main() {
   check(
     "CANCELED là trạng thái cuối, khóa nội dung",
     !!planContentLockMessage({ status: "CANCELED", title: "A" })
+  );
+  check(
+    "PLAN_CONTENT_LOCKED gồm CANCELED",
+    (PLAN_CONTENT_LOCKED as readonly string[]).includes("CANCELED")
+  );
+  check(
+    "planContentLockKey ổn định theo planId",
+    planContentLockKey("abc") === "plan-content:abc"
   );
   check(
     "normalizeTitle gộp khoảng trắng/hoa thường",
@@ -103,8 +113,45 @@ async function main() {
   check("DELETE ghi audit PLAN_CANCEL_DUPLICATE", detailRoute.includes('action: "PLAN_CANCEL_DUPLICATE"'));
   check("DELETE lưu lý do vào audit", detailRoute.includes("newData: { status: PLAN_CANCELED_STATUS, reason }"));
   check(
+    "DELETE khóa nội dung dùng chung",
+    detailRoute.includes("advisoryLock(tx, planContentLockKey(planId))")
+  );
+  check(
+    "DELETE đếm liên kết trong transaction sau khóa",
+    /const cancelResult = await prisma\.\$transaction/.test(detailRoute) &&
+      detailRoute.indexOf("advisoryLock(tx, planContentLockKey(planId))") <
+        detailRoute.indexOf("tx.planItem.count({ where: { planId } })")
+  );
+  check(
+    "DELETE chặn kỳ đã chốt bằng assertPeriodWritable",
+    detailRoute.includes("await assertPeriodWritable(plan.periodId)")
+  );
+  check(
     "DELETE không gọi plan.delete",
     !/prisma\.plan\.delete(?!Many)/.test(detailRoute) && !detailRoute.includes("plan.deleteMany")
+  );
+
+  // ---- Khóa nội dung dùng chung cho item create + LINK_TASK
+  const itemsRoute = read("src/app/api/plans/[id]/items/route.ts");
+  check(
+    "Item create dùng chung khóa plan-content",
+    itemsRoute.includes("advisoryLock(tx, planContentLockKey(planId))")
+  );
+  check(
+    "Item create đọc lại trạng thái trong transaction",
+    itemsRoute.includes("planContentLockMessage(fresh)") &&
+      itemsRoute.includes("const createResult = await prisma.$transaction")
+  );
+
+  const workflowRoute = read("src/app/api/plans/[id]/workflow/route.ts");
+  check(
+    "LINK_TASK dùng chung khóa plan-content",
+    workflowRoute.includes("advisoryLock(tx, planContentLockKey(planId))")
+  );
+  check(
+    "LINK_TASK chặn kế hoạch CANCELED trong transaction",
+    workflowRoute.includes("planContentLockMessage(freshPlan)") &&
+      workflowRoute.includes('return { kind: "locked" as const, message: freshLock }')
   );
 
   // ---- UI
@@ -113,6 +160,10 @@ async function main() {
   check(
     "UI chỉ cho kế hoạch DRAFT/RETURNED không hạng mục",
     page.includes("(activePlan.items?.length || 0) === 0") && page.includes("planContentEditable")
+  );
+  check(
+    "UI đồng bộ quyền người tạo với API",
+    page.includes("isActivePlanCreator || (isLeaderRole && !!planOptions?.canCreatePlan)")
   );
   check("UI có nút hủy desktop", page.includes('data-testid="cancel-plan-btn"'));
   check("UI có nút hủy mobile", page.includes('data-testid="cancel-plan-btn-mobile"'));
