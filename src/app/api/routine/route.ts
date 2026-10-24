@@ -5,6 +5,8 @@ import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
 import { getIsoWeekFromDate } from "@/lib/period-helper";
+import { parseDateOnly, todayInVietnam } from "@/server/work-dates";
+import { getCatalogEntrySelectionError } from "@/server/work-catalog";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,6 +23,29 @@ export async function GET(req: NextRequest) {
     const unitId = searchParams.get("unitId");
     const occurrenceStatus = searchParams.get("occurrenceStatus");
     const id = searchParams.get("id");
+    // V3 UX 2B1: loc theo ngay lam viec (DATE-ONLY, khong quy doi mui gio)
+    const workDateParam = searchParams.get("workDate");
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+
+    const parsedWorkDate = workDateParam ? parseDateOnly(workDateParam) : null;
+    if (parsedWorkDate && !parsedWorkDate.ok) {
+      return jsonError(parsedWorkDate.message, 400);
+    }
+    const parsedFrom = fromParam ? parseDateOnly(fromParam) : null;
+    if (parsedFrom && !parsedFrom.ok) {
+      return jsonError(parsedFrom.message, 400);
+    }
+    const parsedTo = toParam ? parseDateOnly(toParam) : null;
+    if (parsedTo && !parsedTo.ok) {
+      return jsonError(parsedTo.message, 400);
+    }
+    const workDateExact = parsedWorkDate?.value ?? null;
+    const workDateFrom = parsedFrom?.value ?? null;
+    const workDateTo = parsedTo?.value ?? null;
+    if (workDateFrom && workDateTo && workDateFrom > workDateTo) {
+      return jsonError("Khoảng ngày không hợp lệ: 'from' phải trước hoặc bằng 'to'", 400);
+    }
 
     const authorizedUnits = await getAuthorizedUnitIds(user);
     if (unitId && authorizedUnits !== "ALL" && !authorizedUnits.includes(unitId)) {
@@ -55,6 +80,17 @@ export async function GET(req: NextRequest) {
         ...(periodId ? { periodId } : {}),
         ...(targetPersonId ? { personId: targetPersonId } : {}),
         ...(occurrenceStatus ? { occurrenceStatus } : {}),
+        // V3 UX 2B1: workDate chinh xac uu tien; neu khong co thi loc theo khoang from/to.
+        ...(workDateExact
+          ? { workDate: workDateExact }
+          : workDateFrom || workDateTo
+          ? {
+              workDate: {
+                ...(workDateFrom ? { gte: workDateFrom } : {}),
+                ...(workDateTo ? { lte: workDateTo } : {}),
+              },
+            }
+          : {}),
         // F18: an du lieu mau (nguon [DEMO]) khi yeu cau - khong xoa, chi loc khi hien thi
         ...(hideDemo
           ? {
@@ -75,6 +111,12 @@ export async function GET(req: NextRequest) {
         },
         workItem: true,
         catalogEntry: { select: { id: true, code: true, title: true, convertFactor: true } },
+        catalogTags: {
+          include: {
+            catalogEntry: { select: { id: true, code: true, title: true, department: true } },
+          },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
         productItem: { select: { id: true, code: true, taskName: true, convertFactor: true } },
         submissions: {
           include: {
@@ -151,6 +193,16 @@ export async function GET(req: NextRequest) {
         occurrenceStatus: entry.occurrenceStatus,
         notes: entry.notes,
         catalogEntryId: entry.catalogEntryId,
+        catalogTags: entry.catalogTags.map((tag) => ({
+          id: tag.id,
+          catalogEntryId: tag.catalogEntryId,
+          code: tag.catalogEntry.code,
+          title: tag.catalogEntry.title,
+          department: tag.catalogEntry.department,
+          sortOrder: tag.sortOrder,
+        })),
+        workDate: entry.workDate ? entry.workDate.toISOString().slice(0, 10) : null,
+        shift: entry.shift,
         productItemId: entry.productItemId,
         proposedProducts: entry.proposedProducts ? JSON.parse(entry.proposedProducts) : [],
         sourceKind: entry.sourceKind,
@@ -222,24 +274,100 @@ export async function POST(req: NextRequest) {
       formVersionId,
       formValues = {},
       // --- F18: danh muc TX + san pham QD1277 ---
-      catalogEntryId = null,
+      catalogEntryId: legacyCatalogEntryId = null,
+      catalogEntryIds: inputCatalogEntryIds = null,
+      workDate: inputWorkDate,
+      shift: inputShift,
       productItemId = null,
       proposedProducts = [],
       notOccurredKind = null, // NO_VIOLATION | NO_ACTIVITY
       dataOrigin = null,     // REAL | DEMO
     } = body;
 
-    // F18 — xác thực danh mục ở phía máy chủ (hệ số LUÔN lấy từ danh mục, không tin client)
-    let txEntry: any = null;
-    if (catalogEntryId) {
-      txEntry = await prisma.workCatalogEntry.findUnique({
-        where: { id: String(catalogEntryId) },
-        select: { id: true, code: true, title: true, convertFactor: true, status: true },
-      });
-      if (!txEntry) return jsonError("Công việc thường xuyên không tồn tại trong danh mục TX", 400);
-      if (txEntry.status !== "ACTIVE") {
-        return jsonError("Công việc thường xuyên đã ngừng áp dụng trong danh mục TX", 400);
+    // V3 UX 2B1 — xác thực N tag TX ở phía máy chủ.
+    // `catalogEntryId` cũ vẫn được nhận. UI gửi cả hai (tag đầu trùng với tag cũ)
+    // nên chỉ bổ sung tag cũ khi nó chưa có trong danh sách; trùng lặp TRONG danh
+    // sách vẫn bị từ chối.
+    const inputTagIds: string[] = [];
+    if (inputCatalogEntryIds !== null && inputCatalogEntryIds !== undefined) {
+      if (!Array.isArray(inputCatalogEntryIds)) {
+        return jsonError("Danh sách công việc thường xuyên phải là một mảng mã đầu việc", 400);
       }
+      const seenInputIds = new Set<string>();
+      for (const rawId of inputCatalogEntryIds) {
+        const id = String(rawId ?? "").trim();
+        if (!id) continue;
+        if (seenInputIds.has(id)) {
+          return jsonError(
+            "Danh sách công việc thường xuyên có mã trùng lặp — vui lòng chọn mỗi đầu việc một lần.",
+            400
+          );
+        }
+        seenInputIds.add(id);
+        inputTagIds.push(id);
+      }
+    }
+    const legacyTagId =
+      legacyCatalogEntryId !== null &&
+      legacyCatalogEntryId !== undefined &&
+      String(legacyCatalogEntryId).trim()
+        ? String(legacyCatalogEntryId).trim()
+        : null;
+    const requestedTagIds =
+      legacyTagId && !inputTagIds.includes(legacyTagId)
+        ? [legacyTagId, ...inputTagIds]
+        : inputTagIds;
+    if (requestedTagIds.length > 30) {
+      return jsonError("Một bản ghi nhật ký chỉ được gắn tối đa 30 đầu việc thường xuyên", 400);
+    }
+    const seenTagIds = new Set<string>(requestedTagIds);
+
+    let txEntries: Array<{
+      id: string;
+      code: string;
+      title: string;
+      convertFactor: unknown;
+      status: string;
+      department: string;
+      version: { status: string };
+    }> = [];
+    if (seenTagIds.size > 0) {
+      const foundEntries = await prisma.workCatalogEntry.findMany({
+        where: { id: { in: [...seenTagIds] } },
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          convertFactor: true,
+          status: true,
+          department: true,
+          version: { select: { status: true } },
+        },
+      });
+      const byId = new Map(foundEntries.map((entry) => [entry.id, entry]));
+      for (const id of requestedTagIds) {
+        const entry = byId.get(id);
+        if (!entry) {
+          return jsonError("Công việc thường xuyên không tồn tại trong danh mục TX", 400);
+        }
+        const selectionError = await getCatalogEntrySelectionError(user.personId, entry);
+        if (selectionError) return jsonError(selectionError, 400);
+        txEntries.push(entry);
+      }
+    }
+    const txEntry = txEntries[0] || null;
+
+    // Ngày/ca làm việc: mặc định ngày VN hôm nay + CA_NGAY; không suy đoán ca thực tế.
+    const parsedWorkDate = parseDateOnly(inputWorkDate);
+    if (!parsedWorkDate.ok) return jsonError(parsedWorkDate.message, 400);
+    const workDate =
+      parsedWorkDate.value ?? new Date(`${todayInVietnam()}T00:00:00.000Z`);
+    const normalizedShift =
+      inputShift === null || inputShift === undefined || String(inputShift).trim() === ""
+        ? "CA_NGAY"
+        : String(inputShift).trim().toUpperCase();
+    if (!["SANG", "CHIEU", "CA_NGAY"].includes(normalizedShift)) {
+      return jsonError("Ca làm việc phải là SANG, CHIEU hoặc CA_NGAY", 400);
     }
 
     // Sản phẩm QĐ1277: chuẩn hoá danh sách, lấy hệ số từ danh mục, chặn trùng
@@ -563,6 +691,17 @@ export async function POST(req: NextRequest) {
           templateId: templateId || null,
           workItemId: createdWorkItemId || null,
           catalogEntryId: txEntry?.id || null,
+          workDate,
+          shift: normalizedShift,
+          catalogTags:
+            txEntries.length > 0
+              ? {
+                  create: txEntries.map((entry, index) => ({
+                    catalogEntryId: entry.id,
+                    sortOrder: index,
+                  })),
+                }
+              : undefined,
           productItemId: mainProductId,
           proposedProducts: proposed.length ? JSON.stringify(proposed) : null,
           sourceKind: txEntry ? "TX_CATALOG" : mainProductId ? "QD1277_PRODUCT" : templateId ? "LEGACY_TEMPLATE" : "ADHOC",
@@ -580,6 +719,12 @@ export async function POST(req: NextRequest) {
             include: { group: true },
           },
           workItem: true,
+          catalogTags: {
+            include: {
+              catalogEntry: { select: { id: true, code: true, title: true, department: true } },
+            },
+            orderBy: { sortOrder: "asc" },
+          },
         },
       });
 
@@ -702,6 +847,9 @@ export async function POST(req: NextRequest) {
         templateId,
         periodId,
         formVersionId: targetFormVersion?.id || null,
+        catalogEntryIds: txEntries.map((entry) => entry.id),
+        workDate: workDate.toISOString().slice(0, 10),
+        shift: normalizedShift,
       },
     });
 

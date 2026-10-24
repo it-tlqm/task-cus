@@ -1,10 +1,11 @@
 "use client";
 
 /**
- * RoutineCatalogPicker — F18: chọn công việc thường xuyên (danh mục TX 348 mục) và
- * đề xuất nhiều sản phẩm QĐ1277 cho một bản ghi nhật ký tác nghiệp.
+ * RoutineCatalogPicker — F18 / UX 2B1: chọn N công việc thường xuyên (danh mục TX)
+ * và đề xuất nhiều sản phẩm QĐ1277 cho MỘT bản ghi nhật ký tác nghiệp.
  *
  * Nguyên tắc:
+ *  - Nhiều tag TX là phân loại của cùng một bản ghi, KHÔNG tạo N bản ghi.
  *  - Tìm được theo mã/tên, CÓ dấu và KHÔNG dấu (API /api/products & /api/work-catalog đã xử lý).
  *  - Chọn SP KHÔNG có nghĩa SP đã được xác nhận → hiển thị rõ "chờ xác nhận".
  *  - Không tự điền hệ số còn thiếu; không dùng hệ số TX thay hệ số QĐ1277.
@@ -24,7 +25,7 @@ export interface ProposedProduct {
   reviewState: "PROPOSED";
 }
 
-interface TxEntry {
+export interface TxTag {
   id: string;
   code: string;
   title: string;
@@ -33,20 +34,19 @@ interface TxEntry {
 }
 
 export default function RoutineCatalogPicker({
-  selectedTxId,
-  onTxChange,
+  selectedTags,
+  onTagsChange,
   products,
   onProductsChange,
 }: {
-  selectedTxId: string;
-  onTxChange: (tx: TxEntry | null) => void;
+  selectedTags: TxTag[];
+  onTagsChange: (tags: TxTag[]) => void;
   products: ProposedProduct[];
   onProductsChange: (p: ProposedProduct[]) => void;
 }) {
   const [txQuery, setTxQuery] = useState("");
-  const [txResults, setTxResults] = useState<TxEntry[]>([]);
+  const [txResults, setTxResults] = useState<TxTag[]>([]);
   const [txBusy, setTxBusy] = useState(false);
-  const [selectedTx, setSelectedTx] = useState<TxEntry | null>(null);
 
   const [spQuery, setSpQuery] = useState("");
   const [spResults, setSpResults] = useState<
@@ -92,6 +92,16 @@ export default function RoutineCatalogPicker({
     })();
   }, [spQuery]);
 
+  const addTag = (tag: TxTag) => {
+    if (selectedTags.some((x) => x.id === tag.id)) {
+      toast.info("Đầu việc TX này đã được gắn cho bản ghi.");
+      return;
+    }
+    onTagsChange([...selectedTags, tag]);
+    setTxQuery("");
+    setTxResults([]);
+  };
+
   const addProduct = (p: any) => {
     if (products.some((x) => x.productItemId === p.id)) {
       toast.info("Sản phẩm này đã có trong danh sách đề xuất.");
@@ -122,76 +132,75 @@ export default function RoutineCatalogPicker({
 
   return (
     <div className="flex flex-col gap-3" data-testid="routine-catalog-picker">
-      {/* ---------- Công việc thường xuyên (danh mục TX) ---------- */}
+      {/* ---------- Công việc thường xuyên (danh mục TX) — chọn nhiều ---------- */}
       <div className="flex flex-col gap-1">
         <label className="font-label-md text-label-md text-primary font-semibold">
-          Công việc thường xuyên (danh mục TX)
+          Công việc thường xuyên (danh mục TX — có thể chọn nhiều)
         </label>
-        {selectedTx ? (
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface-container-lowest px-3 py-2 text-sm">
-            <div className="min-w-0">
-              <p className="font-semibold text-on-surface truncate">
-                <span className="font-mono">{selectedTx.code}</span> — {selectedTx.title}
-              </p>
-              <p className="text-[11px] text-on-surface-variant">
-                {selectedTx.department} · hệ số TX:{" "}
-                {selectedTx.convertFactor === null || selectedTx.convertFactor === undefined
-                  ? "chưa có (không dùng thay hệ số SP)"
-                  : selectedTx.convertFactor}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedTx(null);
-                onTxChange(null);
-              }}
-              className="text-[11px] font-semibold text-status-danger hover:underline"
-            >
-              Bỏ chọn
-            </button>
+
+        {selectedTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5" data-testid="routine-tx-tags">
+            {selectedTags.map((tag) => (
+              <span
+                key={tag.id}
+                data-testid={`routine-tx-chip-${tag.code}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-[11px]"
+              >
+                <span className="font-mono font-bold text-primary">{tag.code}</span>
+                <span className="max-w-[280px] truncate text-on-surface">{tag.title}</span>
+                <button
+                  type="button"
+                  data-testid={`routine-tx-remove-${tag.code}`}
+                  aria-label={`Bỏ chọn ${tag.code}`}
+                  onClick={() => onTagsChange(selectedTags.filter((x) => x.id !== tag.id))}
+                  className="text-status-danger font-bold leading-none hover:opacity-70"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
           </div>
-        ) : (
-          <>
-            <input
-              data-testid="routine-tx-search"
-              value={txQuery}
-              onChange={(e) => setTxQuery(e.target.value)}
-              placeholder="Tìm công việc thường xuyên theo mã hoặc tên (có/không dấu)…"
-              className="h-10 px-3 rounded bg-surface-container-lowest text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-            />
-            {txBusy && <span className="text-[11px] text-outline">Đang tìm…</span>}
-            {!txBusy && txResults.length > 0 && (
-              <div className="max-h-44 overflow-y-auto rounded-lg border border-border-subtle divide-y divide-border-subtle">
-                {txResults.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    data-testid={`routine-tx-option-${t.code}`}
-                    onClick={() => {
-                      setSelectedTx(t);
-                      onTxChange(t);
-                      setTxQuery("");
-                      setTxResults([]);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-xs hover:bg-surface-container"
-                  >
-                    <span className="font-mono font-bold text-primary">{t.code}</span> — {t.title}
-                    <span className="block text-[10px] text-outline">
-                      {t.department} · hệ số TX:{" "}
-                      {t.convertFactor === null || t.convertFactor === undefined ? "chưa có" : t.convertFactor}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {!txBusy && txQuery.trim().length >= 2 && txResults.length === 0 && (
-              <span className="text-[11px] text-outline">Không tìm thấy trong danh mục TX.</span>
-            )}
-          </>
+        )}
+
+        <input
+          data-testid="routine-tx-search"
+          value={txQuery}
+          onChange={(e) => setTxQuery(e.target.value)}
+          placeholder="Tìm công việc thường xuyên theo mã hoặc tên (có/không dấu)…"
+          className="h-10 px-3 rounded bg-surface-container-lowest text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+        />
+        {txBusy && <span className="text-[11px] text-outline">Đang tìm…</span>}
+        {!txBusy && txResults.length > 0 && (
+          <div className="max-h-44 overflow-y-auto rounded-lg border border-border-subtle divide-y divide-border-subtle">
+            {txResults.map((t) => {
+              const already = selectedTags.some((x) => x.id === t.id);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  data-testid={`routine-tx-option-${t.code}`}
+                  onClick={() => addTag(t)}
+                  className={`block w-full text-left px-3 py-2 text-xs hover:bg-surface-container ${
+                    already ? "opacity-60" : ""
+                  }`}
+                >
+                  <span className="font-mono font-bold text-primary">{t.code}</span> — {t.title}
+                  <span className="block text-[10px] text-outline">
+                    {t.department} · hệ số TX:{" "}
+                    {t.convertFactor === null || t.convertFactor === undefined ? "chưa có" : t.convertFactor}
+                    {already ? " · đã gắn" : ""}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {!txBusy && txQuery.trim().length >= 2 && txResults.length === 0 && (
+          <span className="text-[11px] text-outline">Không tìm thấy trong danh mục TX.</span>
         )}
         <span className="text-[11px] text-outline">
-          Có thể bỏ trống nếu công việc phát sinh ngoài danh mục (ghi nội dung thực tế ở ô bên trên).
+          Có thể chọn nhiều đầu việc TX cho cùng một bản ghi. Bỏ trống nếu công việc phát sinh ngoài danh mục
+          (ghi nội dung thực tế ở ô bên trên).
         </span>
       </div>
 

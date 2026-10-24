@@ -1,0 +1,168 @@
+/**
+ * UX Phase 2B1 — UI smoke: chọn N tag TX bằng chip, ngày/ca mặc định VN.
+ * Chỉ chạy trên server dev local trỏ database kiểm thử.
+ *
+ *   $env:DATABASE_URL="postgresql://postgres:postgres@localhost:5432/talung_v3_integration_2b1"
+ *   $env:TEST_BASE_URL="http://localhost:3113"
+ *   npx tsx scripts/test-ux-phase2b1-routine-ui.ts
+ */
+import puppeteer from "puppeteer-core";
+import { createRequire } from "node:module";
+import path from "node:path";
+import fs from "node:fs";
+import { assertLocalTestDatabase } from "./lib/test-db-safety";
+import { todayInVietnam } from "../src/server/work-dates";
+
+const creq = createRequire(import.meta.url);
+const { PrismaClient } = creq("@prisma/client");
+const dbUrl = assertLocalTestDatabase(
+  process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+  "test-ux-phase2b1-routine-ui"
+);
+const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+
+const BASE = process.env.TEST_BASE_URL || "http://localhost:3113";
+const PASSWORD = process.env.V3_DEMO_PASSWORD || "LocalTest@2026";
+const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+
+let passed = 0;
+let failed = 0;
+function check(name: string, cond: boolean, detail = "") {
+  if (cond) {
+    passed++;
+    console.log(`[PASS] ${name}${detail ? " - " + detail : ""}`);
+  } else {
+    failed++;
+    console.log(`[FAIL] ${name}${detail ? " - " + detail : ""}`);
+  }
+}
+
+async function main() {
+  console.log("=== UX 2B1 — UI SMOKE ===\n");
+
+  const txEntries = await prisma.workCatalogEntry.findMany({
+    where: { status: "ACTIVE", version: { status: "ACTIVE" } },
+    orderBy: [{ departmentOrder: "asc" }, { sortOrder: "asc" }],
+    take: 2,
+    select: { id: true, code: true, title: true },
+  });
+  if (txEntries.length < 2) throw new Error("Không đủ 2 đầu việc TX ACTIVE để test UI");
+
+  const browser = await puppeteer.launch({
+    executablePath: EDGE,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--window-size=1440,1000"],
+  });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1440, height: 1000 });
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(String(error)));
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+
+  try {
+    // Lấy cookie phiên bằng API (tránh phụ thuộc thời điểm hydration của trang login),
+    // sau đó mở trực tiếp trang nhật ký như người dùng đã đăng nhập.
+    const loginRes = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "democb01", password: PASSWORD }),
+    });
+    if (!loginRes.ok) throw new Error(`Đăng nhập API lỗi HTTP ${loginRes.status}`);
+    const setCookies = loginRes.headers.getSetCookie?.() || [];
+    const tokenCookie = setCookies.find((cookie) => cookie.startsWith("token="));
+    if (!tokenCookie) throw new Error("Không nhận được cookie phiên đăng nhập");
+    const tokenValue = tokenCookie.split(";")[0].slice("token=".length);
+    await page.setCookie({
+      name: "token",
+      value: tokenValue,
+      url: BASE,
+      httpOnly: true,
+      sameSite: "Lax",
+    });
+
+    await page.goto(`${BASE}/routine`, { waitUntil: "networkidle2", timeout: 120000 });
+    await page.waitForSelector('[data-testid="routine-catalog-picker"]', { timeout: 120000 });
+
+    const dateValue = await page.$eval('[data-testid="routine-work-date"]', (el: any) => el.value);
+    const shiftValue = await page.$eval('[data-testid="routine-work-shift"]', (el: any) => el.value);
+    check("1. Ngày mặc định là hôm nay theo giờ VN", dateValue === todayInVietnam(), `${dateValue}`);
+    check("1. Ca mặc định là CA_NGAY", shiftValue === "CA_NGAY", shiftValue);
+
+    for (const entry of txEntries) {
+      await page.click('[data-testid="routine-tx-search"]');
+      await page.type('[data-testid="routine-tx-search"]', entry.code);
+      await page.waitForSelector(`[data-testid="routine-tx-option-${entry.code}"]`, { timeout: 60000 });
+      // Chờ React hoàn tất một nhịp render trước khi bấm (dev server hydrate không đồng bộ).
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await page.evaluate((code) => {
+        const button = document.querySelector<HTMLButtonElement>(
+          `[data-testid="routine-tx-option-${code}"]`
+        );
+        button?.click();
+      }, entry.code);
+      try {
+        await page.waitForSelector(`[data-testid="routine-tx-chip-${entry.code}"]`, { timeout: 30000 });
+      } catch (error) {
+        const state = await page.evaluate(() => ({
+          chips: Array.from(document.querySelectorAll('[data-testid^="routine-tx-chip-"]')).map(
+            (el) => el.getAttribute("data-testid")
+          ),
+          search: (document.querySelector('[data-testid="routine-tx-search"]') as HTMLInputElement)?.value,
+          pickerText: document
+            .querySelector('[data-testid="routine-catalog-picker"]')
+            ?.textContent?.slice(0, 800),
+        }));
+        console.log("DEBUG STATE", state);
+        console.log("CONSOLE ERRORS", consoleErrors);
+        console.log("PAGE ERRORS", pageErrors);
+        throw error;
+      }
+    }
+
+    const chipCount = await page.$$eval('[data-testid^="routine-tx-chip-"]', (els) => els.length);
+    check("2. Chọn 2 tag TX tạo 2 chip (không thay thế tag trước)", chipCount === 2, `chips=${chipCount}`);
+
+    const titleValue = await page.$eval('[data-testid="routine-title"]', (el: any) => el.value);
+    check(
+      "2. Nội dung công việc được điền từ tag đầu tiên",
+      titleValue.trim() === txEntries[0].title.trim(),
+      titleValue
+    );
+
+    await page.evaluate((code) => {
+      document
+        .querySelector<HTMLButtonElement>(`[data-testid="routine-tx-remove-${code}"]`)
+        ?.click();
+    }, txEntries[1].code);
+    await page.waitForFunction(
+      (code) => !document.querySelector(`[data-testid="routine-tx-chip-${code}"]`),
+      { timeout: 30000 },
+      txEntries[1].code
+    );
+    const afterRemove = await page.$$eval('[data-testid^="routine-tx-chip-"]', (els) => els.length);
+    check("3. Bỏ một chip chỉ bỏ đúng tag đó", afterRemove === 1, `chips=${afterRemove}`);
+
+    const screenshotDir = path.resolve(".superpowers/sdd/ux-phase2");
+    fs.mkdirSync(screenshotDir, { recursive: true });
+    await page.screenshot({
+      path: path.join(screenshotDir, "task-2b1-routine-picker.png"),
+      fullPage: false,
+    });
+    check("4. Không có lỗi runtime trên trang", pageErrors.length === 0, pageErrors.join(" | "));
+  } finally {
+    await browser.close();
+    await prisma.$disconnect();
+  }
+
+  console.log(`\n=== KẾT QUẢ UI: ${passed} pass / ${failed} fail ===`);
+  if (failed > 0) process.exitCode = 1;
+}
+
+main().catch(async (error) => {
+  console.error(error);
+  await prisma.$disconnect();
+  process.exit(1);
+});

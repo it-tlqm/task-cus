@@ -4,7 +4,10 @@ import React, { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
-import RoutineCatalogPicker, { type ProposedProduct } from "./RoutineCatalogPicker";
+import { formatVnDate, vnDateOnly } from "@/lib/datetime";
+import RoutineCatalogPicker, { type ProposedProduct, type TxTag } from "./RoutineCatalogPicker";
+
+const SHIFT_LABELS: Record<string, string> = { SANG: "Sáng", CHIEU: "Chiều", CA_NGAY: "Cả ngày" };
 
 interface WorkLogEntry {
   id: string;
@@ -27,8 +30,11 @@ interface WorkLogEntry {
     name: string;
   };
   formValues?: Record<string, any>;
-  // --- F18 ---
+  // --- F18 / UX 2B1 ---
   catalogEntry?: { id: string; code: string; title: string } | null;
+  catalogTags?: Array<{ id: string; catalogEntryId: string; code: string; title: string; department?: string; sortOrder?: number }>;
+  workDate?: string | null;
+  shift?: string | null;
   productItem?: { id: string; code: string; taskName: string } | null;
   proposedProducts?: Array<{ productItemId: string; code: string; taskName: string; factor: number | null; quantity: number | null; unit: string | null; reviewState: string }>;
   sourceKind?: string | null;
@@ -74,7 +80,9 @@ interface ActiveFormVersion {
 
 export default function RoutinePage() {
   const [activeTab, setActiveTab] = useState<"tab1" | "tab2" | "tab3">("tab1");
-  const [logDate, setLogDate] = useState(() => new Date().toISOString().split("T")[0]);
+  // Ngày ghi nhận mặc định theo lịch Việt Nam (không dùng ngày UTC của trình duyệt/máy chủ).
+  const [logDate, setLogDate] = useState(() => vnDateOnly());
+  const [logShift, setLogShift] = useState<"SANG" | "CHIEU" | "CA_NGAY">("CA_NGAY");
   const [entries, setEntries] = useState<WorkLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{
@@ -95,8 +103,8 @@ export default function RoutinePage() {
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  // --- F18: danh muc TX + san pham QD1277 + loc du lieu mau ---
-  const [selectedTx, setSelectedTx] = useState<any>(null);
+  // --- F18 / UX 2B1: N tag danh muc TX + nhieu san pham QD1277 + loc du lieu mau ---
+  const [selectedTxs, setSelectedTxs] = useState<TxTag[]>([]);
   const [proposedProducts, setProposedProducts] = useState<ProposedProduct[]>([]);
   const [hideDemo, setHideDemo] = useState(true);
   const [newCompany, setNewCompany] = useState("");
@@ -132,7 +140,10 @@ export default function RoutinePage() {
   const fetchRoutineData = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/routine?hideDemo=" + (hideDemo ? "1" : "0"));
+      const params = new URLSearchParams({ hideDemo: hideDemo ? "1" : "0" });
+      // UX 2B1: danh sách bám đúng ngày/ca đang chọn.
+      if (logDate) params.set("workDate", logDate);
+      const res = await fetch(`/api/routine?${params.toString()}`);
       if (!res.ok) throw new Error("Không thể tải danh sách nhật ký tác nghiệp");
       const data = await res.json();
 
@@ -146,6 +157,9 @@ export default function RoutinePage() {
             item.sourceCodeSnapshot ||
             "—",
           catalogEntry: item.catalogEntry || null,
+          catalogTags: item.catalogTags || [],
+          workDate: item.workDate || null,
+          shift: item.shift || null,
           productItem: item.productItem || null,
           proposedProducts: item.proposedProducts || [],
           sourceKind: item.sourceKind || null,
@@ -194,9 +208,13 @@ export default function RoutinePage() {
     }
   };
 
+  // Tải lại danh sách khi đổi ngày ghi nhận (workDate là bộ lọc chính của màn hình).
   useEffect(() => {
     fetchRoutineData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logDate]);
 
+  useEffect(() => {
     // Fetch Catalog Templates (chỉ lấy các mẫu đang áp dụng)
     fetch("/api/catalog/templates?activeOnly=true")
       .then((res) => (res.ok ? res.json() : null))
@@ -262,8 +280,11 @@ export default function RoutinePage() {
           templateId: null, // F19: danh muc cong viec chinh thuc chi dung TX moi
           formVersionId: activeFormVersion?.id,
           formValues: dynamicFormValues,
-          // F18: danh muc TX + danh sach SP QD1277 de xuat
-          catalogEntryId: selectedTx?.id || null,
+          // F18 / UX 2B1: N tag TX + ngay/ca + danh sach SP QD1277 de xuat
+          catalogEntryIds: selectedTxs.map((tag) => tag.id),
+          catalogEntryId: selectedTxs[0]?.id || null, // backward compatibility
+          workDate: logDate,
+          shift: logShift,
           productItemId: proposedProducts[0]?.productItemId || null,
           proposedProducts,
         }),
@@ -279,6 +300,9 @@ export default function RoutinePage() {
         setNewConts("");
         setNewNotes("");
         setDynamicFormValues({});
+        // UX 2B1: xóa lựa chọn sau khi lưu để bản ghi kế tiếp không bị dính tag/SP cũ.
+        setSelectedTxs([]);
+        setProposedProducts([]);
         // Reload data from PostgreSQL
         await fetchRoutineData();
       } else {
@@ -316,6 +340,9 @@ export default function RoutinePage() {
           notOccurredKind: kind,
           templateId: null,
           catalogEntryId: null,
+          catalogEntryIds: [],
+          workDate: logDate,
+          shift: logShift,
           productItemId: null,
           proposedProducts: [],
         }),
@@ -496,10 +523,30 @@ export default function RoutinePage() {
                     </span>
                     <input
                       type="date"
+                      data-testid="routine-work-date"
                       value={logDate}
                       onChange={(e) => setLogDate(e.target.value)}
                       className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
                     />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-surface-subtle px-3 py-1.5 rounded-lg border border-border-default">
+                  <span className="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+                  <div className="flex flex-col">
+                    <span className="font-label-sm text-[11px] text-on-surface-variant uppercase font-bold">
+                      Ca làm việc
+                    </span>
+                    <select
+                      data-testid="routine-work-shift"
+                      value={logShift}
+                      onChange={(e) => setLogShift(e.target.value as "SANG" | "CHIEU" | "CA_NGAY")}
+                      className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
+                    >
+                      <option value="SANG">Sáng</option>
+                      <option value="CHIEU">Chiều</option>
+                      <option value="CA_NGAY">Cả ngày</option>
+                    </select>
                   </div>
                 </div>
 
@@ -546,6 +593,7 @@ export default function RoutinePage() {
                   <input
                     type="text"
                     required
+                    data-testid="routine-title"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="Nhập nội dung công việc đã xử lý trong ca..."
@@ -557,10 +605,10 @@ export default function RoutinePage() {
                     Ban goc "Danh muc nghiep vu lien quan" (48 mau TTHQ/GSHQ) duoc giu o
                     phan "mau cu" de khong pha vong mau cua cac ban ghi lich su. */}
                 <RoutineCatalogPicker
-                  selectedTxId={selectedTx?.id || ""}
-                  onTxChange={(tx: any) => {
-                    setSelectedTx(tx);
-                    if (tx && !newTitle) setNewTitle(tx.title);
+                  selectedTags={selectedTxs}
+                  onTagsChange={(tags: TxTag[]) => {
+                    setSelectedTxs(tags);
+                    if (tags.length > 0 && !newTitle) setNewTitle(tags[tags.length - 1].title);
                   }}
                   products={proposedProducts}
                   onProductsChange={setProposedProducts}
@@ -746,7 +794,7 @@ export default function RoutinePage() {
             <div data-tour="log-list" className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
               <div className="p-space-md bg-surface-subtle border-b border-border-default flex items-center justify-between">
                 <span className="font-headline-sm text-primary font-bold">
-                  Nhật Ký Đã Khai Báo Trong Ca Ngày {logDate}
+                  Nhật Ký Đã Khai Báo — Ngày {formatVnDate(logDate)} · Ca {SHIFT_LABELS[logShift]}
                 </span>
                 <span className="text-xs text-outline">{entries.length} bản ghi thực tế</span>
               </div>
@@ -775,7 +823,7 @@ export default function RoutinePage() {
                         <td colSpan={6} className="py-12 text-center text-on-surface-variant">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[36px] text-outline">history_edu</span>
-                            <p className="font-semibold text-primary">Chưa có nhật ký nào được ghi nhận cho ca hôm nay</p>
+                            <p className="font-semibold text-primary">Chưa có nhật ký nào được ghi nhận cho ngày đã chọn</p>
                             <p className="text-xs text-outline">
                               Đồng chí có thể nhập nội dung thực tế ở form trên hoặc bấm "Xác nhận 1-chạm không phát sinh".
                             </p>
@@ -792,18 +840,50 @@ export default function RoutinePage() {
                               <span className="text-xs text-outline">
                                 {entry.notes || (entry.occurrenceStatus === "NOT_OCCURRED" ? "Xác nhận không phát sinh" : "Đã hoàn thành")}
                               </span>
-                              {/* F18: danh muc TX + san pham QD1277 da de xuat */}
-                              {entry.catalogEntry && (
+                              {/* UX 2B1: ngày/ca thực tế */}
+                              {(entry.workDate || entry.shift) && (
                                 <span className="text-[11px] text-outline">
-                                  Công việc thường xuyên: <span className="font-mono">{entry.catalogEntry.code}</span> — {entry.catalogEntry.title}
+                                  Ngày {entry.workDate ? formatVnDate(entry.workDate) : "—"} · Ca{" "}
+                                  {SHIFT_LABELS[entry.shift || "CA_NGAY"] || entry.shift}
                                 </span>
                               )}
+                              {/* F18 / UX 2B1: đủ N tag TX (fallback tag chính của dữ liệu cũ) */}
+                              <div className="flex flex-wrap gap-1">
+                                {(entry.catalogTags && entry.catalogTags.length > 0
+                                  ? entry.catalogTags
+                                  : entry.catalogEntry
+                                    ? [
+                                        {
+                                          id: entry.catalogEntry.id,
+                                          catalogEntryId: entry.catalogEntry.id,
+                                          code: entry.catalogEntry.code,
+                                          title: entry.catalogEntry.title,
+                                        },
+                                      ]
+                                    : []
+                                ).map((tag) => (
+                                  <span
+                                    key={tag.id}
+                                    className="inline-flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-2 py-0.5 text-[10px] text-on-surface"
+                                  >
+                                    <span className="font-mono font-bold text-primary">{tag.code}</span>
+                                    <span className="max-w-[220px] truncate">{tag.title}</span>
+                                  </span>
+                                ))}
+                              </div>
                               {(entry.proposedProducts || []).length > 0 && (
-                                <span className="text-[11px] text-outline">
-                                  Sản phẩm QĐ1277 đề xuất:{" "}
-                                  {(entry.proposedProducts || []).map((p) => p.code).join(", ")}
-                                  {" "}(chờ lãnh đạo xác nhận)
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <span className="text-[11px] text-outline">SP QĐ1277:</span>
+                                  {(entry.proposedProducts || []).map((p) => (
+                                    <span
+                                      key={p.productItemId}
+                                      className="inline-flex items-center gap-1 rounded-full border border-status-warning/40 bg-status-warning-bg px-2 py-0.5 text-[10px] text-status-warning"
+                                      title={`${p.taskName} — chờ lãnh đạo xác nhận`}
+                                    >
+                                      <span className="font-mono font-bold">{p.code}</span>
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                               {/* F18: trang thai V3 — KHONG coi la da nghiem thu */}
                               {entry.workItemId && (
@@ -1058,6 +1138,13 @@ export default function RoutinePage() {
                 </span>
               </div>
               <div className="flex flex-col">
+                <span className="text-outline text-xs">Ngày / ca làm việc</span>
+                <span className="font-semibold text-primary">
+                  {inspectEntry.workDate ? formatVnDate(inspectEntry.workDate) : "—"} ·{" "}
+                  {SHIFT_LABELS[inspectEntry.shift || "CA_NGAY"] || inspectEntry.shift || "—"}
+                </span>
+              </div>
+              <div className="flex flex-col">
                 <span className="text-outline text-xs">Trạng thái phát sinh</span>
                 <span
                   className={`font-semibold ${
@@ -1098,6 +1185,61 @@ export default function RoutinePage() {
                 </p>
               </div>
             )}
+
+            {/* UX 2B1: đủ N tag TX + N sản phẩm QĐ1277 */}
+            <div className="flex flex-col gap-1 border-t border-border-default/60 pt-3">
+              <span className="text-outline text-xs font-bold uppercase">Công việc thường xuyên (tag TX)</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(inspectEntry.catalogTags && inspectEntry.catalogTags.length > 0
+                  ? inspectEntry.catalogTags
+                  : inspectEntry.catalogEntry
+                    ? [
+                        {
+                          id: inspectEntry.catalogEntry.id,
+                          catalogEntryId: inspectEntry.catalogEntry.id,
+                          code: inspectEntry.catalogEntry.code,
+                          title: inspectEntry.catalogEntry.title,
+                        },
+                      ]
+                    : []
+                ).map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-[11px]"
+                  >
+                    <span className="font-mono font-bold text-primary">{tag.code}</span>
+                    <span className="max-w-[360px] truncate">{tag.title}</span>
+                  </span>
+                ))}
+                {(!inspectEntry.catalogTags || inspectEntry.catalogTags.length === 0) &&
+                  !inspectEntry.catalogEntry && (
+                    <span className="text-xs text-outline italic">Không gắn danh mục TX</span>
+                  )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-outline text-xs font-bold uppercase">Sản phẩm QĐ1277 đề xuất</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(inspectEntry.proposedProducts || []).length > 0 ? (
+                  (inspectEntry.proposedProducts || []).map((p) => (
+                    <span
+                      key={p.productItemId}
+                      className="inline-flex flex-col rounded-lg border border-status-warning/40 bg-status-warning-bg px-2.5 py-1 text-[11px] text-status-warning"
+                      title={p.taskName}
+                    >
+                      <span className="font-mono font-bold">{p.code}</span>
+                      <span className="text-[10px] opacity-80">
+                        {p.quantity !== null && p.quantity !== undefined ? `${p.quantity}${p.unit ? " " + p.unit : ""} · ` : ""}
+                        chờ lãnh đạo xác nhận
+                      </span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-outline italic">Không đề xuất sản phẩm</span>
+                )}
+              </div>
+            </div>
 
             {/* Dynamic Submission Values Table */}
             {inspectEntry.formValues && Object.keys(inspectEntry.formValues).length > 0 && (
