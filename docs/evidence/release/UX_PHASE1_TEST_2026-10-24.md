@@ -1,9 +1,13 @@
 # UX PHASE 1 — KẾT QUẢ KIỂM THỬ (24/10/2026)
 
 **Trạng thái:** `PASS WITH LIMITATIONS — CHƯA DEPLOY`
+
 **Branch:** `codex/v3-ux-phase1`
+
 **Base:** `bdf45ae` (production remediation)
-**Code head:** `09d3982`
+
+**Code head:** `f12bced`
+
 **Phạm vi:** 4 việc UI Đợt 1; không đổi schema/API nghiệp vụ/Production.
 
 ---
@@ -16,6 +20,7 @@
 | 2 | Mục “Công chức nhận việc” + tab/nút nhận việc + rút gọn nhắc ca trực | `07516e1`, `1565d82`, `e93c57e` |
 | 3 | Cột “Người thực hiện” trong nhật ký + ẩn cảnh báo phân công | `664dfd5` |
 | 4 | Căn đều 4 nút kỳ Dashboard + làm nổi bật lũy kế tháng/năm | `09d3982` |
+| 5 | Đồng bộ tab chờ nhận, deep-link, a11y và fix wave cuối | `f12bced` |
 
 ---
 
@@ -24,7 +29,7 @@
 | Kiểm tra | Kết quả |
 |---|---|
 | `npx tsc --noEmit` | **PASS** |
-| `npx tsx scripts/test-v3-ux-phase1.ts` | **72/72 PASS** |
+| `npx tsx scripts/test-v3-ux-phase1.ts` | **85/85 PASS** |
 | `npx tsx scripts/test-yc30-navigation.ts` | **215 PASS / 1 FAIL** — `/change-password` không nằm trong menu; lỗi có từ trước, không do Đợt 1 |
 | `pnpm build` | **PASS** (Next.js 15.5.27) |
 | `git diff --check` | **PASS** |
