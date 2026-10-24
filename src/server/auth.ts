@@ -161,15 +161,24 @@ export async function authenticateRequest(req: NextRequest): Promise<SessionUser
 
   // Luôn trả về SessionUser được cập nhật theo cơ sở dữ liệu thực tế tại thời điểm gọi API:
   // Ngay sau khi điều chuyển, unitId và scopeUnitId lập tức trỏ về đơn vị mới!
+  // TUYỆT ĐỐI không fallback các trường phân quyền từ JWT: grant/tài khoản bị thu hồi
+  // phải mất hiệu lực ngay, kể cả khi đó là grant cuối cùng. Chỉ giữ các trường
+  // định danh bất biến (id, personId, username, fullName, personCode, mustChangePassword)
+  // từ token/session đã xác thực.
   const sessionUser: SessionUser = {
-    ...decoded,
-    unitId: primaryAssignment?.unitId || decoded.unitId,
-    unitName: primaryAssignment?.unit?.name || decoded.unitName,
-    positionTitle: primaryAssignment?.position?.title || decoded.positionTitle,
-    role: primaryGrant?.role.code || decoded.role,
-    scopeType: (primaryGrant?.scopeType as SessionUser["scopeType"]) || decoded.scopeType,
-    scopeUnitId: primaryGrant?.scopeUnitId !== undefined ? primaryGrant.scopeUnitId : decoded.scopeUnitId,
-    permissions: permissions.size > 0 ? Array.from(permissions) : decoded.permissions,
+    id: decoded.id,
+    personId: decoded.personId,
+    username: decoded.username,
+    fullName: decoded.fullName,
+    personCode: decoded.personCode,
+    mustChangePassword: decoded.mustChangePassword,
+    unitId: primaryAssignment?.unitId,
+    unitName: primaryAssignment?.unit?.name,
+    positionTitle: primaryAssignment?.position?.title || "Cán bộ công chức",
+    role: primaryGrant?.role.code || "STAFF",
+    scopeType: (primaryGrant?.scopeType as SessionUser["scopeType"]) || "DEPARTMENT",
+    scopeUnitId: primaryGrant?.scopeUnitId,
+    permissions: Array.from(permissions),
   };
 
   return sessionUser;
