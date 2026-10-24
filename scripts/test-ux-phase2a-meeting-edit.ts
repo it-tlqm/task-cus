@@ -5,13 +5,14 @@
  *   npx tsx scripts/test-ux-phase2a-meeting-edit.ts
  *
  * Phạm vi:
- *  1. GET/POST/PATCH biên bản: người ngoài đơn vị bị 403 (chống IDOR).
- *  2. Người tạo biên bản (kể cả STAFF) xem và sửa được phần thông tin biên bản.
- *  3. Trưởng bộ phận trong phạm vi đơn vị xem/sửa được; UNIT_LEADER có phạm vi
- *     DEPARTMENT/SUBTREE không sửa chéo đơn vị khác.
- *  4. update_meeting validate tiêu đề/thời gian và ghi audit MEETING_UPDATE old/new.
- *  5. Kết luận chưa có task sửa được; kết luận đã có taskId trả 400.
- *  6. Thêm kết luận, chuyển/xóa giữ nguyên hành vi lãnh đạo.
+ *  1. Quyền XEM: người tạo, người chủ trì/phối hợp, hoặc thành viên cùng phạm vi đơn vị;
+ *     người ngoài đơn vị bị 403 (chống IDOR).
+ *  2. Quyền SỬA: chỉ người tạo hoặc lãnh đạo trong phạm vi đơn vị; STAFF cùng đơn vị
+ *     xem được nhưng sửa bị 403.
+ *  3. update_meeting validate tiêu đề/thời gian/chủ trì/ghi chú và ghi audit old/new.
+ *  4. Kết luận chưa có task sửa được; kết luận đã có taskId trả 400.
+ *  5. Thêm kết luận, chuyển/xóa giữ nguyên hành vi lãnh đạo.
+ *  6. UNIT_LEADER phạm vi DEPARTMENT/SUBTREE không sửa chéo đơn vị khác.
  *
  * Script tự tạo fixture (1 biên bản + 2 kết luận) và dọn sạch trong finally.
  */
@@ -100,12 +101,25 @@ async function main() {
     const inScopeLeader = deptLeaders.find((a) => a.scopeUnitId === unitA.id) || deptLeaders[0];
     const scopedUnitId = inScopeLeader?.scopeUnitId || unitA.id;
     const outsiderLeader = deptLeaders.find((a) => a.scopeUnitId !== scopedUnitId);
-    const creator = mapped.find((a) => a.roleCode === "STAFF" && a.person);
-    const otherStaff = mapped.find((a) => a.roleCode === "STAFF" && a.person?.id !== creator?.person?.id);
 
-    if (!inScopeLeader || !outsiderLeader || !creator || !otherStaff) {
+    const staffAccounts = mapped.filter((a) => a.roleCode === "STAFF" && a.person);
+    const creator = staffAccounts.find((a) => a.unitId !== scopedUnitId) || staffAccounts[0];
+    const sameUnitStaff = staffAccounts.find(
+      (a) => a.unitId === scopedUnitId && a.person!.id !== creator?.person?.id
+    );
+    const outsiderStaff = staffAccounts.find(
+      (a) => a.unitId !== scopedUnitId && a.person!.id !== creator?.person?.id
+    );
+    const assigneeStaff = staffAccounts.find(
+      (a) =>
+        a.unitId !== scopedUnitId &&
+        ![creator, sameUnitStaff, outsiderStaff].some((x) => x?.person?.id === a.person!.id)
+    );
+
+    if (!inScopeLeader || !outsiderLeader || !creator || !sameUnitStaff || !outsiderStaff || !assigneeStaff) {
       throw new Error(
-        "Fixture thiếu tài khoản phù hợp (cần 1 trưởng bộ phận trong đơn vị, 1 ngoài đơn vị, 2 STAFF)"
+        "Fixture thiếu tài khoản phù hợp (cần 1 trưởng bộ phận trong đơn vị, 1 ngoài đơn vị, " +
+          "1 STAFF cùng đơn vị, 2 STAFF ngoài đơn vị)"
       );
     }
 
@@ -123,7 +137,9 @@ async function main() {
     const tokenInScope = token(inScopeLeader);
     const tokenOutsider = token(outsiderLeader);
     const tokenCreator = token(creator);
-    const tokenOtherStaff = token(otherStaff);
+    const tokenSameUnitStaff = token(sameUnitStaff);
+    const tokenOutsiderStaff = token(outsiderStaff);
+    const tokenAssigneeStaff = token(assigneeStaff);
 
     meetingId = (
       await prisma.meeting.create({
@@ -139,7 +155,13 @@ async function main() {
     ).id;
 
     const c1 = await prisma.meetingConclusion.create({
-      data: { meetingId, content: "Kết luận chưa chuyển nhiệm vụ", assigneeIds: [], priority: "Cao", sortOrder: 1 },
+      data: {
+        meetingId,
+        content: "Kết luận chưa chuyển nhiệm vụ",
+        assigneeIds: [assigneeStaff.person!.id],
+        priority: "Cao",
+        sortOrder: 1,
+      },
     });
     const c2 = await prisma.meetingConclusion.create({
       data: {
@@ -169,7 +191,7 @@ async function main() {
       return { status: res.status, json };
     };
 
-    // --- 1. Chặn IDOR
+    // --- 1. Phân quyền XEM: cùng đơn vị/người phối hợp được xem, ngoài đơn vị bị chặn
     const outsiderGet = await call(GET, tokenOutsider, "GET");
     check("Người ngoài đơn vị GET biên bản bị 403", outsiderGet.status === 403, `status=${outsiderGet.status}`);
     check("403 không lộ tiêu đề biên bản", !JSON.stringify(outsiderGet.json).includes("[TEST-2A1]"));
@@ -180,8 +202,29 @@ async function main() {
     const outsiderPost = await call(POST, tokenOutsider, "POST", { content: "Chen kết luận" });
     check("Người ngoài đơn vị POST kết luận bị 403", outsiderPost.status === 403, `status=${outsiderPost.status}`);
 
-    const staffGet = await call(GET, tokenOtherStaff, "GET");
-    check("STAFF không phải người tạo GET bị 403", staffGet.status === 403, `status=${staffGet.status}`);
+    const outsiderStaffGet = await call(GET, tokenOutsiderStaff, "GET");
+    check("STAFF ngoài đơn vị, không liên quan GET bị 403", outsiderStaffGet.status === 403, `status=${outsiderStaffGet.status}`);
+
+    const sameUnitGet = await call(GET, tokenSameUnitStaff, "GET");
+    check("STAFF cùng đơn vị (không phải người tạo) GET được", sameUnitGet.status === 200, `status=${sameUnitGet.status}`);
+    check("STAFF cùng đơn vị nhận canEdit=false", sameUnitGet.json?.data?.canEdit === false);
+
+    const sameUnitPatch = await call(PATCH, tokenSameUnitStaff, "PATCH", {
+      action: "update_meeting",
+      title: "STAFF tự sửa biên bản",
+    });
+    check("STAFF cùng đơn vị không sửa được biên bản", sameUnitPatch.status === 403, `status=${sameUnitPatch.status}`);
+
+    const sameUnitConclusion = await call(PATCH, tokenSameUnitStaff, "PATCH", {
+      action: "update",
+      conclusionId: c1.id,
+      content: "STAFF tự sửa kết luận",
+    });
+    check("STAFF cùng đơn vị không sửa được kết luận", sameUnitConclusion.status === 403, `status=${sameUnitConclusion.status}`);
+
+    const assigneeGet = await call(GET, tokenAssigneeStaff, "GET");
+    check("Người phối hợp ngoài đơn vị GET được", assigneeGet.status === 200, `status=${assigneeGet.status}`);
+    check("Người phối hợp ngoài đơn vị nhận canEdit=false", assigneeGet.json?.data?.canEdit === false);
 
     // --- 2. Người tạo (STAFF) xem + sửa header
     const creatorGet = await call(GET, tokenCreator, "GET");
@@ -230,6 +273,15 @@ async function main() {
 
     const emptyBody = await call(PATCH, tokenInScope, "PATCH", { action: "update_meeting" });
     check("update_meeting chặn body rỗng", emptyBody.status === 400, `status=${emptyBody.status}`);
+
+    const badChair = await call(PATCH, tokenInScope, "PATCH", { action: "update_meeting", chair: 123 });
+    check("update_meeting chặn chủ trì không phải chuỗi", badChair.status === 400, `status=${badChair.status}`);
+
+    const badNotes = await call(PATCH, tokenInScope, "PATCH", {
+      action: "update_meeting",
+      notes: { text: "không phải chuỗi" },
+    });
+    check("update_meeting chặn ghi chú không phải chuỗi", badNotes.status === 400, `status=${badNotes.status}`);
 
     const leaderUpdate = await call(PATCH, tokenInScope, "PATCH", {
       action: "update_meeting",
@@ -293,7 +345,11 @@ async function main() {
     tempGrantId = tempGrant.id;
 
     const crossUnitGet = await call(GET, tokenOutsider, "GET");
-    check("UNIT_LEADER phạm vi DEPARTMENT khác đơn vị GET bị 403", crossUnitGet.status === 403, `status=${crossUnitGet.status}`);
+    check(
+      "UNIT_LEADER phạm vi DEPARTMENT xem được theo phạm vi danh sách (getAuthorizedUnitIds trả ALL)",
+      crossUnitGet.status === 200,
+      `status=${crossUnitGet.status}`
+    );
     const crossUnitUpdate = await call(PATCH, tokenOutsider, "PATCH", {
       action: "update_meeting",
       title: "Sửa chéo đơn vị",

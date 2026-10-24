@@ -380,7 +380,7 @@ export default function MeetingDetailPage() {
         </form>
       )}
 
-      {canApprove && aiEnabled && (
+      {canApprove && meeting.canEdit && aiEnabled && (
         <div className="bg-secondary/10 border border-secondary/30 rounded-xl p-3 flex flex-col gap-2">
           <span className="text-xs font-bold text-secondary">✨ Dán biên bản thô, AI tách kết luận giúp</span>
           <textarea rows={3} value={minutes} onChange={(e) => setMinutes(e.target.value)}
@@ -393,7 +393,7 @@ export default function MeetingDetailPage() {
         </div>
       )}
 
-      {canApprove && (
+      {canApprove && meeting.canEdit && (
         <form onSubmit={handleAdd} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col gap-2">
           <span className="text-xs font-bold text-slate-700">+ Thêm kết luận</span>
           <input value={cContent} onChange={(e) => setCContent(e.target.value)}
@@ -481,7 +481,7 @@ export default function MeetingDetailPage() {
                     )}
                     <span className="text-xs text-slate-500">Kết luận đã chuyển thành nhiệm vụ — sửa trên nhiệm vụ.</span>
                   </div>
-                ) : canApprove ? (
+                ) : meeting.canEdit && canApprove ? (
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => handleConvert(c.id)} disabled={convertingId === c.id}
                       className="text-xs font-bold text-white bg-secondary rounded-lg px-3 py-1.5 disabled:opacity-50">

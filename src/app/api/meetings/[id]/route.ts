@@ -30,10 +30,28 @@ async function getMeetingScopeUnits(user: SessionUser): Promise<string[] | "ALL"
 }
 
 /** Người tạo biên bản hoặc lãnh đạo trong đúng phạm vi đơn vị của biên bản. */
-async function canAccessMeeting(
-  user: SessionUser,
-  meeting: { unitId: string | null; createdById: string | null }
-): Promise<boolean> {
+type MeetingScopeRow = {
+  unitId: string | null;
+  createdById: string | null;
+  conclusions?: Array<{ ownerId: string | null; assigneeIds: string[] }>;
+};
+
+/** Quyền XEM: người tạo, người chủ trì/phối hợp, hoặc thành viên trong phạm vi đơn vị. */
+async function canViewMeeting(user: SessionUser, meeting: MeetingScopeRow): Promise<boolean> {
+  // Danh sách biên bản chặn SYSTEM_ADMIN — chi tiết phải khớp để không lộ dữ liệu nghiệp vụ.
+  if (user.role === "SYSTEM_ADMIN") return false;
+  if (meeting.createdById && meeting.createdById === user.personId) return true;
+  const isConclusionMember = (meeting.conclusions || []).some(
+    (c) => c.ownerId === user.personId || (c.assigneeIds || []).includes(user.personId)
+  );
+  if (isConclusionMember) return true;
+  if (!meeting.unitId) return false;
+  const authorizedUnits = await getAuthorizedUnitIds(user);
+  return authorizedUnits === "ALL" || authorizedUnits.includes(meeting.unitId);
+}
+
+/** Quyền SỬA: người tạo hoặc lãnh đạo trong đúng phạm vi đơn vị của biên bản. */
+async function canEditMeeting(user: SessionUser, meeting: MeetingScopeRow): Promise<boolean> {
   if (meeting.createdById && meeting.createdById === user.personId) return true;
   if (!canManage(user)) return false;
   if (!meeting.unitId) return user.scopeType === "ORGANIZATION";
@@ -52,8 +70,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       include: { conclusions: { orderBy: { sortOrder: "asc" } } },
     });
     if (!meeting) return jsonError("Biên bản không tồn tại", 404);
-    const canEdit = await canAccessMeeting(user, meeting);
-    if (!canEdit) return jsonError("Bạn không có quyền xem biên bản này", 403);
+    if (!(await canViewMeeting(user, meeting))) {
+      return jsonError("Bạn không có quyền xem biên bản này", 403);
+    }
+    const canEdit = await canEditMeeting(user, meeting);
     const personIds = [...new Set(meeting.conclusions.flatMap((c) => [c.ownerId, ...(c.assigneeIds || [])]).filter(Boolean))] as string[];
     const taskIds = [...new Set(meeting.conclusions.map((c) => c.taskId).filter(Boolean))] as string[];
     const [people, tasks] = await Promise.all([
@@ -93,7 +113,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const meeting = await prisma.meeting.findUnique({ where: { id } });
     if (!meeting) return jsonError("Biên bản không tồn tại", 404);
-    if (!(await canAccessMeeting(user, meeting))) {
+    if (!(await canEditMeeting(user, meeting))) {
       return jsonError("Bạn không có quyền thêm kết luận cho biên bản này", 403);
     }
     const body = await req.json();
@@ -130,7 +150,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const meeting = await prisma.meeting.findUnique({ where: { id } });
     if (!meeting) return jsonError("Biên bản không tồn tại", 404);
-    if (!(await canAccessMeeting(user, meeting))) {
+    if (!(await canEditMeeting(user, meeting))) {
       return jsonError("Bạn không có quyền sửa biên bản này", 403);
     }
 
@@ -151,11 +171,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         data.meetingAt = parsed;
       }
       if (chair !== undefined) {
+        if (chair !== null && typeof chair !== "string") return jsonError("Chủ trì không hợp lệ", 400);
         const cleanChair = typeof chair === "string" ? chair.trim() : "";
         if (cleanChair.length > 200) return jsonError("Chủ trì không quá 200 ký tự", 400);
         data.chair = cleanChair || null;
       }
       if (notes !== undefined) {
+        if (notes !== null && typeof notes !== "string") return jsonError("Ghi chú không hợp lệ", 400);
         const cleanNotes = typeof notes === "string" ? notes.trim() : "";
         if (cleanNotes.length > 5000) return jsonError("Ghi chú không quá 5.000 ký tự", 400);
         data.notes = cleanNotes || null;
