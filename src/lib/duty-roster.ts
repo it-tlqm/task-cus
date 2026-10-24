@@ -11,6 +11,19 @@
 export const MAX_EXTRA_SLOTS_PER_POSITION = 12;
 
 /**
+ * E13 / A0 — Ghi chú chỉ thuộc về NGƯỜI được phân công trong ô.
+ * Không cho phép lưu ghi chú cho ô trống (không có người) để tránh "ghi chú mồ côi"
+ * không hiển thị được ở bảng phân công / phiếu ngày / file Excel.
+ */
+export const NOTES_REQUIRE_PERSON_MESSAGE =
+  "Ô chưa có người thực hiện — không thể lưu ghi chú. Hãy phân công người trước.";
+
+/** Ô đã có người thực hiện hay chưa (dùng chung server + client cho quy tắc A0). */
+export function hasAssignedPerson(personId: unknown): boolean {
+  return typeof personId === "string" && personId.trim().length > 0;
+}
+
+/**
  * Nhận diện vị trí "Trực trưa" từ tiêu đề snapshot của phân công.
  * So khớp không dấu, không phân biệt hoa/thường và cho phép tiêu đề có tiền tố
  * (ví dụ: "Trực trưa:", "TRỰC TRƯA — Vị trí cửa Nhập cảnh").

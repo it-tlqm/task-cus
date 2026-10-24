@@ -5,7 +5,12 @@ import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { parseSlots, slotKeyOf } from "@/server/duty-catalog";
 import { primaryUnitOf, resolveDutyUnitId as resolveUnitId } from "@/server/duty-scope";
-import { isNoonDutyTitle, MAX_EXTRA_SLOTS_PER_POSITION } from "@/lib/duty-roster";
+import {
+  hasAssignedPerson,
+  isNoonDutyTitle,
+  MAX_EXTRA_SLOTS_PER_POSITION,
+  NOTES_REQUIRE_PERSON_MESSAGE,
+} from "@/lib/duty-roster";
 
 /**
  * YC-24 PHƯƠNG ÁN B — Bảng phân công định danh theo (BỘ PHẬN + NGÀY + Ô).
@@ -294,11 +299,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { date, personId, positionId, slotOrder, unitId, reason, notes } = body;
-    if (!date || !personId) return jsonError("Ngày và người thực hiện là bắt buộc", 400);
+    // E13 / A0: ghi chú chỉ gắn với người được phân công — không nhận ghi chú cho ô trống.
+    const assignedPersonId = hasAssignedPerson(personId) ? String(personId).trim() : "";
+    const noteText = normalizeNotes(notes);
+    if (noteText && !assignedPersonId) return jsonError(NOTES_REQUIRE_PERSON_MESSAGE, 400);
+    if (!date || !assignedPersonId) return jsonError("Ngày và người thực hiện là bắt buộc", 400);
     if (!unitId) return jsonError("Thiếu bộ phận của bảng phân công", 400);
     const d = parseDayStart(String(date));
     if (!d) return jsonError("Ngày phân công không hợp lệ", 400);
-    const noteText = normalizeNotes(notes);
     if (noteText && noteText.length > MAX_NOTES_LENGTH) {
       return jsonError(`Ghi chú tối đa ${MAX_NOTES_LENGTH} ký tự`, 400);
     }
@@ -307,7 +315,7 @@ export async function POST(req: NextRequest) {
     if (!resolved.ok) return jsonError(resolved.error, resolved.status);
     const targetUnitId = resolved.unitId;
 
-    const person = await prisma.person.findUnique({ where: { id: personId }, select: { id: true, status: true } });
+    const person = await prisma.person.findUnique({ where: { id: assignedPersonId }, select: { id: true, status: true } });
     if (!person || person.status !== "ACTIVE") return jsonError("Cán bộ không tồn tại hoặc đã ngừng hoạt động", 400);
 
     // ---- Trường hợp 1: phân công theo biểu mẫu (có positionId) ----
@@ -339,7 +347,7 @@ export async function POST(req: NextRequest) {
         data: {
           date: d,
           shift: "CA_NGAY",
-          personId,
+          personId: assignedPersonId,
           unitId: targetUnitId,
           notes: noteText,
           reason: reason?.trim() || null,
@@ -358,8 +366,8 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const clash = await leaveClashOf(personId, d);
-      const cross = await crossCountOf(personId, d, targetUnitId, isNoonDutyTitle(position.title));
+      const clash = await leaveClashOf(assignedPersonId, d);
+      const cross = await crossCountOf(assignedPersonId, d, targetUnitId, isNoonDutyTitle(position.title));
       await recordAuditEvent({
         actorId: user.id,
         action: "ROSTER_CREATE",
@@ -368,7 +376,7 @@ export async function POST(req: NextRequest) {
         newData: {
           date: d.toISOString().slice(0, 10),
           unitId: targetUnitId,
-          personId,
+          personId: assignedPersonId,
           positionId: position.id,
           positionCode: position.code,
           slotLabel: slot?.l ?? undefined,
@@ -399,7 +407,7 @@ export async function POST(req: NextRequest) {
         date: d,
         shift,
         post: post?.trim() || null,
-        personId,
+        personId: assignedPersonId,
         unitId: targetUnitId,
         notes: noteText,
         createdById: user.personId,
@@ -409,14 +417,14 @@ export async function POST(req: NextRequest) {
         unit: { select: { id: true, name: true, code: true } },
       },
     });
-    const clash = await leaveClashOf(personId, d);
-    const cross = await crossCountOf(personId, d, targetUnitId, false);
+    const clash = await leaveClashOf(assignedPersonId, d);
+    const cross = await crossCountOf(assignedPersonId, d, targetUnitId, false);
     await recordAuditEvent({
       actorId: user.id,
       action: "ROSTER_CREATE",
       resourceType: "DutyRoster",
       resourceId: created.id,
-      newData: { personId, date: d.toISOString().slice(0, 10), unitId: targetUnitId, shift, post: post || undefined, notes: noteText ?? undefined },
+      newData: { personId: assignedPersonId, date: d.toISOString().slice(0, 10), unitId: targetUnitId, shift, post: post || undefined, notes: noteText ?? undefined },
     });
     return NextResponse.json(
       {
@@ -464,6 +472,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     const data: any = {};
+    // E13 / A0: không bao giờ lưu ghi chú cho dòng không có người thực hiện (chặn cả dữ liệu bất thường).
+    if (notes !== undefined && !hasAssignedPerson(current.personId)) {
+      return jsonError(NOTES_REQUIRE_PERSON_MESSAGE, 400);
+    }
     const auditOld: any = { personId: current.personId, unitId: current.unitId, notes: current.notes };
     const auditNew: any = {};
 
