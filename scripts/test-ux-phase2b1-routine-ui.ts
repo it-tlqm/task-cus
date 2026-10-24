@@ -84,6 +84,31 @@ async function main() {
     });
 
     await page.goto(`${BASE}/routine`, { waitUntil: "networkidle2", timeout: 120000 });
+    // UX 3B: với công chức, form khai báo mặc định thu gọn — mở trước khi thao tác.
+    await page.waitForSelector('[data-testid="routine-declaration-toggle"]', { timeout: 120000 });
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    const toggleCollapsed = await page.$eval(
+      '[data-testid="routine-declaration-toggle"]',
+      (el) => el.getAttribute("aria-expanded")
+    );
+    check(
+      "0. Form khai báo mặc định thu gọn với công chức",
+      toggleCollapsed === "false",
+      `aria-expanded=${toggleCollapsed}`
+    );
+    const panelHidden = await page.$eval(
+      '[data-testid="routine-declaration-panel"]',
+      (el) => el.hasAttribute("hidden")
+    );
+    check("0. Panel khai báo ẩn khi chưa mở", panelHidden === true);
+    await page.click('[data-testid="routine-declaration-toggle"]');
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-testid="routine-declaration-toggle"]')
+          ?.getAttribute("aria-expanded") === "true",
+      { timeout: 30000 }
+    );
     await page.waitForSelector('[data-testid="routine-catalog-picker"]', { timeout: 120000 });
     // Dev server hydrate không đồng bộ; chờ một nhịp trước khi thao tác input có state React.
     await new Promise((resolve) => setTimeout(resolve, 1200));

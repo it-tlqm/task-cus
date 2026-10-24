@@ -5,6 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { formatVnDate, vnDateOnly } from "@/lib/datetime";
+import { getRoutineDeclarationMode } from "@/lib/routine-declaration";
 import RoutineCatalogPicker, { type ProposedProduct, type TxTag } from "./RoutineCatalogPicker";
 
 const SHIFT_LABELS: Record<string, string> = { SANG: "Sáng", CHIEU: "Chiều", CA_NGAY: "Cả ngày" };
@@ -117,6 +118,8 @@ export default function RoutinePage() {
   const [newNotes, setNewNotes] = useState("");
   const [newProgress, setNewProgress] = useState<number>(100);
   const [dynamicFormValues, setDynamicFormValues] = useState<Record<string, any>>({});
+  // UX 3B: form khai báo mặc định thu gọn với vai trò được phép khai báo.
+  const [isDeclarationOpen, setIsDeclarationOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [catalogTemplates, setCatalogTemplates] = useState<Array<{ id: string; code: string; title: string }>>([]);
 
@@ -125,8 +128,11 @@ export default function RoutinePage() {
 
   // Tab 2: Admin Form Builder State
   // Chỉ người có quyền quản trị biểu mẫu / xem audit mới thấy tab 2-3
-  const { can: canPerm, canAudit } = usePermissions();
+  const { can: canPerm, canAudit, user: permissionUser } = usePermissions();
   const canManageForms = canPerm("form.manage");
+  // UX 3B (UI-only): lãnh đạo đơn vị / quản trị hệ thống không khai báo đầu việc.
+  const declarationMode = getRoutineDeclarationMode(permissionUser?.role);
+  const canDeclare = declarationMode !== "HIDDEN";
   const [builderFields, setBuilderFields] = useState<FormFieldDef[]>([]);
   // F19: chi hien truong DN / container khi bieu mau (Form Builder) that su yeu cau.
   // Khong co bieu mau chuyen biet => dung bieu mau ghi nhan co ban, khong ep chi tieu thong quan.
@@ -540,6 +546,9 @@ export default function RoutinePage() {
             {/* Officer Context & Date Header Bar */}
             <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md border border-border-default/50">
               <div className="flex flex-wrap items-center gap-space-md">
+                {/* UX 3B: ngày/ca chỉ dùng cho bản ghi mới — ẩn cùng form với vai trò không khai báo. */}
+                {canDeclare && (
+                <>
                 <div className="flex items-center gap-2 bg-surface-subtle px-3 py-1.5 rounded-lg border border-border-default">
                   <span className="material-symbols-outlined text-secondary text-[20px]">calendar_today</span>
                   <div className="flex flex-col">
@@ -603,6 +612,8 @@ export default function RoutinePage() {
                     </select>
                   </div>
                 </div>
+                </>
+                )}
 
                 <div className="flex items-center gap-3 pl-2">
                   <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-headline-sm font-bold">
@@ -625,20 +636,37 @@ export default function RoutinePage() {
               </div>
             </div>
 
-            {/* Form Thêm Đầu Việc Tác Nghiệp Hàng Ngày */}
+            {/* Form Thêm Đầu Việc Tác Nghiệp Hàng Ngày — UX 3B: ẩn với lãnh đạo, thu gọn với vai trò khai báo */}
+            {canDeclare ? (
             <div data-tour="log-form" className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
-              <div className="flex items-center justify-between border-b border-surface-container pb-space-sm">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[22px]">add_task</span>
-                  <h3 className="font-headline-sm text-headline-sm text-primary">
-                    Khai Báo Đầu Việc Thực Hiện Trong Ca
-                  </h3>
+              <div className="flex flex-col gap-2 border-b border-surface-container pb-space-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="material-symbols-outlined shrink-0 text-secondary text-[22px]">add_task</span>
+                  <div className="flex min-w-0 flex-col">
+                    <h3 className="font-headline-sm text-headline-sm text-primary">
+                      Khai Báo Đầu Việc Thực Hiện Trong Ca
+                    </h3>
+                    <span className="font-label-sm text-label-sm text-outline">
+                      Mặc định thu gọn — danh sách nhật ký bên dưới luôn hiển thị.
+                    </span>
+                  </div>
                 </div>
-                <span className="font-label-sm text-label-sm text-outline">
-                  Dữ liệu được lưu trữ trực tiếp vào cơ sở dữ liệu PostgreSQL
-                </span>
+                <button
+                  type="button"
+                  data-testid="routine-declaration-toggle"
+                  aria-expanded={isDeclarationOpen}
+                  aria-controls="routine-declaration-panel"
+                  onClick={() => setIsDeclarationOpen((open) => !open)}
+                  className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-secondary/40 bg-secondary/5 px-4 py-2 font-label-md font-semibold text-secondary transition-fast hover:bg-secondary/10 active-press sm:w-auto"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {isDeclarationOpen ? "expand_less" : "add_task"}
+                  </span>
+                  <span>{isDeclarationOpen ? "Thu gọn khai báo" : "Khai báo đầu việc"}</span>
+                </button>
               </div>
 
+              <div id="routine-declaration-panel" data-testid="routine-declaration-panel" hidden={!isDeclarationOpen}>
               <form onSubmit={handleAddLog} className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
                 <div className="flex flex-col gap-1 md:col-span-2">
                   <label className="font-label-md text-label-md text-primary font-semibold">
@@ -811,38 +839,63 @@ export default function RoutinePage() {
                   />
                 </div>
 
-                <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-space-sm pt-2">
-                  <button
-                    type="button"
-                    data-testid="routine-no-violation"
-                    disabled={isSubmitting || !entryWorkDate}
-                    onClick={() => handleConfirmNotOccurred("NO_VIOLATION")}
-                    className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-status-warning">check_circle</span>
-                    <span>Ca không phát sinh vụ việc vi phạm/tồn đọng</span>
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="routine-no-activity"
-                    disabled={isSubmitting || !entryWorkDate}
-                    onClick={() => handleConfirmNotOccurred("NO_ACTIVITY")}
-                    className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-outline">bedtime</span>
-                    <span>Ca không có hoạt động tác nghiệp</span>
-                  </button>
+                <div className="md:col-span-2 flex flex-wrap items-center justify-end gap-space-sm pt-2">
                   <button
                     type="submit"
                     disabled={isSubmitting || !entryWorkDate}
-                    className="px-6 py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-2 disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
                   >
                     <span className="material-symbols-outlined text-[18px]">save</span>
                     <span>{isSubmitting ? "Đang lưu..." : "Lưu vào sổ nhật ký tác nghiệp"}</span>
                   </button>
                 </div>
               </form>
+              </div>
+
+              {/* Xác nhận 1-chạm giữ NGOÀI panel thu gọn để vẫn dùng được khi form đang đóng. */}
+              <div className="flex flex-wrap items-center gap-space-sm border-t border-surface-container pt-space-sm">
+                <span className="w-full font-label-sm text-label-sm text-on-surface-variant sm:mr-auto sm:w-auto">
+                  Không có đầu việc trong ca?
+                </span>
+                <button
+                  type="button"
+                  data-testid="routine-no-violation"
+                  disabled={isSubmitting || !entryWorkDate}
+                  onClick={() => handleConfirmNotOccurred("NO_VIOLATION")}
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined shrink-0 text-[18px] text-status-warning">check_circle</span>
+                  <span>Ca không phát sinh vụ việc vi phạm/tồn đọng</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="routine-no-activity"
+                  disabled={isSubmitting || !entryWorkDate}
+                  onClick={() => handleConfirmNotOccurred("NO_ACTIVITY")}
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined shrink-0 text-[18px] text-outline">bedtime</span>
+                  <span>Ca không có hoạt động tác nghiệp</span>
+                </button>
+              </div>
             </div>
+            ) : (
+              <div
+                role="note"
+                data-testid="routine-declaration-hidden"
+                className="flex items-start gap-3 rounded-xl border border-border-default/50 bg-surface-container-lowest p-space-md shadow-sm"
+              >
+                <span className="material-symbols-outlined shrink-0 text-[22px] text-outline">visibility</span>
+                <div className="flex flex-col gap-0.5">
+                  <p className="font-body-semibold text-body-semibold text-primary">
+                    Tài khoản lãnh đạo đơn vị không khai báo đầu việc trong ca.
+                  </p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    Danh sách nhật ký bên dưới vẫn hiển thị đầy đủ để theo dõi.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Bảng Danh Sách Nhật Ký Đã Ghi Nhận */}
             <div data-tour="log-list" className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
@@ -925,9 +978,11 @@ export default function RoutinePage() {
                               Chưa có nhật ký nào được ghi nhận cho{" "}
                               {filterAllDates ? "bất kỳ ngày nào" : "ngày đang lọc"}
                             </p>
-                            <p className="text-xs text-outline">
-                              Đồng chí có thể nhập nội dung thực tế ở form trên hoặc bấm "Xác nhận 1-chạm không phát sinh".
-                            </p>
+                            {canDeclare && (
+                              <p className="text-xs text-outline">
+                                Đồng chí có thể nhập nội dung thực tế ở form trên hoặc bấm "Xác nhận 1-chạm không phát sinh".
+                              </p>
+                            )}
                           </div>
                         </td>
                       </tr>
