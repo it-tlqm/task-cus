@@ -303,6 +303,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           taskCode: (task as any).code,
           idempotencyKey: `EVENT_MEET_CONV_${conclusionId}_${ownerId}`,
         });
+        // Công chức phối hợp cũng phải biết mình được giao việc từ biên bản.
+        for (const pId of assignees) {
+          if (pId === ownerId) continue;
+          await createNotification({
+            recipientId: pId,
+            category: "task", type: "TASK_ASSIGNED",
+            title: `Nhiệm vụ phối hợp từ giao ban: [${(task as any).code}]`,
+            content: `Kết luận giao ban "${meeting.title}" giao bạn phối hợp thực hiện: '${concl.content.slice(0, 120)}'`,
+            tag: "PHỐI HỢP", tagType: "primary",
+            entityType: "TASK", entityId: (task as any).id,
+            actionUrl: `/tasks/${(task as any).id}`, actionLabel: "Xem và nhận việc",
+            taskCode: (task as any).code,
+            idempotencyKey: `EVENT_MEET_CONV_${conclusionId}_${pId}`,
+          });
+        }
       } catch {}
       return NextResponse.json({ success: true, message: "Đã chuyển kết luận thành nhiệm vụ!", data: task }, { status: 201 });
     }

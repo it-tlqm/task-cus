@@ -610,11 +610,20 @@ export async function PATCH(
 
     // YC-01/YC-03: thêm/bớt người phối hợp khi sửa (bỏ trùng, bỏ chủ trì)
     let assigneesChanged = false;
+    let addedAssigneeIds: string[] = [];
     if (assigneeIds !== undefined && Array.isArray(assigneeIds)) {
       const effectiveOwner = updateData.ownerId || currentTask.ownerId;
       const clean = [...new Set(assigneeIds.filter((x) => typeof x === "string").map((x) => x.trim()).filter(Boolean))].filter(
         (pId) => pId !== effectiveOwner
       );
+      // Chỉ báo cho người MỚI được bổ sung, không làm ồn người đã phối hợp từ trước.
+      // Người chỉ có quyền VIEWER trước đó nay thành phối hợp viên thì vẫn cần biết.
+      const previousCollaboratorIds = new Set(
+        (currentTask.assignees || [])
+          .filter((a: any) => a.role !== "VIEWER")
+          .map((a: any) => a.personId)
+      );
+      addedAssigneeIds = clean.filter((pId) => !previousCollaboratorIds.has(pId));
       await prisma.taskAssignee.deleteMany({ where: { taskId } });
       if (clean.length > 0) {
         await prisma.taskAssignee.createMany({
@@ -726,6 +735,28 @@ export async function PATCH(
         progressPercent: effectiveProgress,
       },
     });
+
+    // Bổ sung người phối hợp: chỉ báo người mới, mỗi người một lần.
+    if (assigneesChanged && addedAssigneeIds.length > 0) {
+      for (const pId of addedAssigneeIds) {
+        if (pId === user.personId) continue;
+        await createNotification({
+          recipientId: pId,
+          category: "task",
+          type: "TASK_ASSIGNED",
+          title: `Nhiệm vụ phối hợp: [${updatedTask.code}] ${updatedTask.title}`,
+          content: `Đồng chí được bổ sung làm người phối hợp thực hiện nhiệm vụ '${updatedTask.title}'. Hạn hoàn thành: ${new Date(updatedTask.currentDeadline).toLocaleDateString("vi-VN")}.`,
+          tag: "PHỐI HỢP",
+          tagType: "primary",
+          entityType: "TASK",
+          entityId: updatedTask.id,
+          actionUrl: `/tasks/${updatedTask.id}`,
+          actionLabel: "Xem chi tiết nhiệm vụ",
+          taskCode: updatedTask.code,
+          idempotencyKey: `EVENT_TASK_COLLAB_ADDED_${updatedTask.id}_${pId}`,
+        });
+      }
+    }
 
     if (status === "COMPLETED" || status === "DONE") {
       await createNotification({
