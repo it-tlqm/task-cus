@@ -123,10 +123,18 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                 <th className="px-3 py-2 font-semibold text-left w-[32%] min-w-[220px]">Chỉ tiêu</th>
                 <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[120px]">Trong ngày</th>
                 <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[120px]">Tuần</th>
-                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[140px] bg-secondary/10 text-secondary">
+                <th
+                  className="px-2 py-2 font-bold text-right border-l border-border-default/30 min-w-[140px] bg-primary/10 text-primary"
+                  data-testid="dash-cum-header-month"
+                >
                   {monthLabel}
                 </th>
-                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[140px]">Lũy kế năm</th>
+                <th
+                  className="px-2 py-2 font-bold text-right border-l border-border-default/30 min-w-[140px] bg-primary/10 text-primary"
+                  data-testid="dash-cum-header-year"
+                >
+                  Lũy kế năm
+                </th>
                 <th className="px-2 py-2 font-semibold text-center border-l border-border-default/30 min-w-[130px]">Trạng thái</th>
               </tr>
             </thead>
@@ -150,8 +158,11 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                           {COLS.map((c) => (
                             <td
                               key={c}
+                              data-testid={c === "month" || c === "year" ? `dash-cum-${c}-${m.code}` : undefined}
                               className={`px-2 py-2 text-right tabular-nums border-l border-border-default/20 ${
-                                c === "month" ? "bg-secondary/5 font-semibold" : ""
+                                c === "month" || c === "year"
+                                  ? "bg-primary/5 font-bold text-primary"
+                                  : ""
                               }`}
                             >
                               {m.cols[c] === null ? (
@@ -178,7 +189,14 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                           <tr key={m.id + cc.classificationId} className="border-b border-border-default/20 bg-surface-container-lowest/60">
                             <td className="px-3 py-1.5 pl-8 text-on-surface-variant">↳ {cc.label}</td>
                             {COLS.map((c) => (
-                              <td key={c} className="px-2 py-1.5 text-right tabular-nums text-on-surface-variant border-l border-border-default/20">
+                              <td
+                                key={c}
+                                className={`px-2 py-1.5 text-right tabular-nums border-l border-border-default/20 ${
+                                  c === "month" || c === "year"
+                                    ? "bg-primary/5 font-semibold text-primary"
+                                    : "text-on-surface-variant"
+                                }`}
+                              >
                                 {cc.cols[c] === null ? (
                                   <span className="text-on-surface-variant" title="Chưa nhập">
                                     —

@@ -1,5 +1,5 @@
 /**
- * test-v3-ux-phase1.ts — Kiểm thử tĩnh cho UX Phase 1 (Task 2 + Task 3).
+ * test-v3-ux-phase1.ts — Kiểm thử tĩnh cho UX Phase 1 (Task 2 + Task 3 + Task 4).
  *
  * Chạy KHÔNG cần DB / server:
  *   npx tsx scripts/test-v3-ux-phase1.ts
@@ -10,6 +10,8 @@
  *  3. /my-work có tab WAITING_ACCEPT, deep-link sau mount và nút nhận việc nhanh.
  *  4. Thông báo nhắc ca trực đã rút gọn nhưng giữ nguyên phân loại/action/idempotency.
  *  5. /routine có cột người thực hiện; /roster thu gọn cảnh báo phân công mặc định.
+ *  6. Dashboard: 4 nút kỳ chia đều desktop/mobile, select kỳ CSDL có trạng thái rỗng,
+ *     cột Lũy kế tháng/năm được làm nổi bật tĩnh trên bảng chỉ tiêu.
  */
 import fs from "fs";
 import path from "path";
@@ -271,6 +273,70 @@ check(
   /showWarnings && \([\s\S]{0,600}warnings\.slice\(0, 8\)[\s\S]{0,300}warnings\.length - 8/.test(rosterPage)
 );
 check("T3. Giữ dòng đếm cảnh báo trong ngày ở day view", rosterPage.includes("cảnh báo trong ngày"));
+
+// ---------------------------------------------------------------- 6. Task 4: kỳ dashboard + lũy kế
+const dashboardPage = fs.readFileSync(path.resolve("src/app/dashboard/page.tsx"), "utf8");
+check(
+  "T4. Dải kỳ desktop chia đều 4 cột",
+  dashboardPage.includes("grid flex-1 grid-cols-4 gap-1")
+);
+check(
+  "T4. Dải kỳ mobile chia đều 4 cột",
+  dashboardPage.includes("grid w-full grid-cols-4")
+);
+check(
+  "T4. Giữ nhãn tuần/tháng động ở cả desktop và mobile",
+  (dashboardPage.match(/\{periodLabels\.weekShort\}/g) || []).length >= 2 &&
+    (dashboardPage.match(/\{periodLabels\.monthShort\}/g) || []).length >= 2
+);
+check(
+  "T4. Select kỳ CSDL dùng giá trị suy ra từ availablePeriods",
+  dashboardPage.includes(
+    'const selectedDbPeriodValue = availablePeriods.some((p) => p.id === period) ? period : "";'
+  )
+);
+check(
+  "T4. Không còn select gán trực tiếp value={period}",
+  !dashboardPage.includes("value={period}")
+);
+check(
+  "T4. Select kỳ CSDL có trạng thái rỗng Kỳ khác… ở cả 2 bản",
+  (dashboardPage.match(/Kỳ khác…/g) || []).length >= 2
+);
+check(
+  "T4. Chọn kỳ CSDL vẫn cập nhật period",
+  (dashboardPage.match(/if \(e\.target\.value\) setPeriod\(e\.target\.value\);/g) || []).length >= 2
+);
+check(
+  "T4. Giữ test id riêng cho select desktop/mobile",
+  dashboardPage.includes('data-testid="dashboard-period-select-desktop"') &&
+    dashboardPage.includes('data-testid="dashboard-period-select-mobile"')
+);
+
+const taxSummary = fs.readFileSync(
+  path.resolve("src/components/dashboard/TaxSummarySection.tsx"),
+  "utf8"
+);
+check(
+  "T4. Hai tiêu đề cột lũy kế tháng/năm dùng nền primary nhẹ",
+  (taxSummary.match(/bg-primary\/10 text-primary/g) || []).length === 2
+);
+check(
+  "T4. Ô số lũy kế chữ đậm + màu primary",
+  taxSummary.includes("bg-primary/5 font-bold text-primary") &&
+    taxSummary.includes("bg-primary/5 font-semibold text-primary")
+);
+check(
+  "T4. Có data-testid cho ô lũy kế tháng/năm",
+  taxSummary.includes("`dash-cum-${c}-${m.code}`") &&
+    taxSummary.includes('data-testid="dash-cum-header-month"') &&
+    taxSummary.includes('data-testid="dash-cum-header-year"')
+);
+check("T4. Lũy kế không dùng hiệu ứng nhấp nháy", !taxSummary.includes("animate-"));
+check(
+  "T4. Giữ cuộn ngang bảng chỉ tiêu",
+  taxSummary.includes("overflow-x-auto") && taxSummary.includes("min-w-[820px]")
+);
 
 console.log("\n========================================");
 console.log(`KẾT QUẢ: ${passed} pass / ${failed} fail`);

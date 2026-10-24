@@ -99,6 +99,9 @@ export default function DashboardPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isAdminBlocked, setIsAdminBlocked] = useState(false);
   const periodLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
+  // Kỳ nhanh (today/week/month/all) không phải bản ghi CSDL — select chỉ giữ
+  // giá trị khi period thực sự là một ReportingPeriod.id, tránh value trỏ option không tồn tại.
+  const selectedDbPeriodValue = availablePeriods.some((p) => p.id === period) ? period : "";
   const { canAssign, canExport, canApprove } = usePermissions();
 
   // Quick Task Assign Modal State
@@ -374,10 +377,10 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center justify-between gap-space-md pt-space-sm bg-surface-container-low/60 p-space-md rounded-lg">
             {/* Period Selector Segmented & Dynamic Dropdown */}
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm border border-border-default/40">
+              <div className="grid flex-1 grid-cols-4 gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm border border-border-default/40 min-w-[420px] max-w-[520px]">
                 <button
                   onClick={() => setPeriod("today")}
-                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "today"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
@@ -387,7 +390,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setPeriod("week")}
-                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "week"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
@@ -397,7 +400,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setPeriod("month")}
-                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "month"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
@@ -407,7 +410,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setPeriod("all")}
-                  className={`px-3 py-1.5 rounded-lg text-label-md font-label-md transition-fast ${
+                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "all"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
@@ -420,13 +423,18 @@ export default function DashboardPage() {
               {availablePeriods.length > 0 && (
                 <div className="relative">
                   <select
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
+                    value={selectedDbPeriodValue}
+                    onChange={(e) => {
+                      if (e.target.value) setPeriod(e.target.value);
+                    }}
+                    aria-label="Chọn kỳ báo cáo từ CSDL"
+                    data-testid="dashboard-period-select-desktop"
                     className="h-9 px-3 pr-8 rounded-lg bg-surface-container-lowest font-body-semibold text-body-semibold text-primary border border-border-default focus:outline-none cursor-pointer shadow-sm text-xs"
                     title="Chọn kỳ báo cáo từ CSDL PostgreSQL"
                   >
-                    <option value="all">-- Chọn kỳ CSDL (Toàn bộ) --</option>
-                    <option value="today">Hôm nay</option>
+                    <option value="" disabled>
+                      Kỳ khác…
+                    </option>
                     {availablePeriods.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.title}
@@ -870,10 +878,10 @@ export default function DashboardPage() {
 
           {/* Quick Period Pill Switcher & Dynamic Dropdown */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex p-1 bg-surface-container-highest rounded-lg gap-1">
+            <div className="grid w-full grid-cols-4 p-1 bg-surface-container-highest rounded-lg gap-1">
               <button
                 onClick={() => setPeriod("today")}
-                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                className={`min-w-0 px-1 py-1.5 text-center font-label-md text-label-md leading-tight rounded transition-fast text-[11px] ${
                   period === "today"
                     ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                     : "text-on-surface-variant hover:text-primary"
@@ -883,7 +891,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => setPeriod("week")}
-                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                className={`min-w-0 px-1 py-1.5 text-center font-label-md text-label-md leading-tight rounded transition-fast text-[11px] ${
                   period === "week"
                     ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                     : "text-on-surface-variant hover:text-primary"
@@ -893,7 +901,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => setPeriod("month")}
-                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                className={`min-w-0 px-1 py-1.5 text-center font-label-md text-label-md leading-tight rounded transition-fast text-[11px] ${
                   period === "month"
                     ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                     : "text-on-surface-variant hover:text-primary"
@@ -903,7 +911,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => setPeriod("all")}
-                className={`flex-1 py-1.5 text-center font-label-md text-label-md rounded transition-fast text-xs ${
+                className={`min-w-0 px-1 py-1.5 text-center font-label-md text-label-md leading-tight rounded transition-fast text-[11px] ${
                   period === "all"
                     ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
                     : "text-on-surface-variant hover:text-primary"
@@ -914,12 +922,17 @@ export default function DashboardPage() {
             </div>
             {availablePeriods.length > 0 && (
               <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                value={selectedDbPeriodValue}
+                onChange={(e) => {
+                  if (e.target.value) setPeriod(e.target.value);
+                }}
+                aria-label="Chọn kỳ báo cáo từ CSDL"
+                data-testid="dashboard-period-select-mobile"
                 className="w-full bg-surface-container-highest px-2 py-1.5 rounded text-primary text-xs font-semibold focus:outline-none"
               >
-                <option value="all">Toàn bộ nhiệm vụ</option>
-                <option value="today">Hôm nay</option>
+                <option value="" disabled>
+                  Kỳ khác…
+                </option>
                 {availablePeriods.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.title}
