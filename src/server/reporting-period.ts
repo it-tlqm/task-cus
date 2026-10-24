@@ -182,6 +182,125 @@ export async function resolveReportingPeriod(input: ResolveReportingPeriodInput)
   }
 }
 
+const VN_OFFSET_MS = 7 * 3600_000;
+
+function vnDateIsoFromInstant(date: Date): string {
+  return vnDateIso(getVnDateParts(date));
+}
+
+function isoWeekForVnDate(dateIso: string) {
+  const parsed = parseDateOnly(dateIso);
+  if (!parsed.ok || !parsed.value) {
+    throw new ReportingPeriodError(parsed.ok ? "Ngày làm việc không hợp lệ" : parsed.message);
+  }
+  const parts = getVnDateParts(parsed.value);
+  return getIsoWeekFromDate(createVnDate(parts.year, parts.month, parts.day, 12, 0, 0, 0));
+}
+
+/**
+ * Khoảng NGÀY LỊCH Việt Nam của một kỳ.
+ * - `endAt` exclusive đúng 00:00 VN được lùi 1ms để lấy ngày Chủ nhật cuối kỳ.
+ * - Dữ liệu cũ lưu endAt lệch múi giờ (VD Chủ nhật 23:59Z) vẫn được quy đổi
+ *   trung thực sang ngày VN; caller phải kiểm tra thêm alignment nếu là kỳ tuần.
+ */
+export function getReportingPeriodVnDateRange(period: { startAt: Date; endAt: Date }): {
+  startDate: string;
+  endDate: string;
+} {
+  let effectiveEnd = period.endAt;
+  const endVn = new Date(period.endAt.getTime() + VN_OFFSET_MS);
+  const isVnMidnight =
+    endVn.getUTCHours() === 0 &&
+    endVn.getUTCMinutes() === 0 &&
+    endVn.getUTCSeconds() === 0 &&
+    endVn.getUTCMilliseconds() === 0;
+  if (isVnMidnight && period.endAt.getTime() > period.startAt.getTime()) {
+    effectiveEnd = new Date(period.endAt.getTime() - 1);
+  }
+  return {
+    startDate: vnDateIsoFromInstant(period.startAt),
+    endDate: vnDateIsoFromInstant(effectiveEnd),
+  };
+}
+
+/** Kỳ có đúng khoảng ngày VN của tuần ISO chứa `dateIso` hay không. */
+export function isPeriodAlignedToIsoWeek(
+  period: { startAt: Date; endAt: Date },
+  week: { startAt: Date; endInclusive: Date }
+): boolean {
+  const range = getReportingPeriodVnDateRange(period);
+  return (
+    range.startDate === vnDateIsoFromInstant(week.startAt) &&
+    range.endDate === vnDateIsoFromInstant(week.endInclusive)
+  );
+}
+
+/**
+ * Ngày làm việc có thực sự thuộc kỳ theo LỊCH VN hay không.
+ * Với kỳ WEEK, yêu cầu thêm khoảng ngày khớp tuần ISO của ngày đó — chặn dữ liệu
+ * cũ có endAt lệch múi giờ (Chủ nhật 23:59Z) nuốt sang Thứ Hai tuần sau.
+ */
+export function isVnDateWithinReportingPeriod(
+  period: { type: string; startAt: Date; endAt: Date },
+  dateIso: string
+): boolean {
+  const parsed = parseDateOnly(dateIso);
+  if (!parsed.ok || !parsed.value) return false;
+  const normalized = parsed.value.toISOString().slice(0, 10);
+  const range = getReportingPeriodVnDateRange(period);
+  if (normalized < range.startDate || normalized > range.endDate) return false;
+  if (period.type === "WEEK") {
+    return isPeriodAlignedToIsoWeek(period, isoWeekForVnDate(dateIso));
+  }
+  return true;
+}
+
+/**
+ * Phân giải kỳ TUẦN chứa đúng ngày VN.
+ *
+ * `resolveReportingPeriod` chọn kỳ chồng lấn gần nhất — với dữ liệu cũ có endAt
+ * lệch múi giờ, kỳ tuần trước có thể chồng lấn 7 giờ sang Thứ Hai. Helper này xác
+ * thực lại khoảng ngày VN và tạo kỳ tuần ISO đúng nếu dữ liệu cũ không khớp.
+ * Chỉ dùng cho gán nhật ký; không thay đổi công thức/kỳ của module khác.
+ */
+export async function resolveReportingWeekContainingVnDate(dateIso: string) {
+  const expected = isoWeekForVnDate(dateIso);
+  const resolved = await resolveReportingPeriod({ type: "WEEK", date: dateIso });
+  if (isPeriodAlignedToIsoWeek(resolved, expected)) return resolved;
+
+  const candidates = await prisma.reportingPeriod.findMany({
+    where: {
+      type: "WEEK",
+      startAt: { lte: expected.endInclusive },
+      endAt: { gte: expected.startAt },
+    },
+    orderBy: { startAt: "asc" },
+  });
+  const matched = candidates.find((candidate) =>
+    isPeriodAlignedToIsoWeek(candidate, expected)
+  );
+  if (matched) return matched;
+
+  try {
+    return await prisma.reportingPeriod.create({
+      data: {
+        type: "WEEK",
+        title: expected.standardTitle,
+        startAt: expected.startAt,
+        endAt: expected.endInclusive,
+        dueAt: new Date(expected.endInclusive.getTime() - 4 * 3600000),
+      },
+    });
+  } catch (error: any) {
+    if (error?.code === "P2002") {
+      throw new ReportingPeriodError(
+        `Kỳ tuần ${expected.standardTitle} đã tồn tại nhưng khoảng ngày không khớp lịch VN — cần quản trị sửa kỳ trước khi ghi nhật ký.`
+      );
+    }
+    throw error;
+  }
+}
+
 export function currentVnDateIso(): string {
   return vnDateIso(getVnDateParts(new Date()));
 }

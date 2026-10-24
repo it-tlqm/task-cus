@@ -159,6 +159,25 @@ async function main() {
       { timeout: 30000 }
     );
 
+    // Ngày ghi nhận rỗng không được âm thầm fallback về hôm nay.
+    await page.evaluate(() => {
+      const input = document.querySelector('[data-testid="routine-entry-date"]') as HTMLInputElement;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+      setter.call(input, "");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await page.waitForSelector('[data-testid="routine-entry-date-required"]', { timeout: 30000 });
+    const dateRequired = await page.$eval('[data-testid="routine-entry-date"]', (el: any) => el.required);
+    check("1e. Ngày ghi nhận rỗng bị chặn (required + cảnh báo)", dateRequired === true);
+    await page.evaluate(() => {
+      document.querySelector<HTMLButtonElement>('[data-testid="routine-entry-date-today"]')?.click();
+    });
+    await page.waitForFunction(
+      () => !document.querySelector('[data-testid="routine-entry-date-required"]'),
+      { timeout: 30000 }
+    );
+
     for (const entry of txEntries) {
       await page.click('[data-testid="routine-tx-search"]');
       await page.type('[data-testid="routine-tx-search"]', entry.code);

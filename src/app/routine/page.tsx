@@ -87,6 +87,7 @@ export default function RoutinePage() {
   const [filterDate, setFilterDate] = useState(() => vnDateOnly());
   const [filterAllDates, setFilterAllDates] = useState(false);
   const [entries, setEntries] = useState<WorkLogEntry[]>([]);
+  const [hasMoreEntries, setHasMoreEntries] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{
     fullName: string;
@@ -196,6 +197,7 @@ export default function RoutinePage() {
           formVersion: item.formVersion,
         }));
         setEntries(loaded);
+        setHasMoreEntries(Boolean(data.hasMore));
       }
 
       if (data.activeFormVersion) {
@@ -264,6 +266,10 @@ export default function RoutinePage() {
   // Handle Submit New Routine Log
   const handleAddLog = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!entryWorkDate) {
+      toast.error("Vui lòng chọn ngày ghi nhận — không để trống");
+      return;
+    }
     if (!newTitle.trim()) {
       toast.error("Vui lòng nhập nội dung công việc tác nghiệp thực tế");
       return;
@@ -328,6 +334,10 @@ export default function RoutinePage() {
   //  1) Ca khong phat sinh VU VIE vi pham / ton dong
   //  2) Ca khong co hoat dong tac nghiep nao
   const handleConfirmNotOccurred = async (kind: "NO_VIOLATION" | "NO_ACTIVITY") => {
+    if (!entryWorkDate) {
+      toast.error("Vui lòng chọn ngày ghi nhận — không để trống");
+      return;
+    }
     const isNoActivity = kind === "NO_ACTIVITY";
     const defaultTitle = isNoActivity
       ? "Xác nhận: ca trực không có hoạt động tác nghiệp"
@@ -539,12 +549,13 @@ export default function RoutinePage() {
                     <div className="flex items-center gap-2">
                       <input
                         type="date"
+                        required
                         data-testid="routine-entry-date"
                         value={entryWorkDate}
                         onChange={(e) => setEntryWorkDate(e.target.value)}
                         className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
                       />
-                      {entryWorkDate !== vnDateOnly() && (
+                      {(!entryWorkDate || entryWorkDate !== vnDateOnly()) && (
                         <button
                           type="button"
                           data-testid="routine-entry-date-today"
@@ -555,7 +566,15 @@ export default function RoutinePage() {
                         </button>
                       )}
                     </div>
-                    {entryWorkDate !== vnDateOnly() && (
+                    {!entryWorkDate && (
+                      <span
+                        data-testid="routine-entry-date-required"
+                        className="text-[10px] text-status-danger font-semibold"
+                      >
+                        Ngày ghi nhận là bắt buộc.
+                      </span>
+                    )}
+                    {entryWorkDate && entryWorkDate !== vnDateOnly() && (
                       <span
                         data-testid="routine-entry-date-warning"
                         className="text-[10px] text-status-warning"
@@ -796,7 +815,7 @@ export default function RoutinePage() {
                   <button
                     type="button"
                     data-testid="routine-no-violation"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !entryWorkDate}
                     onClick={() => handleConfirmNotOccurred("NO_VIOLATION")}
                     className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
                   >
@@ -806,7 +825,7 @@ export default function RoutinePage() {
                   <button
                     type="button"
                     data-testid="routine-no-activity"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !entryWorkDate}
                     onClick={() => handleConfirmNotOccurred("NO_ACTIVITY")}
                     className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
                   >
@@ -815,7 +834,7 @@ export default function RoutinePage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !entryWorkDate}
                     className="px-6 py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-2 disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[18px]">save</span>
@@ -867,6 +886,14 @@ export default function RoutinePage() {
                   <span className="text-xs text-outline">
                     {entries.length} bản ghi {filterAllDates ? "đã nạp" : "trong ngày"}
                   </span>
+                  {filterAllDates && hasMoreEntries && (
+                    <span
+                      data-testid="routine-list-truncated"
+                      className="text-[11px] text-status-warning"
+                    >
+                      Chỉ hiển thị {entries.length} bản ghi gần nhất — thu hẹp ngày để xem thêm.
+                    </span>
+                  )}
                 </div>
               </div>
 

@@ -7,8 +7,10 @@ import { recordAuditEvent } from "@/server/audit";
 import { getIsoWeekFromDate } from "@/lib/period-helper";
 import { parseDateOnly, todayInVietnam } from "@/server/work-dates";
 import { getCatalogEntrySelectionError } from "@/server/work-catalog";
-import { resolveReportingPeriod } from "@/server/reporting-period";
-import { isDateWithinPeriod } from "@/lib/period-helper";
+import {
+  isVnDateWithinReportingPeriod,
+  resolveReportingWeekContainingVnDate,
+} from "@/server/reporting-period";
 
 export async function GET(req: NextRequest) {
   try {
@@ -75,7 +77,16 @@ export async function GET(req: NextRequest) {
 
     const targetPersonId = user.scopeType === "OWN" ? user.personId : (personId || undefined);
 
-    const entries = await prisma.routineEntry.findMany({
+    // UX 2B1: chế độ "Tất cả ngày" không được trả toàn bộ lịch sử.
+    // Khi không có workDate/from/to (và không query 1 id), cap mặc định 500,
+    // cho phép client hạ bằng ?limit=1..500; trả hasMore để UI hiển thị ghi chú.
+    const isUnboundedList = !id && !workDateExact && !workDateFrom && !workDateTo;
+    const requestedLimitRaw = Number.parseInt(searchParams.get("limit") || "", 10);
+    const requestedLimit =
+      Number.isFinite(requestedLimitRaw) && requestedLimitRaw > 0 ? requestedLimitRaw : 500;
+    const unboundedLimit = isUnboundedList ? Math.min(requestedLimit, 500) : null;
+
+    const rawEntries = await prisma.routineEntry.findMany({
       where: {
         ...unitFilter,
         ...(id ? { id } : {}),
@@ -132,8 +143,12 @@ export async function GET(req: NextRequest) {
           orderBy: { submittedAt: "desc" },
         },
       },
+      take: unboundedLimit ? unboundedLimit + 1 : undefined,
       orderBy: { createdAt: "desc" },
     });
+
+    const hasMore = unboundedLimit !== null && rawEntries.length > unboundedLimit;
+    const entries = hasMore ? rawEntries.slice(0, unboundedLimit!) : rawEntries;
 
     // Lấy phiên bản biểu mẫu động đang hoạt động (ACTIVE / PUBLISHED)
     const activeFormVersion =
@@ -236,6 +251,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       entries: formattedEntries,
+      hasMore,
+      limit: unboundedLimit,
       activeFormVersion: activeFormVersion
         ? {
             id: activeFormVersion.id,
@@ -285,6 +302,18 @@ export async function POST(req: NextRequest) {
       notOccurredKind = null, // NO_VIOLATION | NO_ACTIVITY
       dataOrigin = null,     // REAL | DEMO
     } = body;
+
+    // UX 2B1: nếu client gửi field workDate thì không được rỗng (UI luôn gửi ngày cụ thể).
+    // Bỏ hẳn field vẫn giữ hành vi cũ (mặc định hôm nay) cho client legacy.
+    const hasWorkDateField = Object.prototype.hasOwnProperty.call(body, "workDate");
+    if (
+      hasWorkDateField &&
+      (inputWorkDate === null ||
+        inputWorkDate === undefined ||
+        String(inputWorkDate).trim() === "")
+    ) {
+      return jsonError("Ngày làm việc là bắt buộc — vui lòng chọn ngày ghi nhận", 400);
+    }
 
     // V3 UX 2B1 — xác thực N tag TX ở phía máy chủ.
     // `catalogEntryId` cũ vẫn được nhận. UI gửi cả hai (tag đầu trùng với tag cũ)
@@ -473,60 +502,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Xác định kỳ báo cáo
-    // UX 2B1: khi client gửi ngày làm việc, kỳ PHẢI tương ứng với ngày đó.
-    // - Có periodId: chấp nhận nếu ngày nằm trong kỳ, ngược lại từ chối.
-    // - Không có periodId: phân giải kỳ tuần từ chính ngày đó bằng helper hiện hành.
-    // - Không gửi workDate: giữ nguyên hành vi cũ để backward-compatible.
-    let periodId = inputPeriodId;
-    if (hasExplicitWorkDate) {
-      if (inputPeriodId) {
-        const suppliedPeriod = await prisma.reportingPeriod.findUnique({
-          where: { id: inputPeriodId },
-          select: { id: true, title: true, startAt: true, endAt: true },
-        });
-        if (!suppliedPeriod) return jsonError("Kỳ báo cáo không tồn tại", 400);
-        if (!isDateWithinPeriod(workDate, suppliedPeriod.startAt, suppliedPeriod.endAt)) {
-          return jsonError(
-            `Ngày làm việc ${workDateIso} không thuộc kỳ "${suppliedPeriod.title}" — vui lòng chọn kỳ tương ứng`,
-            400
-          );
-        }
-        periodId = suppliedPeriod.id;
-      } else {
-        const resolvedPeriod = await resolveReportingPeriod({
-          type: "WEEK",
-          date: workDateIso,
-        });
-        periodId = resolvedPeriod.id;
-      }
-    }
-
-    if (!periodId) {
-      const activePeriod = await prisma.reportingPeriod.findFirst({
-        where: { type: "WEEK" },
-        orderBy: { startAt: "desc" },
-      });
-      if (activePeriod) {
-        periodId = activePeriod.id;
-      } else {
-        const currentIsoWeek = getIsoWeekFromDate(new Date());
-        // Upsert theo unique (type, title): 2 request đồng thời không tạo trùng kỳ
-        const newPeriod = await prisma.reportingPeriod.upsert({
-          where: { type_title: { type: "WEEK", title: currentIsoWeek.standardTitle } },
-          update: {},
-          create: {
-            type: "WEEK",
-            title: currentIsoWeek.standardTitle,
-            startAt: currentIsoWeek.startAt,
-            endAt: currentIsoWeek.endInclusive,
-            dueAt: new Date(currentIsoWeek.endInclusive.getTime() - 4 * 3600000),
-          },
-        });
-        periodId = newPeriod.id;
-      }
-    }
-
+    // 2. Xác định người/bộ phận TRƯỚC khi tạo kỳ mới (tránh kỳ mồ côi khi 400).
     const targetPersonId = user.personId;
     const targetUnitId = user.unitId;
 
@@ -535,13 +511,6 @@ export async function POST(req: NextRequest) {
         { error: "Tài khoản chưa được gán bộ phận công tác" },
         { status: 400 }
       );
-    }
-
-    // E1: kỳ đã chốt thì khóa ghi nhật ký mới
-    try {
-      await assertPeriodWritable(periodId);
-    } catch (err: any) {
-      return NextResponse.json({ error: err.message }, { status: err.statusCode || 423 });
     }
 
     // 3. Xác định phiên bản biểu mẫu áp dụng và kiểm tra tính hợp lệ của schema
@@ -613,9 +582,71 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Thực thi Prisma Transaction nguyên tử
+    // 4. Xác định kỳ báo cáo SAU khi đã validate form/ngày/bộ phận/tag.
+    // UX 2B1: khi client gửi ngày làm việc, kỳ PHẢI chứa đúng ngày đó theo lịch VN.
+    // - Có periodId: chấp nhận nếu ngày thực sự thuộc kỳ, ngược lại từ chối.
+    // - Không có periodId: phân giải kỳ tuần ISO đúng ngày bằng helper hiện hành.
+    // - Không gửi workDate: giữ nguyên hành vi cũ để backward-compatible.
+    let periodId = inputPeriodId;
+    if (hasExplicitWorkDate) {
+      if (inputPeriodId) {
+        const suppliedPeriod = await prisma.reportingPeriod.findUnique({
+          where: { id: inputPeriodId },
+          select: { id: true, type: true, title: true, startAt: true, endAt: true },
+        });
+        if (!suppliedPeriod) return jsonError("Kỳ báo cáo không tồn tại", 400);
+        if (!isVnDateWithinReportingPeriod(suppliedPeriod, workDateIso)) {
+          return jsonError(
+            `Ngày làm việc ${workDateIso} không thuộc kỳ "${suppliedPeriod.title}" theo lịch VN — vui lòng chọn kỳ tương ứng`,
+            400
+          );
+        }
+        periodId = suppliedPeriod.id;
+      } else {
+        try {
+          const resolvedPeriod = await resolveReportingWeekContainingVnDate(workDateIso);
+          periodId = resolvedPeriod.id;
+        } catch (error: any) {
+          return jsonError(error.message || "Không thể xác định kỳ tuần cho ngày đã chọn", error.statusCode || 400);
+        }
+      }
+    }
+
+    if (!periodId) {
+      const activePeriod = await prisma.reportingPeriod.findFirst({
+        where: { type: "WEEK" },
+        orderBy: { startAt: "desc" },
+      });
+      if (activePeriod) {
+        periodId = activePeriod.id;
+      } else {
+        const currentIsoWeek = getIsoWeekFromDate(new Date());
+        // Upsert theo unique (type, title): 2 request đồng thời không tạo trùng kỳ
+        const newPeriod = await prisma.reportingPeriod.upsert({
+          where: { type_title: { type: "WEEK", title: currentIsoWeek.standardTitle } },
+          update: {},
+          create: {
+            type: "WEEK",
+            title: currentIsoWeek.standardTitle,
+            startAt: currentIsoWeek.startAt,
+            endAt: currentIsoWeek.endInclusive,
+            dueAt: new Date(currentIsoWeek.endInclusive.getTime() - 4 * 3600000),
+          },
+        });
+        periodId = newPeriod.id;
+      }
+    }
+
+    // E1: kỳ đã chốt thì khóa ghi nhật ký mới
+    try {
+      await assertPeriodWritable(periodId);
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: err.statusCode || 423 });
+    }
+
+    // 5. Thực thi Prisma Transaction nguyên tử
     const result = await prisma.$transaction(async (tx) => {
-      // 4.1 Chống trùng lặp gửi liên tục cho CÙNG một nội dung công việc
+      // 5.1 Chống trùng lặp gửi liên tục cho CÙNG một nội dung công việc
       // trong CÙNG ngày/ca (gửi hộ ngày khác không bị chặn nhầm).
       const duplicateRecent = await tx.routineEntry.findFirst({
         where: {
@@ -639,7 +670,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 4.2 Chống trùng lặp xác nhận KHÔNG PHÁT SINH cho cùng nghiệp vụ
+      // 5.2 Chống trùng lặp xác nhận KHÔNG PHÁT SINH cho cùng nghiệp vụ
       // trong CÙNG NGÀY + CÙNG CA (không chặn nhầm ngày khác trong cùng kỳ tuần).
       if (occurrenceStatus === "NOT_OCCURRED") {
         const notOccurredTitle = String(finalTitle || "").trim();
@@ -663,7 +694,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 4.3 Tạo PersonalWorkItem tương ứng nếu chưa có
+      // 5.3 Tạo PersonalWorkItem tương ứng nếu chưa có
       let createdWorkItemId = workItemId;
       if (!workItemId) {
         const newWorkItem = await tx.personalWorkItem.create({
@@ -722,7 +753,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 4.4 Tạo RoutineEntry
+      // 5.4 Tạo RoutineEntry
       const routineEntry = await tx.routineEntry.create({
         data: {
           periodId,
@@ -768,7 +799,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // 4.5 Nếu là OCCURRED và có FormVersion, tạo ResultSubmission và SubmissionValues
+      // 5.5 Nếu là OCCURRED và có FormVersion, tạo ResultSubmission và SubmissionValues
       let createdSubmission: any = null;
       if (occurrenceStatus === "OCCURRED" && targetFormVersion) {
         createdSubmission = await tx.resultSubmission.create({
@@ -870,7 +901,7 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // 5. Ghi Audit Trail sau giao dịch thành công
+    // 6. Ghi Audit Trail sau giao dịch thành công
     await recordAuditEvent({
       actorId: user.id,
       action:
