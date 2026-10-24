@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { vnDateToDeadlineIso } from "@/lib/datetime";
+import { toCalendarDate, vnDateToDeadlineIso } from "@/lib/datetime";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
@@ -28,6 +28,7 @@ interface MeetingDetail {
   meetingAt: string;
   chair: string | null;
   notes: string | null;
+  canEdit?: boolean;
   conclusions: Conclusion[];
 }
 
@@ -37,6 +38,7 @@ export default function MeetingDetailPage() {
   const id = params.id as string;
   const [meeting, setMeeting] = useState<MeetingDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const { canApprove } = usePermissions();
   const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
 
@@ -46,6 +48,23 @@ export default function MeetingDetailPage() {
   const [cDeadline, setCDeadline] = useState("");
   const [adding, setAdding] = useState(false);
   const [convertingId, setConvertingId] = useState<string | null>(null);
+
+  // Sửa thông tin biên bản (tiêu đề, thời gian, chủ trì, ghi chú)
+  const [editingMeeting, setEditingMeeting] = useState(false);
+  const [savingMeeting, setSavingMeeting] = useState(false);
+  const [mTitle, setMTitle] = useState("");
+  const [mDate, setMDate] = useState("");
+  const [mChair, setMChair] = useState("");
+  const [mNotes, setMNotes] = useState("");
+
+  // Sửa kết luận chưa chuyển nhiệm vụ (inline)
+  const [editingConclusionId, setEditingConclusionId] = useState<string | null>(null);
+  const [savingConclusion, setSavingConclusion] = useState(false);
+  const [ecContent, setEcContent] = useState("");
+  const [ecOwner, setEcOwner] = useState("");
+  const [ecCollabs, setECCollabs] = useState<string[]>([]);
+  const [ecDeadline, setEcDeadline] = useState("");
+  const [ecPriority, setEcPriority] = useState("Cao");
 
   // AI tách biên bản thô
   const [aiEnabled, setAiEnabled] = useState(false);
@@ -57,9 +76,15 @@ export default function MeetingDetailPage() {
     try {
       const res = await fetch(`/api/meetings/${id}`);
       const json = await res.json();
-      if (res.ok) setMeeting(json.data);
-      else toast.error(json.error || "Không thể tải biên bản");
+      if (res.ok) {
+        setMeeting(json.data);
+        setLoadError("");
+      } else {
+        setLoadError(json.error || "Không thể tải biên bản");
+        toast.error(json.error || "Không thể tải biên bản");
+      }
     } catch (err: any) {
+      setLoadError("Lỗi kết nối: " + err.message);
       toast.error("Lỗi kết nối: " + err.message);
     } finally {
       setLoading(false);
@@ -186,12 +211,107 @@ export default function MeetingDetailPage() {
     }
   };
 
+  const startMeetingEdit = () => {
+    if (!meeting) return;
+    setMTitle(meeting.title);
+    setMDate(toCalendarDate(meeting.meetingAt));
+    setMChair(meeting.chair || "");
+    setMNotes(meeting.notes || "");
+    setEditingMeeting(true);
+  };
+
+  const handleMeetingSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (savingMeeting || !meeting) return;
+    if (!mTitle.trim()) { toast.warning("Nhập tiêu đề biên bản"); return; }
+    if (!mDate) { toast.warning("Chọn ngày họp"); return; }
+    setSavingMeeting(true);
+    try {
+      const res = await fetch(`/api/meetings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_meeting",
+          title: mTitle.trim(),
+          meetingAt: mDate,
+          chair: mChair.trim(),
+          notes: mNotes.trim(),
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(json.message || "Đã lưu thông tin biên bản.");
+        setEditingMeeting(false);
+        fetchDetail();
+      } else {
+        toast.error(json.error || "Không thể lưu biên bản");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setSavingMeeting(false);
+    }
+  };
+
+  const startConclusionEdit = (c: Conclusion) => {
+    setEditingConclusionId(c.id);
+    setEcContent(c.content);
+    setEcOwner(c.ownerId || "");
+    setECCollabs(c.assigneeIds || []);
+    setEcDeadline(c.deadline ? toCalendarDate(c.deadline) : "");
+    setEcPriority(c.priority || "Cao");
+  };
+
+  const cancelConclusionEdit = () => {
+    setEditingConclusionId(null);
+    setEcContent("");
+    setEcOwner("");
+    setECCollabs([]);
+    setEcDeadline("");
+    setEcPriority("Cao");
+  };
+
+  const handleConclusionSave = async (e: React.FormEvent, cid: string) => {
+    e.preventDefault();
+    if (savingConclusion) return;
+    const content = ecContent.trim();
+    if (!content) { toast.warning("Nhập nội dung kết luận"); return; }
+    setSavingConclusion(true);
+    try {
+      const res = await fetch(`/api/meetings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conclusionId: cid,
+          action: "update",
+          content,
+          ownerId: ecOwner || "",
+          assigneeIds: ecCollabs.filter((pid) => pid !== ecOwner),
+          deadline: ecDeadline ? vnDateToDeadlineIso(ecDeadline) : null,
+          priority: ecPriority,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã cập nhật kết luận.");
+        cancelConclusionEdit();
+        fetchDetail();
+      } else {
+        toast.error(json.error || "Không thể sửa kết luận");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setSavingConclusion(false);
+    }
+  };
+
   if (loading) return <div className="p-6 text-sm text-slate-500">Đang tải biên bản...</div>;
   if (!meeting)
     return (
       <div className="p-6 flex flex-col items-start gap-3">
         <BackButton href="/meetings" label="Danh sách biên bản" />
-        <p className="text-sm text-slate-500">Không tìm thấy biên bản.</p>
+        <p className="text-sm text-slate-500">{loadError || "Không tìm thấy biên bản."}</p>
       </div>
     );
 
@@ -199,12 +319,66 @@ export default function MeetingDetailPage() {
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
       <BackButton href="/meetings" label="Danh sách biên bản" />
       <div>
-        <h1 className="text-xl font-bold text-slate-900">{meeting.title}</h1>
-        <p className="text-sm text-slate-500">
-          {new Date(meeting.meetingAt).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
-          {meeting.chair ? ` · Chủ trì: ${meeting.chair}` : ""}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">{meeting.title}</h1>
+            <p className="text-sm text-slate-500">
+              {new Date(meeting.meetingAt).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
+              {meeting.chair ? ` · Chủ trì: ${meeting.chair}` : ""}
+            </p>
+            {meeting.notes && (
+              <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">{meeting.notes}</p>
+            )}
+          </div>
+          {meeting.canEdit && !editingMeeting && (
+            <button onClick={startMeetingEdit}
+              className="shrink-0 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:border-teal-400">
+              Sửa biên bản
+            </button>
+          )}
+        </div>
       </div>
+
+      {editingMeeting && (
+        <form onSubmit={handleMeetingSave} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col gap-2">
+          <span className="text-xs font-bold text-slate-700">Sửa thông tin biên bản</span>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-slate-700">Tiêu đề *</label>
+            <input required value={mTitle} onChange={(e) => setMTitle(e.target.value)}
+              placeholder="Giao ban tuần 42..."
+              className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Ngày họp *</label>
+              <input type="date" required value={mDate} onChange={(e) => setMDate(e.target.value)}
+                className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-700">Chủ trì</label>
+              <input value={mChair} onChange={(e) => setMChair(e.target.value)}
+                placeholder="Nhập tên chủ trì..."
+                className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-slate-700">Ghi chú</label>
+            <textarea rows={2} value={mNotes} onChange={(e) => setMNotes(e.target.value)}
+              placeholder="Ghi chú biên bản..."
+              className="p-2.5 rounded-lg border border-slate-300 text-sm" />
+          </div>
+          <div className="flex gap-2">
+            <button type="submit" disabled={savingMeeting}
+              className="px-4 py-2 rounded-lg bg-teal-800 text-white text-xs font-bold disabled:opacity-50">
+              {savingMeeting ? "Đang lưu..." : "Lưu biên bản"}
+            </button>
+            <button type="button" onClick={() => setEditingMeeting(false)}
+              className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">
+              Hủy
+            </button>
+          </div>
+        </form>
+      )}
 
       {canApprove && aiEnabled && (
         <div className="bg-secondary/10 border border-secondary/30 rounded-xl p-3 flex flex-col gap-2">
@@ -247,30 +421,83 @@ export default function MeetingDetailPage() {
         )}
         {meeting.conclusions.map((c, idx) => (
           <div key={c.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col gap-1.5">
-            <div className="text-sm text-slate-900">
-              <strong className="text-teal-900">{idx + 1}. </strong>{c.content}
-            </div>
-            <div className="text-xs text-slate-500">
-              {c.ownerName ? `Chủ trì: ${c.ownerName}` : "Chưa gán chủ trì"}
-              {c.assigneeNames.length > 0 ? ` · Phối hợp: ${c.assigneeNames.join(", ")}` : ""}
-              {c.deadline ? ` · Hạn: ${new Date(c.deadline).toLocaleDateString("vi-VN")}` : ""}
-            </div>
-            {c.task ? (
-              <Link href={`/tasks/${c.task.id}`}
-                className="text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5 self-start">
-                Đã thành việc [{c.task.code}] — {c.task.status === "COMPLETED" ? "Đã xong" : "Đang làm"} ›
-              </Link>
-            ) : canApprove ? (
-              <div className="flex gap-2">
-                <button onClick={() => handleConvert(c.id)} disabled={convertingId === c.id}
-                  className="text-xs font-bold text-white bg-secondary rounded-lg px-3 py-1.5 disabled:opacity-50">
-                  {convertingId === c.id ? "Đang chuyển..." : "Chuyển thành nhiệm vụ"}
-                </button>
-                <button onClick={() => handleDelete(c.id)} className="text-xs text-rose-600 px-2 py-1.5">
-                  Xóa
-                </button>
-              </div>
-            ) : null}
+            {editingConclusionId === c.id ? (
+              <form onSubmit={(e) => handleConclusionSave(e, c.id)} className="flex flex-col gap-2">
+                <span className="text-xs font-bold text-slate-700">Sửa kết luận {idx + 1}</span>
+                <textarea rows={2} value={ecContent} onChange={(e) => setEcContent(e.target.value)}
+                  placeholder="Nhập nội dung kết luận..."
+                  className="p-2.5 rounded-lg border border-slate-300 text-sm" />
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={ecOwner} onChange={(e) => setEcOwner(e.target.value)}
+                    className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                    <option value="">Chủ trì...</option>
+                    {c.ownerId && !people.some((p) => p.id === c.ownerId) && (
+                      <option value={c.ownerId}>{c.ownerName || c.ownerId}</option>
+                    )}
+                    {people.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                  </select>
+                  <input type="date" value={ecDeadline} onChange={(e) => setEcDeadline(e.target.value)}
+                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-slate-700">Mức ưu tiên</label>
+                  <select value={ecPriority} onChange={(e) => setEcPriority(e.target.value)}
+                    className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                    <option value="Khẩn">Khẩn cấp</option>
+                    <option value="Cao">Cao</option>
+                    <option value="Trung bình">Trung bình</option>
+                    <option value="Thấp">Thấp</option>
+                  </select>
+                </div>
+                <CollaboratorPicker people={people} value={ecCollabs} onChange={setECCollabs} excludeId={ecOwner} disabled={savingConclusion} />
+                <div className="flex gap-2">
+                  <button type="submit" disabled={savingConclusion}
+                    className="px-4 py-2 rounded-lg bg-teal-800 text-white text-xs font-bold disabled:opacity-50">
+                    {savingConclusion ? "Đang lưu..." : "Lưu kết luận"}
+                  </button>
+                  <button type="button" onClick={cancelConclusionEdit}
+                    className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div className="text-sm text-slate-900">
+                  <strong className="text-teal-900">{idx + 1}. </strong>{c.content}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {c.ownerName ? `Chủ trì: ${c.ownerName}` : "Chưa gán chủ trì"}
+                  {c.assigneeNames.length > 0 ? ` · Phối hợp: ${c.assigneeNames.join(", ")}` : ""}
+                  {c.deadline ? ` · Hạn: ${new Date(c.deadline).toLocaleDateString("vi-VN")}` : ""}
+                </div>
+                {c.taskId ? (
+                  <div className="flex flex-col items-start gap-1">
+                    {c.task && (
+                      <Link href={`/tasks/${c.task.id}`}
+                        className="text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5 self-start">
+                        Đã thành việc [{c.task.code}] — {c.task.status === "COMPLETED" ? "Đã xong" : "Đang làm"} ›
+                      </Link>
+                    )}
+                    <span className="text-xs text-slate-500">Kết luận đã chuyển thành nhiệm vụ — sửa trên nhiệm vụ.</span>
+                  </div>
+                ) : canApprove ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => handleConvert(c.id)} disabled={convertingId === c.id}
+                      className="text-xs font-bold text-white bg-secondary rounded-lg px-3 py-1.5 disabled:opacity-50">
+                      {convertingId === c.id ? "Đang chuyển..." : "Chuyển thành nhiệm vụ"}
+                    </button>
+                    <button onClick={() => startConclusionEdit(c)}
+                      className="text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-3 py-1.5">
+                      Sửa
+                    </button>
+                    <button onClick={() => handleDelete(c.id)} className="text-xs text-rose-600 px-2 py-1.5">
+                      Xóa
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
         ))}
       </div>
