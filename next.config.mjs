@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
-const isDev = process.env.NODE_ENV !== "production";
+// Chỉ bật nới lỏng CSP khi CHẮC CHẮN là dev; NODE_ENV rỗng/không rõ ⇒ CSP production nghiêm.
+const isDev = process.env.NODE_ENV === "development";
 
 // CSP: chỉ cho phép tài nguyên cùng nguồn + các nguồn tối thiểu đang dùng:
 // - Google Fonts (Material Symbols nạp qua <link> trong layout.tsx)

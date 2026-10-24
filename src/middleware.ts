@@ -14,33 +14,42 @@ function requireJwtSecret(): Uint8Array {
   return new TextEncoder().encode(configured || JWT_FALLBACK_SECRET);
 }
 
-// Danh sách các đường dẫn công khai không cần session.
+// Danh sách các đường dẫn công khai không cần session — so khớp CHÍNH XÁC.
 // Danh sách ĐÓNG: không dùng regex đuôi file chung (mọi path có dấu chấm từng bị bỏ qua auth).
-// Chỉ các tệp gốc thật sự tồn tại trong public/ mới được liệt kê.
-const PUBLIC_PATHS = [
+// Chỉ các tệp gốc thật sự tồn tại trong public/ mới được liệt kê; `/login-abc`,
+// `/manifest.webmanifest.bak`, `/sw.js.map`... vẫn phải qua auth.
+const PUBLIC_EXACT_PATHS = new Set([
   "/login",
-  "/api/auth/login",
-  "/_next",
   "/favicon.ico",
-  "/images",
-  "/fonts",
   "/manifest.webmanifest",
   "/sw.js",
-];
+]);
 
-// Danh sách các API công khai hoặc tự xử lý kiểm tra
-const PUBLIC_API_PREFIXES = [
-  "/api/auth/login",
-  "/api/auth/me",
-  "/api/health",
-];
+// Chỉ các thư mục tài nguyên tĩnh mới dùng prefix (so khớp theo segment, không theo chuỗi thô).
+const PUBLIC_PREFIXES = ["/_next", "/images", "/fonts"];
+
+// Danh sách API công khai hoặc tự xử lý kiểm tra — cũng so khớp CHÍNH XÁC.
+const PUBLIC_API_PATHS = new Set(["/api/auth/login", "/api/auth/me", "/api/health"]);
+
+/** `/login/` tương đương `/login`; không nới rộng sang `/login-abc`. */
+function normalizePath(pathname: string): string {
+  return pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const publicPath = normalizePath(pathname);
 
-  // 1. Cho phép tài nguyên tĩnh và trang login (chỉ các prefix trong PUBLIC_PATHS).
+  // 1. Cho phép tài nguyên tĩnh và trang login (exact path hoặc prefix thư mục).
   // KHÔNG bypass theo dấu chấm: `/admin/system/foo.bar` và `/api/tasks/foo.json` vẫn phải qua auth.
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  if (
+    PUBLIC_EXACT_PATHS.has(publicPath) ||
+    PUBLIC_PREFIXES.some((prefix) => matchesPrefix(publicPath, prefix))
+  ) {
     return NextResponse.next();
   }
 
@@ -98,7 +107,7 @@ export async function middleware(req: NextRequest) {
   if (!isAuthenticated) {
     // Nếu là API route (không nằm trong danh sách public) -> Trả về HTTP 401 Unauthorized
     if (pathname.startsWith("/api/")) {
-      if (PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p))) {
+      if (PUBLIC_API_PATHS.has(publicPath)) {
         return NextResponse.next();
       }
       return NextResponse.json(

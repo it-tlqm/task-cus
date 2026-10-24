@@ -16,6 +16,9 @@
  *   6. GET /manifest.webmanifest, /sw.js          -> next() (file public có thật).
  *   7. Có JWT hợp lệ, GET /dashboard              -> next() (không chặn nhầm).
  *   8. GET /templates/<file>.xlsx (không đăng nhập) -> 307 (asset nghiệp vụ, không public).
+ *   9. Public path/API so khớp CHÍNH XÁC: /api/auth/me, /api/health đi qua;
+ *      /login-abc, /api/auth/login-extra, /api/healthz, /manifest.webmanifest.bak
+ *      KHÔNG được bypass.
  *
  * Fail-closed: file public thiếu, import lỗi hay case không chạy được đều tính FAIL
  * và script thoát mã 1. Không chạm Production, không gọi HTTP ra ngoài.
@@ -149,7 +152,30 @@ async function main() {
   }
 
   await expectNext("GET /login -> next", "/login");
+  await expectNext("GET /login/ (trailing slash) -> next", "/login/");
   await expectNext("GET /api/auth/login (public API) -> next", "/api/auth/login");
+  await expectNext("GET /api/auth/me (public API) -> next", "/api/auth/me");
+  await expectNext("GET /api/health (public API) -> next", "/api/health");
+
+  // --- So khớp CHÍNH XÁC: tiền tố giống tên nhưng khác path không được bypass ---
+  await expectRedirectToLogin("unauth /login-abc -> 307 /login", "/login-abc");
+  await expectRedirectToLogin(
+    "unauth /manifest.webmanifest.bak -> 307 /login",
+    "/manifest.webmanifest.bak",
+  );
+
+  for (const apiPath of ["/api/auth/login-extra", "/api/auth/me/extra", "/api/healthz"]) {
+    try {
+      const res = await middleware(makeRequest(apiPath));
+      check(
+        `unauth ${apiPath} -> 401 (không bypass theo prefix)`,
+        res.status === 401,
+        `status=${res.status}`,
+      );
+    } catch (err) {
+      check(`unauth ${apiPath} -> 401 (không bypass theo prefix)`, false, `middleware threw: ${(err as Error)?.message ?? err}`);
+    }
+  }
 
   // --- Đã đăng nhập: trang nghiệp vụ vẫn vào được ---
   try {
