@@ -5,7 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { formatVnDate, vnDateOnly } from "@/lib/datetime";
-import { getRoutineDeclarationMode } from "@/lib/routine-declaration";
+import { resolveRoutineDeclarationState } from "@/lib/routine-declaration";
 import RoutineCatalogPicker, { type ProposedProduct, type TxTag } from "./RoutineCatalogPicker";
 
 const SHIFT_LABELS: Record<string, string> = { SANG: "Sáng", CHIEU: "Chiều", CA_NGAY: "Cả ngày" };
@@ -128,11 +128,15 @@ export default function RoutinePage() {
 
   // Tab 2: Admin Form Builder State
   // Chỉ người có quyền quản trị biểu mẫu / xem audit mới thấy tab 2-3
-  const { can: canPerm, canAudit, user: permissionUser } = usePermissions();
+  const { can: canPerm, canAudit, user: permissionUser, loading: permissionsLoading } = usePermissions();
   const canManageForms = canPerm("form.manage");
   // UX 3B (UI-only): lãnh đạo đơn vị / quản trị hệ thống không khai báo đầu việc.
-  const declarationMode = getRoutineDeclarationMode(permissionUser?.role);
-  const canDeclare = declarationMode !== "HIDDEN";
+  // Khi quyền còn tải, trạng thái là LOADING → chỉ placeholder, không lộ form/nút 1-chạm.
+  const declarationState = resolveRoutineDeclarationState(
+    permissionsLoading,
+    permissionUser?.role
+  );
+  const canDeclare = declarationState === "COLLAPSED";
   const [builderFields, setBuilderFields] = useState<FormFieldDef[]>([]);
   // F19: chi hien truong DN / container khi bieu mau (Form Builder) that su yeu cau.
   // Khong co bieu mau chuyen biet => dung bieu mau ghi nhan co ban, khong ep chi tieu thong quan.
@@ -348,7 +352,11 @@ export default function RoutinePage() {
     const defaultTitle = isNoActivity
       ? "Xác nhận: ca trực không có hoạt động tác nghiệp"
       : "Xác nhận: ca trực không phát sinh vụ việc vi phạm hoặc tồn đọng";
-    const finalTitle = (kind === "NO_ACTIVITY" ? "" : newTitle.trim()) || defaultTitle;
+    // UX 3B: một chạm khi panel đang đóng KHÔNG được âm thầm dùng bản nháp ẩn
+    // (title/notes người dùng có thể đã gõ trước đó). Chỉ dùng bản nháp khi form mở.
+    const draftTitle = isDeclarationOpen && !isNoActivity ? newTitle.trim() : "";
+    const draftNotes = isDeclarationOpen ? newNotes.trim() : "";
+    const finalTitle = draftTitle || defaultTitle;
     const defaultNotes = isNoActivity
       ? "Xác nhận 1-chạm: ca trực không có hoạt động tác nghiệp nào để ghi nhận."
       : "Xác nhận 1-chạm: ca trực không phát sinh vụ việc vi phạm hoặc tồn đọng.";
@@ -359,7 +367,7 @@ export default function RoutinePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: finalTitle,
-          notes: newNotes.trim() || defaultNotes,
+          notes: draftNotes || defaultNotes,
           occurrenceStatus: "NOT_OCCURRED",
           notOccurredKind: kind,
           templateId: null,
@@ -637,7 +645,44 @@ export default function RoutinePage() {
             </div>
 
             {/* Form Thêm Đầu Việc Tác Nghiệp Hàng Ngày — UX 3B: ẩn với lãnh đạo, thu gọn với vai trò khai báo */}
-            {canDeclare ? (
+            {declarationState === "LOADING" ? (
+              <div
+                role="status"
+                aria-busy="true"
+                data-testid="routine-declaration-loading"
+                className="flex flex-col gap-3 rounded-xl border border-border-default/50 bg-surface-container-lowest p-space-lg shadow-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined shrink-0 text-[22px] text-outline">hourglass_top</span>
+                  <div className="flex min-w-0 flex-col">
+                    <span className="font-body-semibold text-body-semibold text-primary">
+                      Đang xác định quyền khai báo đầu việc…
+                    </span>
+                    <span className="font-label-sm text-label-sm text-outline">
+                      Vui lòng chờ trong giây lát.
+                    </span>
+                  </div>
+                </div>
+                <div className="h-2.5 w-2/3 rounded bg-surface-container animate-pulse" aria-hidden="true" />
+                <div className="h-2.5 w-1/2 rounded bg-surface-container animate-pulse" aria-hidden="true" />
+              </div>
+            ) : declarationState === "UNKNOWN" ? (
+              <div
+                role="note"
+                data-testid="routine-declaration-unavailable"
+                className="flex items-start gap-3 rounded-xl border border-border-default/50 bg-surface-container-lowest p-space-md shadow-sm"
+              >
+                <span className="material-symbols-outlined shrink-0 text-[22px] text-outline">help</span>
+                <div className="flex flex-col gap-0.5">
+                  <p className="font-body-semibold text-body-semibold text-primary">
+                    Chưa xác định được quyền khai báo đầu việc.
+                  </p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    Vui lòng tải lại trang để thử lại. Danh sách nhật ký bên dưới vẫn hiển thị đầy đủ.
+                  </p>
+                </div>
+              </div>
+            ) : canDeclare ? (
             <div data-tour="log-form" className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
               <div className="flex flex-col gap-2 border-b border-surface-container pb-space-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-2">
@@ -888,7 +933,7 @@ export default function RoutinePage() {
                 <span className="material-symbols-outlined shrink-0 text-[22px] text-outline">visibility</span>
                 <div className="flex flex-col gap-0.5">
                   <p className="font-body-semibold text-body-semibold text-primary">
-                    Tài khoản lãnh đạo đơn vị không khai báo đầu việc trong ca.
+                    Tài khoản này không khai báo đầu việc trong ca.
                   </p>
                   <p className="font-label-sm text-label-sm text-on-surface-variant">
                     Danh sách nhật ký bên dưới vẫn hiển thị đầy đủ để theo dõi.
