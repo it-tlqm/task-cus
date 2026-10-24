@@ -58,7 +58,23 @@ interface DecidedCase {
     content: string | null;
     actorName: string | null;
     at: string;
+    source?: string;
+    sourceLabel?: string;
   } | null;
+  /** E12-A: các vòng đã quyết định, kèm nhãn nguồn. */
+  history?: Array<{
+    id: string;
+    round: number;
+    action: string;
+    actionLabel: string;
+    reason: string | null;
+    content: string | null;
+    qualityPercent?: number | null;
+    actorName: string | null;
+    at: string;
+    source: string;
+    sourceLabel: string;
+  }>;
 }
 
 function formatFileSize(bytes: number) {
@@ -941,11 +957,40 @@ export default function ApprovalsPage() {
                     {" · "}Người quyết định: <b className="text-on-surface">{dc.decidedByName || "—"}</b>
                     {dc.decidedAt ? ` · ${formatVnDateTime(dc.decidedAt)}` : ""}
                   </p>
+                  <p className="text-[11px] text-on-surface-variant">
+                    <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                      Nguồn: {dc.latestDecision?.sourceLabel || "Quyết định duyệt"}
+                    </span>
+                  </p>
                   {dc.latestDecision?.reason && (
                     <p className="text-[11px] text-on-surface-variant">Lý do: {dc.latestDecision.reason}</p>
                   )}
                   {dc.latestDecision?.content && (
                     <p className="text-[11px] text-on-surface-variant">Nội dung: {dc.latestDecision.content}</p>
+                  )}
+                  {Array.isArray(dc.history) && dc.history.length > 1 && (
+                    <details className="text-[11px] text-on-surface-variant">
+                      <summary className="cursor-pointer font-semibold text-secondary">
+                        Các vòng đã quyết định ({dc.history.length})
+                      </summary>
+                      <ul className="mt-1 space-y-1">
+                        {dc.history.map((h) => (
+                          <li
+                            key={h.id}
+                            className="rounded border border-border-default px-2 py-1"
+                            data-testid={`decided-history-${h.source}`}
+                          >
+                            <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                              Nguồn: {h.sourceLabel}
+                            </span>{" "}
+                            · Vòng {h.round} · {h.actionLabel}
+                            {h.actorName ? ` · ${h.actorName}` : ""} · {formatVnDateTime(h.at)}
+                            {h.reason ? ` · Lý do: ${h.reason}` : ""}
+                            {h.content ? ` · Nội dung: ${h.content}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
                   )}
                 </li>
               ))}

@@ -789,23 +789,30 @@ export async function PATCH(req: NextRequest) {
       // Người giao việc hoặc Lãnh đạo xác nhận hoàn thành — qua ApprovalCase chung.
       return decideTaskResult("AGREE", reason || null, null);
     } else if (action === "REJECT_COMPLETION") {
-      // Trả lại nhiệm vụ yêu cầu làm tiếp — qua ApprovalCase chung (bắt buộc có lý do).
-      return decideTaskResult(
-        "REJECT",
-        (issueNotes || reason || "Yêu cầu hoàn thiện thêm trước khi nghiệm thu.").trim(),
-        null
-      );
+      // Trả lại nhiệm vụ yêu cầu làm tiếp — qua ApprovalCase chung.
+      // E8-A: bắt buộc có lý do/ghi chú; giữ nguyên tiến độ hiện tại (kể cả 100%).
+      const rejectNote = (issueNotes || reason || actualResultText || "").trim();
+      if (!rejectNote) {
+        return jsonError(
+          "Vui lòng nêu lý do trả lại/yêu cầu hoàn thiện. Tiến độ hiện tại (kể cả 100%) được giữ nguyên.",
+          400
+        );
+      }
+      return decideTaskResult("REJECT", rejectNote, null);
     } else {
       // Nghiệm thu / trả lại qua status tự do → đi qua ApprovalCase chung, không ghi tắt.
       if (status === "COMPLETED" || status === "DONE") {
         return decideTaskResult("AGREE", reason || null, null);
       }
       if (currentTask.status === "WAITING_REVIEW" && status === "IN_PROGRESS") {
-        return decideTaskResult(
-          "REJECT",
-          (issueNotes || reason || actualResultText || "Yêu cầu hoàn thiện thêm trước khi nghiệm thu.").trim(),
-          null
-        );
+        const returnNote = (issueNotes || reason || actualResultText || "").trim();
+        if (!returnNote) {
+          return jsonError(
+            "Vui lòng nêu lý do trả lại/yêu cầu hoàn thiện. Tiến độ hiện tại (kể cả 100%) được giữ nguyên.",
+            400
+          );
+        }
+        return decideTaskResult("REJECT", returnNote, null);
       }
 
       // YC-09: người phối hợp không được ghi đè kết quả chung của nhiệm vụ.

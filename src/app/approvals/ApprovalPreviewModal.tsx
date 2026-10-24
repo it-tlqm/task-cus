@@ -55,6 +55,8 @@ export interface ApprovalPreviewData {
     actorName: string;
     actorPersonId: string | null;
     createdAt: string;
+    source?: "APPROVAL_DECISION";
+    sourceLabel?: string;
   }>;
   quality: {
     visible: boolean;
@@ -181,6 +183,22 @@ const STATUS_LABEL: Record<string, string> = {
 
 const QUALITY_VALUES = [65, 70, 75, 80, 85, 90, 95, 100];
 
+interface UnifiedHistoryEntry {
+  id: string;
+  at: string;
+  source: "TASK_UPDATE" | "APPROVAL_DECISION" | "PARTICIPANT_EVENT";
+  sourceLabel: string;
+  title: string;
+  detail: string | null;
+  actorName: string;
+  progressPercent: number | null;
+  statusFrom: string | null;
+  statusTo: string | null;
+  round: number | null;
+  actionLabel: string | null;
+  subjectPersonName: string | null;
+}
+
 function qualityLabel(value: number | null | undefined) {
   if (value === null || value === undefined) return "Chưa đánh giá";
   return `${value}%`;
@@ -197,6 +215,8 @@ export default function ApprovalPreviewModal({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [preview, setPreview] = useState<ApprovalPreviewData | null>(null);
+  const [unifiedHistory, setUnifiedHistory] = useState<UnifiedHistoryEntry[]>([]);
+  const [unifiedLoading, setUnifiedLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [action, setAction] = useState<ApprovalDecisionAction>(initialAction);
   const [reason, setReason] = useState("");
@@ -324,6 +344,36 @@ export default function ApprovalPreviewModal({
       cancelled = true;
     };
   }, [open, caseType, resourceId, initialAction]);
+
+  useEffect(() => {
+    if (!open || caseType !== "TASK_RESULT" || !resourceId) {
+      setUnifiedHistory([]);
+      return;
+    }
+    let cancelled = false;
+    setUnifiedLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tasks/${resourceId}/history?limit=100`, {
+          cache: "no-store",
+        });
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (res.ok) {
+          setUnifiedHistory(json?.data?.entries || []);
+        } else {
+          setUnifiedHistory([]);
+        }
+      } catch {
+        if (!cancelled) setUnifiedHistory([]);
+      } finally {
+        if (!cancelled) setUnifiedLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, caseType, resourceId]);
 
   useEffect(() => {
     if (!open) return;
@@ -827,31 +877,98 @@ export default function ApprovalPreviewModal({
                 </div>
               )}
 
-              {/* Lịch sử quyết định */}
-              {preview.history.length > 0 && (
-                <div className="space-y-2">
+              {/* E12-A: lịch sử hợp nhất — TaskUpdate + ApprovalDecision + participant events */}
+              {caseType === "TASK_RESULT" ? (
+                <div className="space-y-2" data-testid="approval-unified-history">
                   <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
-                    Lịch sử xử lý ({preview.history.length})
+                    Lịch sử hợp nhất ({unifiedHistory.length})
                   </p>
-                  <ul className="space-y-1">
-                    {preview.history.map((h, i) => (
-                      <li key={i} className="rounded-lg border border-border-default p-2">
-                        <p className="text-[11px] text-on-surface">
-                          <strong>Vòng {h.round}</strong> · {h.actionLabel} ·{" "}
-                          {formatDateTime(h.createdAt)}
-                        </p>
-                        {h.reason && (
-                          <p className="text-[11px] text-on-surface-variant">Lý do: {h.reason}</p>
-                        )}
-                        {h.content && (
-                          <p className="text-[11px] text-on-surface-variant">
-                            Nội dung: {h.content}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-[10px] text-outline">
+                    Gồm cập nhật nhiệm vụ, quyết định duyệt và phần việc phối hợp. Không gộp bình
+                    luận/tệp đính kèm.
+                  </p>
+                  {unifiedLoading ? (
+                    <p className="text-[11px] text-on-surface-variant">Đang tải lịch sử...</p>
+                  ) : unifiedHistory.length === 0 ? (
+                    <p className="text-[11px] text-on-surface-variant">Chưa có lịch sử hợp nhất.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {unifiedHistory.map((h) => (
+                        <li
+                          key={h.id}
+                          className="rounded-lg border border-border-default p-2 space-y-1"
+                          data-testid={`approval-history-${h.source}`}
+                        >
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                            <span className="px-2 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                              Nguồn: {h.sourceLabel}
+                            </span>
+                            <strong className="text-on-surface">{h.title}</strong>
+                            {h.round !== null && (
+                              <span className="text-on-surface-variant">· Vòng {h.round}</span>
+                            )}
+                            <span className="text-on-surface-variant">
+                              · {h.actorName} · {formatDateTime(h.at)}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                            {h.subjectPersonName && (
+                              <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-semibold">
+                                {h.subjectPersonName}
+                              </span>
+                            )}
+                            {typeof h.progressPercent === "number" && (
+                              <span className="px-1.5 py-0.5 rounded bg-secondary/15 text-secondary font-bold">
+                                Tiến độ: {h.progressPercent}%
+                              </span>
+                            )}
+                            {h.statusTo && (
+                              <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-semibold">
+                                {h.statusFrom && h.statusFrom !== h.statusTo
+                                  ? `${h.statusFrom} → ${h.statusTo}`
+                                  : h.statusTo}
+                              </span>
+                            )}
+                          </div>
+                          {h.detail && (
+                            <p className="text-[11px] text-on-surface-variant whitespace-pre-wrap">
+                              {h.detail}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
+              ) : (
+                preview.history.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                      Lịch sử xử lý ({preview.history.length})
+                    </p>
+                    <ul className="space-y-1">
+                      {preview.history.map((h, i) => (
+                        <li key={i} className="rounded-lg border border-border-default p-2">
+                          <p className="text-[11px] text-on-surface">
+                            <strong>Vòng {h.round}</strong> ·{" "}
+                            <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                              Nguồn: {h.sourceLabel || "Quyết định duyệt"}
+                            </span>{" "}
+                            · {h.actionLabel} · {formatDateTime(h.createdAt)}
+                          </p>
+                          {h.reason && (
+                            <p className="text-[11px] text-on-surface-variant">Lý do: {h.reason}</p>
+                          )}
+                          {h.content && (
+                            <p className="text-[11px] text-on-surface-variant">
+                              Nội dung: {h.content}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
               )}
               {/* YC-10: mức chất lượng + lịch sử điều chỉnh (chỉ người có quyền xem) */}
               {preview.caseType === "TASK_RESULT" &&
@@ -1107,6 +1224,10 @@ export default function ApprovalPreviewModal({
                     placeholder="Nêu rõ lý do để người trình biết cần điều chỉnh gì..."
                     className="w-full p-2.5 rounded-lg border border-border-default bg-surface-container-lowest text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
+                  <p className="text-[10px] text-outline">
+                    E8-A: tiến độ/kết quả đã báo được giữ nguyên (kể cả 100%); chỉ trạng thái nhiệm
+                    vụ trở về Đang thực hiện.
+                  </p>
                 </div>
               )}
 
