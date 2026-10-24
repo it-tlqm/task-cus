@@ -187,6 +187,17 @@ async function safeText(page: Page, selector: string): Promise<string> {
   }
 }
 
+/** Panel cảnh báo phân công mặc định thu gọn — mở ra trước khi đọc nội dung. */
+async function openWarnings(page: Page): Promise<void> {
+  const expanded = await page
+    .$eval('[data-testid="roster-warnings-toggle"]', (el) => el.getAttribute("aria-expanded"))
+    .catch(() => null);
+  if (expanded !== "true") {
+    await page.click('[data-testid="roster-warnings-toggle"]');
+    await sleep(250);
+  }
+}
+
 /** Đọc giá trị ô "gốc" của vùng merge (tránh đếm trùng dữ liệu merged) — dùng khi đọc file tải về. */
 function rc(addr: string): { r: number; c: number } {
   const m = addr.replace(/\$/g, "").match(/^([A-Z]+)(\d+)$/);
@@ -446,6 +457,11 @@ async function main() {
     await sleep(900);
     await page.click('[data-testid="editor-close"]');
     await sleep(600);
+    const warningsCollapsed = await page
+      .$eval('[data-testid="roster-warnings-toggle"]', (el) => el.getAttribute("aria-expanded"))
+      .catch(() => null);
+    check("P8b0. Bảng cảnh báo phân công mặc định thu gọn", warningsCollapsed === "false", String(warningsCollapsed));
+    await openWarnings(page);
     const warnPanel = norm(await textOf(page, '[data-testid="roster-warnings"]'));
     check("P8b. Bảng cảnh báo trên trang liệt kê ca trùng", warnPanel.includes(norm(pa1.fullName)) && /được phân công \d+ vị trí trong ngày/.test(warnPanel), warnPanel.slice(0, 120));
     await shot(page, "05-overlap-warning.png", true);
@@ -465,6 +481,7 @@ async function main() {
     await sleep(800);
     await page.click('[data-testid="editor-close"]');
     await sleep(500);
+    await openWarnings(page);
     const leavePanel = norm(await textOf(page, '[data-testid="roster-warnings"]'));
     check("P9c. Bảng cảnh báo ghi rõ người + ngày trùng đơn nghỉ", leavePanel.includes(norm(leave.person.fullName)) && leavePanel.includes("trùng đơn nghỉ đã duyệt"));
     const cell17 = norm(await textOf(page, `[data-testid="roster-cell-${D17}-YC24-01"]`));

@@ -757,6 +757,7 @@ export default function RoutinePage() {
                     <tr className="bg-surface-subtle text-primary font-table-header border-b border-border-default">
                       <th className="py-3 px-space-md w-[80px]">MÃ</th>
                       <th className="py-3 px-space-md w-[320px]">NỘI DUNG TÁC NGHIỆP</th>
+                      <th className="py-3 px-space-sm w-[180px]">NGƯỜI THỰC HIỆN</th>
                       <th className="py-3 px-space-sm w-[220px]">DOANH NGHIỆP / CONT</th>
                       <th className="py-3 px-space-sm w-[150px]">TIẾN ĐỘ</th>
                       <th className="py-3 px-space-md text-right w-[150px]">THAO TÁC</th>
@@ -765,13 +766,13 @@ export default function RoutinePage() {
                   <tbody className="divide-y divide-surface-container font-table-data text-on-surface">
                     {loading ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-outline animate-pulse">
+                        <td colSpan={6} className="py-8 text-center text-outline animate-pulse">
                           Đang nạp dữ liệu nhật ký ca trực từ cơ sở dữ liệu PostgreSQL...
                         </td>
                       </tr>
                     ) : entries.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-12 text-center text-on-surface-variant">
+                        <td colSpan={6} className="py-12 text-center text-on-surface-variant">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[36px] text-outline">history_edu</span>
                             <p className="font-semibold text-primary">Chưa có nhật ký nào được ghi nhận cho ca hôm nay</p>
@@ -818,6 +819,14 @@ export default function RoutinePage() {
                                 </span>
                               )}
                             </div>
+                          </td>
+                          <td className="py-3 px-space-sm">
+                            <span
+                              className="block max-w-[180px] truncate"
+                              title={entry.person?.fullName || "—"}
+                            >
+                              {entry.person?.fullName || "—"}
+                            </span>
                           </td>
                           <td className="py-3 px-space-sm">
                             {entry.occurrenceStatus === "NOT_OCCURRED" ? (

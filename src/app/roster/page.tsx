@@ -302,6 +302,7 @@ export default function RosterPage() {
   const [showCatalog, setShowCatalog] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [showWarnings, setShowWarnings] = useState(false);
 
   const todayISO = toISODate(new Date());
   const openEditor = useCallback((iso: string, groupCode?: string) => {
@@ -664,23 +665,42 @@ export default function RosterPage() {
         </div>
       </div>
 
-      {/* Cảnh báo */}
+      {/* Cảnh báo — mặc định thu gọn, chỉ mở khi bấm */}
       {warnings.length > 0 && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-3" data-testid="roster-warnings">
-          <div className="flex items-center gap-2 text-amber-800 text-xs font-bold uppercase tracking-wide">
-            <span className="material-symbols-outlined text-[16px]">warning</span>
-            Cảnh báo phân công ({warnings.length})
-          </div>
-          <ul className="mt-1.5 space-y-1">
-            {warnings.slice(0, 8).map((w, i) => (
-              <li key={i} className="text-xs text-amber-800">
-                • {w}
-              </li>
-            ))}
-            {warnings.length > 8 && (
-              <li className="text-xs text-amber-700 italic">… và {warnings.length - 8} cảnh báo khác</li>
-            )}
-          </ul>
+          <button
+            type="button"
+            data-testid="roster-warnings-toggle"
+            onClick={() => setShowWarnings((v) => !v)}
+            aria-expanded={showWarnings}
+            aria-controls="roster-warnings-list"
+            className="flex w-full items-center justify-between gap-2 rounded-lg text-left text-xs font-bold uppercase tracking-wide text-amber-800 transition-colors hover:text-amber-900"
+          >
+            <span className="inline-flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">warning</span>
+              Cảnh báo phân công ({warnings.length})
+            </span>
+            <span className="inline-flex items-center gap-1 normal-case tracking-normal">
+              <span className="text-[11px] font-semibold text-amber-700">
+                {showWarnings ? "Ẩn chi tiết" : "Xem chi tiết"}
+              </span>
+              <span className="material-symbols-outlined text-[18px]">
+                {showWarnings ? "expand_less" : "expand_more"}
+              </span>
+            </span>
+          </button>
+          {showWarnings && (
+            <ul id="roster-warnings-list" className="mt-1.5 space-y-1">
+              {warnings.slice(0, 8).map((w, i) => (
+                <li key={i} className="text-xs text-amber-800">
+                  • {w}
+                </li>
+              ))}
+              {warnings.length > 8 && (
+                <li className="text-xs text-amber-700 italic">… và {warnings.length - 8} cảnh báo khác</li>
+              )}
+            </ul>
+          )}
         </div>
       )}
 

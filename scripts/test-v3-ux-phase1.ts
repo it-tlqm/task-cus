@@ -1,5 +1,5 @@
 /**
- * test-v3-ux-phase1.ts — Kiểm thử tĩnh cho UX Phase 1 / Task 2.
+ * test-v3-ux-phase1.ts — Kiểm thử tĩnh cho UX Phase 1 (Task 2 + Task 3).
  *
  * Chạy KHÔNG cần DB / server:
  *   npx tsx scripts/test-v3-ux-phase1.ts
@@ -9,6 +9,7 @@
  *  2. Điều kiện "chờ nhận việc" dùng chung, không áp dụng cho việc tự khởi tạo.
  *  3. /my-work có tab WAITING_ACCEPT, deep-link sau mount và nút nhận việc nhanh.
  *  4. Thông báo nhắc ca trực đã rút gọn nhưng giữ nguyên phân loại/action/idempotency.
+ *  5. /routine có cột người thực hiện; /roster thu gọn cảnh báo phân công mặc định.
  */
 import fs from "fs";
 import path from "path";
@@ -240,6 +241,36 @@ check(
   "Giữ idempotency key ALERT_ROUTINE_",
   routineBlock.includes("ALERT_ROUTINE_${todayStr}_${personId}")
 );
+
+// ---------------------------------------------------------------- 5. Task 3: tên người thực hiện + ẩn cảnh báo
+const routinePage = fs.readFileSync(path.resolve("src/app/routine/page.tsx"), "utf8");
+check("T3. /routine có cột NGƯỜI THỰC HIỆN", routinePage.includes("NGƯỜI THỰC HIỆN"));
+check(
+  "T3. /routine hiển thị tên người thực hiện, fallback —",
+  routinePage.includes("entry.person?.fullName || \"—\"")
+);
+check(
+  "T3. /routine colSpan chuyển 5 → 6 ở cả loading và empty",
+  (routinePage.match(/colSpan=\{6\}/g) || []).length === 2 && !routinePage.includes("colSpan={5}")
+);
+const nameCellIdx = routinePage.indexOf('entry.person?.fullName || "—"');
+check(
+  "T3. Tên người thực hiện hiển thị cả dòng không phát sinh",
+  nameCellIdx > 0 && !routinePage.slice(nameCellIdx - 400, nameCellIdx + 100).includes("occurrenceStatus")
+);
+
+const rosterPage = fs.readFileSync(path.resolve("src/app/roster/page.tsx"), "utf8");
+check("T3. /roster có state showWarnings mặc định false", rosterPage.includes("const [showWarnings, setShowWarnings] = useState(false);"));
+check(
+  "T3. Cảnh báo dùng nút bấm có aria-expanded",
+  rosterPage.includes('data-testid="roster-warnings-toggle"') && rosterPage.includes("aria-expanded={showWarnings}")
+);
+check("T3. Giữ data-testid roster-warnings trên khối cảnh báo", rosterPage.includes('data-testid="roster-warnings"'));
+check(
+  "T3. Danh sách cảnh báo chỉ render khi mở (tối đa 8 + phần còn lại)",
+  /showWarnings && \([\s\S]{0,600}warnings\.slice\(0, 8\)[\s\S]{0,300}warnings\.length - 8/.test(rosterPage)
+);
+check("T3. Giữ dòng đếm cảnh báo trong ngày ở day view", rosterPage.includes("cảnh báo trong ngày"));
 
 console.log("\n========================================");
 console.log(`KẾT QUẢ: ${passed} pass / ${failed} fail`);
