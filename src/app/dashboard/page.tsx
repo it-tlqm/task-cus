@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { vnLocalToUtcIso, vnNowLocalParts } from "@/lib/datetime";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
-import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 import { TaxSummarySection } from "@/components/dashboard/TaxSummarySection";
 
 interface KPIData {
@@ -104,41 +102,10 @@ export default function DashboardPage() {
   const selectedDbPeriodValue = availablePeriods.some((p) => p.id === period) ? period : "";
   const { canAssign, canExport, canApprove } = usePermissions();
 
-  // Quick Task Assign Modal State
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [assignTitle, setAssignTitle] = useState("");
-  const [assignUnit, setAssignUnit] = useState("");
-  const [assignPriority, setAssignPriority] = useState("Cao");
-  // YC-38 UAT fix: mặc định theo giờ Việt Nam (không theo múi giờ thiết bị)
-  const [assignDeadline, setAssignDeadline] = useState(() => {
-    const now = vnNowLocalParts(new Date(Date.now() + 24 * 3600 * 1000));
-    return `${now.date}T17:00`;
-  });
   // AI tóm tắt giao ban (tự ẩn khi máy chủ chưa cấu hình key)
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiSummary, setAiSummary] = useState("");
   const [aiSummarizing, setAiSummarizing] = useState(false);
-  const [isAssigning, setIsAssigning] = useState(false);
-  // YC-01: chủ trì + phối hợp trong modal giao việc nhanh
-  const [assignOwner, setAssignOwner] = useState("");
-  const [assignCollabs, setAssignCollabs] = useState<string[]>([]);
-  const [assignPeople, setAssignPeople] = useState<Array<{ id: string; fullName: string }>>([]);
-  // Đợt A: ảnh/văn bản đính kèm ngay khi giao
-  const [assignFiles, setAssignFiles] = useState<File[]>([]);
-
-  const uploadAssignAttachments = async (taskId: string, files: File[]): Promise<number> => {
-    let ok = 0;
-    for (const f of files.slice(0, 5)) {
-      try {
-        const fd = new FormData();
-        fd.append("file", f);
-        fd.append("isSigned", "false");
-        const r = await fetch(`/api/tasks/${taskId}/attachments`, { method: "POST", body: fd });
-        if (r.ok) ok++;
-      } catch {}
-    }
-    return ok;
-  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -172,9 +139,6 @@ export default function DashboardPage() {
 
       if (Array.isArray(data.departmentBreakdown)) {
         setDepartments(data.departmentBreakdown);
-        if (data.departmentBreakdown.length > 0 && !assignUnit) {
-          setAssignUnit(data.departmentBreakdown[0].id);
-        }
       }
 
       if (Array.isArray(data.attentionTasks)) {
@@ -195,15 +159,6 @@ export default function DashboardPage() {
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.enabled) setAiEnabled(true);
-      })
-      .catch(() => {});
-    // YC-01: nạp danh sách nhân sự thật cho chọn chủ trì/phối hợp
-    fetch("/api/people?pageSize=100")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        const list = Array.isArray(json) ? json : json?.data || [];
-        setAssignPeople(list.map((p: any) => ({ id: p.id, fullName: p.fullName })));
-        if (list.length > 0) setAssignOwner((cur) => cur || list[0].id);
       })
       .catch(() => {});
   }, [unitFilter, period]);
@@ -228,56 +183,6 @@ export default function DashboardPage() {
       toast.error("Lỗi: " + err.message);
     } finally {
       setAiSummarizing(false);
-    }
-  };
-
-  const handleQuickAssign = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // YC-04: một thao tác chỉ gửi một request
-    if (!assignTitle.trim() || isAssigning) return;
-
-    setIsAssigning(true);
-    try {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: assignTitle.trim(),
-          priority: assignPriority,
-          currentDeadline: vnLocalToUtcIso(assignDeadline),
-          description: "Chỉ đạo trực ban lãnh đạo giao khẩn",
-          unitId: assignUnit && assignUnit !== "ALL" ? assignUnit : undefined,
-          ownerId: assignOwner || undefined,
-          assigneeIds: assignCollabs,
-          status: "IN_PROGRESS",
-          progressPercent: 0,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        let attachMsg = "";
-        if (assignFiles.length > 0 && data.data?.id) {
-          const n = await uploadAssignAttachments(data.data.id, assignFiles);
-          attachMsg = n > 0 ? ` (đính kèm ${n} tệp)` : " (tải đính kèm thất bại, bổ sung ở chi tiết)";
-        }
-        setShowAssignModal(false);
-        setAssignTitle("");
-        setAssignCollabs([]);
-        setAssignFiles([]);
-        toast.success(
-          data.deduplicated
-            ? "Nhiệm vụ vừa được tạo (hệ thống chặn bấm trùng, không tạo thêm bản ghi)"
-            : `Đã chuyển ý kiến chỉ đạo thành công!${attachMsg}`
-        );
-        await fetchDashboardData();
-      } else {
-        toast.error(data.error || "Không thể giao nhiệm vụ");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Lỗi mạng khi giao việc");
-    } finally {
-      setIsAssigning(false);
     }
   };
 
@@ -336,13 +241,13 @@ export default function DashboardPage() {
                 </Link>
               )}
               {canAssign && (
-                <button
-                  onClick={() => setShowAssignModal(true)}
+                <Link
+                  href="/tasks?new=1"
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
                 >
                   <span className="material-symbols-outlined text-[18px]">add_task</span>
                   <span>Giao nhiệm vụ đột xuất</span>
-                </button>
+                </Link>
               )}
               <button
                 onClick={fetchDashboardData}
@@ -1096,13 +1001,13 @@ export default function DashboardPage() {
         <section className="px-margin pt-space-md">
           <div className="grid grid-cols-3 gap-2">
             {canAssign && (
-              <button
-                onClick={() => setShowAssignModal(true)}
+              <Link
+                href="/tasks?new=1"
                 className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-secondary text-on-secondary shadow-sm active:opacity-90 transition-fast active-press"
               >
                 <span className="material-symbols-outlined text-[20px] mb-1">add_task</span>
                 <span className="font-label-sm text-label-sm text-center leading-tight">Giao việc đột xuất</span>
-              </button>
+              </Link>
             )}
             {canApprove && (
               <Link
@@ -1288,159 +1193,6 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
-
-      {/* QUICK ASSIGN TASK MODAL */}
-      {showAssignModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
-            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary-fixed text-[22px]">add_task</span>
-                <h3 className="font-headline-sm text-headline-sm text-white">
-                  Giao Nhiệm Vụ Đột Xuất (Trực Ban Lãnh Đạo)
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowAssignModal(false)}
-                className="text-on-primary-container hover:text-white"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleQuickAssign}>
-              <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Nội dung nhiệm vụ chỉ đạo *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={assignTitle}
-                    onChange={(e) => setAssignTitle(e.target.value)}
-                    placeholder="Nhập nội dung nhiệm vụ chỉ đạo..."
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-space-sm">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">
-                      Đơn vị tiếp nhận
-                    </label>
-                    <select
-                      value={assignUnit}
-                      onChange={(e) => setAssignUnit(e.target.value)}
-                      className="h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary text-xs"
-                    >
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">
-                      Mức ưu tiên
-                    </label>
-                    <select
-                      value={assignPriority}
-                      onChange={(e) => setAssignPriority(e.target.value)}
-                      className="h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                    >
-                      <option value="Khẩn">Khẩn cấp</option>
-                      <option value="Cao">Cao</option>
-                      <option value="Trung bình">Trung bình</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Cán bộ chủ trì
-                  </label>
-                  <select
-                    value={assignOwner}
-                    onChange={(e) => setAssignOwner(e.target.value)}
-                    className="h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary text-xs"
-                  >
-                    {assignPeople.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.fullName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <CollaboratorPicker
-                  people={assignPeople}
-                  value={assignCollabs}
-                  onChange={setAssignCollabs}
-                  excludeId={assignOwner}
-                  disabled={isAssigning}
-                />
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Hạn chót hoàn thành
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={assignDeadline}
-                    onChange={(e) => setAssignDeadline(e.target.value)}
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Ảnh / Văn bản kèm theo {assignFiles.length > 0 && `(${assignFiles.length} tệp)`}
-                  </label>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx"
-                    disabled={isAssigning}
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      const valid = files.filter((f) => {
-                        if (f.size > 10 * 1024 * 1024) {
-                          toast.error(`Tệp ${f.name} quá 10MB — bỏ qua`);
-                          return false;
-                        }
-                        return true;
-                      }).slice(0, 5);
-                      setAssignFiles(valid);
-                    }}
-                    className="text-body-md font-body-md text-on-surface file:mr-2 file:px-3 file:py-1.5 file:rounded file:bg-surface-container file:text-primary file:text-xs file:font-semibold file:border file:border-border-subtle"
-                  />
-                  <p className="text-[11px] text-on-surface-variant">Tối đa 5 tệp, mỗi tệp ≤ 10MB.</p>
-                </div>
-              </div>
-
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
-                <button
-                  type="button"
-                  onClick={() => setShowAssignModal(false)}
-                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={isAssigning}
-                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press disabled:opacity-50"
-                >
-                  {isAssigning ? "Đang chuyển..." : "Chuyển ý kiến chỉ đạo"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
