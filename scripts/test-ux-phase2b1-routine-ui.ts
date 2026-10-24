@@ -85,6 +85,8 @@ async function main() {
 
     await page.goto(`${BASE}/routine`, { waitUntil: "networkidle2", timeout: 120000 });
     await page.waitForSelector('[data-testid="routine-catalog-picker"]', { timeout: 120000 });
+    // Dev server hydrate không đồng bộ; chờ một nhịp trước khi thao tác input có state React.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
     const today = todayInVietnam();
     const entryDateValue = await page.$eval('[data-testid="routine-entry-date"]', (el: any) => el.value);

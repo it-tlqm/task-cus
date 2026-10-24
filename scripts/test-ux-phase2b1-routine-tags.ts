@@ -61,7 +61,7 @@ const createdEntryIds: string[] = [];
 const createdWorkItemIds: string[] = [];
 const createdWeekPeriodIds: string[] = [];
 let lockedPeriodBackup: { id: string; isLocked: boolean } | null = null;
-let legacyReviewPeriodId: string | null = null;
+const legacyPeriodIds: string[] = [];
 
 async function postRoutine(token: string, body: Record<string, unknown>) {
   const res = await fetch(`${BASE}/api/routine`, {
@@ -289,6 +289,34 @@ async function main() {
   check(
     "3b. Query theo ngày không bị cap và hasMore=false",
     boundedRes.status === 200 && boundedJson.hasMore === false && boundedJson.limit === null
+  );
+
+  const wideRangeRes = await fetch(
+    `${BASE}/api/routine?hideDemo=0&from=2026-09-01&to=2026-10-31`,
+    { headers: H(token) }
+  );
+  check("3b. Từ chối range quá 31 ngày", wideRangeRes.status === 400, `HTTP ${wideRangeRes.status}`);
+
+  const maxRangeRes = await fetch(
+    `${BASE}/api/routine?hideDemo=0&from=2026-10-01&to=2026-10-31`,
+    { headers: H(token) }
+  );
+  const maxRangeJson = await maxRangeRes.json().catch(() => ({}));
+  check(
+    "3b. Range đúng 31 ngày được phép",
+    maxRangeRes.status === 200 && maxRangeJson.hasMore === false && maxRangeJson.limit === null
+  );
+
+  const oneSidedRes = await fetch(`${BASE}/api/routine?hideDemo=0&from=2026-01-01&limit=1`, {
+    headers: H(token),
+  });
+  const oneSidedJson = await oneSidedRes.json().catch(() => ({}));
+  check(
+    "3b. Range một phía vẫn bị cap 500",
+    oneSidedRes.status === 200 &&
+      oneSidedJson.limit === 1 &&
+      oneSidedJson.entries?.length <= 1,
+    `limit=${oneSidedJson.limit} n=${oneSidedJson.entries?.length}`
   );
 
   // ---- 4. Legacy catalogEntryId vẫn hoạt động ----
@@ -634,9 +662,9 @@ async function main() {
       isLocked: false,
     },
   });
-  legacyReviewPeriodId = legacyWeek.id;
+  legacyPeriodIds.push(legacyWeek.id);
 
-  for (const vnDate of ["2026-10-25", "2026-10-26", "2026-11-01", "2026-11-02"]) {
+  const assertWeekAttribution = async (vnDate: string, label: string) => {
     const expected = getIsoWeekFromDate(new Date(`${vnDate}T12:00:00+07:00`));
     const periodBeforeDate = await prisma.reportingPeriod.findFirst({
       where: { type: "WEEK", startAt: expected.startAt },
@@ -657,29 +685,124 @@ async function main() {
         })
       : null;
     if (entry?.workItemId) createdWorkItemIds.push(entry.workItemId);
-    check(
-      `10. ${vnDate} gán đúng tuần ${expected.weekNumber} (không dùng tuần legacy)`,
+    const correctWeek =
       created.res.status === 201 &&
-        !!entry?.period &&
-        entry.periodId !== legacyWeek.id &&
-        entry.period.startAt.getTime() === expected.startAt.getTime() &&
-        entry.period.endAt.getTime() === expected.endInclusive.getTime(),
+      !!entry?.period &&
+      entry.period.startAt.getTime() === expected.startAt.getTime() &&
+      entry.period.endAt.getTime() === expected.endInclusive.getTime();
+    check(
+      `${label} ${vnDate} gán đúng tuần ${expected.weekNumber}`,
+      correctWeek,
       `HTTP ${created.res.status} period=${entry?.period?.title || "?"}`
     );
     if (!periodBeforeDate && entry?.periodId) createdWeekPeriodIds.push(entry.periodId);
-  }
+    return { entry, status: created.res.status };
+  };
 
-  // Client gửi periodId của tuần legacy cho ngày Thứ Hai kế tiếp → phải từ chối.
-  const legacySupplied = await postRoutine(token, {
+  await assertWeekAttribution("2026-10-25", "10.");
+  await assertWeekAttribution("2026-10-26", "10.");
+  await assertWeekAttribution("2026-11-01", "10.");
+
+  // Legacy tuần 44 (26/10–01/11 end 23:59Z) xuất hiện TRƯỚC khi ghi 02/11.
+  const legacyWeek44 = await prisma.reportingPeriod.create({
+    data: {
+      type: "WEEK",
+      title: `${TMP} LEGACY 26/10-01/11 end 23:59Z ${Date.now()}`,
+      startAt: new Date("2026-10-26T00:00:00.000Z"),
+      endAt: new Date("2026-11-01T23:59:59.999Z"),
+      isLocked: false,
+    },
+  });
+  legacyPeriodIds.push(legacyWeek44.id);
+  await assertWeekAttribution("2026-11-02", "10. (sau legacy week44)");
+
+  // ---- 11. Legacy periodId: chấp nhận cùng tuần, từ chối sang tuần sau ----
+  const acceptedLegacy = await postRoutine(token, {
     periodId: legacyWeek.id,
-    title: `${TMP} legacy period bị từ chối ${Date.now()}`,
+    title: `${TMP} legacy period 20/10 được nhận ${Date.now()}`,
+    occurrenceStatus: "OCCURRED",
+    workDate: "2026-10-20",
+  });
+  const acceptedEntryId = acceptedLegacy.json?.routineEntry?.id;
+  if (acceptedEntryId) createdEntryIds.push(acceptedEntryId);
+  const acceptedEntry = acceptedEntryId
+    ? await prisma.routineEntry.findUnique({
+        where: { id: acceptedEntryId },
+        include: { workItem: true },
+      })
+    : null;
+  if (acceptedEntry?.workItemId) createdWorkItemIds.push(acceptedEntry.workItemId);
+  check(
+    "11. Chấp nhận periodId legacy 19–25/10 cho ngày 20/10 (cùng tuần ISO)",
+    acceptedLegacy.res.status === 201 && acceptedEntry?.periodId === legacyWeek.id,
+    `HTTP ${acceptedLegacy.res.status}`
+  );
+
+  const rejectedLegacy = await postRoutine(token, {
+    periodId: legacyWeek.id,
+    title: `${TMP} legacy period 26/10 bị từ chối ${Date.now()}`,
     occurrenceStatus: "OCCURRED",
     workDate: "2026-10-26",
   });
   check(
-    "10. Từ chối periodId tuần legacy không chứa đúng ngày VN",
-    legacySupplied.res.status === 400,
-    `HTTP ${legacySupplied.res.status}`
+    "11. Từ chối periodId legacy 19–25/10 cho ngày 26/10 (tuần kế tiếp)",
+    rejectedLegacy.res.status === 400,
+    `HTTP ${rejectedLegacy.res.status}`
+  );
+
+  // ---- 12. Không được bypass tuần đã khóa qua kỳ legacy misaligned ----
+  const lockedLegacyTitle = `${TMP} LEGACY LOCKED week44 26/10-01/11 ${Date.now()}`;
+  const lockedLegacy = await prisma.reportingPeriod.create({
+    data: {
+      type: "WEEK",
+      title: lockedLegacyTitle,
+      startAt: new Date("2026-10-26T00:00:00.000Z"),
+      endAt: new Date("2026-11-01T23:59:59.999Z"),
+      isLocked: true,
+    },
+  });
+  legacyPeriodIds.push(lockedLegacy.id);
+  const periodsBeforeLockedWrite = await prisma.reportingPeriod.count();
+  const lockedWrite = await postRoutine(token, {
+    title: `${TMP} ghi vào tuần khóa ${Date.now()}`,
+    occurrenceStatus: "OCCURRED",
+    workDate: "2026-10-28",
+  });
+  check(
+    "12. Ghi vào tuần có legacy week44 đã khóa trả 423",
+    lockedWrite.res.status === 423,
+    `HTTP ${lockedWrite.res.status}`
+  );
+  check(
+    "12. Tuần khóa không tạo thêm kỳ song song",
+    (await prisma.reportingPeriod.count()) === periodsBeforeLockedWrite
+  );
+
+  // ---- 13. P2002 title conflict: đọc lại, không trả lỗi 400 giả khi kỳ đúng ----
+  // Tạo kỳ cùng title chuẩn nhưng khoảng ngày sai → helper phải 400, không crash 500.
+  const conflictDate = "2027-02-01";
+  const conflictWeek = getIsoWeekFromDate(new Date(`${conflictDate}T12:00:00+07:00`));
+  const conflictPeriod = await prisma.reportingPeriod.create({
+    data: {
+      type: "WEEK",
+      title: conflictWeek.standardTitle,
+      startAt: new Date("2020-01-06T00:00:00.000Z"),
+      endAt: new Date("2020-01-12T23:59:59.999Z"),
+      isLocked: false,
+    },
+  });
+  legacyPeriodIds.push(conflictPeriod.id);
+  const periodsBeforeConflict = await prisma.reportingPeriod.count();
+  const conflictWrite = await postRoutine(token, {
+    title: `${TMP} title conflict ${Date.now()}`,
+    occurrenceStatus: "OCCURRED",
+    workDate: conflictDate,
+  });
+  check(
+    "13. P2002 title conflict misaligned trả 400 (không 500), không tạo kỳ",
+    conflictWrite.res.status === 400 &&
+      (await prisma.reportingPeriod.count()) === periodsBeforeConflict,
+    `HTTP ${conflictWrite.res.status}`
   );
 }
 
@@ -713,10 +836,10 @@ async function cleanup() {
       await prisma.reportingPeriod.delete({ where: { id: periodId } }).catch(() => {});
     }
   }
-  if (legacyReviewPeriodId) {
-    const refs = await prisma.routineEntry.count({ where: { periodId: legacyReviewPeriodId } }).catch(() => 1);
+  for (const periodId of legacyPeriodIds) {
+    const refs = await prisma.routineEntry.count({ where: { periodId } }).catch(() => 1);
     if (refs === 0) {
-      await prisma.reportingPeriod.delete({ where: { id: legacyReviewPeriodId } }).catch(() => {});
+      await prisma.reportingPeriod.delete({ where: { id: periodId } }).catch(() => {});
     }
   }
 }

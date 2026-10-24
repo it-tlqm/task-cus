@@ -9,8 +9,11 @@ import { parseDateOnly, todayInVietnam } from "@/server/work-dates";
 import { getCatalogEntrySelectionError } from "@/server/work-catalog";
 import {
   isVnDateWithinReportingPeriod,
+  ReportingPeriodError,
   resolveReportingWeekContainingVnDate,
 } from "@/server/reporting-period";
+
+const MAX_ROUTINE_DATE_RANGE_DAYS = 31;
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,6 +53,18 @@ export async function GET(req: NextRequest) {
     if (workDateFrom && workDateTo && workDateFrom > workDateTo) {
       return jsonError("Khoảng ngày không hợp lệ: 'from' phải trước hoặc bằng 'to'", 400);
     }
+    // P4: range có cả from+to không được vượt quá 31 ngày (tránh tải toàn lịch sử).
+    if (workDateFrom && workDateTo) {
+      const spanDays =
+        Math.round((workDateTo.getTime() - workDateFrom.getTime()) / 86400000) + 1;
+      if (spanDays > MAX_ROUTINE_DATE_RANGE_DAYS) {
+        return jsonError(
+          `Khoảng ngày tối đa ${MAX_ROUTINE_DATE_RANGE_DAYS} ngày — vui lòng thu hẹp bộ lọc`,
+          400
+        );
+      }
+    }
+    const hasFullDateRange = !!(workDateFrom && workDateTo);
 
     const authorizedUnits = await getAuthorizedUnitIds(user);
     if (unitId && authorizedUnits !== "ALL" && !authorizedUnits.includes(unitId)) {
@@ -78,9 +93,9 @@ export async function GET(req: NextRequest) {
     const targetPersonId = user.scopeType === "OWN" ? user.personId : (personId || undefined);
 
     // UX 2B1: chế độ "Tất cả ngày" không được trả toàn bộ lịch sử.
-    // Khi không có workDate/from/to (và không query 1 id), cap mặc định 500,
-    // cho phép client hạ bằng ?limit=1..500; trả hasMore để UI hiển thị ghi chú.
-    const isUnboundedList = !id && !workDateExact && !workDateFrom && !workDateTo;
+    // Khi không có workDate, không có range đủ from+to (và không query 1 id),
+    // cap mặc định 500; range một phía cũng bị cap. Range đủ 2 đầu đã giới hạn 31 ngày.
+    const isUnboundedList = !id && !workDateExact && !hasFullDateRange;
     const requestedLimitRaw = Number.parseInt(searchParams.get("limit") || "", 10);
     const requestedLimit =
       Number.isFinite(requestedLimitRaw) && requestedLimitRaw > 0 ? requestedLimitRaw : 500;
@@ -607,7 +622,15 @@ export async function POST(req: NextRequest) {
           const resolvedPeriod = await resolveReportingWeekContainingVnDate(workDateIso);
           periodId = resolvedPeriod.id;
         } catch (error: any) {
-          return jsonError(error.message || "Không thể xác định kỳ tuần cho ngày đã chọn", error.statusCode || 400);
+          // P5: chỉ lỗi nghiệp vụ đã biết mới trả message/4xx; lỗi hệ thống → 500 generic.
+          if (error instanceof ReportingPeriodError) {
+            return jsonError(
+              error.message,
+              error.statusCode || 400
+            );
+          }
+          console.error("Error resolving routine reporting period:", error);
+          return jsonError("Không thể xác định kỳ báo cáo cho ngày đã chọn", 500);
         }
       }
     }
