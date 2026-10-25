@@ -6,7 +6,7 @@
  * Gọi `/api/metrics/targets/*`; không sửa `/api/metrics/admin`.
  * D5 đang DEFERRED_B_C_3: UI hiển thị “chưa có quy tắc”; không tính % chính thức.
  */
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 import type { MetricOption, MetricRuleOption, TargetDraftInput, TargetLabelCode } from "../../lib/metrics-contract";
 import { metricRuleFor } from "../../lib/metrics-contract";
@@ -38,6 +38,8 @@ interface ConfigGroup {
 
 export interface MetricTargetManagerProps {
   groups: ConfigGroup[];
+  /** Mã chỉ tiêu cần chọn sẵn khi mở từ link "Nhập chỉ tiêu đối chiếu". */
+  initialMetricCode?: string;
 }
 
 interface RevisionView {
@@ -61,7 +63,7 @@ function formatValue(v: number | null): string {
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(v);
 }
 
-export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
+export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTargetManagerProps) {
   const metricOptions: MetricOption[] = useMemo(
     () =>
       groups.flatMap((g) =>
@@ -88,16 +90,29 @@ export function MetricTargetManager({ groups }: MetricTargetManagerProps) {
   );
   const metricById = useMemo(() => new Map(metricOptions.map((m) => [m.id, m])), [metricOptions]);
 
-  const [selectedMetricId, setSelectedMetricId] = useState(metricOptions[0]?.id ?? "");
+  const [selectedMetricId, setSelectedMetricId] = useState(() => {
+    const matched = initialMetricCode
+      ? metricOptions.find((m) => m.code === initialMetricCode)
+      : null;
+    return matched?.id ?? metricOptions[0]?.id ?? "";
+  });
   const [targets, setTargets] = useState<TargetDraftInput[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [history, setHistory] = useState<{ target: TargetDraftInput; revisions: RevisionView[] } | null>(null);
+  const initialMetricApplied = useRef(false);
 
   useEffect(() => {
     if (!selectedMetricId && metricOptions[0]) setSelectedMetricId(metricOptions[0].id);
   }, [metricOptions, selectedMetricId]);
+
+  useEffect(() => {
+    if (initialMetricApplied.current || !initialMetricCode || metricOptions.length === 0) return;
+    const matched = metricOptions.find((m) => m.code === initialMetricCode);
+    if (matched) setSelectedMetricId(matched.id);
+    initialMetricApplied.current = true;
+  }, [initialMetricCode, metricOptions]);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 

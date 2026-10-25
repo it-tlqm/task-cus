@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { fmtDate, fmtMetric, fmtPercent } from "@/lib/metric-format";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export interface ComparisonTargetBlock {
   targetId: string | null;
@@ -90,6 +91,8 @@ export function RevenueComparisonSection({
   className?: string;
   showConfigureLink?: boolean;
 }) {
+  const { can } = usePermissions();
+  const canConfigure = can("metrics.config");
   const rows = Array.isArray(comparison?.rows) ? comparison!.rows! : [];
   if (rows.length === 0) return null;
 
@@ -238,9 +241,13 @@ export function RevenueComparisonSection({
         >
           Kỳ trước/cùng kỳ: SO CÙNG SỐ NGÀY (B1-A)
         </span>
-        {showConfigureLink && (
-          <Link href="/giao-ban/cau-hinh" className="text-label-sm font-semibold text-primary hover:underline whitespace-nowrap">
-            Cấu hình chỉ tiêu →
+        {(showConfigureLink || canConfigure) && (
+          <Link
+            href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-[16px]">edit_note</span>
+            Nhập chỉ tiêu đối chiếu →
           </Link>
         )}
       </div>

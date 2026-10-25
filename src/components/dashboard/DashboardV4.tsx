@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatVnDate } from "@/lib/datetime";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type PeriodKey = "today" | "week" | "month" | "year";
 type ViewKey = "overview" | "charts" | "table" | "compare";
@@ -132,6 +133,8 @@ function metricStatusLabel(status?: string): string {
 }
 
 export default function DashboardV4() {
+  const { can } = usePermissions();
+  const canConfigureMetrics = can("metrics.config");
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [view, setView] = useState<ViewKey>("overview");
   const [kpi, setKpi] = useState<KpiResponse | null>(null);
@@ -416,7 +419,19 @@ export default function DashboardV4() {
                 className="xl:col-span-2"
                 title="So sánh thu NSNN"
                 subtitle={`${comparisonRow?.name || "Thu NSNN"} · tháng hiện tại, tháng trước, cùng kỳ và chỉ tiêu`}
-                action={<Link href="/giao-ban/bao-cao" className="text-body-xs font-semibold text-secondary">Chi tiết →</Link>}
+                action={
+                  <div className="flex items-center gap-2">
+                    {canConfigureMetrics && (
+                      <Link
+                        href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
+                        className="text-body-xs font-semibold text-primary bg-primary/5 border border-primary/20 rounded-md px-2 py-1 hover:bg-primary/10"
+                      >
+                        Nhập chỉ tiêu →
+                      </Link>
+                    )}
+                    <Link href="/giao-ban/bao-cao" className="text-body-xs font-semibold text-secondary">Chi tiết →</Link>
+                  </div>
+                }
               >
                 <div className="h-[280px] px-1">
                   {hasComparisonData ? (
@@ -550,7 +565,20 @@ export default function DashboardV4() {
 
         {view === "compare" && (
           <section className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-            <Panel title="So sánh thu NSNN" subtitle={comparisonRow?.name || "Thu NSNN"}>
+            <Panel
+              title="So sánh thu NSNN"
+              subtitle={comparisonRow?.name || "Thu NSNN"}
+              action={
+                canConfigureMetrics ? (
+                  <Link
+                    href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
+                    className="text-body-xs font-semibold text-primary bg-primary/5 border border-primary/20 rounded-md px-2 py-1 hover:bg-primary/10"
+                  >
+                    Nhập chỉ tiêu →
+                  </Link>
+                ) : null
+              }
+            >
               <div className="h-[320px] px-1">
                 {hasComparisonData ? (
                   <ResponsiveContainer width="100%" height="100%">

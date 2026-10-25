@@ -46,9 +46,19 @@ export default function CauHinhSoLieuPage() {
   const { loading: permLoading, can } = usePermissions();
   const canConfigMetrics = can("metrics.config");
   const [tab, setTab] = useState<TabKey>("STRUCT");
+  const [initialMetricCode, setInitialMetricCode] = useState("");
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = (params.get("tab") || "").toUpperCase();
+    if (TABS.some((item) => item.key === requestedTab)) {
+      setTab(requestedTab as TabKey);
+    }
+    setInitialMetricCode(params.get("metric") || "");
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -685,7 +695,7 @@ export default function CauHinhSoLieuPage() {
         )}
 
         {/* ============ CHỈ TIÊU GIAO ============ */}
-        {tab === "TARGET" && <MetricTargetManager groups={groups} />}
+        {tab === "TARGET" && <MetricTargetManager groups={groups} initialMetricCode={initialMetricCode} />}
 
 
         {/* ============ MỐC LŨY KẾ ============ */}

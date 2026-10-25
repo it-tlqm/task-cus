@@ -27,6 +27,9 @@ const page = read("src/app/dashboard/v4/page.tsx");
 const component = read("src/components/dashboard/DashboardV4.tsx");
 const oldDashboard = read("src/app/dashboard/page.tsx");
 const kpiRoute = read("src/app/api/dashboard/kpi/route.ts");
+const comparison = read("src/components/dashboard/RevenueComparisonSection.tsx");
+const targetManager = read("src/components/metrics/MetricTargetManager.tsx");
+const configPage = read("src/app/giao-ban/cau-hinh/page.tsx");
 
 check("Có route /dashboard/v4", page.includes("DashboardV4"));
 check("Dùng Recharts", component.includes("recharts"));
@@ -39,6 +42,9 @@ check("Dashboard cũ có link thử V4", oldDashboard.includes('href="/dashboard
 check("KPI API hỗ trợ period=year", kpiRoute.includes('targetPeriodKey === "year"'));
 check("Không thay thế route /dashboard cũ", oldDashboard.includes("export default function DashboardPage"));
 check("Có empty state chưa cấu hình", component.includes("Chưa cấu hình chỉ tiêu"));
+check("Có link nhập chỉ tiêu đối chiếu", comparison.includes("/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"));
+check("Target manager nhận mã chỉ tiêu", targetManager.includes("initialMetricCode"));
+check("Cấu hình đọc tab/metric từ URL", configPage.includes('params.get("tab")') && configPage.includes('params.get("metric")'));
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
