@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockup — Bảng điều hành V4</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --primary:#1E40AF; --primary-700:#1e3a8a; --primary-50:#eff6ff;
+      --secondary:#3B82F6; --accent:#D97706; --accent-50:#fffbeb;
+      --bg:#F8FAFC; --card:#FFFFFF; --text:#1E3A8A; --muted:#475569;
+      --line:#DBEAFE; --soft:#E9EEF6; --danger:#DC2626; --success:#059669;
+      --warning:#D97706; --radius:16px;
+      --shadow:0 1px 2px rgba(30,58,138,.04), 0 12px 28px rgba(30,58,138,.06);
+      --font:"Fira Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+      --mono:"Fira Code",ui-monospace,SFMono-Regular,Consolas,monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#eef3f9;color:var(--text);font-family:var(--font)}
+    body{min-height:100vh}
+    a{color:inherit;text-decoration:none}
+    button{font:inherit;cursor:pointer}
+    .app{display:flex;min-height:100vh}
+    .sidebar{width:248px;flex:0 0 248px;background:#0f2747;color:#dbeafe;padding:22px 16px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh}
+    .brand{display:flex;align-items:center;gap:10px;padding:0 8px}
+    .brand-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#60a5fa,#1e40af);display:grid;place-items:center;color:#fff;font-weight:700;font-family:var(--mono);font-size:13px}
+    .brand-name{font-size:13px;font-weight:700;letter-spacing:.04em;line-height:1.25}
+    .brand-sub{font-size:10px;color:#93c5fd;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+    .nav-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7dd3fc;padding:0 10px;margin-bottom:4px}
+    .nav{display:flex;flex-direction:column;gap:3px}
+    .nav a{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;color:#bfdbfe;font-size:13px;line-height:1.2}
+    .nav a:hover{background:rgba(147,197,253,.10);color:#fff}
+    .nav a.active{background:#1e40af;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+    .nav svg{width:17px;height:17px;flex:0 0 17px;opacity:.9}
+    .sidebar-foot{margin-top:auto;padding:12px 10px;border-top:1px solid rgba(147,197,253,.14);font-size:11px;color:#93c5fd;line-height:1.5}
+    .main{flex:1;min-width:0;display:flex;flex-direction:column}
+    .topbar{height:72px;background:rgba(248,250,252,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:20}
+    .topbar h1{font-size:18px;margin:0;letter-spacing:-.01em}
+    .topbar .sub{font-size:11px;color:var(--muted);margin-top:2px}
+    .top-actions{display:flex;align-items:center;gap:10px}
+    .date-chip{font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 12px;display:flex;align-items:center;gap:6px}
+    .avatar{width:36px;height:36px;border-radius:50%;background:#dbeafe;color:var(--primary);display:grid;place-items:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:var(--shadow)}
+    .content{padding:22px 28px 44px;max-width:1680px;width:100%;margin:0 auto}
+    .mock-banner{display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(90deg,#eff6ff,#f8fafc);border:1px solid var(--line);border-radius:12px;padding:9px 14px;margin-bottom:16px;font-size:11px;color:var(--muted)}
+    .mock-banner strong{color:var(--primary)}
+    .filters{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:18px}
+    .filter-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .select,.view-tab,.period-tab,.export{height:36px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--muted);font-size:12px;padding:0 12px;display:inline-flex;align-items:center;gap:7px}
+    .select{font-weight:600;color:var(--text)}
+    .periods{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;min-width:420px}
+    .period-tab{border:0;background:transparent;height:30px;justify-content:center;padding:0 8px;white-space:nowrap}
+    .period-tab.active{background:var(--primary);color:#fff;box-shadow:0 2px 5px rgba(30,64,175,.2)}
+    .views{display:flex;gap:6px;align-items:center}
+    .view-tab{border-color:transparent;background:transparent;font-weight:600}
+    .view-tab.active{background:var(--primary-50);color:var(--primary);border-color:#bfdbfe}
+    .export{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:600;box-shadow:0 4px 10px rgba(30,64,175,.18)}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:14px}
+    .kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px 14px;box-shadow:var(--shadow);overflow:hidden}
+    .kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--secondary)}
+    .kpi.accent:before{background:var(--accent)} .kpi.success:before{background:var(--success)} .kpi.warning:before{background:var(--warning)}
+    .kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .kpi-label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.01em}
+    .kpi-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--primary-50);color:var(--primary)}
+    .kpi-value{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:-.04em;margin:10px 0 2px;white-space:nowrap}
+    .kpi-value small{font-family:var(--font);font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0}
+    .kpi-meta{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted)}
+    .delta{font-weight:700;color:var(--success)} .delta.down{color:var(--danger)} .delta.warn{color:var(--warning)}
+    .kpi-bar{height:5px;background:var(--soft);border-radius:99px;margin-top:11px;overflow:hidden}
+    .kpi-bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--secondary),var(--primary))}
+    .grid{display:grid;grid-template-columns:1.55fr .85fr;gap:14px;margin-bottom:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 18px 0}
+    .card-title{font-size:13px;font-weight:700;margin:0}
+    .card-sub{font-size:11px;color:var(--muted);margin-top:3px}
+    .card-link{font-size:11px;color:var(--primary);font-weight:600;white-space:nowrap}
+    .chart-wrap{padding:8px 14px 14px}
+    .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--muted);padding:0 4px 4px}
+    .legend i{width:8px;height:8px;border-radius:99px;display:inline-block;margin-right:5px;vertical-align:1px}
+    .chart{width:100%;height:auto;display:block}
+    .chart text{font-family:var(--font);fill:#64748b;font-size:9px}
+    .chart .value{font-family:var(--mono);fill:var(--primary);font-size:9px;font-weight:600}
+    .gauge-wrap{padding:14px 18px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+    .gauge{width:174px;height:174px;border-radius:50%;background:conic-gradient(var(--primary) 0 78.18%, #e2e8f0 78.18% 100%);display:grid;place-items:center;position:relative;box-shadow:inset 0 0 0 1px rgba(30,64,175,.05)}
+    .gauge:before{content:"";position:absolute;inset:14px;background:#fff;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line)}
+    .gauge-inner{position:relative;text-align:center;z-index:1}
+    .gauge-value{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--primary);letter-spacing:-.05em}
+    .gauge-label{font-size:10px;color:var(--muted);margin-top:2px}
+    .gauge-foot{font-size:11px;color:var(--muted);text-align:center;line-height:1.5}
+    .gauge-foot strong{color:var(--text)}
+    .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .mini-grid .card{min-height:250px}
+    .donut-wrap{display:flex;align-items:center;gap:18px;padding:14px 18px 18px}
+    .donut{width:132px;height:132px;border-radius:50%;background:conic-gradient(var(--primary) 0 45%, var(--secondary) 45% 66%, var(--accent) 66% 84%, #cbd5e1 84% 100%);position:relative;flex:0 0 132px}
+    .donut:before{content:"";position:absolute;inset:18px;background:#fff;border-radius:50%}
+    .donut-center{position:absolute;inset:0;display:grid;place-items:center;text-align:center;z-index:1}
+    .donut-center strong{display:block;font-family:var(--mono);font-size:22px;color:var(--primary)}
+    .donut-center span{font-size:9px;color:var(--muted)}
+    .donut-legend{display:flex;flex-direction:column;gap:8px;font-size:11px;color:var(--muted);min-width:0}
+    .donut-legend div{display:flex;align-items:center;gap:7px;white-space:nowrap}
+    .donut-legend i{width:8px;height:8px;border-radius:99px;display:inline-block}
+    .donut-legend b{margin-left:auto;color:var(--text);font-family:var(--mono);font-size:11px}
+    .alerts{padding:12px 18px 16px;display:flex;flex-direction:column;gap:8px}
+    .alert{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+    .alert .dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:0 0 7px;background:var(--warning)}
+    .alert.danger .dot{background:var(--danger)} .alert.info .dot{background:var(--secondary)}
+    .alert p{margin:0;font-size:11px;line-height:1.45;color:var(--muted)}
+    .alert strong{display:block;font-size:11px;color:var(--text);margin-bottom:1px}
+    .alert a{font-size:10px;color:var(--primary);font-weight:600;white-space:nowrap;margin-left:auto;padding-top:2px}
+    .rank{padding:12px 18px 16px;display:flex;flex-direction:column;gap:11px}
+    .rank-row{display:grid;grid-template-columns:120px 1fr 42px;align-items:center;gap:10px;font-size:11px;color:var(--muted)}
+    .rank-row b{font-family:var(--mono);color:var(--text);text-align:right;font-size:11px}
+    .rank-bar{height:8px;background:var(--soft);border-radius:99px;overflow:hidden}
+    .rank-bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--secondary),var(--primary))}
+    .rank-row:nth-child(2) .rank-bar span{background:linear-gradient(90deg,#60a5fa,#3b82f6)}
+    .rank-row:nth-child(3) .rank-bar span{background:linear-gradient(90deg,#93c5fd,#60a5fa)}
+    .rank-row:nth-child(4) .rank-bar span{background:linear-gradient(90deg,#bfdbfe,#93c5fd)}
+    .table-card{overflow:hidden}
+    .table-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 18px 12px}
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;min-width:820px}
+    th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:10px 14px;background:var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line);white-space:nowrap}
+    td{font-size:12px;padding:12px 14px;border-bottom:1px solid #edf2f7;color:var(--text);white-space:nowrap}
+    td.num{font-family:var(--mono);text-align:right}
+    tr:hover td{background:#f8fbff}
+    .pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:4px 8px;border-radius:999px;background:var(--primary-50);color:var(--primary)}
+    .pill.ok{background:#ecfdf5;color:#047857}.pill.warn{background:#fffbeb;color:#b45309}.pill.danger{background:#fef2f2;color:#b91c1c}
+    .pill:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+    .table-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 18px;font-size:11px;color:var(--muted)}
+    .source{font-size:10px;color:#94a3b8;margin-top:10px;line-height:1.5}
+    @media (max-width:1180px){
+      .sidebar{width:76px;flex-basis:76px;padding:18px 10px;align-items:center}
+      .brand-name,.brand-sub,.nav-label,.nav a span,.sidebar-foot{display:none}
+      .nav a{justify-content:center;padding:11px}
+      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid{grid-template-columns:1fr}
+      .mini-grid{grid-template-columns:1fr}
+    }
+    @media (max-width:760px){
+      .sidebar{display:none}
+      .topbar{padding:0 16px;height:64px}
+      .topbar h1{font-size:16px}
+      .content{padding:16px 14px 34px}
+      .date-chip{display:none}
+      .filters{padding:9px}
+      .periods{min-width:0;width:100%;grid-template-columns:repeat(2,1fr)}
+      .filter-group{width:100%}
+      .views{overflow-x:auto;width:100%;padding-bottom:1px}
+      .kpis{grid-template-columns:1fr 1fr;gap:10px}
+      .kpi-value{font-size:20px}
+      .kpi{padding:13px}
+      .kpi-icon{width:28px;height:28px}
+      .donut-wrap{flex-direction:column;align-items:flex-start}
+      .table-head{padding:14px 14px 10px}
+      .source{padding:0 2px}
+    }
+    @media (max-width:430px){
+      .kpis{grid-template-columns:1fr}
+      .periods{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Điều hướng chính">
+    <div class="brand">
+      <div class="brand-mark">TL</div>
+      <div>
+        <div class="brand-name">HẢI QUAN TÀ LÙNG</div>
+        <div class="brand-sub">Điều hành nội bộ</div>
+      </div>
+    </div>
+    <div>
+      <div class="nav-label">Tổng quan</div>
+      <nav class="nav">
+        <a class="active" href="#" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>Bảng điều hành</span>
+        </a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5m0 14h16M8 16v-5m4 5V7m4 9v-3"/></svg><span>Số liệu giao ban</span></a>
+      </nav>
+    </div>
+    <div>
+      <div class="nav-label">Công việc</div>
+      <nav class="nav">
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h10a2 2 0 0 1 2 2v16l-7-3-7 3V5a2 2 0 0 1 2-2Z"/></svg><span>Nhật ký công việc</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Công việc phát sinh</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M4 9h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9Zm0 4h16"/></svg><span>Lịch trực</span></a>
+      </nav>
+    </div>
+    <div>
+      <div class="nav-label">Kết quả</div>
+      <nav class="nav">
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5m0 14h16M8 16v-5m4 5V7m4 9v-3"/></svg><span>Báo cáo &amp; tổng hợp</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.56V21h-3v-.08a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1H5v-3h.08a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.12-2.12.06.06A1.7 1.7 0 0 0 10.3 6a1.7 1.7 0 0 0 1-1.56V4h3v.08a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19 10.3a1.7 1.7 0 0 0 1.56 1H21v3h-.08a1.7 1.7 0 0 0-1.52 1Z"/></svg><span>Quản trị hệ thống</span></a>
+      </nav>
+    </div>
+    <div class="sidebar-foot">
+      Dữ liệu cập nhật 09:42<br/>
+      Phiên bản V4 · Mockup
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Bảng điều hành</h1>
+        <div class="sub">Hải quan cửa khẩu Quốc tế Tà Lùng · Phạm vi giám sát</div>
+      </div>
+      <div class="top-actions">
+        <div class="date-chip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+          Chủ nhật, 25/10/2026
+        </div>
+        <div class="avatar" title="Lãnh đạo đơn vị">LĐ</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="mock-banner">
+        <span><strong>BẢN MOCKUP GIAO DIỆN</strong> · Dữ liệu minh họa, chưa phải số liệu Production</span>
+        <span>Dashboard V4 · 25/10/2026</span>
+      </div>
+
+      <section class="filters" aria-label="Bộ lọc dashboard">
+        <div class="filter-group">
+          <select class="select" aria-label="Đơn vị">
+            <option>HQCK Quốc tế Tà Lùng</option>
+          </select>
+          <div class="periods" role="tablist" aria-label="Kỳ báo cáo">
+            <button class="period-tab" role="tab" aria-selected="false">Hôm nay</button>
+            <button class="period-tab" role="tab" aria-selected="false">Tuần 43</button>
+            <button class="period-tab active" role="tab" aria-selected="true">Tháng 10/2026</button>
+            <button class="period-tab" role="tab" aria-selected="false">Năm 2026</button>
+          </div>
+        </div>
+        <div class="views" role="tablist" aria-label="Kiểu xem">
+          <button class="view-tab active" role="tab" aria-selected="true">Tổng quan</button>
+          <button class="view-tab" role="tab" aria-selected="false">Biểu đồ</button>
+          <button class="view-tab" role="tab" aria-selected="false">Bảng</button>
+          <button class="view-tab" role="tab" aria-selected="false">So sánh</button>
+          <button class="export">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+            Xuất
+          </button>
+        </div>
+      </section>
+
+      <section class="kpis" aria-label="Chỉ số chính">
+        <article class="kpi accent">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Thu NSNN / chỉ tiêu</div>
+              <div class="kpi-value">2.651,8 <small>tỷ đồng</small></div>
+            </div>
+            <div class="kpi-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5m0 14h16M8 16v-5m4 5V7m4 9v-3"/></svg>
+            </div>
+          </div>
+          <div class="kpi-meta"><span class="delta">↗ 12,4%</span><span>so cùng kỳ</span></div>
+          <div class="kpi-bar"><span style="width:78.18%"></span></div>
+          <div class="kpi-meta" style="margin-top:7px"><span>78,18% kế hoạch năm</span><span style="margin-left:auto">Mục tiêu 3.391 tỷ</span></div>
+        </article>
+
+        <article class="kpi">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Nhiệm vụ đang thực hiện</div>
+              <div class="kpi-value">14 <small>nhiệm vụ</small></div>
+            </div>
+            <div class="kpi-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+            </div>
+          </div>
+          <div class="kpi-meta"><span class="delta warn">5 đang làm</span><span>· 3 quá hạn</span></div>
+          <div class="kpi-bar"><span style="width:64%"></span></div>
+          <div class="kpi-meta" style="margin-top:7px"><span>5 chờ duyệt</span><span style="margin-left:auto">1 sắp hạn</span></div>
+        </article>
+
+        <article class="kpi warning">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Chờ duyệt / quá hạn</div>
+              <div class="kpi-value">5 <small>hồ sơ</small></div>
+            </div>
+            <div class="kpi-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+          </div>
+          <div class="kpi-meta"><span class="delta down">3 quá hạn</span><span>cần xử lý hôm nay</span></div>
+          <div class="kpi-bar"><span style="width:36%;background:linear-gradient(90deg,#fbbf24,#d97706)"></span></div>
+          <div class="kpi-meta" style="margin-top:7px"><span>2 hồ sơ chờ &gt; 2 ngày</span><span style="margin-left:auto">Xem ngay →</span></div>
+        </article>
+
+        <article class="kpi success">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Chất lượng kết quả (YC-10)</div>
+              <div class="kpi-value">84<small>%</small></div>
+            </div>
+            <div class="kpi-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.4l6.1-.9L12 3Z"/></svg>
+            </div>
+          </div>
+          <div class="kpi-meta"><span class="delta">↗ 3,2 điểm</span><span>so tháng trước</span></div>
+          <div class="kpi-bar"><span style="width:84%;background:linear-gradient(90deg,#34d399,#059669)"></span></div>
+          <div class="kpi-meta" style="margin-top:7px"><span>7 lượt đánh giá</span><span style="margin-left:auto">Cao nhất 95%</span></div>
+        </article>
+      </section>
+
+      <section class="grid" aria-label="Biểu đồ chính">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Xu hướng thu NSNN</h2>
+              <div class="card-sub">Lũy kế tháng 10/2026 · so với chỉ tiêu tháng</div>
+            </div>
+            <a class="card-link" href="#">Chi tiết →</a>
+          </div>
+          <div class="chart-wrap">
+            <div class="legend">
+              <span><i style="background:#1E40AF"></i>Thực tế lũy kế</span>
+              <span><i style="background:#D97706"></i>Chỉ tiêu tháng</span>
+              <span><i style="background:#CBD5E1"></i>Kỳ trước</span>
+            </div>
+            <svg class="chart" viewBox="0 0 720 250" role="img" aria-label="Biểu đồ xu hướng thu NSNN tháng 10">
+              <line x1="42" y1="20" x2="42" y2="210" stroke="#e2e8f0"/>
+              <line x1="42" y1="210" x2="700" y2="210" stroke="#e2e8f0"/>
+              <line x1="42" y1="60" x2="700" y2="60" stroke="#f1f5f9"/>
+              <line x1="42" y1="100" x2="700" y2="100" stroke="#f1f5f9"/>
+              <line x1="42" y1="140" x2="700" y2="140" stroke="#f1f5f9"/>
+              <line x1="42" y1="180" x2="700" y2="180" stroke="#f1f5f9"/>
+              <text x="36" y="213" text-anchor="end">0</text>
+              <text x="36" y="183" text-anchor="end">500</text>
+              <text x="36" y="143" text-anchor="end">1.000</text>
+              <text x="36" y="103" text-anchor="end">1.500</text>
+              <text x="36" y="63" text-anchor="end">2.000</text>
+              <text x="36" y="23" text-anchor="end">2.500</text>
+              <text x="70" y="230">01/10</text>
+              <text x="210" y="230">05/10</text>
+              <text x="355" y="230">10/10</text>
+              <text x="500" y="230">15/10</text>
+              <text x="620" y="230">20/10</text>
+              <text x="680" y="230">24/10</text>
+              <path d="M70 190 L140 178 L210 170 L280 150 L355 138 L430 112 L500 96 L560 78 L620 42 L680 28 L680 210 L70 210 Z" fill="#eff6ff"/>
+              <path d="M70 190 L140 178 L210 170 L280 150 L355 138 L430 112 L500 96 L560 78 L620 42 L680 28" fill="none" stroke="#1E40AF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M70 185 L140 170 L210 158 L280 142 L355 124 L430 104 L500 86 L560 66 L620 46 L680 30" fill="none" stroke="#D97706" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round"/>
+              <path d="M70 205 L140 200 L210 192 L280 186 L355 176 L430 164 L500 154 L560 140 L620 126 L680 116" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="4 5"/>
+              <circle cx="680" cy="28" r="4" fill="#1E40AF" stroke="#fff" stroke-width="2"/>
+              <circle cx="680" cy="30" r="4" fill="#D97706" stroke="#fff" stroke-width="2"/>
+              <text class="value" x="685" y="24">2.651,8</text>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Tiến độ chỉ tiêu</h2>
+              <div class="card-sub">Kế hoạch năm 2026</div>
+            </div>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge" role="img" aria-label="78,18 phần trăm kế hoạch năm">
+              <div class="gauge-inner">
+                <div class="gauge-value">78,18%</div>
+                <div class="gauge-label">hoàn thành</div>
+              </div>
+            </div>
+            <div class="gauge-foot">
+              Đã thu <strong>2.651,8 tỷ</strong><br/>
+              còn thiếu <strong>739,2 tỷ</strong> so với kế hoạch
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="mini-grid" aria-label="Widget phụ">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Nhiệm vụ theo trạng thái</h2>
+              <div class="card-sub">Toàn đơn vị · tháng 10/2026</div>
+            </div>
+            <a class="card-link" href="#">Xem danh sách →</a>
+          </div>
+          <div class="donut-wrap">
+            <div class="donut" role="img" aria-label="Phân bố nhiệm vụ theo trạng thái">
+              <div class="donut-center"><div><strong>14</strong><span>nhiệm vụ</span></div></div>
+            </div>
+            <div class="donut-legend">
+              <div><i style="background:#1E40AF"></i>Đang thực hiện <b>5</b></div>
+              <div><i style="background:#3B82F6"></i>Chờ duyệt <b>3</b></div>
+              <div><i style="background:#D97706"></i>Quá hạn <b>3</b></div>
+              <div><i style="background:#CBD5E1"></i>Hoàn thành <b>3</b></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Cảnh báo cần xử lý</h2>
+              <div class="card-sub">Ưu tiên theo mức độ</div>
+            </div>
+            <a class="card-link" href="#">Tất cả →</a>
+          </div>
+          <div class="alerts">
+            <div class="alert danger">
+              <span class="dot"></span>
+              <div><strong>3 nhiệm vụ quá hạn</strong><p>2 việc thuộc bộ phận Giám sát; 1 việc chờ duyệt quá 2 ngày.</p></div>
+              <a href="#">Xem</a>
+            </div>
+            <div class="alert">
+              <span class="dot"></span>
+              <div><strong>2 chỉ tiêu chưa cấu hình</strong><p>Chỉ tiêu BTC và UBND chưa có target/baseline REAL.</p></div>
+              <a href="#">Cấu hình</a>
+            </div>
+            <div class="alert info">
+              <span class="dot"></span>
+              <div><strong>Quality thấp</strong><p>1 kết quả đạt 65% trong tuần 43 cần theo dõi.</p></div>
+              <a href="#">Xem</a>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="mini-grid" aria-label="Xếp hạng và phân bố">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Tải công việc theo bộ phận</h2>
+              <div class="card-sub">Số nhiệm vụ đang mở · tháng 10/2026</div>
+            </div>
+            <a class="card-link" href="#">Chi tiết →</a>
+          </div>
+          <div class="rank">
+            <div class="rank-row"><span>Giám sát</span><div class="rank-bar"><span style="width:88%"></span></div><b>8</b></div>
+            <div class="rank-row"><span>Nghiệp vụ</span><div class="rank-bar"><span style="width:56%"></span></div><b>5</b></div>
+            <div class="rank-row"><span>Hành chính</span><div class="rank-bar"><span style="width:34%"></span></div><b>3</b></div>
+            <div class="rank-row"><span>Kiểm soát</span><div class="rank-bar"><span style="width:22%"></span></div><b>2</b></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">Phân bố quality (YC-10)</h2>
+              <div class="card-sub">7 lượt đánh giá · tháng 10/2026</div>
+            </div>
+            <a class="card-link" href="#">Lịch sử →</a>
+          </div>
+          <div style="padding:16px 18px 18px">
+            <div style="display:flex;align-items:flex-end;gap:10px;height:120px;border-bottom:1px solid var(--line);padding:0 4px">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:34px;background:#dbeafe;border-radius:5px 5px 0 0"></div><span style="font-size:9px;color:var(--muted)">65</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:54px;background:#bfdbfe;border-radius:5px 5px 0 0"></div><span style="font-size:9px;color:var(--muted)">70</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:72px;background:#93c5fd;border-radius:5px 5px 0 0"></div><span style="font-size:9px;color:var(--muted)">75</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:100px;background:#60a5fa;border-radius:5px 5px 0 0"></div><span style="font-size:9px;color:var(--muted)">80</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:86px;background:#3b82f6;border-radius:5px 5px 0 0"></div><span style="font-size:9px;color:var(--muted)">85</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:62px;background:#1e40af;border-radius:5px 5px 0 0"></div><span style="font-size:9px;color:var(--muted)">90</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:38px;background:#172554;border-radius:5px 5px 0 0"></div><span style="font-size:9px;color:var(--muted)">95</span></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:10px;color:var(--muted)"><span>Trung bình <strong style="color:var(--text)">84%</strong></span><span>Cao nhất <strong style="color:var(--text)">95%</strong></span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card table-card" aria-label="Bảng chi tiết">
+        <div class="table-head">
+          <div>
+            <h2 class="card-title">Số liệu chi tiết</h2>
+            <div class="card-sub">Lớp đối chiếu chính thức · tháng 10/2026</div>
+          </div>
+          <a class="card-link" href="#">Mở toàn bộ bảng →</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Chỉ tiêu</th><th style="text-align:right">Trong ngày</th><th style="text-align:right">Tuần</th><th style="text-align:right">Lũy kế tháng</th><th style="text-align:right">Lũy kế năm</th><th>Trạng thái</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Thu NSNN (số thuế phát sinh)</strong></td><td class="num">1.334.441.535.806</td><td class="num">2.651.813.870.360</td><td class="num">2.651.813.870.360</td><td class="num">2.651.813.870.360</td><td><span class="pill ok">Đã nhập</span></td></tr>
+              <tr><td>↳ Ô tô</td><td class="num">976.580.710.648</td><td class="num">1.936.077.355.902</td><td class="num">1.936.077.355.902</td><td class="num">1.936.077.355.902</td><td><span class="pill">—</span></td></tr>
+              <tr><td>↳ Than cốc</td><td class="num">3.095.562.726</td><td class="num">6.178.939.999</td><td class="num">6.178.939.999</td><td class="num">6.178.939.999</td><td><span class="pill">—</span></td></tr>
+              <tr><td>↳ Hàng hóa khác</td><td class="num">354.765.262.432</td><td class="num">709.557.574.459</td><td class="num">709.557.574.459</td><td class="num">709.557.574.459</td><td><span class="pill">—</span></td></tr>
+              <tr><td>Mặt hàng phân bón</td><td class="num">134.872.416</td><td class="num">134.872.416</td><td class="num">134.872.416</td><td class="num">134.872.416</td><td><span class="pill warn">Chưa cấu hình</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-foot"><span>5 / 17 chỉ tiêu</span><span>Nguồn: metrics_daily_entries · cập nhật 09:42</span></div>
+      </section>
+
+      <p class="source">Bảng điều hành V4 · Mockup thiết kế. Số liệu minh họa. Bảng chi tiết vẫn là nguồn đối chiếu chính thức; biểu đồ chỉ hỗ trợ đọc xu hướng.</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>
