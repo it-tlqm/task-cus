@@ -65,3 +65,37 @@ vc rollback dpl_DtyiPJAzfL534hDtgQTeJoEGWxWn --scope tlqm --yes
 ```
 
 Không có migration/schema cần rollback.
+
+---
+
+## 7. Bổ sung — modal xem thông báo nhanh (25/10/2026)
+
+- **Deployment:** `dpl_616eHTsS76WdNqDqVt8imwsvWQyZ`
+- **Code:** `7d11267`
+- **Health:** `commit=7d11267`, `db=up`, `env=production`
+
+Đã thêm `NotificationQuickView` khi bấm chuông ở Header:
+
+- Desktop: panel nổi góc phải dưới header, rộng 430px.
+- Điện thoại: bottom sheet toàn chiều rộng.
+- Hiển thị 8 thông báo mới nhất; nền vàng/đỏ cho tin chưa đọc.
+- Đánh dấu đã đọc từng tin hoặc **Đọc tất cả**.
+- Có link **Xem tất cả thông báo** sang `/notifications`.
+- Đóng bằng nút X, click nền hoặc phím Escape.
+- Không migration/schema.
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `scripts/test-notification-quick-view.ts` | 10/10 PASS |
+| `scripts/test-notification-display.ts` | 9/9 PASS |
+| `npx tsc --noEmit` | PASS |
+| `pnpm build` | PASS |
+| `/api/health` Production | 200, db up |
+| `/login` | 200 |
+| `/dashboard`, `/notifications` | 307 unauth |
+
+Rollback về bản trước modal:
+
+```powershell
+vc rollback dpl_xCPQnrRUtVSZx67bEaXptuLKV5SH --scope tlqm --yes
+```
