@@ -4,7 +4,11 @@ import React, { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
-import RoutineCatalogPicker, { type ProposedProduct } from "./RoutineCatalogPicker";
+import { formatVnDate, vnDateOnly } from "@/lib/datetime";
+import { resolveRoutineDeclarationState } from "@/lib/routine-declaration";
+import RoutineCatalogPicker, { type ProposedProduct, type TxTag } from "./RoutineCatalogPicker";
+
+const SHIFT_LABELS: Record<string, string> = { SANG: "Sáng", CHIEU: "Chiều", CA_NGAY: "Cả ngày" };
 
 interface WorkLogEntry {
   id: string;
@@ -27,8 +31,11 @@ interface WorkLogEntry {
     name: string;
   };
   formValues?: Record<string, any>;
-  // --- F18 ---
+  // --- F18 / UX 2B1 ---
   catalogEntry?: { id: string; code: string; title: string } | null;
+  catalogTags?: Array<{ id: string; catalogEntryId: string; code: string; title: string; department?: string; sortOrder?: number }>;
+  workDate?: string | null;
+  shift?: string | null;
   productItem?: { id: string; code: string; taskName: string } | null;
   proposedProducts?: Array<{ productItemId: string; code: string; taskName: string; factor: number | null; quantity: number | null; unit: string | null; reviewState: string }>;
   sourceKind?: string | null;
@@ -74,8 +81,14 @@ interface ActiveFormVersion {
 
 export default function RoutinePage() {
   const [activeTab, setActiveTab] = useState<"tab1" | "tab2" | "tab3">("tab1");
-  const [logDate, setLogDate] = useState(() => new Date().toISOString().split("T")[0]);
+  // Ngày ghi nhận của bản ghi mới (mặc định theo lịch Việt Nam) — tách khỏi bộ lọc xem danh sách.
+  const [entryWorkDate, setEntryWorkDate] = useState(() => vnDateOnly());
+  const [logShift, setLogShift] = useState<"SANG" | "CHIEU" | "CA_NGAY">("CA_NGAY");
+  // Bộ lọc danh sách: mặc định hôm nay, có thể chuyển "Tất cả ngày" để xem lịch sử.
+  const [filterDate, setFilterDate] = useState(() => vnDateOnly());
+  const [filterAllDates, setFilterAllDates] = useState(false);
   const [entries, setEntries] = useState<WorkLogEntry[]>([]);
+  const [hasMoreEntries, setHasMoreEntries] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{
     fullName: string;
@@ -95,8 +108,8 @@ export default function RoutinePage() {
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  // --- F18: danh muc TX + san pham QD1277 + loc du lieu mau ---
-  const [selectedTx, setSelectedTx] = useState<any>(null);
+  // --- F18 / UX 2B1: N tag danh muc TX + nhieu san pham QD1277 + loc du lieu mau ---
+  const [selectedTxs, setSelectedTxs] = useState<TxTag[]>([]);
   const [proposedProducts, setProposedProducts] = useState<ProposedProduct[]>([]);
   const [hideDemo, setHideDemo] = useState(true);
   const [newCompany, setNewCompany] = useState("");
@@ -105,6 +118,8 @@ export default function RoutinePage() {
   const [newNotes, setNewNotes] = useState("");
   const [newProgress, setNewProgress] = useState<number>(100);
   const [dynamicFormValues, setDynamicFormValues] = useState<Record<string, any>>({});
+  // UX 3B: form khai báo mặc định thu gọn với vai trò được phép khai báo.
+  const [isDeclarationOpen, setIsDeclarationOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [catalogTemplates, setCatalogTemplates] = useState<Array<{ id: string; code: string; title: string }>>([]);
 
@@ -113,8 +128,15 @@ export default function RoutinePage() {
 
   // Tab 2: Admin Form Builder State
   // Chỉ người có quyền quản trị biểu mẫu / xem audit mới thấy tab 2-3
-  const { can: canPerm, canAudit } = usePermissions();
+  const { can: canPerm, canAudit, user: permissionUser, loading: permissionsLoading } = usePermissions();
   const canManageForms = canPerm("form.manage");
+  // UX 3B (UI-only): lãnh đạo đơn vị / quản trị hệ thống không khai báo đầu việc.
+  // Khi quyền còn tải, trạng thái là LOADING → chỉ placeholder, không lộ form/nút 1-chạm.
+  const declarationState = resolveRoutineDeclarationState(
+    permissionsLoading,
+    permissionUser?.role
+  );
+  const canDeclare = declarationState === "COLLAPSED";
   const [builderFields, setBuilderFields] = useState<FormFieldDef[]>([]);
   // F19: chi hien truong DN / container khi bieu mau (Form Builder) that su yeu cau.
   // Khong co bieu mau chuyen biet => dung bieu mau ghi nhan co ban, khong ep chi tieu thong quan.
@@ -129,10 +151,15 @@ export default function RoutinePage() {
   const [auditLoading, setAuditLoading] = useState(false);
 
   // 1. Fetch Routine entries and Active Form Version from PostgreSQL
-  const fetchRoutineData = async () => {
+  const fetchRoutineData = async (view?: { date?: string; allDates?: boolean }) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/routine?hideDemo=" + (hideDemo ? "1" : "0"));
+      const params = new URLSearchParams({ hideDemo: hideDemo ? "1" : "0" });
+      // UX 2B1: bộ lọc xem danh sách độc lập với ngày ghi nhận của bản ghi mới.
+      const viewAll = view?.allDates ?? filterAllDates;
+      const viewDate = view?.date ?? filterDate;
+      if (!viewAll && viewDate) params.set("workDate", viewDate);
+      const res = await fetch(`/api/routine?${params.toString()}`);
       if (!res.ok) throw new Error("Không thể tải danh sách nhật ký tác nghiệp");
       const data = await res.json();
 
@@ -146,6 +173,9 @@ export default function RoutinePage() {
             item.sourceCodeSnapshot ||
             "—",
           catalogEntry: item.catalogEntry || null,
+          catalogTags: item.catalogTags || [],
+          workDate: item.workDate || null,
+          shift: item.shift || null,
           productItem: item.productItem || null,
           proposedProducts: item.proposedProducts || [],
           sourceKind: item.sourceKind || null,
@@ -177,6 +207,7 @@ export default function RoutinePage() {
           formVersion: item.formVersion,
         }));
         setEntries(loaded);
+        setHasMoreEntries(Boolean(data.hasMore));
       }
 
       if (data.activeFormVersion) {
@@ -194,9 +225,13 @@ export default function RoutinePage() {
     }
   };
 
+  // Tải lại danh sách khi đổi bộ lọc xem (ngày hoặc tất cả ngày).
   useEffect(() => {
     fetchRoutineData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterDate, filterAllDates]);
 
+  useEffect(() => {
     // Fetch Catalog Templates (chỉ lấy các mẫu đang áp dụng)
     fetch("/api/catalog/templates?activeOnly=true")
       .then((res) => (res.ok ? res.json() : null))
@@ -241,6 +276,10 @@ export default function RoutinePage() {
   // Handle Submit New Routine Log
   const handleAddLog = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!entryWorkDate) {
+      toast.error("Vui lòng chọn ngày ghi nhận — không để trống");
+      return;
+    }
     if (!newTitle.trim()) {
       toast.error("Vui lòng nhập nội dung công việc tác nghiệp thực tế");
       return;
@@ -262,8 +301,11 @@ export default function RoutinePage() {
           templateId: null, // F19: danh muc cong viec chinh thuc chi dung TX moi
           formVersionId: activeFormVersion?.id,
           formValues: dynamicFormValues,
-          // F18: danh muc TX + danh sach SP QD1277 de xuat
-          catalogEntryId: selectedTx?.id || null,
+          // F18 / UX 2B1: N tag TX + ngay/ca + danh sach SP QD1277 de xuat
+          catalogEntryIds: selectedTxs.map((tag) => tag.id),
+          catalogEntryId: selectedTxs[0]?.id || null, // backward compatibility
+          workDate: entryWorkDate,
+          shift: logShift,
           productItemId: proposedProducts[0]?.productItemId || null,
           proposedProducts,
         }),
@@ -279,8 +321,14 @@ export default function RoutinePage() {
         setNewConts("");
         setNewNotes("");
         setDynamicFormValues({});
-        // Reload data from PostgreSQL
-        await fetchRoutineData();
+        // UX 2B1: xóa lựa chọn sau khi lưu để bản ghi kế tiếp không bị dính tag/SP cũ.
+        setSelectedTxs([]);
+        setProposedProducts([]);
+        // Chuyển bộ lọc về đúng ngày vừa lưu để thấy bản ghi mới (không đổi ngày ghi nhận).
+        const viewChanged = filterAllDates || filterDate !== entryWorkDate;
+        setFilterAllDates(false);
+        setFilterDate(entryWorkDate);
+        if (!viewChanged) await fetchRoutineData({ date: entryWorkDate, allDates: false });
       } else {
         // KEEP USER INPUT on error so user can correct and retry
         toast.error(data.error || "Không thể lưu nhật ký vào cơ sở dữ liệu");
@@ -296,11 +344,19 @@ export default function RoutinePage() {
   //  1) Ca khong phat sinh VU VIE vi pham / ton dong
   //  2) Ca khong co hoat dong tac nghiep nao
   const handleConfirmNotOccurred = async (kind: "NO_VIOLATION" | "NO_ACTIVITY") => {
+    if (!entryWorkDate) {
+      toast.error("Vui lòng chọn ngày ghi nhận — không để trống");
+      return;
+    }
     const isNoActivity = kind === "NO_ACTIVITY";
     const defaultTitle = isNoActivity
       ? "Xác nhận: ca trực không có hoạt động tác nghiệp"
       : "Xác nhận: ca trực không phát sinh vụ việc vi phạm hoặc tồn đọng";
-    const finalTitle = (kind === "NO_ACTIVITY" ? "" : newTitle.trim()) || defaultTitle;
+    // UX 3B: một chạm khi panel đang đóng KHÔNG được âm thầm dùng bản nháp ẩn
+    // (title/notes người dùng có thể đã gõ trước đó). Chỉ dùng bản nháp khi form mở.
+    const draftTitle = isDeclarationOpen && !isNoActivity ? newTitle.trim() : "";
+    const draftNotes = isDeclarationOpen ? newNotes.trim() : "";
+    const finalTitle = draftTitle || defaultTitle;
     const defaultNotes = isNoActivity
       ? "Xác nhận 1-chạm: ca trực không có hoạt động tác nghiệp nào để ghi nhận."
       : "Xác nhận 1-chạm: ca trực không phát sinh vụ việc vi phạm hoặc tồn đọng.";
@@ -311,11 +367,14 @@ export default function RoutinePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: finalTitle,
-          notes: newNotes.trim() || defaultNotes,
+          notes: draftNotes || defaultNotes,
           occurrenceStatus: "NOT_OCCURRED",
           notOccurredKind: kind,
           templateId: null,
           catalogEntryId: null,
+          catalogEntryIds: [],
+          workDate: entryWorkDate,
+          shift: logShift,
           productItemId: null,
           proposedProducts: [],
         }),
@@ -325,7 +384,10 @@ export default function RoutinePage() {
 
       if (res.ok && data.success) {
         toast.success(`Đã ghi nhận: ${isNoActivity ? "Ca không có hoạt động tác nghiệp" : "Ca không phát sinh vụ việc vi phạm/tồn đọng"}!`);
-        await fetchRoutineData();
+        const viewChanged = filterAllDates || filterDate !== entryWorkDate;
+        setFilterAllDates(false);
+        setFilterDate(entryWorkDate);
+        if (!viewChanged) await fetchRoutineData({ date: entryWorkDate, allDates: false });
       } else {
         toast.error(data.error || "Không thể ghi nhận xác nhận không phát sinh");
       }
@@ -408,7 +470,9 @@ export default function RoutinePage() {
                   <span className="material-symbols-outlined text-[20px]">task_alt</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Đầu việc đã nạp DB</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    {filterAllDates ? "Tổng bản ghi đã nạp" : "Bản ghi trong ngày"}
+                  </span>
                   <span className="font-headline-sm text-headline-sm text-primary font-bold">
                     {entries.length} <span className="font-body-md text-label-sm text-on-surface-variant font-normal">Bản ghi</span>
                   </span>
@@ -419,7 +483,9 @@ export default function RoutinePage() {
                   <span className="material-symbols-outlined text-[20px]">assignment_turned_in</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Không phát sinh</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    Không phát sinh {filterAllDates ? "(tất cả)" : "(trong ngày)"}
+                  </span>
                   <span className="font-headline-sm text-headline-sm text-status-warning flex items-center gap-1 font-bold">
                     {entries.filter((e) => e.occurrenceStatus === "NOT_OCCURRED").length} việc
                   </span>
@@ -442,7 +508,7 @@ export default function RoutinePage() {
                 <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
                 <span>1. Ghi nhận nhật ký hàng ngày (Cán bộ)</span>
                 <span className="px-2 py-0.2 rounded-full bg-secondary-fixed text-on-secondary-fixed text-label-sm font-label-sm font-bold">
-                  {entries.length} việc
+                  {entries.length} việc đang xem
                 </span>
               </button>
               {canManageForms && (
@@ -488,20 +554,74 @@ export default function RoutinePage() {
             {/* Officer Context & Date Header Bar */}
             <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md border border-border-default/50">
               <div className="flex flex-wrap items-center gap-space-md">
+                {/* UX 3B: ngày/ca chỉ dùng cho bản ghi mới — ẩn cùng form với vai trò không khai báo. */}
+                {canDeclare && (
+                <>
                 <div className="flex items-center gap-2 bg-surface-subtle px-3 py-1.5 rounded-lg border border-border-default">
                   <span className="material-symbols-outlined text-secondary text-[20px]">calendar_today</span>
                   <div className="flex flex-col">
                     <span className="font-label-sm text-[11px] text-on-surface-variant uppercase font-bold">
-                      Ngày ghi nhận
+                      Ngày ghi nhận (quyết định kỳ)
                     </span>
-                    <input
-                      type="date"
-                      value={logDate}
-                      onChange={(e) => setLogDate(e.target.value)}
-                      className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        required
+                        data-testid="routine-entry-date"
+                        value={entryWorkDate}
+                        onChange={(e) => setEntryWorkDate(e.target.value)}
+                        className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
+                      />
+                      {(!entryWorkDate || entryWorkDate !== vnDateOnly()) && (
+                        <button
+                          type="button"
+                          data-testid="routine-entry-date-today"
+                          onClick={() => setEntryWorkDate(vnDateOnly())}
+                          className="text-[10px] font-semibold text-secondary hover:underline"
+                        >
+                          Hôm nay
+                        </button>
+                      )}
+                    </div>
+                    {!entryWorkDate && (
+                      <span
+                        data-testid="routine-entry-date-required"
+                        className="text-[10px] text-status-danger font-semibold"
+                      >
+                        Ngày ghi nhận là bắt buộc.
+                      </span>
+                    )}
+                    {entryWorkDate && entryWorkDate !== vnDateOnly() && (
+                      <span
+                        data-testid="routine-entry-date-warning"
+                        className="text-[10px] text-status-warning"
+                      >
+                        Đang ghi cho ngày khác hôm nay — bản ghi vào kỳ của ngày đã chọn.
+                      </span>
+                    )}
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2 bg-surface-subtle px-3 py-1.5 rounded-lg border border-border-default">
+                  <span className="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+                  <div className="flex flex-col">
+                    <span className="font-label-sm text-[11px] text-on-surface-variant uppercase font-bold">
+                      Ca làm việc
+                    </span>
+                    <select
+                      data-testid="routine-work-shift"
+                      value={logShift}
+                      onChange={(e) => setLogShift(e.target.value as "SANG" | "CHIEU" | "CA_NGAY")}
+                      className="bg-transparent font-body-semibold text-body-semibold text-primary focus:outline-none cursor-pointer"
+                    >
+                      <option value="SANG">Sáng</option>
+                      <option value="CHIEU">Chiều</option>
+                      <option value="CA_NGAY">Cả ngày</option>
+                    </select>
+                  </div>
+                </div>
+                </>
+                )}
 
                 <div className="flex items-center gap-3 pl-2">
                   <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-headline-sm font-bold">
@@ -524,20 +644,74 @@ export default function RoutinePage() {
               </div>
             </div>
 
-            {/* Form Thêm Đầu Việc Tác Nghiệp Hàng Ngày */}
-            <div data-tour="log-form" className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
-              <div className="flex items-center justify-between border-b border-surface-container pb-space-sm">
+            {/* Form Thêm Đầu Việc Tác Nghiệp Hàng Ngày — UX 3B: ẩn với lãnh đạo, thu gọn với vai trò khai báo */}
+            {declarationState === "LOADING" ? (
+              <div
+                role="status"
+                aria-busy="true"
+                data-testid="routine-declaration-loading"
+                className="flex flex-col gap-3 rounded-xl border border-border-default/50 bg-surface-container-lowest p-space-lg shadow-sm"
+              >
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[22px]">add_task</span>
-                  <h3 className="font-headline-sm text-headline-sm text-primary">
-                    Khai Báo Đầu Việc Thực Hiện Trong Ca
-                  </h3>
+                  <span className="material-symbols-outlined shrink-0 text-[22px] text-outline">hourglass_top</span>
+                  <div className="flex min-w-0 flex-col">
+                    <span className="font-body-semibold text-body-semibold text-primary">
+                      Đang xác định quyền khai báo đầu việc…
+                    </span>
+                    <span className="font-label-sm text-label-sm text-outline">
+                      Vui lòng chờ trong giây lát.
+                    </span>
+                  </div>
                 </div>
-                <span className="font-label-sm text-label-sm text-outline">
-                  Dữ liệu được lưu trữ trực tiếp vào cơ sở dữ liệu PostgreSQL
-                </span>
+                <div className="h-2.5 w-2/3 rounded bg-surface-container animate-pulse" aria-hidden="true" />
+                <div className="h-2.5 w-1/2 rounded bg-surface-container animate-pulse" aria-hidden="true" />
+              </div>
+            ) : declarationState === "UNKNOWN" ? (
+              <div
+                role="note"
+                data-testid="routine-declaration-unavailable"
+                className="flex items-start gap-3 rounded-xl border border-border-default/50 bg-surface-container-lowest p-space-md shadow-sm"
+              >
+                <span className="material-symbols-outlined shrink-0 text-[22px] text-outline">help</span>
+                <div className="flex flex-col gap-0.5">
+                  <p className="font-body-semibold text-body-semibold text-primary">
+                    Chưa xác định được quyền khai báo đầu việc.
+                  </p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    Vui lòng tải lại trang để thử lại. Danh sách nhật ký bên dưới vẫn hiển thị đầy đủ.
+                  </p>
+                </div>
+              </div>
+            ) : canDeclare ? (
+            <div data-tour="log-form" className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
+              <div className="flex flex-col gap-2 border-b border-surface-container pb-space-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="material-symbols-outlined shrink-0 text-secondary text-[22px]">add_task</span>
+                  <div className="flex min-w-0 flex-col">
+                    <h3 className="font-headline-sm text-headline-sm text-primary">
+                      Khai Báo Đầu Việc Thực Hiện Trong Ca
+                    </h3>
+                    <span className="font-label-sm text-label-sm text-outline">
+                      Mặc định thu gọn — danh sách nhật ký bên dưới luôn hiển thị.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-testid="routine-declaration-toggle"
+                  aria-expanded={isDeclarationOpen}
+                  aria-controls="routine-declaration-panel"
+                  onClick={() => setIsDeclarationOpen((open) => !open)}
+                  className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-secondary/40 bg-secondary/5 px-4 py-2 font-label-md font-semibold text-secondary transition-fast hover:bg-secondary/10 active-press sm:w-auto"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {isDeclarationOpen ? "expand_less" : "add_task"}
+                  </span>
+                  <span>{isDeclarationOpen ? "Thu gọn khai báo" : "Khai báo đầu việc"}</span>
+                </button>
               </div>
 
+              <div id="routine-declaration-panel" data-testid="routine-declaration-panel" hidden={!isDeclarationOpen}>
               <form onSubmit={handleAddLog} className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
                 <div className="flex flex-col gap-1 md:col-span-2">
                   <label className="font-label-md text-label-md text-primary font-semibold">
@@ -546,6 +720,7 @@ export default function RoutinePage() {
                   <input
                     type="text"
                     required
+                    data-testid="routine-title"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="Nhập nội dung công việc đã xử lý trong ca..."
@@ -557,10 +732,10 @@ export default function RoutinePage() {
                     Ban goc "Danh muc nghiep vu lien quan" (48 mau TTHQ/GSHQ) duoc giu o
                     phan "mau cu" de khong pha vong mau cua cac ban ghi lich su. */}
                 <RoutineCatalogPicker
-                  selectedTxId={selectedTx?.id || ""}
-                  onTxChange={(tx: any) => {
-                    setSelectedTx(tx);
-                    if (tx && !newTitle) setNewTitle(tx.title);
+                  selectedTags={selectedTxs}
+                  onTagsChange={(tags: TxTag[]) => {
+                    setSelectedTxs(tags);
+                    if (tags.length > 0 && !newTitle) setNewTitle(tags[tags.length - 1].title);
                   }}
                   products={proposedProducts}
                   onProductsChange={setProposedProducts}
@@ -709,46 +884,115 @@ export default function RoutinePage() {
                   />
                 </div>
 
-                <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-space-sm pt-2">
-                  <button
-                    type="button"
-                    data-testid="routine-no-violation"
-                    disabled={isSubmitting}
-                    onClick={() => handleConfirmNotOccurred("NO_VIOLATION")}
-                    className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-status-warning">check_circle</span>
-                    <span>Ca không phát sinh vụ việc vi phạm/tồn đọng</span>
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="routine-no-activity"
-                    disabled={isSubmitting}
-                    onClick={() => handleConfirmNotOccurred("NO_ACTIVITY")}
-                    className="px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-outline">bedtime</span>
-                    <span>Ca không có hoạt động tác nghiệp</span>
-                  </button>
+                <div className="md:col-span-2 flex flex-wrap items-center justify-end gap-space-sm pt-2">
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-2 disabled:opacity-50"
+                    disabled={isSubmitting || !entryWorkDate}
+                    className="px-6 py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
                   >
                     <span className="material-symbols-outlined text-[18px]">save</span>
                     <span>{isSubmitting ? "Đang lưu..." : "Lưu vào sổ nhật ký tác nghiệp"}</span>
                   </button>
                 </div>
               </form>
+              </div>
+
+              {/* Xác nhận 1-chạm giữ NGOÀI panel thu gọn để vẫn dùng được khi form đang đóng. */}
+              <div className="flex flex-wrap items-center gap-space-sm border-t border-surface-container pt-space-sm">
+                <span className="w-full font-label-sm text-label-sm text-on-surface-variant sm:mr-auto sm:w-auto">
+                  Không có đầu việc trong ca?
+                </span>
+                <button
+                  type="button"
+                  data-testid="routine-no-violation"
+                  disabled={isSubmitting || !entryWorkDate}
+                  onClick={() => handleConfirmNotOccurred("NO_VIOLATION")}
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined shrink-0 text-[18px] text-status-warning">check_circle</span>
+                  <span>Ca không phát sinh vụ việc vi phạm/tồn đọng</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="routine-no-activity"
+                  disabled={isSubmitting || !entryWorkDate}
+                  onClick={() => handleConfirmNotOccurred("NO_ACTIVITY")}
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md font-semibold transition-fast active-press flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined shrink-0 text-[18px] text-outline">bedtime</span>
+                  <span>Ca không có hoạt động tác nghiệp</span>
+                </button>
+              </div>
             </div>
+            ) : (
+              <div
+                role="note"
+                data-testid="routine-declaration-hidden"
+                className="flex items-start gap-3 rounded-xl border border-border-default/50 bg-surface-container-lowest p-space-md shadow-sm"
+              >
+                <span className="material-symbols-outlined shrink-0 text-[22px] text-outline">visibility</span>
+                <div className="flex flex-col gap-0.5">
+                  <p className="font-body-semibold text-body-semibold text-primary">
+                    Tài khoản này không khai báo đầu việc trong ca.
+                  </p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    Danh sách nhật ký bên dưới vẫn hiển thị đầy đủ để theo dõi.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Bảng Danh Sách Nhật Ký Đã Ghi Nhận */}
             <div data-tour="log-list" className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
-              <div className="p-space-md bg-surface-subtle border-b border-border-default flex items-center justify-between">
-                <span className="font-headline-sm text-primary font-bold">
-                  Nhật Ký Đã Khai Báo Trong Ca Ngày {logDate}
+              <div className="p-space-md bg-surface-subtle border-b border-border-default flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+                <span data-testid="routine-list-title" className="font-headline-sm text-primary font-bold">
+                  Nhật Ký Đã Khai Báo —{" "}
+                  {filterAllDates ? "Tất cả ngày" : `Ngày ${formatVnDate(filterDate)}`}
                 </span>
-                <span className="text-xs text-outline">{entries.length} bản ghi thực tế</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-on-surface-variant font-semibold">Lọc danh sách</span>
+                  <input
+                    type="date"
+                    data-testid="routine-filter-date"
+                    value={filterDate}
+                    disabled={filterAllDates}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!value) {
+                        setFilterAllDates(true);
+                      } else {
+                        setFilterAllDates(false);
+                        setFilterDate(value);
+                      }
+                    }}
+                    className="h-8 px-2 rounded bg-surface-container-lowest text-xs border border-border-subtle disabled:opacity-50"
+                  />
+                  <label className="inline-flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer">
+                    <input
+                      type="checkbox"
+                      data-testid="routine-filter-all"
+                      checked={filterAllDates}
+                      onChange={(e) => {
+                        const all = e.target.checked;
+                        setFilterAllDates(all);
+                        if (!all && !filterDate) setFilterDate(entryWorkDate || vnDateOnly());
+                      }}
+                      className="w-3.5 h-3.5 rounded accent-[#006a62]"
+                    />
+                    Tất cả ngày
+                  </label>
+                  <span className="text-xs text-outline">
+                    {entries.length} bản ghi {filterAllDates ? "đã nạp" : "trong ngày"}
+                  </span>
+                  {filterAllDates && hasMoreEntries && (
+                    <span
+                      data-testid="routine-list-truncated"
+                      className="text-[11px] text-status-warning"
+                    >
+                      Chỉ hiển thị {entries.length} bản ghi gần nhất — thu hẹp ngày để xem thêm.
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -775,10 +1019,15 @@ export default function RoutinePage() {
                         <td colSpan={6} className="py-12 text-center text-on-surface-variant">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[36px] text-outline">history_edu</span>
-                            <p className="font-semibold text-primary">Chưa có nhật ký nào được ghi nhận cho ca hôm nay</p>
-                            <p className="text-xs text-outline">
-                              Đồng chí có thể nhập nội dung thực tế ở form trên hoặc bấm "Xác nhận 1-chạm không phát sinh".
+                            <p className="font-semibold text-primary">
+                              Chưa có nhật ký nào được ghi nhận cho{" "}
+                              {filterAllDates ? "bất kỳ ngày nào" : "ngày đang lọc"}
                             </p>
+                            {canDeclare && (
+                              <p className="text-xs text-outline">
+                                Đồng chí có thể nhập nội dung thực tế ở form trên hoặc bấm "Xác nhận 1-chạm không phát sinh".
+                              </p>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -792,18 +1041,50 @@ export default function RoutinePage() {
                               <span className="text-xs text-outline">
                                 {entry.notes || (entry.occurrenceStatus === "NOT_OCCURRED" ? "Xác nhận không phát sinh" : "Đã hoàn thành")}
                               </span>
-                              {/* F18: danh muc TX + san pham QD1277 da de xuat */}
-                              {entry.catalogEntry && (
+                              {/* UX 2B1: ngày/ca thực tế */}
+                              {(entry.workDate || entry.shift) && (
                                 <span className="text-[11px] text-outline">
-                                  Công việc thường xuyên: <span className="font-mono">{entry.catalogEntry.code}</span> — {entry.catalogEntry.title}
+                                  Ngày {entry.workDate ? formatVnDate(entry.workDate) : "—"} · Ca{" "}
+                                  {SHIFT_LABELS[entry.shift || "CA_NGAY"] || entry.shift}
                                 </span>
                               )}
+                              {/* F18 / UX 2B1: đủ N tag TX (fallback tag chính của dữ liệu cũ) */}
+                              <div className="flex flex-wrap gap-1">
+                                {(entry.catalogTags && entry.catalogTags.length > 0
+                                  ? entry.catalogTags
+                                  : entry.catalogEntry
+                                    ? [
+                                        {
+                                          id: entry.catalogEntry.id,
+                                          catalogEntryId: entry.catalogEntry.id,
+                                          code: entry.catalogEntry.code,
+                                          title: entry.catalogEntry.title,
+                                        },
+                                      ]
+                                    : []
+                                ).map((tag) => (
+                                  <span
+                                    key={tag.id}
+                                    className="inline-flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-2 py-0.5 text-[10px] text-on-surface"
+                                  >
+                                    <span className="font-mono font-bold text-primary">{tag.code}</span>
+                                    <span className="max-w-[220px] truncate">{tag.title}</span>
+                                  </span>
+                                ))}
+                              </div>
                               {(entry.proposedProducts || []).length > 0 && (
-                                <span className="text-[11px] text-outline">
-                                  Sản phẩm QĐ1277 đề xuất:{" "}
-                                  {(entry.proposedProducts || []).map((p) => p.code).join(", ")}
-                                  {" "}(chờ lãnh đạo xác nhận)
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <span className="text-[11px] text-outline">SP QĐ1277:</span>
+                                  {(entry.proposedProducts || []).map((p) => (
+                                    <span
+                                      key={p.productItemId}
+                                      className="inline-flex items-center gap-1 rounded-full border border-status-warning/40 bg-status-warning-bg px-2 py-0.5 text-[10px] text-status-warning"
+                                      title={`${p.taskName} — chờ lãnh đạo xác nhận`}
+                                    >
+                                      <span className="font-mono font-bold">{p.code}</span>
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                               {/* F18: trang thai V3 — KHONG coi la da nghiem thu */}
                               {entry.workItemId && (
@@ -1058,6 +1339,13 @@ export default function RoutinePage() {
                 </span>
               </div>
               <div className="flex flex-col">
+                <span className="text-outline text-xs">Ngày / ca làm việc</span>
+                <span className="font-semibold text-primary">
+                  {inspectEntry.workDate ? formatVnDate(inspectEntry.workDate) : "—"} ·{" "}
+                  {SHIFT_LABELS[inspectEntry.shift || "CA_NGAY"] || inspectEntry.shift || "—"}
+                </span>
+              </div>
+              <div className="flex flex-col">
                 <span className="text-outline text-xs">Trạng thái phát sinh</span>
                 <span
                   className={`font-semibold ${
@@ -1098,6 +1386,61 @@ export default function RoutinePage() {
                 </p>
               </div>
             )}
+
+            {/* UX 2B1: đủ N tag TX + N sản phẩm QĐ1277 */}
+            <div className="flex flex-col gap-1 border-t border-border-default/60 pt-3">
+              <span className="text-outline text-xs font-bold uppercase">Công việc thường xuyên (tag TX)</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(inspectEntry.catalogTags && inspectEntry.catalogTags.length > 0
+                  ? inspectEntry.catalogTags
+                  : inspectEntry.catalogEntry
+                    ? [
+                        {
+                          id: inspectEntry.catalogEntry.id,
+                          catalogEntryId: inspectEntry.catalogEntry.id,
+                          code: inspectEntry.catalogEntry.code,
+                          title: inspectEntry.catalogEntry.title,
+                        },
+                      ]
+                    : []
+                ).map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-[11px]"
+                  >
+                    <span className="font-mono font-bold text-primary">{tag.code}</span>
+                    <span className="max-w-[360px] truncate">{tag.title}</span>
+                  </span>
+                ))}
+                {(!inspectEntry.catalogTags || inspectEntry.catalogTags.length === 0) &&
+                  !inspectEntry.catalogEntry && (
+                    <span className="text-xs text-outline italic">Không gắn danh mục TX</span>
+                  )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-outline text-xs font-bold uppercase">Sản phẩm QĐ1277 đề xuất</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(inspectEntry.proposedProducts || []).length > 0 ? (
+                  (inspectEntry.proposedProducts || []).map((p) => (
+                    <span
+                      key={p.productItemId}
+                      className="inline-flex flex-col rounded-lg border border-status-warning/40 bg-status-warning-bg px-2.5 py-1 text-[11px] text-status-warning"
+                      title={p.taskName}
+                    >
+                      <span className="font-mono font-bold">{p.code}</span>
+                      <span className="text-[10px] opacity-80">
+                        {p.quantity !== null && p.quantity !== undefined ? `${p.quantity}${p.unit ? " " + p.unit : ""} · ` : ""}
+                        chờ lãnh đạo xác nhận
+                      </span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-outline italic">Không đề xuất sản phẩm</span>
+                )}
+              </div>
+            </div>
 
             {/* Dynamic Submission Values Table */}
             {inspectEntry.formValues && Object.keys(inspectEntry.formValues).length > 0 && (

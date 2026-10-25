@@ -226,6 +226,18 @@ export default function PlansPage() {
     (isLeaderRole || !!currentUser?.personId);
   const isActivePlanCreator =
     !!activePlan?.creatorId && activePlan.creatorId === currentUser?.personId;
+  const canEditActivePlanTitle =
+    planContentEditable &&
+    !!activePlan &&
+    (isActivePlanCreator || (isLeaderRole && !!planOptions?.canCreatePlan));
+  // Task 3C: chỉ hủy mềm kế hoạch DRAFT/RETURNED chưa có hạng mục/liên kết.
+  // Người tạo được hủy bản nháp của mình (khớp API `canCancelPlan`); lãnh đạo
+  // cần quyền lập kế hoạch trong phạm vi.
+  const canCancelActivePlan =
+    planContentEditable &&
+    !!activePlan &&
+    (activePlan.items?.length || 0) === 0 &&
+    (isActivePlanCreator || (isLeaderRole && !!planOptions?.canCreatePlan));
   const canApproveActivePlan =
     activePlan?.status === "SUBMITTED" && isLeaderRole && !isActivePlanCreator;
   const canEffectActivePlan = activePlan?.status === "APPROVED" && isLeaderRole;
@@ -333,6 +345,20 @@ export default function PlansPage() {
   const [planFormFieldErrors, setPlanFormFieldErrors] = useState<Record<string, string>>({});
   const [planSubmitting, setPlanSubmitting] = useState(false);
   const planSubmittingRef = useRef(false);
+
+  // Phase 2A/2A2 — sửa tiêu đề kế hoạch (không mở rộng sang hạng mục/đầu việc)
+  const [showPlanTitleModal, setShowPlanTitleModal] = useState(false);
+  const [planTitleDraft, setPlanTitleDraft] = useState("");
+  const [planTitleError, setPlanTitleError] = useState<string | null>(null);
+  const [planTitleBusy, setPlanTitleBusy] = useState(false);
+  const planTitleBusyRef = useRef(false);
+
+  // Task 3C — hủy mềm kế hoạch trùng (bắt buộc lý do, không xóa cứng).
+  const [showPlanCancelModal, setShowPlanCancelModal] = useState(false);
+  const [planCancelReason, setPlanCancelReason] = useState("");
+  const [planCancelError, setPlanCancelError] = useState<string | null>(null);
+  const [planCancelBusy, setPlanCancelBusy] = useState(false);
+  const planCancelBusyRef = useRef(false);
 
   const [showPlanItemsModal, setShowPlanItemsModal] = useState(false);
   const [planItemEditingId, setPlanItemEditingId] = useState<string | null>(null);
@@ -994,8 +1020,14 @@ export default function PlansPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setPlanFormError(json.error || "Không thể tạo kế hoạch");
-        toast.error(json.error || "Không thể tạo kế hoạch");
+        // Task 3C: backend trả 409 kèm duplicatePlanId khi trùng đơn vị+kỳ+tiêu đề.
+        const duplicateNote =
+          res.status === 409 && json.duplicatePlanId
+            ? ` Mã kế hoạch trùng: ${json.duplicatePlanId}.`
+            : "";
+        const message = `${json.error || "Không thể tạo kế hoạch"}${duplicateNote}`;
+        setPlanFormError(message);
+        toast.error(message);
         return;
       }
       const createdId = json.data?.id || "";
@@ -1016,6 +1048,122 @@ export default function PlansPage() {
     } finally {
       planSubmittingRef.current = false;
       setPlanSubmitting(false);
+    }
+  };
+
+  const openPlanTitleModal = () => {
+    if (!activePlan) {
+      toast.warning("Chưa chọn kế hoạch công tác");
+      return;
+    }
+    if (!canEditActivePlanTitle) {
+      toast.warning("Kế hoạch đang khóa hoặc bạn không có quyền sửa");
+      return;
+    }
+    setPlanTitleDraft(activePlan.title);
+    setPlanTitleError(null);
+    setShowPlanTitleModal(true);
+  };
+
+  const handleUpdatePlanTitle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (planTitleBusyRef.current || !activePlan) return;
+    const title = planTitleDraft.trim();
+    if (!title) {
+      setPlanTitleError("Nhập tiêu đề kế hoạch");
+      return;
+    }
+    if (title.length > 300) {
+      setPlanTitleError("Tiêu đề kế hoạch không được vượt quá 300 ký tự");
+      return;
+    }
+
+    planTitleBusyRef.current = true;
+    setPlanTitleBusy(true);
+    setPlanTitleError(null);
+    try {
+      const res = await fetch(`/api/plans/${activePlan.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = json.error || "Không thể sửa kế hoạch";
+        setPlanTitleError(message);
+        toast.error(message);
+        return;
+      }
+      setShowPlanTitleModal(false);
+      toast.success("Đã cập nhật tiêu đề kế hoạch");
+      setWorkflowMessage("Đã cập nhật tiêu đề kế hoạch");
+      setTimeout(() => setWorkflowMessage(null), 3000);
+      await fetchPlans();
+    } catch (err: any) {
+      const message = "Lỗi kết nối: " + err.message;
+      setPlanTitleError(message);
+      toast.error(message);
+    } finally {
+      planTitleBusyRef.current = false;
+      setPlanTitleBusy(false);
+    }
+  };
+
+  const openPlanCancelModal = () => {
+    if (!activePlan) {
+      toast.warning("Chưa chọn kế hoạch công tác");
+      return;
+    }
+    if (!canCancelActivePlan) {
+      toast.warning("Chỉ hủy được kế hoạch DRAFT/RETURNED chưa có hạng mục/liên kết");
+      return;
+    }
+    setPlanCancelReason("");
+    setPlanCancelError(null);
+    setShowPlanCancelModal(true);
+  };
+
+  const handleCancelPlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (planCancelBusyRef.current || !activePlan) return;
+    const reason = planCancelReason.trim();
+    if (!reason) {
+      setPlanCancelError("Nhập lý do hủy kế hoạch trùng");
+      return;
+    }
+    if (reason.length > 500) {
+      setPlanCancelError("Lý do hủy không được vượt quá 500 ký tự");
+      return;
+    }
+
+    planCancelBusyRef.current = true;
+    setPlanCancelBusy(true);
+    setPlanCancelError(null);
+    try {
+      const res = await fetch(`/api/plans/${activePlan.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = json.error || "Không thể hủy kế hoạch";
+        setPlanCancelError(message);
+        toast.error(message);
+        return;
+      }
+      setShowPlanCancelModal(false);
+      toast.success(json.message || "Đã hủy kế hoạch trùng");
+      setWorkflowMessage("Đã hủy mềm kế hoạch trùng");
+      setTimeout(() => setWorkflowMessage(null), 3000);
+      await fetchPlans();
+    } catch (err: any) {
+      const message = "Lỗi kết nối: " + err.message;
+      setPlanCancelError(message);
+      toast.error(message);
+    } finally {
+      planCancelBusyRef.current = false;
+      setPlanCancelBusy(false);
     }
   };
 
@@ -1385,6 +1533,30 @@ export default function PlansPage() {
                 >
                   <span className="material-symbols-outlined text-[18px]">note_add</span>
                   <span>Tạo kế hoạch</span>
+                </button>
+              )}
+
+              {canEditActivePlanTitle && (
+                <button
+                  type="button"
+                  data-testid="edit-plan-title-btn"
+                  onClick={openPlanTitleModal}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-secondary">edit</span>
+                  <span>Sửa kế hoạch</span>
+                </button>
+              )}
+
+              {canCancelActivePlan && (
+                <button
+                  type="button"
+                  data-testid="cancel-plan-btn"
+                  onClick={openPlanCancelModal}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded border border-status-danger/40 bg-status-danger-bg text-status-danger hover:brightness-95 font-label-md text-label-md font-semibold transition-fast active-press"
+                >
+                  <span className="material-symbols-outlined text-[18px]">cancel</span>
+                  <span>Hủy kế hoạch trùng</span>
                 </button>
               )}
 
@@ -2342,9 +2514,23 @@ export default function PlansPage() {
                   <span className="font-body-semibold text-primary">
                     {activePlan?.unit?.name || "Chưa xác định đơn vị"}
                   </span>
-                  <span className="text-xs text-on-surface-variant">
-                    {activePlan?.title || "Chưa có kế hoạch công tác"}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-on-surface-variant">
+                      {activePlan?.title || "Chưa có kế hoạch công tác"}
+                    </span>
+                    {canEditActivePlanTitle && (
+                      <button
+                        type="button"
+                        data-testid="edit-plan-title-btn-mobile"
+                        onClick={openPlanTitleModal}
+                        title="Sửa tiêu đề kế hoạch"
+                        aria-label="Sửa tiêu đề kế hoạch"
+                        className="p-1 rounded text-secondary hover:bg-surface-container transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded text-xs font-bold ${
@@ -2429,6 +2615,17 @@ export default function PlansPage() {
                 <span className="truncate">Xem báo cáo</span>
               </Link>
             </div>
+            {canCancelActivePlan && (
+              <button
+                type="button"
+                data-testid="cancel-plan-btn-mobile"
+                onClick={openPlanCancelModal}
+                className="w-full h-10 px-space-sm bg-status-danger-bg text-status-danger border border-status-danger/40 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 hover:brightness-95 transition-colors active-press"
+              >
+                <span className="material-symbols-outlined text-[18px]">cancel</span>
+                <span className="truncate">Hủy kế hoạch trùng</span>
+              </button>
+            )}
             {deptCatalogCanManage && (
               <button
                 type="button"
@@ -3228,6 +3425,7 @@ export default function PlansPage() {
                 {planFormError && (
                   <div
                     role="alert"
+                    data-testid="plan-form-error"
                     className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[18px]">error</span>
@@ -3363,6 +3561,180 @@ export default function PlansPage() {
                 >
                   <span className="material-symbols-outlined text-[18px]">save</span>
                   <span>{planSubmitting ? "Đang tạo..." : "Tạo kế hoạch"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: SỬA TIÊU ĐỀ KẾ HOẠCH (Phase 2A/2A2 — chỉ field title)
+          ========================================================================= */}
+      {showPlanTitleModal && activePlan && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-white">Sửa kế hoạch công tác</h3>
+                <p className="text-xs text-on-primary-container">
+                  {activePlan.unit?.name || "Chưa xác định đơn vị"}
+                  {activePlan.period?.name ? ` • ${activePlan.period.name}` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlanTitleModal(false)}
+                className="text-on-primary-container hover:text-white transition-fast"
+                aria-label="Đóng"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdatePlanTitle}>
+              <div className="p-space-md flex flex-col gap-space-md">
+                {planTitleError && (
+                  <div
+                    role="alert"
+                    data-testid="plan-title-error"
+                    className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    <span>{planTitleError}</span>
+                  </div>
+                )}
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-primary">
+                  Tiêu đề kế hoạch *
+                  <input
+                    data-testid="plan-title-input"
+                    type="text"
+                    maxLength={300}
+                    autoFocus
+                    value={planTitleDraft}
+                    onChange={(e) => {
+                      setPlanTitleDraft(e.target.value);
+                      setPlanTitleError(null);
+                    }}
+                    placeholder="VD: Kế hoạch công tác tuần 43"
+                    className="h-10 px-3 rounded bg-surface-container-low text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                  <span className="text-[10px] text-outline font-normal">
+                    {planTitleDraft.trim().length}/300 ký tự
+                  </span>
+                </label>
+
+                <p className="text-xs text-outline">
+                  Chỉ tiêu đề được sửa. Đơn vị, kỳ công tác và trạng thái kế hoạch giữ nguyên.
+                </p>
+              </div>
+
+              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+                <button
+                  type="button"
+                  onClick={() => setShowPlanTitleModal(false)}
+                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                >
+                  Hủy
+                </button>
+                <button
+                  data-testid="plan-title-submit"
+                  type="submit"
+                  disabled={planTitleBusy}
+                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[18px]">save</span>
+                  <span>{planTitleBusy ? "Đang lưu..." : "Lưu thay đổi"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: HỦY MỀM KẾ HOẠCH TRÙNG (Task 3C — bắt buộc lý do)
+          ========================================================================= */}
+      {showPlanCancelModal && activePlan && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+            <div className="p-space-md bg-status-danger text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-white">Hủy kế hoạch trùng</h3>
+                <p className="text-xs text-white/80">
+                  {activePlan.unit?.name || "Chưa xác định đơn vị"}
+                  {activePlan.period?.name ? ` • ${activePlan.period.name}` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlanCancelModal(false)}
+                className="text-white/80 hover:text-white transition-fast"
+                aria-label="Đóng"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCancelPlan}>
+              <div className="p-space-md flex flex-col gap-space-md">
+                {planCancelError && (
+                  <div
+                    role="alert"
+                    data-testid="plan-cancel-error"
+                    className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    <span>{planCancelError}</span>
+                  </div>
+                )}
+
+                <div className="rounded-lg bg-surface-subtle border border-border-subtle px-3 py-2 text-xs text-on-surface-variant">
+                  Kế hoạch: <strong className="text-primary">{activePlan.title}</strong>
+                  <br />
+                  Hủy mềm chỉ chuyển trạng thái sang <strong>CANCELED</strong>; dữ liệu vẫn được
+                  lưu để đối soát và không xóa cứng hạng mục/liên kết.
+                </div>
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-primary">
+                  Lý do hủy kế hoạch trùng *
+                  <textarea
+                    data-testid="plan-cancel-reason"
+                    autoFocus
+                    aria-required="true"
+                    maxLength={500}
+                    rows={3}
+                    value={planCancelReason}
+                    onChange={(e) => {
+                      setPlanCancelReason(e.target.value);
+                      setPlanCancelError(null);
+                    }}
+                    placeholder="VD: Trùng với kế hoạch tuần 43 đã lập cho cùng đơn vị"
+                    className="px-3 py-2 rounded bg-surface-container-low text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-y"
+                  />
+                  <span className="text-[10px] text-outline font-normal">
+                    {planCancelReason.trim().length}/500 ký tự
+                  </span>
+                </label>
+              </div>
+
+              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+                <button
+                  type="button"
+                  onClick={() => setShowPlanCancelModal(false)}
+                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                >
+                  Giữ lại
+                </button>
+                <button
+                  data-testid="plan-cancel-submit"
+                  type="submit"
+                  disabled={planCancelBusy}
+                  className="px-4 py-2 rounded bg-status-danger text-white font-label-md text-label-md font-semibold hover:brightness-95 shadow-sm transition-fast active-press flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined text-[18px]">cancel</span>
+                  <span>{planCancelBusy ? "Đang hủy..." : "Hủy kế hoạch"}</span>
                 </button>
               </div>
             </form>

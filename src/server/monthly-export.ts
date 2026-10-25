@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import fs from "fs";
 import path from "path";
+import { MISSING_TEXT } from "./person-assignment";
 
 export interface ExportResultRow {
   title: string;
@@ -17,8 +18,20 @@ export interface ExportResultRow {
 
 export interface ExportPerson {
   fullName: string;
+  /** Chức vụ, chức danh (Position.title). */
   positionTitle?: string | null;
+  /**
+   * Vị trí việc làm/nhiệm vụ chuyên trách — chỉ điền khi có nguồn riêng.
+   * Hệ thống hiện chưa có danh mục này nên thường để trống.
+   */
+  jobPositionTitle?: string | null;
   unitName?: string | null;
+}
+
+/** Giá trị hiển thị: không bịa dữ liệu, thiếu thì dùng dấu gạch ngang. */
+function displayValue(value: string | null | undefined): string {
+  const text = value?.trim();
+  return text ? text : MISSING_TEXT;
 }
 
 const TEMPLATE_REL = ["public", "templates", "bang1-01a-template.xlsx"];
@@ -93,12 +106,18 @@ export async function buildMonthlyWorkbook(
   // Thông tin cán bộ (01A tham chiếu A4/A5 qua công thức)
   const setA = (r: number, v: string) => { b1.getRow(r).getCell(1).value = v; };
   setA(4, `Họ và tên: ${person.fullName}`);
-  setA(5, `Vị trí việc làm/nhiệm vụ được phân công chuyên trách: ${person.positionTitle || ""}`);
-  setA(6, `Đơn vị công tác: ${person.unitName || ""}`);
+  setA(5, `Vị trí việc làm/nhiệm vụ được phân công chuyên trách: ${displayValue(person.jobPositionTitle || person.positionTitle)}`);
+  setA(6, `Đơn vị công tác: ${displayValue(person.unitName)}`);
 
-  // 01A: tháng + chữ ký (giữ nguyên công thức điểm)
+  // 01A: tháng + thông tin cán bộ + chữ ký (giữ nguyên công thức điểm)
   const a01 = wb.getWorksheet("Biểu 01A (CC)");
   if (a01) {
+    // Ghi trực tiếp B8/B9/B10: không phụ thuộc formula/cache mẫu cũ
+    // (B8/B9 trong mẫu trỏ sang Bảng 1, B10 là text mẫu tĩnh).
+    a01.getCell("B8").value = `Họ và tên: ${person.fullName}`;
+    a01.getCell("B9").value = `Vị trí việc làm/nhiệm vụ được phân công chuyên trách: ${displayValue(person.jobPositionTitle || person.positionTitle)}`;
+    a01.getCell("B10").value = `Đơn vị công tác: ${displayValue(person.unitName)}`;
+
     for (let r = 1; r <= 12; r++) {
       const c = a01.getRow(r).getCell(1);
       if (/Tháng\s*\d/.test(String(c.value ?? ""))) {

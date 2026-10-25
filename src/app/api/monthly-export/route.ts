@@ -4,6 +4,7 @@ import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { buildMonthlyWorkbook } from "@/server/monthly-export";
 import { buildMonthlyPlan02C } from "@/server/monthly-plan-02c";
+import { pickPrimaryAssignment } from "@/server/person-assignment";
 import { recordAuditEvent } from "@/server/audit";
 
 /**
@@ -56,10 +57,13 @@ export async function POST(req: NextRequest) {
     });
 
     const template = body.template === "02c" ? "02c" : "bang1";
+    const primaryAssignment = pickPrimaryAssignment(person.assignments);
     const personInfo = {
       fullName: person.fullName,
-      positionTitle: person.assignments[0]?.position?.title || null,
-      unitName: person.assignments[0]?.unit?.name || null,
+      positionTitle: primaryAssignment?.position?.title || null,
+      unitName: primaryAssignment?.unit?.name || null,
+      // Chưa có danh mục "vị trí việc làm" riêng ⇒ 02C không lặp lại chức vụ.
+      jobPositionTitle: null,
     };
     const buf =
       template === "02c"

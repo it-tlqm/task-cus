@@ -77,10 +77,12 @@ export default function TasksPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const { canAssign, canApprove, canAudit, user: permUser } = usePermissions();
+  const { canAssign, canApprove, canAudit, user: permUser, loading: permissionsLoading } = usePermissions();
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // Dashboard chuyển sang /tasks?new=1 — chờ quyền nạp xong mới mở modal
+  const [pendingCreateFromQuery, setPendingCreateFromQuery] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showExtModal, setShowExtModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
@@ -201,6 +203,7 @@ export default function TasksPage() {
       if (q) setSearchQuery(q);
       const u = sp.get("unitId");
       if (u) setSelectedFilterUnit(u);
+      if (sp.get("new") === "1") setPendingCreateFromQuery(true);
     }
 
     fetch("/api/org-units/tree")
@@ -231,6 +234,27 @@ export default function TasksPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Dashboard giao việc dùng chung form này: /tasks?new=1 chỉ mở modal đúng một lần
+  // sau khi quyền đã nạp, rồi xóa query để F5/back không tự mở lại.
+  useEffect(() => {
+    if (!pendingCreateFromQuery || permissionsLoading) return;
+
+    if (canAssign) {
+      setShowCreateModal(true);
+    } else {
+      toast.error("Bạn không có quyền giao nhiệm vụ");
+    }
+    setPendingCreateFromQuery(false);
+
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("new")) {
+        url.searchParams.delete("new");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      }
+    }
+  }, [pendingCreateFromQuery, permissionsLoading, canAssign]);
 
   // AI soạn nháp nội dung chỉ đạo từ vài từ khóa (người duyệt vẫn sửa tay)
   const handleAiDraft = async () => {

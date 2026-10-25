@@ -6,6 +6,8 @@ import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
 import { createNotification } from "@/server/notifications";
 import { reopenApprovalCaseOnResubmit } from "@/server/approval-case";
+import { advisoryLock } from "@/server/idempotency";
+import { planContentLockKey, planContentLockMessage } from "@/server/planning";
 
 export async function POST(
   req: NextRequest,
@@ -356,20 +358,57 @@ export async function POST(
         return jsonError(taskAccess.reason || "Truy cập bị từ chối", 403);
       }
 
-      // Tạo liên kết nhiều-nhiều bảo toàn Task ID duy nhất
-      const link = await prisma.planTaskLink.upsert({
-        where: {
-          planItemId_taskId: {
+      // Task 3C review: LINK_TASK cũng là ghi nội dung kế hoạch. Lấy cùng khóa
+      // với item create/hủy mềm, đọc lại trạng thái trong transaction để không
+      // gắn nhiệm vụ vào kế hoạch vừa CANCELED (hoặc đã khóa nội dung).
+      const linkResult = await prisma.$transaction(async (tx) => {
+        await advisoryLock(tx, planContentLockKey(planId));
+        const freshPlan = await tx.plan.findUnique({
+          where: { id: planId },
+          select: { status: true, title: true },
+        });
+        if (!freshPlan) return { kind: "missingPlan" as const };
+
+        const freshLock = planContentLockMessage(freshPlan);
+        if (freshLock) {
+          return { kind: "locked" as const, message: freshLock };
+        }
+
+        const freshItem = await tx.planItem.findUnique({
+          where: { id: planItemId },
+          select: { id: true, planId: true },
+        });
+        if (!freshItem || freshItem.planId !== planId) {
+          return { kind: "missingItem" as const };
+        }
+
+        // Tạo liên kết nhiều-nhiều bảo toàn Task ID duy nhất
+        const created = await tx.planTaskLink.upsert({
+          where: {
+            planItemId_taskId: {
+              planItemId,
+              taskId,
+            },
+          },
+          create: {
             planItemId,
             taskId,
           },
-        },
-        create: {
-          planItemId,
-          taskId,
-        },
-        update: {},
+          update: {},
+        });
+        return { kind: "linked" as const, link: created };
       });
+
+      if (linkResult.kind === "missingPlan") {
+        return jsonError("Kế hoạch công tác không tồn tại", 404);
+      }
+      if (linkResult.kind === "missingItem") {
+        return jsonError("Hạng mục kế hoạch không tồn tại hoặc không thuộc kế hoạch này", 404);
+      }
+      if (linkResult.kind === "locked") {
+        return jsonError(linkResult.message, 409);
+      }
+      const link = linkResult.link;
 
       await recordAuditEvent({
         actorId: user.id,

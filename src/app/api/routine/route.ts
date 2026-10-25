@@ -5,6 +5,17 @@ import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
 import { getIsoWeekFromDate } from "@/lib/period-helper";
+import { parseDateOnly, todayInVietnam } from "@/server/work-dates";
+import { getCatalogEntrySelectionError } from "@/server/work-catalog";
+import {
+  isReportingPeriodLocked,
+  isVnDateWithinReportingPeriod,
+  periodRepresentsIsoWeek,
+  ReportingPeriodError,
+  resolveReportingWeekContainingVnDate,
+} from "@/server/reporting-period";
+
+const MAX_ROUTINE_DATE_RANGE_DAYS = 31;
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,6 +32,41 @@ export async function GET(req: NextRequest) {
     const unitId = searchParams.get("unitId");
     const occurrenceStatus = searchParams.get("occurrenceStatus");
     const id = searchParams.get("id");
+    // V3 UX 2B1: loc theo ngay lam viec (DATE-ONLY, khong quy doi mui gio)
+    const workDateParam = searchParams.get("workDate");
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+
+    const parsedWorkDate = workDateParam ? parseDateOnly(workDateParam) : null;
+    if (parsedWorkDate && !parsedWorkDate.ok) {
+      return jsonError(parsedWorkDate.message, 400);
+    }
+    const parsedFrom = fromParam ? parseDateOnly(fromParam) : null;
+    if (parsedFrom && !parsedFrom.ok) {
+      return jsonError(parsedFrom.message, 400);
+    }
+    const parsedTo = toParam ? parseDateOnly(toParam) : null;
+    if (parsedTo && !parsedTo.ok) {
+      return jsonError(parsedTo.message, 400);
+    }
+    const workDateExact = parsedWorkDate?.value ?? null;
+    const workDateFrom = parsedFrom?.value ?? null;
+    const workDateTo = parsedTo?.value ?? null;
+    if (workDateFrom && workDateTo && workDateFrom > workDateTo) {
+      return jsonError("Khoảng ngày không hợp lệ: 'from' phải trước hoặc bằng 'to'", 400);
+    }
+    // P4: range có cả from+to không được vượt quá 31 ngày (tránh tải toàn lịch sử).
+    if (workDateFrom && workDateTo) {
+      const spanDays =
+        Math.round((workDateTo.getTime() - workDateFrom.getTime()) / 86400000) + 1;
+      if (spanDays > MAX_ROUTINE_DATE_RANGE_DAYS) {
+        return jsonError(
+          `Khoảng ngày tối đa ${MAX_ROUTINE_DATE_RANGE_DAYS} ngày — vui lòng thu hẹp bộ lọc`,
+          400
+        );
+      }
+    }
+    const hasFullDateRange = !!(workDateFrom && workDateTo);
 
     const authorizedUnits = await getAuthorizedUnitIds(user);
     if (unitId && authorizedUnits !== "ALL" && !authorizedUnits.includes(unitId)) {
@@ -48,13 +94,33 @@ export async function GET(req: NextRequest) {
 
     const targetPersonId = user.scopeType === "OWN" ? user.personId : (personId || undefined);
 
-    const entries = await prisma.routineEntry.findMany({
+    // UX 2B1: chế độ "Tất cả ngày" không được trả toàn bộ lịch sử.
+    // Khi không có workDate, không có range đủ from+to (và không query 1 id),
+    // cap mặc định 500; range một phía cũng bị cap. Range đủ 2 đầu đã giới hạn 31 ngày.
+    const isUnboundedList = !id && !workDateExact && !hasFullDateRange;
+    const requestedLimitRaw = Number.parseInt(searchParams.get("limit") || "", 10);
+    const requestedLimit =
+      Number.isFinite(requestedLimitRaw) && requestedLimitRaw > 0 ? requestedLimitRaw : 500;
+    const unboundedLimit = isUnboundedList ? Math.min(requestedLimit, 500) : null;
+
+    const rawEntries = await prisma.routineEntry.findMany({
       where: {
         ...unitFilter,
         ...(id ? { id } : {}),
         ...(periodId ? { periodId } : {}),
         ...(targetPersonId ? { personId: targetPersonId } : {}),
         ...(occurrenceStatus ? { occurrenceStatus } : {}),
+        // V3 UX 2B1: workDate chinh xac uu tien; neu khong co thi loc theo khoang from/to.
+        ...(workDateExact
+          ? { workDate: workDateExact }
+          : workDateFrom || workDateTo
+          ? {
+              workDate: {
+                ...(workDateFrom ? { gte: workDateFrom } : {}),
+                ...(workDateTo ? { lte: workDateTo } : {}),
+              },
+            }
+          : {}),
         // F18: an du lieu mau (nguon [DEMO]) khi yeu cau - khong xoa, chi loc khi hien thi
         ...(hideDemo
           ? {
@@ -75,6 +141,12 @@ export async function GET(req: NextRequest) {
         },
         workItem: true,
         catalogEntry: { select: { id: true, code: true, title: true, convertFactor: true } },
+        catalogTags: {
+          include: {
+            catalogEntry: { select: { id: true, code: true, title: true, department: true } },
+          },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
         productItem: { select: { id: true, code: true, taskName: true, convertFactor: true } },
         submissions: {
           include: {
@@ -88,8 +160,12 @@ export async function GET(req: NextRequest) {
           orderBy: { submittedAt: "desc" },
         },
       },
+      take: unboundedLimit ? unboundedLimit + 1 : undefined,
       orderBy: { createdAt: "desc" },
     });
+
+    const hasMore = unboundedLimit !== null && rawEntries.length > unboundedLimit;
+    const entries = hasMore ? rawEntries.slice(0, unboundedLimit!) : rawEntries;
 
     // Lấy phiên bản biểu mẫu động đang hoạt động (ACTIVE / PUBLISHED)
     const activeFormVersion =
@@ -151,6 +227,16 @@ export async function GET(req: NextRequest) {
         occurrenceStatus: entry.occurrenceStatus,
         notes: entry.notes,
         catalogEntryId: entry.catalogEntryId,
+        catalogTags: entry.catalogTags.map((tag) => ({
+          id: tag.id,
+          catalogEntryId: tag.catalogEntryId,
+          code: tag.catalogEntry.code,
+          title: tag.catalogEntry.title,
+          department: tag.catalogEntry.department,
+          sortOrder: tag.sortOrder,
+        })),
+        workDate: entry.workDate ? entry.workDate.toISOString().slice(0, 10) : null,
+        shift: entry.shift,
         productItemId: entry.productItemId,
         proposedProducts: entry.proposedProducts ? JSON.parse(entry.proposedProducts) : [],
         sourceKind: entry.sourceKind,
@@ -182,6 +268,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       entries: formattedEntries,
+      hasMore,
+      limit: unboundedLimit,
       activeFormVersion: activeFormVersion
         ? {
             id: activeFormVersion.id,
@@ -222,24 +310,116 @@ export async function POST(req: NextRequest) {
       formVersionId,
       formValues = {},
       // --- F18: danh muc TX + san pham QD1277 ---
-      catalogEntryId = null,
+      catalogEntryId: legacyCatalogEntryId = null,
+      catalogEntryIds: inputCatalogEntryIds = null,
+      workDate: inputWorkDate,
+      shift: inputShift,
       productItemId = null,
       proposedProducts = [],
       notOccurredKind = null, // NO_VIOLATION | NO_ACTIVITY
       dataOrigin = null,     // REAL | DEMO
     } = body;
 
-    // F18 — xác thực danh mục ở phía máy chủ (hệ số LUÔN lấy từ danh mục, không tin client)
-    let txEntry: any = null;
-    if (catalogEntryId) {
-      txEntry = await prisma.workCatalogEntry.findUnique({
-        where: { id: String(catalogEntryId) },
-        select: { id: true, code: true, title: true, convertFactor: true, status: true },
-      });
-      if (!txEntry) return jsonError("Công việc thường xuyên không tồn tại trong danh mục TX", 400);
-      if (txEntry.status !== "ACTIVE") {
-        return jsonError("Công việc thường xuyên đã ngừng áp dụng trong danh mục TX", 400);
+    // UX 2B1: nếu client gửi field workDate thì không được rỗng (UI luôn gửi ngày cụ thể).
+    // Bỏ hẳn field vẫn giữ hành vi cũ (mặc định hôm nay) cho client legacy.
+    const hasWorkDateField = Object.prototype.hasOwnProperty.call(body, "workDate");
+    if (
+      hasWorkDateField &&
+      (inputWorkDate === null ||
+        inputWorkDate === undefined ||
+        String(inputWorkDate).trim() === "")
+    ) {
+      return jsonError("Ngày làm việc là bắt buộc — vui lòng chọn ngày ghi nhận", 400);
+    }
+
+    // V3 UX 2B1 — xác thực N tag TX ở phía máy chủ.
+    // `catalogEntryId` cũ vẫn được nhận. UI gửi cả hai (tag đầu trùng với tag cũ)
+    // nên chỉ bổ sung tag cũ khi nó chưa có trong danh sách; trùng lặp TRONG danh
+    // sách vẫn bị từ chối.
+    const inputTagIds: string[] = [];
+    if (inputCatalogEntryIds !== null && inputCatalogEntryIds !== undefined) {
+      if (!Array.isArray(inputCatalogEntryIds)) {
+        return jsonError("Danh sách công việc thường xuyên phải là một mảng mã đầu việc", 400);
       }
+      const seenInputIds = new Set<string>();
+      for (const rawId of inputCatalogEntryIds) {
+        const id = String(rawId ?? "").trim();
+        if (!id) continue;
+        if (seenInputIds.has(id)) {
+          return jsonError(
+            "Danh sách công việc thường xuyên có mã trùng lặp — vui lòng chọn mỗi đầu việc một lần.",
+            400
+          );
+        }
+        seenInputIds.add(id);
+        inputTagIds.push(id);
+      }
+    }
+    const legacyTagId =
+      legacyCatalogEntryId !== null &&
+      legacyCatalogEntryId !== undefined &&
+      String(legacyCatalogEntryId).trim()
+        ? String(legacyCatalogEntryId).trim()
+        : null;
+    const requestedTagIds =
+      legacyTagId && !inputTagIds.includes(legacyTagId)
+        ? [legacyTagId, ...inputTagIds]
+        : inputTagIds;
+    if (requestedTagIds.length > 30) {
+      return jsonError("Một bản ghi nhật ký chỉ được gắn tối đa 30 đầu việc thường xuyên", 400);
+    }
+    const seenTagIds = new Set<string>(requestedTagIds);
+
+    let txEntries: Array<{
+      id: string;
+      code: string;
+      title: string;
+      convertFactor: unknown;
+      status: string;
+      department: string;
+      version: { status: string };
+    }> = [];
+    if (seenTagIds.size > 0) {
+      const foundEntries = await prisma.workCatalogEntry.findMany({
+        where: { id: { in: [...seenTagIds] } },
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          convertFactor: true,
+          status: true,
+          department: true,
+          version: { select: { status: true } },
+        },
+      });
+      const byId = new Map(foundEntries.map((entry) => [entry.id, entry]));
+      for (const id of requestedTagIds) {
+        const entry = byId.get(id);
+        if (!entry) {
+          return jsonError("Công việc thường xuyên không tồn tại trong danh mục TX", 400);
+        }
+        const selectionError = await getCatalogEntrySelectionError(user.personId, entry);
+        if (selectionError) return jsonError(selectionError, 400);
+        txEntries.push(entry);
+      }
+    }
+    const txEntry = txEntries[0] || null;
+
+    // Ngày/ca làm việc: mặc định ngày VN hôm nay + CA_NGAY; không suy đoán ca thực tế.
+    const parsedWorkDate = parseDateOnly(inputWorkDate);
+    if (!parsedWorkDate.ok) return jsonError(parsedWorkDate.message, 400);
+    // Chỉ coi là "ngày do client chọn" khi thực sự có giá trị; bỏ trống vẫn giữ
+    // hành vi cũ (kỳ do client gửi hoặc kỳ tuần gần nhất).
+    const hasExplicitWorkDate = !!parsedWorkDate.value;
+    const workDate =
+      parsedWorkDate.value ?? new Date(`${todayInVietnam()}T00:00:00.000Z`);
+    const workDateIso = workDate.toISOString().slice(0, 10);
+    const normalizedShift =
+      inputShift === null || inputShift === undefined || String(inputShift).trim() === ""
+        ? "CA_NGAY"
+        : String(inputShift).trim().toUpperCase();
+    if (!["SANG", "CHIEU", "CA_NGAY"].includes(normalizedShift)) {
+      return jsonError("Ca làm việc phải là SANG, CHIEU hoặc CA_NGAY", 400);
     }
 
     // Sản phẩm QĐ1277: chuẩn hoá danh sách, lấy hệ số từ danh mục, chặn trùng
@@ -339,33 +519,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Xác định kỳ báo cáo
-    let periodId = inputPeriodId;
-    if (!periodId) {
-      const activePeriod = await prisma.reportingPeriod.findFirst({
-        where: { type: "WEEK" },
-        orderBy: { startAt: "desc" },
-      });
-      if (activePeriod) {
-        periodId = activePeriod.id;
-      } else {
-        const currentIsoWeek = getIsoWeekFromDate(new Date());
-        // Upsert theo unique (type, title): 2 request đồng thời không tạo trùng kỳ
-        const newPeriod = await prisma.reportingPeriod.upsert({
-          where: { type_title: { type: "WEEK", title: currentIsoWeek.standardTitle } },
-          update: {},
-          create: {
-            type: "WEEK",
-            title: currentIsoWeek.standardTitle,
-            startAt: currentIsoWeek.startAt,
-            endAt: currentIsoWeek.endInclusive,
-            dueAt: new Date(currentIsoWeek.endInclusive.getTime() - 4 * 3600000),
-          },
-        });
-        periodId = newPeriod.id;
-      }
-    }
-
+    // 2. Xác định người/bộ phận TRƯỚC khi tạo kỳ mới (tránh kỳ mồ côi khi 400).
     const targetPersonId = user.personId;
     const targetUnitId = user.unitId;
 
@@ -374,13 +528,6 @@ export async function POST(req: NextRequest) {
         { error: "Tài khoản chưa được gán bộ phận công tác" },
         { status: 400 }
       );
-    }
-
-    // E1: kỳ đã chốt thì khóa ghi nhật ký mới
-    try {
-      await assertPeriodWritable(periodId);
-    } catch (err: any) {
-      return NextResponse.json({ error: err.message }, { status: err.statusCode || 423 });
     }
 
     // 3. Xác định phiên bản biểu mẫu áp dụng và kiểm tra tính hợp lệ của schema
@@ -452,14 +599,108 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Thực thi Prisma Transaction nguyên tử
+    // 4. Xác định kỳ báo cáo SAU khi đã validate form/ngày/bộ phận/tag.
+    // N1: khi client gửi ngày làm việc, LUÔN dùng kỳ TUẦN ISO chuẩn (canonical).
+    // - periodId client gửi chỉ dùng để kiểm tra cùng tuần/khóa, KHÔNG ghi vào sibling legacy.
+    // - Mọi kỳ cùng tuần ISO (kể cả legacy lệch múi giờ) đều được kiểm tra khóa.
+    // - Không gửi workDate: giữ nguyên hành vi cũ để backward-compatible.
+    let periodId = inputPeriodId;
+    if (hasExplicitWorkDate) {
+      if (inputPeriodId) {
+        const suppliedPeriod = await prisma.reportingPeriod.findUnique({
+          where: { id: inputPeriodId },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            startAt: true,
+            endAt: true,
+            isLocked: true,
+            snapshots: { where: { status: "LOCKED" }, select: { id: true } },
+          },
+        });
+        if (!suppliedPeriod) return jsonError("Kỳ báo cáo không tồn tại", 400);
+        if (suppliedPeriod.type === "WEEK") {
+          const expectedWeek = getIsoWeekFromDate(
+            new Date(`${workDateIso}T12:00:00+07:00`)
+          );
+          if (!periodRepresentsIsoWeek(suppliedPeriod, expectedWeek)) {
+            return jsonError(
+              `Kỳ đã chọn thuộc tuần khác với ngày làm việc ${workDateIso} — vui lòng kiểm tra lại`,
+              400
+            );
+          }
+        } else if (!isVnDateWithinReportingPeriod(suppliedPeriod, workDateIso)) {
+          return jsonError(
+            `Ngày làm việc ${workDateIso} không thuộc kỳ "${suppliedPeriod.title}" theo lịch VN — vui lòng chọn kỳ tương ứng`,
+            400
+          );
+        }
+        if (isReportingPeriodLocked(suppliedPeriod)) {
+          return jsonError(
+            `Kỳ "${suppliedPeriod.title}" đã chốt số liệu — không thể ghi nhật ký`,
+            423
+          );
+        }
+      }
+
+      try {
+        // Canonical: helper quét toàn bộ kỳ cùng tuần và chặn nếu bất kỳ kỳ nào đã khóa.
+        const canonicalPeriod = await resolveReportingWeekContainingVnDate(workDateIso);
+        periodId = canonicalPeriod.id;
+      } catch (error: any) {
+        // P5: chỉ lỗi nghiệp vụ đã biết mới trả message/4xx; lỗi hệ thống → 500 generic.
+        if (error instanceof ReportingPeriodError) {
+          return jsonError(error.message, error.statusCode || 400);
+        }
+        console.error("Error resolving routine reporting period:", error);
+        return jsonError("Không thể xác định kỳ báo cáo cho ngày đã chọn", 500);
+      }
+    }
+
+    if (!periodId) {
+      const activePeriod = await prisma.reportingPeriod.findFirst({
+        where: { type: "WEEK" },
+        orderBy: { startAt: "desc" },
+      });
+      if (activePeriod) {
+        periodId = activePeriod.id;
+      } else {
+        const currentIsoWeek = getIsoWeekFromDate(new Date());
+        // Upsert theo unique (type, title): 2 request đồng thời không tạo trùng kỳ
+        const newPeriod = await prisma.reportingPeriod.upsert({
+          where: { type_title: { type: "WEEK", title: currentIsoWeek.standardTitle } },
+          update: {},
+          create: {
+            type: "WEEK",
+            title: currentIsoWeek.standardTitle,
+            startAt: currentIsoWeek.startAt,
+            endAt: currentIsoWeek.endInclusive,
+            dueAt: new Date(currentIsoWeek.endInclusive.getTime() - 4 * 3600000),
+          },
+        });
+        periodId = newPeriod.id;
+      }
+    }
+
+    // E1: kỳ đã chốt thì khóa ghi nhật ký mới
+    try {
+      await assertPeriodWritable(periodId);
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: err.statusCode || 423 });
+    }
+
+    // 5. Thực thi Prisma Transaction nguyên tử
     const result = await prisma.$transaction(async (tx) => {
-      // 4.1 Chống trùng lặp gửi liên tục cho CÙNG một nội dung công việc (title)
+      // 5.1 Chống trùng lặp gửi liên tục cho CÙNG một nội dung công việc
+      // trong CÙNG ngày/ca (gửi hộ ngày khác không bị chặn nhầm).
       const duplicateRecent = await tx.routineEntry.findFirst({
         where: {
           personId: targetPersonId,
           periodId,
           occurrenceStatus,
+          workDate,
+          shift: normalizedShift,
           workItem: {
             title: String(finalTitle || "").trim(),
           },
@@ -475,27 +716,32 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 4.2 Chống trùng lặp xác nhận KHÔNG PHÁT SINH cho cùng nghiệp vụ trong kỳ
+      // 5.2 Chống trùng lặp xác nhận KHÔNG PHÁT SINH cho cùng nghiệp vụ
+      // trong CÙNG NGÀY + CÙNG CA (không chặn nhầm ngày khác trong cùng kỳ tuần).
       if (occurrenceStatus === "NOT_OCCURRED") {
+        const notOccurredTitle = String(finalTitle || "").trim();
         const existingNotOccurred = await tx.routineEntry.findFirst({
           where: {
             personId: targetPersonId,
-            periodId,
+            // N1: không scope theo periodId — sibling legacy cùng tuần không được
+            // tạo đường tránh trùng. workDate đã xác định tuần VN.
             occurrenceStatus: "NOT_OCCURRED",
+            workDate,
+            shift: normalizedShift,
             workItem: {
-              title: title.trim(),
+              title: notOccurredTitle,
             },
           },
         });
 
         if (existingNotOccurred) {
           throw new Error(
-            `NOT_OCCURRED_EXISTS: Nghiệp vụ '${title.trim()}' đã được xác nhận không phát sinh trong kỳ này`
+            `NOT_OCCURRED_EXISTS: Nghiệp vụ '${notOccurredTitle}' đã được xác nhận không phát sinh trong cùng ngày và ca này`
           );
         }
       }
 
-      // 4.3 Tạo PersonalWorkItem tương ứng nếu chưa có
+      // 5.3 Tạo PersonalWorkItem tương ứng nếu chưa có
       let createdWorkItemId = workItemId;
       if (!workItemId) {
         const newWorkItem = await tx.personalWorkItem.create({
@@ -554,7 +800,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 4.4 Tạo RoutineEntry
+      // 5.4 Tạo RoutineEntry
       const routineEntry = await tx.routineEntry.create({
         data: {
           periodId,
@@ -563,6 +809,17 @@ export async function POST(req: NextRequest) {
           templateId: templateId || null,
           workItemId: createdWorkItemId || null,
           catalogEntryId: txEntry?.id || null,
+          workDate,
+          shift: normalizedShift,
+          catalogTags:
+            txEntries.length > 0
+              ? {
+                  create: txEntries.map((entry, index) => ({
+                    catalogEntryId: entry.id,
+                    sortOrder: index,
+                  })),
+                }
+              : undefined,
           productItemId: mainProductId,
           proposedProducts: proposed.length ? JSON.stringify(proposed) : null,
           sourceKind: txEntry ? "TX_CATALOG" : mainProductId ? "QD1277_PRODUCT" : templateId ? "LEGACY_TEMPLATE" : "ADHOC",
@@ -580,10 +837,16 @@ export async function POST(req: NextRequest) {
             include: { group: true },
           },
           workItem: true,
+          catalogTags: {
+            include: {
+              catalogEntry: { select: { id: true, code: true, title: true, department: true } },
+            },
+            orderBy: { sortOrder: "asc" },
+          },
         },
       });
 
-      // 4.5 Nếu là OCCURRED và có FormVersion, tạo ResultSubmission và SubmissionValues
+      // 5.5 Nếu là OCCURRED và có FormVersion, tạo ResultSubmission và SubmissionValues
       let createdSubmission: any = null;
       if (occurrenceStatus === "OCCURRED" && targetFormVersion) {
         createdSubmission = await tx.resultSubmission.create({
@@ -685,7 +948,7 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // 5. Ghi Audit Trail sau giao dịch thành công
+    // 6. Ghi Audit Trail sau giao dịch thành công
     await recordAuditEvent({
       actorId: user.id,
       action:
@@ -702,6 +965,9 @@ export async function POST(req: NextRequest) {
         templateId,
         periodId,
         formVersionId: targetFormVersion?.id || null,
+        catalogEntryIds: txEntries.map((entry) => entry.id),
+        workDate: workDateIso,
+        shift: normalizedShift,
       },
     });
 

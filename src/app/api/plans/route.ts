@@ -4,10 +4,42 @@ import { authenticateRequest } from "@/server/auth";
 import { checkPermission, getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { assertPeriodWritable } from "@/server/period-guard";
+import { advisoryLock, normalizeTitle } from "@/server/idempotency";
+import {
+  findDuplicatePlan,
+  PLAN_CANCELED_STATUS,
+  type DuplicatePlanSummary,
+} from "@/server/planning";
 import {
   ReportingPeriodError,
   resolveReportingPeriod,
 } from "@/server/reporting-period";
+
+class DuplicatePlanError extends Error {
+  duplicate: DuplicatePlanSummary;
+
+  constructor(duplicate: DuplicatePlanSummary) {
+    super(`Trùng kế hoạch: ${duplicate.title}`);
+    this.name = "DuplicatePlanError";
+    this.duplicate = duplicate;
+  }
+}
+
+function duplicatePlanResponse(duplicate: DuplicatePlanSummary) {
+  return NextResponse.json(
+    {
+      success: false,
+      code: "DUPLICATE_PLAN",
+      error:
+        `Đã có kế hoạch cùng đơn vị, cùng kỳ và tiêu đề tương đương: "${duplicate.title}". ` +
+        "Vui lòng mở kế hoạch hiện có hoặc dùng tiêu đề khác.",
+      duplicatePlanId: duplicate.id,
+      duplicatePlanStatus: duplicate.status,
+      duplicatePlanTitle: duplicate.title,
+    },
+    { status: 409 }
+  );
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,13 +55,20 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const requestedUnitId = searchParams.get("unitId");
     const periodId = searchParams.get("periodId");
-    const status = searchParams.get("status");
+    const statusParam = searchParams.get("status");
+    const status = statusParam ? statusParam.trim().toUpperCase() : "";
 
     const authorizedUnits = await getAuthorizedUnitIds(user);
 
     const where: any = {};
     if (periodId) where.periodId = periodId;
-    if (status) where.status = status;
+    // Task 3C: mặc định ẩn kế hoạch đã hủy mềm; chỉ hiện khi lọc rõ
+    // `status=CANCELED` hoặc `status=ALL`.
+    if (status && status !== "ALL") {
+      where.status = status;
+    } else if (status !== "ALL") {
+      where.status = { not: PLAN_CANCELED_STATUS };
+    }
 
     if (authorizedUnits === "ALL") {
       if (requestedUnitId && requestedUnitId !== "ALL") {
@@ -224,26 +263,47 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const newPlan = await prisma.plan.create({
-      data: {
-        periodId,
-        unitId: targetUnitId,
-        creatorId: user.personId,
-        title: String(title).trim(),
-        status: "DRAFT",
-        items:
-          sanitizedItems.length > 0
-            ? {
-                create: sanitizedItems,
-              }
-            : undefined,
-      },
-      include: {
-        period: true,
-        unit: true,
-        items: true,
-      },
-    });
+    let newPlan;
+    try {
+      newPlan = await prisma.$transaction(async (tx) => {
+        // Chống race: hai request cùng đơn vị+kỳ+tiêu đề xếp hàng trước khi kiểm tra trùng.
+        await advisoryLock(
+          tx,
+          `plan-create:${targetUnitId}:${periodId}:${normalizeTitle(String(title))}`
+        );
+        const duplicate = await findDuplicatePlan(
+          { unitId: targetUnitId, periodId, title: String(title) },
+          tx
+        );
+        if (duplicate) throw new DuplicatePlanError(duplicate);
+
+        return tx.plan.create({
+          data: {
+            periodId,
+            unitId: targetUnitId,
+            creatorId: user.personId,
+            title: String(title).trim(),
+            status: "DRAFT",
+            items:
+              sanitizedItems.length > 0
+                ? {
+                    create: sanitizedItems,
+                  }
+                : undefined,
+          },
+          include: {
+            period: true,
+            unit: true,
+            items: true,
+          },
+        });
+      });
+    } catch (error) {
+      if (error instanceof DuplicatePlanError) {
+        return duplicatePlanResponse(error.duplicate);
+      }
+      throw error;
+    }
 
     await recordAuditEvent({
       actorId: user.id,

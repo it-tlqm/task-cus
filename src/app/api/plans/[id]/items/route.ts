@@ -4,8 +4,10 @@ import { jsonError } from "@/server/guard";
 import { prisma } from "@/server/db";
 import { assertPeriodWritable } from "@/server/period-guard";
 import { recordAuditEvent } from "@/server/audit";
+import { advisoryLock } from "@/server/idempotency";
 import {
   canManagePlanContent,
+  planContentLockKey,
   planContentLockMessage,
 } from "@/server/planning";
 
@@ -75,19 +77,48 @@ export async function POST(
     const group = await validateGroupId(body.groupId);
     if (!group.ok) return jsonError("Nhóm nghiệp vụ không tồn tại", 400);
 
-    const max = await prisma.planItem.aggregate({
-      where: { planId },
-      _max: { sortOrder: true },
+    // Task 3C: lấy khóa nội dung dùng chung với hủy mềm. Nếu hủy đang chạy,
+    // request này chờ; sau khi lấy khóa phải đọc lại trạng thái để không thêm
+    // hạng mục vào kế hoạch vừa chuyển CANCELED.
+    const createResult = await prisma.$transaction(async (tx) => {
+      await advisoryLock(tx, planContentLockKey(planId));
+      const fresh = await tx.plan.findUnique({
+        where: { id: planId },
+        select: { status: true, title: true },
+      });
+      if (!fresh) return { kind: "missing" as const };
+
+      const freshLock = planContentLockMessage(fresh);
+      if (freshLock) {
+        return { kind: "locked" as const, status: fresh.status, message: freshLock };
+      }
+
+      const max = await tx.planItem.aggregate({
+        where: { planId },
+        _max: { sortOrder: true },
+      });
+      const created = await tx.planItem.create({
+        data: {
+          planId,
+          title,
+          groupId: group.groupId,
+          sortOrder: Number(body.sortOrder) || (max._max.sortOrder || 0) + 1,
+        },
+        include: { group: true },
+      });
+      return { kind: "created" as const, item: created };
     });
-    const item = await prisma.planItem.create({
-      data: {
-        planId,
-        title,
-        groupId: group.groupId,
-        sortOrder: Number(body.sortOrder) || (max._max.sortOrder || 0) + 1,
-      },
-      include: { group: true },
-    });
+
+    if (createResult.kind === "missing") {
+      return jsonError("Kế hoạch công tác không tồn tại", 404);
+    }
+    if (createResult.kind === "locked") {
+      return jsonError(
+        createResult.message,
+        createResult.status === "SUBMITTED" ? 409 : 403
+      );
+    }
+    const item = createResult.item;
 
     await recordAuditEvent({
       actorId: user.id,

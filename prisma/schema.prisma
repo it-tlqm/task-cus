@@ -344,6 +344,7 @@ model WorkCatalogEntry {
   unit      OrgUnit?           @relation(fields: [unitId], references: [id], onDelete: SetNull)
   workItems PersonalWorkItem[]
   routineEntries RoutineEntry[]
+  routineEntryTags RoutineEntryCatalogTag[]
 
   // Mã đầu việc là khoá duy nhất: file nguồn TX1 có tên trùng trong CÙNG nhóm,
   // nên không thể để (versionId, department, title) là unique.
@@ -915,6 +916,9 @@ model RoutineEntry {
   dataOrigin       String?  @map("data_origin")       // REAL | DEMO (phan biet du lieu mau)
   occurrenceStatus String   @default("OCCURRED") @map("occurrence_status") // OCCURRED, NOT_OCCURRED
   notes            String?
+  // --- V3 UX Phase 2B1: ngay/ca thuc te + N tag TX (additive) ---
+  workDate         DateTime? @map("work_date") @db.Date // ngay lam viec theo lich VN
+  shift            String?  // SANG | CHIEU | CA_NGAY (du lieu cu backfill CA_NGAY)
   createdAt        DateTime @default(now()) @map("created_at")
 
   period      ReportingPeriod   @relation(fields: [periodId], references: [id], onDelete: Cascade)
@@ -924,6 +928,7 @@ model RoutineEntry {
   workItem    PersonalWorkItem? @relation(fields: [workItemId], references: [id])
   catalogEntry WorkCatalogEntry? @relation(fields: [catalogEntryId], references: [id], onDelete: SetNull)
   productItem  ProductItem?      @relation(fields: [productItemId], references: [id], onDelete: SetNull)
+  catalogTags  RoutineEntryCatalogTag[]
   submissions ResultSubmission[]
 
   @@index([periodId])
@@ -932,7 +937,27 @@ model RoutineEntry {
   @@index([occurrenceStatus])
   @@index([catalogEntryId])
   @@index([productItemId])
+  @@index([workDate])
   @@map("routine_entries")
+}
+
+// V3 UX Phase 2B1 — N tag danh muc TX cho MOT nhat ky tac nghiep.
+// Tag chi phan loai; khong tao them RoutineEntry, khong tham gia cong thuc diem.
+// `routine_entries.catalog_entry_id` duoc giu lam tag chinh/backward compatibility.
+model RoutineEntryCatalogTag {
+  id             String   @id @default(uuid())
+  routineEntryId String   @map("routine_entry_id")
+  catalogEntryId String   @map("catalog_entry_id")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  routineEntry RoutineEntry      @relation(fields: [routineEntryId], references: [id], onDelete: Cascade)
+  catalogEntry WorkCatalogEntry  @relation(fields: [catalogEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([routineEntryId, catalogEntryId], map: "routine_entry_catalog_tags_entry_catalog_key")
+  @@index([routineEntryId])
+  @@index([catalogEntryId])
+  @@map("routine_entry_catalog_tags")
 }
 
 model ResultSubmission {

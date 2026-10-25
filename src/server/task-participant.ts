@@ -597,6 +597,30 @@ export async function acceptParticipantPart(user: SessionUser, taskId: string) {
       resourceId: taskId,
       newData: { personId: user.personId },
     });
+
+    // Chủ trì (và người giao việc nếu có) biết công chức phối hợp đã nhận phần việc.
+    const recipients = new Set(
+      [result.task.ownerId, result.task.assignedById].filter(
+        (id: string | null | undefined): id is string => !!id && id !== user.personId
+      )
+    );
+    for (const recipientId of recipients) {
+      await createNotification({
+        recipientId,
+        category: "task",
+        type: "TASK_ACCEPTED",
+        title: `Đã nhận phần việc: [${result.task.code}]`,
+        content: `${user.fullName} đã xác nhận nhận phần việc phối hợp trong nhiệm vụ '${result.task.title}'.`,
+        tag: "NHẬN PHẦN VIỆC",
+        tagType: "success",
+        entityType: "TASK",
+        entityId: taskId,
+        actionUrl: `/tasks/${taskId}`,
+        actionLabel: "Xem nhiệm vụ",
+        taskCode: result.task.code,
+        idempotencyKey: `participant-accept-task:${taskId}:${user.personId}:${recipientId}`,
+      });
+    }
   }
   return result.row;
 }
