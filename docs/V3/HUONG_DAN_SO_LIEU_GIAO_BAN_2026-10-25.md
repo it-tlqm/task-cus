@@ -117,3 +117,12 @@ Nếu bảng vẫn “Chưa cấu hình” sau khi đã nhập target:
 - nguồn `REAL`,
 - trạng thái đã xác nhận/chốt,
 - quy tắc D5-A đã duyệt.
+
+## 9. Cấu hình ẩn/hiện trong So sánh thu NSNN
+
+1. Vào **Số liệu giao ban → Cấu hình số liệu giao ban**.
+2. Chọn tab **So sánh thu NSNN**.
+3. Tick chỉ tiêu muốn hiển thị trong khối **So sánh kết quả thu NSNN**.
+4. Bấm **Lưu cấu hình so sánh**.
+
+Mặc định chỉ bật `THU_NSNN`; `Mặt hàng phân bón` bị ẩn khỏi khối So sánh nhưng vẫn còn trong bảng **SỐ LIỆU GIAO BAN** phía trên. Bỏ tick tất cả để ẩn toàn bộ khối So sánh. Thay đổi có hiệu lực ngay, không cần deploy lại.
