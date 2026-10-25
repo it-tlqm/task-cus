@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { fmtDate, fmtMetric, fmtPercent } from "@/lib/metric-format";
 import { usePermissions } from "@/hooks/usePermissions";
+import { shiftComparisonDate } from "@/lib/comparison-dates";
 import ComparisonTargetQuickModal from "@/components/dashboard/ComparisonTargetQuickModal";
 
 export interface ComparisonTargetBlock {
@@ -174,7 +175,8 @@ export function RevenueComparisonSection({
     block: ComparisonDiffBlock,
     current: number | null,
     currentLabel: string,
-    rowStyle: { displayScale: number; decimals: number; unitLabel: string }
+    rowStyle: { displayScale: number; decimals: number; unitLabel: string },
+    actualDate: string | null
   ) => {
     const hasData = current !== null && block.value !== null;
     const percentTone =
@@ -199,7 +201,19 @@ export function RevenueComparisonSection({
               <span className="text-body-xs text-on-surface-variant"> ({currentLabel})</span>
             </>
           ) : (
-            <span className="text-on-surface-variant italic">Chưa có dữ liệu đối chiếu</span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-on-surface-variant italic">Chưa có dữ liệu đối chiếu</span>
+              {actualDate && (
+                <Link
+                  href={`/giao-ban/nhap?date=${actualDate}&metric=THU_NSNN`}
+                  className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/10"
+                  title={`Mở nhập số thực tế ngày ${actualDate}`}
+                >
+                  <span className="material-symbols-outlined text-[13px]">edit_note</span>
+                  Nhập số thực tế
+                </Link>
+              )}
+            </div>
           )}
         </td>
         <td className="px-3 py-2 text-center">
@@ -271,6 +285,8 @@ export function RevenueComparisonSection({
       <div className="p-4 flex flex-col gap-5">
         {rows.map((r) => {
           const rowStyle = { displayScale: r.displayScale, decimals: r.decimals, unitLabel: r.unitLabel };
+          const prevActualDate = r.latestDate ? shiftComparisonDate(r.latestDate, -1, 0) : null;
+          const lastYearActualDate = r.latestDate ? shiftComparisonDate(r.latestDate, 0, -1) : null;
           return (
             <div key={r.metricId} data-testid={`comparison-${r.code}`}>
               <div className="flex items-baseline gap-2 flex-wrap mb-1.5">
@@ -292,8 +308,8 @@ export function RevenueComparisonSection({
                     {targetRow("Chỉ tiêu Bộ Tài chính (năm)", r.btc, r.yearCum, "LK năm", rowStyle)}
                     {targetRow("Chỉ tiêu UBND tỉnh (năm)", r.ubnd, r.yearCum, "LK năm", rowStyle)}
                     {targetRow("Kế hoạch tháng HQTL", r.monthPlan, r.monthCum, "LK tháng", rowStyle)}
-                    {diffRow("So với tháng trước", r.prevMonth, r.monthCum, "LK tháng", rowStyle)}
-                    {diffRow("So với cùng kỳ năm trước", r.samePeriodLastYear, r.monthCum, "LK tháng", rowStyle)}
+                    {diffRow("So với tháng trước", r.prevMonth, r.monthCum, "LK tháng", rowStyle, prevActualDate)}
+                    {diffRow("So với cùng kỳ năm trước", r.samePeriodLastYear, r.monthCum, "LK tháng", rowStyle, lastYearActualDate)}
                   </tbody>
                 </table>
               </div>

@@ -178,6 +178,11 @@ export default function PlansPage() {
     }
   }, [filteredPlans, selectedPlanId]);
 
+  const clearWorkItemFilters = () => {
+    setSelectedOfficerFilter("all");
+    setSelectedPriorityFilter("all");
+  };
+
   const switchView = (m: "day" | "week" | "month" | "gantt") => {
     setViewMode(m);
     setSelectedPlanId("");
@@ -1479,9 +1484,9 @@ export default function PlansPage() {
       <div className="hidden lg:flex flex-col w-full p-space-lg gap-space-lg">
         {/* Top Command Panel & Period Navigator */}
         <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-border-default/50">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+          <div className="flex flex-col gap-space-md">
             {/* Title & Official Approval Status */}
-            <div className="flex flex-col gap-1">
+            <div className="flex min-w-0 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-space-sm">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold tracking-wide uppercase">
                   <span className="material-symbols-outlined text-[15px]">event_repeat</span>
@@ -1513,17 +1518,24 @@ export default function PlansPage() {
               <h1 className="font-headline-xl text-headline-xl text-primary mt-1 tracking-tight">
                 {activePlan ? activePlan.title : "Chưa có kế hoạch công tác"}
               </h1>
-              <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
-                <span>{activePlan?.unit?.name || "Chưa xác định đơn vị"}</span>
-                <span className="text-outline-variant">•</span>
-                <span className="font-body-semibold text-secondary">
-                  Kế hoạch cấp đơn vị • Dữ liệu theo phân quyền
+              <div className="flex flex-wrap items-center gap-2 text-body-sm text-on-surface-variant">
+                <span className="font-semibold text-on-surface">
+                  {activePlan?.unit?.name || "Chưa xác định đơn vị"}
                 </span>
-              </p>
+                <span className="rounded-full border border-border-subtle bg-surface-subtle px-2 py-0.5 text-[11px] font-semibold">
+                  Kế hoạch cấp đơn vị
+                </span>
+                <span className="rounded-full border border-border-subtle bg-surface-subtle px-2 py-0.5 text-[11px] font-semibold">
+                  Dữ liệu theo phân quyền
+                </span>
+              </div>
             </div>
 
             {/* Action Group */}
-            <div data-tour="workflow-actions" className="flex flex-wrap items-center gap-space-sm shrink-0">
+            <div
+              data-tour="workflow-actions"
+              className="flex flex-wrap items-center gap-space-sm border-t border-border-default/40 pt-space-md"
+            >
               {planOptions?.canCreatePlan && (
                 <button
                   type="button"
@@ -1771,37 +1783,43 @@ export default function PlansPage() {
               </div>
 
               {filteredPlans.length > 0 && (
-                <div className="flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle">
-                  <span className="font-label-sm text-label-sm text-outline">Kế hoạch:</span>
+                <div
+                  className="flex min-w-0 items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle"
+                  title={activePlan?.title}
+                >
+                  <span className="font-label-sm text-label-sm text-outline">Chọn kế hoạch:</span>
                   <select
                     data-testid="plan-select"
                     value={activePlan?.id || ""}
                     onChange={(e) => setSelectedPlanId(e.target.value)}
-                    className="bg-transparent font-label-md text-label-md font-semibold text-primary focus:outline-none cursor-pointer max-w-[280px] truncate"
+                    className="min-w-0 bg-transparent font-label-md text-label-md font-semibold text-primary focus:outline-none cursor-pointer max-w-[320px] truncate"
                   >
                     {filteredPlans.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.unit?.name || "Chưa xác định đơn vị"}: {p.title} ({p.status})
+                        {p.unit?.code ? `[${p.unit.code}] ` : ""}
+                        {p.title} ({p.status})
                       </option>
                     ))}
                   </select>
                 </div>
               )}
               <div className="flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle">
-                <span className="font-label-sm text-label-sm text-outline">Cán bộ phụ trách:</span>
+                <span className="font-label-sm text-label-sm text-outline">Phụ trách:</span>
                 <select
                   value={selectedOfficerFilter}
                   onChange={(e) => setSelectedOfficerFilter(e.target.value)}
                   className="bg-transparent font-label-md text-label-md text-primary focus:outline-none cursor-pointer"
                 >
-                  <option value="all">Tất cả cán bộ ({planOfficers.length} cán bộ)</option>
+                  <option value="all">
+                    {planOfficers.length > 0 ? `Tất cả cán bộ (${planOfficers.length})` : "Chưa có cán bộ"}
+                  </option>
                   {planOfficers.map((name) => (
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
               </div>
               <div className="flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle">
-                <span className="font-label-sm text-label-sm text-outline">Mức ưu tiên:</span>
+                <span className="font-label-sm text-label-sm text-outline">Ưu tiên:</span>
                 <select
                   value={selectedPriorityFilter}
                   onChange={(e) => setSelectedPriorityFilter(e.target.value)}
@@ -1813,6 +1831,16 @@ export default function PlansPage() {
                   <option value="LOW">Thấp</option>
                 </select>
               </div>
+              {(selectedOfficerFilter !== "all" || selectedPriorityFilter !== "all") && (
+                <button
+                  type="button"
+                  onClick={clearWorkItemFilters}
+                  className="inline-flex items-center gap-1 rounded border border-border-default bg-surface px-2.5 py-1.5 text-label-sm font-semibold text-on-surface-variant hover:bg-surface-container"
+                >
+                  <span className="material-symbols-outlined text-[15px]">filter_alt_off</span>
+                  Xóa lọc
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1918,17 +1946,23 @@ export default function PlansPage() {
 
         {/* Main Administrative Data-Dense Table (Excel Grid Representation - Stitch d8279bd2bf0c4198b665f567223d0bf4) */}
         <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
-          {/* Visual Informative Banner for Column C Business Logic */}
-          <div className="px-space-lg py-2.5 bg-primary-container text-on-primary flex items-center justify-between text-label-sm font-label-sm">
-            <div className="flex items-center gap-2">
+          {/* Business rules: giữ chi tiết nhưng thu gọn để không chiếm chỗ bảng */}
+          <details className="group border-b border-primary/20 bg-primary-container text-on-primary">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-space-lg py-2 text-label-sm font-label-sm [&::-webkit-details-marker]:hidden">
               <span className="material-symbols-outlined text-secondary-fixed text-[18px]">rule_settings</span>
-              <span>
-                <strong className="text-white uppercase tracking-wider font-semibold">Quy tắc nghiệp vụ Cột C:</strong>{" "}
-                "Danh mục đầu việc" biến động linh hoạt theo từng Cán bộ phụ trách và kỳ công tác, hỗ trợ liên kết mẫu nghiệp vụ chuẩn hóa [Mã Mẫu] hoặc đăng ký đầu việc đặc thù.
+              <span className="font-semibold uppercase tracking-wider">Quy tắc nghiệp vụ Cột C</span>
+              <span className="hidden truncate text-on-primary-container/90 md:inline">
+                — Danh mục đầu việc biến động theo cán bộ và kỳ công tác
               </span>
+              <span className="ml-auto shrink-0 rounded border border-white/20 px-1.5 py-0.5 text-[10px]">
+                V1.1
+              </span>
+            </summary>
+            <div className="border-t border-white/15 px-space-lg py-2 text-[12px] leading-relaxed text-on-primary-container">
+              “Danh mục đầu việc” biến động linh hoạt theo từng Cán bộ phụ trách và kỳ công tác, hỗ trợ liên kết mẫu
+              nghiệp vụ chuẩn hóa [Mã Mẫu] hoặc đăng ký đầu việc đặc thù.
             </div>
-            <span className="text-on-primary-container hidden md:inline">Phiên bản biểu mẫu công tác chuẩn V1.1</span>
-          </div>
+          </details>
 
           {/* Warning Banner if there are unassigned items */}
           {activePlan?.items?.some((pi) => !pi.group || !pi.groupId) && (
@@ -1952,10 +1986,15 @@ export default function PlansPage() {
                   <th className="py-3 px-space-md w-[110px] uppercase tracking-wider text-center">Thứ / Ngày</th>
                   <th className="py-3 px-space-md w-[200px] uppercase tracking-wider">Nhóm nhiệm vụ</th>
                   <th className="py-3 px-space-lg min-w-[340px] uppercase tracking-wider bg-surface-container-highest/40 text-primary">
-                    <div className="flex items-center justify-between">
-                      <span>Cột C: Danh mục đầu việc (Biến động theo cá nhân)</span>
-                      <span className="text-[11px] font-normal text-secondary uppercase px-1.5 py-0.5 rounded bg-secondary-fixed font-semibold">
-                        Mẫu &amp; Tùy biến
+                    <div className="flex items-center justify-between gap-2">
+                      <span title="Cột C: Danh mục đầu việc biến động theo từng cá nhân">
+                        Đầu việc / Danh mục
+                      </span>
+                      <span
+                        className="shrink-0 rounded bg-secondary-fixed px-1.5 py-0.5 text-[10px] font-semibold uppercase text-secondary"
+                        title="Hỗ trợ mẫu chuẩn và đầu việc tùy biến"
+                      >
+                        Mẫu
                       </span>
                     </div>
                   </th>
@@ -2160,19 +2199,31 @@ export default function PlansPage() {
                   });
 
                   if (filteredRows.length === 0) {
+                    const hasWorkItemFilter =
+                      selectedOfficerFilter !== "all" || selectedPriorityFilter !== "all";
+                    const emptyTitle =
+                      selectedScope === "personal"
+                        ? "Bạn chưa được phân công đầu việc nào trong kế hoạch này"
+                        : hasWorkItemFilter
+                          ? "Không có đầu việc phù hợp với bộ lọc hiện tại"
+                          : "Kế hoạch này chưa có đầu việc";
+                    const emptyHint =
+                      selectedScope === "personal"
+                        ? "Chuyển sang “Toàn đơn vị” để xem toàn bộ đầu việc trong phạm vi được xem."
+                        : hasWorkItemFilter
+                          ? "Bấm “Xóa lọc” để bỏ bộ lọc cán bộ / mức ưu tiên."
+                          : "Bấm “Thêm đầu việc mới” để bắt đầu nhập nội dung cho kế hoạch.";
                     return (
                       <tr>
                         <td colSpan={9} className="py-16 text-center text-on-surface-variant">
                           <span className="material-symbols-outlined text-outline text-[40px] block mb-2">
-                            filter_alt_off
+                            {hasWorkItemFilter ? "filter_alt_off" : "playlist_add"}
                           </span>
                           <p className="font-body-semibold text-body-semibold text-on-surface">
-                            {selectedScope === "personal"
-                              ? "Bạn chưa được phân công đầu việc nào trong kế hoạch này"
-                              : "Không tìm thấy đầu việc nào phù hợp với bộ lọc cán bộ / mức ưu tiên"}
+                            {emptyTitle}
                           </p>
                           <p className="font-table-data text-[12px] text-outline mt-1">
-                            Chuyển sang “Toàn đơn vị” để xem toàn bộ đầu việc trong phạm vi được xem.
+                            {emptyHint}
                           </p>
                         </td>
                       </tr>

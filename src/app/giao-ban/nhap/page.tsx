@@ -83,6 +83,7 @@ function shiftDate(dateStr: string, deltaDays: number): string {
 
 export default function NhapSoLieuPage() {
   const [date, setDate] = useState<string>(todayVnStr());
+  const [focusMetric, setFocusMetric] = useState("");
   const [data, setData] = useState<EntryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -119,8 +120,30 @@ export default function NhapSoLieuPage() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedDate = params.get("date") || "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+      setDate(requestedDate);
+    }
+    const requestedMetric = (params.get("metric") || "").toUpperCase();
+    if (/^[A-Z0-9_]+$/.test(requestedMetric)) {
+      setFocusMetric(requestedMetric);
+    }
+  }, []);
+
+  useEffect(() => {
     load(date);
   }, [date, load]);
+
+  useEffect(() => {
+    if (!focusMetric || !data) return;
+    const timer = window.setTimeout(() => {
+      document
+        .querySelector(`[data-metric-code="${focusMetric}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [focusMetric, data]);
 
   const changedCount = useMemo(() => {
     let n = 0;
@@ -297,7 +320,13 @@ export default function NhapSoLieuPage() {
               </div>
               <div className="divide-y divide-border-default/20">
                 {g.metrics.map((m) => (
-                  <div key={m.id} className="px-4 py-3">
+                  <div
+                    key={m.id}
+                    data-metric-code={m.code}
+                    className={`px-4 py-3 ${
+                      focusMetric === m.code ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : ""
+                    }`}
+                  >
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-body-md text-on-surface">{m.name}</span>
                       {m.valueKind === "BALANCE" && (
