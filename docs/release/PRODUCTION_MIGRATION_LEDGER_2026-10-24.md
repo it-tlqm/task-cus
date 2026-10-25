@@ -1,11 +1,11 @@
 # SỔ MIGRATION PRODUCTION — 24/10/2026
 
-- **Trạng thái:** `LEDGER THỦ CÔNG — 7/7 MIGRATION PASS — PROVIDER BACKUP/PITR CHƯA XÁC MINH`
+- **Trạng thái:** `LEDGER THỦ CÔNG — 8/8 MIGRATION PASS (cập nhật 25/10/2026) — PROVIDER BACKUP/PITR CHƯA XÁC MINH`
 - **Production:** `tlqm/task-cus` — `https://task-cus.vercel.app`
 - **Quy tắc bắt buộc:** [`docs/release/MIGRATION_RULES.md`](./MIGRATION_RULES.md)
 - **Biên bản backup/restore:** [`docs/evidence/release/BACKUP_RESTORE_REMEDIATION_2026-10-24.md`](../evidence/release/BACKUP_RESTORE_REMEDIATION_2026-10-24.md)
 - **Nguồn dữ liệu:** `docs/evidence/release/PRODUCTION_DEPLOY_2026-10-24.md`, `docs/evidence/release/PRODUCTION_DEPLOY_V32_2026-10-24.md`, `docs/release/PRODUCTION_RELEASE_PLAN_2026-10-23.md` mục 4.2
-- **Cập nhật:** 24/10/2026
+- **Cập nhật:** 25/10/2026 (bổ sung migration 8 — UX Phase 2B1)
 
 > **Production không có bảng `_prisma_migrations`.** Preflight V3.1 trả `NULL` cho `to_regclass('public._prisma_migrations')`. Vì vậy sổ này là nguồn ghi nhận migration duy nhất; không có lịch sử do Prisma tự sinh. Không chạy `prisma migrate deploy` trên Production (xem `MIGRATION_RULES.md`).
 
@@ -125,3 +125,18 @@ Theo **audit ngày 24/10/2026**, `sbc backups list` trả **danh sách trống**
 - Không sửa/xóa dòng cũ; nếu sai, thêm dòng đính chính hoặc ghi chú có ngày.
 - Dòng mới phải có: tên migration, SHA-256, ngày + giờ (giờ Việt Nam), người thực hiện, kết quả, counts trước/sau, ghi chú partial/rollback nếu có.
 - Sổ chỉ có giá trị khi đi kèm biên bản backup/restore và preflight read-only tương ứng.
+
+---
+
+## 7. CẬP NHẬT 25/10/2026 — MIGRATION 8 (UX PHASE 2B1)
+
+- **Migration:** `20261025100000_v3_ux_2b1_routine_tags`
+- **SHA-256:** `8B462CC88278EC7A09F55D53ADA4A07F98654FA6C2C33BBD8F54859F24089024`
+- **Thời điểm:** 25/10/2026
+- **Công cụ:** Supabase Management API `POST /v1/projects/{ref}/database/query`, sau backup + restore rehearsal.
+- **Backup schema SHA-256:** `F08BD0B307EC5E602CCE619EC5B8ED6C84A0B53FBE064CFCB1F106CA93A0C904`
+- **Backup data SHA-256:** `B0250A05603DA662E1D21E8A80ECEEF20C8E132427E9DBD83E42EC20E3AEEFFF`
+- **Restore rehearsal:** `talung_v3_prod_rehearsal_20261025` — PASS.
+- **Kết quả Production:** PASS; `routine_entries=18`, `work_date NULL=0`, `shift NULL=0`, `routine_entry_catalog_tags=1`.
+- **Tính chất:** additive; có `IF NOT EXISTS`, backfill idempotent; không đổi dữ liệu nghiệp vụ khác.
+- **Rollback schema:** chỉ drop bảng/cột nếu có quyết định riêng; code rollback không cần drop.
