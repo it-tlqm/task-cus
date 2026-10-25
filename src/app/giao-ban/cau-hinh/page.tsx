@@ -135,6 +135,7 @@ export default function CauHinhSoLieuPage() {
     valueKind: "FLOW",
     requireConfirm: false,
     showOnDashboard: false,
+    showInComparison: false,
     expectDaily: true,
     allowBackdateDays: 0,
     sortOrder: 0,
@@ -172,6 +173,7 @@ export default function CauHinhSoLieuPage() {
       valueKind: m.valueKind,
       requireConfirm: m.requireConfirm,
       showOnDashboard: m.showOnDashboard,
+      showInComparison: !!m.showInComparison,
       dashboardOrder: m.dashboardOrder,
       expectDaily: m.expectDaily,
       allowBackdateDays: m.allowBackdateDays,
@@ -469,6 +471,10 @@ export default function CauHinhSoLieuPage() {
                         <input type="checkbox" checked={newMetric.showOnDashboard} onChange={(e) => setNewMetric({ ...newMetric, showOnDashboard: e.target.checked })} />
                         Hiện trên Trang chủ
                       </label>
+                      <label className="flex items-center gap-1 text-body-xs px-1">
+                        <input type="checkbox" checked={!!newMetric.showInComparison} onChange={(e) => setNewMetric({ ...newMetric, showInComparison: e.target.checked })} />
+                        Hiện trong So sánh thu NSNN
+                      </label>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -551,6 +557,10 @@ export default function CauHinhSoLieuPage() {
                             <label className="flex items-center gap-1 text-body-xs">
                               <input type="checkbox" checked={!!metricDraft.showOnDashboard} onChange={(e) => setMetricDraft({ ...metricDraft, showOnDashboard: e.target.checked })} />
                               Hiện trên Trang chủ
+                            </label>
+                            <label className="flex items-center gap-1 text-body-xs">
+                              <input type="checkbox" checked={!!metricDraft.showInComparison} onChange={(e) => setMetricDraft({ ...metricDraft, showInComparison: e.target.checked })} />
+                              Hiện trong So sánh thu NSNN
                             </label>
                             <input value={metricDraft.note || ""} onChange={(e) => setMetricDraft({ ...metricDraft, note: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Ghi chú / hướng dẫn nhập" />
                           </div>

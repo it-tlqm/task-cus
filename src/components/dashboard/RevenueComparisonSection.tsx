@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { fmtDate, fmtMetric, fmtPercent } from "@/lib/metric-format";
 import { usePermissions } from "@/hooks/usePermissions";
-import { selectRevenueComparisonRows } from "@/lib/comparison-rows";
 
 export interface ComparisonTargetBlock {
   targetId: string | null;
@@ -94,9 +93,7 @@ export function RevenueComparisonSection({
 }) {
   const { can } = usePermissions();
   const canConfigure = can("metrics.config");
-  const rows = selectRevenueComparisonRows(
-    Array.isArray(comparison?.rows) ? comparison!.rows! : []
-  );
+  const rows = Array.isArray(comparison?.rows) ? comparison!.rows! : [];
   if (rows.length === 0) return null;
 
   const targetChip = (block: ComparisonTargetBlock) => {

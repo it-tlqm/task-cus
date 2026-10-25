@@ -1537,6 +1537,7 @@ model MetricDefinition {
   derivation        Json?
   requireConfirm    Boolean  @default(false) @map("require_confirm")
   showOnDashboard   Boolean  @default(false) @map("show_on_dashboard")
+  showInComparison  Boolean  @default(false) @map("show_in_comparison")
   dashboardOrder    Int      @default(0) @map("dashboard_order")
   allowBackdateDays Int      @default(0) @map("allow_backdate_days") // -1 = không giới hạn, N = trong N ngày gần nhất
   expectDaily       Boolean  @default(true) @map("expect_daily")

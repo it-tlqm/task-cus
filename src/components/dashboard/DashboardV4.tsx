@@ -218,7 +218,7 @@ export default function DashboardV4() {
       ].filter((x) => x.value > 0)
     : [];
 
-  const comparisonRow = summary?.comparison?.rows?.find((r) => r.code === "THU_NSNN") || summary?.comparison?.rows?.[0];
+  const comparisonRow = summary?.comparison?.rows?.[0];
   const comparisonData = comparisonRow
     ? [
         { name: "Kỳ này", value: comparisonRow.monthCum ?? null },
