@@ -25,7 +25,7 @@ interface NotificationItem {
 }
 
 export default function NotificationsPage() {
-  const [activeFilter, setActiveFilter] = useState<"all" | "task" | "approval" | "deadline">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "unread" | "task" | "approval" | "deadline">("all");
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -135,6 +135,7 @@ export default function NotificationsPage() {
 
   const filteredNotifications = notifications.filter((item) => {
     if (activeFilter === "all") return true;
+    if (activeFilter === "unread") return item.isUnread;
     return item.category === activeFilter;
   });
 
@@ -142,7 +143,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="w-full min-h-screen bg-app-bg pb-24">
-      <div className="max-w-2xl mx-auto px-margin pt-4 flex flex-col gap-4">
+      <div className="max-w-4xl mx-auto px-margin pt-4 flex flex-col gap-4">
         {/* Interactive Top Action Strip */}
         <section className="flex items-center justify-between py-2">
           <div className="flex items-center gap-2">
@@ -213,6 +214,19 @@ export default function NotificationsPage() {
             <span>Tất cả</span>
             <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[11px] font-semibold leading-tight">
               {notifications.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveFilter("unread")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
+              activeFilter === "unread"
+                ? "bg-status-warning text-on-primary font-bold"
+                : "bg-status-warning-bg/60 text-status-warning hover:bg-status-warning-bg"
+            }`}
+          >
+            <span>Chưa đọc</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-white/30 text-[11px] font-semibold leading-tight">
+              {unreadCount}
             </span>
           </button>
           <button
@@ -290,7 +304,11 @@ export default function NotificationsPage() {
                 <article
                   key={notif.id}
                   className={`relative overflow-hidden rounded-xl p-3.5 shadow-sm transition-fast border border-border-default/50 hover-lift ${
-                    notif.isUnread ? "bg-status-unassigned-bg/70 ring-1 ring-secondary/20" : "bg-surface-container-lowest"
+                    notif.isUnread
+                      ? notif.tagType === "danger"
+                        ? "bg-status-danger-bg/45 border-status-danger/40 border-l-4 border-l-status-danger ring-1 ring-status-danger/15"
+                        : "bg-status-warning-bg/45 border-status-warning/40 border-l-4 border-l-status-warning ring-1 ring-status-warning/15"
+                      : "bg-surface-container-lowest"
                   }`}
                 >
                   <div className="flex items-start gap-3">

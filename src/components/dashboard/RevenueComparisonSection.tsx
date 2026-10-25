@@ -244,10 +244,11 @@ export function RevenueComparisonSection({
         {(showConfigureLink || canConfigure) && (
           <Link
             href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
+            title="Mở Cấu hình → Chỉ tiêu giao để nhập BTC, UBND và KH tháng"
             className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-[16px]">edit_note</span>
-            Nhập chỉ tiêu đối chiếu →
+            Nhập chỉ tiêu BTC/UBND/KH →
           </Link>
         )}
       </div>

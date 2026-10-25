@@ -4,6 +4,7 @@ import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { syncOperationalAlerts } from "@/server/notifications";
 import { formatVnDate } from "@/lib/datetime";
+import { resolveNotificationDisplay } from "@/lib/notification-display";
 
 function formatRelativeOrDateTime(d: Date): string {
   const now = new Date();
@@ -75,24 +76,55 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    // Thông báo "chờ nghiệm thu" có thể đã cũ sau khi lãnh đạo duyệt/trả lại.
+    // Đọc trạng thái nhiệm vụ hiện tại để nhãn/tiêu đề không còn sai.
+    const reviewTaskIds = Array.from(
+      new Set(
+        notifications
+          .filter(
+            (n) => n.type === "TASK_WAITING_REVIEW" && n.entityType === "TASK" && n.entityId
+          )
+          .map((n) => n.entityId as string)
+      )
+    );
+    const reviewTasks = reviewTaskIds.length
+      ? await prisma.task.findMany({
+          where: { id: { in: reviewTaskIds } },
+          select: { id: true, code: true, title: true, status: true },
+        })
+      : [];
+    const reviewTaskById = new Map(reviewTasks.map((t) => [t.id, t]));
+
     // Format theo contract chuẩn của NotificationItem
-    const formattedData = notifications.map((n) => ({
-      id: n.id,
-      category: n.category as "task" | "approval" | "deadline" | "system",
-      type: n.type,
-      title: n.title,
-      description: n.content,
-      time: formatRelativeOrDateTime(n.createdAt),
-      createdAt: n.createdAt.toISOString(),
-      isUnread: !n.isRead,
-      tag: n.tag,
-      tagType: n.tagType as "danger" | "primary" | "success" | "warning",
-      taskCode: n.taskCode || undefined,
-      actionUrl: n.actionUrl,
-      actionLabel: n.actionLabel,
-      entityType: n.entityType || undefined,
-      entityId: n.entityId || undefined,
-    }));
+    const formattedData = notifications.map((n) => {
+      const display = resolveNotificationDisplay({
+        type: n.type,
+        tag: n.tag,
+        tagType: n.tagType as "danger" | "primary" | "success" | "warning",
+        title: n.title,
+        content: n.content,
+        actionUrl: n.actionUrl,
+        actionLabel: n.actionLabel,
+        task: n.entityId ? reviewTaskById.get(n.entityId) : null,
+      });
+      return {
+        id: n.id,
+        category: n.category as "task" | "approval" | "deadline" | "system",
+        type: n.type,
+        title: display.title,
+        description: display.content,
+        time: formatRelativeOrDateTime(n.createdAt),
+        createdAt: n.createdAt.toISOString(),
+        isUnread: !n.isRead,
+        tag: display.tag,
+        tagType: display.tagType,
+        taskCode: n.taskCode || undefined,
+        actionUrl: display.actionUrl,
+        actionLabel: display.actionLabel,
+        entityType: n.entityType || undefined,
+        entityId: n.entityId || undefined,
+      };
+    });
 
     return NextResponse.json({
       success: true,
