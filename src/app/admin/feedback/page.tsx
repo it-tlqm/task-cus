@@ -53,6 +53,9 @@ export default function AdminFeedbackPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkNote, setBulkNote] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   // Gõ tới đâu chờ 400ms mới hỏi máy chủ, đổi từ khóa thì về trang 1
   useEffect(() => {
@@ -110,6 +113,50 @@ export default function AdminFeedbackPage() {
       })
       .finally(() => setLoading(false));
   }, [page, debouncedSearch, tab, permLoading, showAdminMenu, refreshKey]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setBulkNote("");
+  }, [tab, page, debouncedSearch, refreshKey]);
+
+  const selectableIds = items.filter((item) => item.status === "NEW").map((item) => item.id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.includes(id));
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+  };
+
+  const bulkResolve = async () => {
+    if (bulkBusy || selectedIds.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const results = await Promise.all(
+        selectedIds.map(async (id) => {
+          const res = await fetch(`/api/feedback/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "resolve", adminNote: bulkNote.trim() || undefined }),
+          });
+          return res.ok;
+        })
+      );
+      const okCount = results.filter(Boolean).length;
+      if (okCount > 0) {
+        toast.success(`Đã xử lý ${okCount}/${selectedIds.length} góp ý.`);
+        setSelectedIds([]);
+        setBulkNote("");
+        setRefreshKey((key) => key + 1);
+      } else {
+        toast.error("Không xử lý được góp ý nào.");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi kết nối: " + err.message);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   const act = async (id: string, action: "resolve" | "reopen" | "note") => {
     if (busyId) return;
@@ -189,6 +236,19 @@ export default function AdminFeedbackPage() {
             </button>
           ))}
         </div>
+        {tab !== "DONE" && selectableIds.length > 0 && (
+          <label className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={(event) =>
+                setSelectedIds(event.target.checked ? selectableIds : [])
+              }
+              data-testid="feedback-select-all"
+            />
+            Chọn trang ({selectableIds.length})
+          </label>
+        )}
         <div className="flex-1" />
         <div className="relative">
           <span className="material-symbols-outlined text-[18px] text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2">
@@ -202,6 +262,35 @@ export default function AdminFeedbackPage() {
           />
         </div>
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl border border-secondary/30 bg-secondary/5 p-3 shadow-sm sm:flex-row sm:items-center">
+          <span className="text-xs font-bold text-secondary">
+            Đã chọn {selectedIds.length} góp ý mới
+          </span>
+          <input
+            value={bulkNote}
+            onChange={(event) => setBulkNote(event.target.value)}
+            placeholder="Ghi chú chung (tùy chọn)"
+            className="h-8 min-w-0 flex-1 rounded-lg border border-slate-300 px-2.5 text-xs"
+          />
+          <button
+            type="button"
+            onClick={bulkResolve}
+            disabled={bulkBusy}
+            className="h-8 rounded-lg bg-secondary px-3 text-xs font-bold text-on-secondary disabled:opacity-50"
+          >
+            {bulkBusy ? "Đang xử lý..." : "Đánh dấu đã xử lý"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedIds([])}
+            className="h-8 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-600"
+          >
+            Bỏ chọn
+          </button>
+        </div>
+      )}
 
       {/* Danh sách */}
       <div className="flex flex-col gap-3">
@@ -219,6 +308,15 @@ export default function AdminFeedbackPage() {
         {items.map((f) => (
           <div key={f.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2">
             <div className="flex items-center gap-2 flex-wrap">
+              {f.status === "NEW" && (
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(f.id)}
+                  onChange={() => toggleSelected(f.id)}
+                  aria-label={`Chọn góp ý của ${f.senderName}`}
+                  data-testid={`feedback-select-${f.id}`}
+                />
+              )}
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border ${
                   CATEGORY_STYLES[f.category] || "bg-slate-50 text-slate-600 border-slate-200"
