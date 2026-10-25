@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 import BackButton from "@/components/ui/BackButton";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { baseToInput, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { MetricCumulativeAdjustmentPanel } from "@/components/metrics/MetricCumulativeAdjustmentPanel";
 import { getVnDateParts } from "@/lib/period-helper";
@@ -326,13 +327,12 @@ export default function NhapSoLieuPage() {
                             <span className="text-body-sm text-on-surface-variant w-40 shrink-0 truncate" title={v.label}>
                               {v.label || "—"}
                             </span>
-                            <input
-                              inputMode="decimal"
+                            <FormattedNumberInput
                               value={values[key] ?? ""}
-                              onChange={(e) => setValues((p) => ({ ...p, [key]: e.target.value }))}
+                              onValueChange={(raw) => setValues((p) => ({ ...p, [key]: raw }))}
                               disabled={!v.canEdit}
                               placeholder={v.canEdit ? "Nhập số…" : "—"}
-                              className="w-40 px-3 py-1.5 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm text-right tabular-nums focus:outline-none focus:border-primary disabled:bg-surface-container disabled:text-on-surface-variant"
+                              className="w-44 px-3 py-1.5 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm text-right tabular-nums focus:outline-none focus:border-primary disabled:bg-surface-container disabled:text-on-surface-variant"
                             />
                             <span className="text-body-xs text-on-surface-variant w-24">{m.unitLabel}</span>
 

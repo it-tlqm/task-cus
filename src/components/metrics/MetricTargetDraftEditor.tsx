@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from "react";
+import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import {
   BASELINE_SCOPE_LABELS,
   DIRECTION_LABELS,
@@ -397,11 +398,11 @@ export function MetricTargetDraftEditor({
 
         <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
           Giá trị chỉ tiêu ({selectedMetric?.unitLabel || selectedMetric?.unitType || "đơn vị"})
-          <input
+          <FormattedNumberInput
             className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal tabular-nums text-on-surface"
             value={draft.value}
-            onChange={(e) => patch({ value: e.target.value })}
-            placeholder="VD: 1685000000000"
+            onValueChange={(raw) => patch({ value: raw })}
+            placeholder="VD: 1.685.000.000.000"
           />
         </label>
 
