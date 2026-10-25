@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChangePasswordModal } from "@/components/ui/ChangePasswordModal";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
+import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import { clearClientSession } from "@/lib/client-session";
 import {
   UNIT_OFFICIAL_NAME,
@@ -42,6 +43,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
     unitName: "",
   });
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [quickNotificationsOpen, setQuickNotificationsOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
@@ -208,11 +210,14 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
           </div>
 
           <div className="flex shrink-0 items-center gap-space-md">
-            <Link
-              href="/notifications"
+            <button
+              type="button"
+              onClick={() => setQuickNotificationsOpen(true)}
               className="focus-ring relative rounded p-1.5 transition-fast hover:bg-surface-subtle active-press"
               title="Thông báo điều hành"
-              aria-label="Thông báo điều hành"
+              aria-label="Mở thông báo nhanh"
+              aria-haspopup="dialog"
+              aria-expanded={quickNotificationsOpen}
             >
               <span aria-hidden="true" className="material-symbols-outlined text-[22px] text-on-surface-variant">
                 notifications
@@ -222,7 +227,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
-            </Link>
+            </button>
 
             <div className="h-6 w-px bg-border-default" />
 
@@ -322,9 +327,12 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <Link
-              href="/notifications"
-              aria-label="Thông báo hệ thống"
+            <button
+              type="button"
+              onClick={() => setQuickNotificationsOpen(true)}
+              aria-label="Mở thông báo nhanh"
+              aria-haspopup="dialog"
+              aria-expanded={quickNotificationsOpen}
               className="focus-ring relative flex h-10 w-10 items-center justify-center rounded-lg text-primary-container transition-fast hover:bg-surface-subtle active-press"
             >
               <span aria-hidden="true" className="material-symbols-outlined text-[22px]">
@@ -333,7 +341,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               {unreadCount > 0 && (
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-status-danger ring-2 ring-surface" />
               )}
-            </Link>
+            </button>
             <button
               type="button"
               onClick={onOpenMobileMenu}
@@ -348,6 +356,11 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
           </div>
         </div>
       </header>
+
+      <NotificationQuickView
+        open={quickNotificationsOpen}
+        onClose={() => setQuickNotificationsOpen(false)}
+      />
 
       <ChangePasswordModal
         isOpen={isChangePassOpen}
