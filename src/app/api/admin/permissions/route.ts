@@ -31,6 +31,23 @@ function canManagePermissions(user: SessionUser): boolean {
   return checkPermission(user, "org.manage");
 }
 
+function isSystemAdmin(user: SessionUser): boolean {
+  return user.role === "SYSTEM_ADMIN";
+}
+
+async function activeSystemAdminGrantCount(excludeGrantId?: string): Promise<number> {
+  const now = new Date();
+  return prisma.roleGrant.count({
+    where: {
+      ...(excludeGrantId ? { id: { not: excludeGrantId } } : {}),
+      role: { code: "SYSTEM_ADMIN" },
+      validFrom: { lte: now },
+      OR: [{ validTo: null }, { validTo: { gte: now } }],
+      account: { status: "ACTIVE" },
+    },
+  });
+}
+
 function isGrantActive(g: { validFrom: Date; validTo: Date | null }, now = new Date()) {
   return g.validFrom <= now && (!g.validTo || g.validTo >= now);
 }
@@ -149,7 +166,8 @@ export async function GET(req: NextRequest) {
           newData: a.newData,
           oldData: a.oldData,
         })),
-        sensitiveRolesLocked: SENSITIVE_ROLE_CODES,
+        sensitiveRolesLocked: isSystemAdmin(user) ? [] : SENSITIVE_ROLE_CODES,
+        canGrantSystemAdmin: isSystemAdmin(user),
         myRole: user.role,
       },
     });
@@ -173,12 +191,13 @@ export async function POST(req: NextRequest) {
 
     if (!accountId || !roleCode) return jsonError("Thiếu tài khoản hoặc vai trò.", 400);
 
-    // 1) Vai trò nhạy cảm — chưa có quy định ai được cấp ⇒ khóa
-    if (SENSITIVE_ROLE_CODES.includes(roleCode)) {
-      return jsonError(
-        "Chưa có quy định về việc cấp vai trò Quản trị hệ thống. Thao tác này đang được khóa trong bản DEMO — đề nghị lãnh đạo đơn vị xác nhận chính sách.",
-        403
-      );
+    // 1) Vai trò nhạy cảm: chỉ SYSTEM_ADMIN hiện hữu được cấp, phải có lý do.
+    const sensitiveRole = SENSITIVE_ROLE_CODES.includes(roleCode);
+    if (sensitiveRole && !isSystemAdmin(user)) {
+      return jsonError("Chỉ Quản trị hệ thống hiện hữu mới được cấp vai trò Quản trị hệ thống.", 403);
+    }
+    if (sensitiveRole && (!reason || String(reason).trim().length < 10)) {
+      return jsonError("Cấp Quản trị hệ thống phải có lý do tối thiểu 10 ký tự.", 400);
     }
 
     // 2) Không cho tự nâng quyền: chỉ cấp được vai trò không cao hơn vai trò của mình
@@ -209,6 +228,12 @@ export async function POST(req: NextRequest) {
     }
     if (scope === "ORGANIZATION" && user.role !== "UNIT_LEADER" && user.role !== "SYSTEM_ADMIN") {
       return jsonError("Chỉ lãnh đạo đơn vị mới cấp được phạm vi toàn tổ chức.", 403);
+    }
+    if (sensitiveRole) {
+      if (scope !== "ORGANIZATION" || unitId) {
+        return jsonError("Quản trị hệ thống chỉ được cấp ở phạm vi toàn tổ chức.", 400);
+      }
+      unitId = null;
     }
 
     // 4) Thời gian hiệu lực
@@ -287,6 +312,19 @@ export async function DELETE(req: NextRequest) {
     }
 
     const now = new Date();
+    if (grant.role.code === "SYSTEM_ADMIN") {
+      if (!isSystemAdmin(user)) {
+        return jsonError("Chỉ Quản trị hệ thống hiện hữu mới được thu hồi vai trò Quản trị hệ thống.", 403);
+      }
+      if (!reason.trim()) {
+        return jsonError("Thu hồi Quản trị hệ thống phải có lý do.", 400);
+      }
+      const otherAdmins = await activeSystemAdminGrantCount(grant.id);
+      if (otherAdmins === 0) {
+        return jsonError("Không thể thu hồi Quản trị hệ thống cuối cùng.", 409);
+      }
+    }
+
     const updated = await prisma.roleGrant.update({
       where: { id: grantId },
       data: { validTo: now },

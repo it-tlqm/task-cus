@@ -84,6 +84,24 @@ async function main() {
     });
 
     await page.goto(`${BASE}/routine`, { waitUntil: "networkidle2", timeout: 120000 });
+    // TourGuide có thể phủ overlay lên nút khai báo ở lần đầu vào trang.
+    await page.waitForSelector('[data-testid="routine-declaration-toggle"]', { timeout: 120000 });
+    await page
+      .waitForFunction(
+        () =>
+          Array.from(document.querySelectorAll("button")).some(
+            (button) => button.textContent?.trim() === "Bỏ qua"
+          ),
+        { timeout: 10000 }
+      )
+      .catch(() => {});
+    await page.evaluate(() => {
+      const skip = Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent?.trim() === "Bỏ qua"
+      );
+      skip?.click();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
     // UX 3B: với công chức, form khai báo mặc định thu gọn — mở trước khi thao tác.
     await page.waitForSelector('[data-testid="routine-declaration-toggle"]', { timeout: 120000 });
     await new Promise((resolve) => setTimeout(resolve, 1200));

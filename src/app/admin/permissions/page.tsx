@@ -73,6 +73,7 @@ interface Payload {
     oldData: any;
   }[];
   sensitiveRolesLocked: string[];
+  canGrantSystemAdmin: boolean;
   myRole: string;
 }
 
@@ -161,6 +162,23 @@ export default function AdminPermissionsPage() {
       toast.error("Vui lòng chọn tài khoản cần cấp vai trò.");
       return;
     }
+    const sensitive = gRole === "SYSTEM_ADMIN";
+    if (sensitive && !data?.canGrantSystemAdmin) {
+      toast.error("Chỉ Quản trị hệ thống hiện hữu mới được cấp vai trò này.");
+      return;
+    }
+    if (sensitive && gReason.trim().length < 10) {
+      toast.error("Cấp Quản trị hệ thống phải có lý do tối thiểu 10 ký tự.");
+      return;
+    }
+    if (
+      sensitive &&
+      !window.confirm(
+        "Cấp vai trò Quản trị hệ thống? Thao tác này được ghi nhật ký và không thể tự thu hồi."
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch("/api/admin/permissions", {
@@ -191,10 +209,26 @@ export default function AdminPermissionsPage() {
     }
   };
 
-  const revoke = async (grantId: string) => {
+  const revoke = async (grant: Grant) => {
+    let reason = "";
+    if (grant.roleCode === "SYSTEM_ADMIN") {
+      if (!data?.canGrantSystemAdmin) {
+        toast.error("Chỉ Quản trị hệ thống hiện hữu mới được thu hồi vai trò này.");
+        return;
+      }
+      const input = window.prompt("Lý do thu hồi Quản trị hệ thống (bắt buộc):");
+      if (!input?.trim()) {
+        toast.error("Thu hồi Quản trị hệ thống phải có lý do.");
+        return;
+      }
+      reason = input.trim();
+    }
     setBusy(true);
     try {
-      const res = await fetch(`/api/admin/permissions?grantId=${grantId}`, { method: "DELETE" });
+      const res = await fetch(
+        `/api/admin/permissions?grantId=${grant.id}&reason=${encodeURIComponent(reason)}`,
+        { method: "DELETE" }
+      );
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         toast.error(json.error || "Không thu hồi được vai trò.");
@@ -530,23 +564,40 @@ export default function AdminPermissionsPage() {
                 <select
                   data-testid="grant-role"
                   value={gRole}
-                  onChange={(e) => setGRole(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setGRole(next);
+                    if (next === "SYSTEM_ADMIN") {
+                      setGScope("ORGANIZATION");
+                      setGUnit("");
+                    }
+                  }}
                   className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
                 >
                   {data.roles.map((r) => (
                     <option key={r.id} value={r.code}>
                       {r.name}
-                      {data.sensitiveRolesLocked.includes(r.code) ? " (đang khóa)" : ""}
+                      {r.code === "SYSTEM_ADMIN"
+                        ? data.canGrantSystemAdmin
+                          ? " (quản trị cao nhất)"
+                          : " (đang khóa)"
+                        : ""}
                     </option>
                   ))}
                 </select>
+                {gRole === "SYSTEM_ADMIN" && (
+                  <div className="rounded-lg border border-status-warning/40 bg-status-warning-bg/50 p-3 text-[11px] text-status-warning">
+                    Chỉ Quản trị hệ thống hiện hữu được cấp; phạm vi bắt buộc toàn tổ chức; không thể tự cấp hoặc thu hồi admin cuối cùng.
+                  </div>
+                )}
 
                 <label className="block text-xs font-semibold text-on-surface">Phạm vi</label>
                 <select
                   data-testid="grant-scope"
                   value={gScope}
                   onChange={(e) => setGScope(e.target.value)}
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                  disabled={gRole === "SYSTEM_ADMIN"}
+                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm disabled:opacity-60"
                 >
                   {Object.entries(SCOPE_LABEL).map(([k, v]) => (
                     <option key={k} value={k}>
@@ -555,7 +606,7 @@ export default function AdminPermissionsPage() {
                   ))}
                 </select>
 
-                {(gScope === "DEPARTMENT" || gScope === "SUBTREE") && (
+                {gRole !== "SYSTEM_ADMIN" && (gScope === "DEPARTMENT" || gScope === "SUBTREE") && (
                   <>
                     <label className="block text-xs font-semibold text-on-surface">Đơn vị</label>
                     <select
@@ -617,8 +668,8 @@ export default function AdminPermissionsPage() {
                 </button>
                 <p className="text-[11px] text-on-surface-variant">
                   Không thể cấp vai trò cao hơn vai trò của bạn, không thể tự cấp quyền cho mình, và
-                  không thể cấp quyền ngoài đơn vị bạn phụ trách. Vai trò quản trị hệ thống đang được
-                  khóa cho tới khi có quy định về người được cấp.
+                  không thể cấp quyền ngoài đơn vị bạn phụ trách. Quản trị hệ thống chỉ do Quản trị
+                  hệ thống hiện hữu cấp, có lý do và ghi nhật ký; không thể thu hồi admin cuối cùng.
                 </p>
               </div>
 
@@ -652,12 +703,12 @@ export default function AdminPermissionsPage() {
                           >
                             {g.active ? "Còn hiệu lực" : "Đã hết hạn"}
                           </span>
-                          {g.active && (
+                          {g.active && (g.roleCode !== "SYSTEM_ADMIN" || data.canGrantSystemAdmin) && (
                             <button
                               type="button"
                               data-testid={`grant-revoke-${g.id}`}
                               disabled={busy}
-                              onClick={() => revoke(g.id)}
+                              onClick={() => revoke(g)}
                               className="px-2 py-1 rounded text-[11px] font-semibold border border-status-danger/40 text-status-danger hover:bg-status-danger-bg disabled:opacity-50"
                             >
                               Thu hồi
