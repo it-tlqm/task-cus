@@ -1,5 +1,6 @@
 /**
  * Cấu hình chỉ tiêu hiển thị trong So sánh thu NSNN.
+ * Không dùng migration: lưu trong system_configs.
  * Chạy: npx tsx scripts/test-comparison-config.ts
  */
 import fs from "node:fs";
@@ -15,20 +16,22 @@ const check = (name: string, ok: boolean) => {
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), "utf8");
 
 const schema = read("prisma/schema.prisma");
-const migration = read("prisma/migrations/20261025110000_v3_metric_show_in_comparison/migration.sql");
+const systemConfig = read("src/server/system-config.ts");
 const metrics = read("src/server/metrics.ts");
 const admin = read("src/app/api/metrics/admin/route.ts");
 const configPage = read("src/app/giao-ban/cau-hinh/page.tsx");
 const comparison = read("src/components/dashboard/RevenueComparisonSection.tsx");
 const v4 = read("src/components/dashboard/DashboardV4.tsx");
 
-check("Schema có showInComparison", schema.includes("showInComparison"));
-check("Migration thêm cột", migration.includes("show_in_comparison"));
-check("Migration bật THU_NSNN", /THU_NSNN/.test(migration) && migration.includes("= true"));
-check("API so sánh lọc theo cờ", metrics.includes("if (!m.showInComparison) continue"));
-check("API admin trả cờ", admin.includes("showInComparison: m.showInComparison"));
-check("API admin lưu cờ", admin.includes("showInComparison: boolOf(data.showInComparison"));
-check("UI có checkbox cấu hình", configPage.includes("Hiện trong So sánh thu NSNN"));
+check("Không thêm cột schema", !schema.includes("showInComparison"));
+check("Có key cấu hình", systemConfig.includes("metric.comparison.visibleCodes"));
+check("Mặc định THU_NSNN", systemConfig.includes('["THU_NSNN"]'));
+check("Có helper đọc cấu hình", systemConfig.includes("getMetricComparisonVisibleCodes"));
+check("API so sánh lọc theo cấu hình", metrics.includes("getMetricComparisonVisibleCodes") && metrics.includes("comparisonVisibleCodes.has"));
+check("API admin trả danh sách", admin.includes("comparisonVisibleCodes"));
+check("API admin lưu entity comparison", admin.includes('entity === "comparison"'));
+check("API admin lưu SystemConfig", admin.includes("METRIC_COMPARISON_VISIBLE_CODES_KEY"));
+check("UI có tab cấu hình", configPage.includes("So sánh thu NSNN") && configPage.includes("comparisonCodes"));
 check("Không còn filter hard-code trong component", !comparison.includes("selectRevenueComparisonRows"));
 check("V4 không ép cứng THU_NSNN", !v4.includes('rows?.find((r) => r.code === "THU_NSNN")'));
 

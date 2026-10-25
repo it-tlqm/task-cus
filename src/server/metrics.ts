@@ -14,6 +14,7 @@ import {
 } from "@/lib/metrics-contract";
 import { canAssignTarget, ruleOf } from "@/lib/metric-target-rules";
 import { loadMetricTargetRules } from "./metric-target-rules";
+import { getMetricComparisonVisibleCodes } from "./system-config";
 
 const D = Prisma.Decimal;
 export type Dec = Prisma.Decimal;
@@ -265,7 +266,6 @@ export interface MetricSummaryRow {
   requireConfirm: boolean;
   expectDaily: boolean;
   showOnDashboard: boolean;
-  showInComparison: boolean;
   note: string | null;
   cols: MetricCols;
   classCols: {
@@ -778,7 +778,6 @@ export async function computeMetricSummary(
         requireConfirm: m.requireConfirm,
         expectDaily: m.expectDaily,
         showOnDashboard: m.showOnDashboard,
-        showInComparison: m.showInComparison,
         note: m.note,
         cols,
         classCols,
@@ -1021,6 +1020,7 @@ export async function computeMetricComparison(
 ): Promise<MetricComparisonResult> {
   const { year, month } = anchors;
   const baseSummary = base || (await computeMetricSummary(anchors, "full"));
+  const comparisonVisibleCodes = new Set(await getMetricComparisonVisibleCodes());
 
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevYear = month === 1 ? year - 1 : year;
@@ -1120,7 +1120,7 @@ export async function computeMetricComparison(
   for (const g of baseSummary.groups) {
     for (const m of g.metrics) {
       // Cấu hình theo từng chỉ tiêu: chỉ hiện trong khối So sánh khi được bật.
-      if (!m.showInComparison) continue;
+      if (!comparisonVisibleCodes.has(m.code.toUpperCase())) continue;
       // B-C-2/Q9: chỉ dùng target REAL (cờ dữ liệu) — KHÔNG dò nhãn.
       // Chỉ so sánh ở phạm vi TỔNG (classificationId rỗng) để khớp cột lũy kế tổng.
       const officialTargets = m.targets.filter((t) => t.isOfficial && !t.classificationId);

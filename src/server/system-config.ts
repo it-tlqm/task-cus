@@ -68,6 +68,14 @@ export const DEFAULT_CONFIGS: Array<{
     category: "REPORT",
     description: "Cấu hình Builder mẫu báo cáo XLSX (gom nhóm, nhãn không phát sinh, ngắt dòng)",
   },
+  {
+    key: "metric.comparison.visibleCodes",
+    value: '["THU_NSNN"]',
+    dataType: "JSON",
+    category: "REPORT",
+    description:
+      "Danh sách mã chỉ tiêu hiển thị trong khối So sánh kết quả thu NSNN (cấu hình theo từng chỉ tiêu)",
+  },
 ];
 
 /**
@@ -204,6 +212,35 @@ export async function getSystemConfigBoolean(key: string, defaultValue: boolean 
   const val = await getSystemConfig(key);
   if (!val) return defaultValue;
   return val === "true" || val === "1";
+}
+
+export const METRIC_COMPARISON_VISIBLE_CODES_KEY = "metric.comparison.visibleCodes";
+export const DEFAULT_METRIC_COMPARISON_VISIBLE_CODES = ["THU_NSNN"];
+
+/**
+ * Danh sách mã chỉ tiêu được bật trong khối So sánh thu NSNN.
+ * Mặc định chỉ THU_NSNN; lưu dạng JSON array trong system_configs.
+ */
+export async function getMetricComparisonVisibleCodes(): Promise<string[]> {
+  const fallback = DEFAULT_METRIC_COMPARISON_VISIBLE_CODES;
+  const raw = await getSystemConfig(
+    METRIC_COMPARISON_VISIBLE_CODES_KEY,
+    JSON.stringify(fallback)
+  );
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return fallback;
+    return Array.from(
+      new Set(
+        parsed
+          .filter((v): v is string => typeof v === "string")
+          .map((v) => v.trim().toUpperCase())
+          .filter(Boolean)
+      )
+    );
+  } catch {
+    return fallback;
+  }
 }
 
 /**

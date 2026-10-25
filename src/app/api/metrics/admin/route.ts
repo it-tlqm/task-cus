@@ -15,6 +15,11 @@ import {
 } from "@/server/metrics";
 import { canAssignTarget, ruleKey, ruleOf } from "@/lib/metric-target-rules";
 import { loadMetricTargetRules } from "@/server/metric-target-rules";
+import {
+  getMetricComparisonVisibleCodes,
+  updateSystemConfig,
+  METRIC_COMPARISON_VISIBLE_CODES_KEY,
+} from "@/server/system-config";
 
 const D = Prisma.Decimal;
 
@@ -126,6 +131,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
     const metricIds = metrics.map((m) => m.id);
+    const comparisonVisibleCodes = await getMetricComparisonVisibleCodes();
 
     const [classifications, targets, baselines, assignments, sections, people, reportBlocks, targetRules] = await Promise.all([
       prisma.metricClassification.findMany({ orderBy: [{ sortOrder: "asc" }, { label: "asc" }] }),
@@ -236,6 +242,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      comparisonVisibleCodes,
       groups: groups.map((g) => ({
         id: g.id,
         code: g.code,
@@ -259,7 +266,6 @@ export async function GET(req: NextRequest) {
             derivation: m.derivation ? parseDerivation(m.derivation) : null,
             requireConfirm: m.requireConfirm,
             showOnDashboard: m.showOnDashboard,
-            showInComparison: m.showInComparison,
             dashboardOrder: m.dashboardOrder,
             allowBackdateDays: m.allowBackdateDays,
             expectDaily: m.expectDaily,
@@ -371,6 +377,39 @@ export async function POST(req: NextRequest) {
         newData,
       });
 
+    // ---------- SO SÁNH ----------
+    if (entity === "comparison") {
+      if (action !== "update") return jsonError("Thao tác cấu hình so sánh không hợp lệ", 400);
+      if (!Array.isArray(data.codes)) return jsonError("Danh sách chỉ tiêu không hợp lệ", 400);
+      const rawCodes: unknown[] = data.codes;
+      const codes: string[] = Array.from(
+        new Set(
+          rawCodes
+            .filter((v): v is string => typeof v === "string")
+            .map((v) => v.trim().toUpperCase())
+            .filter(Boolean)
+        )
+      );
+      if (codes.length > 0) {
+        const found = await prisma.metricDefinition.findMany({
+          where: { code: { in: codes }, active: true },
+          select: { code: true },
+        });
+        const foundSet = new Set(found.map((m) => m.code.toUpperCase()));
+        const invalid = codes.filter((code) => !foundSet.has(code));
+        if (invalid.length > 0) {
+          return jsonError(`Chỉ tiêu không hợp lệ hoặc đã ngừng dùng: ${invalid.join(", ")}`, 400);
+        }
+      }
+      const result = await updateSystemConfig(
+        METRIC_COMPARISON_VISIBLE_CODES_KEY,
+        JSON.stringify(codes),
+        user
+      );
+      if (!result.success) return jsonError(result.error || "Không lưu được cấu hình so sánh", 400);
+      return NextResponse.json({ success: true, codes });
+    }
+
     // ---------- NHÓM ----------
     if (entity === "group") {
       if (action === "create") {
@@ -449,7 +488,6 @@ export async function POST(req: NextRequest) {
           derivation: valueKind === "DERIVED" ? (derivation as Prisma.InputJsonValue) : Prisma.JsonNull,
           requireConfirm: boolOf(data.requireConfirm, false),
           showOnDashboard: boolOf(data.showOnDashboard, false),
-          showInComparison: boolOf(data.showInComparison, false),
           dashboardOrder: intOf(data.dashboardOrder, 0) || 0,
           allowBackdateDays: intOf(data.allowBackdateDays, 0) || 0,
           expectDaily: boolOf(data.expectDaily, true),

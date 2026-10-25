@@ -7,7 +7,7 @@ import { fmtMetric, fmtDate } from "@/lib/metric-format";
 import { MetricTargetManager } from "@/components/metrics/MetricTargetManager";
 import BackButton from "@/components/ui/BackButton";
 
-type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION" | "REPORT";
+type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION" | "REPORT" | "COMPARISON";
 
 const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: "STRUCT", label: "Nhóm & chỉ tiêu", icon: "list_alt" },
@@ -17,6 +17,8 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: "SECTION", label: "Mục nhận xét", icon: "notes" },
   { key: "REPORT", label: "Cấu trúc báo cáo", icon: "article" },
 ];
+
+TABS.push({ key: "COMPARISON", label: "So sánh thu NSNN", icon: "compare_arrows" });
 
 const SCALE_OPTIONS = [
   { value: 1, label: "Đơn vị gốc (đồng / USD / số lượng)" },
@@ -50,6 +52,7 @@ export default function CauHinhSoLieuPage() {
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [comparisonCodes, setComparisonCodes] = useState<string[]>([]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -65,7 +68,12 @@ export default function CauHinhSoLieuPage() {
     fetch("/api/metrics/admin")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (json?.success) setCfg(json);
+        if (json?.success) {
+          setCfg(json);
+          if (Array.isArray(json.comparisonVisibleCodes)) {
+            setComparisonCodes(json.comparisonVisibleCodes);
+          }
+        }
         else toast.error("Không tải được cấu hình");
       })
       .catch(() => toast.error("Lỗi kết nối"))
@@ -104,6 +112,20 @@ export default function CauHinhSoLieuPage() {
     [load]
   );
 
+  const toggleComparisonCode = (code: string) => {
+    setComparisonCodes((current) =>
+      current.includes(code) ? current.filter((item) => item !== code) : [...current, code]
+    );
+  };
+
+  const saveComparisonCodes = () =>
+    post(
+      "comparison",
+      "update",
+      { codes: comparisonCodes },
+      "Đã lưu cấu hình So sánh thu NSNN"
+    );
+
   // ------------------- LỊCH SỬ (YC-02) -------------------
   const [historyView, setHistoryView] = useState<{ type: "target" | "baseline"; id: string; title: string; revisions: any[] } | null>(null);
   const showHistory = useCallback(async (type: "target" | "baseline", id: string, title: string) => {
@@ -135,7 +157,6 @@ export default function CauHinhSoLieuPage() {
     valueKind: "FLOW",
     requireConfirm: false,
     showOnDashboard: false,
-    showInComparison: false,
     expectDaily: true,
     allowBackdateDays: 0,
     sortOrder: 0,
@@ -173,7 +194,6 @@ export default function CauHinhSoLieuPage() {
       valueKind: m.valueKind,
       requireConfirm: m.requireConfirm,
       showOnDashboard: m.showOnDashboard,
-      showInComparison: !!m.showInComparison,
       dashboardOrder: m.dashboardOrder,
       expectDaily: m.expectDaily,
       allowBackdateDays: m.allowBackdateDays,
@@ -349,6 +369,51 @@ export default function CauHinhSoLieuPage() {
 
       <div className="px-margin pb-space-lg flex flex-col gap-4">
         {/* ============ NHÓM & CHỈ TIÊU ============ */}
+        {tab === "COMPARISON" && (
+          <section className="rounded-xl border border-border-default bg-surface-container-lowest p-4 flex flex-col gap-4">
+            <div>
+              <h2 className="text-title-md font-bold text-on-surface">Hiển thị trong So sánh kết quả thu NSNN</h2>
+              <p className="text-body-sm text-on-surface-variant mt-1">
+                Chọn từng chỉ tiêu được phép xuất hiện trong khối So sánh. Bảng Số liệu giao ban phía trên không bị ảnh hưởng.
+              </p>
+            </div>
+            <div className="grid gap-3">
+              {groups.map((g: any) => (
+                <div key={g.id} className="rounded-lg border border-border-default bg-surface p-3">
+                  <div className="text-label-md font-semibold text-on-surface">{g.name}</div>
+                  <div className="grid gap-1.5 mt-2">
+                    {(g.metrics || [])
+                      .filter((m: any) => m.active !== false)
+                      .map((m: any) => (
+                        <label key={m.id} className="flex items-center gap-2 text-body-sm text-on-surface">
+                          <input
+                            type="checkbox"
+                            checked={comparisonCodes.includes(m.code)}
+                            onChange={() => toggleComparisonCode(m.code)}
+                          />
+                          <span>{m.name}</span>
+                          <span className="text-body-xs text-on-surface-variant">{m.code}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={saveComparisonCodes}
+                disabled={busy === "comparison.update"}
+                className="px-4 py-2 rounded-lg bg-primary text-on-primary text-label-md font-semibold disabled:opacity-50"
+              >
+                {busy === "comparison.update" ? "Đang lưu..." : "Lưu cấu hình so sánh"}
+              </button>
+              <span className="text-body-xs text-on-surface-variant">
+                Mặc định chỉ bật THU_NSNN; bỏ chọn tất cả để ẩn toàn bộ khối So sánh.
+              </span>
+            </div>
+          </section>
+        )}
+
         {tab === "STRUCT" && (
           <>
             <div className="flex gap-2 flex-wrap items-center">
@@ -471,10 +536,6 @@ export default function CauHinhSoLieuPage() {
                         <input type="checkbox" checked={newMetric.showOnDashboard} onChange={(e) => setNewMetric({ ...newMetric, showOnDashboard: e.target.checked })} />
                         Hiện trên Trang chủ
                       </label>
-                      <label className="flex items-center gap-1 text-body-xs px-1">
-                        <input type="checkbox" checked={!!newMetric.showInComparison} onChange={(e) => setNewMetric({ ...newMetric, showInComparison: e.target.checked })} />
-                        Hiện trong So sánh thu NSNN
-                      </label>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -557,10 +618,6 @@ export default function CauHinhSoLieuPage() {
                             <label className="flex items-center gap-1 text-body-xs">
                               <input type="checkbox" checked={!!metricDraft.showOnDashboard} onChange={(e) => setMetricDraft({ ...metricDraft, showOnDashboard: e.target.checked })} />
                               Hiện trên Trang chủ
-                            </label>
-                            <label className="flex items-center gap-1 text-body-xs">
-                              <input type="checkbox" checked={!!metricDraft.showInComparison} onChange={(e) => setMetricDraft({ ...metricDraft, showInComparison: e.target.checked })} />
-                              Hiện trong So sánh thu NSNN
                             </label>
                             <input value={metricDraft.note || ""} onChange={(e) => setMetricDraft({ ...metricDraft, note: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Ghi chú / hướng dẫn nhập" />
                           </div>
