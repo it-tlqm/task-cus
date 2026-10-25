@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChangePasswordModal } from "@/components/ui/ChangePasswordModal";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
+import CommandPalette from "@/components/layout/CommandPalette";
 import { clearClientSession } from "@/lib/client-session";
 import {
   UNIT_OFFICIAL_NAME,
@@ -44,6 +45,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
   });
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [quickNotificationsOpen, setQuickNotificationsOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
@@ -97,6 +99,17 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
     return () => {
       window.removeEventListener("notifications-updated", loadUnreadCount);
     };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   if (pathname === "/login") return null;
@@ -210,6 +223,21 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
           </div>
 
           <div className="flex shrink-0 items-center gap-space-md">
+            <button
+              type="button"
+              onClick={() => setCommandOpen(true)}
+              className="focus-ring flex items-center gap-1.5 rounded border border-border-subtle px-2 py-1.5 text-on-surface-variant transition-fast hover:bg-surface-subtle active-press"
+              title="Tìm nhanh (Ctrl+K)"
+              aria-label="Tìm nhanh và hành động"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
+                search
+              </span>
+              <kbd className="hidden rounded border border-border-default bg-surface-container px-1 py-0.5 text-[9px] font-semibold 2xl:inline">
+                Ctrl K
+              </kbd>
+            </button>
+
             <button
               type="button"
               onClick={() => setQuickNotificationsOpen(true)}
@@ -329,6 +357,16 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
+              onClick={() => setCommandOpen(true)}
+              aria-label="Tìm nhanh và hành động"
+              className="focus-ring flex h-10 w-10 items-center justify-center rounded-lg text-primary-container transition-fast hover:bg-surface-subtle active-press"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[21px]">
+                search
+              </span>
+            </button>
+            <button
+              type="button"
               onClick={() => setQuickNotificationsOpen(true)}
               aria-label="Mở thông báo nhanh"
               aria-haspopup="dialog"
@@ -356,6 +394,8 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
           </div>
         </div>
       </header>
+
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
 
       <NotificationQuickView
         open={quickNotificationsOpen}
