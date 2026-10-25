@@ -3,8 +3,8 @@
 **Trạng thái:** `DEPLOYED — TECHNICAL SMOKE PASS — UAT PENDING`
 
 - **Production:** `https://task-cus.vercel.app`
-- **Code hiện tại:** `66cb285`
-- **Health:** `db=up`, `commit=66cb285`, `env=production`
+- **Code hiện tại:** `057e9fd`
+- **Health:** `db=up`, `commit=057e9fd`, `env=production`
 - **Dashboard V4:** vẫn chỉ là bản xem trước; `/dashboard` cũ mặc định.
 
 ---
@@ -84,3 +84,32 @@ vc rollback dpl_3BQSHuARnKvMWnrERaE16cAsVB1p --scope tlqm --yes
 ```
 
 Không có migration/schema trong batch này.
+
+---
+
+## 6. Bổ sung — xử lý Góp ý hàng loạt (`057e9fd`)
+
+- **Deployment:** `dpl_6Hxj9gLzxdcHXbXdTsispmL5RYDG`
+- **Code:** `057e9fd`
+- **Health:** `commit=057e9fd`, `db=up`, `env=production`
+
+Trang `/admin/feedback`:
+- Chọn từng góp ý mới hoặc **Chọn trang**.
+- Nhập **ghi chú chung**.
+- Bấm **Đánh dấu đã xử lý** để xử lý nhiều góp ý một lần.
+- Có **Bỏ chọn**.
+- Chỉ hiện checkbox cho góp ý trạng thái `NEW`.
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `scripts/test-feedback-bulk.ts` | 7/7 PASS |
+| `npx tsc --noEmit` | PASS |
+| `pnpm build` | PASS |
+| `/api/health` Production | 200, db up |
+| `/admin/feedback` | 307 unauth |
+
+Rollback riêng batch này:
+
+```powershell
+vc rollback dpl_8wNZro3caUPnDc6iQShFZbbFW2mS --scope tlqm --yes
+```
