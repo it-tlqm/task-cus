@@ -151,6 +151,11 @@ export async function GET(req: NextRequest) {
           periodEnd = range.end;
           selectedPeriodTitle = `Tháng ${range.month}/${range.year}`;
         }
+      } else if (targetPeriodKey === "year") {
+        const year = vietnamDayRange().date.slice(0, 4);
+        periodStart = new Date(`${year}-01-01T00:00:00+07:00`);
+        periodEnd = new Date(`${year}-12-31T23:59:59.999+07:00`);
+        selectedPeriodTitle = `Năm ${year}`;
       } else if (targetPeriodKey === "custom" && startDateParam && endDateParam) {
         periodStart = new Date(startDateParam);
         periodEnd = new Date(endDateParam);

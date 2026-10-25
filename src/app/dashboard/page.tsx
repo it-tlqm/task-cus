@@ -326,6 +326,13 @@ export default function DashboardPage() {
                   <span>{aiSummarizing ? "Đang tóm tắt..." : "Tóm tắt AI"}</span>
                 </button>
               )}
+              <Link
+                href="/dashboard/v4"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/15 text-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press border border-secondary/20"
+              >
+                <span className="material-symbols-outlined text-[18px]">insights</span>
+                <span>Thử giao diện V4</span>
+              </Link>
               {canExport && (
                 <Link
                   href="/reports/excel"
