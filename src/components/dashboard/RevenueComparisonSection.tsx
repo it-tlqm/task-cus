@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { fmtDate, fmtMetric, fmtPercent } from "@/lib/metric-format";
 import { usePermissions } from "@/hooks/usePermissions";
+import ComparisonTargetQuickModal from "@/components/dashboard/ComparisonTargetQuickModal";
 
 export interface ComparisonTargetBlock {
   targetId: string | null;
@@ -93,8 +94,13 @@ export function RevenueComparisonSection({
 }) {
   const { can } = usePermissions();
   const canConfigure = can("metrics.config");
+  const [quickTargetOpen, setQuickTargetOpen] = useState(false);
   const rows = Array.isArray(comparison?.rows) ? comparison!.rows! : [];
   if (rows.length === 0) return null;
+
+  const primaryRow = rows.find((row) => row.code === "THU_NSNN") || rows[0]!;
+  const quickYear = comparison?.anchors?.year || new Date().getFullYear();
+  const quickMonth = comparison?.anchors?.month || new Date().getMonth() + 1;
 
   const targetChip = (block: ComparisonTargetBlock) => {
     if (block.ruleState === "AMBIGUOUS")
@@ -241,16 +247,25 @@ export function RevenueComparisonSection({
         >
           Kỳ trước/cùng kỳ: SO CÙNG SỐ NGÀY (B1-A)
         </span>
-        {(showConfigureLink || canConfigure) && (
-          <Link
-            href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
-            title="Mở Cấu hình → Chỉ tiêu giao để nhập BTC, UBND và KH tháng"
+        {canConfigure ? (
+          <button
+            type="button"
+            onClick={() => setQuickTargetOpen(true)}
+            title="Nhập nhanh BTC, UBND và KH tháng"
             className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-[16px]">edit_note</span>
-            Nhập chỉ tiêu BTC/UBND/KH →
+            Nhập chỉ tiêu BTC/UBND/KH
+          </button>
+        ) : showConfigureLink ? (
+          <Link
+            href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-[16px]">edit_note</span>
+            Cấu hình chỉ tiêu →
           </Link>
-        )}
+        ) : null}
       </div>
 
       <div className="p-4 flex flex-col gap-5">
@@ -294,6 +309,15 @@ export function RevenueComparisonSection({
           <b>cùng số ngày đến data cutoff</b> (B1-A); tháng chưa đủ kỳ ghi “Chưa đủ kỳ”.
         </p>
       </div>
+
+      <ComparisonTargetQuickModal
+        open={quickTargetOpen}
+        onClose={() => setQuickTargetOpen(false)}
+        metricId={primaryRow.metricId}
+        year={quickYear}
+        month={quickMonth}
+        onSaved={() => window.location.reload()}
+      />
     </div>
   );
 }
