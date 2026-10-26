@@ -2,9 +2,9 @@
 
 ## Production
 
-- **Code:** `d3bf8d3`
-- **Deployment:** `dpl_BRGszWwEQvF2D8VW3TXZbQ5kBhu6`
-- **Health:** `db=up`, `commit=d3bf8d3`
+- **Code:** `66320da`
+- **Deployment:** `dpl_DNk9nXJ3wuoqjF4sBWtDNdiV2vcP`
+- **Health:** `db=up`, `commit=66320da`
 - **Migration:** không có.
 
 ## Phạm vi đã áp dụng
@@ -12,11 +12,14 @@
 ### 1. V5 shell toàn cục
 
 - `AppShell` cũ được thay bằng **V5Shell** cho toàn bộ màn hình nghiệp vụ.
-- Sidebar trắng, topbar trắng, nav nhóm:
+- Sidebar trắng, topbar trắng, nav nhóm đầy đủ:
   - Điều hành
   - Công việc
   - Lịch & báo cáo
-  - Hệ thống
+  - Quản trị
+  - Hỗ trợ
+- Sidebar có đủ mục nghiệp vụ và quản trị, không còn ít mục.
+- **Mobile: sidebar mở rộng dạng drawer**, có overlay, đóng khi chọn trang; không dùng tabbar ngang.
 - Các trang cũ vẫn giữ nguyên logic/nghiệp vụ nhưng nằm trong khung V5.
 - Login/change-password vẫn full-screen riêng.
 
@@ -31,6 +34,13 @@ Các token cũ (`primary`, `surface`, `border`, `status-*`…) được remap sa
 - Viền `#E5E7EB`
 
 Nhờ vậy các trang cũ tự chuyển sang nền trắng, chữ/nút navy, trạng thái đỏ/vàng xanh, không cần sửa từng class.
+
+### 2b. Đồng bộ table & input toàn cục
+
+- Table: header xám nhạt, chữ muted, viền dưới, hover row, font 12px.
+- Input/select/textarea: cao tối thiểu 36px, border `#E5E7EB`, radius 8px, focus navy.
+- Button: radius 8px, transition, focus ring navy.
+- Placeholder màu muted; bảng và form thống nhất trên mọi trang cũ.
 
 ### 3. Trang V5 đã tối ưu
 
@@ -57,7 +67,7 @@ Bước tiếp theo là tối ưu UX từng màn hình theo thứ tự ưu tiên
 
 | Hạng mục | Kết quả |
 |---|---|
-| `scripts/test-v5-preview.ts` | 18/18 PASS |
+| `scripts/test-v5-preview.ts` | 19/19 PASS |
 | `npx tsc --noEmit` | PASS |
 | `pnpm build` | PASS |
 | Production health | PASS |
