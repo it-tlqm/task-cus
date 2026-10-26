@@ -2,9 +2,9 @@
 
 ## Production
 
-- **Code:** `66320da`
-- **Deployment:** `dpl_DNk9nXJ3wuoqjF4sBWtDNdiV2vcP`
-- **Health:** `db=up`, `commit=66320da`
+- **Code:** `54b4a70`
+- **Deployment:** `dpl_Ers44M3Z9GaXhaFiwqpZoG6m3TRR`
+- **Health:** `db=up`, `commit=54b4a70`
 - **Migration:** không có.
 
 ## Phạm vi đã áp dụng
@@ -46,14 +46,29 @@ Nhờ vậy các trang cũ tự chuyển sang nền trắng, chữ/nút navy, tr
 
 - `/v5` — dashboard widget.
 - `/v5/giao-ban` — ưu tiên bảng Tổng hợp số thu ngày + bảng theo chỉ tiêu.
+- `/v5/giao-ban/nhap` — nhập số liệu:
+  - Tab kỳ Ngày/Tuần/Tháng/Quý/Năm.
+  - Danh sách “Cần nhập” và “Tất cả”.
+  - Form theo card, tiến độ nhập.
+  - Tính lũy kế inline, không cần modal rời.
+  - Lưu nháp/thay đổi, cảnh báo trạng thái.
+- Tab nhỏ trên V5 có hành vi thật:
+  - Dashboard: Tổng quan / Số liệu / Công việc / Báo cáo.
+  - Giao ban: Tổng hợp / Theo chỉ tiêu / So sánh / Nhận xét.
+- Bổ sung biểu đồ:
+  - So sánh kỳ này, tháng trước, cùng kỳ, chỉ tiêu.
+  - Thu theo phân loại tháng/năm.
+- Màu chỉ tiêu:
+  - Đạt/vượt: xanh.
+  - Chưa đạt/chưa nhập: đỏ.
+  - Target bất thường: vàng gold + cảnh báo.
+- Giảm padding/margin thừa; content rộng hơn (`max-w 1760`).
+- Sidebar section thu gọn/mở rộng; mobile dùng drawer.
 
 ## Chưa làm
 
-Đây là **migration khung + theme toàn bộ**, chưa phải rewrite UX từng trang.
-
 Các trang sau vẫn dùng layout cũ trong khung V5:
 
-- Nhập số liệu (`/giao-ban/nhap`)
 - Công việc (`/tasks`)
 - Kế hoạch (`/plans`)
 - Duyệt hồ sơ (`/approvals`)
@@ -67,7 +82,7 @@ Bước tiếp theo là tối ưu UX từng màn hình theo thứ tự ưu tiên
 
 | Hạng mục | Kết quả |
 |---|---|
-| `scripts/test-v5-preview.ts` | 19/19 PASS |
+| `scripts/test-v5-preview.ts` | 24/24 PASS |
 | `npx tsc --noEmit` | PASS |
 | `pnpm build` | PASS |
 | Production health | PASS |
@@ -75,8 +90,8 @@ Bước tiếp theo là tối ưu UX từng màn hình theo thứ tự ưu tiên
 
 ## Ưu tiên tiếp theo
 
-1. **Nhập số liệu** — inbox việc cần nhập + form 2 cột + lũy kế inline.
-2. **Công việc** — bảng/kanban, filter, chi tiết.
-3. **Kế hoạch / Duyệt hồ sơ**.
+1. **Công việc** — bảng/kanban, filter, chi tiết.
+2. **Kế hoạch / Duyệt hồ sơ**.
+3. **Báo cáo / Quản trị**.
 4. **Báo cáo / Quản trị**.
 5. Login V5.
