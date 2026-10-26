@@ -36,7 +36,7 @@ check("Dùng Recharts", component.includes("recharts"));
 check("Có BarChart", component.includes("BarChart"));
 check("Có PieChart", component.includes("PieChart"));
 check("Có 4 KPI", component.includes("Thu NSNN / chỉ tiêu") && component.includes("Chất lượng kết quả"));
-check("Có view Tổng quan/Biểu đồ/Bảng/So sánh", ["Tổng quan", "Biểu đồ", "Bảng", "So sánh"].every((v) => component.includes(`\"${v}\"`)));
+check("Có view Tổng quan/Biểu đồ/Chỉ tiêu/So sánh", ["Tổng quan", "Biểu đồ", "Chỉ tiêu", "So sánh"].every((v) => component.includes(`\"${v}\"`)));
 check("Có link về dashboard cũ", component.includes('href="/dashboard"'));
 check("Dashboard cũ có link thử V4", oldDashboard.includes('href="/dashboard/v4"'));
 check("KPI API hỗ trợ period=year", kpiRoute.includes('targetPeriodKey === "year"'));
@@ -46,7 +46,7 @@ check("Có link nhập chỉ tiêu đối chiếu", comparison.includes("/giao-b
 check("Target manager nhận mã chỉ tiêu", targetManager.includes("initialMetricCode"));
 check("Cấu hình đọc tab/metric từ URL", configPage.includes('params.get("tab")') && configPage.includes('params.get("metric")'));
 
-const detailIndex = component.indexOf('title="Số liệu giao ban"');
+const detailIndex = component.indexOf("<MetricWidgetBoard");
 const comparisonIndex = component.indexOf('title="So sánh thu NSNN"');
 const taskIndex = component.indexOf('title="Nhiệm vụ theo trạng thái"');
 check(
@@ -57,6 +57,11 @@ check(
   "V4 có bảng so sánh kết quả thu",
   component.includes("RevenueComparisonSection") && component.includes("summary?.comparison")
 );
+check(
+  "V4 dashboard dạng widget, không còn bảng chi tiết",
+  component.includes("MetricWidgetBoard") && !component.includes("<table")
+);
+check("V4 có lưới widget và empty state", component.includes('data-testid="dashboard-v4-widgets"') && component.includes("Chưa có chỉ tiêu hiển thị trên dashboard"));
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

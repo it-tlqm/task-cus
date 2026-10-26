@@ -130,6 +130,156 @@ function metricStatusLabel(status?: string): string {
   }
 }
 
+function metricStatusTone(status?: string): string {
+  switch (status) {
+    case "LOCKED":
+      return "border-emerald-300 bg-emerald-50 text-emerald-700";
+    case "CONFIRMED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "RECORDED":
+      return "border-sky-200 bg-sky-50 text-sky-700";
+    default:
+      return "border-border-default bg-surface-container text-on-surface-variant";
+  }
+}
+
+function MetricMiniBars({
+  metric,
+  period,
+}: {
+  metric: MetricRow;
+  period: PeriodKey;
+}) {
+  const keys = ["day", "week", "month", "year"] as const;
+  const values = keys.map((key) => Math.max(0, Number(metric.cols?.[key] ?? 0)));
+  const max = Math.max(...values, 1);
+  return (
+    <div className="flex h-7 items-end gap-0.5" aria-hidden="true">
+      {keys.map((key, index) => {
+        const height = Math.max(10, Math.round((values[index] / max) * 100));
+        const active = PERIOD_COL[period] === key;
+        return (
+          <span
+            key={key}
+            title={`${key}: ${fmtMetricCompact(metric.cols?.[key] ?? null, {
+              displayScale: metric.displayScale || 1,
+              decimals: metric.decimals ?? 0,
+              unitLabel: metric.unitLabel,
+            })}`}
+            className={`w-1.5 rounded-sm ${active ? "bg-primary" : "bg-primary/20"}`}
+            style={{ height: `${height}%` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function MetricWidgetBoard({
+  groups,
+  period,
+  periodLabel,
+  maxMetrics = 12,
+}: {
+  groups: SummaryResponse["groups"];
+  period: PeriodKey;
+  periodLabel: string;
+  maxMetrics?: number;
+}) {
+  const totalMetrics = groups.reduce((total, group) => total + group.metrics.length, 0);
+  let remaining = maxMetrics;
+  const visibleGroups = groups
+    .map((group) => {
+      const metrics = group.metrics.slice(0, Math.max(0, remaining));
+      remaining -= metrics.length;
+      return { ...group, metrics };
+    })
+    .filter((group) => group.metrics.length > 0);
+  const shownMetrics = visibleGroups.reduce((total, group) => total + group.metrics.length, 0);
+
+  return (
+    <section className="space-y-3" data-testid="dashboard-v4-widgets">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="font-body-semibold text-headline-sm text-primary">Số liệu giao ban</h2>
+          <p className="text-body-xs text-on-surface-variant">
+            {shownMetrics < totalMetrics ? `${shownMetrics}/${totalMetrics}` : totalMetrics} chỉ tiêu · widget theo nhóm ·{" "}
+            {periodLabel.toLowerCase()}
+          </p>
+        </div>
+        <Link href="/giao-ban" className="text-body-xs font-semibold text-secondary hover:underline">
+          Mở toàn bộ →
+        </Link>
+      </div>
+
+      {totalMetrics === 0 && (
+        <div className="rounded-xl border border-dashed border-border-default/60 bg-surface-container-lowest p-6 text-center text-body-sm text-on-surface-variant">
+          Chưa có chỉ tiêu hiển thị trên dashboard.
+        </div>
+      )}
+
+      {visibleGroups.map((group) => (
+        <div key={group.id} className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-body-semibold text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">
+              {group.name}
+            </h3>
+            <span className="text-[10px] text-outline">{group.metrics.length} chỉ tiêu</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {group.metrics.map((metric) => {
+              const value = metric.cols?.[PERIOD_COL[period]] ?? null;
+              const style = {
+                displayScale: metric.displayScale || 1,
+                decimals: metric.decimals ?? 0,
+                unitLabel: metric.unitLabel,
+              };
+              return (
+                <article
+                  key={metric.id}
+                  className="flex min-w-0 flex-col justify-between gap-2 rounded-xl border border-border-default/60 bg-surface-container-lowest p-3 shadow-sm transition-fast hover:border-primary/30 hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-body-semibold text-body-sm text-primary" title={metric.name}>
+                        {metric.name}
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-on-surface-variant">
+                        {metric.code}
+                        {metric.unitLabel ? ` · ${metric.unitLabel}` : ""}
+                      </div>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-semibold ${metricStatusTone(
+                        metric.status?.monthState
+                      )}`}
+                    >
+                      {metricStatusLabel(metric.status?.monthState)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-end justify-between gap-2">
+                    <div className="min-w-0">
+                      <div
+                        className="truncate text-headline-sm font-bold tabular-nums text-primary"
+                        title={fmtMetric(value, style)}
+                      >
+                        {fmtMetricCompact(value, style, { withUnit: false })}
+                      </div>
+                      <div className="text-[10px] text-on-surface-variant">{periodLabel}</div>
+                    </div>
+                    <MetricMiniBars metric={metric} period={period} />
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export default function DashboardV4() {
   const { can } = usePermissions();
   const canConfigureMetrics = can("metrics.config");
@@ -325,7 +475,7 @@ export default function DashboardV4() {
               [
                 ["overview", "Tổng quan"],
                 ["charts", "Biểu đồ"],
-                ["table", "Bảng"],
+                ["table", "Chỉ tiêu"],
                 ["compare", "So sánh"],
               ] as Array<[ViewKey, string]>
             ).map(([key, label]) => (
@@ -353,71 +503,13 @@ export default function DashboardV4() {
           </div>
         </section>
 
-        {(view === "overview" || view === "table" || view === "compare") && (
-          <Panel
-            title="Số liệu giao ban"
-            subtitle="Lớp đối chiếu chính thức · bảng vẫn là nguồn kiểm tra số liệu"
-            action={<Link href="/giao-ban" className="text-body-xs font-semibold text-secondary">Mở toàn bộ →</Link>}
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[820px]">
-                <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant font-table-header text-table-header border-y border-border-default/50">
-                    <th className="py-2.5 px-4">Chỉ tiêu</th>
-                    <th className="py-2.5 px-3 text-right">Trong ngày</th>
-                    <th className="py-2.5 px-3 text-right">Tuần</th>
-                    <th className="py-2.5 px-3 text-right">Lũy kế tháng</th>
-                    <th className="py-2.5 px-3 text-right">Lũy kế năm</th>
-                    <th className="py-2.5 px-3 text-center">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-default/30">
-                  {metrics.slice(0, 12).map((m) => (
-                    <tr key={m.id} className="hover:bg-surface-container-low/60">
-                      <td className="py-2.5 px-4 font-body-semibold text-body-sm text-primary">
-                        {m.name}
-                        {m.unitLabel ? <span className="font-body-xs text-on-surface-variant"> · {m.unitLabel}</span> : null}
-                      </td>
-                      {(["day", "week", "month", "year"] as const).map((key) => (
-                        <td
-                          key={key}
-                          className={`py-2.5 px-3 text-right tabular-nums font-body-sm ${
-                            key === "month" || key === "year" ? "font-semibold text-primary bg-primary/[0.03]" : ""
-                          }`}
-                          title={
-                            m.cols?.[key] !== null && m.cols?.[key] !== undefined
-                              ? fmtMetric(
-                                  m.cols[key],
-                                  { displayScale: m.displayScale || 1, decimals: m.decimals ?? 0, unitLabel: m.unitLabel }
-                                )
-                              : undefined
-                          }
-                        >
-                          {fmtMetricCompact(
-                            m.cols?.[key] ?? null,
-                            { displayScale: m.displayScale || 1, decimals: m.decimals ?? 0, unitLabel: m.unitLabel },
-                            { withUnit: false }
-                          )}
-                        </td>
-                      ))}
-                      <td className="py-2.5 px-3 text-center">
-                        <span className="inline-flex px-2 py-1 rounded-md bg-surface-container text-on-surface-variant font-body-xs font-semibold">
-                          {metricStatusLabel(m.status?.monthState)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {metrics.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-10 text-center text-body-sm text-on-surface-variant">
-                        Chưa có chỉ tiêu hiển thị trên dashboard.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
+        {(view === "overview" || view === "table" || view === "compare") && summary && (
+          <MetricWidgetBoard
+            groups={summary.groups}
+            period={period}
+            periodLabel={PERIOD_LABEL[period]}
+            maxMetrics={view === "table" ? 1000 : 12}
+          />
         )}
 
         {(view === "overview" || view === "table" || view === "compare") && summary?.comparison && (
