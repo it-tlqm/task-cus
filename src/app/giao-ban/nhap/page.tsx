@@ -112,6 +112,10 @@ export default function NhapSoLieuPage() {
   } | null>(null);
   const [cumulativeToday, setCumulativeToday] = useState("");
   const [cumulativePrevious, setCumulativePrevious] = useState("");
+  const [cumulativeLoading, setCumulativeLoading] = useState(false);
+  const [cumulativeError, setCumulativeError] = useState<string | null>(null);
+  const [cumulativePreviousDate, setCumulativePreviousDate] = useState("");
+  const [cumulativeEntryCount, setCumulativeEntryCount] = useState<number | null>(null);
 
   const load = useCallback((d: string) => {
     setLoading(true);
@@ -248,10 +252,34 @@ export default function NhapSoLieuPage() {
     else setHistory([]);
   };
 
-  const openCumulativeHelper = (key: string, label: string) => {
+  const openCumulativeHelper = async (key: string, label: string) => {
+    const [metricId, classificationId = ""] = key.split("|");
     setCumulativeHelper({ key, label, current: values[key] || "" });
     setCumulativeToday("");
     setCumulativePrevious("");
+    setCumulativeError(null);
+    setCumulativePreviousDate("");
+    setCumulativeEntryCount(null);
+    setCumulativeLoading(true);
+    try {
+      const params = new URLSearchParams({
+        metricId,
+        classificationId,
+        asOf: date,
+      });
+      const res = await fetch(`/api/metrics/entries/cumulative?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || "Không lấy được lũy kế hôm trước");
+      setCumulativePrevious(String(json.cumulativePrevious ?? "0"));
+      setCumulativePreviousDate(String(json.previousDate || ""));
+      setCumulativeEntryCount(Number(json.entryCount) || 0);
+    } catch (error) {
+      setCumulativeError(error instanceof Error ? error.message : "Không lấy được lũy kế hôm trước");
+    } finally {
+      setCumulativeLoading(false);
+    }
   };
 
   const cumulativeDelta = useMemo(() => {
@@ -271,6 +299,9 @@ export default function NhapSoLieuPage() {
     setCumulativeHelper(null);
     setCumulativeToday("");
     setCumulativePrevious("");
+    setCumulativeError(null);
+    setCumulativePreviousDate("");
+    setCumulativeEntryCount(null);
   };
 
   return (
@@ -565,15 +596,33 @@ export default function NhapSoLieuPage() {
                 />
               </label>
               <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
-                Lũy kế hôm trước
+                <span className="flex items-center gap-1.5">
+                  Lũy kế đến {cumulativePreviousDate || "hôm trước"}
+                  <span className="rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold text-sky-700">
+                    TỰ LẤY
+                  </span>
+                </span>
                 <FormattedNumberInput
                   value={cumulativePrevious}
                   onValueChange={setCumulativePrevious}
-                  placeholder="VD: 1.317.372.334.554"
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm tabular-nums text-on-surface focus:border-primary focus:outline-none"
+                  readOnly={!cumulativeError}
+                  disabled={cumulativeLoading}
+                  placeholder={cumulativeLoading ? "Đang tính..." : "Chưa có dữ liệu"}
+                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm tabular-nums text-on-surface focus:border-primary focus:outline-none read-only:bg-surface-container disabled:opacity-60"
                 />
               </label>
             </div>
+
+            {cumulativeError && (
+              <div className="mt-2 rounded-lg border border-status-danger/30 bg-status-danger-bg/40 p-2 text-[11px] text-status-danger">
+                {cumulativeError}. Có thể nhập tay lũy kế hôm trước.
+              </div>
+            )}
+            {!cumulativeError && cumulativePreviousDate && (
+              <div className="mt-2 text-[11px] text-on-surface-variant">
+                Đã lấy lũy kế từ {cumulativeEntryCount || 0} bản ghi trước ngày {cumulativePreviousDate}.
+              </div>
+            )}
 
             <div className="mt-3 rounded-lg border border-border-default bg-surface-container-low p-3">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
