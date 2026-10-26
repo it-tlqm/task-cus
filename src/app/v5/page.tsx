@@ -217,6 +217,7 @@ function KpiTile({
 export default function V5DashboardPage() {
   const { user } = usePermissions();
   const [period, setPeriod] = useState<PeriodKey>("month");
+  const [tab, setTab] = useState<"overview" | "data" | "work" | "report">("overview");
   const [kpi, setKpi] = useState<KpiResponse | null>(null);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -351,18 +352,38 @@ export default function V5DashboardPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-v5-line">
         <nav className="flex gap-5">
-          {["Tổng quan", "Số liệu", "Công việc", "Báo cáo"].map((tab, index) => (
+          {[
+            { key: "overview" as const, label: "Tổng quan" },
+            { key: "data" as const, label: "Số liệu" },
+            { key: "work" as const, label: "Công việc" },
+            { key: "report" as const, label: "Báo cáo" },
+          ].map((item) => (
             <button
-              key={tab}
+              key={item.key}
               type="button"
+              onClick={() => {
+                setTab(item.key);
+                if (item.key === "report") {
+                  window.location.href = "/v5/giao-ban";
+                  return;
+                }
+                if (item.key === "overview") {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  return;
+                }
+                document.getElementById(item.key === "data" ? "v5-data" : "v5-work")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
               className={cn(
                 "border-b-2 pb-2 text-[12px] font-medium transition-colors",
-                index === 0
+                tab === item.key
                   ? "border-v5-accent text-v5-ink"
                   : "border-transparent text-v5-muted hover:text-v5-ink"
               )}
             >
-              {tab}
+              {item.label}
             </button>
           ))}
         </nav>
@@ -378,11 +399,13 @@ export default function V5DashboardPage() {
         </div>
       </div>
 
-      <RevenueSummaryTable
-        groups={summary?.groups || []}
-        comparison={summary?.comparison}
-        latestDate={revenueMetric?.latestDate}
-      />
+      <div id="v5-data" className="scroll-mt-16">
+        <RevenueSummaryTable
+          groups={summary?.groups || []}
+          comparison={summary?.comparison}
+          latestDate={revenueMetric?.latestDate}
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         <KpiTile
@@ -546,7 +569,7 @@ export default function V5DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2">
+      <div id="v5-work" className="grid scroll-mt-16 grid-cols-1 gap-2.5 xl:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <div>

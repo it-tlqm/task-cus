@@ -74,6 +74,14 @@ check(
     v5Entry.includes("/api/metrics/entries/cumulative") &&
     v5Entry.includes("Lưu")
 );
+check(
+  "Tab V5 có hành vi thật",
+  v5Page.includes("setTab") && v5Page.includes("scrollIntoView") && v5GiaoBan.includes("setTab")
+);
+check(
+  "Giao ban có biểu đồ",
+  v5GiaoBan.includes("RevenueCharts") && fs.existsSync(path.join(root, "src/components/v5/RevenueCharts.tsx"))
+);
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

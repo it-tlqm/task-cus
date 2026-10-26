@@ -6,6 +6,8 @@ import {
   CalendarDays,
   ChevronRight,
   FileBarChart2,
+  FileDown,
+  FileText,
   ListFilter,
   Loader2,
   Plus,
@@ -18,6 +20,7 @@ import { Button } from "@/components/v5/ui/button";
 import { Card } from "@/components/v5/ui/card";
 import { RevenueSummaryTable } from "@/components/v5/RevenueSummaryTable";
 import { MetricsSummaryTable } from "@/components/v5/MetricsSummaryTable";
+import { RevenueCharts } from "@/components/v5/RevenueCharts";
 
 type PeriodKey = "week" | "month" | "quarter" | "year";
 
@@ -61,6 +64,7 @@ export default function V5GiaoBanPage() {
   const iso = getIsoWeekFromDate(now);
   const quarter = Math.floor(vn.month / 3) + 1;
   const [period, setPeriod] = useState<PeriodKey>("month");
+  const [tab, setTab] = useState<"tonghop" | "chitiet" | "sohieu" | "nhanxet">("tonghop");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -151,6 +155,11 @@ export default function V5GiaoBanPage() {
           <Button variant="outline" size="sm">
             <CalendarDays className="h-3.5 w-3.5" /> {periodLabel}
           </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/reports/excel">
+              <FileDown className="h-3.5 w-3.5" /> Xuất báo cáo
+            </Link>
+          </Button>
           <Button variant="outline" size="icon" onClick={() => load(false)} disabled={refreshing} aria-label="Làm mới">
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
@@ -164,17 +173,23 @@ export default function V5GiaoBanPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-v5-line">
         <nav className="flex gap-5">
-          {["Tổng hợp", "Theo chỉ tiêu", "So sánh", "Nhận xét"].map((tab, index) => (
+          {[
+            { key: "tonghop" as const, label: "Tổng hợp" },
+            { key: "chitiet" as const, label: "Theo chỉ tiêu" },
+            { key: "sohieu" as const, label: "So sánh" },
+            { key: "nhanxet" as const, label: "Nhận xét" },
+          ].map((item) => (
             <button
-              key={tab}
+              key={item.key}
               type="button"
+              onClick={() => setTab(item.key)}
               className={`border-b-2 pb-2 text-[12px] font-medium transition-colors ${
-                index === 0
+                tab === item.key
                   ? "border-v5-accent text-v5-ink"
                   : "border-transparent text-v5-muted hover:text-v5-ink"
               }`}
             >
-              {tab}
+              {item.label}
             </button>
           ))}
         </nav>
@@ -199,24 +214,76 @@ export default function V5GiaoBanPage() {
         </div>
       </div>
 
-      <RevenueSummaryTable
-        groups={summary?.groups || []}
-        comparison={summary?.comparison}
-        latestDate={taxMetric?.latestDate}
-      />
+      {tab === "tonghop" && (
+        <>
+          <RevenueSummaryTable
+            groups={summary?.groups || []}
+            comparison={summary?.comparison}
+            latestDate={taxMetric?.latestDate}
+          />
+          <Card className="p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-[11px] text-v5-muted">
+                Bảng tổng hợp đặt trên cùng. Chuyển tab <b className="text-v5-ink">Theo chỉ tiêu</b> để xem toàn bộ chỉ tiêu, hoặc{" "}
+                <b className="text-v5-ink">So sánh</b> để xem biểu đồ.
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setTab("sohieu")}>
+                Xem biểu đồ <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </Card>
+        </>
+      )}
 
-      <section className="space-y-2">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-semibold text-v5-ink">Bảng số liệu theo chỉ tiêu</h2>
-            <p className="text-[11px] text-v5-muted">Ngày · Tuần · Tháng · Quý · Năm · trạng thái nhập liệu</p>
+      {tab === "chitiet" && (
+        <section className="space-y-2">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-v5-ink">Bảng số liệu theo chỉ tiêu</h2>
+              <p className="text-[11px] text-v5-muted">Ngày · Tuần · Tháng · Quý · Năm · trạng thái nhập liệu</p>
+            </div>
+            <Link href="/giao-ban" className="inline-flex items-center gap-1 text-[11px] font-medium text-v5-accent hover:underline">
+              Mở bản đầy đủ <ChevronRight className="h-3 w-3" />
+            </Link>
           </div>
-          <Link href="/giao-ban" className="inline-flex items-center gap-1 text-[11px] font-medium text-v5-accent hover:underline">
-            Mở bản đầy đủ <ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-        <MetricsSummaryTable groups={summary?.groups || []} />
-      </section>
+          <MetricsSummaryTable groups={summary?.groups || []} />
+        </section>
+      )}
+
+      {tab === "sohieu" && (
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-v5-ink">Biểu đồ so sánh</h2>
+              <p className="text-[11px] text-v5-muted">Số thu theo kỳ và theo phân loại · đơn vị tỷ đồng</p>
+            </div>
+            <Link href="/giao-ban" className="inline-flex items-center gap-1 text-[11px] font-medium text-v5-accent hover:underline">
+              Mở bản đầy đủ <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <RevenueCharts metrics={metrics} comparison={summary?.comparison} />
+          <RevenueSummaryTable
+            groups={summary?.groups || []}
+            comparison={summary?.comparison}
+            latestDate={taxMetric?.latestDate}
+          />
+        </section>
+      )}
+
+      {tab === "nhanxet" && (
+        <Card className="p-6 text-center">
+          <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-v5-accent-soft text-v5-accent">
+            <FileText className="h-5 w-5" />
+          </div>
+          <h2 className="mt-3 text-base font-semibold text-v5-ink">Nhận xét giao ban</h2>
+          <p className="mx-auto mt-1 max-w-xl text-[12px] text-v5-muted">
+            Phần nhận xét theo kỳ đang được hiển thị trong bản giao ban đầy đủ. Mở trang nhận xét để nhập hoặc chỉnh sửa nội dung.
+          </p>
+          <Button className="mt-4" asChild>
+            <Link href="/giao-ban">Mở trang nhận xét</Link>
+          </Button>
+        </Card>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-v5-line px-4 py-3 text-[10px] text-v5-muted">
         <span>V5 preview · bảng tổng hợp số thu đặt trên cùng; dữ liệu thật từ API hiện có.</span>
