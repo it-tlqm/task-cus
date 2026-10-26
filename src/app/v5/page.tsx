@@ -26,6 +26,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
 import { Progress } from "@/components/v5/ui/progress";
+import { RevenueSummaryTable } from "@/components/v5/RevenueSummaryTable";
 
 type PeriodKey = "week" | "month" | "year";
 
@@ -49,6 +50,12 @@ interface MetricRow {
   displayScale?: number;
   decimals: number;
   cols: Record<string, number | null>;
+  classCols?: Array<{
+    classificationId: string;
+    label: string;
+    cols: Record<string, number | null>;
+  }>;
+  latestDate?: string | null;
   status?: { monthState?: string };
   targets?: Array<{
     periodType: string;
@@ -68,6 +75,8 @@ interface ComparisonRow {
   code?: string;
   name?: string;
   monthCum?: number | null;
+  btc?: { targetValue?: number | null; percent?: number | null; percentText?: string | null };
+  ubnd?: { targetValue?: number | null; percent?: number | null; percentText?: string | null };
   monthPlan?: { targetValue?: number | null; percent?: number | null; percentText?: string | null };
   prevMonth?: { value?: number | null; label?: string };
   samePeriodLastYear?: { value?: number | null; label?: string };
@@ -221,7 +230,7 @@ export default function V5DashboardPage() {
     try {
       const [kpiRes, summaryRes] = await Promise.all([
         fetch(`/api/dashboard/kpi?unitId=ALL&period=${period}`, { cache: "no-store" }),
-        fetch("/api/metrics/summary?scope=dashboard&comparison=1", { cache: "no-store" }),
+        fetch("/api/metrics/summary?comparison=1", { cache: "no-store" }),
       ]);
       const kpiJson = await kpiRes.json().catch(() => ({}));
       const summaryJson = await summaryRes.json().catch(() => ({}));
@@ -356,6 +365,12 @@ export default function V5DashboardPage() {
           </Button>
         </div>
       </div>
+
+      <RevenueSummaryTable
+        groups={summary?.groups || []}
+        comparison={summary?.comparison}
+        latestDate={revenueMetric?.latestDate}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiTile
