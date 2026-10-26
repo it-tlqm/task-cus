@@ -28,8 +28,12 @@ const badge = read("src/components/v5/ui/badge.tsx");
 check("Có shadcn dependency CVA", pkg.includes("class-variance-authority"));
 check("Có Radix Slot", pkg.includes("@radix-ui/react-slot"));
 check("Có token V5 trong Tailwind", tailwind.includes("v5-bg") && tailwind.includes("v5-accent"));
+check(
+  "Đúng bộ màu Hải quan",
+  tailwind.includes("#1B3461") && tailwind.includes("#C62222") && tailwind.includes("#F2C41D")
+);
 check("AppShell bỏ qua chrome cũ cho /v5", shell.includes("isV5Preview") && shell.includes('pathname === "/v5"'));
-check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.includes("V5 Preview"));
+check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.toLowerCase().includes("v5 preview"));
 check("V5 layout dùng shell", v5Layout.includes("V5Shell"));
 check("V5 dashboard dùng widget, không bảng", v5Page.includes("MetricWidget") && !v5Page.includes("<table"));
 check("V5 dashboard dùng token mới", v5Page.includes("bg-v5-bg") && v5Page.includes("text-v5-ink"));

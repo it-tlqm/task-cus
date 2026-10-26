@@ -12,12 +12,15 @@ import {
   CircleDollarSign,
   ClipboardList,
   Gauge,
+  ListFilter,
   Loader2,
+  Plus,
   RefreshCw,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { cn } from "@/lib/utils";
 import { fmtMetric, fmtMetricCompact } from "@/lib/metric-format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/v5/ui/card";
 import { Badge } from "@/components/v5/ui/badge";
@@ -184,7 +187,7 @@ function KpiTile({
 }) {
   const tones = {
     accent: "bg-v5-accent-soft text-v5-accent",
-    warning: "bg-v5-warning-soft text-v5-warning",
+    warning: "bg-v5-gold-soft text-v5-gold-ink",
     danger: "bg-v5-danger-soft text-v5-danger",
     success: "bg-v5-success-soft text-v5-success",
   };
@@ -296,8 +299,8 @@ export default function V5DashboardPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-v5-ink">Trung tâm điều hành</h1>
-            <Badge variant="accent">V5 · dữ liệu thật</Badge>
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Tổng quan điều hành</h1>
+            <Badge variant="outline">Dữ liệu thật</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
             {user?.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"} · {dataDate} · cập nhật từ PostgreSQL
@@ -305,13 +308,13 @@ export default function V5DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-lg border border-v5-line bg-v5-surface p-0.5">
+          <div className="flex rounded-md border border-v5-line bg-v5-surface p-0.5">
             {(Object.keys(PERIOD_LABEL) as PeriodKey[]).map((key) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setPeriod(key)}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                   period === key ? "bg-v5-accent text-white" : "text-v5-muted hover:text-v5-ink"
                 }`}
               >
@@ -324,6 +327,35 @@ export default function V5DashboardPage() {
           </Button>
         </div>
       </header>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-v5-line">
+        <nav className="flex gap-5">
+          {["Tổng quan", "Số liệu", "Công việc", "Báo cáo"].map((tab, index) => (
+            <button
+              key={tab}
+              type="button"
+              className={cn(
+                "border-b-2 pb-2 text-[12px] font-medium transition-colors",
+                index === 0
+                  ? "border-v5-accent text-v5-ink"
+                  : "border-transparent text-v5-muted hover:text-v5-ink"
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+        <div className="flex items-center gap-2 pb-2">
+          <Button variant="outline" size="sm">
+            <ListFilter className="h-3.5 w-3.5" /> Bộ lọc
+          </Button>
+          <Button size="sm" asChild>
+            <Link href="/giao-ban/nhap">
+              <Plus className="h-3.5 w-3.5" /> Nhập số liệu
+            </Link>
+          </Button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiTile
@@ -394,7 +426,7 @@ export default function V5DashboardPage() {
               </Button>
             </div>
             {suspiciousTarget && (
-              <div className="mt-3 rounded-md border border-v5-warning/25 bg-v5-warning-soft px-2.5 py-1.5 text-[10px] text-v5-warning">
+              <div className="mt-3 rounded-md border border-v5-gold/60 bg-v5-gold-soft px-2.5 py-1.5 text-[10px] text-v5-gold-ink">
                 Target đang chênh lớn bất thường — kiểm tra lại đơn vị (đồng/tỷ) trước khi dùng tỷ lệ chính thức.
               </div>
             )}
@@ -500,7 +532,7 @@ export default function V5DashboardPage() {
                 href={`/tasks/${alert.id}`}
                 className="flex items-start gap-2 rounded-lg border border-v5-line/70 bg-v5-bg/40 px-3 py-2 transition-colors hover:border-v5-warning/30 hover:bg-v5-warning-soft/40"
               >
-                <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${alert.severity === "DANGER" ? "bg-v5-danger" : "bg-v5-warning"}`} />
+                <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${alert.severity === "DANGER" ? "bg-v5-danger" : "bg-v5-gold"}`} />
                 <div className="min-w-0">
                   <div className="truncate text-[11px] font-semibold text-v5-ink">
                     {alert.type}: [{alert.code}]
@@ -551,7 +583,7 @@ export default function V5DashboardPage() {
 
       <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-v5-line px-4 py-3 text-[10px] text-v5-muted">
         <span className="inline-flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-v5-accent" /> V5 preview · design system mới, không ảnh hưởng production
+          <Sparkles className="h-3.5 w-3.5 text-v5-gold-ink" /> V5 preview · shadcn/ui · không ảnh hưởng production
         </span>
         <Link href="/dashboard" className="font-semibold text-v5-accent hover:underline">
           Quay lại bản hiện tại
