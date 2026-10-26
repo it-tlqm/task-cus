@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { fmtDate, fmtMetric, fmtPercent } from "@/lib/metric-format";
+import { fmtDate, fmtMetric, fmtMetricCompact, fmtPercent } from "@/lib/metric-format";
 import { usePermissions } from "@/hooks/usePermissions";
 import { shiftComparisonDate } from "@/lib/comparison-dates";
 import ComparisonTargetQuickModal from "@/components/dashboard/ComparisonTargetQuickModal";
@@ -141,10 +141,17 @@ export function RevenueComparisonSection({
     return (
       <tr className="border-b border-border-default/20 align-top">
         <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-        <td className="px-3 py-2 text-right tabular-nums">
+        <td
+          className="px-3 py-2 text-right tabular-nums"
+          title={
+            hasCurrent && hasTarget
+              ? `${fmtMetric(current, rowStyle, { withUnit: false })} / ${fmtMetric(block.targetValue, rowStyle, { withUnit: false })}`
+              : undefined
+          }
+        >
           {hasCurrent && hasTarget ? (
             <>
-              {fmtMetric(current, rowStyle, { withUnit: false })} / {fmtMetric(block.targetValue, rowStyle, { withUnit: false })}
+              {fmtMetricCompact(current, rowStyle, { withUnit: false })} / {fmtMetricCompact(block.targetValue, rowStyle, { withUnit: false })}
               <span className="text-body-xs text-on-surface-variant"> ({currentLabel})</span>
             </>
           ) : block.ruleState === "AMBIGUOUS" ? (
@@ -178,10 +185,17 @@ export function RevenueComparisonSection({
     return (
       <tr className="border-b border-border-default/20 align-top">
         <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-        <td className="px-3 py-2 text-right tabular-nums">
+        <td
+          className="px-3 py-2 text-right tabular-nums"
+          title={
+            hasData
+              ? `${fmtMetric(current, rowStyle, { withUnit: false })} so với ${fmtMetric(block.value, rowStyle, { withUnit: false })}`
+              : undefined
+          }
+        >
           {hasData ? (
             <>
-              {fmtMetric(current, rowStyle, { withUnit: false })} so với {fmtMetric(block.value, rowStyle, { withUnit: false })}
+              {fmtMetricCompact(current, rowStyle, { withUnit: false })} so với {fmtMetricCompact(block.value, rowStyle, { withUnit: false })}
               <span className="text-body-xs text-on-surface-variant"> ({currentLabel})</span>
             </>
           ) : (

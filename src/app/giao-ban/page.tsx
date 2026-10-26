@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
-import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { fmtMetric, fmtMetricCompact, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { PERCENT_REASON_LABELS } from "@/lib/metrics-contract";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 import { RevenueComparisonSection } from "@/components/dashboard/RevenueComparisonSection";
@@ -421,14 +421,12 @@ export default function GiaoBanPage() {
                                         cumulative ? "bg-primary/5 font-semibold text-primary" : ""
                                       } ${selectedCol === c ? "bg-secondary/10 font-semibold" : ""}`}
                                       title={
-                                        applies && cumulative
-                                          ? "Lũy kế tự động từ các bản ghi phát sinh theo kỳ"
-                                          : !applies
-                                            ? `Chỉ tiêu nhập theo ${ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod} — không hiển thị ở cột này`
-                                            : undefined
+                                        applies
+                                          ? `${fmtMetric(m.cols[c], m)}${cumulative ? " · lũy kế tự động từ phát sinh theo kỳ" : ""}`
+                                          : `Chỉ tiêu nhập theo ${ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod} — không hiển thị ở cột này`
                                       }
                                     >
-                                      {applies ? fmtMetric(m.cols[c], m) : "—"}
+                                      {applies ? fmtMetricCompact(m.cols[c], m, { withUnit: true }) : "—"}
                                     </td>
                                   );
                                 })}
@@ -485,7 +483,7 @@ export default function GiaoBanPage() {
                                               title={`${t.label}: ${fmtMetric(t.targetValue, m)} · ${statusLabel} · ${ruleText}`}
                                               className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${tone}`}
                                             >
-                                              {t.label} · {fmtMetric(t.targetValue, m, { withUnit: false })} · {t.percentText}%
+                                              {t.label} · {fmtMetricCompact(t.targetValue, m, { withUnit: false })} · {t.percentText}%
                                             </span>
                                           );
                                         }
@@ -497,7 +495,7 @@ export default function GiaoBanPage() {
                                             title={`${t.label}: ${fmtMetric(t.targetValue, m)} · ${statusLabel} · ${ruleText}`}
                                             className="text-[11px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold"
                                           >
-                                            {t.label} · {fmtMetric(t.targetValue, m, { withUnit: false })} · {statusLabel} · {reasonLabel}
+                                            {t.label} · {fmtMetricCompact(t.targetValue, m, { withUnit: false })} · {statusLabel} · {reasonLabel}
                                           </span>
                                         );
                                       })}
@@ -539,9 +537,13 @@ export default function GiaoBanPage() {
                                       <td
                                         key={c}
                                         className={`px-2 py-1.5 text-right tabular-nums text-on-surface-variant ${selectedCol === c ? "bg-secondary/5" : ""}`}
-                                        title={!applies ? `Không áp dụng cột này cho kỳ ${ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod}` : undefined}
+                                        title={
+                                          applies
+                                            ? fmtMetric(cc.cols[c], m)
+                                            : `Không áp dụng cột này cho kỳ ${ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod}`
+                                        }
                                       >
-                                        {applies ? fmtMetric(cc.cols[c], m, { withUnit: false }) : "—"}
+                                        {applies ? fmtMetricCompact(cc.cols[c], m, { withUnit: false }) : "—"}
                                       </td>
                                     );
                                   })}

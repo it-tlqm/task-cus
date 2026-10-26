@@ -20,6 +20,33 @@ export function fmtMetric(value: number | null | undefined, style: MetricStyle, 
   return `${s} ${style.unitLabel}`;
 }
 
+/**
+ * Bản rút gọn cho bảng tổng hợp: tiền VND lớn hiển thị theo tỷ/triệu.
+ * Giá trị gốc vẫn được giữ trong title/tooltip ở nơi gọi.
+ */
+export function fmtMetricCompact(
+  value: number | null | undefined,
+  style: MetricStyle,
+  opts?: { withUnit?: boolean }
+): string {
+  if (value === null || value === undefined) return "—";
+  const v = value / (style.displayScale || 1);
+  const unit = String(style.unitLabel || "").toLowerCase();
+  const isVnd = unit.includes("đồng") || unit.includes("vnd") || unit.includes("vnđ");
+  const isAlreadyScaled = (style.displayScale || 1) >= 1_000_000_000 || unit.includes("tỷ");
+  if (!isVnd || isAlreadyScaled) return fmtMetric(value, style, opts);
+
+  if (Math.abs(v) >= 1_000_000_000) {
+    const s = (v / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+    return `${s} tỷ`;
+  }
+  if (Math.abs(v) >= 1_000_000) {
+    const s = (v / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+    return `${s} triệu`;
+  }
+  return fmtMetric(value, style, opts);
+}
+
 /** Đổi giá trị gốc -> chuỗi để đưa vào ô nhập (theo đơn vị hiển thị). */
 export function baseToInput(value: number | null | undefined, style: MetricStyle): string {
   if (value === null || value === undefined) return "";

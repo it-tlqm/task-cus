@@ -115,6 +115,9 @@ export default function NhapSoLieuPage() {
     key: string;
     label: string;
     current: string;
+    entryPeriod: EntryPeriod;
+    periodLabel: string;
+    periodEnd: string;
   } | null>(null);
   const [cumulativeToday, setCumulativeToday] = useState("");
   const [cumulativePrevious, setCumulativePrevious] = useState("");
@@ -262,7 +265,16 @@ export default function NhapSoLieuPage() {
 
   const openCumulativeHelper = async (key: string, label: string) => {
     const [metricId, classificationId = ""] = key.split("|");
-    setCumulativeHelper({ key, label, current: values[key] || "" });
+    const periodLabel = data?.period?.label || `Ngày ${fmtDate(data?.date || date)}`;
+    const periodEnd = data?.date || date;
+    setCumulativeHelper({
+      key,
+      label,
+      current: values[key] || "",
+      entryPeriod,
+      periodLabel,
+      periodEnd,
+    });
     setCumulativeToday("");
     setCumulativePrevious("");
     setCumulativeError(null);
@@ -273,18 +285,32 @@ export default function NhapSoLieuPage() {
       const params = new URLSearchParams({
         metricId,
         classificationId,
-        asOf: data?.date || date,
+        asOf: periodEnd,
       });
+      if (entryPeriod !== "DAY") params.set("entryPeriod", entryPeriod);
       const res = await fetch(`/api/metrics/entries/cumulative?${params.toString()}`, {
         cache: "no-store",
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error || "Không lấy được lũy kế hôm trước");
+      if (!res.ok) {
+        throw new Error(
+          json?.error ||
+            (entryPeriod === "DAY"
+              ? "Không lấy được lũy kế hôm trước"
+              : "Không lấy được lũy kế kỳ trước")
+        );
+      }
       setCumulativePrevious(String(json.cumulativePrevious ?? "0"));
       setCumulativePreviousDate(String(json.previousDate || ""));
       setCumulativeEntryCount(Number(json.entryCount) || 0);
     } catch (error) {
-      setCumulativeError(error instanceof Error ? error.message : "Không lấy được lũy kế hôm trước");
+      setCumulativeError(
+        error instanceof Error
+          ? error.message
+          : entryPeriod === "DAY"
+            ? "Không lấy được lũy kế hôm trước"
+            : "Không lấy được lũy kế kỳ trước"
+      );
     } finally {
       setCumulativeLoading(false);
     }
@@ -299,11 +325,19 @@ export default function NhapSoLieuPage() {
 
   const applyCumulativeDelta = () => {
     if (!cumulativeHelper || cumulativeDelta === null) {
-      toast.error("Nhập đủ lũy kế hôm nay và hôm trước.");
+      toast.error(
+        cumulativeHelper?.entryPeriod === "DAY"
+          ? "Nhập đủ lũy kế hôm nay và hôm trước."
+          : "Nhập đủ lũy kế cuối kỳ và cuối kỳ trước."
+      );
       return;
     }
     setValues((prev) => ({ ...prev, [cumulativeHelper.key]: rawFromNumber(cumulativeDelta) }));
-    toast.success("Đã điền số phát sinh ngày. Kiểm tra lại rồi bấm Lưu số liệu.");
+    toast.success(
+      cumulativeHelper.entryPeriod === "DAY"
+        ? "Đã điền số phát sinh ngày. Kiểm tra lại rồi bấm Lưu số liệu."
+        : "Đã điền số phát sinh trong kỳ. Kiểm tra lại rồi bấm Lưu số liệu."
+    );
     setCumulativeHelper(null);
     setCumulativeToday("");
     setCumulativePrevious("");
@@ -497,7 +531,7 @@ export default function NhapSoLieuPage() {
                             />
                             <span className="text-body-xs text-on-surface-variant w-24">{m.unitLabel}</span>
 
-                            {v.canEdit && entryPeriod === "DAY" && (
+                            {v.canEdit && m.valueKind !== "BALANCE" && (
                               <button
                                 type="button"
                                 onClick={() =>
@@ -507,7 +541,11 @@ export default function NhapSoLieuPage() {
                                   )
                                 }
                                 className="inline-flex items-center gap-1 rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold text-sky-800 hover:bg-sky-100"
-                                title="Tính số phát sinh ngày từ lũy kế hôm nay và hôm trước"
+                                title={
+                                  entryPeriod === "DAY"
+                                    ? "Tính số phát sinh ngày từ lũy kế hôm nay và hôm trước"
+                                    : `Tính số phát sinh ${ENTRY_PERIOD_LABELS[entryPeriod].toLowerCase()} từ lũy kế cuối kỳ`
+                                }
                               >
                                 <span className="material-symbols-outlined text-[14px]">calculate</span>
                                 Tính từ lũy kế
@@ -629,7 +667,10 @@ export default function NhapSoLieuPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-title-md font-bold text-on-surface">Tính từ lũy kế</h2>
-                <p className="mt-0.5 text-body-xs text-on-surface-variant">{cumulativeHelper.label}</p>
+                <p className="mt-0.5 text-body-xs text-on-surface-variant">
+                  {cumulativeHelper.label}
+                  {cumulativeHelper.entryPeriod !== "DAY" ? ` · ${cumulativeHelper.periodLabel}` : ""}
+                </p>
               </div>
               <button
                 type="button"
@@ -643,7 +684,9 @@ export default function NhapSoLieuPage() {
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
-                Lũy kế hôm nay
+                {cumulativeHelper.entryPeriod === "DAY"
+                  ? "Lũy kế hôm nay"
+                  : `Lũy kế đến cuối kỳ (${fmtDate(cumulativeHelper.periodEnd)})`}
                 <FormattedNumberInput
                   value={cumulativeToday}
                   onValueChange={setCumulativeToday}
@@ -653,7 +696,9 @@ export default function NhapSoLieuPage() {
               </label>
               <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
                 <span className="flex items-center gap-1.5">
-                  Lũy kế đến {cumulativePreviousDate || "hôm trước"}
+                  {cumulativeHelper.entryPeriod === "DAY"
+                    ? `Lũy kế đến ${cumulativePreviousDate || "hôm trước"}`
+                    : `Lũy kế cuối kỳ trước${cumulativePreviousDate ? ` (${fmtDate(cumulativePreviousDate)})` : ""}`}
                   <span className="rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold text-sky-700">
                     TỰ LẤY
                   </span>
@@ -671,7 +716,8 @@ export default function NhapSoLieuPage() {
 
             {cumulativeError && (
               <div className="mt-2 rounded-lg border border-status-danger/30 bg-status-danger-bg/40 p-2 text-[11px] text-status-danger">
-                {cumulativeError}. Có thể nhập tay lũy kế hôm trước.
+                {cumulativeError}. Có thể nhập tay lũy kế{" "}
+                {cumulativeHelper.entryPeriod === "DAY" ? "hôm trước" : "cuối kỳ trước"}.
               </div>
             )}
             {!cumulativeError && cumulativePreviousDate && (
@@ -682,7 +728,9 @@ export default function NhapSoLieuPage() {
 
             <div className="mt-3 rounded-lg border border-border-default bg-surface-container-low p-3">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                Số phát sinh ngày = lũy kế hôm nay − lũy kế hôm trước
+                {cumulativeHelper.entryPeriod === "DAY"
+                  ? "Số phát sinh ngày = lũy kế hôm nay − lũy kế hôm trước"
+                  : "Số phát sinh trong kỳ = lũy kế cuối kỳ − lũy kế cuối kỳ trước"}
               </div>
               <div
                 className={`mt-1 text-xl font-bold tabular-nums ${

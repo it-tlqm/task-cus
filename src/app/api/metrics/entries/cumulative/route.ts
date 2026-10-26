@@ -9,6 +9,7 @@ import {
   permForMetric,
   resolveEntryPerms,
 } from "@/server/metrics";
+import { entryPeriodBounds, parseEntryPeriod } from "@/lib/metric-entry-period";
 
 const D = Prisma.Decimal;
 
@@ -28,6 +29,11 @@ export async function GET(req: NextRequest) {
     const classificationId = searchParams.get("classificationId") || "";
     const asOfRaw = searchParams.get("asOf")?.trim() || "";
     const asOf = dateOnlyFromStr(asOfRaw);
+    const entryPeriodParam = searchParams.get("entryPeriod");
+    const entryPeriod = entryPeriodParam ? parseEntryPeriod(entryPeriodParam) : "DAY";
+    if (entryPeriodParam && !entryPeriod) {
+      return jsonError("Kỳ nhập không hợp lệ (DAY/WEEK/MONTH/QUARTER/YEAR)", 400);
+    }
     if (!metricId) return jsonError("Thiếu chỉ tiêu", 400);
     if (!asOf) return jsonError("Ngày không hợp lệ (YYYY-MM-DD)", 400);
 
@@ -48,7 +54,9 @@ export async function GET(req: NextRequest) {
       return jsonError("Bạn không có quyền xem lũy kế của chỉ tiêu này", 403);
     }
 
-    const prevDay = previousDate(asOf);
+    const period = entryPeriodBounds(entryPeriod || "DAY", dateOnlyToStr(asOf));
+    const periodStart = dateOnlyFromStr(period.start) || asOf;
+    const prevDay = previousDate(periodStart);
     const yearStart = new Date(Date.UTC(asOf.getUTCFullYear(), 0, 1));
 
     if (metric.valueKind === "BALANCE") {
@@ -64,6 +72,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         success: true,
         asOf: dateOnlyToStr(asOf),
+        entryPeriod: entryPeriod || "DAY",
+        period,
         previousDate: dateOnlyToStr(prevDay),
         cumulativePrevious: latest ? latest.valueNumeric.toString() : "0",
         valueKind: metric.valueKind,
@@ -108,6 +118,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       asOf: dateOnlyToStr(asOf),
+      entryPeriod: entryPeriod || "DAY",
+      period,
       previousDate: dateOnlyToStr(prevDay),
       cumulativePrevious: cumulative.toString(),
       valueKind: metric.valueKind,

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { fmtMetric, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
+import { fmtMetric, fmtMetricCompact, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 import { RevenueComparisonSection, type ComparisonData } from "@/components/dashboard/RevenueComparisonSection";
 
@@ -159,6 +159,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                             <td
                               key={c}
                               data-testid={c === "month" || c === "year" ? `dash-cum-${c}-${m.code}` : undefined}
+                              title={m.cols[c] !== null ? fmtMetric(m.cols[c], m) : undefined}
                               className={`px-2 py-2 text-right tabular-nums border-l border-border-default/20 ${
                                 c === "month" || c === "year"
                                   ? "bg-primary/5 font-bold text-primary"
@@ -170,7 +171,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                                   —
                                 </span>
                               ) : (
-                                fmtMetric(m.cols[c], m, { withUnit: false })
+                                fmtMetricCompact(m.cols[c], m, { withUnit: false })
                               )}
                             </td>
                           ))}
@@ -202,7 +203,9 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                                     —
                                   </span>
                                 ) : (
-                                  fmtMetric(cc.cols[c], m, { withUnit: false })
+                                  <span title={fmtMetric(cc.cols[c], m)}>
+                                    {fmtMetricCompact(cc.cols[c], m, { withUnit: false })}
+                                  </span>
                                 )}
                               </td>
                             ))}

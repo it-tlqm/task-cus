@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatVnDate } from "@/lib/datetime";
+import { fmtMetric, fmtMetricCompact } from "@/lib/metric-format";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RevenueComparisonSection, type ComparisonData } from "@/components/dashboard/RevenueComparisonSection";
 
@@ -43,6 +44,7 @@ interface MetricRow {
   code: string;
   name: string;
   unitLabel: string;
+  displayScale?: number;
   decimals: number;
   cols: Record<string, number | null>;
   latestDate?: string | null;
@@ -105,11 +107,6 @@ function formatMoney(value: number | null | undefined): string {
     return `${(value / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr`;
   }
   return value.toLocaleString("vi-VN");
-}
-
-function formatNumber(value: number | null | undefined, decimals = 0): string {
-  if (value === null || value === undefined) return "—";
-  return value.toLocaleString("vi-VN", { maximumFractionDigits: decimals });
 }
 
 function formatPercent(value: number | null | undefined, decimals = 2): string {
@@ -387,8 +384,20 @@ export default function DashboardV4() {
                           className={`py-2.5 px-3 text-right tabular-nums font-body-sm ${
                             key === "month" || key === "year" ? "font-semibold text-primary bg-primary/[0.03]" : ""
                           }`}
+                          title={
+                            m.cols?.[key] !== null && m.cols?.[key] !== undefined
+                              ? fmtMetric(
+                                  m.cols[key],
+                                  { displayScale: m.displayScale || 1, decimals: m.decimals ?? 0, unitLabel: m.unitLabel }
+                                )
+                              : undefined
+                          }
                         >
-                          {formatNumber(m.cols?.[key] ?? null, m.decimals ?? 0)}
+                          {fmtMetricCompact(
+                            m.cols?.[key] ?? null,
+                            { displayScale: m.displayScale || 1, decimals: m.decimals ?? 0, unitLabel: m.unitLabel },
+                            { withUnit: false }
+                          )}
                         </td>
                       ))}
                       <td className="py-2.5 px-3 text-center">
