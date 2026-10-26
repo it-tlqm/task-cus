@@ -500,6 +500,13 @@ export default function DashboardV4() {
               <span className="material-symbols-outlined text-[17px]">table_view</span>
               Số liệu giao ban
             </Link>
+            <Link
+              href="/v5"
+              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 text-primary font-body-semibold text-body-sm hover:bg-primary/10"
+            >
+              <span className="material-symbols-outlined text-[17px]">auto_awesome</span>
+              V5 Preview
+            </Link>
           </div>
         </section>
 

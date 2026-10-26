@@ -25,7 +25,9 @@
   "dependencies": {
     "@e965/xlsx": "0.20.3",
     "@prisma/client": "^6.4.1",
+    "@radix-ui/react-slot": "^1.5.0",
     "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "docx": "^9.11.0",
     "exceljs": "^4.4.0",

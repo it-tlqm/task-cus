@@ -16,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Trang xác thực: không bọc sidebar/header để form đăng nhập & đổi mật khẩu
   // chiếm trọn màn hình, đúng layout của design system.
   const isLoginPage = pathname === "/login" || pathname === "/change-password";
+  const isV5Preview = pathname === "/v5" || pathname.startsWith("/v5/");
 
   // Thu gọn menu: giữ trạng thái ở đây để Sidebar, Header và vùng nội dung cùng biết.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -55,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
   const openMobileMenu = useCallback(() => setMobileMenuOpen(true), []);
 
-  if (isLoginPage) {
+  if (isLoginPage || isV5Preview) {
     return <div className="min-h-screen w-full overflow-x-hidden">{children}</div>;
   }
 

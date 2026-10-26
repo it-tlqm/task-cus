@@ -84,6 +84,23 @@ const config: Config = {
         "error-container": "#ffdad6",
         "on-error": "#ffffff",
         "on-error-container": "#93000a",
+
+        // V5 design system — warm government workspace
+        "v5-bg": "#F4F1EA",
+        "v5-surface": "#FFFDF8",
+        "v5-ink": "#17211C",
+        "v5-muted": "#66706A",
+        "v5-line": "#DDD8CC",
+        "v5-accent": "#0E6B5C",
+        "v5-accent-soft": "#E3F0EC",
+        "v5-sidebar": "#15211C",
+        "v5-sidebar-text": "#E7EDE8",
+        "v5-warning": "#B45309",
+        "v5-warning-soft": "#FDF3E3",
+        "v5-danger": "#B42318",
+        "v5-danger-soft": "#FDECEA",
+        "v5-success": "#067647",
+        "v5-success-soft": "#E8F5EE",
       },
       spacing: {
         "space-xs": "4px",
