@@ -201,7 +201,7 @@ function KpiTile({
     success: "bg-v5-success-soft text-v5-success",
   };
   return (
-    <Card className="p-4">
+    <Card className="p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-v5-muted">{label}</div>
         <div className={`grid h-7 w-7 place-items-center rounded-lg ${tones[tone]}`}>
@@ -269,6 +269,18 @@ export default function V5DashboardPage() {
     (revenueValue !== null && revenueTarget ? (revenueValue / revenueTarget) * 100 : null);
   const suspiciousTarget = rawPercent !== null && Math.abs(rawPercent) > 300;
   const displayPercent = suspiciousTarget ? null : rawPercent;
+  const revenueTone: "success" | "danger" | "warning" =
+    suspiciousTarget
+      ? "warning"
+      : displayPercent !== null && displayPercent >= 100
+        ? "success"
+        : "danger";
+  const revenuePercentTone =
+    revenueTone === "success"
+      ? "text-v5-success"
+      : revenueTone === "warning"
+        ? "text-v5-gold-ink"
+        : "text-v5-danger";
 
   const latestMetrics = useMemo(
     () => (summary?.groups || []).flatMap((g) => g.metrics).slice(0, 12),
@@ -304,8 +316,8 @@ export default function V5DashboardPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="space-y-3">
+      <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Tổng quan điều hành</h1>
@@ -359,7 +371,7 @@ export default function V5DashboardPage() {
             <ListFilter className="h-3.5 w-3.5" /> Bộ lọc
           </Button>
           <Button size="sm" asChild>
-            <Link href="/giao-ban/nhap">
+            <Link href="/v5/giao-ban/nhap">
               <Plus className="h-3.5 w-3.5" /> Nhập số liệu
             </Link>
           </Button>
@@ -372,13 +384,13 @@ export default function V5DashboardPage() {
         latestDate={revenueMetric?.latestDate}
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         <KpiTile
           label="Thu NSNN"
           value={fmtMetricCompact(revenueValue, { displayScale: 1, decimals: 0, unitLabel: "đồng" }, { withUnit: false })}
           note={`${PERIOD_LABEL[period]} · lũy kế`}
           icon={CircleDollarSign}
-          tone="accent"
+          tone={revenueTone}
         />
         <KpiTile
           label="Đang thực hiện"
@@ -403,7 +415,7 @@ export default function V5DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-12">
         <Card className="overflow-hidden xl:col-span-7">
           <div className="border-b border-v5-line/70 bg-gradient-to-br from-v5-accent-soft/70 via-v5-surface to-v5-surface px-5 py-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
@@ -421,10 +433,13 @@ export default function V5DashboardPage() {
                   {fmtMetricCompact(revenueValue, { displayScale: 1, decimals: 0, unitLabel: "đồng" }, { withUnit: false })}
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-v5-muted">
-                  <span className="font-semibold text-v5-accent">
+                  <span className={`font-semibold ${revenuePercentTone}`}>
                     {displayPercent === null ? "Chưa tính %" : `${displayPercent.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`}
                   </span>
                   <span>so với chỉ tiêu</span>
+                  <Badge variant={revenueTone === "success" ? "success" : revenueTone === "warning" ? "warning" : "danger"}>
+                    {revenueTone === "success" ? "Đạt chỉ tiêu" : revenueTone === "warning" ? "Kiểm tra target" : "Chưa đạt"}
+                  </Badge>
                   <span className="text-v5-line">·</span>
                   <span>
                     Chỉ tiêu:{" "}
@@ -531,7 +546,7 @@ export default function V5DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <div>

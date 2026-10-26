@@ -136,8 +136,8 @@ export default function V5GiaoBanPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="space-y-3">
+      <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Số liệu giao ban</h1>
@@ -155,7 +155,7 @@ export default function V5GiaoBanPage() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
           <Button size="sm" asChild>
-            <Link href="/giao-ban/nhap">
+            <Link href="/v5/giao-ban/nhap">
               <Plus className="h-3.5 w-3.5" /> Nhập số liệu
             </Link>
           </Button>

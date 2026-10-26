@@ -22,6 +22,7 @@ const v5Shell = read("src/components/v5/V5Shell.tsx");
 const v5Page = read("src/app/v5/page.tsx");
 const v5Layout = read("src/app/v5/layout.tsx");
 const v5GiaoBan = read("src/app/v5/giao-ban/page.tsx");
+const v5Entry = read("src/app/v5/giao-ban/nhap/page.tsx");
 const button = read("src/components/v5/ui/button.tsx");
 const card = read("src/components/v5/ui/card.tsx");
 const badge = read("src/components/v5/ui/badge.tsx");
@@ -39,6 +40,11 @@ check("AppShell dùng V5Shell cho toàn bộ màn hình cũ", shell.includes("<V
 check(
   "Mobile dùng sidebar drawer, không dùng tabbar",
   v5Shell.includes("mobileOpen") && v5Shell.includes("fixed inset-0 z-50") && !v5Shell.includes("overflow-x-auto border-t")
+);
+check("Sidebar section thu gọn/mở rộng", v5Shell.includes("collapsed") && v5Shell.includes("aria-expanded"));
+check(
+  "Tổng quan đạt chỉ tiêu xanh, chưa đạt/chưa nhập đỏ",
+  v5Page.includes("revenueTone") && v5Page.includes("text-v5-success") && v5Page.includes("text-v5-danger")
 );
 check("V5 layout dùng shell", v5Layout.includes("V5Shell"));
 check("V5 dashboard dùng widget, không bảng", v5Page.includes("MetricWidget") && !v5Page.includes("<table"));
@@ -60,6 +66,13 @@ check(
   v5Shell.includes('href: "/v5/giao-ban"') &&
     v5GiaoBan.includes("RevenueSummaryTable") &&
     v5GiaoBan.includes("MetricsSummaryTable")
+);
+check(
+  "V5 có màn hình nhập số liệu tối ưu",
+  v5Entry.includes("Cần nhập") &&
+    v5Entry.includes("Tính từ lũy kế") &&
+    v5Entry.includes("/api/metrics/entries/cumulative") &&
+    v5Entry.includes("Lưu")
 );
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);

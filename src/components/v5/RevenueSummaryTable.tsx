@@ -94,6 +94,13 @@ function diffText(block?: { percent?: number | null; percentText?: string | null
   return "Chưa xác định";
 }
 
+function percentTone(block: { percent?: number | null } | null | undefined, kind: "target" | "diff"): string {
+  const value = block?.percent;
+  if (value === null || value === undefined) return "text-v5-danger";
+  if (kind === "target") return value >= 100 ? "text-v5-success" : "text-v5-danger";
+  return value >= 0 ? "text-v5-success" : "text-v5-danger";
+}
+
 export function RevenueSummaryTable({
   groups,
   comparison,
@@ -143,11 +150,11 @@ export function RevenueSummaryTable({
   const totalYearTax = tax?.cols.year ?? sumOrNull(rows.map((item) => item.yearTax));
 
   const summaryItems = [
-    { label: "Chỉ tiêu BTC", block: row?.btc, value: row?.btc?.targetValue },
-    { label: "Chỉ tiêu UBND tỉnh", block: row?.ubnd, value: row?.ubnd?.targetValue },
-    { label: "Kế hoạch tháng HQTL", block: row?.monthPlan, value: row?.monthPlan?.targetValue },
-    { label: "So với tháng trước", block: row?.prevMonth, value: null },
-    { label: "So với cùng kỳ 2025", block: row?.samePeriodLastYear, value: null },
+    { label: "Chỉ tiêu BTC", block: row?.btc, value: row?.btc?.targetValue, kind: "target" as const },
+    { label: "Chỉ tiêu UBND tỉnh", block: row?.ubnd, value: row?.ubnd?.targetValue, kind: "target" as const },
+    { label: "Kế hoạch tháng HQTL", block: row?.monthPlan, value: row?.monthPlan?.targetValue, kind: "target" as const },
+    { label: "So với tháng trước", block: row?.prevMonth, value: null, kind: "diff" as const },
+    { label: "So với cùng kỳ 2025", block: row?.samePeriodLastYear, value: null, kind: "diff" as const },
   ];
 
   const noTaxValue = noTax ? noTax.cols.month ?? noTax.cols.year ?? null : null;
@@ -183,7 +190,9 @@ export function RevenueSummaryTable({
                 {item.value !== null && item.value !== undefined ? (
                   <span className="text-[12px] font-semibold tabular-nums text-v5-ink">{formatValue(item.value, tax)}</span>
                 ) : null}
-                <span className="text-[11px] font-semibold text-v5-accent">{percentText(item.block)}</span>
+                <span className={`text-[11px] font-semibold ${percentTone(item.block, item.kind)}`}>
+                  {percentText(item.block)}
+                </span>
               </div>
             </div>
           ))}

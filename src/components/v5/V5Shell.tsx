@@ -53,7 +53,7 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { label: "Tổng quan", href: "/v5", icon: LayoutDashboard },
       { label: "Số liệu giao ban", href: "/v5/giao-ban", icon: FileBarChart2 },
-      { label: "Nhập số liệu", href: "/giao-ban/nhap", icon: PlusSquare },
+      { label: "Nhập số liệu", href: "/v5/giao-ban/nhap", icon: PlusSquare },
     ],
   },
   {
@@ -102,10 +102,12 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
 ];
 
 const PAGE_TITLES: Array<[string, string]> = [
+  ["/v5/giao-ban/nhap", "Nhập số liệu"],
   ["/v5/giao-ban", "Số liệu giao ban"],
   ["/v5", "Tổng quan điều hành"],
   ["/dashboard/v4", "Bảng điều hành V4"],
   ["/dashboard", "Bảng điều hành"],
+  ["/v5/giao-ban/nhap", "Nhập số liệu"],
   ["/giao-ban/nhap", "Nhập số liệu"],
   ["/giao-ban/cau-hinh", "Cấu hình số liệu"],
   ["/giao-ban/bao-cao", "Báo cáo giao ban"],
@@ -134,38 +136,50 @@ function isActivePath(pathname: string, href: string): boolean {
 }
 
 function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   return (
-    <nav className="flex-1 overflow-y-auto px-3 py-4">
-      {NAV_SECTIONS.map((section) => (
-        <div key={section.label} className="mb-5">
-          <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-v5-muted">
-            {section.label}
+    <nav className="min-h-0 flex-1 overflow-y-auto px-2.5 py-3">
+      {NAV_SECTIONS.map((section) => {
+        const isCollapsed = !!collapsed[section.label];
+        return (
+          <div key={section.label} className="mb-2.5">
+            <button
+              type="button"
+              onClick={() => setCollapsed((prev) => ({ ...prev, [section.label]: !prev[section.label] }))}
+              aria-expanded={!isCollapsed}
+              className="flex w-full items-center justify-between rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+            >
+              <span>{section.label}</span>
+              <ChevronDown className={cn("h-3 w-3 transition-transform", isCollapsed && "-rotate-90")} />
+            </button>
+            {!isCollapsed && (
+              <div className="mt-0.5 space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActivePath(pathname, item.href);
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      onClick={onNavigate}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors",
+                        active
+                          ? "bg-v5-accent-soft font-semibold text-v5-accent"
+                          : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="flex-1">{item.label}</span>
+                      {active && <ChevronRight className="h-3.5 w-3.5" />}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          <div className="space-y-0.5">
-            {section.items.map((item) => {
-              const Icon = item.icon;
-              const active = isActivePath(pathname, item.href);
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors",
-                    active
-                      ? "bg-v5-accent-soft font-semibold text-v5-accent"
-                      : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="flex-1">{item.label}</span>
-                  {active && <ChevronRight className="h-3.5 w-3.5" />}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </nav>
   );
 }
@@ -326,7 +340,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1500px] px-4 pb-14 pt-4 lg:px-6 lg:pt-5">{children}</main>
+        <main className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-3 lg:px-5 lg:pt-4">{children}</main>
       </div>
 
       <div className="fixed bottom-4 right-4 z-40 hidden xl:block">
