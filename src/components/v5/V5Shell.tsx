@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
   BookOpenCheck,
+  Building2,
   CalendarDays,
   CalendarOff,
   CalendarRange,
@@ -16,10 +17,15 @@ import {
   ClipboardList,
   Command,
   FileBarChart2,
+  FileCog,
   FileText,
+  FolderKanban,
   LayoutDashboard,
   LifeBuoy,
+  ListChecks,
   LogOut,
+  Menu,
+  Package,
   PanelLeft,
   PieChart,
   PlusSquare,
@@ -28,6 +34,7 @@ import {
   ShieldCheck,
   Users,
   UserCheck,
+  X,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
@@ -38,7 +45,6 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ElementType;
-  soon?: boolean;
 };
 
 const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
@@ -58,22 +64,38 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
       { label: "Duyệt hồ sơ", href: "/approvals", icon: CheckCheck },
       { label: "Công chức nhận việc", href: "/my-work", icon: UserCheck },
       { label: "Nhật ký ca trực", href: "/routine", icon: BookOpenCheck },
+      { label: "Cuộc họp", href: "/meetings", icon: Users },
     ],
   },
   {
     label: "Lịch & báo cáo",
     items: [
-      { label: "Lịch", href: "/calendar", icon: CalendarRange },
+      { label: "Lịch công tác", href: "/calendar", icon: CalendarRange },
       { label: "Lịch trực", href: "/roster", icon: Users },
       { label: "Nghỉ phép", href: "/leaves", icon: CalendarOff },
       { label: "Báo cáo", href: "/reports", icon: FileText },
       { label: "Kết quả tháng", href: "/monthly-results", icon: PieChart },
+      { label: "Sản phẩm", href: "/products", icon: Package },
+      { label: "Tài liệu", href: "/docs", icon: FileCog },
     ],
   },
   {
-    label: "Hệ thống",
+    label: "Quản trị",
     items: [
-      { label: "Quản trị", href: "/admin", icon: ShieldCheck },
+      { label: "Tổng quan quản trị", href: "/admin", icon: ShieldCheck },
+      { label: "Tổ chức", href: "/admin/organization", icon: Building2 },
+      { label: "Phân quyền", href: "/admin/permissions", icon: ShieldCheck },
+      { label: "Danh mục", href: "/admin/catalog", icon: FolderKanban },
+      { label: "Biểu mẫu", href: "/admin/forms", icon: FileCog },
+      { label: "Phản hồi", href: "/admin/feedback", icon: ListChecks },
+      { label: "Giám sát", href: "/admin/supervisions", icon: UserCheck },
+      { label: "Nhật ký hệ thống", href: "/admin/audit", icon: FileText },
+      { label: "Cấu hình hệ thống", href: "/admin/system", icon: Settings2 },
+    ],
+  },
+  {
+    label: "Hỗ trợ",
+    items: [
       { label: "Hướng dẫn", href: "/huong-dan", icon: CircleHelp },
     ],
   },
@@ -93,18 +115,115 @@ const PAGE_TITLES: Array<[string, string]> = [
   ["/approvals", "Duyệt hồ sơ"],
   ["/my-work", "Công chức nhận việc"],
   ["/routine", "Nhật ký ca trực"],
-  ["/calendar", "Lịch"],
+  ["/meetings", "Cuộc họp"],
+  ["/calendar", "Lịch công tác"],
   ["/roster", "Lịch trực"],
   ["/leaves", "Nghỉ phép"],
   ["/reports", "Báo cáo"],
   ["/monthly-results", "Kết quả tháng"],
+  ["/products", "Sản phẩm"],
+  ["/docs", "Tài liệu"],
   ["/admin", "Quản trị"],
   ["/huong-dan", "Hướng dẫn"],
 ];
 
+function isActivePath(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  if (href === "/v5" || href === "/dashboard" || href === "/admin") return false;
+  return pathname.startsWith(`${href}/`);
+}
+
+function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  return (
+    <nav className="flex-1 overflow-y-auto px-3 py-4">
+      {NAV_SECTIONS.map((section) => (
+        <div key={section.label} className="mb-5">
+          <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-v5-muted">
+            {section.label}
+          </div>
+          <div className="space-y-0.5">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const active = isActivePath(pathname, item.href);
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors",
+                    active
+                      ? "bg-v5-accent-soft font-semibold text-v5-accent"
+                      : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="flex-1">{item.label}</span>
+                  {active && <ChevronRight className="h-3.5 w-3.5" />}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function BrandBlock() {
+  return (
+    <div className="flex h-14 items-center gap-2.5 border-b border-v5-line px-4">
+      <img src="/images/logo-haiquan.png" alt="Hải quan Tà Lùng" className="h-8 w-8 rounded-full object-contain" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13px] font-semibold leading-tight">Hải quan Tà Lùng</div>
+        <div className="truncate text-[10px] text-v5-muted">Không gian điều hành</div>
+      </div>
+      <ChevronDown className="h-3.5 w-3.5 text-v5-muted" />
+    </div>
+  );
+}
+
+function UserCard({ user }: { user: ReturnType<typeof usePermissions>["user"] }) {
+  return (
+    <div className="border-t border-v5-line p-3">
+      <Link
+        href="/huong-dan"
+        className="mb-2 flex items-center gap-2 rounded-md px-2 py-1.5 text-[11px] text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+      >
+        <LifeBuoy className="h-3.5 w-3.5" /> Hướng dẫn & hỗ trợ
+      </Link>
+      <div className="flex items-center gap-2 rounded-md border border-v5-line px-2 py-2">
+        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-v5-accent-soft text-[10px] font-bold text-v5-accent">
+          {(user?.fullName || "HQ").slice(0, 2).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[11px] font-semibold">{user?.fullName || "Đang tải…"}</div>
+          <div className="truncate text-[9px] text-v5-muted">{user?.positionTitle || user?.role || "—"}</div>
+        </div>
+        <button
+          type="button"
+          aria-label="Đăng xuất"
+          title="Đăng xuất"
+          onClick={async () => {
+            try {
+              await fetch("/api/auth/logout", { method: "POST" });
+            } finally {
+              window.location.href = "/login";
+            }
+          }}
+          className="rounded p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-danger"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function V5Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = usePermissions();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pageTitle = PAGE_TITLES.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] || "Không gian điều hành";
   const today = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
@@ -113,103 +232,58 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
     year: "numeric",
   }).format(new Date());
 
-  const isActive = (href: string) =>
-    pathname === href || (href !== "/v5" && href !== "/dashboard" && pathname.startsWith(`${href}/`));
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-v5-bg text-v5-ink">
+    <div className="v5-shell min-h-screen bg-v5-bg text-v5-ink">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-v5-line bg-v5-surface lg:flex">
-        <div className="flex h-14 items-center gap-2.5 border-b border-v5-line px-4">
-          <img src="/images/logo-haiquan.png" alt="Hải quan Tà Lùng" className="h-8 w-8 rounded-full object-contain" />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-semibold leading-tight">Hải quan Tà Lùng</div>
-            <div className="truncate text-[10px] text-v5-muted">Không gian điều hành</div>
-          </div>
-          <ChevronDown className="h-3.5 w-3.5 text-v5-muted" />
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.label} className="mb-5">
-              <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-v5-muted">
-                {section.label}
-              </div>
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return item.soon ? (
-                    <div
-                      key={item.label}
-                      className="flex cursor-not-allowed items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-v5-muted/50"
-                      title="Sẽ có trong V5"
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="flex-1">{item.label}</span>
-                      <span className="text-[8px] uppercase tracking-wider">sắp có</span>
-                    </div>
-                  ) : (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors",
-                        active
-                          ? "bg-v5-accent-soft font-semibold text-v5-accent"
-                          : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="flex-1">{item.label}</span>
-                      {active && <ChevronRight className="h-3.5 w-3.5" />}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="border-t border-v5-line p-3">
-          <Link
-            href="/v5"
-            className="mb-2 flex items-center gap-2 rounded-md px-2 py-1.5 text-[11px] text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
-          >
-            <LifeBuoy className="h-3.5 w-3.5" /> Trang tổng quan
-          </Link>
-          <div className="flex items-center gap-2 rounded-md border border-v5-line px-2 py-2">
-            <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-v5-accent-soft text-[10px] font-bold text-v5-accent">
-              {(user?.fullName || "HQ").slice(0, 2).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[11px] font-semibold">{user?.fullName || "Đang tải…"}</div>
-              <div className="truncate text-[9px] text-v5-muted">{user?.positionTitle || user?.role || "—"}</div>
-            </div>
-            <button
-              type="button"
-              aria-label="Đăng xuất"
-              title="Đăng xuất"
-              onClick={async () => {
-                try {
-                  await fetch("/api/auth/logout", { method: "POST" });
-                } finally {
-                  window.location.href = "/login";
-                }
-              }}
-              className="rounded p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-danger"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+        <BrandBlock />
+        <SidebarNav pathname={pathname} />
+        <UserCard user={user} />
       </aside>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Đóng menu"
+            className="absolute inset-0 bg-slate-950/35 backdrop-blur-[1px]"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="relative flex h-full w-[88%] max-w-[310px] flex-col border-r border-v5-line bg-v5-surface shadow-2xl">
+            <div className="flex items-center justify-between border-b border-v5-line pr-2">
+              <BrandBlock />
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md p-2 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                aria-label="Đóng menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <SidebarNav pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <UserCard user={user} />
+          </aside>
+        </div>
+      )}
 
       <div className="lg:pl-[248px]">
         <header className="sticky top-0 z-20 border-b border-v5-line bg-v5-surface/95 backdrop-blur">
           <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
-            <div className="flex items-center gap-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-v5-line text-v5-muted hover:bg-v5-bg hover:text-v5-ink lg:hidden"
+              aria-label="Mở menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <div className="flex min-w-0 items-center gap-2 lg:hidden">
               <img src="/images/logo-haiquan.png" alt="" className="h-7 w-7 rounded-full object-contain" />
-              <span className="text-sm font-semibold">Hải quan Tà Lùng</span>
+              <span className="truncate text-sm font-semibold">{pageTitle}</span>
             </div>
 
             <div className="hidden min-w-0 items-center gap-2 lg:flex">
@@ -250,21 +324,6 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
-
-          <nav className="flex gap-1 overflow-x-auto border-t border-v5-line px-3 py-2 lg:hidden">
-            {NAV_SECTIONS.flatMap((section) => section.items).map((item) => (
-              <Link
-                key={`${item.label}-${item.href}`}
-                href={item.href}
-                className={cn(
-                  "whitespace-nowrap rounded-md px-2.5 py-1.5 text-[11px] font-semibold",
-                  isActive(item.href) ? "bg-v5-accent-soft text-v5-accent" : "text-v5-muted"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
         </header>
 
         <main className="mx-auto w-full max-w-[1500px] px-4 pb-14 pt-4 lg:px-6 lg:pt-5">{children}</main>

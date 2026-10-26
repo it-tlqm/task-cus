@@ -36,6 +36,10 @@ check(
 check("AppShell bỏ qua chrome cũ cho /v5", shell.includes("isV5Route") && shell.includes('pathname === "/v5"'));
 check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.includes("shadcn/ui"));
 check("AppShell dùng V5Shell cho toàn bộ màn hình cũ", shell.includes("<V5Shell>"));
+check(
+  "Mobile dùng sidebar drawer, không dùng tabbar",
+  v5Shell.includes("mobileOpen") && v5Shell.includes("fixed inset-0 z-50") && !v5Shell.includes("overflow-x-auto border-t")
+);
 check("V5 layout dùng shell", v5Layout.includes("V5Shell"));
 check("V5 dashboard dùng widget, không bảng", v5Page.includes("MetricWidget") && !v5Page.includes("<table"));
 check(
