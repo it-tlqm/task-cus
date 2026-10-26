@@ -3,8 +3,8 @@
 **Trạng thái:** `DEPLOYED — TECHNICAL SMOKE PASS — UAT PENDING`
 
 - **Production:** `https://task-cus.vercel.app`
-- **Code hiện tại:** `057e9fd`
-- **Health:** `db=up`, `commit=057e9fd`, `env=production`
+- **Code hiện tại:** `6571f15`
+- **Health:** `db=up`, `commit=6571f15`, `env=production`
 - **Dashboard V4:** vẫn chỉ là bản xem trước; `/dashboard` cũ mặc định.
 
 ---
@@ -113,3 +113,47 @@ Rollback riêng batch này:
 ```powershell
 vc rollback dpl_8wNZro3caUPnDc6iQShFZbbFW2mS --scope tlqm --yes
 ```
+---
+
+## 7. Bổ sung — Action Center + Duyệt tuần tự (`6571f15`)
+
+- **Deployment:** `dpl_H8kCiNDr9DWojNaWQ8HzfdUSJPzF`
+- **Code:** `6571f15`
+- **Health:** `commit=6571f15`, `db=up`, `env=production`
+
+### Trung tâm Việc cần xử lý
+- Dải hành động đầu Dashboard, hiển thị cả desktop/mobile:
+  - Chờ duyệt → `/approvals`
+  - Quá hạn → `/tasks`
+  - Cần chú ý → `/tasks`
+  - Mở việc của tôi → `/my-work`
+- Dữ liệu lấy từ KPI/attentionTasks hiện có, không thêm API.
+
+### Duyệt hồ sơ tuần tự
+- Sau khi ghi quyết định, tự mở hồ sơ kế tiếp trong tab đang xem.
+- Không mở lại hồ sơ vừa xử lý.
+- Có thông báo “Đang mở hồ sơ tiếp theo...”.
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `test-dashboard-action-center.ts` | 8/8 PASS |
+| `test-approval-next.ts` | 5/5 PASS |
+| `test-feedback-bulk.ts` | 7/7 PASS |
+| `npx tsc --noEmit` | PASS |
+| `pnpm build` | PASS |
+| `/api/health` Production | 200, db up |
+
+## 8. YC-11 — kiểm tra live ngày 26/10/2026
+
+Read-only Production:
+
+- `person_supervisions = 0`
+- `confirmed_supervisions = 0`
+- `active_people = 37`
+
+Kết luận: **không thể bật YC-11 bằng code**. Cần danh sách tuyến phê duyệt thật (ai quản lý ai) và ghi qua `/admin/supervisions`; hệ thống không tự suy từ chức danh, không seed.
+
+## 9. Chưa triển khai
+
+- Sao chép lịch trực / kế hoạch tuần trước: cần chốt quy tắc nhân bản (bỏ qua ngày khóa, xử lý trùng, quyền).
+- YC-11: chờ dữ liệu tuyến phê duyệt thật.
