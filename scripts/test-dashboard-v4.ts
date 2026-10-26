@@ -53,6 +53,10 @@ check(
   "V4 đưa Số liệu giao ban + So sánh lên trước các khối khác",
   detailIndex >= 0 && comparisonIndex > detailIndex && taskIndex > comparisonIndex
 );
+check(
+  "V4 có bảng so sánh kết quả thu",
+  component.includes("RevenueComparisonSection") && component.includes("summary?.comparison")
+);
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { formatVnDate } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/usePermissions";
+import { RevenueComparisonSection, type ComparisonData } from "@/components/dashboard/RevenueComparisonSection";
 
 type PeriodKey = "today" | "week" | "month" | "year";
 type ViewKey = "overview" | "charts" | "table" | "compare";
@@ -408,6 +409,12 @@ export default function DashboardV4() {
               </table>
             </div>
           </Panel>
+        )}
+
+        {(view === "overview" || view === "table" || view === "compare") && summary?.comparison && (
+          <RevenueComparisonSection
+            comparison={summary.comparison as unknown as ComparisonData}
+          />
         )}
 
         {(view === "overview" || view === "charts") && (
