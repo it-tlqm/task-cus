@@ -347,6 +347,7 @@ export default function PlansPage() {
   const [planFormTitle, setPlanFormTitle] = useState("");
   const [planFormFirstItem, setPlanFormFirstItem] = useState("");
   const [planFormError, setPlanFormError] = useState<string | null>(null);
+  const [duplicatePlanId, setDuplicatePlanId] = useState<string | null>(null);
   const [planFormFieldErrors, setPlanFormFieldErrors] = useState<Record<string, string>>({});
   const [planSubmitting, setPlanSubmitting] = useState(false);
   const planSubmittingRef = useRef(false);
@@ -986,6 +987,7 @@ export default function PlansPage() {
     setPlanFormTitle("");
     setPlanFormFirstItem("I. Công tác trọng tâm");
     setPlanFormError(null);
+    setDuplicatePlanId(null);
     setPlanFormFieldErrors({});
     setShowPlanCreateModal(true);
   };
@@ -1032,10 +1034,12 @@ export default function PlansPage() {
             : "";
         const message = `${json.error || "Không thể tạo kế hoạch"}${duplicateNote}`;
         setPlanFormError(message);
+        setDuplicatePlanId(res.status === 409 && json.duplicatePlanId ? String(json.duplicatePlanId) : null);
         toast.error(message);
         return;
       }
       const createdId = json.data?.id || "";
+      setDuplicatePlanId(null);
       setShowPlanCreateModal(false);
       setViewMode(
         planFormType === "DAY" ? "day" : planFormType === "MONTH" ? "month" : "week"
@@ -1054,6 +1058,16 @@ export default function PlansPage() {
       planSubmittingRef.current = false;
       setPlanSubmitting(false);
     }
+  };
+
+  const openDuplicatePlan = async () => {
+    if (!duplicatePlanId) return;
+    setShowPlanCreateModal(false);
+    setPlanFormError(null);
+    await fetchPlans();
+    setSelectedPlanId(duplicatePlanId);
+    setWorkflowMessage("Đã mở kế hoạch trùng — dùng nút Sửa kế hoạch hoặc Hủy kế hoạch trùng.");
+    setTimeout(() => setWorkflowMessage(null), 4000);
   };
 
   const openPlanTitleModal = () => {
@@ -1467,6 +1481,9 @@ export default function PlansPage() {
   const toggleAccordion = (id: string) => {
     setOpenAccordions((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const unassignedItemCount =
+    activePlan?.items?.filter((item) => !item.group || !item.groupId).length || 0;
 
   return (
     <div className="w-full min-h-screen bg-app-bg pb-12">
@@ -1964,19 +1981,25 @@ export default function PlansPage() {
             </div>
           </details>
 
-          {/* Warning Banner if there are unassigned items */}
-          {activePlan?.items?.some((pi) => !pi.group || !pi.groupId) && (
-            <div className="px-space-lg py-2.5 bg-status-warning-bg/60 border-b border-status-warning/30 text-status-warning flex items-center justify-between text-label-sm font-label-sm">
-              <div className="flex items-center gap-2">
+          {/* Cảnh báo phân công: thu gọn để không chiếm chỗ bảng */}
+          {unassignedItemCount > 0 && (
+            <details
+              data-testid="plan-assignment-warning"
+              className="border-b border-status-warning/30 bg-status-warning-bg/40 text-status-warning"
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-space-lg py-2 text-label-sm font-label-sm [&::-webkit-details-marker]:hidden">
                 <span className="material-symbols-outlined text-[18px]">warning</span>
-                <span>
-                  <strong>Cảnh báo nghiệp vụ:</strong> Kế hoạch này có nhiệm vụ trọng tâm chưa được phân vào 6 nhóm nghiệp vụ quy chuẩn của Hải quan. Vui lòng xác định nhóm nghiệp vụ trước khi phát hành báo cáo chính thức.
+                <strong>Cảnh báo phân công ({unassignedItemCount})</strong>
+                <span className="text-on-surface-variant">— bấm để xem chi tiết</span>
+                <span className="ml-auto rounded border border-status-warning/40 bg-status-warning-bg px-2 py-0.5 text-[10px] font-semibold uppercase">
+                  Chưa phân nhóm
                 </span>
+              </summary>
+              <div className="border-t border-status-warning/20 px-space-lg py-2 text-body-xs text-status-warning">
+                Kế hoạch có nhiệm vụ trọng tâm chưa được phân vào 6 nhóm nghiệp vụ quy chuẩn của Hải quan.
+                Vui lòng xác định nhóm nghiệp vụ trước khi phát hành báo cáo chính thức.
               </div>
-              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded bg-status-warning-bg text-status-warning border border-status-warning/40">
-                Chưa phân nhóm nghiệp vụ
-              </span>
-            </div>
+            </details>
           )}
 
           <div className="overflow-x-auto w-full custom-scrollbar">
@@ -3480,7 +3503,19 @@ export default function PlansPage() {
                     className="rounded-lg border border-status-danger/40 bg-status-danger-bg px-3 py-2 text-sm text-status-danger flex items-start gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[18px]">error</span>
-                    <span>{planFormError}</span>
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                      <span>{planFormError}</span>
+                      {duplicatePlanId && (
+                        <button
+                          type="button"
+                          onClick={openDuplicatePlan}
+                          data-testid="open-duplicate-plan-btn"
+                          className="w-fit rounded border border-status-danger/40 bg-surface-container-lowest px-2.5 py-1 text-[11px] font-semibold text-status-danger hover:bg-status-danger-bg"
+                        >
+                          Mở kế hoạch trùng để sửa/xóa
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 

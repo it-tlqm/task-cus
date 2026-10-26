@@ -180,6 +180,14 @@ export function MetricTargetDraftEditor({
     });
   }, [draft, selectedMetric, selectedRule]);
 
+  const parsedTargetValue = parseMetricInput(draft.value);
+  const vndTargetLooksTooSmall =
+    selectedMetric?.code === "THU_NSNN" &&
+    selectedMetric.unitType === "VND" &&
+    parsedTargetValue !== null &&
+    parsedTargetValue > 0 &&
+    parsedTargetValue < 1_000_000_000_000;
+
   function patch(patchValue: Partial<TargetDraftInput>) {
     setDraft((current) => ({ ...current, ...patchValue }));
   }
@@ -405,6 +413,22 @@ export function MetricTargetDraftEditor({
             placeholder="VD: 1.685.000.000.000"
           />
         </label>
+
+        {vndTargetLooksTooSmall && (
+          <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
+            <div className="font-semibold">Kiểm tra đơn vị: giá trị đang nhỏ hơn 1.000 tỷ đồng.</div>
+            <div className="mt-0.5">
+              Nếu Quyết định ghi <b>1.685 tỷ</b>, phải nhập <b>1.685.000.000.000</b> (đồng).
+            </div>
+            <button
+              type="button"
+              onClick={() => patch({ value: String(Math.round((parsedTargetValue || 0) * 1000)) })}
+              className="mt-1.5 rounded border border-amber-400 bg-white px-2 py-1 font-semibold text-amber-900 hover:bg-amber-100"
+            >
+              Nhân 1.000 (đổi tỷ → đồng)
+            </button>
+          </div>
+        )}
 
         <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
           Chiều đánh giá (D5-A/C1)

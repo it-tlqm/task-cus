@@ -19,9 +19,11 @@ export type RoutineDeclarationState = RoutineDeclarationMode | "LOADING" | "UNKN
 
 /** Vai trò → cách hiển thị form khai báo đầu việc. */
 export const ROUTINE_DECLARATION_MODE_BY_ROLE: Record<string, RoutineDeclarationMode> = {
+  // Lãnh đạo đơn vị/bộ phận không khai báo ca; chỉ công chức/trưởng-phó nhóm
+  // (đang dùng role STAFF trong mô hình hiện tại) mới thấy form.
   UNIT_LEADER: "HIDDEN",
   SYSTEM_ADMIN: "HIDDEN",
-  DEPARTMENT_LEADER: "COLLAPSED",
+  DEPARTMENT_LEADER: "HIDDEN",
   STAFF: "COLLAPSED",
 };
 

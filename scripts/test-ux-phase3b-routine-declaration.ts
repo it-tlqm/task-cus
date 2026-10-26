@@ -52,9 +52,9 @@ check(
     canDeclareRoutine("SYSTEM_ADMIN") === false
 );
 check(
-  "1. DEPARTMENT_LEADER thấy form thu gọn",
-  getRoutineDeclarationMode("DEPARTMENT_LEADER") === "COLLAPSED" &&
-    canDeclareRoutine("DEPARTMENT_LEADER") === true
+  "1. DEPARTMENT_LEADER không thấy form khai báo",
+  getRoutineDeclarationMode("DEPARTMENT_LEADER") === "HIDDEN" &&
+    canDeclareRoutine("DEPARTMENT_LEADER") === false
 );
 check(
   "1. STAFF thấy form thu gọn",
@@ -87,7 +87,7 @@ check(
   resolveRoutineDeclarationState(false, "UNIT_LEADER") === "HIDDEN" &&
     resolveRoutineDeclarationState(false, "SYSTEM_ADMIN") === "HIDDEN" &&
     resolveRoutineDeclarationState(false, "STAFF") === "COLLAPSED" &&
-    resolveRoutineDeclarationState(false, "DEPARTMENT_LEADER") === "COLLAPSED"
+    resolveRoutineDeclarationState(false, "DEPARTMENT_LEADER") === "HIDDEN"
 );
 check(
   "2. Tải xong nhưng không có user/vai trò → UNKNOWN, không đoán bừa",

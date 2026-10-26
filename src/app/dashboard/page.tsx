@@ -295,13 +295,14 @@ export default function DashboardPage() {
           )}
 
           {/* Filter Strip */}
-          <div className="flex flex-wrap items-center justify-between gap-space-md pt-space-sm bg-surface-container-low/60 p-space-md rounded-lg">
+          <div className="flex flex-col gap-space-md pt-space-sm bg-surface-container-low/60 p-space-md rounded-lg xl:flex-row xl:items-center xl:justify-between">
             {/* Period Selector Segmented & Dynamic Dropdown */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="grid flex-1 grid-cols-4 gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm border border-border-default/40 min-w-[420px] max-w-[520px]">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center xl:w-auto">
+              <div className="grid w-full grid-cols-4 gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm border border-border-default/40 sm:min-w-[440px] sm:max-w-[540px]">
                 <button
                   onClick={() => setPeriod("today")}
-                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
+                  aria-pressed={period === "today"}
+                  className={`min-w-0 whitespace-nowrap px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "today"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
@@ -311,7 +312,8 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setPeriod("week")}
-                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
+                  aria-pressed={period === "week"}
+                  className={`min-w-0 whitespace-nowrap px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "week"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
@@ -321,7 +323,8 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setPeriod("month")}
-                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
+                  aria-pressed={period === "month"}
+                  className={`min-w-0 whitespace-nowrap px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "month"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"
@@ -331,7 +334,8 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setPeriod("all")}
-                  className={`min-w-0 px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
+                  aria-pressed={period === "all"}
+                  className={`min-w-0 whitespace-nowrap px-2 py-1.5 rounded-lg text-center text-label-md font-label-md leading-tight transition-fast ${
                     period === "all"
                       ? "bg-primary text-on-primary shadow-sm font-semibold"
                       : "text-on-surface-variant hover:text-primary"

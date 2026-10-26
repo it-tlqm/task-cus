@@ -351,11 +351,20 @@ export default function GiaoBanPage() {
                         <thead>
                           <tr className="text-left text-body-xs text-on-surface-variant border-b border-border-default/40">
                             <th className="px-3 py-2 font-semibold">Chỉ tiêu</th>
-                            {cols.map((c) => (
-                              <th key={c} className={`px-2 py-2 font-semibold text-right ${selectedCol === c ? "bg-secondary/10 text-secondary" : ""}`}>
-                                {colLabel(c)}
-                              </th>
-                            ))}
+                            {cols.map((c) => {
+                              const cumulative = c === "month" || c === "quarter" || c === "year";
+                              return (
+                                <th
+                                  key={c}
+                                  className={`px-2 py-2 text-right ${cumulative ? "bg-primary/5 font-bold text-primary" : "font-semibold"} ${
+                                    selectedCol === c ? "bg-secondary/10 text-secondary" : ""
+                                  }`}
+                                  title={cumulative ? `${colLabel(c)} — lũy kế tự động từ phát sinh ngày` : undefined}
+                                >
+                                  {colLabel(c)}
+                                </th>
+                              );
+                            })}
                             <th
                               className="px-2 py-2 font-semibold text-center"
                               title="V3.2/D5-A + C1-A: chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đánh giá đã duyệt; chưa có quy tắc thì hiển thị lý do, không tô đạt/vượt."
@@ -386,11 +395,20 @@ export default function GiaoBanPage() {
                                   </div>
                                   {m.note && <div className="text-body-xs text-on-surface-variant mt-0.5">{m.note}</div>}
                                 </td>
-                                {cols.map((c) => (
-                                  <td key={c} className={`px-2 py-2 text-right tabular-nums ${selectedCol === c ? "bg-secondary/10 font-semibold" : ""}`}>
-                                    {fmtMetric(m.cols[c], m)}
-                                  </td>
-                                ))}
+                                {cols.map((c) => {
+                                  const cumulative = c === "month" || c === "quarter" || c === "year";
+                                  return (
+                                    <td
+                                      key={c}
+                                      className={`px-2 py-2 text-right tabular-nums ${
+                                        cumulative ? "bg-primary/5 font-semibold text-primary" : ""
+                                      } ${selectedCol === c ? "bg-secondary/10 font-semibold" : ""}`}
+                                      title={cumulative ? "Lũy kế tự động từ các bản ghi phát sinh ngày" : undefined}
+                                    >
+                                      {fmtMetric(m.cols[c], m)}
+                                    </td>
+                                  );
+                                })}
                                 <td className="px-2 py-2 text-center">
                                   {m.targetPolicy && !m.targetPolicy.targetApplicable ? (
                                     <span
