@@ -2,10 +2,11 @@
 
 ## Production
 
-- **Code:** `5bd0daa`
-- **Deployment:** `dpl_6PCgGykqp5VMgJ7A9YEHECo8SwZj`
+- **Code:** `c71d39f`
+- **Deployment:** `dpl_J8cierjJFaVaRGRhwW37GWKiSfT8`
 - **V5 URL:** `https://task-cus.vercel.app/v5`
-- **Health:** `db=up`, `commit=5bd0daa`
+- **V5 Giao ban:** `https://task-cus.vercel.app/v5/giao-ban`
+- **Health:** `db=up`, `commit=c71d39f`
 - **Migration:** không có.
 
 ## Giao diện
@@ -55,6 +56,16 @@ Gold dùng nền `#FFF8DC`, chữ `#6B4E00` để đảm bảo tương phản.
 - Cảnh báo + tải công việc.
 - Cảnh báo target >300% thay vì hiện tỷ lệ sai.
 
+## Giao ban V5 — ưu tiên đầu
+
+- Nav V5 đưa **Số liệu giao ban** lên đầu tiên.
+- Trang `/v5/giao-ban`:
+  - Bảng **Tổng hợp số thu ngày** đặt trên cùng.
+  - Bảng số liệu theo chỉ tiêu: Ngày / Tuần / Tháng / Quý / Năm / Trạng thái.
+  - Row nhóm + row phân loại.
+  - Link nhập số liệu, cấu hình, bản đầy đủ.
+- Dữ liệu thật từ API summary hiện có.
+
 ## Phạm vi
 
 - `/v5` là preview song song.
@@ -65,15 +76,15 @@ Gold dùng nền `#FFF8DC`, chữ `#6B4E00` để đảm bảo tương phản.
 
 | Hạng mục | Kết quả |
 |---|---|
-| `scripts/test-v5-preview.ts` | 16/16 PASS |
+| `scripts/test-v5-preview.ts` | 17/17 PASS |
 | `npx tsc --noEmit` | PASS |
 | `pnpm build` | PASS |
 | Production health | PASS |
 
 ## Tiếp theo
 
-1. Anh duyệt V5 trên `/v5`.
-2. Migrate Giao ban.
+1. Anh duyệt V5 Giao ban trên `/v5/giao-ban`.
+2. Migrate nhập liệu giao ban.
 3. Công việc / Kế hoạch.
 4. Báo cáo / Cấu hình.
 5. Cutover khi ổn định.
