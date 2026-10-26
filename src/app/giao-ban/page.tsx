@@ -9,6 +9,7 @@ import { fmtMetric, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-f
 import { PERCENT_REASON_LABELS } from "@/lib/metrics-contract";
 import { DataQualityBanner, type MetricDataQuality } from "@/components/dashboard/DataQualityBanner";
 import { RevenueComparisonSection } from "@/components/dashboard/RevenueComparisonSection";
+import { ENTRY_PERIOD_LABELS, type EntryPeriod } from "@/lib/metric-entry-period";
 
 type Mode = "WEEK" | "MONTH" | "QUARTER" | "YEAR";
 
@@ -48,6 +49,7 @@ interface SummaryMetric {
   requireConfirm: boolean;
   keepDaily?: boolean;
   expectDaily: boolean;
+  entryPeriod: EntryPeriod;
   note: string | null;
   cols: { week: number | null; month: number | null; quarter: number | null; year: number | null };
   classCols: ClassCol[];
@@ -100,6 +102,14 @@ const MODE_TABS: { key: Mode; label: string }[] = [
 
 function modeLabel(mode: Mode): string {
   return mode === "WEEK" ? "Tuần" : mode === "MONTH" ? "Tháng" : mode === "QUARTER" ? "Quý" : "Năm";
+}
+
+/** Cột nào có ý nghĩa với kỳ nhập của chỉ tiêu. */
+function entryPeriodColumnAllowed(entryPeriod: EntryPeriod | undefined, col: "week" | "month" | "quarter" | "year"): boolean {
+  if (!entryPeriod || entryPeriod === "DAY" || entryPeriod === "WEEK") return true;
+  if (entryPeriod === "MONTH") return col !== "week";
+  if (entryPeriod === "QUARTER") return col === "quarter" || col === "year";
+  return col === "year";
 }
 
 export default function GiaoBanPage() {
@@ -359,7 +369,7 @@ export default function GiaoBanPage() {
                                   className={`px-2 py-2 text-right ${cumulative ? "bg-primary/5 font-bold text-primary" : "font-semibold"} ${
                                     selectedCol === c ? "bg-secondary/10 text-secondary" : ""
                                   }`}
-                                  title={cumulative ? `${colLabel(c)} — lũy kế tự động từ phát sinh ngày` : undefined}
+                                  title={cumulative ? `${colLabel(c)} — lũy kế tự động từ phát sinh theo kỳ` : undefined}
                                 >
                                   {colLabel(c)}
                                 </th>
@@ -392,20 +402,33 @@ export default function GiaoBanPage() {
                                         KIỂM TRA
                                       </span>
                                     )}
+                                    <span
+                                      className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold"
+                                      title="Kỳ nhập số liệu của chỉ tiêu"
+                                    >
+                                      Kỳ: {ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod}
+                                    </span>
                                   </div>
                                   {m.note && <div className="text-body-xs text-on-surface-variant mt-0.5">{m.note}</div>}
                                 </td>
                                 {cols.map((c) => {
                                   const cumulative = c === "month" || c === "quarter" || c === "year";
+                                  const applies = entryPeriodColumnAllowed(m.entryPeriod, c);
                                   return (
                                     <td
                                       key={c}
                                       className={`px-2 py-2 text-right tabular-nums ${
                                         cumulative ? "bg-primary/5 font-semibold text-primary" : ""
                                       } ${selectedCol === c ? "bg-secondary/10 font-semibold" : ""}`}
-                                      title={cumulative ? "Lũy kế tự động từ các bản ghi phát sinh ngày" : undefined}
+                                      title={
+                                        applies && cumulative
+                                          ? "Lũy kế tự động từ các bản ghi phát sinh theo kỳ"
+                                          : !applies
+                                            ? `Chỉ tiêu nhập theo ${ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod} — không hiển thị ở cột này`
+                                            : undefined
+                                      }
                                     >
-                                      {fmtMetric(m.cols[c], m)}
+                                      {applies ? fmtMetric(m.cols[c], m) : "—"}
                                     </td>
                                   );
                                 })}
@@ -510,11 +533,18 @@ export default function GiaoBanPage() {
                               {m.classCols.map((cc) => (
                                 <tr key={m.id + cc.classificationId} className="border-b border-border-default/20 bg-surface-container-lowest/60">
                                   <td className="px-3 py-1.5 pl-8 text-on-surface-variant">↳ {cc.label}</td>
-                                  {cols.map((c) => (
-                                    <td key={c} className={`px-2 py-1.5 text-right tabular-nums text-on-surface-variant ${selectedCol === c ? "bg-secondary/5" : ""}`}>
-                                      {fmtMetric(cc.cols[c], m, { withUnit: false })}
-                                    </td>
-                                  ))}
+                                  {cols.map((c) => {
+                                    const applies = entryPeriodColumnAllowed(m.entryPeriod, c);
+                                    return (
+                                      <td
+                                        key={c}
+                                        className={`px-2 py-1.5 text-right tabular-nums text-on-surface-variant ${selectedCol === c ? "bg-secondary/5" : ""}`}
+                                        title={!applies ? `Không áp dụng cột này cho kỳ ${ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod}` : undefined}
+                                      >
+                                        {applies ? fmtMetric(cc.cols[c], m, { withUnit: false }) : "—"}
+                                      </td>
+                                    );
+                                  })}
                                   <td className="px-2 py-1.5" />
                                   <td className="px-2 py-1.5 text-body-xs text-on-surface-variant">{cc.latestDate ? fmtDate(cc.latestDate) : ""}</td>
                                 </tr>
@@ -531,8 +561,8 @@ export default function GiaoBanPage() {
               <RevenueComparisonSection comparison={comparison} showConfigureLink={showAdminMenu} />
             )}
             <p className="text-body-xs text-on-surface-variant">
-              Số liệu được cộng tự động từ các bản ghi nhập theo ngày. Cột lũy kế áp dụng "mốc đã xác nhận" (nếu có) để tránh cộng
-              trùng. Đơn vị hiển thị theo cấu hình từng chỉ tiêu.
+              Số liệu được cộng tự động từ các bản ghi nhập theo ngày hoặc theo kỳ (tuần/tháng/quý/năm).
+              Cột lũy kế áp dụng "mốc đã xác nhận" (nếu có) để tránh cộng trùng. Đơn vị hiển thị theo cấu hình từng chỉ tiêu.
             </p>
           </>
         )}

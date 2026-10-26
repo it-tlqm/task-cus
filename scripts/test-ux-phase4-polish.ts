@@ -31,7 +31,7 @@ check("#10 Có đếm số dòng chưa phân nhóm", plans.includes("unassignedI
 check(
   "#17 Cột lũy kế tháng/quý/năm in đậm + màu",
   giaoBan.includes("bg-primary/5 font-bold text-primary") &&
-    giaoBan.includes("Lũy kế tự động từ các bản ghi phát sinh ngày")
+    giaoBan.includes("Lũy kế tự động")
 );
 check(
   "#6 Lãnh đạo bộ phận không thấy form khai báo",

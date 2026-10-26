@@ -4,6 +4,7 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { metricEntryPeriod, parseEntryPeriod } from "@/lib/metric-entry-period";
 import {
   isMetricsAdmin,
   parseDerivation,
@@ -263,7 +264,8 @@ export async function GET(req: NextRequest) {
             displayScale: m.displayScale,
             decimals: m.decimals,
             valueKind: m.valueKind,
-            derivation: m.derivation ? parseDerivation(m.derivation) : null,
+            derivation: m.valueKind === "DERIVED" && m.derivation ? parseDerivation(m.derivation) : null,
+            entryPeriod: metricEntryPeriod(m),
             requireConfirm: m.requireConfirm,
             showOnDashboard: m.showOnDashboard,
             dashboardOrder: m.dashboardOrder,
@@ -461,10 +463,35 @@ export async function POST(req: NextRequest) {
     if (entity === "metric") {
       if (action === "create" || action === "update") {
         const name = str(data.name);
+        const code = str(data.code);
         const unitType = str(data.unitType) || "COUNT";
         const valueKind = str(data.valueKind) || "FLOW";
         if (!UNIT_TYPES.includes(unitType)) return jsonError("Đơn vị không hợp lệ", 400);
         if (!VALUE_KINDS.includes(valueKind)) return jsonError("Kiểu số liệu không hợp lệ", 400);
+        if (data.entryPeriod !== undefined && !parseEntryPeriod(data.entryPeriod)) {
+          return jsonError("Kỳ nhập không hợp lệ (DAY/WEEK/MONTH/QUARTER/YEAR)", 400);
+        }
+
+        const id = action === "update" ? (str(data.id) || "").trim() : "";
+        if (action === "update" && !id) return jsonError("Thiếu id chỉ tiêu", 400);
+        const existing = id
+          ? await prisma.metricDefinition.findUnique({ where: { id } })
+          : null;
+        if (action === "update" && !existing) return jsonError("Chỉ tiêu không tồn tại", 404);
+
+        const requestedEntryPeriod = data.entryPeriod !== undefined ? parseEntryPeriod(data.entryPeriod) : null;
+        const entryPeriod =
+          requestedEntryPeriod ??
+          (String(existing?.code || code || "").toUpperCase() === "THU_NSNN"
+            ? "DAY"
+            : existing
+              ? metricEntryPeriod(existing)
+              : valueKind === "BALANCE"
+                ? "MONTH"
+                : "WEEK");
+        if (String(existing?.code || code || "").toUpperCase() === "THU_NSNN" && entryPeriod !== "DAY") {
+          return jsonError("Thu NSNN phải nhập theo ngày", 400);
+        }
 
         let derivation: any = null;
         if (valueKind === "DERIVED") {
@@ -475,7 +502,14 @@ export async function POST(req: NextRequest) {
             if (!mid) continue;
             cleanTerms.push({ metricId: mid, sign: t?.sign === -1 ? -1 : 1 });
           }
-          derivation = { terms: cleanTerms, includeBaseline: boolOf(data.derivation?.includeBaseline, false) };
+          derivation = {
+            terms: cleanTerms,
+            includeBaseline: boolOf(data.derivation?.includeBaseline, false),
+            entryPeriod,
+          };
+        } else {
+          // Giữ cấu hình kỳ nhập ngay cả khi là DAY, để không bị fallback sai.
+          derivation = { entryPeriod };
         }
 
         const base = {
@@ -485,12 +519,12 @@ export async function POST(req: NextRequest) {
           displayScale: intOf(data.displayScale, 1) || 1,
           decimals: Math.max(0, Math.min(4, intOf(data.decimals, 0) || 0)),
           valueKind,
-          derivation: valueKind === "DERIVED" ? (derivation as Prisma.InputJsonValue) : Prisma.JsonNull,
+          derivation: derivation ? (derivation as Prisma.InputJsonValue) : Prisma.JsonNull,
           requireConfirm: boolOf(data.requireConfirm, false),
           showOnDashboard: boolOf(data.showOnDashboard, false),
           dashboardOrder: intOf(data.dashboardOrder, 0) || 0,
           allowBackdateDays: intOf(data.allowBackdateDays, 0) || 0,
-          expectDaily: boolOf(data.expectDaily, true),
+          expectDaily: entryPeriod === "DAY" ? boolOf(data.expectDaily, true) : false,
           note: data.note !== undefined ? str(data.note) : undefined,
           sortOrder: intOf(data.sortOrder, 0) || 0,
           ...(data.active !== undefined ? { active: boolOf(data.active, true) } : {}),
@@ -498,23 +532,20 @@ export async function POST(req: NextRequest) {
 
         if (action === "create") {
           const groupId = str(data.groupId);
-          const code = str(data.code);
           if (!groupId || !code || !name) return jsonError("Thiếu nhóm, mã hoặc tên chỉ tiêu", 400);
           const grp = await prisma.metricGroup.findUnique({ where: { id: groupId } });
           if (!grp) return jsonError("Nhóm không tồn tại", 400);
           const dup = await prisma.metricDefinition.findUnique({ where: { code } });
           if (dup) return jsonError(`Mã chỉ tiêu "${code}" đã tồn tại`, 400);
           const m = await prisma.metricDefinition.create({ data: { ...base, groupId, code, name } });
-          await audit("METRIC_CREATED", m.id, { code, name, valueKind });
+          await audit("METRIC_CREATED", m.id, { code, name, valueKind, entryPeriod });
           return NextResponse.json({ success: true, id: m.id });
         }
 
-        const id = str(data.id);
-        if (!id) return jsonError("Thiếu id chỉ tiêu", 400);
         if (valueKind === "DERIVED" && derivation?.terms?.some((t: any) => t.metricId === id))
           return jsonError("Công thức không được tham chiếu chính chỉ tiêu này", 400);
         const m = await prisma.metricDefinition.update({ where: { id }, data: base });
-        await audit("METRIC_UPDATED", id, { name: m.name, valueKind });
+        await audit("METRIC_UPDATED", id, { name: m.name, valueKind, entryPeriod });
         return NextResponse.json({ success: true });
       }
       if (action === "delete") {

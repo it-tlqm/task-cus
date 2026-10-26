@@ -3,6 +3,7 @@ import { prisma } from "./db";
 import type { SessionUser } from "./auth";
 import { checkPermission } from "./guard";
 import { getIsoWeekBounds, getVnDateParts } from "@/lib/period-helper";
+import { metricEntryPeriod, type EntryPeriod } from "@/lib/metric-entry-period";
 import {
   UNCONFIGURED_TARGET_RULE,
   targetRuleBlockReason,
@@ -173,6 +174,43 @@ export function isEntryDateAllowed(
   return { ok: false, reason: "Bạn không được phân công nhập chỉ tiêu này trong khoảng ngày đã chọn" };
 }
 
+/**
+ * Kiểm tra nhập theo kỳ (tuần/tháng/quý/năm).
+ * - Kỳ đã bắt đầu mới được nhập, nhưng cho phép nhập trước khi kỳ kết thúc.
+ * - Backdate tính theo ngày cuối kỳ; phân công tính theo giao khoảng kỳ.
+ */
+export function isEntryPeriodAllowed(
+  periodStart: Date,
+  periodEnd: Date,
+  today: Date,
+  backdateDays: number,
+  perms: ResolvedEntryPerms,
+  metric: { id: string; groupId: string }
+): { ok: boolean; reason?: string } {
+  const t = today.getTime();
+  const start = periodStart.getTime();
+  const end = periodEnd.getTime();
+  if (start > t) return { ok: false, reason: "Kỳ này chưa bắt đầu" };
+  if (perms.all) return { ok: true };
+  if (backdateDays >= 0) {
+    const min = t - backdateDays * 86400000;
+    if (end < min) {
+      return {
+        ok: false,
+        reason: `Chỉ được nhập/sửa kỳ trong ${backdateDays} ngày gần nhất (cấu hình ở mục Phân công / Chỉ tiêu)`,
+      };
+    }
+  }
+  for (const a of perms.assignments) {
+    const match = a.metricId ? a.metricId === metric.id : a.groupId === metric.groupId;
+    if (!match) continue;
+    if (a.validFrom && end < a.validFrom.getTime()) continue;
+    if (a.validTo && start > a.validTo.getTime()) continue;
+    return { ok: true };
+  }
+  return { ok: false, reason: "Bạn không được phân công nhập chỉ tiêu này trong kỳ đã chọn" };
+}
+
 // ============================================================
 // Kiểu cấu hình
 // ============================================================
@@ -265,6 +303,7 @@ export interface MetricSummaryRow {
   valueKind: ValueKind;
   requireConfirm: boolean;
   expectDaily: boolean;
+  entryPeriod: EntryPeriod;
   showOnDashboard: boolean;
   note: string | null;
   cols: MetricCols;
@@ -749,7 +788,7 @@ export async function computeMetricSummary(
 
       // Ngày thiếu (chỉ cảnh báo với chỉ tiêu phát sinh hằng ngày, trong phạm vi tuần đã chọn)
       let missingDates: string[] = [];
-      if (m.valueKind === "FLOW" && m.expectDaily) {
+      if (m.valueKind === "FLOW" && m.expectDaily && metricEntryPeriod(m) === "DAY") {
         const datesSet = new Set(list.map((e) => dateOnlyToStr(e.entryDate)));
         let cursor = weekRange.start;
         while (cursor.getTime() <= weekRange.end.getTime()) {
@@ -779,6 +818,7 @@ export async function computeMetricSummary(
         expectDaily: m.expectDaily,
         showOnDashboard: m.showOnDashboard,
         note: m.note,
+        entryPeriod: metricEntryPeriod(m),
         cols,
         classCols,
         targets: metricTargets,

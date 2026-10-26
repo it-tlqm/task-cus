@@ -6,6 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { fmtMetric, fmtDate } from "@/lib/metric-format";
 import { MetricTargetManager } from "@/components/metrics/MetricTargetManager";
 import BackButton from "@/components/ui/BackButton";
+import { ENTRY_PERIODS, ENTRY_PERIOD_LABELS, metricEntryPeriod } from "@/lib/metric-entry-period";
 
 type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION" | "REPORT" | "COMPARISON";
 
@@ -157,7 +158,8 @@ export default function CauHinhSoLieuPage() {
     valueKind: "FLOW",
     requireConfirm: false,
     showOnDashboard: false,
-    expectDaily: true,
+    expectDaily: false,
+    entryPeriod: "WEEK",
     allowBackdateDays: 0,
     sortOrder: 0,
   });
@@ -196,6 +198,7 @@ export default function CauHinhSoLieuPage() {
       showOnDashboard: m.showOnDashboard,
       dashboardOrder: m.dashboardOrder,
       expectDaily: m.expectDaily,
+      entryPeriod: m.entryPeriod || metricEntryPeriod(m),
       allowBackdateDays: m.allowBackdateDays,
       note: m.note || "",
       sortOrder: m.sortOrder,
@@ -524,6 +527,18 @@ export default function CauHinhSoLieuPage() {
                           <option key={s.value} value={s.value}>{s.label}</option>
                         ))}
                       </select>
+                      <select
+                        value={newMetric.entryPeriod || "WEEK"}
+                        onChange={(e) => setNewMetric({ ...newMetric, entryPeriod: e.target.value })}
+                        className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                        title="Kỳ nhập số liệu của chỉ tiêu"
+                      >
+                        {ENTRY_PERIODS.map((p) => (
+                          <option key={p} value={p}>
+                            Kỳ nhập: {ENTRY_PERIOD_LABELS[p]}
+                          </option>
+                        ))}
+                      </select>
                       <label className="flex items-center gap-1 text-body-xs px-1">
                         <input type="checkbox" checked={newMetric.expectDaily} onChange={(e) => setNewMetric({ ...newMetric, expectDaily: e.target.checked })} />
                         Nhập hằng ngày
@@ -566,6 +581,9 @@ export default function CauHinhSoLieuPage() {
                         <span className="text-body-xs text-on-surface-variant">{m.code}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant">{m.unitLabelEffective}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant">{KIND_LABELS[m.valueKind]?.split(" (")[0]}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
+                          Kỳ: {ENTRY_PERIOD_LABELS[(m.entryPeriod || metricEntryPeriod(m)) as keyof typeof ENTRY_PERIOD_LABELS]}
+                        </span>
                         {m.classifications.length > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700">{m.classifications.length} phân loại</span>
                         )}
@@ -611,6 +629,18 @@ export default function CauHinhSoLieuPage() {
                               <input type="checkbox" checked={!!metricDraft.expectDaily} onChange={(e) => setMetricDraft({ ...metricDraft, expectDaily: e.target.checked })} />
                               Nhập hằng ngày (cảnh báo thiếu)
                             </label>
+                            <select
+                              value={metricDraft.entryPeriod || "WEEK"}
+                              onChange={(e) => setMetricDraft({ ...metricDraft, entryPeriod: e.target.value })}
+                              className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                              title="Kỳ nhập số liệu của chỉ tiêu"
+                            >
+                              {ENTRY_PERIODS.map((p) => (
+                                <option key={p} value={p}>
+                                  Kỳ nhập: {ENTRY_PERIOD_LABELS[p]}
+                                </option>
+                              ))}
+                            </select>
                             <label className="flex items-center gap-1 text-body-xs">
                               <input type="checkbox" checked={!!metricDraft.requireConfirm} onChange={(e) => setMetricDraft({ ...metricDraft, requireConfirm: e.target.checked })} />
                               Cần kiểm tra (Nháp → Gửi → Xác nhận)
@@ -1428,6 +1458,7 @@ function keepMetricFields(m: any) {
     dashboardOrder: m.dashboardOrder,
     allowBackdateDays: m.allowBackdateDays,
     expectDaily: m.expectDaily,
+    entryPeriod: m.entryPeriod || metricEntryPeriod(m),
     note: m.note,
     sortOrder: m.sortOrder,
   };

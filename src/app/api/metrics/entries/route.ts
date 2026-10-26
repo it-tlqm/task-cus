@@ -4,10 +4,12 @@ import { prisma } from "@/server/db";
 import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
+import { entryPeriodBounds, metricEntryPeriod, parseEntryPeriod } from "@/lib/metric-entry-period";
 import {
   resolveEntryPerms,
   permForMetric,
   isEntryDateAllowed,
+  isEntryPeriodAllowed,
   parseNumberInput,
   dateOnlyFromStr,
   dateOnlyToStr,
@@ -73,10 +75,18 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ---- Danh sách nhập liệu theo ngày ----
+    // ---- Danh sách nhập liệu theo ngày hoặc theo kỳ ----
     const dateStr = searchParams.get("date") || dateOnlyToStr(today);
     const date = dateOnlyFromStr(dateStr);
     if (!date) return jsonError("Ngày không hợp lệ (định dạng YYYY-MM-DD)", 400);
+    const entryPeriodParam = searchParams.get("entryPeriod");
+    const entryPeriod = entryPeriodParam ? parseEntryPeriod(entryPeriodParam) : null;
+    if (entryPeriodParam && !entryPeriod) {
+      return jsonError("Kỳ nhập không hợp lệ (DAY/WEEK/MONTH/QUARTER/YEAR)", 400);
+    }
+    const period = entryPeriod ? entryPeriodBounds(entryPeriod, dateOnlyToStr(date)) : null;
+    const entryDate = period ? dateOnlyFromStr(period.end) : date;
+    if (!entryDate) return jsonError("Ngày kết thúc kỳ không hợp lệ", 400);
 
     const perms = await resolveEntryPerms(user);
 
@@ -102,9 +112,12 @@ export async function GET(req: NextRequest) {
       note: string | null;
       enteredById: string;
     }
-    const entries: LineRow[] = metrics.length
+    const loadedMetrics = entryPeriod
+      ? metrics.filter((m) => metricEntryPeriod(m) === entryPeriod)
+      : metrics;
+    const entries: LineRow[] = loadedMetrics.length
       ? await prisma.metricDailyEntry.findMany({
-          where: { entryDate: date, metricId: { in: metrics.map((m) => m.id) } },
+          where: { entryDate: entryDate, metricId: { in: loadedMetrics.map((m) => m.id) } },
           select: {
             id: true,
             metricId: true,
@@ -140,7 +153,7 @@ export async function GET(req: NextRequest) {
     let anyEditable = false;
 
     for (const g of groups) {
-      const gMetrics = metrics.filter((m) => m.groupId === g.id);
+      const gMetrics = loadedMetrics.filter((m) => m.groupId === g.id);
       const rows = [];
       for (const m of gMetrics) {
         const p = permForMetric(perms, m);
@@ -191,6 +204,7 @@ export async function GET(req: NextRequest) {
           canEnter: p.canEnter || perms.all,
           canConfirm: p.canConfirm || perms.all,
           backdateDays: perms.all ? -1 : p.backdateDays,
+          entryPeriod: metricEntryPeriod(m),
           values,
         });
       }
@@ -199,11 +213,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const selectedDateStr = dateOnlyToStr(date);
     return NextResponse.json({
       success: true,
-      date: dateOnlyToStr(date),
+      date: dateOnlyToStr(entryDate),
+      selectedDate: selectedDateStr,
       today: isoToday,
-      isToday: dateOnlyToStr(date) === isoToday,
+      isToday: period
+        ? period.start <= isoToday && isoToday <= period.end
+        : selectedDateStr === isoToday,
+      entryPeriod: entryPeriod || null,
+      period,
       anyEditable,
       groups: resultGroups,
     });
@@ -228,6 +248,25 @@ export async function POST(req: NextRequest) {
     if (!items || items.length === 0) return jsonError("Không có số liệu để lưu", 400);
     if (items.length > 300) return jsonError("Một lần lưu tối đa 300 ô số liệu", 400);
 
+    const entryPeriodRaw = body?.entryPeriod;
+    const entryPeriod = entryPeriodRaw !== undefined && entryPeriodRaw !== null
+      ? parseEntryPeriod(entryPeriodRaw)
+      : null;
+    if (entryPeriodRaw !== undefined && entryPeriodRaw !== null && !entryPeriod) {
+      return jsonError("Kỳ nhập không hợp lệ (DAY/WEEK/MONTH/QUARTER/YEAR)", 400);
+    }
+    const periodAnchor = entryPeriod
+      ? dateOnlyFromStr(String(body?.periodDate || ""))
+      : null;
+    if (entryPeriod && !periodAnchor) {
+      return jsonError("Thiếu ngày neo của kỳ nhập (periodDate)", 400);
+    }
+    const period = entryPeriod && periodAnchor
+      ? entryPeriodBounds(entryPeriod, dateOnlyToStr(periodAnchor))
+      : null;
+    const periodStart = period ? dateOnlyFromStr(period.start) : null;
+    const periodEnd = period ? dateOnlyFromStr(period.end) : null;
+
     const perms = await resolveEntryPerms(user);
     const today = todayVnDateOnly();
     // B-C-2/Q9: tài khoản DEMO tạo dữ liệu DEMO; tài khoản thật mặc định REAL.
@@ -240,6 +279,7 @@ export async function POST(req: NextRequest) {
 
     // ---- Kiểm tra từng dòng ----
     const prepared: {
+      index: number;
       metric: (typeof metrics)[number];
       classificationId: string;
       entryDate: Date;
@@ -263,16 +303,28 @@ export async function POST(req: NextRequest) {
         errors.push({ index: idx, message: `Bạn không được phân công nhập "${metric.name}"` });
         return;
       }
-      const entryDate = dateOnlyFromStr(String(it.entryDate || dateOnlyToStr(today)));
+      if (entryPeriod && metricEntryPeriod(metric) !== entryPeriod) {
+        errors.push({
+          index: idx,
+          message: `"${metric.name}" được cấu hình nhập theo ${metricEntryPeriod(metric)}, không phải ${entryPeriod}`,
+        });
+        return;
+      }
+      const entryDate = period && periodEnd
+        ? periodEnd
+        : dateOnlyFromStr(String(it.entryDate || dateOnlyToStr(today)));
       if (!entryDate) {
         errors.push({ index: idx, message: `"${metric.name}": ngày không hợp lệ` });
         return;
       }
-      const allowed = isEntryDateAllowed(entryDate, today, p.backdateDays, perms, metric);
+      const allowed = period && periodStart && periodEnd
+        ? isEntryPeriodAllowed(periodStart, periodEnd, today, p.backdateDays, perms, metric)
+        : isEntryDateAllowed(entryDate, today, p.backdateDays, perms, metric);
       if (!allowed.ok) {
         errors.push({ index: idx, message: `"${metric.name}": ${allowed.reason}` });
         return;
       }
+
       const parsed = parseNumberInput(it.value);
       if (parsed === null) {
         errors.push({ index: idx, message: `"${metric.name}": giá trị không hợp lệ ("${String(it.value)}")` });
@@ -280,8 +332,34 @@ export async function POST(req: NextRequest) {
       }
       const valueBase = new D(parsed).mul(metric.displayScale || 1);
       const classificationId = typeof it.classificationId === "string" ? it.classificationId : "";
-      prepared.push({ metric, classificationId, entryDate, valueBase, note: it.note ? String(it.note).slice(0, 500) : null });
+      prepared.push({
+        index: idx,
+        metric,
+        classificationId,
+        entryDate,
+        valueBase,
+        note: it.note ? String(it.note).slice(0, 500) : null,
+      });
     });
+
+    if (period && periodStart && periodEnd) {
+      for (const row of prepared) {
+        const overlapping = await prisma.metricDailyEntry.findFirst({
+          where: {
+            metricId: row.metric.id,
+            classificationId: row.classificationId,
+            entryDate: { gte: periodStart, lt: periodEnd },
+          },
+          select: { entryDate: true },
+        });
+        if (overlapping) {
+          errors.push({
+            index: row.index,
+            message: `"${row.metric.name}": kỳ này đã có dữ liệu ngày ${dateOnlyToStr(overlapping.entryDate)} — không nhập chồng số kỳ`,
+          });
+        }
+      }
+    }
 
     if (errors.length > 0) {
       return NextResponse.json({ success: false, error: "Có số liệu không hợp lệ — chưa lưu gì", errors }, { status: 400 });
@@ -405,7 +483,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, saved: savedIds.length, items: savedIds, warnings });
+    return NextResponse.json({
+      success: true,
+      saved: savedIds.length,
+      items: savedIds,
+      warnings,
+      entryPeriod: entryPeriod || null,
+      period,
+    });
   } catch (error: any) {
     if (typeof error?.message === "string" && error.message.startsWith("ENTRY_LOCKED:")) {
       const name = error.message.slice("ENTRY_LOCKED:".length);

@@ -7,6 +7,13 @@ import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
 import { baseToInput, fmtDate, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
 import { MetricCumulativeAdjustmentPanel } from "@/components/metrics/MetricCumulativeAdjustmentPanel";
 import { getVnDateParts } from "@/lib/period-helper";
+import {
+  ENTRY_PERIODS,
+  ENTRY_PERIOD_HINTS,
+  ENTRY_PERIOD_LABELS,
+  shiftPeriodAnchor,
+  type EntryPeriod,
+} from "@/lib/metric-entry-period";
 
 interface EntryValue {
   classificationId: string;
@@ -34,6 +41,7 @@ interface EntryMetric {
   canEnter: boolean;
   canConfirm: boolean;
   backdateDays: number;
+  entryPeriod: EntryPeriod;
   values: EntryValue[];
 }
 interface EntryGroup {
@@ -44,8 +52,11 @@ interface EntryGroup {
 }
 interface EntryData {
   date: string;
+  selectedDate?: string;
   today: string;
   isToday: boolean;
+  entryPeriod: EntryPeriod | null;
+  period: { type: EntryPeriod; start: string; end: string; key: string; label: string } | null;
   anyEditable: boolean;
   groups: EntryGroup[];
 }
@@ -75,12 +86,6 @@ function todayVnStr(): string {
   return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
 }
 
-function shiftDate(dateStr: string, deltaDays: number): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + deltaDays);
-  return d.toISOString().slice(0, 10);
-}
-
 function parseRawNumber(raw: string): number | null {
   const text = raw.trim();
   if (!text) return null;
@@ -95,6 +100,7 @@ function rawFromNumber(value: number): string {
 
 export default function NhapSoLieuPage() {
   const [date, setDate] = useState<string>(todayVnStr());
+  const [entryPeriod, setEntryPeriod] = useState<EntryPeriod>("DAY");
   const [focusMetric, setFocusMetric] = useState("");
   const [data, setData] = useState<EntryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -117,9 +123,9 @@ export default function NhapSoLieuPage() {
   const [cumulativePreviousDate, setCumulativePreviousDate] = useState("");
   const [cumulativeEntryCount, setCumulativeEntryCount] = useState<number | null>(null);
 
-  const load = useCallback((d: string) => {
+  const load = useCallback((d: string, period: EntryPeriod) => {
     setLoading(true);
-    fetch(`/api/metrics/entries?date=${d}`)
+    fetch(`/api/metrics/entries?date=${d}&entryPeriod=${period}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.success) {
@@ -155,8 +161,8 @@ export default function NhapSoLieuPage() {
   }, []);
 
   useEffect(() => {
-    load(date);
-  }, [date, load]);
+    load(date, entryPeriod);
+  }, [date, entryPeriod, load]);
 
   useEffect(() => {
     if (!focusMetric || !data) return;
@@ -189,7 +195,7 @@ export default function NhapSoLieuPage() {
           const val = (values[key] || "").trim();
           const ini = (initial[key] || "").trim();
           if (val === ini || val === "") continue;
-          entries.push({ metricId: m.id, classificationId: v.classificationId, entryDate: date, value: val });
+          entries.push({ metricId: m.id, classificationId: v.classificationId, entryDate: data.date, value: val });
         }
       }
     }
@@ -202,14 +208,16 @@ export default function NhapSoLieuPage() {
       const res = await fetch("/api/metrics/entries", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ entries }),
+        body: JSON.stringify({ entries, entryPeriod, periodDate: date }),
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        toast.success(`Đã lưu ${json.saved} ô số liệu cho ${fmtDate(date)}`);
+        toast.success(
+          `Đã lưu ${json.saved} ô số liệu cho ${data.period?.label || fmtDate(data.date)}`
+        );
         // P0: cảnh báo mềm giá trị bất thường (không chặn lưu) — người nhập tự kiểm tra lại
         setSaveWarnings(Array.isArray(json.warnings) && json.warnings.length > 0 ? json.warnings : null);
-        load(date);
+        load(date, entryPeriod);
       } else {
         const first = json?.errors?.[0]?.message;
         toast.error(first || json?.error || "Không lưu được số liệu");
@@ -232,7 +240,7 @@ export default function NhapSoLieuPage() {
       const json = await res.json();
       if (res.ok && json.success) {
         toast.success(ACTION_LABELS[action.toUpperCase()] ? `Đã ${ACTION_LABELS[action.toUpperCase()].toLowerCase()}` : "Đã cập nhật trạng thái");
-        load(date);
+        load(date, entryPeriod);
       } else {
         toast.error(json.error || "Không thực hiện được");
       }
@@ -265,7 +273,7 @@ export default function NhapSoLieuPage() {
       const params = new URLSearchParams({
         metricId,
         classificationId,
-        asOf: date,
+        asOf: data?.date || date,
       });
       const res = await fetch(`/api/metrics/entries/cumulative?${params.toString()}`, {
         cache: "no-store",
@@ -311,20 +319,48 @@ export default function NhapSoLieuPage() {
           <div>
             <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Nhập số liệu</h1>
             <p className="text-body-sm text-on-surface-variant">
-              Nhập số liệu theo ngày — chỉ hiện các chỉ tiêu bạn được phân công. Số đã gửi/xác nhận: lãnh đạo yêu cầu điều chỉnh để mở lại.
+              Thuế nhập theo ngày; các chỉ tiêu khác nhập theo tuần/tháng/quý/năm theo cấu hình. Chỉ hiện các chỉ tiêu bạn được phân công.
             </p>
             <p className="text-body-xs text-on-surface-variant">
-              Nếu số nguồn là lũy kế YTD, bấm biểu tượng máy tính cạnh ô nhập để tự tính số phát sinh ngày.
+              Số nhập theo kỳ là <b>tổng phát sinh trong kỳ</b>, lưu tại ngày cuối kỳ; có thể nhập ngay cả khi kỳ chưa kết thúc.
             </p>
           </div>
           <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div
+          className="grid w-full max-w-2xl grid-cols-5 gap-1 rounded-lg border border-border-default/40 bg-surface-container-lowest p-1 shadow-sm"
+          data-testid="entry-period-tabs"
+        >
+          {ENTRY_PERIODS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setEntryPeriod(p)}
+              aria-pressed={entryPeriod === p}
+              className={`min-w-0 rounded-lg px-2 py-1.5 text-label-md font-label-md leading-tight transition-fast ${
+                entryPeriod === p
+                  ? "bg-primary text-on-primary shadow-sm font-semibold"
+                  : "text-on-surface-variant hover:text-primary"
+              }`}
+              title={ENTRY_PERIOD_HINTS[p]}
+            >
+              {ENTRY_PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
+
+        {entryPeriod === "DAY" && data && data.groups.length > 0 && (
+          <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-body-xs text-sky-800">
+            Thu NSNN nhập theo ngày. Các chỉ tiêu khác chọn tab Tuần/Tháng/Quý/Năm ở trên.
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setDate(shiftDate(date, -1))}
+            onClick={() => setDate(shiftPeriodAnchor(entryPeriod, date, -1))}
             className="p-2 rounded-lg border border-border-default bg-surface-container-lowest hover:bg-surface-container"
-            title="Ngày trước"
+            title={`${ENTRY_PERIOD_LABELS[entryPeriod]} trước`}
           >
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
@@ -334,12 +370,13 @@ export default function NhapSoLieuPage() {
             max={data?.today || todayVnStr()}
             onChange={(e) => setDate(e.target.value)}
             className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+            title={entryPeriod === "DAY" ? "Chọn ngày" : "Chọn một ngày trong kỳ cần nhập"}
           />
           <button
-            onClick={() => setDate(shiftDate(date, 1))}
-            disabled={date >= (data?.today || todayVnStr())}
+            onClick={() => setDate(shiftPeriodAnchor(entryPeriod, date, 1))}
+            disabled={shiftPeriodAnchor(entryPeriod, date, 1) > (data?.today || todayVnStr())}
             className="p-2 rounded-lg border border-border-default bg-surface-container-lowest hover:bg-surface-container disabled:opacity-40"
-            title="Ngày sau"
+            title={`${ENTRY_PERIOD_LABELS[entryPeriod]} sau`}
           >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
@@ -347,11 +384,16 @@ export default function NhapSoLieuPage() {
             onClick={() => setDate(todayVnStr())}
             className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-label-sm font-semibold hover:bg-surface-container"
           >
-            Hôm nay
+            Kỳ hiện tại
           </button>
+          {entryPeriod !== "DAY" && data?.period && (
+            <span className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-body-xs text-sky-800">
+              {data.period.label} · lưu tại {fmtDate(data.period.end)}
+            </span>
+          )}
           {data && !data.isToday && (
-            <span className="text-body-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-              Đang nhập cho ngày {fmtDate(date)} — kiểm tra phạm vi ngày được phân công
+            <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-body-xs text-amber-700">
+              Đang nhập cho {data.period?.label || `ngày ${fmtDate(date)}`} — kiểm tra phạm vi được phân công
             </span>
           )}
         </div>
@@ -380,7 +422,19 @@ export default function NhapSoLieuPage() {
         )}
         {loading && <div className="text-body-sm text-on-surface-variant py-8 text-center">Đang tải…</div>}
 
-        {!loading && data && !data.anyEditable && (
+        {!loading && data && data.groups.length === 0 && (
+          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-6 text-center">
+            <span className="material-symbols-outlined text-[40px] text-on-surface-variant">event_note</span>
+            <p className="text-body-md text-on-surface mt-2 font-medium">
+              Chưa có chỉ tiêu nào cấu hình nhập theo {ENTRY_PERIOD_LABELS[entryPeriod].toLowerCase()}
+            </p>
+            <p className="text-body-sm text-on-surface-variant mt-1">
+              Vào “Cấu hình số liệu → Nhóm &amp; chỉ tiêu” để đổi Kỳ nhập, hoặc chọn kỳ khác ở trên.
+            </p>
+          </div>
+        )}
+
+        {!loading && data && data.groups.length > 0 && !data.anyEditable && (
           <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-6 text-center">
             <span className="material-symbols-outlined text-[40px] text-on-surface-variant">lock_person</span>
             <p className="text-body-md text-on-surface mt-2 font-medium">Bạn chưa được phân công nhập chỉ tiêu nào</p>
@@ -443,7 +497,7 @@ export default function NhapSoLieuPage() {
                             />
                             <span className="text-body-xs text-on-surface-variant w-24">{m.unitLabel}</span>
 
-                            {v.canEdit && (
+                            {v.canEdit && entryPeriod === "DAY" && (
                               <button
                                 type="button"
                                 onClick={() =>
@@ -518,7 +572,7 @@ export default function NhapSoLieuPage() {
             </div>
           ))}
 
-        {!loading && data && (
+        {!loading && data && entryPeriod === "DAY" && (
           <MetricCumulativeAdjustmentPanel
             metrics={data.groups.flatMap((g) =>
               g.metrics.map((m) => ({
@@ -542,7 +596,9 @@ export default function NhapSoLieuPage() {
         <div className="fixed bottom-20 lg:bottom-6 left-0 lg:left-[276px] right-0 lg:right-6 px-margin z-40">
           <div className="bg-primary text-on-primary rounded-xl shadow-2xl px-4 py-3 flex items-center justify-between gap-3">
             <span className="text-label-md font-semibold">
-              {changedCount > 0 ? `${changedCount} ô đã thay đổi · ngày ${fmtDate(date)}` : "Chưa có thay đổi"}
+              {changedCount > 0
+                ? `${changedCount} ô đã thay đổi · ${data.period?.label || `ngày ${fmtDate(date)}`}`
+                : "Chưa có thay đổi"}
             </span>
             <button
               onClick={save}

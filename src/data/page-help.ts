@@ -12,7 +12,7 @@ export const HELP: Record<string, PageHelp> = {
   "/giao-ban": {
     title: "Số liệu giao ban",
     bullets: [
-      "Số liệu tự cộng từ các bản ghi nhập theo ngày: Tuần – Tháng – Quý – Năm.",
+      "Số liệu tự cộng từ các bản ghi nhập theo ngày hoặc theo kỳ: Tuần – Tháng – Quý – Năm.",
       "Chọn kỳ ở thanh phía trên; cột đang xem được tô nổi bật.",
       "Chip % là tỷ lệ hoàn thành so với chỉ tiêu giao (do lãnh đạo cấu hình).",
       "Nhãn 'Thiếu N ngày' = các ngày trong tuần chưa có số liệu (rê chuột xem ngày).",
@@ -22,7 +22,8 @@ export const HELP: Record<string, PageHelp> = {
   "/giao-ban/nhap": {
     title: "Nhập số liệu",
     bullets: [
-      "Mặc định là hôm nay; đổi ngày bằng ô ngày hoặc mũi tên trái/phải.",
+      "Chọn kỳ nhập Ngày/Tuần/Tháng/Quý/Năm ở trên. Thu NSNN nhập theo ngày; chỉ tiêu khác theo kỳ đã cấu hình.",
+      "Số nhập theo kỳ là tổng phát sinh trong kỳ, lưu tại ngày cuối kỳ; có thể nhập trước khi kỳ kết thúc.",
       "Chỉ hiện các chỉ tiêu bạn được phân công — ô bị khóa là số liệu đã gửi/xác nhận.",
       "Nhập xong bấm nút Lưu số liệu ở thanh dưới cùng (chỉ lưu các ô đã thay đổi).",
       "Chỉ tiêu có nhãn CẦN KIỂM TRA: sau khi nhập bấm Gửi kiểm tra để lãnh đạo xác nhận.",
