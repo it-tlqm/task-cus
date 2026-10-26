@@ -1,80 +1,74 @@
-# V5 Preview — Design system mới — 26/10/2026
+# V5 Preview — shadcn/ui + màu Hải quan — 26/10/2026
 
 ## Production
 
-- **Code:** `734cc03`
-- **Deployment:** `dpl_F2YaxACFcmxnngG9xfRVY5zXtfNS`
+- **Code:** `7281d25`
+- **Deployment:** `dpl_4gHMvUzRksf5rHUmnzu2UuCVBGDT`
 - **V5 URL:** `https://task-cus.vercel.app/v5`
-- **Health:** `db=up`, `commit=734cc03`
+- **Health:** `db=up`, `commit=7281d25`
 - **Migration:** không có.
 
-## Định hướng
+## Giao diện
 
-Làm mới giao diện theo **shadcn/ui + Tailwind**, hướng government data workspace:
+Làm mới theo hướng **shadcnblocks Admin Kit**, nền trắng chủ đạo:
 
-- Nền giấy ấm, sidebar tối, accent teal.
-- Widget nhỏ, không bảng dài trên dashboard.
-- Typography rõ, số liệu tabular.
-- Dữ liệu thật từ API hiện có; không đổi nghiệp vụ.
+- Sidebar trắng, border phải.
+- Topbar trắng, border dưới.
+- Nền trang `#F7F8FA`.
+- Card trắng, viền `#E5E7EB`, shadow rất nhẹ.
+- Tab gạch chân, button shadcn, badge trạng thái.
+- Bố cục gọn, mật độ dữ liệu cao nhưng thoáng.
 
-## Đã dựng
+### Màu Hải quan
 
-### Foundation
+| Màu | Mã | Dùng |
+|---|---|---|
+| Navy Blue | `#1B3461` | Button chính, tab active, link |
+| Red | `#C62222` | Quá hạn, lỗi, cảnh báo nặng |
+| Gold | `#F2C41D` | Điểm nhấn, cảnh báo, trạng thái chờ |
+| Trắng | `#FFFFFF` | Sidebar, topbar, card |
+| Nền | `#F7F8FA` | Nền trang |
 
-- Token V5 trong `tailwind.config.ts`.
-- `cn()` tại `src/lib/utils.ts`.
-- shadcn-style primitives:
-  - Button (CVA + Radix Slot)
-  - Card
-  - Badge
-  - Progress
-- V5 shell riêng: sidebar, topbar, nav, user, preview badge.
-- AppShell cũ tự bỏ qua với route `/v5`.
+Gold dùng nền `#FFF8DC`, chữ `#6B4E00` để đảm bảo tương phản.
 
-### V5 Dashboard
+## Thành phần
+
+- shadcn-style Button (CVA + Radix Slot)
+- Card / Badge / Progress
+- V5 shell:
+  - logo Hải quan
+  - sidebar nhóm Tổng quan / Nghiệp vụ / Hệ thống
+  - topbar tìm kiếm, thông báo, cấu hình, avatar
+  - breadcrumb/tab/button theo shadcn
+
+## Dashboard V5
 
 - 4 KPI widget.
-- Hero Thu NSNN: số lớn, target, 4 mốc so sánh.
-- Tiến độ điều hành: progress + trạng thái công việc.
-- Số liệu giao ban: lưới widget theo chỉ tiêu, mini trend tuần/tháng/năm.
-- Cảnh báo cần xử lý.
-- Tải công việc theo bộ phận.
-- Cảnh báo target bất thường (>300%) thay vì hiển thị tỷ lệ sai.
-
-### Điểm vào
-
-- Trực tiếp: `/v5`.
-- Từ Dashboard cũ: nút **V5 Preview**.
-- Từ Dashboard V4: nút **V5 Preview**.
+- Hero Thu NSNN.
+- Tiến độ điều hành.
+- Lưới widget Số liệu giao ban.
+- Cảnh báo + tải công việc.
+- Cảnh báo target >300% thay vì hiện tỷ lệ sai.
 
 ## Phạm vi
 
-Đợt này mới là **foundation + dashboard preview**.
-
-Chưa migrate:
-
-- Giao ban
-- Công việc
-- Kế hoạch
-- Báo cáo
-- Cấu hình
-- Các trang quản trị
-
-Trang cũ vẫn hoạt động bình thường; V5 chưa phải giao diện mặc định.
+- `/v5` là preview song song.
+- Trang cũ `/dashboard`, `/dashboard/v4`, `/giao-ban` vẫn hoạt động.
+- Chưa migrate toàn bộ app.
 
 ## Kiểm tra
 
 | Hạng mục | Kết quả |
 |---|---|
-| `scripts/test-v5-preview.ts` | 14/14 PASS |
+| `scripts/test-v5-preview.ts` | 15/15 PASS |
 | `npx tsc --noEmit` | PASS |
 | `pnpm build` | PASS |
 | Production health | PASS |
 
-## Bước tiếp theo
+## Tiếp theo
 
-1. Anh duyệt hướng V5 trên `/v5`.
-2. Migrate **Giao ban** sang V5.
-3. Migrate **Công việc / Kế hoạch**.
-4. Migrate **Báo cáo / Cấu hình**.
-5. Cutover khi V5 ổn định; giữ route cũ để rollback.
+1. Anh duyệt V5 trên `/v5`.
+2. Migrate Giao ban.
+3. Công việc / Kế hoạch.
+4. Báo cáo / Cấu hình.
+5. Cutover khi ổn định.
