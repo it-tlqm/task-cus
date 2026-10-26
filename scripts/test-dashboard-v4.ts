@@ -46,5 +46,13 @@ check("Có link nhập chỉ tiêu đối chiếu", comparison.includes("/giao-b
 check("Target manager nhận mã chỉ tiêu", targetManager.includes("initialMetricCode"));
 check("Cấu hình đọc tab/metric từ URL", configPage.includes('params.get("tab")') && configPage.includes('params.get("metric")'));
 
+const detailIndex = component.indexOf('title="Số liệu giao ban"');
+const comparisonIndex = component.indexOf('title="So sánh thu NSNN"');
+const taskIndex = component.indexOf('title="Nhiệm vụ theo trạng thái"');
+check(
+  "V4 đưa Số liệu giao ban + So sánh lên trước các khối khác",
+  detailIndex >= 0 && comparisonIndex > detailIndex && taskIndex > comparisonIndex
+);
+
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

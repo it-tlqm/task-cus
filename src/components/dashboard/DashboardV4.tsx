@@ -355,6 +355,140 @@ export default function DashboardV4() {
           </div>
         </section>
 
+        {(view === "overview" || view === "table" || view === "compare") && (
+          <Panel
+            title="Số liệu giao ban"
+            subtitle="Lớp đối chiếu chính thức · bảng vẫn là nguồn kiểm tra số liệu"
+            action={<Link href="/giao-ban" className="text-body-xs font-semibold text-secondary">Mở toàn bộ →</Link>}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[820px]">
+                <thead>
+                  <tr className="bg-surface-container-low text-on-surface-variant font-table-header text-table-header border-y border-border-default/50">
+                    <th className="py-2.5 px-4">Chỉ tiêu</th>
+                    <th className="py-2.5 px-3 text-right">Trong ngày</th>
+                    <th className="py-2.5 px-3 text-right">Tuần</th>
+                    <th className="py-2.5 px-3 text-right">Lũy kế tháng</th>
+                    <th className="py-2.5 px-3 text-right">Lũy kế năm</th>
+                    <th className="py-2.5 px-3 text-center">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-default/30">
+                  {metrics.slice(0, 12).map((m) => (
+                    <tr key={m.id} className="hover:bg-surface-container-low/60">
+                      <td className="py-2.5 px-4 font-body-semibold text-body-sm text-primary">
+                        {m.name}
+                        {m.unitLabel ? <span className="font-body-xs text-on-surface-variant"> · {m.unitLabel}</span> : null}
+                      </td>
+                      {(["day", "week", "month", "year"] as const).map((key) => (
+                        <td
+                          key={key}
+                          className={`py-2.5 px-3 text-right tabular-nums font-body-sm ${
+                            key === "month" || key === "year" ? "font-semibold text-primary bg-primary/[0.03]" : ""
+                          }`}
+                        >
+                          {formatNumber(m.cols?.[key] ?? null, m.decimals ?? 0)}
+                        </td>
+                      ))}
+                      <td className="py-2.5 px-3 text-center">
+                        <span className="inline-flex px-2 py-1 rounded-md bg-surface-container text-on-surface-variant font-body-xs font-semibold">
+                          {metricStatusLabel(m.status?.monthState)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {metrics.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-body-sm text-on-surface-variant">
+                        Chưa có chỉ tiêu hiển thị trên dashboard.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        )}
+
+        {(view === "overview" || view === "charts") && (
+          <section className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+            <Panel
+              className="xl:col-span-2"
+              title="So sánh thu NSNN"
+              subtitle={`${comparisonRow?.name || "Thu NSNN"} · tháng hiện tại, tháng trước, cùng kỳ và chỉ tiêu`}
+              action={
+                <div className="flex items-center gap-2">
+                  {canConfigureMetrics && (
+                    <Link
+                      href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
+                      className="text-body-xs font-semibold text-primary bg-primary/5 border border-primary/20 rounded-md px-2 py-1 hover:bg-primary/10"
+                    >
+                      Nhập chỉ tiêu →
+                    </Link>
+                  )}
+                  <Link href="/giao-ban/bao-cao" className="text-body-xs font-semibold text-secondary">Chi tiết →</Link>
+                </div>
+              }
+            >
+              <div className="h-[280px] px-1">
+                {hasComparisonData ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000_000)}`}
+                        width={38}
+                      />
+                      <Tooltip formatter={(v: any) => formatMoney(Number(v))} />
+                      <Bar dataKey="value" name="Giá trị" radius={[5, 5, 0, 0]}>
+                        {comparisonData.map((_, i) => (
+                          <Cell key={i} fill={i === 0 ? "#1E40AF" : i === 3 ? "#D97706" : "#93C5FD"} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <EmptyChart text="Chưa có dữ liệu đối chiếu" />
+                )}
+              </div>
+            </Panel>
+
+            <Panel
+              title="Tiến độ chỉ tiêu"
+              subtitle={comparisonRow?.monthPlan?.label || `Kế hoạch ${PERIOD_LABEL[period].toLowerCase()}`}
+            >
+              <div className="flex flex-col items-center justify-center h-[280px] gap-3">
+                <div
+                  className="relative w-[180px] h-[180px] rounded-full grid place-items-center"
+                  style={{
+                    background: `conic-gradient(#1E40AF 0 ${Math.max(0, Math.min(100, revenuePercent ?? 0))}%, #e2e8f0 ${Math.max(0, Math.min(100, revenuePercent ?? 0))}% 100%)`,
+                  }}
+                  role="img"
+                  aria-label={`Tiến độ chỉ tiêu ${formatPercent(revenuePercent ?? 0)}`}
+                >
+                  <div className="absolute inset-[14px] rounded-full bg-surface-container-lowest grid place-items-center text-center">
+                    <div>
+                      <div className="font-headline-md text-primary font-bold tabular-nums">
+                        {revenuePercent === null ? "—" : formatPercent(revenuePercent)}
+                      </div>
+                      <div className="font-body-xs text-on-surface-variant">hoàn thành</div>
+                    </div>
+                  </div>
+                </div>
+                <p className="font-body-sm text-on-surface-variant text-center max-w-[220px]">
+                  {revenueTarget
+                    ? `Chỉ tiêu: ${formatMoney(revenueTarget.targetValue)}`
+                    : "Chưa cấu hình chỉ tiêu cho kỳ này."}
+                </p>
+              </div>
+            </Panel>
+          </section>
+        )}
+
         {(view === "overview" || view === "charts") && (
           <>
             {view === "overview" && (
@@ -413,83 +547,6 @@ export default function DashboardV4() {
                 />
               </section>
             )}
-
-            <section className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-              <Panel
-                className="xl:col-span-2"
-                title="So sánh thu NSNN"
-                subtitle={`${comparisonRow?.name || "Thu NSNN"} · tháng hiện tại, tháng trước, cùng kỳ và chỉ tiêu`}
-                action={
-                  <div className="flex items-center gap-2">
-                    {canConfigureMetrics && (
-                      <Link
-                        href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
-                        className="text-body-xs font-semibold text-primary bg-primary/5 border border-primary/20 rounded-md px-2 py-1 hover:bg-primary/10"
-                      >
-                        Nhập chỉ tiêu →
-                      </Link>
-                    )}
-                    <Link href="/giao-ban/bao-cao" className="text-body-xs font-semibold text-secondary">Chi tiết →</Link>
-                  </div>
-                }
-              >
-                <div className="h-[280px] px-1">
-                  {hasComparisonData ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={comparisonData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                        <YAxis
-                          tick={{ fontSize: 10, fill: "#64748b" }}
-                          axisLine={false}
-                          tickLine={false}
-                          tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000_000)}`}
-                          width={38}
-                        />
-                        <Tooltip formatter={(v: any) => formatMoney(Number(v))} />
-                        <Bar dataKey="value" name="Giá trị" radius={[5, 5, 0, 0]}>
-                          {comparisonData.map((_, i) => (
-                            <Cell key={i} fill={i === 0 ? "#1E40AF" : i === 3 ? "#D97706" : "#93C5FD"} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <EmptyChart text="Chưa có dữ liệu đối chiếu" />
-                  )}
-                </div>
-              </Panel>
-
-              <Panel
-                title="Tiến độ chỉ tiêu"
-                subtitle={comparisonRow?.monthPlan?.label || `Kế hoạch ${PERIOD_LABEL[period].toLowerCase()}`}
-              >
-                <div className="flex flex-col items-center justify-center h-[280px] gap-3">
-                  <div
-                    className="relative w-[180px] h-[180px] rounded-full grid place-items-center"
-                    style={{
-                      background: `conic-gradient(#1E40AF 0 ${Math.max(0, Math.min(100, revenuePercent ?? 0))}%, #e2e8f0 ${Math.max(0, Math.min(100, revenuePercent ?? 0))}% 100%)`,
-                    }}
-                    role="img"
-                    aria-label={`Tiến độ chỉ tiêu ${formatPercent(revenuePercent ?? 0)}`}
-                  >
-                    <div className="absolute inset-[14px] rounded-full bg-surface-container-lowest grid place-items-center text-center">
-                      <div>
-                        <div className="font-headline-md text-primary font-bold tabular-nums">
-                          {revenuePercent === null ? "—" : formatPercent(revenuePercent)}
-                        </div>
-                        <div className="font-body-xs text-on-surface-variant">hoàn thành</div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="font-body-sm text-on-surface-variant text-center max-w-[220px]">
-                    {revenueTarget
-                      ? `Chỉ tiêu: ${formatMoney(revenueTarget.targetValue)}`
-                      : "Chưa cấu hình chỉ tiêu cho kỳ này."}
-                  </p>
-                </div>
-              </Panel>
-            </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
               <Panel title="Nhiệm vụ theo trạng thái" subtitle={`${kpi?.kpis.totalTasks ?? 0} nhiệm vụ trong kỳ`}>
@@ -617,61 +674,6 @@ export default function DashboardV4() {
               </div>
             </Panel>
           </section>
-        )}
-
-        {(view === "overview" || view === "table" || view === "compare") && (
-          <Panel
-            title="Số liệu chi tiết"
-            subtitle="Lớp đối chiếu chính thức · bảng vẫn là nguồn kiểm tra số liệu"
-            action={<Link href="/giao-ban" className="text-body-xs font-semibold text-secondary">Mở toàn bộ →</Link>}
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[820px]">
-                <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant font-table-header text-table-header border-y border-border-default/50">
-                    <th className="py-2.5 px-4">Chỉ tiêu</th>
-                    <th className="py-2.5 px-3 text-right">Trong ngày</th>
-                    <th className="py-2.5 px-3 text-right">Tuần</th>
-                    <th className="py-2.5 px-3 text-right">Lũy kế tháng</th>
-                    <th className="py-2.5 px-3 text-right">Lũy kế năm</th>
-                    <th className="py-2.5 px-3 text-center">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-default/30">
-                  {metrics.slice(0, 12).map((m) => (
-                    <tr key={m.id} className="hover:bg-surface-container-low/60">
-                      <td className="py-2.5 px-4 font-body-semibold text-body-sm text-primary">
-                        {m.name}
-                        {m.unitLabel ? <span className="font-body-xs text-on-surface-variant"> · {m.unitLabel}</span> : null}
-                      </td>
-                      {(["day", "week", "month", "year"] as const).map((key) => (
-                        <td
-                          key={key}
-                          className={`py-2.5 px-3 text-right tabular-nums font-body-sm ${
-                            key === "month" || key === "year" ? "font-semibold text-primary bg-primary/[0.03]" : ""
-                          }`}
-                        >
-                          {formatNumber(m.cols?.[key] ?? null, m.decimals ?? 0)}
-                        </td>
-                      ))}
-                      <td className="py-2.5 px-3 text-center">
-                        <span className="inline-flex px-2 py-1 rounded-md bg-surface-container text-on-surface-variant font-body-xs font-semibold">
-                          {metricStatusLabel(m.status?.monthState)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {metrics.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-10 text-center text-body-sm text-on-surface-variant">
-                        Chưa có chỉ tiêu hiển thị trên dashboard.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
         )}
 
         <p className="text-[10px] text-outline px-1">
