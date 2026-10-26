@@ -129,17 +129,6 @@ export function RevenueComparisonSection({
     );
   };
 
-  const sourceLine = (block: ComparisonTargetBlock) => (
-    <span className="text-body-xs text-on-surface-variant block">
-      {block.label ? `${block.label} · ${block.periodLabel}` : block.periodLabel}
-      {block.dataSource === "DEMO" ? (
-        <span className="ml-1 text-[10px] px-1 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600 font-semibold">DEMO</span>
-      ) : null}
-      {block.sourceNote ? <span className="block italic">Căn cứ: {block.sourceNote}</span> : null}
-      {block.confirmedAt ? <span className="block">Xác nhận: {fmtDate(block.confirmedAt)}</span> : null}
-    </span>
-  );
-
   const targetRow = (
     label: string,
     block: ComparisonTargetBlock,
@@ -152,7 +141,6 @@ export function RevenueComparisonSection({
     return (
       <tr className="border-b border-border-default/20 align-top">
         <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-        <td className="px-3 py-2 text-body-xs text-on-surface-variant">{sourceLine(block)}</td>
         <td className="px-3 py-2 text-right tabular-nums">
           {hasCurrent && hasTarget ? (
             <>
@@ -190,10 +178,6 @@ export function RevenueComparisonSection({
     return (
       <tr className="border-b border-border-default/20 align-top">
         <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-        <td className="px-3 py-2 text-body-xs text-on-surface-variant">
-          {block.label}
-          <span className="block text-[10px] text-on-surface-variant">{block.note}</span>
-        </td>
         <td className="px-3 py-2 text-right tabular-nums">
           {hasData ? (
             <>
@@ -295,11 +279,10 @@ export function RevenueComparisonSection({
                 {r.latestDate ? <span className="text-body-xs text-on-surface-variant">Số liệu đến {fmtDate(r.latestDate)}</span> : null}
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-body-sm min-w-[720px] border-collapse">
+                <table className="w-full text-body-sm min-w-[560px] border-collapse">
                   <thead>
                     <tr className="text-body-xs text-on-surface-variant border-b border-border-default/40">
                       <th className="px-3 py-1.5 font-semibold text-left">Nội dung đối chiếu</th>
-                      <th className="px-3 py-1.5 font-semibold text-left">Nguồn / Kỳ</th>
                       <th className="px-3 py-1.5 font-semibold text-right">Số liệu đối chiếu</th>
                       <th className="px-3 py-1.5 font-semibold text-center w-[130px]">Tỷ lệ</th>
                     </tr>
@@ -317,13 +300,6 @@ export function RevenueComparisonSection({
           );
         })}
 
-        <p className="text-body-xs text-on-surface-variant">
-          Công thức: % BTC/UBND = lũy kế năm / chỉ tiêu năm × 100; % KH tháng = lũy kế tháng / kế hoạch tháng × 100. Chỉ tiêu BTC/UBND/KH
-          tháng phải được cấu hình tường minh trong <b>Cấu hình → Chỉ tiêu giao</b>, có nguồn dữ liệu <b>REAL</b> (không dùng DEMO), ở
-          trạng thái Đã xác nhận/Đã chốt và chỉ tiêu/kỳ phải có <b>quy tắc đánh giá đã duyệt</b> (V3.2/D5-A). Tỷ lệ hiển thị 2 chữ số
-          thập phân; thiếu dữ liệu hoặc mẫu số bằng 0 hiển thị “Chưa xác định”, không tự hiện 0%. Hai dòng kỳ trước/cùng kỳ so{" "}
-          <b>cùng số ngày đến data cutoff</b> (B1-A); tháng chưa đủ kỳ ghi “Chưa đủ kỳ”.
-        </p>
       </div>
 
       <ComparisonTargetQuickModal

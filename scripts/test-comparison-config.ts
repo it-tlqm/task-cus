@@ -34,6 +34,8 @@ check("API admin lưu SystemConfig", admin.includes("METRIC_COMPARISON_VISIBLE_C
 check("UI có tab cấu hình", configPage.includes("So sánh thu NSNN") && configPage.includes("comparisonCodes"));
 check("Không còn filter hard-code trong component", !comparison.includes("selectRevenueComparisonRows"));
 check("V4 không ép cứng THU_NSNN", !v4.includes('rows?.find((r) => r.code === "THU_NSNN")'));
+check("Bỏ cột Nguồn / Kỳ", !comparison.includes("Nguồn / Kỳ"));
+check("Bỏ công thức cuối bảng", !comparison.includes("Công thức:"));
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
