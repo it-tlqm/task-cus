@@ -21,6 +21,7 @@ const shell = read("src/components/layout/AppShell.tsx");
 const v5Shell = read("src/components/v5/V5Shell.tsx");
 const v5Page = read("src/app/v5/page.tsx");
 const v5Layout = read("src/app/v5/layout.tsx");
+const v5GiaoBan = read("src/app/v5/giao-ban/page.tsx");
 const button = read("src/components/v5/ui/button.tsx");
 const card = read("src/components/v5/ui/card.tsx");
 const badge = read("src/components/v5/ui/badge.tsx");
@@ -49,6 +50,12 @@ check("Card có compound primitives", card.includes("CardHeader") && card.includ
 check("Badge có variant", badge.includes("badgeVariants"));
 check("Có design system doc", fs.existsSync(path.join(root, "docs/V5/DESIGN_SYSTEM.md")));
 check("Có link V5 từ giao diện cũ", read("src/app/dashboard/page.tsx").includes('href="/v5"'));
+check(
+  "V5 có trang Giao ban và nav ưu tiên",
+  v5Shell.includes('href: "/v5/giao-ban"') &&
+    v5GiaoBan.includes("RevenueSummaryTable") &&
+    v5GiaoBan.includes("MetricsSummaryTable")
+);
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);

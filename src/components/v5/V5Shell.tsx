@@ -35,12 +35,14 @@ type NavItem = {
 const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Tổng quan",
-    items: [{ label: "Bảng điều hành", href: "/v5", icon: LayoutDashboard, active: true }],
+    items: [
+      { label: "Số liệu giao ban", href: "/v5/giao-ban", icon: FileBarChart2 },
+      { label: "Bảng điều hành", href: "/v5", icon: LayoutDashboard },
+    ],
   },
   {
     label: "Nghiệp vụ",
     items: [
-      { label: "Số liệu giao ban", href: "#", icon: FileBarChart2, soon: true },
       { label: "Công việc", href: "#", icon: ClipboardList, soon: true },
       { label: "Kế hoạch", href: "#", icon: SlidersHorizontal, soon: true },
       { label: "Báo cáo", href: "#", icon: FileBarChart2, soon: true },
@@ -58,6 +60,7 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
 export function V5Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = usePermissions();
+  const pageTitle = pathname.startsWith("/v5/giao-ban") ? "Số liệu giao ban" : "Bảng điều hành";
   const today = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
     day: "2-digit",
@@ -86,7 +89,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
               <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const active = item.active || pathname === item.href;
+                  const active = pathname === item.href || (item.href !== "/v5" && pathname.startsWith(`${item.href}/`));
                   return item.soon ? (
                     <div
                       key={item.label}
@@ -149,7 +152,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
 
             <div className="hidden min-w-0 items-center gap-2 lg:flex">
               <PanelLeft className="h-4 w-4 text-v5-muted" />
-              <span className="text-[13px] font-semibold text-v5-ink">Bảng điều hành</span>
+              <span className="text-[13px] font-semibold text-v5-ink">{pageTitle}</span>
               <Badge variant="outline" className="ml-1 hidden xl:inline-flex">V5</Badge>
             </div>
 
@@ -188,7 +191,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                   key={item.label}
                   className={cn(
                     "whitespace-nowrap rounded-md px-2.5 py-1.5 text-[11px] font-semibold",
-                    item.active ? "bg-v5-bg text-v5-ink" : "text-v5-muted"
+                    pathname === item.href ? "bg-v5-bg text-v5-ink" : "text-v5-muted"
                   )}
                 >
                   {item.label}

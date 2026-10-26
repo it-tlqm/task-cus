@@ -435,7 +435,7 @@ export default function V5DashboardPage() {
                 </div>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/giao-ban">
+                <Link href="/v5/giao-ban">
                   Chi tiết <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </Button>
@@ -512,7 +512,7 @@ export default function V5DashboardPage() {
             <CardDescription>Widget theo chỉ tiêu · {PERIOD_LABEL[period].toLowerCase()}</CardDescription>
           </div>
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/giao-ban">
+            <Link href="/v5/giao-ban">
               Mở toàn bộ <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </Button>

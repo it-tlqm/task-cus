@@ -114,8 +114,13 @@ export function RevenueSummaryTable({
     : [{ classificationId: "", label: "Tổng Thu NSNN", cols: tax?.cols || {} }];
 
   const rows = classes.map((item) => {
-    const isCar = item.label.toLowerCase().includes("ô tô");
-    const isOther = item.label.toLowerCase().includes("khác");
+    const normalized = item.label.toLowerCase();
+    const isCar = normalized.includes("ô tô");
+    const isOther = normalized.includes("khác");
+    const usdClass = usd?.classCols?.find((candidate) => {
+      const label = candidate.label.toLowerCase();
+      return isCar ? label.includes("ô tô") : isOther ? label.includes("khác") : false;
+    });
     return {
       key: item.classificationId || item.label,
       label: item.label,
@@ -123,7 +128,7 @@ export function RevenueSummaryTable({
       monthTax: item.cols.month ?? null,
       monthVehicle: isCar ? vehicle?.cols.month ?? null : null,
       yearVehicle: isCar ? vehicle?.cols.year ?? null : null,
-      yearUsd: usd?.cols.year ?? null,
+      yearUsd: usdClass?.cols.year ?? usd?.cols.year ?? null,
       yearTax: item.cols.year ?? null,
       isOther,
     };
@@ -163,7 +168,7 @@ export function RevenueSummaryTable({
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline">Dữ liệu thật</Badge>
-          <Link href="/giao-ban" className="inline-flex items-center gap-1 text-[11px] font-medium text-v5-accent hover:underline">
+          <Link href="/v5/giao-ban" className="inline-flex items-center gap-1 text-[11px] font-medium text-v5-accent hover:underline">
             Chi tiết <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
