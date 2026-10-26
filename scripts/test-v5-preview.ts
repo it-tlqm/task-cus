@@ -33,8 +33,9 @@ check(
   "Đúng bộ màu Hải quan",
   tailwind.includes("#1B3461") && tailwind.includes("#C62222") && tailwind.includes("#F2C41D")
 );
-check("AppShell bỏ qua chrome cũ cho /v5", shell.includes("isV5Preview") && shell.includes('pathname === "/v5"'));
-check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.toLowerCase().includes("v5 preview"));
+check("AppShell bỏ qua chrome cũ cho /v5", shell.includes("isV5Route") && shell.includes('pathname === "/v5"'));
+check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.includes("shadcn/ui"));
+check("AppShell dùng V5Shell cho toàn bộ màn hình cũ", shell.includes("<V5Shell>"));
 check("V5 layout dùng shell", v5Layout.includes("V5Shell"));
 check("V5 dashboard dùng widget, không bảng", v5Page.includes("MetricWidget") && !v5Page.includes("<table"));
 check(

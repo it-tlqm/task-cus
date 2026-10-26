@@ -631,7 +631,7 @@ export default function NhapSoLieuPage() {
 
       {/* Thanh lưu */}
       {!loading && data?.anyEditable && (
-        <div className="fixed bottom-20 lg:bottom-6 left-0 lg:left-[276px] right-0 lg:right-6 px-margin z-40">
+        <div className="fixed bottom-20 lg:bottom-6 left-0 lg:left-[264px] right-0 lg:right-6 px-margin z-40">
           <div className="bg-primary text-on-primary rounded-xl shadow-2xl px-4 py-3 flex items-center justify-between gap-3">
             <span className="text-label-md font-semibold">
               {changedCount > 0
