@@ -2,10 +2,10 @@
 
 ## Production
 
-- **Code:** `7281d25`
-- **Deployment:** `dpl_4gHMvUzRksf5rHUmnzu2UuCVBGDT`
+- **Code:** `5bd0daa`
+- **Deployment:** `dpl_6PCgGykqp5VMgJ7A9YEHECo8SwZj`
 - **V5 URL:** `https://task-cus.vercel.app/v5`
-- **Health:** `db=up`, `commit=7281d25`
+- **Health:** `db=up`, `commit=5bd0daa`
 - **Migration:** không có.
 
 ## Giao diện
@@ -43,6 +43,11 @@ Gold dùng nền `#FFF8DC`, chữ `#6B4E00` để đảm bảo tương phản.
 
 ## Dashboard V5
 
+- **Bảng “Tổng hợp số thu ngày” đặt trên cùng**, ngay dưới tab:
+  - 5 mốc chỉ tiêu/so sánh.
+  - Bảng Ô tô / Than cốc / Hàng hóa khác / Tổng cộng.
+  - Cột: phát sinh ngày, lũy kế tháng, lượng xe, SL xe năm, trị giá USD, tổng thuế năm.
+  - Dòng “Đã mở TK chưa nộp thuế” nếu có dữ liệu.
 - 4 KPI widget.
 - Hero Thu NSNN.
 - Tiến độ điều hành.
@@ -60,7 +65,7 @@ Gold dùng nền `#FFF8DC`, chữ `#6B4E00` để đảm bảo tương phản.
 
 | Hạng mục | Kết quả |
 |---|---|
-| `scripts/test-v5-preview.ts` | 15/15 PASS |
+| `scripts/test-v5-preview.ts` | 16/16 PASS |
 | `npx tsc --noEmit` | PASS |
 | `pnpm build` | PASS |
 | Production health | PASS |
