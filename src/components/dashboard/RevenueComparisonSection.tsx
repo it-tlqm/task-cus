@@ -129,7 +129,7 @@ export function RevenueComparisonSection({
     );
   };
 
-  const targetRow = (
+  const targetWidget = (
     label: string,
     block: ComparisonTargetBlock,
     current: number | null,
@@ -139,33 +139,38 @@ export function RevenueComparisonSection({
     const hasCurrent = current !== null;
     const hasTarget = block.targetValue !== null;
     return (
-      <tr className="border-b border-border-default/20 align-top">
-        <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-        <td
-          className="px-3 py-2 text-right tabular-nums"
-          title={
-            hasCurrent && hasTarget
-              ? `${fmtMetric(current, rowStyle, { withUnit: false })} / ${fmtMetric(block.targetValue, rowStyle, { withUnit: false })}`
-              : undefined
-          }
-        >
-          {hasCurrent && hasTarget ? (
-            <>
-              {fmtMetricCompact(current, rowStyle, { withUnit: false })} / {fmtMetricCompact(block.targetValue, rowStyle, { withUnit: false })}
-              <span className="text-body-xs text-on-surface-variant"> ({currentLabel})</span>
-            </>
-          ) : block.ruleState === "AMBIGUOUS" ? (
-            <span className="text-on-surface-variant italic">Chưa xác định quy tắc đối chiếu</span>
-          ) : (
-            <span className="text-on-surface-variant italic">Chưa có dữ liệu đối chiếu</span>
-          )}
-        </td>
-        <td className="px-3 py-2 text-center">{targetChip(block)}</td>
-      </tr>
+      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-border-default/50 bg-surface-container-low/30 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-body-xs font-semibold leading-snug text-on-surface-variant">{label}</span>
+          <span className="shrink-0">{targetChip(block)}</span>
+        </div>
+        {hasCurrent && hasTarget ? (
+          <>
+            <div className="flex flex-wrap items-baseline gap-1.5">
+              <span
+                className="text-headline-sm font-bold tabular-nums text-primary"
+                title={fmtMetric(current, rowStyle)}
+              >
+                {fmtMetricCompact(current, rowStyle, { withUnit: false })}
+              </span>
+              <span className="text-body-xs text-on-surface-variant">
+                / {fmtMetricCompact(block.targetValue, rowStyle, { withUnit: false })}
+              </span>
+            </div>
+            <div className="text-[10px] text-on-surface-variant">{currentLabel} · so với chỉ tiêu</div>
+          </>
+        ) : (
+          <div className="flex min-h-[52px] items-center text-body-xs italic text-on-surface-variant">
+            {block.ruleState === "AMBIGUOUS"
+              ? "Chưa xác định quy tắc đối chiếu"
+              : "Chưa có dữ liệu đối chiếu"}
+          </div>
+        )}
+      </div>
     );
   };
 
-  const diffRow = (
+  const diffWidget = (
     label: string,
     block: ComparisonDiffBlock,
     current: number | null,
@@ -183,63 +188,65 @@ export function RevenueComparisonSection({
             ? "border-rose-200 bg-rose-50 text-rose-700"
             : "border-border-default text-on-surface-variant";
     return (
-      <tr className="border-b border-border-default/20 align-top">
-        <td className="px-3 py-2 font-medium text-on-surface">{label}</td>
-        <td
-          className="px-3 py-2 text-right tabular-nums"
-          title={
-            hasData
-              ? `${fmtMetric(current, rowStyle, { withUnit: false })} so với ${fmtMetric(block.value, rowStyle, { withUnit: false })}`
-              : undefined
-          }
-        >
-          {hasData ? (
-            <>
-              {fmtMetricCompact(current, rowStyle, { withUnit: false })} so với {fmtMetricCompact(block.value, rowStyle, { withUnit: false })}
-              <span className="text-body-xs text-on-surface-variant"> ({currentLabel})</span>
-            </>
-          ) : (
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-on-surface-variant italic">Chưa có dữ liệu đối chiếu</span>
-              {actualDate && (
-                <Link
-                  href={`/giao-ban/nhap?date=${actualDate}&metric=THU_NSNN`}
-                  className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/10"
-                  title={`Mở nhập số thực tế ngày ${actualDate}`}
-                >
-                  <span className="material-symbols-outlined text-[13px]">edit_note</span>
-                  Nhập số thực tế
-                </Link>
-              )}
-            </div>
-          )}
-        </td>
-        <td className="px-3 py-2 text-center">
-          <div className="flex flex-col items-center gap-1">
+      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-border-default/50 bg-surface-container-low/30 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-body-xs font-semibold leading-snug text-on-surface-variant">{label}</span>
+          <span className="shrink-0">
             {block.percent !== null ? (
               <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${percentTone}`}>
                 {block.percentText}%
               </span>
             ) : (
-              <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default font-semibold text-on-surface-variant">
                 {block.ruleState === "NO_DATA" ? "Chưa xác định" : "Không %"}
               </span>
             )}
-            {block.ruleState === "INCOMPLETE_PERIOD" ? (
+          </span>
+        </div>
+
+        {hasData ? (
+          <>
+            <div className="flex flex-wrap items-baseline gap-1.5">
               <span
-                data-testid="comparison-incomplete"
-                className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold whitespace-nowrap"
-                title="B1-A: tháng hiện tại chưa đủ kỳ; chỉ so cùng số ngày đến data cutoff, không hiển thị 0% khi thiếu."
+                className="text-headline-sm font-bold tabular-nums text-primary"
+                title={fmtMetric(current, rowStyle)}
               >
-                Chưa đủ kỳ
+                {fmtMetricCompact(current, rowStyle, { withUnit: false })}
               </span>
-            ) : null}
-            {block.ruleState === "SAME_DAYS" ? (
-              <span className="text-[10px] text-on-surface-variant whitespace-nowrap">{block.dayCount} ngày</span>
-            ) : null}
+              <span className="text-body-xs text-on-surface-variant">
+                so với {fmtMetricCompact(block.value, rowStyle, { withUnit: false })}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-on-surface-variant">
+              <span>{currentLabel}</span>
+              {block.ruleState === "INCOMPLETE_PERIOD" ? (
+                <span
+                  data-testid="comparison-incomplete"
+                  className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-800"
+                  title="B1-A: tháng hiện tại chưa đủ kỳ; chỉ so cùng số ngày đến data cutoff, không hiển thị 0% khi thiếu."
+                >
+                  Chưa đủ kỳ
+                </span>
+              ) : null}
+              {block.ruleState === "SAME_DAYS" ? <span>{block.dayCount} ngày</span> : null}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-start gap-1">
+            <span className="text-body-xs italic text-on-surface-variant">Chưa có dữ liệu đối chiếu</span>
+            {actualDate && (
+              <Link
+                href={`/giao-ban/nhap?date=${actualDate}&metric=THU_NSNN`}
+                className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/10"
+                title={`Mở nhập số thực tế ngày ${actualDate}`}
+              >
+                <span className="material-symbols-outlined text-[13px]">edit_note</span>
+                Nhập số thực tế
+              </Link>
+            )}
           </div>
-        </td>
-      </tr>
+        )}
+      </div>
     );
   };
 
@@ -292,23 +299,21 @@ export function RevenueComparisonSection({
                 {r.unitLabel ? <span className="text-body-xs text-on-surface-variant">({r.unitLabel})</span> : null}
                 {r.latestDate ? <span className="text-body-xs text-on-surface-variant">Số liệu đến {fmtDate(r.latestDate)}</span> : null}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-body-sm min-w-[560px] border-collapse">
-                  <thead>
-                    <tr className="text-body-xs text-on-surface-variant border-b border-border-default/40">
-                      <th className="px-3 py-1.5 font-semibold text-left">Nội dung đối chiếu</th>
-                      <th className="px-3 py-1.5 font-semibold text-right">Số liệu đối chiếu</th>
-                      <th className="px-3 py-1.5 font-semibold text-center w-[130px]">Tỷ lệ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {targetRow("Chỉ tiêu Bộ Tài chính (năm)", r.btc, r.yearCum, "LK năm", rowStyle)}
-                    {targetRow("Chỉ tiêu UBND tỉnh (năm)", r.ubnd, r.yearCum, "LK năm", rowStyle)}
-                    {targetRow("Kế hoạch tháng HQTL", r.monthPlan, r.monthCum, "LK tháng", rowStyle)}
-                    {diffRow("So với tháng trước", r.prevMonth, r.monthCum, "LK tháng", rowStyle, prevActualDate)}
-                    {diffRow("So với cùng kỳ năm trước", r.samePeriodLastYear, r.monthCum, "LK tháng", rowStyle, lastYearActualDate)}
-                  </tbody>
-                </table>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                Chỉ tiêu giao
+              </div>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                {targetWidget("Chỉ tiêu Bộ Tài chính (năm)", r.btc, r.yearCum, "LK năm", rowStyle)}
+                {targetWidget("Chỉ tiêu UBND tỉnh (năm)", r.ubnd, r.yearCum, "LK năm", rowStyle)}
+                {targetWidget("Kế hoạch tháng HQTL", r.monthPlan, r.monthCum, "LK tháng", rowStyle)}
+              </div>
+
+              <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                So sánh kỳ
+              </div>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {diffWidget("So với tháng trước", r.prevMonth, r.monthCum, "LK tháng", rowStyle, prevActualDate)}
+                {diffWidget("So với cùng kỳ năm trước", r.samePeriodLastYear, r.monthCum, "LK tháng", rowStyle, lastYearActualDate)}
               </div>
             </div>
           );

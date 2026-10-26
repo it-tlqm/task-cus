@@ -36,6 +36,10 @@ check("Không còn filter hard-code trong component", !comparison.includes("sele
 check("V4 không ép cứng THU_NSNN", !v4.includes('rows?.find((r) => r.code === "THU_NSNN")'));
 check("Bỏ cột Nguồn / Kỳ", !comparison.includes("Nguồn / Kỳ"));
 check("Bỏ công thức cuối bảng", !comparison.includes("Công thức:"));
+check(
+  "So sánh chia thành widget, không còn bảng rộng",
+  comparison.includes("targetWidget") && comparison.includes("diffWidget") && !comparison.includes("<table")
+);
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
 process.exit(fail === 0 ? 0 : 1);
