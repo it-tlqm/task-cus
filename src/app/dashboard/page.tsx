@@ -6,6 +6,7 @@ import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
 import { TaxSummarySection } from "@/components/dashboard/TaxSummarySection";
+import DashboardActionCenter from "@/components/dashboard/DashboardActionCenter";
 
 interface KPIData {
   totalTasks: number;
@@ -188,6 +189,14 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full min-h-screen bg-app-bg pb-12">
+      <DashboardActionCenter
+        waitingReview={kpis.waitingReview}
+        urgentReview={kpis.urgentReviewCount}
+        overdue={kpis.overdue}
+        attention={attentionTasks.length}
+        canApprove={canApprove}
+      />
+
       {/* =========================================================================
           DESKTOP VIEW (Pixel-accurate Google Stitch ID 089086aec3864b019c5af41b1319cf82)
           ========================================================================= */}

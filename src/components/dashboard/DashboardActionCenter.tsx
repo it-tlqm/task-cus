@@ -1,0 +1,84 @@
+"use client";
+
+import Link from "next/link";
+
+interface Props {
+  waitingReview: number;
+  urgentReview: number;
+  overdue: number;
+  attention: number;
+  canApprove: boolean;
+}
+
+export default function DashboardActionCenter({
+  waitingReview,
+  urgentReview,
+  overdue,
+  attention,
+  canApprove,
+}: Props) {
+  const total = waitingReview + overdue + attention;
+
+  return (
+    <section className="px-margin pt-space-md lg:px-space-lg" data-testid="dashboard-action-center">
+      <div className="flex flex-col gap-2 rounded-xl border border-border-default/60 bg-surface-container-lowest p-3 shadow-sm sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="material-symbols-outlined text-[18px]">bolt</span>
+          </span>
+          <div>
+            <div className="text-label-md font-bold text-on-surface">Việc cần xử lý</div>
+            <div className="text-[11px] text-on-surface-variant">
+              {total > 0 ? `${total} việc đang chờ` : "Không có việc gấp"}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
+          {canApprove && (
+            <Link
+              href="/approvals"
+              className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-status-warning/30 bg-status-warning-bg/50 px-2.5 py-1.5 text-[11px] font-semibold text-status-warning hover:brightness-95"
+            >
+              <span className="material-symbols-outlined text-[15px]">approval</span>
+              Chờ duyệt
+              <span className="rounded-full bg-status-warning px-1.5 text-[10px] text-white">
+                {waitingReview}
+              </span>
+              {urgentReview > 0 && (
+                <span className="text-[10px] font-bold">({urgentReview} gấp)</span>
+              )}
+            </Link>
+          )}
+
+          <Link
+            href="/tasks"
+            className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-status-danger/30 bg-status-danger-bg/50 px-2.5 py-1.5 text-[11px] font-semibold text-status-danger hover:brightness-95"
+          >
+            <span className="material-symbols-outlined text-[15px]">warning</span>
+            Quá hạn
+            <span className="rounded-full bg-status-danger px-1.5 text-[10px] text-white">{overdue}</span>
+          </Link>
+
+          <Link
+            href="/tasks"
+            className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-border-default bg-surface-container px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant hover:bg-surface-container-high"
+          >
+            <span className="material-symbols-outlined text-[15px]">visibility</span>
+            Cần chú ý
+            <span className="rounded-full bg-surface-container-highest px-1.5 text-[10px] text-on-surface">
+              {attention}
+            </span>
+          </Link>
+        </div>
+
+        <Link
+          href="/my-work"
+          className="shrink-0 text-[11px] font-semibold text-secondary hover:underline"
+        >
+          Mở việc của tôi →
+        </Link>
+      </div>
+    </section>
+  );
+}

@@ -127,6 +127,7 @@ export default function ApprovalsPage() {
   const [previewCaseType, setPreviewCaseType] = useState<ApprovalCaseType | null>(null);
   const [previewResourceId, setPreviewResourceId] = useState<string | null>(null);
   const [previewAction, setPreviewAction] = useState<ApprovalDecisionAction>("AGREE");
+  const [previewItemKey, setPreviewItemKey] = useState<string>("");
 
   // YC-37 — "Hồ sơ của tôi": theo dõi + gửi giải trình lại
   const [myCases, setMyCases] = useState<
@@ -320,6 +321,8 @@ export default function ApprovalsPage() {
     return null;
   };
 
+  const approvalItemKey = (item: ApprovalItem) => `${item.id}-${item.reqId || "main"}`;
+
   // YC-37 — Bấm "Chấp thuận" chỉ MỞ xem trước, KHÔNG ghi quyết định
   const openPreview = (item: ApprovalItem, initialAction: ApprovalDecisionAction) => {
     const ref = resolveCaseRef(item);
@@ -330,6 +333,7 @@ export default function ApprovalsPage() {
     setPreviewCaseType(ref.caseType);
     setPreviewResourceId(ref.resourceId);
     setPreviewAction(initialAction);
+    setPreviewItemKey(approvalItemKey(item));
     setPreviewOpen(true);
   };
 
@@ -1008,6 +1012,11 @@ export default function ApprovalsPage() {
           fetchLiveApprovals();
           fetchMyCases();
           fetchDecidedCases();
+          const next = filteredItems.find((item) => approvalItemKey(item) !== previewItemKey);
+          if (next) {
+            toast.info("Đã xử lý. Đang mở hồ sơ tiếp theo...");
+            window.setTimeout(() => openPreview(next, "AGREE"), 450);
+          }
         }}
       />
 
