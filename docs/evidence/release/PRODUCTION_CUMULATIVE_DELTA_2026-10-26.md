@@ -3,18 +3,19 @@
 **Trạng thái:** `DEPLOYED — CODE PASS — DATA CORRECTION PENDING`
 
 - **Production:** `https://task-cus.vercel.app`
-- **Deployment:** `dpl_EFf5gFQFtLrcoZRCN2g6exoR9jsX`
-- **Code:** `94e0dbf`
-- **Health:** `db=up`, `commit=94e0dbf`
+- **Deployment:** `dpl_G7aPNjPhQJsEjr15A1pjr4jafhaN`
+- **Code:** `6989bd5`
+- **Health:** `db=up`, `commit=6989bd5`
 
 ## 1. Thay đổi
 
 Màn hình `/giao-ban/nhap` có nút **Tính từ lũy kế** cạnh mỗi ô nhập được phép sửa:
 
-- Nhập **Lũy kế hôm nay**.
-- Nhập **Lũy kế hôm trước**.
+- Chỉ cần nhập **Lũy kế hôm nay**.
+- Hệ thống **tự lấy lũy kế đến hết ngày hôm trước** từ dữ liệu đã nhập (tổng phát sinh từ đầu năm + mốc YEAR đã xác nhận nếu có).
 - Hệ thống tính: `phát sinh ngày = lũy kế hôm nay − lũy kế hôm trước`.
 - Chỉ điền vào ô nhập, **không tự lưu**; người nhập kiểm tra rồi bấm **Lưu số liệu**.
+- Nếu API không lấy được dữ liệu, modal cho phép nhập tay lũy kế hôm trước.
 
 Ví dụ 24/10/2026:
 
@@ -54,7 +55,8 @@ Chưa tự sửa target vì là số liệu nghiệp vụ.
 
 | Kiểm tra | Kết quả |
 |---|---|
-| `scripts/test-cumulative-helper.ts` | 7/7 PASS |
+| `scripts/test-cumulative-helper.ts` | 9/9 PASS |
+| Local API lũy kế hôm trước | PASS |
 | `npx tsc --noEmit` | PASS |
 | `pnpm build` | PASS |
 | `/api/health` Production | 200, db up |
