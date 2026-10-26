@@ -81,6 +81,18 @@ function shiftDate(dateStr: string, deltaDays: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function parseRawNumber(raw: string): number | null {
+  const text = raw.trim();
+  if (!text) return null;
+  const normalized = text.replace(/\./g, "").replace(",", ".");
+  const value = Number(normalized);
+  return Number.isFinite(value) ? value : null;
+}
+
+function rawFromNumber(value: number): string {
+  return String(Number(value.toFixed(6))).replace(".", ",");
+}
+
 export default function NhapSoLieuPage() {
   const [date, setDate] = useState<string>(todayVnStr());
   const [focusMetric, setFocusMetric] = useState("");
@@ -93,6 +105,13 @@ export default function NhapSoLieuPage() {
   const [saveWarnings, setSaveWarnings] = useState<{ metricCode: string; metricName: string; message: string }[] | null>(null);
   const [historyFor, setHistoryFor] = useState<{ entryId: string; metricName: string } | null>(null);
   const [history, setHistory] = useState<Revision[] | null>(null);
+  const [cumulativeHelper, setCumulativeHelper] = useState<{
+    key: string;
+    label: string;
+    current: string;
+  } | null>(null);
+  const [cumulativeToday, setCumulativeToday] = useState("");
+  const [cumulativePrevious, setCumulativePrevious] = useState("");
 
   const load = useCallback((d: string) => {
     setLoading(true);
@@ -229,6 +248,31 @@ export default function NhapSoLieuPage() {
     else setHistory([]);
   };
 
+  const openCumulativeHelper = (key: string, label: string) => {
+    setCumulativeHelper({ key, label, current: values[key] || "" });
+    setCumulativeToday("");
+    setCumulativePrevious("");
+  };
+
+  const cumulativeDelta = useMemo(() => {
+    const today = parseRawNumber(cumulativeToday);
+    const previous = parseRawNumber(cumulativePrevious);
+    if (today === null || previous === null) return null;
+    return today - previous;
+  }, [cumulativeToday, cumulativePrevious]);
+
+  const applyCumulativeDelta = () => {
+    if (!cumulativeHelper || cumulativeDelta === null) {
+      toast.error("Nhập đủ lũy kế hôm nay và hôm trước.");
+      return;
+    }
+    setValues((prev) => ({ ...prev, [cumulativeHelper.key]: rawFromNumber(cumulativeDelta) }));
+    toast.success("Đã điền số phát sinh ngày. Kiểm tra lại rồi bấm Lưu số liệu.");
+    setCumulativeHelper(null);
+    setCumulativeToday("");
+    setCumulativePrevious("");
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-surface-container-low pb-24">
       <div className="px-margin pt-space-md pb-space-sm flex flex-col gap-3">
@@ -236,7 +280,10 @@ export default function NhapSoLieuPage() {
           <div>
             <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Nhập số liệu</h1>
             <p className="text-body-sm text-on-surface-variant">
-              Nhập số liệu theo ngày — chỉ hiện các chỉ tiêu bạn được phân công. Số đã gửi/xác nhận chỉ lãnh đạo sửa được.
+              Nhập số liệu theo ngày — chỉ hiện các chỉ tiêu bạn được phân công. Số đã gửi/xác nhận: lãnh đạo yêu cầu điều chỉnh để mở lại.
+            </p>
+            <p className="text-body-xs text-on-surface-variant">
+              Nếu số nguồn là lũy kế YTD, bấm biểu tượng máy tính cạnh ô nhập để tự tính số phát sinh ngày.
             </p>
           </div>
           <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
@@ -365,6 +412,23 @@ export default function NhapSoLieuPage() {
                             />
                             <span className="text-body-xs text-on-surface-variant w-24">{m.unitLabel}</span>
 
+                            {v.canEdit && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openCumulativeHelper(
+                                    key,
+                                    `${m.name}${v.label ? ` · ${v.label}` : ""}`
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold text-sky-800 hover:bg-sky-100"
+                                title="Tính số phát sinh ngày từ lũy kế hôm nay và hôm trước"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">calculate</span>
+                                Tính từ lũy kế
+                              </button>
+                            )}
+
                             <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${STATUS_STYLES[status] || "border-border-default text-on-surface-variant"}`}>
                               {STATUS_LABELS[status] || "Chưa nhập"}
                             </span>
@@ -461,6 +525,96 @@ export default function NhapSoLieuPage() {
       )}
 
       {/* Lịch sử sửa */}
+      {cumulativeHelper && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setCumulativeHelper(null);
+          }}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tính từ lũy kế"
+            className="relative w-full max-w-lg rounded-2xl border border-border-default bg-surface-container-lowest p-4 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-title-md font-bold text-on-surface">Tính từ lũy kế</h2>
+                <p className="mt-0.5 text-body-xs text-on-surface-variant">{cumulativeHelper.label}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCumulativeHelper(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container"
+                aria-label="Đóng"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+                Lũy kế hôm nay
+                <FormattedNumberInput
+                  value={cumulativeToday}
+                  onValueChange={setCumulativeToday}
+                  placeholder="VD: 1.334.441.535.806"
+                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm tabular-nums text-on-surface focus:border-primary focus:outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+                Lũy kế hôm trước
+                <FormattedNumberInput
+                  value={cumulativePrevious}
+                  onValueChange={setCumulativePrevious}
+                  placeholder="VD: 1.317.372.334.554"
+                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm tabular-nums text-on-surface focus:border-primary focus:outline-none"
+                />
+              </label>
+            </div>
+
+            <div className="mt-3 rounded-lg border border-border-default bg-surface-container-low p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                Số phát sinh ngày = lũy kế hôm nay − lũy kế hôm trước
+              </div>
+              <div
+                className={`mt-1 text-xl font-bold tabular-nums ${
+                  cumulativeDelta !== null && cumulativeDelta < 0 ? "text-status-danger" : "text-primary"
+                }`}
+              >
+                {cumulativeDelta === null
+                  ? "—"
+                  : cumulativeDelta.toLocaleString("vi-VN", { maximumFractionDigits: 6 })}
+              </div>
+            </div>
+
+            <p className="mt-2 text-[11px] text-on-surface-variant">
+              Hệ thống chỉ điền vào ô nhập; chưa lưu. Kiểm tra lại rồi bấm <b>Lưu số liệu</b>.
+            </p>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCumulativeHelper(null)}
+                className="rounded-lg border border-border-default px-3 py-2 text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={applyCumulativeDelta}
+                disabled={cumulativeDelta === null}
+                className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-40"
+              >
+                Điền số phát sinh
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
       {historyFor && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setHistoryFor(null)}>
           <div className="absolute inset-0 bg-black/40" />
