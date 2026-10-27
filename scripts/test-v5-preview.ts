@@ -166,6 +166,21 @@ check(
     !approvalsPage.includes("max-w-2xl") &&
     !approvalsPage.includes("TRUNG TÂM PHÊ DUYỆT")
 );
+const myWorkPage = read("src/app/my-work/page.tsx");
+const plansPage = read("src/app/plans/page.tsx");
+check(
+  "Công chức nhận việc dùng header/KPI V5",
+  myWorkPage.includes("Công việc của tôi") &&
+    myWorkPage.includes("<Card") &&
+    !myWorkPage.includes("Audit Trail") &&
+    !myWorkPage.includes("bg-surface-container-lowest")
+);
+check(
+  "Kế hoạch dùng token V5",
+  plansPage.includes("Tạo kế hoạch") &&
+    !plansPage.includes("bg-surface-container-lowest") &&
+    !plansPage.includes("border-border-default")
+);
 const monthlyResults = read("src/app/monthly-results/page.tsx");
 check(
   "Kết quả tháng dùng header/KPI/token V5",

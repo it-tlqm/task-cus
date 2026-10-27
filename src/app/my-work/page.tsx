@@ -5,7 +5,20 @@ import { useSearchParams } from "next/navigation";
 import { isSelfInitiated, originLabel } from "@/lib/task-origin";
 import { isMyPendingAcceptance } from "@/lib/task-acceptance";
 import Link from "next/link";
+import {
+  AlertTriangle,
+  BookOpenCheck,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  Plus,
+  RefreshCw,
+  Timer,
+} from "lucide-react";
 import { toast } from "@/components/ui/Toast";
+import { Badge } from "@/components/v5/ui/badge";
+import { Button } from "@/components/v5/ui/button";
+import { Card } from "@/components/v5/ui/card";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { formatVnDateTime, vnLocalToUtcIso, utcIsoToVnInputValue } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -832,7 +845,7 @@ function MyWorkPageContent() {
   const overdueTask = tasks.find((t) => t.isOverdue || t.hasIssue);
 
   return (
-    <div className="w-full min-h-screen bg-app-bg pb-12">
+    <div className="w-full min-h-screen bg-transparent pb-12">
       {/* =========================================================================
           DESKTOP VIEW (Pixel-accurate Google Stitch ID a1afd1c794c6454a8e161b43f25f4024)
           ========================================================================= */}
@@ -852,9 +865,9 @@ function MyWorkPageContent() {
                   <span className="font-body-semibold text-body-semibold text-status-danger">
                     Đầu việc {overdueTask.code}: {overdueTask.title}
                   </span>
-                  <span className="font-label-sm text-label-sm text-outline">· Đã trễ hạn nghiệp vụ</span>
+                  <span className="font-label-sm text-label-sm text-v5-muted">· Đã trễ hạn nghiệp vụ</span>
                 </div>
-                <p className="font-body-md text-body-md text-on-surface-variant mt-0.5">
+                <p className="font-body-md text-body-md text-v5-muted mt-0.5">
                   Quy chế nghiệp vụ yêu cầu hoàn thành giải trình chậm hạn hoặc gửi phiếu đề xuất gia hạn trình Trưởng bộ phận trước 15:00 hôm nay.
                 </p>
               </div>
@@ -862,7 +875,7 @@ function MyWorkPageContent() {
             <div className="flex items-center gap-space-sm shrink-0 w-full md:w-auto justify-end">
               <button
                 onClick={() => openDrawerForTask(overdueTask)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-lowest text-status-danger font-label-md text-label-md hover:bg-status-danger hover:text-on-error transition-fast shadow-sm active-press"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-v5-surface text-status-danger font-label-md text-label-md hover:bg-status-danger hover:text-on-error transition-fast shadow-sm active-press"
               >
                 <span className="material-symbols-outlined text-[18px]">assignment_late</span>
                 <span>Giải trình chậm hạn</span>
@@ -879,198 +892,135 @@ function MyWorkPageContent() {
         )}
 
         {/* HEADER KHU VỰC LÀM VIỆC & THAO TÁC NHANH */}
-        <section className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md border border-border-default/50">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-space-xs text-outline">
-                <span className="font-label-sm text-label-sm uppercase tracking-wide text-secondary font-bold">
-                  TÁC NGHIỆP CÁ NHÂN
-                </span>
-                <span>•</span>
-                <span className="font-label-sm text-label-sm">HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG</span>
-                <span>•</span>
-                <span className="font-label-sm text-label-sm text-status-success font-semibold">
-                  CA TRỰC CHÍNH 07:30 - 17:00
-                </span>
+        <section className="flex flex-col gap-3">
+          <header className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Công việc của tôi</h1>
+                <Badge variant="outline">{currentUser.positionTitle}</Badge>
+                <Badge variant="success">Sẵn sàng</Badge>
               </div>
-              <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight">
-                Nhật ký công việc — Không Gian Tác Nghiệp Cán Bộ
-              </h1>
-              <div className="flex items-center gap-space-md mt-1 flex-wrap">
-                <div className="inline-flex items-center gap-2 bg-surface-subtle px-3 py-1 rounded-lg">
-                  <span className="material-symbols-outlined text-secondary text-[18px]">badge</span>
-                  <span className="font-body-semibold text-body-semibold text-primary">{currentUser.fullName}</span>
-                  <span className="font-label-sm text-label-sm text-outline">Mã: {currentUser.personCode}</span>
-                </div>
-                <span className="font-label-md text-label-md text-on-surface-variant">
-                  {currentUser.positionTitle} · <strong>{currentUser.unitName}</strong>
-                </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-success-bg text-status-success font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-status-success" />
-                  Sẵn sàng xử lý
-                </span>
-              </div>
+              <p className="mt-1 text-sm text-v5-muted">
+                {currentUser.fullName} · {currentUser.personCode} · {currentUser.unitName}
+              </p>
+              <p className="text-[11px] text-v5-muted">Ca trực chính 07:30 - 17:00</p>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" onClick={() => setIsNewTaskModalOpen(true)}>
+                <Plus className="h-3.5 w-3.5" /> Thêm việc
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/routine">
+                  <BookOpenCheck className="h-3.5 w-3.5" /> Nhật ký
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => fetchTasks()}>
+                <RefreshCw className="h-3.5 w-3.5" /> Làm mới
+              </Button>
+            </div>
+          </header>
 
-            <div className="flex items-center gap-space-sm flex-wrap self-start lg:self-auto">
-              <button
-                onClick={() => setIsNewTaskModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:bg-secondary/90 transition-fast shadow-sm active-press font-semibold"
-              >
-                <span className="material-symbols-outlined text-[18px]">add_task</span>
-                <span>+ Thêm việc mới (Tùy biến)</span>
-              </button>
-              <Link
-                href="/routine"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-subtle text-primary font-label-md text-label-md hover:bg-surface-container transition-fast active-press"
-              >
-                <span className="material-symbols-outlined text-[18px]">history_edu</span>
-                <span>Nhật ký tác nghiệp</span>
-              </Link>
-              <button
-                onClick={() => fetchTasks()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-subtle text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-fast active-press"
-              >
-                <span className="material-symbols-outlined text-[18px]">sync</span>
-                <span>Làm mới</span>
-              </button>
+          <div data-tour="time-filter" className="flex flex-col justify-between gap-2 rounded-lg border border-v5-line bg-v5-surface p-2 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap items-center gap-1 rounded-md bg-v5-bg p-1">
+              {[
+                { key: "DAY" as const, label: `Hôm nay (${todayLabel})` },
+                { key: "WEEK" as const, label: `Tuần này (${periodLabels.weekShort})` },
+                { key: "MONTH" as const, label: periodLabels.monthShort },
+                { key: "ALL" as const, label: "Tất cả nhiệm vụ" },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setTimeFilter(item.key)}
+                  className={`rounded px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                    timeFilter === item.key
+                      ? "bg-v5-accent text-white shadow-sm"
+                      : "text-v5-muted hover:bg-v5-surface hover:text-v5-ink"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-          </div>
-
-          {/* BỘ LỌC THỜI GIAN THEO CA/KỲ TÁC NGHIỆP */}
-          <div data-tour="time-filter" className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pt-space-sm bg-surface-container-low p-space-sm rounded-lg">
-            <div className="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg shadow-sm">
-              <button
-                onClick={() => setTimeFilter("DAY")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "DAY" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
-              >
-                Hôm nay ({todayLabel})
-              </button>
-              <button
-                onClick={() => setTimeFilter("WEEK")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "WEEK" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
-              >
-                Tuần này ({periodLabels.weekShort})
-              </button>
-              <button
-                onClick={() => setTimeFilter("MONTH")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "MONTH" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
-              >
-                {periodLabels.monthShort}
-              </button>
-              <button
-                onClick={() => setTimeFilter("ALL")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${timeFilter === "ALL" ? "bg-secondary text-on-secondary shadow-sm font-semibold" : "text-on-surface-variant hover:text-primary hover:bg-surface-subtle"}`}
-              >
-                Tất cả nhiệm vụ
-              </button>
-            </div>
-            <div className="flex items-center gap-3 text-outline font-label-sm text-label-sm px-2">
-              <span className="flex items-center gap-1 text-on-surface-variant">
-                <span className="material-symbols-outlined text-[16px] text-secondary">update</span>
-                Đồng bộ lúc: {lastSyncAt ? lastSyncAt.toLocaleTimeString("vi-VN") : "chưa đồng bộ"}
-              </span>
+            <div className="flex items-center gap-2 px-1 text-[10px] text-v5-muted">
+              <Clock3 className="h-3.5 w-3.5" />
+              <span>Đồng bộ lúc: {lastSyncAt ? lastSyncAt.toLocaleTimeString("vi-VN") : "chưa đồng bộ"}</span>
               <button
                 onClick={() => fetchTasks({ page: 1 })}
-                className="p-1 hover:text-primary transition-fast"
+                className="rounded p-1 text-v5-muted transition-colors hover:bg-v5-bg hover:text-v5-ink"
                 title="Tải lại dữ liệu"
               >
-                <span className="material-symbols-outlined text-[16px]">sync</span>
+                <RefreshCw className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
         </section>
 
         {/* THANH SỐ LIỆU TỔNG QUAN HÔM NAY (4 KPI CARDS) */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
-          {/* Card 1 */}
-          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Cần xử lý hôm nay</span>
-              <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-[20px]">assignment</span>
-              </div>
+        <section className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Cần xử lý hôm nay</span>
+              <ClipboardList className="h-4 w-4 text-v5-accent" />
             </div>
-            <div className="my-space-sm flex items-baseline gap-2">
-              <span className="font-headline-xl text-headline-xl text-primary font-bold">
-                {String(myStats.active).padStart(2, "0")}
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.active).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">đầu việc</span>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-[10px]">
+              <span className="flex items-center gap-1 font-semibold text-v5-danger">
+                <AlertTriangle className="h-3 w-3" /> {String(myStats.high).padStart(2, "0")} ưu tiên cao
               </span>
-              <span className="font-label-sm text-label-sm text-outline">đầu việc</span>
+              <span className="text-v5-muted">{String(myStats.done).padStart(2, "0")} đã xong</span>
             </div>
-            <div className="flex items-center justify-between pt-space-xs bg-surface-container-low px-2 py-1 rounded">
-              <span className="font-label-sm text-label-sm text-status-danger font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">priority_high</span> {String(myStats.high).padStart(2, "0")} việc ưu tiên cao
-              </span>
-              <span className="font-label-sm text-label-sm text-outline">{String(myStats.done).padStart(2, "0")} đã xong</span>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Sắp đến hạn</span>
+              <Timer className="h-4 w-4 text-v5-warning" />
             </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Sắp đến hạn / Hôm nay</span>
-              <div className="w-8 h-8 rounded-lg bg-status-warning-bg flex items-center justify-center text-status-warning">
-                <span className="material-symbols-outlined text-[20px]">schedule</span>
-              </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-warning">{String(myStats.dueSoon).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">nhiệm vụ</span>
             </div>
-            <div className="my-space-sm flex items-baseline gap-2">
-              <span className="font-headline-xl text-headline-xl text-status-warning font-bold">{String(myStats.dueSoon).padStart(2, "0")}</span>
-              <span className="font-label-sm text-label-sm text-outline">nhiệm vụ</span>
+            <div className="mt-1 flex items-center justify-between gap-1 text-[10px]">
+              <span className="font-semibold text-v5-warning">Hạn trong 24 giờ</span>
+              <span className="text-v5-muted">{myStats.dueSoon > 0 ? "Cần xử lý" : "Không gấp"}</span>
             </div>
-            <div className="flex items-center justify-between pt-space-xs bg-status-warning-bg/40 px-2 py-1 rounded">
-              <span className="font-label-sm text-label-sm text-status-warning font-semibold">
-                Hạn trong 24 giờ tới
-              </span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">{myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}</span>
+          </Card>
+          <Card className="border-v5-danger/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Quá hạn</span>
+              <AlertTriangle className="h-4 w-4 text-v5-danger" />
             </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Quá hạn / Cần giải trình</span>
-              <div className="w-8 h-8 rounded-lg bg-status-danger-bg flex items-center justify-center text-status-danger">
-                <span className="material-symbols-outlined text-[20px]">error_outline</span>
-              </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-danger">{String(myStats.overdue).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">hồ sơ trễ</span>
             </div>
-            <div className="my-space-sm flex items-baseline gap-2">
-              <span className="font-headline-xl text-headline-xl text-status-danger font-bold">
-                {String(myStats.overdue).padStart(2, "0")}
-              </span>
-              <span className="font-label-sm text-label-sm text-outline">hồ sơ trễ</span>
-            </div>
-            <div className="flex items-center justify-between pt-space-xs bg-status-danger-bg/50 px-2 py-1 rounded">
+            <div className="mt-1 flex items-center justify-between gap-1 text-[10px]">
               <button
                 onClick={() => overdueTask && openDrawerForTask(overdueTask)}
-                className="font-label-sm text-label-sm text-status-danger hover:underline font-semibold flex items-center gap-1 active-press"
+                className="font-semibold text-v5-danger hover:underline"
               >
-                <span className="material-symbols-outlined text-[14px]">edit_note</span> Giải trình ngay
+                Giải trình ngay
               </button>
-              <span className="font-label-sm text-label-sm text-status-danger">{myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Không trễ hạn"}</span>
+              <span className="text-v5-danger">{myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}</span>
             </div>
-          </div>
-
-          {/* Card 4 */}
-          <div className="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between hover-lift border border-border-default/40">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Chờ phối hợp &amp; Phê duyệt</span>
-              <div className="w-8 h-8 rounded-lg bg-status-unassigned-bg flex items-center justify-center text-status-unassigned">
-                <span className="material-symbols-outlined text-[20px]">verified</span>
-              </div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ phê duyệt</span>
+              <CheckCircle2 className="h-4 w-4 text-v5-muted" />
             </div>
-            <div className="my-space-sm flex items-baseline gap-2">
-              <span className="font-headline-xl text-headline-xl text-primary font-bold">
-                {String(myStats.waiting).padStart(2, "0")}
-              </span>
-              <span className="font-label-sm text-label-sm text-outline">đã nộp kết quả</span>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.waiting).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">đã nộp</span>
             </div>
-            <div className="flex items-center justify-between pt-space-xs bg-status-unassigned-bg px-2 py-1 rounded">
-              <span className="font-label-sm text-label-sm text-status-unassigned font-semibold">
-                Chờ Trưởng BP ký
-              </span>
-              <span className="font-label-sm text-label-sm text-outline">Đang duyệt</span>
+            <div className="mt-1 flex items-center justify-between gap-1 text-[10px]">
+              <span className="font-semibold text-v5-muted">Chờ Trưởng BP ký</span>
+              <span className="text-v5-muted">Đang duyệt</span>
             </div>
-          </div>
+          </Card>
         </section>
 
         {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung cho cả 2 nguồn dữ liệu */}
@@ -1084,16 +1034,16 @@ function MyWorkPageContent() {
         <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
 
         {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP */}
-        <section data-tour="task-list" className="bg-surface-container-lowest rounded-xl shadow-sm flex flex-col overflow-hidden border border-border-default/50">
+        <section data-tour="task-list" className="bg-v5-surface rounded-xl shadow-sm flex flex-col overflow-hidden border border-v5-line/50">
           {/* TAB ĐIỀU HƯỚNG TRẠNG THÁI & TÌM KIẾM NHANH */}
-          <div className="p-space-md bg-surface-subtle flex flex-col md:flex-row md:items-center justify-between gap-space-md border-b border-border-default">
+          <div className="p-space-md bg-v5-bg flex flex-col md:flex-row md:items-center justify-between gap-space-md border-b border-v5-line">
             <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
               <button
                 onClick={() => setActiveTab("ALL")}
                 className={`px-3 py-1.5 rounded font-label-md text-label-md font-semibold shrink-0 transition-fast ${
                   activeTab === "ALL"
                     ? "bg-secondary text-on-secondary shadow-sm"
-                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
                 }`}
               >
                 Tất cả ({tasks.length})
@@ -1103,7 +1053,7 @@ function MyWorkPageContent() {
                 className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
                   activeTab === "WAITING_ACCEPT"
                     ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
                 }`}
               >
                 Chờ nhận việc ({waitingAcceptCount})
@@ -1113,7 +1063,7 @@ function MyWorkPageContent() {
                 className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
                   activeTab === "IN_PROGRESS"
                     ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
                 }`}
               >
                 Đang thực hiện ({tasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "NOT_STARTED").length})
@@ -1133,7 +1083,7 @@ function MyWorkPageContent() {
                 className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
                   activeTab === "WAITING_REVIEW"
                     ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
                 }`}
               >
                 Chờ xác nhận ({tasks.filter((t) => t.status === "WAITING_REVIEW").length})
@@ -1143,7 +1093,7 @@ function MyWorkPageContent() {
                 className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
                   activeTab === "COMPLETED"
                     ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
                 }`}
               >
                 Đã hoàn thành ({tasks.filter((t) => t.status === "COMPLETED").length})
@@ -1151,7 +1101,7 @@ function MyWorkPageContent() {
             </div>
             <div className="flex items-center gap-space-sm shrink-0">
               <div className="relative w-full sm:w-64">
-                <span className="material-symbols-outlined absolute left-2.5 top-2 text-outline text-[18px]">
+                <span className="material-symbols-outlined absolute left-2.5 top-2 text-v5-muted text-[18px]">
                   search
                 </span>
                 <input
@@ -1159,12 +1109,12 @@ function MyWorkPageContent() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm theo mã việc, tên việc..."
-                  className="w-full h-8 pl-8 pr-3 rounded bg-surface-container-lowest text-body-md font-body-md text-on-surface placeholder:text-outline border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary transition-fast"
+                  className="w-full h-8 pl-8 pr-3 rounded bg-v5-surface text-body-md font-body-md text-v5-ink placeholder:text-v5-muted border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary transition-fast"
                 />
               </div>
               <button
                 onClick={() => fetchTasks()}
-                className="h-8 px-2.5 rounded bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md hover:bg-surface-container flex items-center gap-1 shadow-sm border border-border-subtle transition-fast active-press"
+                className="h-8 px-2.5 rounded bg-v5-surface text-v5-muted font-label-md text-label-md hover:bg-v5-bg flex items-center gap-1 shadow-sm border border-border-subtle transition-fast active-press"
               >
                 <span className="material-symbols-outlined text-[16px]">tune</span>
                 <span className="hidden sm:inline">Phân loại</span>
@@ -1176,7 +1126,7 @@ function MyWorkPageContent() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-surface-subtle text-primary font-table-header text-table-header border-b border-border-default">
+                <tr className="bg-v5-bg text-primary font-table-header text-table-header border-b border-v5-line">
                   <th className="py-3 px-space-md w-[260px]">MÃ &amp; TÊN ĐẦU VIỆC</th>
                   <th className="py-3 px-space-sm w-[170px]">NGUỒN &amp; DANH MỤC</th>
                   <th className="py-3 px-space-sm w-[160px]">HẠN CHÓT</th>
@@ -1186,10 +1136,10 @@ function MyWorkPageContent() {
                   <th className="py-3 px-space-md text-right w-[240px]">THAO TÁC TRỰC TIẾP</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-container font-table-data text-table-data text-on-surface">
+              <tbody className="divide-y divide-surface-container font-table-data text-table-data text-v5-ink">
                 {filteredTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-outline">
+                    <td colSpan={7} className="py-12 text-center text-v5-muted">
                       Chưa có công việc nào trong danh mục lọc hiện tại.
                     </td>
                   </tr>
@@ -1209,7 +1159,7 @@ function MyWorkPageContent() {
                     return (
                       <tr
                         key={task.id}
-                        className={`hover:bg-surface-container-low transition-fast ${
+                        className={`hover:bg-v5-bg transition-fast ${
                           idx === 0 ? "bg-secondary-fixed/10" : ""
                         }`}
                       >
@@ -1225,11 +1175,11 @@ function MyWorkPageContent() {
                             </div>
                             <span
                               onClick={() => openDrawerForTask(task)}
-                              className="font-body-semibold text-body-semibold text-on-surface leading-tight hover:text-secondary cursor-pointer"
+                              className="font-body-semibold text-body-semibold text-v5-ink leading-tight hover:text-secondary cursor-pointer"
                             >
                               {task.title}
                             </span>
-                            <span className="font-label-sm text-label-sm text-outline">
+                            <span className="font-label-sm text-label-sm text-v5-muted">
                               {task.description || "Nhiệm vụ trực tiếp"}
                             </span>
                           </div>
@@ -1239,10 +1189,10 @@ function MyWorkPageContent() {
                           <div className="flex flex-col">
                             {/* YC-38 UAT fix: hien thi ma TX thuoc (bo nhan "TTHQ-ĐT" hard-code) */}
                             <TxSourceBadge source={task.txSource} />
-                            <span className="font-label-sm text-[11px] text-outline">
+                            <span className="font-label-sm text-[11px] text-v5-muted">
                               {originLabel(task.originKind)}
                             </span>
-                            <span className="text-on-surface-variant font-label-sm text-[12px] truncate max-w-[150px]">
+                            <span className="text-v5-muted font-label-sm text-[12px] truncate max-w-[150px]">
                               {task.expectedResultText || "Theo quy trình hải quan"}
                             </span>
                           </div>
@@ -1265,7 +1215,7 @@ function MyWorkPageContent() {
                                 <span className="font-body-semibold text-body-semibold text-status-success">
                                   Đã hoàn tất
                                 </span>
-                                <span className="font-label-sm text-label-sm text-outline">
+                                <span className="font-label-sm text-label-sm text-v5-muted">
                                   Hoàn thành 100%
                                 </span>
                               </>
@@ -1287,7 +1237,7 @@ function MyWorkPageContent() {
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold ${
                               task.priority === "Cao" || task.priority === "Khẩn"
                                 ? "bg-status-danger-bg text-status-danger"
-                                : "bg-surface-container text-on-surface-variant"
+                                : "bg-v5-bg text-v5-muted"
                             }`}
                           >
                             <span className="material-symbols-outlined text-[14px]">flag</span>
@@ -1300,7 +1250,7 @@ function MyWorkPageContent() {
                             <span className="font-label-sm text-label-sm text-primary font-semibold">
                               {task.owner?.fullName || currentUser.fullName}
                             </span>
-                            <span className="text-on-surface-variant font-label-sm text-[11px]">
+                            <span className="text-v5-muted font-label-sm text-[11px]">
                               {task.unit?.name || currentUser.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"}
                             </span>
                           </div>
@@ -1317,11 +1267,11 @@ function MyWorkPageContent() {
                                 <span className="material-symbols-outlined text-[14px]">undo</span> Bị trả lại
                               </span>
                               {task.approval?.reason && (
-                                <span className="text-[11px] text-on-surface-variant line-clamp-2">
+                                <span className="text-[11px] text-v5-muted line-clamp-2">
                                   {task.approval.reason}
                                 </span>
                               )}
-                              <span className="text-[10px] text-outline">Giữ nguyên tiến độ</span>
+                              <span className="text-[10px] text-v5-muted">Giữ nguyên tiến độ</span>
                             </div>
                           ) : isWaiting ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-unassigned-bg text-status-unassigned font-semibold">
@@ -1337,9 +1287,9 @@ function MyWorkPageContent() {
                                 <span className="text-secondary font-semibold">
                                   {task.progressPercent ?? (isCompleted ? 100 : 0)}%
                                 </span>
-                                <span className="text-outline">Đang chạy</span>
+                                <span className="text-v5-muted">Đang chạy</span>
                               </div>
-                              <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                              <div className="w-full bg-v5-bg h-1.5 rounded-full overflow-hidden">
                                 <div
                                   className="bg-secondary h-full rounded-full transition-all duration-300"
                                   style={{ width: `${task.progressPercent ?? (isCompleted ? 100 : 0)}%` }}
@@ -1356,7 +1306,7 @@ function MyWorkPageContent() {
                                 <button
                                   onClick={(e) => handleSendReminder(task.id, e)}
                                   disabled={remindingTaskId === task.id}
-                                  className="px-2.5 py-1 rounded bg-surface-subtle text-on-surface font-label-sm text-label-sm hover:bg-surface-container flex items-center gap-1 active-press disabled:opacity-50"
+                                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-ink font-label-sm text-label-sm hover:bg-v5-bg flex items-center gap-1 active-press disabled:opacity-50"
                                   title="Gửi thông báo nhắc Trưởng bộ phận phê duyệt"
                                 >
                                   <span className={`material-symbols-outlined text-[14px] ${remindingTaskId === task.id ? "animate-spin" : ""}`}>
@@ -1398,7 +1348,7 @@ function MyWorkPageContent() {
 
                             <Link
                               href={`/tasks/${task.id}`}
-                              className="p-1 rounded text-outline hover:text-primary hover:bg-surface-container transition-fast"
+                              className="p-1 rounded text-v5-muted hover:text-primary hover:bg-v5-bg transition-fast"
                               title="Xem chi tiết"
                             >
                               <span className="material-symbols-outlined text-[16px]">visibility</span>
@@ -1414,7 +1364,7 @@ function MyWorkPageContent() {
           </div>
 
           {/* PHÂN TRANG BẢNG NGHIỆP VỤ (server, 50/trang) */}
-          <div className="p-space-sm bg-surface-subtle flex flex-col sm:flex-row items-center justify-between text-label-sm text-on-surface-variant gap-space-sm border-t border-border-default">
+          <div className="p-space-sm bg-v5-bg flex flex-col sm:flex-row items-center justify-between text-label-sm text-v5-muted gap-space-sm border-t border-v5-line">
             <div className="flex items-center gap-2">
               <span>Đã tải <strong>{tasks.length}</strong> trên tổng số <strong>{totalCount}</strong> nhiệm vụ</span>
             </div>
@@ -1427,7 +1377,7 @@ function MyWorkPageContent() {
                 {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
               </button>
             ) : (
-              <span className="text-xs text-outline">Đã hiển thị tất cả</span>
+              <span className="text-xs text-v5-muted">Đã hiển thị tất cả</span>
             )}
           </div>
         </section>
@@ -1435,33 +1385,33 @@ function MyWorkPageContent() {
         {/* BẢNG NGUYÊN TẮC TÁC NGHIỆP & AUDIT TIMELINE TÓM TẮT */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
           {/* KHỐI 1 & 2: NHẬT KÝ THAO TÁC AUDIT TRAIL GẦN NHẤT */}
-          <div className="lg:col-span-2 bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between border border-border-default/40">
+          <div className="lg:col-span-2 bg-v5-surface rounded-xl p-space-md shadow-sm flex flex-col justify-between border border-v5-line/40">
             <div className="flex items-center justify-between pb-space-sm border-b border-surface-container">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary text-[20px]">manage_history</span>
-                <h2 className="font-headline-sm text-headline-sm text-primary">Nhật Ký Tác Nghiệp Cá Nhân Tự Động (Audit Trail)</h2>
+                <h2 className="text-sm font-semibold text-v5-ink">Lịch sử cập nhật cá nhân</h2>
               </div>
-              <span className="font-label-sm text-label-sm text-outline">Ghi nhận UTC+7 (Hải quan cửa khẩu Quốc tế Tà Lùng)</span>
+              <span className="font-label-sm text-label-sm text-v5-muted">Ghi nhận UTC+7 (Hải quan cửa khẩu Quốc tế Tà Lùng)</span>
             </div>
             <div className="flex flex-col gap-space-sm my-space-sm">
               {recentActivity.length === 0 ? (
-                <div className="text-xs text-outline text-center py-4">
+                <div className="text-xs text-v5-muted text-center py-4">
                   Chưa có hoạt động nào. Cập nhật tiến độ công việc để ghi nhận tại đây.
                 </div>
               ) : (
                 recentActivity.map((a, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-2 rounded-lg bg-surface-container-low">
+                  <div key={idx} className="flex items-start gap-3 p-2 rounded-lg bg-v5-bg">
                     <span className="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5">update</span>
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-body-semibold text-body-semibold text-primary truncate">
                           [{a.taskCode}] {a.taskTitle}
                         </span>
-                        <span className="font-label-sm text-[11px] text-outline shrink-0">
+                        <span className="font-label-sm text-[11px] text-v5-muted shrink-0">
                           {new Date(a.at).toLocaleString("vi-VN")}
                         </span>
                       </div>
-                      <p className="font-table-data text-[13px] text-on-surface-variant mt-0.5">
+                      <p className="font-table-data text-[13px] text-v5-muted mt-0.5">
                         {a.author ? `${a.author}: ` : ""}{a.notes}
                       </p>
                     </div>
@@ -1469,7 +1419,7 @@ function MyWorkPageContent() {
                 ))
               )}
             </div>
-            <div className="flex items-center justify-between pt-2 text-label-sm text-outline">
+            <div className="flex items-center justify-between pt-2 text-label-sm text-v5-muted">
               <span>Toàn bộ hành vi tác nghiệp được lưu trữ vĩnh viễn trên máy chủ nội bộ.</span>
               <Link href="/admin/audit" className="text-secondary font-semibold hover:underline">
                 Xem toàn bộ lịch sử (Audit Log)
@@ -1509,163 +1459,92 @@ function MyWorkPageContent() {
       {/* =========================================================================
           MOBILE VIEW (Pixel-accurate Google Stitch ID 2443cdf63e214979b5a74c40779511ba)
           ========================================================================= */}
-      <div className="lg:hidden flex flex-col w-full pb-16">
-        {/* BANNER ĐIỀU HÀNH CHÍNH THỨC */}
-        <div className="w-full bg-primary/10 border-b border-border-default/40 px-margin py-2 flex items-center justify-between gap-space-sm shadow-sm">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="material-symbols-outlined text-primary text-[16px] shrink-0">verified</span>
-            <span className="font-label-sm text-primary truncate uppercase tracking-wider text-[11px] font-bold">
-              KHÔNG GIAN LÀM VIỆC CÁ NHÂN — HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
-            </span>
-          </div>
-          <span
-            title="Nhãn HỆ THỐNG vận hành chính thức — không phải xác nhận cho số liệu hiển thị."
-            className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-label-sm text-[10px] shrink-0 font-bold"
-          >
-            {ENV_BADGE_LABEL}
-          </span>
-        </div>
-
-        {/* PHẦN CHÀO & ĐƠN VỊ TÁC NGHIỆP */}
-        <div className="px-margin pt-3 pb-2 flex items-center justify-between">
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-status-success shrink-0" />
-              <h2 className="font-headline-sm text-headline-sm text-primary truncate">Đ/c {currentUser.fullName}</h2>
+      <div className="lg:hidden flex flex-col gap-3 pb-16">
+        <header className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <h1 className="truncate text-xl font-semibold tracking-tight text-v5-ink">C?ng vi?c c?a t?i</h1>
+              <Badge variant="success">S?n s?ng</Badge>
             </div>
-            <p className="font-label-md text-label-md text-on-surface-variant truncate">
-              {currentUser.unitName || "Hải quan CKQT Tà Lùng"} • Trực ban tác nghiệp
+            <p className="mt-0.5 truncate text-[11px] text-v5-muted">
+              {currentUser.fullName} ? {currentUser.unitName}
             </p>
+            <p className="mt-0.5 text-[10px] text-v5-muted">{ENV_BADGE_LABEL} ? Ca ch?nh 07:30 - 17:00</p>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <Button variant="outline" size="icon" onClick={() => fetchTasks()} aria-label="L?m m?i">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </header>
+
+        <div data-tour="time-filter" className="flex flex-wrap items-center gap-1 rounded-md bg-v5-bg p-1">
+          {[
+            { key: "DAY" as const, label: `H?m nay (${todayShort || "..."})` },
+            { key: "WEEK" as const, label: periodLabels.weekShort },
+            { key: "MONTH" as const, label: periodLabels.monthShort },
+            { key: "ALL" as const, label: "T?t c?" },
+          ].map((item) => (
             <button
-              onClick={() => fetchTasks()}
-              aria-label="Làm mới tác vụ"
-              className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary-container hover:bg-surface-container-high transition-fast active-press"
+              key={item.key}
+              type="button"
+              onClick={() => setTimeFilter(item.key)}
+              className={`flex-1 rounded px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                timeFilter === item.key ? "bg-v5-accent text-white shadow-sm" : "text-v5-muted"
+              }`}
             >
-              <span className="material-symbols-outlined text-[19px]">sync</span>
+              {item.label}
             </button>
-          </div>
+          ))}
         </div>
 
-        {/* CHỌN KỲ TÁC NGHIỆP (SEGMENTED PILLS) */}
-        <div className="px-margin py-2">
-          <div data-tour="time-filter" className="bg-surface-container p-1 rounded-lg flex items-center justify-between gap-1 shadow-inner">
-            <button
-              onClick={() => setTimeFilter("DAY")}
-              className={`flex-1 py-1.5 px-2 rounded-md font-body-semibold text-label-md text-center shadow-sm flex items-center justify-center gap-1 transition-fast ${timeFilter === "DAY" ? "bg-secondary text-on-secondary" : "text-on-surface-variant"}`}
-            >
-              <span className="material-symbols-outlined text-[15px]">event</span>
-              <span>Hôm nay ({todayShort || "..."})</span>
-            </button>
-            <button
-              onClick={() => setTimeFilter("WEEK")}
-              className={`flex-1 py-1.5 px-2 rounded-md font-label-md text-label-md text-center transition-fast ${timeFilter === "WEEK" ? "bg-secondary text-on-secondary font-body-semibold shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
-            >
-              {periodLabels.weekShort}
-            </button>
-            <button
-              onClick={() => setTimeFilter("MONTH")}
-              className={`flex-1 py-1.5 px-2 rounded-md font-label-md text-label-md text-center transition-fast ${timeFilter === "MONTH" ? "bg-secondary text-on-secondary font-body-semibold shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
-            >
-              {periodLabels.monthShort}
-            </button>
-            <button
-              onClick={() => setTimeFilter("ALL")}
-              className={`flex-1 py-1.5 px-2 rounded-md font-label-md text-label-md text-center transition-fast ${timeFilter === "ALL" ? "bg-secondary text-on-secondary font-body-semibold shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
-            >
-              Tất cả
-            </button>
-          </div>
-        </div>
-
-        {/* THỐNG KÊ NHANH TÁC VỤ CÁ NHÂN (GRID 2x2 ĐẶC THÙ NGHIỆP VỤ) — số liệu THẬT từ tasks */}
-        <div className="px-margin py-2">
-          <div className="grid grid-cols-2 gap-2.5">
-            {/* Card 1: Cần xử lý hôm nay */}
-            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between border border-border-default/40">
-              <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md text-on-surface-variant">Cần xử lý hôm nay</span>
-                <span className="w-6 h-6 rounded bg-primary-container/10 text-primary-container flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px]">assignment</span>
-                </span>
-              </div>
-              <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-primary font-bold">
-                  {String(myStats.active).padStart(2, "0")}
-                </span>
-                <span className="font-label-sm text-label-sm text-status-danger font-medium">
-                  {myStats.high > 0 ? `${myStats.high} việc ưu tiên cao` : "Không có việc gấp"}
-                </span>
-              </div>
-              <div className="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-                <div
-                  className="bg-primary h-full rounded-full"
-                  style={{ width: `${myStats.active > 0 ? Math.round((myStats.high / myStats.active) * 100) : 0}%` }}
-                />
-              </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">C?n x? l?</span>
+              <ClipboardList className="h-4 w-4 text-v5-accent" />
             </div>
-
-            {/* Card 2: Sắp đến hạn */}
-            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between border border-border-default/40">
-              <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md text-on-surface-variant">Sắp đến hạn</span>
-                <span className="w-6 h-6 rounded bg-status-warning-bg text-status-warning flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px]">alarm</span>
-                </span>
-              </div>
-              <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-status-warning font-bold">
-                  {String(myStats.dueSoon).padStart(2, "0")}
-                </span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">trong 24 giờ tới</span>
-              </div>
-              <span className="font-label-sm text-[11px] text-status-warning font-medium truncate">
-                {myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}
-              </span>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.active).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">??u vi?c</span>
             </div>
-
-            {/* Card 3: Quá hạn */}
-            <div className="bg-status-danger-bg p-3 rounded-lg shadow-sm flex flex-col justify-between border border-status-danger/20">
-              <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md text-status-danger font-semibold">Quá hạn xử lý</span>
-                <span className="w-6 h-6 rounded bg-status-danger/10 text-status-danger flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px]">priority_high</span>
-                </span>
-              </div>
-              <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-status-danger font-bold">
-                  {String(myStats.overdue).padStart(2, "0")}
-                </span>
-                <span className="font-label-sm text-label-sm text-status-danger">
-                  {myStats.overdue > 0 ? (overdueTask?.code || "hồ sơ trễ") : "Không trễ hạn"}
-                </span>
-              </div>
-              <span className="font-label-sm text-[11px] text-status-danger font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[13px]">gavel</span>
-                {myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày • Cần giải trình` : "Đúng hạn"}
-              </span>
+            <div className="mt-1 text-[10px] font-semibold text-v5-danger">
+              {myStats.high > 0 ? `${myStats.high} ?u ti?n cao` : "Kh?ng c? vi?c g?p"}
             </div>
-
-            {/* Card 4: Chờ xác nhận */}
-            <div className="bg-surface-container-lowest p-3 rounded-lg shadow-sm flex flex-col justify-between border border-border-default/40">
-              <div className="flex items-center justify-between">
-                <span className="font-label-md text-label-md text-on-surface-variant">Chờ xác nhận</span>
-                <span className="w-6 h-6 rounded bg-status-unassigned-bg text-status-unassigned flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px]">hourglass_top</span>
-                </span>
-              </div>
-              <div className="my-1.5 flex items-baseline gap-1.5">
-                <span className="font-headline-xl text-headline-xl text-status-unassigned font-bold">
-                  {String(myStats.waiting).padStart(2, "0")}
-                </span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">đầu việc</span>
-              </div>
-              <span className="font-label-sm text-[11px] text-status-unassigned font-medium truncate">
-                {myStats.waiting > 0 ? "Chờ Trưởng BP duyệt" : "Không có hồ sơ chờ duyệt"}
-              </span>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">S?p ??n h?n</span>
+              <Timer className="h-4 w-4 text-v5-warning" />
             </div>
-          </div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-warning">{String(myStats.dueSoon).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">24 gi?</span>
+            </div>
+            <div className="mt-1 text-[10px] text-v5-muted">{myStats.dueSoon > 0 ? "C?n x? l?" : "Kh?ng c? vi?c g?p"}</div>
+          </Card>
+          <Card className="border-v5-danger/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Qu? h?n</span>
+              <AlertTriangle className="h-4 w-4 text-v5-danger" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-danger">{String(myStats.overdue).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">h? s?</span>
+            </div>
+            <div className="mt-1 text-[10px] font-semibold text-v5-danger">
+              {myStats.overdue > 0 ? `Ch?m ${myStats.maxOverdueDays} ng?y` : "??ng h?n"}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Ch? ph? duy?t</span>
+              <CheckCircle2 className="h-4 w-4 text-v5-muted" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.waiting).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">?? n?p</span>
+            </div>
+            <div className="mt-1 text-[10px] text-v5-muted">Ch? Tr??ng BP k?</div>
+          </Card>
         </div>
 
         {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung (mobile) */}
@@ -1690,7 +1569,7 @@ function MyWorkPageContent() {
               className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 flex items-center gap-1.5 shadow-sm transition-fast ${
                 activeTab === "ALL"
                   ? "bg-primary text-on-primary"
-                  : "bg-surface-container text-on-surface-variant"
+                  : "bg-v5-bg text-v5-muted"
               }`}
             >
               <span>Tất cả</span>
@@ -1700,7 +1579,7 @@ function MyWorkPageContent() {
               className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
                 activeTab === "WAITING_ACCEPT"
                   ? "bg-primary text-on-primary"
-                  : "bg-surface-container text-on-surface-variant"
+                  : "bg-v5-bg text-v5-muted"
               }`}
             >
               <span>Chờ nhận việc ({waitingAcceptCount})</span>
@@ -1710,7 +1589,7 @@ function MyWorkPageContent() {
               className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
                 activeTab === "IN_PROGRESS"
                   ? "bg-primary text-on-primary"
-                  : "bg-surface-container text-on-surface-variant"
+                  : "bg-v5-bg text-v5-muted"
               }`}
             >
               <span>Đang làm ({myStats.active})</span>
@@ -1730,7 +1609,7 @@ function MyWorkPageContent() {
               className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
                 activeTab === "WAITING_REVIEW"
                   ? "bg-primary text-on-primary"
-                  : "bg-surface-container text-on-surface-variant"
+                  : "bg-v5-bg text-v5-muted"
               }`}
             >
               <span>Chờ duyệt ({myStats.waiting})</span>
@@ -1754,7 +1633,7 @@ function MyWorkPageContent() {
               return (
                 <div
                   key={task.id}
-                  className="bg-surface-container-lowest rounded-xl p-3.5 shadow-sm flex flex-col gap-3 relative overflow-hidden"
+                  className="bg-v5-surface rounded-xl p-3.5 shadow-sm flex flex-col gap-3 relative overflow-hidden"
                 >
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-status-danger" />
                   <div className="flex items-start justify-between gap-2 pl-1">
@@ -1779,10 +1658,10 @@ function MyWorkPageContent() {
                     </span>
                   </div>
                   <div className="pl-1">
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
+                    <h3 className="font-headline-sm text-headline-sm text-v5-ink font-bold leading-tight">
                       {task.title}
                     </h3>
-                    <p className="font-label-sm text-[12px] text-on-surface-variant mt-1">
+                    <p className="font-label-sm text-[12px] text-v5-muted mt-1">
                       Hạn: {formatDateTime(task.currentDeadline)}
                       {task.owner ? ` • ${task.owner.fullName}` : ""}
                     </p>
@@ -1791,7 +1670,7 @@ function MyWorkPageContent() {
                         <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">info</span>
                         <div className="flex flex-col text-[12px]">
                           <span className="font-body-semibold text-status-warning">Vướng mắc phát sinh:</span>
-                          <span className="text-on-surface">{task.issueNotes}</span>
+                          <span className="text-v5-ink">{task.issueNotes}</span>
                         </div>
                       </div>
                     )}
@@ -1799,7 +1678,7 @@ function MyWorkPageContent() {
                   <div className="grid grid-cols-2 gap-2 pt-1 pl-1">
                     <button
                       onClick={() => openDrawerForTask(task)}
-                      className="h-11 px-2.5 rounded-lg bg-surface-container text-on-surface font-body-semibold text-body-md flex items-center justify-center gap-1 hover:bg-surface-container-high active:scale-[0.98] transition-all"
+                      className="h-11 px-2.5 rounded-lg bg-v5-bg text-v5-ink font-body-semibold text-body-md flex items-center justify-center gap-1 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
                       type="button"
                     >
                       <span className="material-symbols-outlined text-[18px] text-status-warning">schedule_send</span>
@@ -1822,14 +1701,14 @@ function MyWorkPageContent() {
               return (
                 <div
                   key={task.id}
-                  className="bg-surface-container-lowest rounded-xl p-3.5 shadow-sm flex flex-col gap-3"
+                  className="bg-v5-surface rounded-xl p-3.5 shadow-sm flex flex-col gap-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-label-sm text-label-sm font-bold text-primary-container bg-surface-container px-2 py-0.5 rounded">
+                      <span className="font-label-sm text-label-sm font-bold text-primary-container bg-v5-bg px-2 py-0.5 rounded">
                         {task.code}
                       </span>
-                      <span className="font-label-sm text-on-surface-variant text-[11px]">
+                      <span className="font-label-sm text-v5-muted text-[11px]">
                         {task.planLinks?.[0]?.planItem?.plan?.title || "Đầu việc phát sinh"}
                       </span>
                     </div>
@@ -1838,15 +1717,15 @@ function MyWorkPageContent() {
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
+                    <h3 className="font-headline-sm text-headline-sm text-v5-ink font-bold leading-tight">
                       {task.title}
                     </h3>
-                    <div className="mt-2.5 p-2 rounded-lg bg-surface-container-low flex items-center justify-between text-[12px]">
+                    <div className="mt-2.5 p-2 rounded-lg bg-v5-bg flex items-center justify-between text-[12px]">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="material-symbols-outlined text-secondary text-[20px] shrink-0">assignment_turned_in</span>
                         <div className="flex flex-col min-w-0">
-                          <span className="font-body-semibold text-on-surface truncate">Đã nộp kết quả</span>
-                          <span className="text-on-surface-variant text-[11px]">
+                          <span className="font-body-semibold text-v5-ink truncate">Đã nộp kết quả</span>
+                          <span className="text-v5-muted text-[11px]">
                             Hạn: {formatDateTime(task.currentDeadline)}
                           </span>
                         </div>
@@ -1859,7 +1738,7 @@ function MyWorkPageContent() {
                   <div className="pt-0.5 flex items-center justify-between gap-2">
                     <Link
                       href={`/tasks/${task.id}`}
-                      className="flex-1 h-11 px-3 rounded-lg bg-surface-container text-on-surface-variant font-label-md text-label-md flex items-center justify-center gap-1 hover:bg-surface-container-high transition-all"
+                      className="flex-1 h-11 px-3 rounded-lg bg-v5-bg text-v5-muted font-label-md text-label-md flex items-center justify-center gap-1 hover:bg-v5-bg-high transition-all"
                     >
                       <span className="material-symbols-outlined text-[17px]">visibility</span>
                       <span>Xem chi tiết hồ sơ nộp</span>
@@ -1872,17 +1751,17 @@ function MyWorkPageContent() {
             return (
               <div
                 key={task.id}
-                className="bg-surface-container-lowest rounded-xl p-3.5 shadow-sm flex flex-col gap-3"
+                className="bg-v5-surface rounded-xl p-3.5 shadow-sm flex flex-col gap-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-label-sm text-label-sm font-bold text-primary-container bg-surface-container px-2 py-0.5 rounded">
+                    <span className="font-label-sm text-label-sm font-bold text-primary-container bg-v5-bg px-2 py-0.5 rounded">
                       {task.code}
                     </span>
                     <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
                       <span className="material-symbols-outlined text-[13px]">flag</span> {task.priority || "Cao"}
                     </span>
-                    <span className="text-on-surface-variant font-label-sm text-[11px]">TTHQ</span>
+                    <span className="text-v5-muted font-label-sm text-[11px]">TTHQ</span>
                     {isReturned && (
                       <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
                         <span className="material-symbols-outlined text-[13px]">undo</span> Bị trả lại
@@ -1894,21 +1773,21 @@ function MyWorkPageContent() {
                   </span>
                 </div>
                 <div>
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">
+                  <h3 className="font-headline-sm text-headline-sm text-v5-ink font-bold leading-tight">
                     {task.title}
                   </h3>
-                  <div className="mt-2 flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+                  <div className="mt-2 flex items-center gap-1.5 text-v5-muted font-label-md text-label-md">
                     <span className="material-symbols-outlined text-[16px] text-secondary">assignment_ind</span>
                     <span className="truncate">
                       {isSelfInitiated(task.originKind) ? (
-                        <>Nguồn: <strong className="text-on-surface font-body-semibold">Công việc tự khởi tạo</strong></>
+                        <>Nguồn: <strong className="text-v5-ink font-body-semibold">Công việc tự khởi tạo</strong></>
                       ) : (
-                        <>Người giao: <strong className="text-on-surface font-body-semibold">{task.owner?.fullName || "Lãnh đạo bộ phận"}</strong> ({task.owner?.position || "Phụ trách"})</>
+                        <>Người giao: <strong className="text-v5-ink font-body-semibold">{task.owner?.fullName || "Lãnh đạo bộ phận"}</strong> ({task.owner?.position || "Phụ trách"})</>
                       )}
                     </span>
                   </div>
                 </div>
-                <div className="bg-surface-container-low p-2 rounded-lg flex items-center justify-between text-[12px] text-on-surface-variant">
+                <div className="bg-v5-bg p-2 rounded-lg flex items-center justify-between text-[12px] text-v5-muted">
                   <span className="flex items-center gap-1">
                     <span className="material-symbols-outlined text-[15px] text-secondary">inventory_2</span>
                     <span>{task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</span>
@@ -1916,26 +1795,26 @@ function MyWorkPageContent() {
                   <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
                 </div>
                 {isReturned && (task.approval?.reason || task.approval?.content) && (
-                  <div className="rounded-lg bg-status-danger-bg/50 border border-status-danger/30 px-3 py-2 text-[11px] text-on-surface">
+                  <div className="rounded-lg bg-status-danger-bg/50 border border-status-danger/30 px-3 py-2 text-[11px] text-v5-ink">
                     <b className="text-status-danger">Lý do trả lại:</b> {task.approval?.reason || task.approval?.content}
                     {task.approval?.decidedByName ? ` · ${task.approval.decidedByName}` : ""}
-                    <span className="block text-outline mt-0.5">
+                    <span className="block text-v5-muted mt-0.5">
                       Tiến độ hiện tại (kể cả 100%) được giữ nguyên khi trả lại.
                     </span>
                   </div>
                 )}
                 {/* YC-38 UAT fix: khoi "Nguon cong viec" — ma TX + nguon phat sinh */}
-                <div className="bg-surface-container-lowest border border-border-default/50 rounded-lg p-2 flex flex-col gap-1">
-                  <span className="text-[10px] uppercase tracking-wide text-on-surface-variant font-semibold">
+                <div className="bg-v5-surface border border-v5-line/50 rounded-lg p-2 flex flex-col gap-1">
+                  <span className="text-[10px] uppercase tracking-wide text-v5-muted font-semibold">
                     Nguồn công việc
                   </span>
                   <TxSourceBadge source={task.txSource} />
-                  <span className="text-[11px] text-on-surface-variant">
+                  <span className="text-[11px] text-v5-muted">
                     {originLabel(task.originKind)}
                   </span>
                 </div>
                 {isTaskTerminal(task.status) ? (
-                  <div className="rounded-lg bg-surface-container px-3 py-2 text-[12px] text-on-surface-variant">
+                  <div className="rounded-lg bg-v5-bg px-3 py-2 text-[12px] text-v5-muted">
                     Nhiệm vụ đã được nghiệm thu — bạn có thể xem kết quả và lịch sử, nhưng không thể cập nhật hoặc nộp lại.
                   </div>
                 ) : isMyPendingAcceptance(task, currentUser.personId) ? (
@@ -1954,7 +1833,7 @@ function MyWorkPageContent() {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={() => openDrawerForTask(task)}
-                    className="h-11 px-3 rounded-lg bg-surface-container text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:bg-surface-container-high active:scale-[0.98] transition-all"
+                    className="h-11 px-3 rounded-lg bg-v5-bg text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
                     type="button"
                   >
                     <span className="material-symbols-outlined text-[18px]">edit_note</span>
@@ -1974,7 +1853,7 @@ function MyWorkPageContent() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => openEditAssign(task)}
-                      className="h-10 px-3 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-border-default active:scale-[0.98] transition-all"
+                      className="h-10 px-3 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
                       type="button"
                     >
                       <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
@@ -1993,7 +1872,7 @@ function MyWorkPageContent() {
                     ) : (
                       <Link
                         href={`/tasks/${task.id}`}
-                        className="h-10 px-3 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-border-default active:scale-[0.98] transition-all"
+                        className="h-10 px-3 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
                       >
                         <span className="material-symbols-outlined text-[18px]">visibility</span>
                         <span>Chi tiết & duyệt</span>
@@ -2007,12 +1886,12 @@ function MyWorkPageContent() {
         </div>
 
         <div className="flex flex-col items-center gap-1 pt-1">
-          <span className="text-[11px] text-outline">Đã tải {tasks.length}/{totalCount} nhiệm vụ</span>
+          <span className="text-[11px] text-v5-muted">Đã tải {tasks.length}/{totalCount} nhiệm vụ</span>
           {page < totalPages && (
             <button
               onClick={() => fetchTasks({ page: page + 1, append: true })}
               disabled={loadingMore}
-              className="w-full h-11 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-md shadow-sm border border-border-default active-press disabled:opacity-50"
+              className="w-full h-11 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md shadow-sm border border-v5-line active-press disabled:opacity-50"
             >
               {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
             </button>
@@ -2045,7 +1924,7 @@ function MyWorkPageContent() {
             onClick={() => setIsDrawerOpen(false)}
           />
 
-          <aside className="relative w-full max-w-full sm:max-w-[520px] sm:w-[520px] bg-surface-container-lowest shadow-2xl z-50 flex flex-col h-full transform transition-transform duration-300 ease-in-out">
+          <aside className="relative w-full max-w-full sm:max-w-[520px] sm:w-[520px] bg-v5-surface shadow-2xl z-50 flex flex-col h-full transform transition-transform duration-300 ease-in-out">
             {/* DRAWER HEADER */}
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between shrink-0">
               <div className="flex items-center gap-space-sm min-w-0 flex-1">
@@ -2072,7 +1951,7 @@ function MyWorkPageContent() {
 
             {/* DRAWER THÔNG TIN NHANH */}
             {selectedTask && (
-              <div className="bg-surface-subtle p-space-md flex flex-col gap-2 shrink-0 border-b border-border-default">
+              <div className="bg-v5-bg p-space-md flex flex-col gap-2 shrink-0 border-b border-v5-line">
                 <div className="flex items-center justify-between">
                   <span className="font-headline-sm text-headline-sm text-primary font-bold">
                     Mã việc: {selectedTask.code}
@@ -2081,14 +1960,14 @@ function MyWorkPageContent() {
                     {selectedTask.planLinks?.[0]?.planItem?.plan?.title || "Kế hoạch tuần"}
                   </span>
                 </div>
-                <p className="font-body-semibold text-body-semibold text-on-surface">
+                <p className="font-body-semibold text-body-semibold text-v5-ink">
                   {selectedTask.title}
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-label-sm mt-1">
-                  <div className="text-outline">
+                  <div className="text-v5-muted">
                     Hạn xử lý: <strong className="text-status-warning">{formatDateTime(selectedTask.currentDeadline)}</strong>
                   </div>
-                  <div className="text-outline text-right">
+                  <div className="text-v5-muted text-right">
                     Phối hợp: <strong className="text-primary">{selectedTask.assignees?.[0]?.person?.fullName || selectedTask.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</strong>
                   </div>
                 </div>
@@ -2124,7 +2003,7 @@ function MyWorkPageContent() {
                     className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
                       drawerStatus === "IN_PROGRESS"
                         ? "bg-secondary/15 border border-secondary text-primary font-semibold"
-                        : "bg-surface-subtle hover:bg-surface-container text-on-surface"
+                        : "bg-v5-bg hover:bg-v5-bg text-v5-ink"
                     }`}
                   >
                     <input
@@ -2145,7 +2024,7 @@ function MyWorkPageContent() {
                       className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
                         drawerStatus === "COMPLETED"
                           ? "bg-status-success-bg border border-status-success text-status-success font-semibold"
-                          : "bg-surface-subtle hover:bg-surface-container text-on-surface"
+                          : "bg-v5-bg hover:bg-v5-bg text-v5-ink"
                       }`}
                     >
                       <input
@@ -2182,9 +2061,9 @@ function MyWorkPageContent() {
                   step="5"
                   value={drawerProgress}
                   onChange={(e) => setDrawerProgress(Number(e.target.value))}
-                  className="w-full accent-secondary cursor-pointer h-2 bg-surface-container rounded-lg"
+                  className="w-full accent-secondary cursor-pointer h-2 bg-v5-bg rounded-lg"
                 />
-                <div className="flex justify-between text-label-sm text-outline px-0.5">
+                <div className="flex justify-between text-label-sm text-v5-muted px-0.5">
                   <span>0% Bắt đầu</span>
                   <span>50% Đang xử lý</span>
                   <span className="text-secondary font-semibold">100% Hoàn tất</span>
@@ -2201,9 +2080,9 @@ function MyWorkPageContent() {
                   value={drawerNotes}
                   onChange={(e) => setDrawerNotes(e.target.value)}
                   placeholder="Nhập tóm tắt kết quả, số hồ sơ xử lý, số tờ khai..."
-                  className="w-full p-2.5 rounded-lg bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
+                  className="w-full p-2.5 rounded-lg bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
                 />
-                <span className="font-label-sm text-[12px] text-outline">
+                <span className="font-label-sm text-[12px] text-v5-muted">
                   Gợi ý: Ghi rõ số lượng tờ khai, vướng mắc nếu có để cấp trên kiểm tra.
                 </span>
               </div>
@@ -2225,13 +2104,13 @@ function MyWorkPageContent() {
                 {/* Danh sách tệp đính kèm thực tế từ Supabase Storage */}
                 <div className="flex flex-col gap-1.5">
                   {attachmentsLoading ? (
-                    <div className="p-3 rounded-lg bg-surface-container-low text-center text-label-sm text-outline flex items-center justify-center gap-2">
+                    <div className="p-3 rounded-lg bg-v5-bg text-center text-label-sm text-v5-muted flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                       Đang tải danh sách tài liệu...
                     </div>
                   ) : attachments.length === 0 ? (
-                    <div className="p-3 rounded-lg bg-surface-container-low border border-dashed border-border-default text-center">
-                      <p className="font-label-sm text-label-sm text-outline">
+                    <div className="p-3 rounded-lg bg-v5-bg border border-dashed border-v5-line text-center">
+                      <p className="font-label-sm text-label-sm text-v5-muted">
                         Chưa có tệp đính kèm. Tải lên biên bản kiểm tra điện tử, chứng từ hoặc ảnh giám định hiện trường.
                       </p>
                     </div>
@@ -2252,7 +2131,7 @@ function MyWorkPageContent() {
                       return (
                         <div
                           key={att.id}
-                          className="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low border border-border-default hover:border-secondary/40 transition-fast"
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-v5-bg border border-v5-line hover:border-secondary/40 transition-fast"
                         >
                           <div className="flex items-center gap-2 min-w-0 pr-2">
                             <span
@@ -2263,7 +2142,7 @@ function MyWorkPageContent() {
                                   ? "text-status-success"
                                   : isImage
                                   ? "text-secondary"
-                                  : "text-outline"
+                                  : "text-v5-muted"
                               }`}
                             >
                               {isPdf
@@ -2284,7 +2163,7 @@ function MyWorkPageContent() {
                               >
                                 {att.fileName}
                               </a>
-                              <span className="font-label-sm text-[11px] text-outline">
+                              <span className="font-label-sm text-[11px] text-v5-muted">
                                 {sizeFormatted} · {att.uploadedBy?.fullName || "Cán bộ"}
                                 {att.isSigned ? " · Đã xác thực nghiệp vụ" : ""}
                               </span>
@@ -2302,7 +2181,7 @@ function MyWorkPageContent() {
                                     mimeType: att.mimeType,
                                   })
                                 }
-                                className="p-1 text-outline hover:text-secondary transition-fast rounded hover:bg-surface-container"
+                                className="p-1 text-v5-muted hover:text-secondary transition-fast rounded hover:bg-v5-bg"
                                 title="Xem nhanh tệp"
                               >
                                 <span className="material-symbols-outlined text-[18px]">visibility</span>
@@ -2313,7 +2192,7 @@ function MyWorkPageContent() {
                               target="_blank"
                               rel="noreferrer"
                               download
-                              className="p-1 text-outline hover:text-secondary transition-fast rounded hover:bg-surface-container"
+                              className="p-1 text-v5-muted hover:text-secondary transition-fast rounded hover:bg-v5-bg"
                               title="Tải về máy tính"
                             >
                               <span className="material-symbols-outlined text-[18px]">download</span>
@@ -2321,7 +2200,7 @@ function MyWorkPageContent() {
                             <button
                               type="button"
                               onClick={() => handleDeleteAttachment(att.id)}
-                              className="p-1 text-outline hover:text-status-danger transition-fast rounded hover:bg-surface-container"
+                              className="p-1 text-v5-muted hover:text-status-danger transition-fast rounded hover:bg-v5-bg"
                               title="Xóa tệp"
                             >
                               <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -2346,7 +2225,7 @@ function MyWorkPageContent() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
                   type="button"
-                  className="mt-1 w-full py-2.5 rounded-lg bg-surface-subtle text-secondary font-label-md text-label-md hover:bg-surface-container flex items-center justify-center gap-2 transition-fast active-press border border-border-subtle disabled:opacity-50"
+                  className="mt-1 w-full py-2.5 rounded-lg bg-v5-bg text-secondary font-label-md text-label-md hover:bg-v5-bg flex items-center justify-center gap-2 transition-fast active-press border border-border-subtle disabled:opacity-50"
                 >
                   <span className={`material-symbols-outlined text-[18px] ${uploadingFile ? "animate-spin" : ""}`}>
                     {uploadingFile ? "progress_activity" : "upload_file"}
@@ -2364,17 +2243,17 @@ function MyWorkPageContent() {
                 <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">
                   info
                 </span>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                <p className="font-label-sm text-label-sm text-v5-muted">
                   Bấm <strong>&quot;Báo hoàn thành &amp; Trình duyệt&quot;</strong> hệ thống sẽ tự động cập nhật Dashboard lãnh đạo và chuyển thông báo tới Trưởng bộ phận.
                 </p>
               </div>
             </div>
 
             {/* DRAWER ACTIONS FOOTER */}
-            <div className="p-space-md bg-surface-subtle flex items-center justify-between gap-space-sm shrink-0 border-t border-border-default">
+            <div className="p-space-md bg-v5-bg flex items-center justify-between gap-space-sm shrink-0 border-t border-v5-line">
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="px-4 py-2 rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container transition-fast border border-border-subtle active-press"
+                className="px-4 py-2 rounded-lg bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg transition-fast border border-border-subtle active-press"
               >
                 Hủy bỏ
               </button>
@@ -2382,7 +2261,7 @@ function MyWorkPageContent() {
                 <button
                   disabled={drawerLoading}
                   onClick={() => handleDrawerSubmit(false)}
-                  className="px-3 py-2 rounded-lg bg-surface-container text-primary font-label-md text-label-md hover:bg-surface-container-high transition-fast active-press"
+                  className="px-3 py-2 rounded-lg bg-v5-bg text-primary font-label-md text-label-md hover:bg-v5-bg-high transition-fast active-press"
                 >
                   {drawerLoading
                     ? "Đang lưu..."
@@ -2411,7 +2290,7 @@ function MyWorkPageContent() {
           ========================================================================= */}
       {editTask && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Sửa giao việc [{editTask.code}]</h3>
               <button onClick={() => setEditTask(null)}>
@@ -2424,13 +2303,13 @@ function MyWorkPageContent() {
                   <label className="text-xs font-semibold text-primary">Tên / Nội dung chỉ đạo *</label>
                   <input type="text" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
                     placeholder="Nhập nội dung công việc chỉ đạo..."
-                    className="h-10 px-3 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
                 </div>
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-semibold text-primary">Cán bộ chủ trì</label>
                     <select value={editOwnerId} onChange={(e) => setEditOwnerId(e.target.value)}
-                      className="h-10 px-2 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
+                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
                       {editTask.owner && <option value={editTask.owner.id}>{editTask.owner.fullName}</option>}
                       {people.filter((p) => p.id !== editTask.owner?.id).map((p) => (
                         <option key={p.id} value={p.id}>{p.fullName}</option>
@@ -2440,7 +2319,7 @@ function MyWorkPageContent() {
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-semibold text-primary">Ưu tiên</label>
                     <select value={editPriority} onChange={(e) => setEditPriority(e.target.value)}
-                      className="h-10 px-2 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
+                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
                       <option value="Khẩn">Khẩn cấp</option>
                       <option value="Cao">Cao</option>
                       <option value="Trung bình">Trung bình</option>
@@ -2452,10 +2331,10 @@ function MyWorkPageContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-primary">Hạn hoàn thành</label>
                   <input type="datetime-local" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)}
-                    className="h-10 px-3 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
                 </div>
               </div>
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
                 <button type="button" onClick={() => setEditTask(null)} className="px-4 py-2 rounded text-xs font-semibold">Hủy</button>
                 <button type="submit" disabled={editSaving} className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50">
                   {editSaving ? "Đang lưu..." : "Lưu sửa giao việc"}
@@ -2471,7 +2350,7 @@ function MyWorkPageContent() {
           ========================================================================= */}
       {isNewTaskModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary-fixed text-[22px]">
@@ -2501,7 +2380,7 @@ function MyWorkPageContent() {
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Nhập nội dung kết quả, số hồ sơ liên quan..."
-                    className="h-9 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-9 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
 
@@ -2527,7 +2406,7 @@ function MyWorkPageContent() {
                     </label>                    <select
                       value={newTaskSource}
                       onChange={(e) => setNewTaskSource(e.target.value)}
-                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="PLAN">Kế hoạch công tác tuần</option>
                       <option value="SELF_INITIATED">Tự khởi tạo phát sinh</option>
@@ -2543,7 +2422,7 @@ function MyWorkPageContent() {
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="Cao">Cao</option>
                       <option value="Trung bình">Trung bình</option>
@@ -2561,7 +2440,7 @@ function MyWorkPageContent() {
                       type="date"
                       value={newTaskDeadline}
                       onChange={(e) => setNewTaskDeadline(e.target.value)}
-                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -2572,17 +2451,17 @@ function MyWorkPageContent() {
                       type="time"
                       value={newTaskTime}
                       onChange={(e) => setNewTaskTime(e.target.value)}
-                      className="h-9 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
                 <button
                   type="button"
                   onClick={() => setIsNewTaskModalOpen(false)}
-                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -2606,7 +2485,7 @@ function MyWorkPageContent() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
             <div className="p-4 bg-status-success text-white flex items-center justify-between gap-2">
               <h3 className="font-headline-sm text-sm font-bold">
                 Duyệt hoàn thành &amp; chọn chất lượng
@@ -2621,10 +2500,10 @@ function MyWorkPageContent() {
               </button>
             </div>
             <div className="p-4 flex flex-col gap-3">
-              <p className="text-xs text-on-surface">
+              <p className="text-xs text-v5-ink">
                 Nhiệm vụ <strong>{quickApproveTask.code}</strong> — {quickApproveTask.title}
               </p>
-              <label className="text-xs font-semibold text-on-surface">
+              <label className="text-xs font-semibold text-v5-ink">
                 Mức chất lượng kết quả (65–100, bước 5){" "}
                 <span className="text-status-danger">*</span>
               </label>
@@ -2633,7 +2512,7 @@ function MyWorkPageContent() {
                 value={quickApproveQuality}
                 onChange={(e) => setQuickApproveQuality(e.target.value)}
                 disabled={quickApproveBusy}
-                className="w-full p-2.5 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                className="w-full p-2.5 rounded bg-v5-bg text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
               >
                 <option value="">— Chọn mức chất lượng —</option>
                 {[65, 70, 75, 80, 85, 90, 95, 100].map((v) => (
@@ -2642,16 +2521,16 @@ function MyWorkPageContent() {
                   </option>
                 ))}
               </select>
-              <p className="text-[10px] text-on-surface-variant">
+              <p className="text-[10px] text-v5-muted">
                 Không tự mặc định 100; mức chất lượng chỉ hiển thị/audit, không tự đổi điểm hoặc xếp loại.
               </p>
             </div>
-            <div className="p-4 bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+            <div className="p-4 bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
               <button
                 type="button"
                 onClick={() => setQuickApproveTask(null)}
                 disabled={quickApproveBusy}
-                className="px-3 py-1.5 rounded bg-surface-container text-xs font-semibold disabled:opacity-50"
+                className="px-3 py-1.5 rounded bg-v5-bg text-xs font-semibold disabled:opacity-50"
               >
                 Hủy
               </button>
@@ -2676,10 +2555,10 @@ function MyWorkPageContent() {
           onClick={() => setPreviewFile(null)}
         >
           <div
-            className="bg-surface-container-lowest rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-border-default"
+            className="bg-v5-surface rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-v5-line"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-3.5 border-b border-border-default flex items-center justify-between bg-surface-subtle">
+            <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">
               <div className="flex items-center gap-2 min-w-0 pr-2">
                 <span className="material-symbols-outlined text-secondary text-[22px]">
                   {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
@@ -2704,7 +2583,7 @@ function MyWorkPageContent() {
                 <button
                   type="button"
                   onClick={() => setPreviewFile(null)}
-                  className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-primary transition-fast"
+                  className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-primary transition-fast"
                   aria-label="Đóng xem trước"
                 >
                   <span className="material-symbols-outlined text-[20px]">close</span>
@@ -2737,8 +2616,8 @@ export default function MyWorkPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen w-full items-center justify-center bg-app-bg">
-          <div className="flex items-center gap-2 rounded-xl border border-border-default/50 bg-surface-container-lowest px-4 py-3 text-label-md text-on-surface-variant shadow-sm">
+        <div className="flex min-h-screen w-full items-center justify-center bg-transparent">
+          <div className="flex items-center gap-2 rounded-xl border border-v5-line/50 bg-v5-surface px-4 py-3 text-label-md text-v5-muted shadow-sm">
             <span className="material-symbols-outlined text-[20px] text-secondary animate-spin">
               progress_activity
             </span>

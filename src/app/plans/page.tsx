@@ -1486,7 +1486,7 @@ export default function PlansPage() {
     activePlan?.items?.filter((item) => !item.group || !item.groupId).length || 0;
 
   return (
-    <div className="w-full min-h-screen bg-app-bg pb-12">
+    <div className="w-full min-h-screen bg-transparent pb-12">
       {/* Toast message */}
       {workflowMessage && (
         <div className="fixed top-24 right-6 z-50 p-4 rounded-xl bg-status-success text-on-primary font-body-semibold text-sm shadow-xl flex items-center gap-2 transition-panel">
@@ -1500,7 +1500,7 @@ export default function PlansPage() {
           ========================================================================= */}
       <div className="hidden lg:flex flex-col w-full p-space-lg gap-space-lg">
         {/* Top Command Panel & Period Navigator */}
-        <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-border-default/50">
+        <div className="bg-v5-surface p-space-lg rounded-xl shadow-sm border border-v5-line/50">
           <div className="flex flex-col gap-space-md">
             {/* Title & Official Approval Status */}
             <div className="flex min-w-0 flex-col gap-1">
@@ -1527,7 +1527,7 @@ export default function PlansPage() {
                     ? "DỰ THẢO KẾ HOẠCH"
                     : "CHƯA CÓ KẾ HOẠCH"}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-surface-subtle text-outline font-label-sm text-label-sm">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-v5-bg text-v5-muted font-label-sm text-label-sm">
                   <span className="material-symbols-outlined text-[15px]">tag</span>
                   {activePlan?.period?.code || (activePlan ? "CHƯA CÓ MÃ KỲ" : "CHƯA CÓ KẾ HOẠCH")}
                 </span>
@@ -1535,14 +1535,14 @@ export default function PlansPage() {
               <h1 className="font-headline-xl text-headline-xl text-primary mt-1 tracking-tight">
                 {activePlan ? activePlan.title : "Chưa có kế hoạch công tác"}
               </h1>
-              <div className="flex flex-wrap items-center gap-2 text-body-sm text-on-surface-variant">
-                <span className="font-semibold text-on-surface">
+              <div className="flex flex-wrap items-center gap-2 text-body-sm text-v5-muted">
+                <span className="font-semibold text-v5-ink">
                   {activePlan?.unit?.name || "Chưa xác định đơn vị"}
                 </span>
-                <span className="rounded-full border border-border-subtle bg-surface-subtle px-2 py-0.5 text-[11px] font-semibold">
+                <span className="rounded-full border border-border-subtle bg-v5-bg px-2 py-0.5 text-[11px] font-semibold">
                   Kế hoạch cấp đơn vị
                 </span>
-                <span className="rounded-full border border-border-subtle bg-surface-subtle px-2 py-0.5 text-[11px] font-semibold">
+                <span className="rounded-full border border-border-subtle bg-v5-bg px-2 py-0.5 text-[11px] font-semibold">
                   Dữ liệu theo phân quyền
                 </span>
               </div>
@@ -1551,14 +1551,14 @@ export default function PlansPage() {
             {/* Action Group */}
             <div
               data-tour="workflow-actions"
-              className="flex flex-wrap items-center gap-space-sm border-t border-border-default/40 pt-space-md"
+              className="flex flex-wrap items-center gap-space-sm border-t border-v5-line/40 pt-space-md"
             >
               {planOptions?.canCreatePlan && (
                 <button
                   type="button"
                   data-testid="create-plan-btn"
                   onClick={openPlanCreateModal}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
                 >
                   <span className="material-symbols-outlined text-[18px]">note_add</span>
                   <span>Tạo kế hoạch</span>
@@ -1570,7 +1570,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="edit-plan-title-btn"
                   onClick={openPlanTitleModal}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
                 >
                   <span className="material-symbols-outlined text-[18px] text-secondary">edit</span>
                   <span>Sửa kế hoạch</span>
@@ -1613,7 +1613,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="manage-plan-items-btn"
                   onClick={openPlanItemsManager}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
                 >
                   <span className="material-symbols-outlined text-[18px] text-secondary">account_tree</span>
                   <span>Quản lý hạng mục</span>
@@ -1625,7 +1625,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="open-dept-catalog-manager-toolbar"
                   onClick={openDeptCatalogManager}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-primary font-label-md text-label-md font-semibold transition-fast active-press"
                 >
                   <span className="material-symbols-outlined text-[18px] text-status-warning">settings_applications</span>
                   <span>Danh mục đầu việc bộ phận</span>
@@ -1644,7 +1644,7 @@ export default function PlansPage() {
                   </button>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-border-subtle cursor-default"
                     title="Bạn không có quyền trình duyệt kế hoạch này."
                   >
                     <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
@@ -1672,7 +1672,7 @@ export default function PlansPage() {
                   </>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-border-subtle cursor-default"
                     title={
                       selfApprovalBlocked
                         ? "Người lập/trình không được tự phê duyệt kế hoạch của mình."
@@ -1702,7 +1702,7 @@ export default function PlansPage() {
                   </button>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle text-outline font-label-md text-label-md border border-border-subtle cursor-default"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-border-subtle cursor-default"
                     title="Kế hoạch đã phê duyệt, chờ lãnh đạo ban hành hiệu lực thi hành."
                   >
                     <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
@@ -1712,7 +1712,7 @@ export default function PlansPage() {
               ) : canRequestAmendment ? (
                 <button
                   onClick={() => setShowAmendmentModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-muted font-label-md text-label-md transition-fast active-press"
                   title="Đề xuất điều chỉnh bổ sung nhiệm vụ cho kế hoạch đã ban hành"
                 >
                   <span className="material-symbols-outlined text-[18px]">approval_delegation</span>
@@ -1725,7 +1725,7 @@ export default function PlansPage() {
                   data-testid="export-xlsx-btn"
                   href={`/api/reports/export?template=legacy&planId=${activePlan.id}&periodId=${activePlan.period?.id || ""}${selectedScope === "personal" ? "&scope=personal" : ""}`}
                   download
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-surface-subtle hover:bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-muted font-label-md text-label-md transition-fast active-press"
                   title="Xuất dữ liệu Excel chuẩn mẫu báo cáo Hải quan (8 cột A-H)"
                 >
                   <span className="material-symbols-outlined text-[18px] text-status-success">download</span>
@@ -1736,9 +1736,9 @@ export default function PlansPage() {
           </div>
 
           {/* View Mode Switcher + Interactive Filters */}
-          <div className="mt-space-lg pt-space-md border-t border-border-default/50 flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+          <div className="mt-space-lg pt-space-md border-t border-v5-line/50 flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
             {/* Tabs lọc theo kỳ thật + Góc nhìn Gantt */}
-            <div className="inline-flex p-1 rounded-lg bg-surface-subtle gap-1 text-on-surface-variant">
+            <div className="inline-flex p-1 rounded-lg bg-v5-bg gap-1 text-v5-muted">
               {(
                 [
                   { key: "day", label: `Kế hoạch Ngày (${countBy("DAY")})` },
@@ -1751,8 +1751,8 @@ export default function PlansPage() {
                   onClick={() => switchView(t.key)}
                   className={`px-3.5 py-1.5 rounded font-label-md text-label-md transition-fast ${
                     viewMode === t.key
-                      ? "bg-surface-container-lowest text-primary font-body-semibold shadow-sm"
-                      : "hover:text-on-surface"
+                      ? "bg-v5-surface text-primary font-body-semibold shadow-sm"
+                      : "hover:text-v5-ink"
                   }`}
                 >
                   {t.label}
@@ -1762,8 +1762,8 @@ export default function PlansPage() {
                 onClick={() => switchView("gantt")}
                 className={`px-3.5 py-1.5 rounded font-label-md text-label-md transition-fast flex items-center gap-1 ${
                   viewMode === "gantt"
-                    ? "bg-surface-container-lowest text-primary font-body-semibold shadow-sm"
-                    : "hover:text-on-surface"
+                    ? "bg-v5-surface text-primary font-body-semibold shadow-sm"
+                    : "hover:text-v5-ink"
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">view_timeline</span>
@@ -1774,13 +1774,13 @@ export default function PlansPage() {
             {/* Filter Controls Bar */}
             <div className="flex flex-wrap items-center gap-space-sm">
               {/* Scope Switcher: All vs Personal Plan */}
-              <div className="inline-flex p-1 rounded-lg bg-surface-container-low border border-border-subtle gap-1">
+              <div className="inline-flex p-1 rounded-lg bg-v5-bg border border-border-subtle gap-1">
                 <button
                   onClick={() => setSelectedScope("all")}
                   className={`px-3 py-1.5 rounded text-xs font-semibold transition-fast ${
                     selectedScope === "all"
                       ? "bg-primary text-on-primary shadow-sm"
-                      : "text-on-surface-variant hover:text-primary"
+                      : "text-v5-muted hover:text-primary"
                   }`}
                 >
                   Toàn đơn vị
@@ -1791,7 +1791,7 @@ export default function PlansPage() {
                   className={`px-3 py-1.5 rounded text-xs font-semibold transition-fast flex items-center gap-1 ${
                     selectedScope === "personal"
                       ? "bg-primary text-on-primary shadow-sm"
-                      : "text-on-surface-variant hover:text-primary"
+                      : "text-v5-muted hover:text-primary"
                   }`}
                 >
                   <span className="material-symbols-outlined text-[15px]">person</span>
@@ -1801,10 +1801,10 @@ export default function PlansPage() {
 
               {filteredPlans.length > 0 && (
                 <div
-                  className="flex min-w-0 items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle"
+                  className="flex min-w-0 items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-border-subtle"
                   title={activePlan?.title}
                 >
-                  <span className="font-label-sm text-label-sm text-outline">Chọn kế hoạch:</span>
+                  <span className="font-label-sm text-label-sm text-v5-muted">Chọn kế hoạch:</span>
                   <select
                     data-testid="plan-select"
                     value={activePlan?.id || ""}
@@ -1820,8 +1820,8 @@ export default function PlansPage() {
                   </select>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle">
-                <span className="font-label-sm text-label-sm text-outline">Phụ trách:</span>
+              <div className="flex items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-border-subtle">
+                <span className="font-label-sm text-label-sm text-v5-muted">Phụ trách:</span>
                 <select
                   value={selectedOfficerFilter}
                   onChange={(e) => setSelectedOfficerFilter(e.target.value)}
@@ -1835,8 +1835,8 @@ export default function PlansPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-1.5 bg-surface-container-low px-3 py-1.5 rounded text-on-surface border border-border-subtle">
-                <span className="font-label-sm text-label-sm text-outline">Ưu tiên:</span>
+              <div className="flex items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-border-subtle">
+                <span className="font-label-sm text-label-sm text-v5-muted">Ưu tiên:</span>
                 <select
                   value={selectedPriorityFilter}
                   onChange={(e) => setSelectedPriorityFilter(e.target.value)}
@@ -1852,7 +1852,7 @@ export default function PlansPage() {
                 <button
                   type="button"
                   onClick={clearWorkItemFilters}
-                  className="inline-flex items-center gap-1 rounded border border-border-default bg-surface px-2.5 py-1.5 text-label-sm font-semibold text-on-surface-variant hover:bg-surface-container"
+                  className="inline-flex items-center gap-1 rounded border border-v5-line bg-surface px-2.5 py-1.5 text-label-sm font-semibold text-v5-muted hover:bg-v5-bg"
                 >
                   <span className="material-symbols-outlined text-[15px]">filter_alt_off</span>
                   Xóa lọc
@@ -1863,12 +1863,12 @@ export default function PlansPage() {
         </div>
 
         {!activePlan && (
-          <div className="bg-surface-container-lowest rounded-xl border border-dashed border-border-default p-8 text-center">
-            <span className="material-symbols-outlined text-outline text-[40px]">event_note</span>
+          <div className="bg-v5-surface rounded-xl border border-dashed border-v5-line p-8 text-center">
+            <span className="material-symbols-outlined text-v5-muted text-[40px]">event_note</span>
             <h2 className="font-headline-sm text-headline-sm text-primary mt-2">
               Chưa có kế hoạch cho kỳ này
             </h2>
-            <p className="text-sm text-on-surface-variant mt-1">
+            <p className="text-sm text-v5-muted mt-1">
               Dữ liệu bên dưới chỉ hiển thị kế hoạch có thật trong phạm vi bạn được xem.
               {planOptions?.canCreatePlan
                 ? " Bạn có thể tạo kế hoạch mới cho đơn vị trong phạm vi được cấp quyền."
@@ -1889,7 +1889,7 @@ export default function PlansPage() {
 
         {/* Góc nhìn Gantt — timeline nhiệm vụ liên kết của kế hoạch đang chọn (dữ liệu thật) */}
         {viewMode === "gantt" && (
-          <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
+          <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line/50">
             <div className="px-space-lg py-2.5 bg-primary-container text-on-primary text-label-sm font-label-sm flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary-fixed text-[18px]">view_timeline</span>
               <span>
@@ -1898,13 +1898,13 @@ export default function PlansPage() {
               </span>
             </div>
             {!ganttData || ganttData.tasks.length === 0 ? (
-              <div className="p-8 text-center text-sm text-outline">
+              <div className="p-8 text-center text-sm text-v5-muted">
                 Kế hoạch này chưa liên kết nhiệm vụ nào. Dùng thao tác liên kết nhiệm vụ vào hạng mục để xem trên Gantt.
               </div>
             ) : (
               <div className="overflow-x-auto p-space-md">
                 <div className="min-w-[720px]">
-                  <div className="flex text-[11px] text-outline font-mono mb-1">
+                  <div className="flex text-[11px] text-v5-muted font-mono mb-1">
                     <div className="w-64 shrink-0 pr-2">Nhiệm vụ / Chủ trì</div>
                     <div className="flex-1 relative h-5">
                       {Array.from({ length: ganttData.days }).map((_, i) => {
@@ -1932,14 +1932,14 @@ export default function PlansPage() {
                     return (
                       <div key={t.id} className="flex items-center py-1.5 border-t border-border-subtle/50">
                         <div className="w-64 shrink-0 pr-2 min-w-0">
-                          <div className="text-xs font-semibold text-on-surface truncate" title={t.title}>
+                          <div className="text-xs font-semibold text-v5-ink truncate" title={t.title}>
                             [{t.code}] {t.title}
                           </div>
-                          <div className="text-[11px] text-outline truncate">
+                          <div className="text-[11px] text-v5-muted truncate">
                             {t.owner?.fullName || "Chưa phân công"} • Hạn {new Date(t.currentDeadline).toLocaleDateString("vi-VN")}
                           </div>
                         </div>
-                        <div className="flex-1 relative h-6 bg-surface-subtle rounded">
+                        <div className="flex-1 relative h-6 bg-v5-bg rounded">
                           <div
                             className={`absolute top-1 h-4 rounded ${color}`}
                             style={{ left: `${barStartPct}%`, width: `${widthPct}%` }}
@@ -1949,7 +1949,7 @@ export default function PlansPage() {
                       </div>
                     );
                   })}
-                  <div className="flex gap-4 mt-2 text-[11px] text-outline">
+                  <div className="flex gap-4 mt-2 text-[11px] text-v5-muted">
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-secondary inline-block" /> Đang thực hiện</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-status-warning inline-block" /> Chờ nghiệm thu</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-status-success inline-block" /> Hoàn thành</span>
@@ -1962,7 +1962,7 @@ export default function PlansPage() {
         )}
 
         {/* Main Administrative Data-Dense Table (Excel Grid Representation - Stitch d8279bd2bf0c4198b665f567223d0bf4) */}
-        <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
+        <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line/50">
           {/* Business rules: giữ chi tiết nhưng thu gọn để không chiếm chỗ bảng */}
           <details className="group border-b border-primary/20 bg-primary-container text-on-primary">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-space-lg py-2 text-label-sm font-label-sm [&::-webkit-details-marker]:hidden">
@@ -1990,7 +1990,7 @@ export default function PlansPage() {
               <summary className="flex cursor-pointer list-none items-center gap-2 px-space-lg py-2 text-label-sm font-label-sm [&::-webkit-details-marker]:hidden">
                 <span className="material-symbols-outlined text-[18px]">warning</span>
                 <strong>Cảnh báo phân công ({unassignedItemCount})</strong>
-                <span className="text-on-surface-variant">— bấm để xem chi tiết</span>
+                <span className="text-v5-muted">— bấm để xem chi tiết</span>
                 <span className="ml-auto rounded border border-status-warning/40 bg-status-warning-bg px-2 py-0.5 text-[10px] font-semibold uppercase">
                   Chưa phân nhóm
                 </span>
@@ -2005,10 +2005,10 @@ export default function PlansPage() {
           <div className="overflow-x-auto w-full custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[1240px]">
               <thead className="sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <tr className="bg-surface-subtle font-table-header text-table-header text-primary">
+                <tr className="bg-v5-bg font-table-header text-table-header text-primary">
                   <th className="py-3 px-space-md w-[110px] uppercase tracking-wider text-center">Thứ / Ngày</th>
                   <th className="py-3 px-space-md w-[200px] uppercase tracking-wider">Nhóm nhiệm vụ</th>
-                  <th className="py-3 px-space-lg min-w-[340px] uppercase tracking-wider bg-surface-container-highest/40 text-primary">
+                  <th className="py-3 px-space-lg min-w-[340px] uppercase tracking-wider bg-v5-bg-highest/40 text-primary">
                     <div className="flex items-center justify-between gap-2">
                       <span title="Cột C: Danh mục đầu việc biến động theo từng cá nhân">
                         Đầu việc / Danh mục
@@ -2034,16 +2034,16 @@ export default function PlansPage() {
                   if (!activePlan || !activePlan.items || activePlan.items.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={9} className="py-16 text-center text-on-surface-variant">
-                          <span className="material-symbols-outlined text-outline text-[40px] block mb-2">
+                        <td colSpan={9} className="py-16 text-center text-v5-muted">
+                          <span className="material-symbols-outlined text-v5-muted text-[40px] block mb-2">
                             {activePlan ? "account_tree" : "event_note"}
                           </span>
-                          <p className="font-body-semibold text-body-semibold text-on-surface">
+                          <p className="font-body-semibold text-body-semibold text-v5-ink">
                             {activePlan
                               ? "Kế hoạch chưa có hạng mục"
                               : "Chưa có kế hoạch công tác trong phạm vi được xem"}
                           </p>
-                          <p className="font-table-data text-[12px] text-outline mt-1">
+                          <p className="font-table-data text-[12px] text-v5-muted mt-1">
                             {activePlan
                               ? "Tạo hạng mục trước, sau đó thêm đầu việc vào từng hạng mục."
                               : planOptions?.canCreatePlan
@@ -2238,14 +2238,14 @@ export default function PlansPage() {
                           : "Bấm “Thêm đầu việc mới” để bắt đầu nhập nội dung cho kế hoạch.";
                     return (
                       <tr>
-                        <td colSpan={9} className="py-16 text-center text-on-surface-variant">
-                          <span className="material-symbols-outlined text-outline text-[40px] block mb-2">
+                        <td colSpan={9} className="py-16 text-center text-v5-muted">
+                          <span className="material-symbols-outlined text-v5-muted text-[40px] block mb-2">
                             {hasWorkItemFilter ? "filter_alt_off" : "playlist_add"}
                           </span>
-                          <p className="font-body-semibold text-body-semibold text-on-surface">
+                          <p className="font-body-semibold text-body-semibold text-v5-ink">
                             {emptyTitle}
                           </p>
-                          <p className="font-table-data text-[12px] text-outline mt-1">
+                          <p className="font-table-data text-[12px] text-v5-muted mt-1">
                             {emptyHint}
                           </p>
                         </td>
@@ -2254,10 +2254,10 @@ export default function PlansPage() {
                   }
 
                   return filteredRows.map((row) => (
-                    <tr key={row.id} className="hover:bg-surface-container-low/40 transition-colors">
-                      <td className="py-4 px-space-md text-center align-top bg-surface-subtle/30">
+                    <tr key={row.id} className="hover:bg-v5-bg/40 transition-colors">
+                      <td className="py-4 px-space-md text-center align-top bg-v5-bg/30">
                         <div className="font-body-semibold text-primary">{row.dayLabel}</div>
-                        {row.dateStr && <div className="font-label-sm text-label-sm text-outline">{row.dateStr}</div>}
+                        {row.dateStr && <div className="font-label-sm text-label-sm text-v5-muted">{row.dateStr}</div>}
                       </td>
                       <td className="py-4 px-space-md align-top">
                         {row.isUnassignedGroup ? (
@@ -2269,14 +2269,14 @@ export default function PlansPage() {
                           <span className="font-body-semibold text-primary block">{row.groupTitle}</span>
                         )}
                       </td>
-                      <td className="py-4 px-space-lg align-top bg-surface-container-lowest">
+                      <td className="py-4 px-space-lg align-top bg-v5-surface">
                         <div className="flex flex-col gap-1.5">
                           <div className="font-body-semibold text-primary text-[14px]">
                             {row.title}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             {row.code && (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-surface-container text-primary font-semibold">
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-v5-bg text-primary font-semibold">
                                 {row.code}
                               </span>
                             )}
@@ -2286,7 +2286,7 @@ export default function PlansPage() {
                               </span>
                             )}
                             {row.deptWorkItemTitle && (
-                              <span className="px-2 py-0.5 rounded text-[11px] bg-surface-container-high text-primary font-semibold border border-border-subtle">
+                              <span className="px-2 py-0.5 rounded text-[11px] bg-v5-bg-high text-primary font-semibold border border-border-subtle">
                                 BỘ PHẬN: {row.deptWorkItemTitle}
                               </span>
                             )}
@@ -2304,7 +2304,7 @@ export default function PlansPage() {
                               </span>
                             ))}
                             {row.deadlineText && (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-surface-container-high text-primary font-semibold border border-border-subtle">
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-v5-bg-high text-primary font-semibold border border-border-subtle">
                                 Hạn hoàn thành: {row.deadlineText}
                               </span>
                             )}
@@ -2317,13 +2317,13 @@ export default function PlansPage() {
                             {row.ownerName.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-body-semibold text-on-surface block text-sm">{row.ownerName}</span>
-                            <span className="text-xs text-outline">{activePlan?.unit?.name || "Bộ phận"}</span>
+                            <span className="font-body-semibold text-v5-ink block text-sm">{row.ownerName}</span>
+                            <span className="text-xs text-v5-muted">{activePlan?.unit?.name || "Bộ phận"}</span>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-space-md align-top">
-                        <span className="text-xs text-on-surface-variant font-medium">{row.coordinationUnit}</span>
+                        <span className="text-xs text-v5-muted font-medium">{row.coordinationUnit}</span>
                       </td>
                       <td className="py-4 px-space-sm align-top text-center">
                         <span
@@ -2339,7 +2339,7 @@ export default function PlansPage() {
                         </span>
                       </td>
                       <td className="py-4 px-space-md align-top">
-                        <span className="text-xs text-on-surface-variant">{row.expectedResult}</span>
+                        <span className="text-xs text-v5-muted">{row.expectedResult}</span>
                       </td>
                       <td className="py-4 px-space-md align-top text-center">
                         <div className="flex flex-col items-center gap-1">
@@ -2348,7 +2348,7 @@ export default function PlansPage() {
                               row.status === "COMPLETED"
                                 ? "bg-status-success-bg text-status-success"
                                 : row.status === "NOT_STARTED"
-                                ? "bg-surface-container text-outline"
+                                ? "bg-v5-bg text-v5-muted"
                                 : row.hasIssue
                                 ? "bg-status-danger-bg text-status-danger"
                                 : "bg-status-warning-bg text-status-warning"
@@ -2382,7 +2382,7 @@ export default function PlansPage() {
                                   ? "text-status-success font-semibold"
                                   : row.reviewState === "SUBMITTED"
                                   ? "text-status-warning font-semibold"
-                                  : "text-outline"
+                                  : "text-v5-muted"
                               }`}
                             >
                               {reviewStateText(row.reviewState)}
@@ -2407,7 +2407,7 @@ export default function PlansPage() {
                                   type="button"
                                   onClick={() => openEditModal(row.rawWorkItem!)}
                                   disabled={!canModify}
-                                  className="p-1 rounded hover:bg-surface-container text-outline hover:text-primary transition-colors inline-block disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="p-1 rounded hover:bg-v5-bg text-v5-muted hover:text-primary transition-colors inline-block disabled:opacity-40 disabled:cursor-not-allowed"
                                   title={reason}
                                 >
                                   <span className="material-symbols-outlined text-[18px]">edit</span>
@@ -2416,7 +2416,7 @@ export default function PlansPage() {
                                   type="button"
                                   onClick={() => handleDeleteWorkItem(row.rawWorkItem!.id)}
                                   disabled={!canModify}
-                                  className="p-1 rounded hover:bg-status-danger-bg text-outline hover:text-status-danger transition-colors inline-block disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="p-1 rounded hover:bg-status-danger-bg text-v5-muted hover:text-status-danger transition-colors inline-block disabled:opacity-40 disabled:cursor-not-allowed"
                                   title={canModify ? "Xóa đầu việc" : reason}
                                 >
                                   <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -2427,7 +2427,7 @@ export default function PlansPage() {
                           {row.rawTask && (
                             <Link
                               href={`/tasks/${row.rawTask.id}`}
-                              className="p-1 rounded hover:bg-surface-container text-outline hover:text-primary transition-colors inline-block"
+                              className="p-1 rounded hover:bg-v5-bg text-v5-muted hover:text-primary transition-colors inline-block"
                               title="Xem chi tiết nhiệm vụ"
                             >
                               <span className="material-symbols-outlined text-[18px]">visibility</span>
@@ -2453,13 +2453,13 @@ export default function PlansPage() {
         {/* Operational Filter Section */}
         <section className="px-margin mt-space-md flex flex-col gap-space-sm">
           {/* Period Segmented Control — dùng chung viewMode với Desktop */}
-          <div className="bg-surface-container-high p-1 rounded-xl flex items-center justify-between">
+          <div className="bg-v5-bg-high p-1 rounded-xl flex items-center justify-between">
             <button
               onClick={() => switchView("day")}
               className={`flex-1 py-1.5 rounded-lg font-label-md text-label-md text-center transition-fast ${
                 viewMode === "day"
-                  ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                  : "text-on-surface-variant"
+                  ? "bg-v5-surface text-primary shadow-sm font-semibold"
+                  : "text-v5-muted"
               }`}
             >
               Ngày
@@ -2468,8 +2468,8 @@ export default function PlansPage() {
               onClick={() => switchView("week")}
               className={`flex-1 py-1.5 rounded-lg font-label-md text-label-md text-center transition-fast ${
                 viewMode === "week"
-                  ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                  : "text-on-surface-variant"
+                  ? "bg-v5-surface text-primary shadow-sm font-semibold"
+                  : "text-v5-muted"
               }`}
             >
               {mobileLabels.weekShort}
@@ -2478,8 +2478,8 @@ export default function PlansPage() {
               onClick={() => switchView("month")}
               className={`flex-1 py-1.5 rounded-lg font-label-md text-label-md text-center transition-fast ${
                 viewMode === "month"
-                  ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                  : "text-on-surface-variant"
+                  ? "bg-v5-surface text-primary shadow-sm font-semibold"
+                  : "text-v5-muted"
               }`}
             >
               {mobileLabels.monthShort}
@@ -2487,13 +2487,13 @@ export default function PlansPage() {
           </div>
 
           {/* Kỳ của kế hoạch đang chọn — không suy đoán kỳ hiện tại nếu chưa có kế hoạch */}
-          <div className="flex items-center justify-between bg-surface-container-lowest px-space-md py-space-sm rounded-xl shadow-sm border border-border-default/40">
+          <div className="flex items-center justify-between bg-v5-surface px-space-md py-space-sm rounded-xl shadow-sm border border-v5-line/40">
             <button
               type="button"
               aria-label="Kỳ trước"
               disabled
               title="Chưa hỗ trợ chuyển kỳ trên màn hình này"
-              className="w-9 h-9 rounded-lg bg-surface-subtle flex items-center justify-center text-on-surface opacity-40 cursor-not-allowed"
+              className="w-9 h-9 rounded-lg bg-v5-bg flex items-center justify-center text-v5-ink opacity-40 cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[20px]">chevron_left</span>
             </button>
@@ -2510,7 +2510,7 @@ export default function PlansPage() {
                     : "Chưa có kỳ kế hoạch"}
                 </span>
               </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">
+              <span className="font-label-sm text-label-sm text-v5-muted">
                 {activePlan ? "Kỳ công tác theo kế hoạch" : "Chọn hoặc tạo kế hoạch để xem kỳ"}
               </span>
             </div>
@@ -2519,21 +2519,21 @@ export default function PlansPage() {
               aria-label="Kỳ sau"
               disabled
               title="Chưa hỗ trợ chuyển kỳ trên màn hình này"
-              className="w-9 h-9 rounded-lg bg-surface-subtle flex items-center justify-center text-on-surface opacity-40 cursor-not-allowed"
+              className="w-9 h-9 rounded-lg bg-v5-bg flex items-center justify-center text-v5-ink opacity-40 cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[20px]">chevron_right</span>
             </button>
           </div>
 
           {/* Plan selector thật — chỉ liệt kê kế hoạch trong phạm vi được xem */}
-          <label className="flex flex-col gap-1 text-xs font-semibold text-on-surface-variant">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-v5-muted">
             Kế hoạch đang xem
             <select
               data-testid="plan-select-mobile"
               value={activePlan?.id || ""}
               onChange={(e) => setSelectedPlanId(e.target.value)}
               disabled={filteredPlans.length === 0}
-              className="h-11 px-3 rounded-lg bg-surface-container-lowest text-primary border border-border-default/50 disabled:opacity-60"
+              className="h-11 px-3 rounded-lg bg-v5-surface text-primary border border-v5-line/50 disabled:opacity-60"
             >
               {filteredPlans.length === 0 ? (
                 <option value="">Chưa có kế hoạch</option>
@@ -2555,7 +2555,7 @@ export default function PlansPage() {
               className={`flex-1 py-2 px-space-sm rounded-lg font-body-semibold text-center shadow-sm flex items-center justify-center gap-1.5 transition-fast ${
                 selectedScope === "personal"
                   ? "bg-primary text-on-primary"
-                  : "bg-surface-container-high text-on-surface-variant"
+                  : "bg-v5-bg-high text-v5-muted"
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">person</span>
@@ -2567,7 +2567,7 @@ export default function PlansPage() {
               className={`flex-1 py-2 px-space-sm rounded-lg font-body-semibold text-center flex items-center justify-center gap-1.5 transition-fast ${
                 selectedScope === "all"
                   ? "bg-primary text-on-primary"
-                  : "bg-surface-container-high text-on-surface-variant"
+                  : "bg-v5-bg-high text-v5-muted"
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">group</span>
@@ -2578,7 +2578,7 @@ export default function PlansPage() {
 
         {/* Plan Metadata & Approval State Card */}
         <section className="px-margin mt-space-md">
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm border border-border-default/40">
+          <div className="bg-v5-surface p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm border border-v5-line/40">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-space-sm">
                 <div className="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-headline-sm text-headline-sm font-bold">
@@ -2589,7 +2589,7 @@ export default function PlansPage() {
                     {activePlan?.unit?.name || "Chưa xác định đơn vị"}
                   </span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-on-surface-variant">
+                    <span className="text-xs text-v5-muted">
                       {activePlan?.title || "Chưa có kế hoạch công tác"}
                     </span>
                     {canEditActivePlanTitle && (
@@ -2599,7 +2599,7 @@ export default function PlansPage() {
                         onClick={openPlanTitleModal}
                         title="Sửa tiêu đề kế hoạch"
                         aria-label="Sửa tiêu đề kế hoạch"
-                        className="p-1 rounded text-secondary hover:bg-surface-container transition-colors"
+                        className="p-1 rounded text-secondary hover:bg-v5-bg transition-colors"
                       >
                         <span className="material-symbols-outlined text-[15px]">edit</span>
                       </button>
@@ -2614,7 +2614,7 @@ export default function PlansPage() {
                   ? "bg-status-warning-bg text-status-warning"
                   : activePlan?.status === "RETURNED"
                   ? "bg-status-danger-bg text-status-danger"
-                  : "bg-surface-container text-outline"
+                  : "bg-v5-bg text-v5-muted"
               }`}>
                 {activePlan?.status === "IN_EFFECT"
                   ? "CÓ HIỆU LỰC"
@@ -2661,7 +2661,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="manage-plan-items-btn-mobile"
                   onClick={openPlanItemsManager}
-                  className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
+                  className="h-10 px-space-sm bg-v5-surface text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-v5-bg transition-colors active-press"
                 >
                   <span className="material-symbols-outlined text-[18px] text-secondary">account_tree</span>
                   <span className="truncate">Quản lý hạng mục</span>
@@ -2670,20 +2670,20 @@ export default function PlansPage() {
                 <button
                   type="button"
                   onClick={openPlanCreateModal}
-                  className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
+                  className="h-10 px-space-sm bg-v5-surface text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-v5-bg transition-colors active-press"
                 >
                   <span className="material-symbols-outlined text-[18px] text-secondary">note_add</span>
                   <span className="truncate">Tạo kế hoạch</span>
                 </button>
               ) : (
-                <span className="h-10 px-space-sm bg-surface-container-lowest text-outline rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 opacity-60">
+                <span className="h-10 px-space-sm bg-v5-surface text-v5-muted rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 opacity-60">
                   <span className="material-symbols-outlined text-[18px]">lock</span>
                   <span className="truncate">Nội dung đang khóa</span>
                 </span>
               )}
               <Link
                 href="/reports"
-                className="h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
+                className="h-10 px-space-sm bg-v5-surface text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-v5-bg transition-colors active-press"
               >
                 <span className="material-symbols-outlined text-[18px] text-primary">description</span>
                 <span className="truncate">Xem báo cáo</span>
@@ -2705,7 +2705,7 @@ export default function PlansPage() {
                 type="button"
                 data-testid="open-dept-catalog-manager-toolbar-mobile"
                 onClick={openDeptCatalogManager}
-                className="w-full h-10 px-space-sm bg-surface-container-lowest text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-surface-subtle transition-colors active-press"
+                className="w-full h-10 px-space-sm bg-v5-surface text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm hover:bg-v5-bg transition-colors active-press"
               >
                 <span className="material-symbols-outlined text-[18px] text-status-warning">settings_applications</span>
                 <span className="truncate">Danh mục đầu việc bộ phận</span>
@@ -2723,10 +2723,10 @@ export default function PlansPage() {
               const totalItems = (item.workItems?.length || 0) + (item.taskLinks?.length || 0);
 
               return (
-                <div key={item.id} className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-border-default/50">
+                <div key={item.id} className="bg-v5-surface rounded-xl overflow-hidden shadow-sm border border-v5-line/50">
                   <button
                     onClick={() => toggleAccordion(secKey)}
-                    className="w-full p-space-md bg-surface-container-low flex items-center justify-between text-left"
+                    className="w-full p-space-md bg-v5-bg flex items-center justify-between text-left"
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-secondary" />
@@ -2746,14 +2746,14 @@ export default function PlansPage() {
                   {isOpen && (
                     <div className="p-3 flex flex-col gap-3">
                       {totalItems === 0 ? (
-                        <p className="text-xs text-outline py-2 text-center">Chưa có đầu việc nào trong mục này</p>
+                        <p className="text-xs text-v5-muted py-2 text-center">Chưa có đầu việc nào trong mục này</p>
                       ) : (
                         <>
                           {item.workItems?.map((wi) => {
                             const products = workItemProducts(wi);
                             const canModify = canModifyWorkItem(wi);
                             return (
-                              <div key={wi.id} className="p-3 rounded-lg bg-surface-subtle border border-border-default flex flex-col gap-2">
+                              <div key={wi.id} className="p-3 rounded-lg bg-v5-bg border border-v5-line flex flex-col gap-2">
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="font-label-sm font-bold text-primary truncate">
                                     {wi.template ? `[${wi.template.code}]` : wi.deptWorkItem ? "[BỘ PHẬN]" : "ĐẦU VIỆC"}
@@ -2766,7 +2766,7 @@ export default function PlansPage() {
                                 {(wi.deptWorkItem || products.length > 0) && (
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {wi.deptWorkItem && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-surface-container-high text-primary border border-border-subtle">
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-v5-bg-high text-primary border border-border-subtle">
                                         {wi.deptWorkItem.title}
                                       </span>
                                     )}
@@ -2781,7 +2781,7 @@ export default function PlansPage() {
                                     ))}
                                   </div>
                                 )}
-                                <div className="flex items-center justify-between gap-2 text-xs text-outline pt-1 border-t border-border-default">
+                                <div className="flex items-center justify-between gap-2 text-xs text-v5-muted pt-1 border-t border-v5-line">
                                   <div className="flex flex-col gap-0.5">
                                     <span>Thực hiện: {wi.status === "COMPLETED" ? "Đã hoàn thành" : wi.status === "IN_PROGRESS" || wi.status === "ACTIVE" ? "Đang thực hiện" : wi.status === "DISCONTINUED" ? "Ngừng áp dụng" : "Chưa bắt đầu"}</span>
                                     <span className={wi.reviewState === "CONFIRMED" ? "text-status-success font-semibold" : wi.reviewState === "SUBMITTED" ? "text-status-warning font-semibold" : ""}>
@@ -2816,7 +2816,7 @@ export default function PlansPage() {
                           })}
 
                           {item.taskLinks?.map((tl) => (
-                            <div key={tl.task.id} className="p-3 rounded-lg bg-surface-subtle border border-border-default flex flex-col gap-2">
+                            <div key={tl.task.id} className="p-3 rounded-lg bg-v5-bg border border-v5-line flex flex-col gap-2">
                               <div className="flex items-center justify-between">
                                 <span className="font-label-sm font-bold text-primary">
                                   {tl.task.code}
@@ -2834,7 +2834,7 @@ export default function PlansPage() {
                               <h4 className="font-body-semibold text-sm text-primary">
                                 {tl.task.title}
                               </h4>
-                              <div className="flex items-center justify-between text-xs text-outline pt-1 border-t border-border-default">
+                              <div className="flex items-center justify-between text-xs text-v5-muted pt-1 border-t border-v5-line">
                                 <span>Ưu tiên: {tl.task.priority}</span>
                                 <Link href={`/tasks/${tl.task.id}`} className="text-secondary font-bold flex items-center gap-0.5">
                                   <span>Xử lý</span>
@@ -2851,12 +2851,12 @@ export default function PlansPage() {
               );
             })
           ) : (
-            <div className="p-6 bg-surface-container-lowest rounded-xl text-center text-sm">
+            <div className="p-6 bg-v5-surface rounded-xl text-center text-sm">
               {activePlan ? (
                 <>
-                  <span className="material-symbols-outlined text-outline text-[32px]">account_tree</span>
+                  <span className="material-symbols-outlined text-v5-muted text-[32px]">account_tree</span>
                   <p className="font-semibold text-primary mt-1">Kế hoạch chưa có hạng mục</p>
-                  <p className="text-outline text-xs mt-1">
+                  <p className="text-v5-muted text-xs mt-1">
                     Tạo hạng mục trước, sau đó thêm đầu việc vào từng hạng mục.
                   </p>
                   {canEditActivePlanContent && (
@@ -2872,9 +2872,9 @@ export default function PlansPage() {
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-outline text-[32px]">event_note</span>
+                  <span className="material-symbols-outlined text-v5-muted text-[32px]">event_note</span>
                   <p className="font-semibold text-primary mt-1">Chưa có kế hoạch công tác</p>
-                  <p className="text-outline text-xs mt-1">
+                  <p className="text-v5-muted text-xs mt-1">
                     {planOptions?.canCreatePlan
                       ? "Tạo kế hoạch mới cho đơn vị trong phạm vi được cấp quyền."
                       : "Bạn chưa có quyền lập kế hoạch — vui lòng liên hệ người có thẩm quyền."}
@@ -2901,7 +2901,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-4xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-4xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary-fixed text-[22px]">
@@ -2938,20 +2938,20 @@ export default function PlansPage() {
                 {/* 1. YC-23 + YC-25: Khu vực chọn đầu việc từ danh mục — mỗi nguồn một cột riêng */}
                 <div
                   data-testid="catalog-picker"
-                  className="rounded-xl border border-border-subtle bg-surface-subtle/50 p-3 flex flex-col gap-3"
+                  className="rounded-xl border border-border-subtle bg-v5-bg/50 p-3 flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="font-label-md text-label-md text-primary font-semibold flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[18px] text-secondary">library_books</span>
                       Chọn từ danh mục — tối đa một nguồn đầu việc, không bắt buộc
                     </span>
-                    <span className="text-[11px] text-outline">Nguồn: Danh mục TX · bộ phận · 48 mẫu cũ · sản phẩm QĐ1277 gắn kèm</span>
+                    <span className="text-[11px] text-v5-muted">Nguồn: Danh mục TX · bộ phận · 48 mẫu cũ · sản phẩm QĐ1277 gắn kèm</span>
                   </div>
 
                   {/* YC-31 — TX và QĐ1277 được chọn tại một bộ chọn thống nhất bên dưới. */}
                   <div
                     data-testid="modal-tx-picker"
-                    className="text-[11px] text-outline rounded border border-dashed border-border-subtle p-2.5 flex items-start gap-1.5"
+                    className="text-[11px] text-v5-muted rounded border border-dashed border-border-subtle p-2.5 flex items-start gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[14px] shrink-0">info</span>
                     <span>
@@ -2996,7 +2996,7 @@ export default function PlansPage() {
                       data-testid="modal-dept-item-select"
                       value={modalDeptWorkItemId}
                       onChange={(e) => handleSelectDeptWorkItem(e.target.value)}
-                      className="h-10 px-3 rounded bg-surface-container-lowest text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-surface text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="">-- Không chọn từ danh mục bộ phận --</option>
                       {modalDeptWorkItemId &&
@@ -3014,7 +3014,7 @@ export default function PlansPage() {
                       ))}
                     </select>
                     {deptWorkItems.length === 0 && (
-                      <span className="text-[11px] text-outline">
+                      <span className="text-[11px] text-v5-muted">
                         Bộ phận chưa có danh mục riêng — có thể chọn từ Cột A hoặc Cột B bên dưới, hoặc tự nhập tên đầu việc.
                       </span>
                     )}
@@ -3025,7 +3025,7 @@ export default function PlansPage() {
                     {/* Cột A — công việc thường xuyên (48 mẫu) */}
                     <div
                       data-testid="picker-col-routine"
-                      className={`${!legacyTemplatesSelectable && !modalTemplateId ? "hidden" : "flex"} rounded-lg border border-border-default bg-surface-container-lowest flex-col min-w-0`}
+                      className={`${!legacyTemplatesSelectable && !modalTemplateId ? "hidden" : "flex"} rounded-lg border border-v5-line bg-v5-surface flex-col min-w-0`}
                     >
                       <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-primary uppercase tracking-wide">
@@ -3065,12 +3065,12 @@ export default function PlansPage() {
                           value={templateSearch}
                           onChange={(e) => setTemplateSearch(e.target.value)}
                           placeholder="Tìm nhanh theo mã hoặc tên mẫu..."
-                          className="w-full h-8 px-2 rounded bg-surface-container-low text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                          className="w-full h-8 px-2 rounded bg-v5-bg text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                         />
                       </div>
                       <div className="max-h-52 overflow-y-auto flex flex-col">
                         {filteredTemplates.length === 0 ? (
-                          <span className="p-3 text-xs text-outline">Không có mẫu phù hợp.</span>
+                          <span className="p-3 text-xs text-v5-muted">Không có mẫu phù hợp.</span>
                         ) : (
                           filteredTemplates.map((tpl) => {
                             const active = modalTemplateId === tpl.id;
@@ -3089,13 +3089,13 @@ export default function PlansPage() {
                                 className={`text-left px-3 py-2 border-b border-border-subtle/60 flex flex-col gap-0.5 transition-colors ${
                                   active
                                     ? "bg-secondary/10 border-l-2 border-l-secondary"
-                                    : "hover:bg-surface-container-low"
+                                    : "hover:bg-v5-bg"
                                 }`}
                               >
                                 <span className="text-xs font-semibold text-primary">
                                   [{tpl.code}] {tpl.title}
                                 </span>
-                                <span className="text-[10px] text-outline">
+                                <span className="text-[10px] text-v5-muted">
                                   {groups.find((g) => g.id === tpl.groupId)?.name || ""}
                                   {tpl.defaultPriority ? ` · Ưu tiên: ${tpl.defaultPriority}` : ""}
                                 </span>
@@ -3133,7 +3133,7 @@ export default function PlansPage() {
                       }
                     }}
                     placeholder="Nhập tên nhiệm vụ trong kỳ kế hoạch..."
-                    className={`p-2.5 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary resize-none ${
+                    className={`p-2.5 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary resize-none ${
                       modalFieldErrors.title ? "border-status-danger" : "border-border-subtle"
                     }`}
                   />
@@ -3157,7 +3157,7 @@ export default function PlansPage() {
                         setModalFieldErrors((prev) => ({ ...prev, planItemId: "" }));
                       }
                     }}
-                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                    className={`h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary ${
                       modalFieldErrors.planItemId ? "border-status-danger" : "border-border-subtle"
                     }`}
                   >
@@ -3198,12 +3198,12 @@ export default function PlansPage() {
                   {editingItem ? (
                     <div
                       data-testid="modal-person-readonly"
-                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle flex items-center justify-between gap-2"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle flex items-center justify-between gap-2"
                     >
                       <span className="truncate">
                         {editingItem.person?.fullName || "Không xác định"}
                       </span>
-                      <span className="text-[10px] text-outline shrink-0">
+                      <span className="text-[10px] text-v5-muted shrink-0">
                         Không đổi khi sửa
                       </span>
                     </div>
@@ -3226,7 +3226,7 @@ export default function PlansPage() {
                             setModalFieldErrors((prev) => ({ ...prev, personId: "" }));
                           }
                         }}
-                        className={`h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-70 ${
+                        className={`h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-70 ${
                           modalFieldErrors.personId ? "border-status-danger" : "border-border-subtle"
                         }`}
                       >
@@ -3245,7 +3245,7 @@ export default function PlansPage() {
                           </option>
                         ))}
                       </select>
-                      <span className="text-[10px] text-outline">
+                      <span className="text-[10px] text-v5-muted">
                         {isLeaderRole
                           ? "Chỉ cán bộ đang hoạt động thuộc đơn vị của kế hoạch."
                           : "Cán bộ chỉ được thêm đầu việc cho chính mình."}
@@ -3317,7 +3317,7 @@ export default function PlansPage() {
                         setModalFieldErrors((prev) => ({ ...prev, groupId: "" }));
                       }
                     }}
-                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                    className={`h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary ${
                       modalFieldErrors.groupId ? "border-status-danger" : "border-border-subtle"
                     }`}
                   >
@@ -3343,7 +3343,7 @@ export default function PlansPage() {
                       data-testid="modal-workdate-select"
                       value={modalWorkDate}
                       onChange={(e) => setModalWorkDate(e.target.value)}
-                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="">Cả tuần / Thực hiện thường xuyên</option>
                       {weekDaysOptions.map((opt) => (
@@ -3362,7 +3362,7 @@ export default function PlansPage() {
                       data-testid="modal-priority-select"
                       value={modalPriority}
                       onChange={(e) => setModalPriority(e.target.value)}
-                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="Cao">Cao (Khẩn cấp / Trọng điểm)</option>
                       <option value="Trung bình">Trung bình (Thường quy)</option>
@@ -3381,9 +3381,9 @@ export default function PlansPage() {
                     type="date"
                     value={modalDueDate}
                     onChange={(e) => setModalDueDate(e.target.value)}
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
-                  <span className="text-[10px] text-outline">
+                  <span className="text-[10px] text-v5-muted">
                     Mốc cam kết xử lý. Ngày hoàn thành thực tế và xác nhận của lãnh đạo được ghi nhận tại
                     “Nhật ký công việc” — không chỉnh trực tiếp tại đây.
                   </span>
@@ -3401,7 +3401,7 @@ export default function PlansPage() {
                       value={modalCoordination}
                       onChange={(e) => setModalCoordination(e.target.value)}
                       placeholder="VD: Doanh nghiệp XNK, Trạm BP..."
-                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
 
@@ -3413,13 +3413,13 @@ export default function PlansPage() {
                       data-testid="modal-status-select"
                       value={modalStatus}
                       onChange={(e) => setModalStatus(e.target.value)}
-                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="NOT_STARTED">Chưa thực hiện</option>
                       <option value="IN_PROGRESS">Đang thực hiện</option>
                       <option value="DISCONTINUED">Ngừng áp dụng</option>
                     </select>
-                    <span className="text-[10px] text-outline">
+                    <span className="text-[10px] text-v5-muted">
                       Không đặt “Đã hoàn thành” trực tiếp tại đây. Hoàn thành thực tế và xác nhận của
                       lãnh đạo là hai bước riêng.
                     </span>
@@ -3437,16 +3437,16 @@ export default function PlansPage() {
                     value={modalExpectedResult}
                     onChange={(e) => setModalExpectedResult(e.target.value)}
                     placeholder="VD: 100% hồ sơ thông quan đúng quy trình, theo dõi 100% seal GPS..."
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
               </div>
 
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -3476,7 +3476,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanCreateModal && planOptions?.canCreatePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+          <div className="w-full max-w-xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div>
                 <h3 className="font-headline-sm text-headline-sm text-white">Tạo kế hoạch công tác</h3>
@@ -3510,7 +3510,7 @@ export default function PlansPage() {
                           type="button"
                           onClick={openDuplicatePlan}
                           data-testid="open-duplicate-plan-btn"
-                          className="w-fit rounded border border-status-danger/40 bg-surface-container-lowest px-2.5 py-1 text-[11px] font-semibold text-status-danger hover:bg-status-danger-bg"
+                          className="w-fit rounded border border-status-danger/40 bg-v5-surface px-2.5 py-1 text-[11px] font-semibold text-status-danger hover:bg-status-danger-bg"
                         >
                           Mở kế hoạch trùng để sửa/xóa
                         </button>
@@ -3528,7 +3528,7 @@ export default function PlansPage() {
                       setPlanFormUnitId(e.target.value);
                       setPlanFormFieldErrors((prev) => ({ ...prev, unitId: "" }));
                     }}
-                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                    className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
                       planFormFieldErrors.unitId ? "border-status-danger" : "border-border-subtle"
                     }`}
                   >
@@ -3559,7 +3559,7 @@ export default function PlansPage() {
                         className={`h-10 rounded-lg text-sm font-semibold border transition-fast ${
                           planFormType === type
                             ? "bg-primary text-on-primary border-primary"
-                            : "bg-surface-container-low text-on-surface-variant border-border-subtle"
+                            : "bg-v5-bg text-v5-muted border-border-subtle"
                         }`}
                       >
                         {label}
@@ -3578,11 +3578,11 @@ export default function PlansPage() {
                       setPlanFormDate(e.target.value);
                       setPlanFormFieldErrors((prev) => ({ ...prev, date: "" }));
                     }}
-                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                    className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
                       planFormFieldErrors.date ? "border-status-danger" : "border-border-subtle"
                     }`}
                   />
-                  <span className="text-[10px] text-outline font-normal">
+                  <span className="text-[10px] text-v5-muted font-normal">
                     Hệ thống xác định đúng Ngày/Tuần/Tháng theo lịch, không tự cộng 7 ngày.
                   </span>
                   {planFormFieldErrors.date && (
@@ -3601,7 +3601,7 @@ export default function PlansPage() {
                       setPlanFormFieldErrors((prev) => ({ ...prev, title: "" }));
                     }}
                     placeholder="VD: Kế hoạch công tác tuần 43"
-                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                    className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
                       planFormFieldErrors.title ? "border-status-danger" : "border-border-subtle"
                     }`}
                   />
@@ -3621,7 +3621,7 @@ export default function PlansPage() {
                       setPlanFormFieldErrors((prev) => ({ ...prev, firstItem: "" }));
                     }}
                     placeholder="VD: I. Công tác trọng tâm"
-                    className={`h-10 px-3 rounded bg-surface-container-low text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
+                    className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
                       planFormFieldErrors.firstItem ? "border-status-danger" : "border-border-subtle"
                     }`}
                   />
@@ -3631,11 +3631,11 @@ export default function PlansPage() {
                 </label>
               </div>
 
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
                 <button
                   type="button"
                   onClick={() => setShowPlanCreateModal(false)}
-                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -3659,7 +3659,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanTitleModal && activePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div>
                 <h3 className="font-headline-sm text-headline-sm text-white">Sửa kế hoạch công tác</h3>
@@ -3704,23 +3704,23 @@ export default function PlansPage() {
                       setPlanTitleError(null);
                     }}
                     placeholder="VD: Kế hoạch công tác tuần 43"
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
-                  <span className="text-[10px] text-outline font-normal">
+                  <span className="text-[10px] text-v5-muted font-normal">
                     {planTitleDraft.trim().length}/300 ký tự
                   </span>
                 </label>
 
-                <p className="text-xs text-outline">
+                <p className="text-xs text-v5-muted">
                   Chỉ tiêu đề được sửa. Đơn vị, kỳ công tác và trạng thái kế hoạch giữ nguyên.
                 </p>
               </div>
 
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
                 <button
                   type="button"
                   onClick={() => setShowPlanTitleModal(false)}
-                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -3744,7 +3744,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanCancelModal && activePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
             <div className="p-space-md bg-status-danger text-white flex items-center justify-between">
               <div>
                 <h3 className="font-headline-sm text-headline-sm text-white">Hủy kế hoạch trùng</h3>
@@ -3776,7 +3776,7 @@ export default function PlansPage() {
                   </div>
                 )}
 
-                <div className="rounded-lg bg-surface-subtle border border-border-subtle px-3 py-2 text-xs text-on-surface-variant">
+                <div className="rounded-lg bg-v5-bg border border-border-subtle px-3 py-2 text-xs text-v5-muted">
                   Kế hoạch: <strong className="text-primary">{activePlan.title}</strong>
                   <br />
                   Hủy mềm chỉ chuyển trạng thái sang <strong>CANCELED</strong>; dữ liệu vẫn được
@@ -3797,19 +3797,19 @@ export default function PlansPage() {
                       setPlanCancelError(null);
                     }}
                     placeholder="VD: Trùng với kế hoạch tuần 43 đã lập cho cùng đơn vị"
-                    className="px-3 py-2 rounded bg-surface-container-low text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-y"
+                    className="px-3 py-2 rounded bg-v5-bg text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-y"
                   />
-                  <span className="text-[10px] text-outline font-normal">
+                  <span className="text-[10px] text-v5-muted font-normal">
                     {planCancelReason.trim().length}/500 ký tự
                   </span>
                 </label>
               </div>
 
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
                 <button
                   type="button"
                   onClick={() => setShowPlanCancelModal(false)}
-                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
                 >
                   Giữ lại
                 </button>
@@ -3833,7 +3833,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanItemsModal && activePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default">
+          <div className="w-full max-w-2xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div>
                 <h3 className="font-headline-sm text-headline-sm text-white">Quản lý hạng mục kế hoạch</h3>
@@ -3861,7 +3861,7 @@ export default function PlansPage() {
               )}
 
               {!canEditActivePlanContent && (
-                <div className="rounded-lg border border-border-subtle bg-surface-subtle px-3 py-2 text-xs text-outline flex items-start gap-1.5">
+                <div className="rounded-lg border border-border-subtle bg-v5-bg px-3 py-2 text-xs text-v5-muted flex items-start gap-1.5">
                   <span className="material-symbols-outlined text-[16px]">lock</span>
                   <span>
                     Kế hoạch đang {activePlan.status === "SUBMITTED" ? "chờ duyệt" : "khóa nội dung"} — chỉ xem
@@ -3870,7 +3870,7 @@ export default function PlansPage() {
                 </div>
               )}
 
-              <div className="rounded-lg border border-border-default p-3 bg-surface-subtle/50 flex flex-col gap-2">
+              <div className="rounded-lg border border-v5-line p-3 bg-v5-bg/50 flex flex-col gap-2">
                 <span className="text-xs font-bold text-primary">
                   {planItemEditingId ? "Sửa hạng mục" : "Thêm hạng mục mới"}
                 </span>
@@ -3883,14 +3883,14 @@ export default function PlansPage() {
                   }}
                   disabled={!canEditActivePlanContent || planItemBusy}
                   placeholder="Tên hạng mục *"
-                  className="h-10 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
+                  className="h-10 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
                 />
                 <select
                   data-testid="plan-item-group"
                   value={planItemGroupId}
                   onChange={(e) => setPlanItemGroupId(e.target.value)}
                   disabled={!canEditActivePlanContent || planItemBusy}
-                  className="h-10 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
+                  className="h-10 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
                 >
                   <option value="">Không gán nhóm nghiệp vụ</option>
                   {(groups.length ? groups : planOptions?.groups || []).map((g) => (
@@ -3908,7 +3908,7 @@ export default function PlansPage() {
                         setPlanItemTitle("");
                         setPlanItemError(null);
                       }}
-                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-surface-container"
+                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-v5-bg"
                     >
                       Hủy sửa
                     </button>
@@ -3926,11 +3926,11 @@ export default function PlansPage() {
               </div>
 
               {activePlan.items.length === 0 ? (
-                <div className="text-center text-xs text-outline rounded-lg border border-dashed border-border-subtle p-6">
+                <div className="text-center text-xs text-v5-muted rounded-lg border border-dashed border-border-subtle p-6">
                   Kế hoạch chưa có hạng mục. Thêm hạng mục đầu tiên ở biểu mẫu phía trên.
                 </div>
               ) : (
-                <div className="flex flex-col divide-y divide-border-subtle border border-border-default rounded-lg overflow-hidden">
+                <div className="flex flex-col divide-y divide-border-subtle border border-v5-line rounded-lg overflow-hidden">
                   {activePlan.items.map((it, idx) => {
                     const linked =
                       (it.workItems?.length || 0) + (it.taskLinks?.length || 0);
@@ -3944,7 +3944,7 @@ export default function PlansPage() {
                           <span className="text-sm font-semibold text-primary truncate">
                             {idx + 1}. {it.title}
                           </span>
-                          <span className="text-[11px] text-outline">
+                          <span className="text-[11px] text-v5-muted">
                             {it.group?.name || "Chưa gán nhóm"} · {linked} đầu việc/nhiệm vụ
                           </span>
                         </div>
@@ -3965,7 +3965,7 @@ export default function PlansPage() {
                               setPlanItemGroupId(it.groupId || "");
                               setPlanItemError(null);
                             }}
-                            className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="w-8 h-8 rounded hover:bg-v5-bg flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <span className="material-symbols-outlined text-[16px] text-secondary">edit</span>
                           </button>
@@ -3980,7 +3980,7 @@ export default function PlansPage() {
                             }
                             disabled={!canEditActivePlanContent || planItemBusy || linked > 0}
                             onClick={() => deletePlanItem(it.id, it.title)}
-                            className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="w-8 h-8 rounded hover:bg-v5-bg flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <span className="material-symbols-outlined text-[16px] text-status-danger">delete</span>
                           </button>
@@ -3992,11 +3992,11 @@ export default function PlansPage() {
               )}
             </div>
 
-            <div className="p-space-md bg-surface-subtle flex items-center justify-end border-t border-border-default">
+            <div className="p-space-md bg-v5-bg flex items-center justify-end border-t border-v5-line">
               <button
                 type="button"
                 onClick={() => setShowPlanItemsModal(false)}
-                className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle transition-fast active-press"
+                className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
               >
                 Đóng
               </button>
@@ -4010,7 +4010,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showDeptCatalogModal && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-2xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div>
                 <h3 className="font-headline-sm text-headline-sm text-white">
@@ -4043,7 +4043,7 @@ export default function PlansPage() {
                       setDeptFormDesc("");
                       loadDeptManageItems(e.target.value);
                     }}
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                   >
                     {deptCatalogUnits.map((u) => (
                       <option key={u.id} value={u.id}>
@@ -4055,7 +4055,7 @@ export default function PlansPage() {
               )}
 
               {/* Form thêm / sửa đầu việc */}
-              <div className="rounded-lg border border-border-default p-3 flex flex-col gap-2 bg-surface-subtle/50">
+              <div className="rounded-lg border border-v5-line p-3 flex flex-col gap-2 bg-v5-bg/50">
                 <span className="text-xs font-bold text-primary">
                   {deptEditingId ? "Sửa đầu việc đang chọn" : "Thêm đầu việc mới vào danh mục bộ phận"}
                 </span>
@@ -4064,14 +4064,14 @@ export default function PlansPage() {
                   value={deptFormTitle}
                   onChange={(e) => setDeptFormTitle(e.target.value)}
                   placeholder="Tên đầu việc * (VD: Kiểm tra niêm phong GPS ca đêm)"
-                  className="h-9 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="h-9 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                 />
                 <input
                   data-testid="dept-form-desc"
                   value={deptFormDesc}
                   onChange={(e) => setDeptFormDesc(e.target.value)}
                   placeholder="Mô tả ngắn (tuỳ chọn)"
-                  className="h-9 px-3 rounded bg-surface-container-lowest text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="h-9 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
                 />
                 <div className="flex justify-end gap-2">
                   {deptEditingId && (
@@ -4082,7 +4082,7 @@ export default function PlansPage() {
                         setDeptFormTitle("");
                         setDeptFormDesc("");
                       }}
-                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-surface-container"
+                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-v5-bg"
                     >
                       Huỷ sửa
                     </button>
@@ -4101,18 +4101,18 @@ export default function PlansPage() {
 
               {/* Danh sách đầu việc của bộ phận */}
               {deptManageLoading ? (
-                <span className="text-xs text-outline py-2">Đang tải danh mục...</span>
+                <span className="text-xs text-v5-muted py-2">Đang tải danh mục...</span>
               ) : deptManageItems.length === 0 ? (
-                <span className="text-xs text-outline py-2">
+                <span className="text-xs text-v5-muted py-2">
                   Bộ phận này chưa có đầu việc nào trong danh mục riêng.
                 </span>
               ) : (
-                <div className="flex flex-col divide-y divide-border-subtle border border-border-default rounded-lg overflow-hidden">
+                <div className="flex flex-col divide-y divide-border-subtle border border-v5-line rounded-lg overflow-hidden">
                   {deptManageItems.map((it) => (
                     <div key={it.id} className="p-3 flex items-center justify-between gap-2" data-testid={`dept-manage-row-${it.id}`}>
                       <div className="flex flex-col min-w-0">
                         <span className="text-sm font-semibold text-primary truncate">{it.title}</span>
-                        <span className="text-[11px] text-outline truncate">
+                        <span className="text-[11px] text-v5-muted truncate">
                           {it.description ? `${it.description} · ` : ""}
                           {it.status === "ACTIVE" ? "Đang sử dụng" : "Đã ngừng sử dụng"} · Đã dùng trong {it.usageCount ?? 0} đầu việc kế hoạch
                         </span>
@@ -4126,7 +4126,7 @@ export default function PlansPage() {
                             setDeptFormTitle(it.title);
                             setDeptFormDesc(it.description || "");
                           }}
-                          className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center active-press"
+                          className="w-8 h-8 rounded hover:bg-v5-bg flex items-center justify-center active-press"
                         >
                           <span className="material-symbols-outlined text-[16px] text-secondary">edit</span>
                         </button>
@@ -4134,7 +4134,7 @@ export default function PlansPage() {
                           type="button"
                           title={it.status === "ACTIVE" ? "Ngừng sử dụng" : "Kích hoạt lại"}
                           onClick={() => toggleDeptItemStatus(it)}
-                          className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center active-press"
+                          className="w-8 h-8 rounded hover:bg-v5-bg flex items-center justify-center active-press"
                         >
                           <span className="material-symbols-outlined text-[16px] text-status-warning">
                             {it.status === "ACTIVE" ? "block" : "restart_alt"}
@@ -4144,7 +4144,7 @@ export default function PlansPage() {
                           type="button"
                           title="Xoá / ngừng sử dụng"
                           onClick={() => removeDeptItem(it)}
-                          className="w-8 h-8 rounded hover:bg-surface-container flex items-center justify-center active-press"
+                          className="w-8 h-8 rounded hover:bg-v5-bg flex items-center justify-center active-press"
                         >
                           <span className="material-symbols-outlined text-[16px] text-status-danger">delete</span>
                         </button>
@@ -4161,7 +4161,7 @@ export default function PlansPage() {
       {/* MODAL TRẢ LẠI CHỈNH SỬA */}
       {showReturnModal && (
         <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-status-danger text-on-error flex items-center justify-between">
               <span className="font-headline-sm font-semibold">Yêu Cầu Chỉnh Sửa Kế Hoạch</span>
               <button onClick={() => setShowReturnModal(false)}>
@@ -4176,13 +4176,13 @@ export default function PlansPage() {
                 value={returnNotes}
                 onChange={(e) => setReturnNotes(e.target.value)}
                 placeholder="Nhập ý kiến chỉ đạo, nội dung cần bổ sung..."
-                className="w-full p-2.5 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                className="w-full p-2.5 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
               />
             </div>
-            <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+            <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
               <button
                 onClick={() => setShowReturnModal(false)}
-                className="px-4 py-2 rounded bg-surface-container-lowest text-xs font-semibold"
+                className="px-4 py-2 rounded bg-v5-surface text-xs font-semibold"
               >
                 Hủy
               </button>
@@ -4201,7 +4201,7 @@ export default function PlansPage() {
       {/* MODAL TRÌNH DUYỆT BỔ SUNG / ĐIỀU CHỈNH */}
       {showAmendmentModal && (
         <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-secondary text-on-secondary flex items-center justify-between">
               <span className="font-headline-sm font-semibold flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">approval_delegation</span>
@@ -4212,7 +4212,7 @@ export default function PlansPage() {
               </button>
             </div>
             <div className="p-space-md flex flex-col gap-space-sm">
-              <p className="font-label-sm text-xs text-on-surface-variant">
+              <p className="font-label-sm text-xs text-v5-muted">
                 Kế hoạch hiện tại đã có hiệu lực. Bạn có thể mở khóa kế hoạch về trạng thái Dự thảo để cập nhật bổ sung nhiệm vụ mới hoặc trình Lãnh đạo thẩm định lại.
               </p>
 
@@ -4236,14 +4236,14 @@ export default function PlansPage() {
                   value={amendmentNotes}
                   onChange={(e) => setAmendmentNotes(e.target.value)}
                   placeholder="Nhập tên hạng mục bổ sung, số văn bản liên quan..."
-                  className="w-full p-2.5 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                  className="w-full p-2.5 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
                 />
               </div>
             </div>
-            <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
+            <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
               <button
                 onClick={() => setShowAmendmentModal(false)}
-                className="px-4 py-2 rounded bg-surface-container-lowest text-xs font-semibold"
+                className="px-4 py-2 rounded bg-v5-surface text-xs font-semibold"
               >
                 Hủy
               </button>
