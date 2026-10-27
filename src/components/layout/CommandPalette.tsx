@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -300,7 +302,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                             active ? "bg-primary text-on-primary" : "bg-surface-container text-primary"
                           }`}
                         >
-                          <span className="material-symbols-outlined text-[19px]">{command.icon}</span>
+                          <V5Icon name={command.icon} className="text-[19px]" />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-body-sm font-semibold text-on-surface">
@@ -311,9 +313,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                           </span>
                         </span>
                         {active && (
-                          <span className="material-symbols-outlined text-[18px] text-primary">
-                            keyboard_return
-                          </span>
+                          <V5Icon name="keyboard_return" className="text-[18px] text-primary" />
                         )}
                       </button>
                     );

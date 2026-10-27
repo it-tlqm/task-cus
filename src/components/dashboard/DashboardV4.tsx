@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -434,7 +436,7 @@ export default function DashboardV4() {
               href="/dashboard"
               className="h-10 px-3 inline-flex items-center gap-1.5 rounded-lg bg-surface-container-lowest border border-border-default text-primary font-body-semibold text-body-sm hover:bg-surface-container"
             >
-              <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+              <V5Icon name="arrow_back" className="text-[18px]" />
               Giao diện cũ
             </Link>
             <button
@@ -442,7 +444,7 @@ export default function DashboardV4() {
               onClick={() => window.print()}
               className="h-10 px-3 inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary font-body-semibold text-body-sm hover:bg-primary/90"
             >
-              <span className="material-symbols-outlined text-[18px]">print</span>
+              <V5Icon name="print" className="text-[18px]" />
               In / PDF
             </button>
           </div>
@@ -451,7 +453,7 @@ export default function DashboardV4() {
         <section className="bg-surface-container-lowest border border-border-default/60 rounded-xl p-2.5 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg bg-surface-container text-primary font-body-semibold text-body-sm">
-              <span className="material-symbols-outlined text-[17px]">account_balance</span>
+              <V5Icon name="account_balance" className="text-[17px]" />
               HQCK Quốc tế Tà Lùng
             </span>
             <div className="grid grid-cols-4 gap-1 bg-surface-container rounded-lg p-1 min-w-[340px] sm:min-w-[420px]">
@@ -497,14 +499,14 @@ export default function DashboardV4() {
               href="/giao-ban"
               className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary font-body-semibold text-body-sm hover:bg-primary/90"
             >
-              <span className="material-symbols-outlined text-[17px]">table_view</span>
+              <V5Icon name="table_view" className="text-[17px]" />
               Số liệu giao ban
             </Link>
             <Link
               href="/v5"
               className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 text-primary font-body-semibold text-body-sm hover:bg-primary/10"
             >
-              <span className="material-symbols-outlined text-[17px]">auto_awesome</span>
+              <V5Icon name="auto_awesome" className="text-[17px]" />
               Bảng điều hành mới
             </Link>
           </div>
@@ -833,7 +835,7 @@ function KpiCard({
       <div className="flex items-start justify-between gap-2">
         <div className="font-label-sm text-label-sm text-on-surface-variant font-semibold">{label}</div>
         <span className={`w-8 h-8 rounded-lg grid place-items-center ${toneClass}`}>
-          <span className="material-symbols-outlined text-[18px]">{icon}</span>
+          <V5Icon name={icon} className="text-[18px]" />
         </span>
       </div>
       <div className="mt-2.5 font-headline-md text-primary font-bold tabular-nums">{value}</div>

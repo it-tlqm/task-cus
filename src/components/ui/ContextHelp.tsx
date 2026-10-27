@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -57,7 +59,7 @@ export function ContextHelp() {
           pathname.startsWith("/roster") ? "hidden lg:flex" : "flex"
         }`}
       >
-        <span className="material-symbols-outlined text-[22px]">help</span>
+        <V5Icon name="help" className="text-[22px]" />
       </button>
       {open && (
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4" onClick={close}>
@@ -73,11 +75,11 @@ export function ContextHelp() {
             )}
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-primary flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">help</span>
+                <V5Icon name="help" className="text-[20px]" />
                 {help.title}
               </h3>
               <button onClick={close} className="p-1 rounded hover:bg-surface-container text-outline" aria-label="Đóng">
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <ol className="list-decimal list-inside text-sm text-on-surface flex flex-col gap-1.5">

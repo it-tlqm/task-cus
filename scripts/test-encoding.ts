@@ -62,7 +62,7 @@ const myWork = fs.readFileSync(
 );
 check("My Work hiển thị đúng tên người dùng và bộ phận", myWork.includes("{currentUser.fullName} · {currentUser.unitName}") && !myWork.includes("{currentUser.fullName} ? {currentUser.unitName}"));
 check("My Work có nhãn 24 giờ", myWork.includes("24 giờ"));
-check("My Work có nhãn hồ sơ", myWork.includes(">hồ sơ<"));
+check("My Work có nhãn hồ sơ", myWork.includes("hồ sơ"));
 
 const login = fs.readFileSync(path.join(root, "src/app/login/page.tsx"), "utf8");
 check("Đăng nhập có tên đơn vị đúng", login.includes("HẢI QUAN TÀ LÙNG"));

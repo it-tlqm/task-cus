@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState } from "react";
 import BackButton from "@/components/ui/BackButton";
 import { Badge } from "@/components/v5/ui/badge";
@@ -132,9 +134,7 @@ export default function AdminAuditPage() {
       {/* Filter Strip */}
       <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-md">
         <div className="relative flex-1 w-full sm:max-w-md">
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-v5-muted text-[18px]">
-            search
-          </span>
+          <V5Icon name="search" className="absolute left-3 top-2.5 text-v5-muted text-[18px]" />
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -182,18 +182,14 @@ export default function AdminAuditPage() {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-v5-muted">
-                    <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-2 animate-spin">
-                      progress_activity
-                    </span>
+                    <V5Icon name="progress_activity" className="text-v5-muted text-[32px] block mb-2 animate-spin" />
                     Đang nạp dữ liệu kiểm toán từ hệ thống...
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-v5-muted">
-                    <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-2">
-                      manage_history
-                    </span>
+                    <V5Icon name="manage_history" className="text-v5-muted text-[32px] block mb-2" />
                     Không tìm thấy bản ghi kiểm toán nào phù hợp với bộ lọc tìm kiếm.
                   </td>
                 </tr>

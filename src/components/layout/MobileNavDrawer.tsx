@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -133,9 +135,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
               data-testid="mobile-nav-close"
               className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[21px]">
-                close
-              </span>
+              <V5Icon name="close" className="text-[21px]" />
             </button>
           </div>
 
@@ -143,9 +143,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
             <div className="px-3 pt-3">
               <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-on-secondary">
-                  <span aria-hidden="true" className="material-symbols-outlined text-[19px]">
-                    person
-                  </span>
+                  <V5Icon name="person" className="text-[19px]" />
                 </span>
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-[13px] font-semibold text-white">
@@ -168,9 +166,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
               onClick={onClose}
               className="focus-ring flex items-center gap-2 rounded-lg px-2 py-2 text-[12px] font-medium text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                help
-              </span>
+              <V5Icon name="help" className="text-[18px]" />
               Hướng dẫn sử dụng
             </Link>
             <div className="mt-1 grid grid-cols-2 gap-2">
@@ -179,9 +175,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
                 onClick={() => setChangePasswordOpen(true)}
                 className="focus-ring flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-white/15 px-2 py-1.5 text-[11.5px] font-semibold text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
               >
-                <span aria-hidden="true" className="material-symbols-outlined text-[17px]">
-                  key
-                </span>
+                <V5Icon name="key" className="text-[17px]" />
                 Đổi mật khẩu
               </button>
               <button
@@ -190,9 +184,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
                 disabled={loggingOut}
                 className="focus-ring flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-rose-300/40 bg-rose-500/10 px-2 py-1.5 text-[11.5px] font-semibold text-rose-100 transition-fast hover:bg-rose-500/20 disabled:opacity-60"
               >
-                <span aria-hidden="true" className="material-symbols-outlined text-[17px]">
-                  logout
-                </span>
+                <V5Icon name="logout" className="text-[17px]" />
                 {loggingOut ? "Đang thoát..." : "Đăng xuất"}
               </button>
             </div>

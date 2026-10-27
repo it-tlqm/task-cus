@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { isSelfInitiated, originLabel } from "@/lib/task-origin";
@@ -18,7 +20,10 @@ import {
 import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
-import { Card } from "@/components/v5/ui/card";
+import { DataTable } from "@/components/v5/ui/data-table";
+import { FilterBar, FilterChip } from "@/components/v5/ui/filter-bar";
+import { PageHeader } from "@/components/v5/ui/page-header";
+import { StatCard } from "@/components/v5/ui/stat-card";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { formatVnDateTime, vnLocalToUtcIso, utcIsoToVnInputValue } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -855,7 +860,7 @@ function MyWorkPageContent() {
           <section className="bg-status-danger-bg rounded-xl p-space-md shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-status-danger/20 transition-panel">
             <div className="flex items-start gap-space-md">
               <div className="w-10 h-10 rounded-lg bg-status-danger/10 text-status-danger flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[24px]">warning</span>
+                <V5Icon name="warning" className="text-[24px]" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-space-xs flex-wrap">
@@ -877,14 +882,14 @@ function MyWorkPageContent() {
                 onClick={() => openDrawerForTask(overdueTask)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-v5-surface text-status-danger font-label-md text-label-md hover:bg-status-danger hover:text-on-error transition-fast shadow-sm active-press"
               >
-                <span className="material-symbols-outlined text-[18px]">assignment_late</span>
+                <V5Icon name="assignment_late" className="text-[18px]" />
                 <span>Giải trình chậm hạn</span>
               </button>
               <button
                 onClick={() => openDrawerForTask(overdueTask)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-status-danger text-on-error font-label-md text-label-md hover:opacity-90 transition-fast shadow-sm active-press"
               >
-                <span className="material-symbols-outlined text-[18px]">more_time</span>
+                <V5Icon name="more_time" className="text-[18px]" />
                 <span>Xin gia hạn khẩn</span>
               </button>
             </div>
@@ -893,134 +898,132 @@ function MyWorkPageContent() {
 
         {/* HEADER KHU VỰC LÀM VIỆC & THAO TÁC NHANH */}
         <section className="flex flex-col gap-3">
-          <header className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Công việc của tôi</h1>
+          <PageHeader
+            eyebrow="Công việc cá nhân"
+            title="Công việc của tôi"
+            badges={
+              <>
                 <Badge variant="outline">{currentUser.positionTitle}</Badge>
                 <Badge variant="success">Sẵn sàng</Badge>
-              </div>
-              <p className="mt-1 text-sm text-v5-muted">
+              </>
+            }
+            description={
+              <>
                 {currentUser.fullName} · {currentUser.personCode} · {currentUser.unitName}
-              </p>
-              <p className="text-[11px] text-v5-muted">Ca trực chính 07:30 - 17:00</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" onClick={() => setIsNewTaskModalOpen(true)}>
-                <Plus className="h-3.5 w-3.5" /> Thêm việc
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/routine">
-                  <BookOpenCheck className="h-3.5 w-3.5" /> Nhật ký
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => fetchTasks()}>
-                <RefreshCw className="h-3.5 w-3.5" /> Làm mới
-              </Button>
-            </div>
-          </header>
+                <span className="mt-0.5 block text-[11px]">Ca trực chính 07:30 - 17:00</span>
+              </>
+            }
+            actions={
+              <>
+                <Button size="sm" onClick={() => setIsNewTaskModalOpen(true)}>
+                  <Plus className="h-3.5 w-3.5" /> Thêm việc
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/routine">
+                    <BookOpenCheck className="h-3.5 w-3.5" /> Nhật ký
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => fetchTasks()}>
+                  <RefreshCw className="h-3.5 w-3.5" /> Làm mới
+                </Button>
+              </>
+            }
+          />
 
-          <div data-tour="time-filter" className="flex flex-col justify-between gap-2 rounded-lg border border-v5-line bg-v5-surface p-2 sm:flex-row sm:items-center">
-            <div className="flex flex-wrap items-center gap-1 rounded-md bg-v5-bg p-1">
+          <div data-tour="time-filter">
+            <FilterBar
+              actions={
+                <div className="flex items-center gap-2 px-1 text-[10px] text-v5-muted">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  <span>Đồng bộ lúc: {lastSyncAt ? lastSyncAt.toLocaleTimeString("vi-VN") : "chưa đồng bộ"}</span>
+                  <button
+                    onClick={() => fetchTasks({ page: 1 })}
+                    className="rounded p-1 text-v5-muted transition-colors hover:bg-v5-bg hover:text-v5-ink"
+                    title="Tải lại dữ liệu"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              }
+            >
               {[
                 { key: "DAY" as const, label: `Hôm nay (${todayLabel})` },
                 { key: "WEEK" as const, label: `Tuần này (${periodLabels.weekShort})` },
                 { key: "MONTH" as const, label: periodLabels.monthShort },
                 { key: "ALL" as const, label: "Tất cả nhiệm vụ" },
               ].map((item) => (
-                <button
+                <FilterChip
                   key={item.key}
-                  type="button"
+                  active={timeFilter === item.key}
                   onClick={() => setTimeFilter(item.key)}
-                  className={`rounded px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
-                    timeFilter === item.key
-                      ? "bg-v5-accent text-white shadow-sm"
-                      : "text-v5-muted hover:bg-v5-surface hover:text-v5-ink"
-                  }`}
                 >
                   {item.label}
-                </button>
+                </FilterChip>
               ))}
-            </div>
-            <div className="flex items-center gap-2 px-1 text-[10px] text-v5-muted">
-              <Clock3 className="h-3.5 w-3.5" />
-              <span>Đồng bộ lúc: {lastSyncAt ? lastSyncAt.toLocaleTimeString("vi-VN") : "chưa đồng bộ"}</span>
-              <button
-                onClick={() => fetchTasks({ page: 1 })}
-                className="rounded p-1 text-v5-muted transition-colors hover:bg-v5-bg hover:text-v5-ink"
-                title="Tải lại dữ liệu"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            </FilterBar>
           </div>
         </section>
 
         {/* THANH SỐ LIỆU TỔNG QUAN HÔM NAY (4 KPI CARDS) */}
         <section className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <Card className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Cần xử lý hôm nay</span>
-              <ClipboardList className="h-4 w-4 text-v5-accent" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.active).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">đầu việc</span>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-[10px]">
-              <span className="flex items-center gap-1 font-semibold text-v5-danger">
-                <AlertTriangle className="h-3 w-3" /> {String(myStats.high).padStart(2, "0")} ưu tiên cao
-              </span>
-              <span className="text-v5-muted">{String(myStats.done).padStart(2, "0")} đã xong</span>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Sắp đến hạn</span>
-              <Timer className="h-4 w-4 text-v5-warning" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-warning">{String(myStats.dueSoon).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">nhiệm vụ</span>
-            </div>
-            <div className="mt-1 flex items-center justify-between gap-1 text-[10px]">
-              <span className="font-semibold text-v5-warning">Hạn trong 24 giờ</span>
-              <span className="text-v5-muted">{myStats.dueSoon > 0 ? "Cần xử lý" : "Không gấp"}</span>
-            </div>
-          </Card>
-          <Card className="border-v5-danger/30 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Quá hạn</span>
-              <AlertTriangle className="h-4 w-4 text-v5-danger" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-danger">{String(myStats.overdue).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">hồ sơ trễ</span>
-            </div>
-            <div className="mt-1 flex items-center justify-between gap-1 text-[10px]">
-              <button
-                onClick={() => overdueTask && openDrawerForTask(overdueTask)}
-                className="font-semibold text-v5-danger hover:underline"
-              >
-                Giải trình ngay
-              </button>
-              <span className="text-v5-danger">{myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}</span>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ phê duyệt</span>
-              <CheckCircle2 className="h-4 w-4 text-v5-muted" />
-            </div>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.waiting).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">đã nộp</span>
-            </div>
-            <div className="mt-1 flex items-center justify-between gap-1 text-[10px]">
-              <span className="font-semibold text-v5-muted">Chờ Trưởng BP ký</span>
-              <span className="text-v5-muted">Đang duyệt</span>
-            </div>
-          </Card>
+          <StatCard
+            label="Cần xử lý hôm nay"
+            value={String(myStats.active).padStart(2, "0")}
+            unit="đầu việc"
+            icon={ClipboardList}
+            tone="accent"
+            footer={
+              <>
+                <span className="flex items-center gap-1 font-semibold text-v5-danger">
+                  <AlertTriangle className="h-3 w-3" /> {String(myStats.high).padStart(2, "0")} ưu tiên cao
+                </span>
+                <span className="text-v5-muted">{String(myStats.done).padStart(2, "0")} đã xong</span>
+              </>
+            }
+          />
+          <StatCard
+            label="Sắp đến hạn"
+            value={String(myStats.dueSoon).padStart(2, "0")}
+            unit="nhiệm vụ"
+            icon={Timer}
+            tone="warning"
+            footer={
+              <>
+                <span className="font-semibold text-v5-gold-ink">Hạn trong 24 giờ</span>
+                <span className="text-v5-muted">{myStats.dueSoon > 0 ? "Cần xử lý" : "Không gấp"}</span>
+              </>
+            }
+          />
+          <StatCard
+            label="Quá hạn"
+            value={String(myStats.overdue).padStart(2, "0")}
+            unit="hồ sơ trễ"
+            icon={AlertTriangle}
+            tone="danger"
+            footer={
+              <>
+                <button
+                  onClick={() => overdueTask && openDrawerForTask(overdueTask)}
+                  className="font-semibold text-v5-danger hover:underline"
+                >
+                  Giải trình ngay
+                </button>
+                <span className="text-v5-danger">{myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}</span>
+              </>
+            }
+          />
+          <StatCard
+            label="Chờ phê duyệt"
+            value={String(myStats.waiting).padStart(2, "0")}
+            unit="đã nộp"
+            icon={CheckCircle2}
+            footer={
+              <>
+                <span className="font-semibold text-v5-muted">Chờ Trưởng BP ký</span>
+                <span className="text-v5-muted">Đang duyệt</span>
+              </>
+            }
+          />
         </section>
 
         {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung cho cả 2 nguồn dữ liệu */}
@@ -1101,9 +1104,7 @@ function MyWorkPageContent() {
             </div>
             <div className="flex items-center gap-space-sm shrink-0">
               <div className="relative w-full sm:w-64">
-                <span className="material-symbols-outlined absolute left-2.5 top-2 text-v5-muted text-[18px]">
-                  search
-                </span>
+                <V5Icon name="search" className="absolute left-2.5 top-2 text-v5-muted text-[18px]" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -1116,16 +1117,15 @@ function MyWorkPageContent() {
                 onClick={() => fetchTasks()}
                 className="h-8 px-2.5 rounded bg-v5-surface text-v5-muted font-label-md text-label-md hover:bg-v5-bg flex items-center gap-1 shadow-sm border border-v5-line transition-fast active-press"
               >
-                <span className="material-symbols-outlined text-[16px]">tune</span>
+                <V5Icon name="tune" className="text-[16px]" />
                 <span className="hidden sm:inline">Phân loại</span>
               </button>
             </div>
           </div>
 
           {/* BẢNG TÁC NGHIỆP CHI TIẾT & QUICK ACTIONS */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
+          <DataTable className="text-left">
+            <thead>
                 <tr className="bg-v5-bg text-primary font-table-header text-table-header border-b border-v5-line">
                   <th className="py-3 px-space-md w-[260px]">MÃ &amp; TÊN ĐẦU VIỆC</th>
                   <th className="py-3 px-space-sm w-[170px]">NGUỒN &amp; DANH MỤC</th>
@@ -1206,7 +1206,7 @@ function MyWorkPageContent() {
                                   {formatDateTime(task.currentDeadline)}
                                 </span>
                                 <span className="font-label-sm text-label-sm text-status-danger font-semibold flex items-center gap-0.5">
-                                  <span className="material-symbols-outlined text-[13px]">warning</span>
+                                  <V5Icon name="warning" className="text-[13px]" />
                                   Chậm tiến độ
                                 </span>
                               </>
@@ -1240,7 +1240,7 @@ function MyWorkPageContent() {
                                 : "bg-v5-bg text-v5-muted"
                             }`}
                           >
-                            <span className="material-symbols-outlined text-[14px]">flag</span>
+                            <V5Icon name="flag" className="text-[14px]" />
                             {task.priority}
                           </span>
                         </td>
@@ -1264,7 +1264,7 @@ function MyWorkPageContent() {
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-danger-bg text-status-danger font-semibold"
                                 title={task.approval?.reason || task.approval?.content || ""}
                               >
-                                <span className="material-symbols-outlined text-[14px]">undo</span> Bị trả lại
+                                <V5Icon name="undo" className="text-[14px]" /> Bị trả lại
                               </span>
                               {task.approval?.reason && (
                                 <span className="text-[11px] text-v5-muted line-clamp-2">
@@ -1275,11 +1275,11 @@ function MyWorkPageContent() {
                             </div>
                           ) : isWaiting ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-unassigned-bg text-status-unassigned font-semibold">
-                              <span className="material-symbols-outlined text-[14px]">hourglass_top</span> Đã báo hoàn thành — chờ duyệt
+                              <V5Icon name="hourglass_top" className="text-[14px]" /> Đã báo hoàn thành — chờ duyệt
                             </span>
                           ) : isCompleted ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-success-bg text-status-success font-semibold">
-                              <span className="material-symbols-outlined text-[14px]">check_circle</span> 100% Đạt
+                              <V5Icon name="check_circle" className="text-[14px]" /> 100% Đạt
                             </span>
                           ) : (
                             <div className="flex flex-col gap-1 w-28">
@@ -1309,9 +1309,10 @@ function MyWorkPageContent() {
                                   className="px-2.5 py-1 rounded bg-v5-bg text-v5-ink font-label-sm text-label-sm hover:bg-v5-bg flex items-center gap-1 active-press disabled:opacity-50"
                                   title="Gửi thông báo nhắc Trưởng bộ phận phê duyệt"
                                 >
-                                  <span className={`material-symbols-outlined text-[14px] ${remindingTaskId === task.id ? "animate-spin" : ""}`}>
-                                    {remindingTaskId === task.id ? "progress_activity" : "notifications_active"}
-                                  </span>
+                                  <V5Icon
+                                    name={remindingTaskId === task.id ? "progress_activity" : "notifications_active"}
+                                    className={`text-[14px] ${remindingTaskId === task.id ? "animate-spin" : ""}`}
+                                  />
                                   <span>{remindingTaskId === task.id ? "Đang gửi..." : "Nhắc duyệt"}</span>
                                 </button>
                                 {canApprove && task.owner?.id !== permUser?.personId && (
@@ -1321,7 +1322,7 @@ function MyWorkPageContent() {
                                     className="px-2.5 py-1 rounded bg-status-success text-white font-label-sm text-label-sm hover:bg-status-success/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
                                     title="Duyệt hoàn thành và chọn mức chất lượng"
                                   >
-                                    <span className="material-symbols-outlined text-[14px]">verified</span>
+                                    <V5Icon name="verified" className="text-[14px]" />
                                     <span>{approvingId === task.id ? "Đang duyệt..." : "Duyệt hoàn thành"}</span>
                                   </button>
                                 )}
@@ -1333,7 +1334,7 @@ function MyWorkPageContent() {
                                 className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-label-sm text-label-sm hover:bg-secondary/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
                                 title="Xác nhận đã nhận việc được giao"
                               >
-                                <span className="material-symbols-outlined text-[14px]">how_to_reg</span>
+                                <V5Icon name="how_to_reg" className="text-[14px]" />
                                 <span>{acceptingId === task.id ? "Đang nhận..." : "Nhận việc"}</span>
                               </button>
                             ) : !isTaskTerminal(task.status) ? (
@@ -1341,7 +1342,7 @@ function MyWorkPageContent() {
                                 onClick={() => openDrawerForTask(task)}
                                 className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-label-sm text-label-sm hover:bg-secondary/90 shadow-sm flex items-center gap-1 active-press font-semibold"
                               >
-                                <span className="material-symbols-outlined text-[14px]">fact_check</span>
+                                <V5Icon name="fact_check" className="text-[14px]" />
                                 <span>Tác nghiệp 1 chạm</span>
                               </button>
                             ) : null}
@@ -1351,7 +1352,7 @@ function MyWorkPageContent() {
                               className="p-1 rounded text-v5-muted hover:text-primary hover:bg-v5-bg transition-fast"
                               title="Xem chi tiết"
                             >
-                              <span className="material-symbols-outlined text-[16px]">visibility</span>
+                              <V5Icon name="visibility" className="text-[16px]" />
                             </Link>
                           </div>
                         </td>
@@ -1360,8 +1361,7 @@ function MyWorkPageContent() {
                   })
                 )}
               </tbody>
-            </table>
-          </div>
+          </DataTable>
 
           {/* PHÂN TRANG BẢNG NGHIỆP VỤ (server, 50/trang) */}
           <div className="p-space-sm bg-v5-bg flex flex-col sm:flex-row items-center justify-between text-label-sm text-v5-muted gap-space-sm border-t border-v5-line">
@@ -1388,7 +1388,7 @@ function MyWorkPageContent() {
           <div className="lg:col-span-2 bg-v5-surface rounded-xl p-space-md shadow-sm flex flex-col justify-between border border-v5-line/40">
             <div className="flex items-center justify-between pb-space-sm border-b border-surface-container">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[20px]">manage_history</span>
+                <V5Icon name="manage_history" className="text-secondary text-[20px]" />
                 <h2 className="text-sm font-semibold text-v5-ink">Lịch sử cập nhật cá nhân</h2>
               </div>
               <span className="font-label-sm text-label-sm text-v5-muted">Ghi nhận UTC+7 (Hải quan cửa khẩu Quốc tế Tà Lùng)</span>
@@ -1401,7 +1401,7 @@ function MyWorkPageContent() {
               ) : (
                 recentActivity.map((a, idx) => (
                   <div key={idx} className="flex items-start gap-3 p-2 rounded-lg bg-v5-bg">
-                    <span className="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5">update</span>
+                    <V5Icon name="update" className="text-secondary text-[18px] shrink-0 mt-0.5" />
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-body-semibold text-body-semibold text-primary truncate">
@@ -1431,7 +1431,7 @@ function MyWorkPageContent() {
           <div className="bg-primary text-on-primary rounded-xl p-space-md shadow-sm flex flex-col justify-between">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 text-secondary-fixed">
-                <span className="material-symbols-outlined text-[22px]">policy</span>
+                <V5Icon name="policy" className="text-[22px]" />
                 <h3 className="font-headline-sm text-headline-sm">Hướng dẫn thao tác</h3>
               </div>
               <p className="font-body-md text-body-md text-on-primary-container leading-relaxed">
@@ -1439,18 +1439,18 @@ function MyWorkPageContent() {
               </p>
               <div className="flex flex-col gap-2 mt-2">
                 <div className="flex items-start gap-2">
-                  <span className="material-symbols-outlined text-secondary-fixed text-[18px] shrink-0 mt-0.5">check_circle</span>
+                  <V5Icon name="check_circle" className="text-secondary-fixed text-[18px] shrink-0 mt-0.5" />
                   <span className="font-label-md text-label-md text-surface-container-high">Xong việc: bấm Báo hoàn thành để trình nghiệm thu.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="material-symbols-outlined text-secondary-fixed text-[18px] shrink-0 mt-0.5">check_circle</span>
+                  <V5Icon name="check_circle" className="text-secondary-fixed text-[18px] shrink-0 mt-0.5" />
                   <span className="font-label-md text-label-md text-surface-container-high">Cần thêm thời gian: xin lùi hạn kèm lý do, chờ phê duyệt.</span>
                 </div>
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-primary-container flex items-center justify-between">
               <span className="font-label-sm text-label-sm text-on-primary-container">Cần hỗ trợ? Liên hệ quản trị hệ thống.</span>
-              <span className="material-symbols-outlined text-secondary-fixed text-[18px]">support_agent</span>
+              <V5Icon name="support_agent" className="text-secondary-fixed text-[18px]" />
             </div>
           </div>
         </section>
@@ -1460,91 +1460,82 @@ function MyWorkPageContent() {
           MOBILE VIEW (Pixel-accurate Google Stitch ID 2443cdf63e214979b5a74c40779511ba)
           ========================================================================= */}
       <div className="lg:hidden flex flex-col gap-3 pb-16">
-        <header className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <h1 className="truncate text-xl font-semibold tracking-tight text-v5-ink">Công việc của tôi</h1>
-              <Badge variant="success">Sẵn sàng</Badge>
-            </div>
-            <p className="mt-0.5 truncate text-[11px] text-v5-muted">
+        <PageHeader
+          title="Công việc của tôi"
+          badges={<Badge variant="success">Sẵn sàng</Badge>}
+          description={
+            <>
               {currentUser.fullName} · {currentUser.unitName}
-            </p>
-            <p className="mt-0.5 text-[10px] text-v5-muted">{ENV_BADGE_LABEL} · Ca chính 07:30 - 17:00</p>
-          </div>
-          <Button variant="outline" size="icon" onClick={() => fetchTasks()} aria-label="Làm mới">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </header>
+              <span className="mt-0.5 block text-[10px]">{ENV_BADGE_LABEL} · Ca chính 07:30 - 17:00</span>
+            </>
+          }
+          actions={
+            <Button variant="outline" size="icon" onClick={() => fetchTasks()} aria-label="Làm mới">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          }
+        />
 
-        <div data-tour="time-filter" className="flex flex-wrap items-center gap-1 rounded-md bg-v5-bg p-1">
-          {[
-            { key: "DAY" as const, label: `Hôm nay (${todayShort || "..."})` },
-            { key: "WEEK" as const, label: periodLabels.weekShort },
-            { key: "MONTH" as const, label: periodLabels.monthShort },
-            { key: "ALL" as const, label: "Tất cả" },
-          ].map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setTimeFilter(item.key)}
-              className={`flex-1 rounded px-2 py-1.5 text-[11px] font-semibold transition-colors ${
-                timeFilter === item.key ? "bg-v5-accent text-white shadow-sm" : "text-v5-muted"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div data-tour="time-filter">
+          <FilterBar>
+            {[
+              { key: "DAY" as const, label: `Hôm nay (${todayShort || "..."})` },
+              { key: "WEEK" as const, label: periodLabels.weekShort },
+              { key: "MONTH" as const, label: periodLabels.monthShort },
+              { key: "ALL" as const, label: "Tất cả" },
+            ].map((item) => (
+              <FilterChip
+                key={item.key}
+                active={timeFilter === item.key}
+                onClick={() => setTimeFilter(item.key)}
+                className="flex-1"
+              >
+                {item.label}
+              </FilterChip>
+            ))}
+          </FilterBar>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <Card className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Cần xử lý</span>
-              <ClipboardList className="h-4 w-4 text-v5-accent" />
-            </div>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.active).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">đầu việc</span>
-            </div>
-            <div className="mt-1 text-[10px] font-semibold text-v5-danger">
-              {myStats.high > 0 ? `${myStats.high} ưu tiên cao` : "Không có việc gấp"}
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Sắp đến hạn</span>
-              <Timer className="h-4 w-4 text-v5-warning" />
-            </div>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-warning">{String(myStats.dueSoon).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">24 giờ</span>
-            </div>
-            <div className="mt-1 text-[10px] text-v5-muted">{myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}</div>
-          </Card>
-          <Card className="border-v5-danger/30 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Quá hạn</span>
-              <AlertTriangle className="h-4 w-4 text-v5-danger" />
-            </div>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-danger">{String(myStats.overdue).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">hồ sơ</span>
-            </div>
-            <div className="mt-1 text-[10px] font-semibold text-v5-danger">
-              {myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ phê duyệt</span>
-              <CheckCircle2 className="h-4 w-4 text-v5-muted" />
-            </div>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.waiting).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">đã nộp</span>
-            </div>
-            <div className="mt-1 text-[10px] text-v5-muted">Chờ Trưởng BP ký</div>
-          </Card>
+          <StatCard
+            label="Cần xử lý"
+            value={String(myStats.active).padStart(2, "0")}
+            unit="đầu việc"
+            icon={ClipboardList}
+            tone="accent"
+            hint={
+              <span className={myStats.high > 0 ? "font-semibold text-v5-danger" : undefined}>
+                {myStats.high > 0 ? `${myStats.high} ưu tiên cao` : "Không có việc gấp"}
+              </span>
+            }
+          />
+          <StatCard
+            label="Sắp đến hạn"
+            value={String(myStats.dueSoon).padStart(2, "0")}
+            unit="24 giờ"
+            icon={Timer}
+            tone="warning"
+            hint={myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}
+          />
+          <StatCard
+            label="Quá hạn"
+            value={String(myStats.overdue).padStart(2, "0")}
+            unit="hồ sơ"
+            icon={AlertTriangle}
+            tone="danger"
+            hint={
+              <span className="font-semibold text-v5-danger">
+                {myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}
+              </span>
+            }
+          />
+          <StatCard
+            label="Chờ phê duyệt"
+            value={String(myStats.waiting).padStart(2, "0")}
+            unit="đã nộp"
+            icon={CheckCircle2}
+            hint="Chờ Trưởng BP ký"
+          />
         </div>
 
         {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung (mobile) */}
@@ -1643,17 +1634,17 @@ function MyWorkPageContent() {
                       </span>
                       {task.hasIssue && (
                         <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-0.5">
-                          <span className="material-symbols-outlined text-[13px]">report_problem</span> Có vướng mắc
+                          <V5Icon name="report_problem" className="text-[13px]" /> Có vướng mắc
                         </span>
                       )}
                       {isReturned && (
                         <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
-                          <span className="material-symbols-outlined text-[13px]">undo</span> Bị trả lại
+                          <V5Icon name="undo" className="text-[13px]" /> Bị trả lại
                         </span>
                       )}
                     </div>
                     <span className="px-2 py-0.5 rounded bg-status-danger text-on-primary font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0 shadow-xs">
-                      <span className="material-symbols-outlined text-[13px]">alarm_off</span>{" "}
+                      <V5Icon name="alarm_off" className="text-[13px]" />{" "}
                       {task.isOverdue ? `Quá hạn ${overdueDays} ngày` : "Cần xử lý"}
                     </span>
                   </div>
@@ -1667,7 +1658,7 @@ function MyWorkPageContent() {
                     </p>
                     {task.issueNotes && (
                       <div className="mt-2.5 p-2.5 rounded-lg bg-status-warning-bg/80 flex items-start gap-2">
-                        <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">info</span>
+                        <V5Icon name="info" className="text-status-warning text-[18px] shrink-0 mt-0.5" />
                         <div className="flex flex-col text-[12px]">
                           <span className="font-body-semibold text-status-warning">Vướng mắc phát sinh:</span>
                           <span className="text-v5-ink">{task.issueNotes}</span>
@@ -1681,7 +1672,7 @@ function MyWorkPageContent() {
                       className="h-11 px-2.5 rounded-lg bg-v5-bg text-v5-ink font-body-semibold text-body-md flex items-center justify-center gap-1 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[18px] text-status-warning">schedule_send</span>
+                      <V5Icon name="schedule_send" className="text-[18px] text-status-warning" />
                       <span className="text-[13px] leading-tight truncate">Xin lùi hạn</span>
                     </button>
                     <button
@@ -1689,7 +1680,7 @@ function MyWorkPageContent() {
                       className="h-11 px-2.5 rounded-lg bg-status-danger text-on-primary font-body-semibold text-body-md flex items-center justify-center gap-1 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[18px]">gavel</span>
+                      <V5Icon name="gavel" className="text-[18px]" />
                       <span className="text-[13px] leading-tight truncate">Nộp giải trình</span>
                     </button>
                   </div>
@@ -1713,7 +1704,7 @@ function MyWorkPageContent() {
                       </span>
                     </div>
                     <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0">
-                      <span className="material-symbols-outlined text-[13px]">pending</span> Chờ Trưởng BP duyệt
+                      <V5Icon name="pending" className="text-[13px]" /> Chờ Trưởng BP duyệt
                     </span>
                   </div>
                   <div>
@@ -1722,7 +1713,7 @@ function MyWorkPageContent() {
                     </h3>
                     <div className="mt-2.5 p-2 rounded-lg bg-v5-bg flex items-center justify-between text-[12px]">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="material-symbols-outlined text-secondary text-[20px] shrink-0">assignment_turned_in</span>
+                        <V5Icon name="assignment_turned_in" className="text-secondary text-[20px] shrink-0" />
                         <div className="flex flex-col min-w-0">
                           <span className="font-body-semibold text-v5-ink truncate">Đã nộp kết quả</span>
                           <span className="text-v5-muted text-[11px]">
@@ -1740,7 +1731,7 @@ function MyWorkPageContent() {
                       href={`/tasks/${task.id}`}
                       className="flex-1 h-11 px-3 rounded-lg bg-v5-bg text-v5-muted font-label-md text-label-md flex items-center justify-center gap-1 hover:bg-v5-bg-high transition-all"
                     >
-                      <span className="material-symbols-outlined text-[17px]">visibility</span>
+                      <V5Icon name="visibility" className="text-[17px]" />
                       <span>Xem chi tiết hồ sơ nộp</span>
                     </Link>
                   </div>
@@ -1759,17 +1750,17 @@ function MyWorkPageContent() {
                       {task.code}
                     </span>
                     <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
-                      <span className="material-symbols-outlined text-[13px]">flag</span> {task.priority || "Cao"}
+                      <V5Icon name="flag" className="text-[13px]" /> {task.priority || "Cao"}
                     </span>
                     <span className="text-v5-muted font-label-sm text-[11px]">TTHQ</span>
                     {isReturned && (
                       <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
-                        <span className="material-symbols-outlined text-[13px]">undo</span> Bị trả lại
+                        <V5Icon name="undo" className="text-[13px]" /> Bị trả lại
                       </span>
                     )}
                   </div>
                   <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-1 shrink-0">
-                    <span className="material-symbols-outlined text-[13px]">schedule</span> {formatDateTime(task.currentDeadline)}
+                    <V5Icon name="schedule" className="text-[13px]" /> {formatDateTime(task.currentDeadline)}
                   </span>
                 </div>
                 <div>
@@ -1777,7 +1768,7 @@ function MyWorkPageContent() {
                     {task.title}
                   </h3>
                   <div className="mt-2 flex items-center gap-1.5 text-v5-muted font-label-md text-label-md">
-                    <span className="material-symbols-outlined text-[16px] text-secondary">assignment_ind</span>
+                    <V5Icon name="assignment_ind" className="text-[16px] text-secondary" />
                     <span className="truncate">
                       {isSelfInitiated(task.originKind) ? (
                         <>Nguồn: <strong className="text-v5-ink font-body-semibold">Công việc tự khởi tạo</strong></>
@@ -1789,7 +1780,7 @@ function MyWorkPageContent() {
                 </div>
                 <div className="bg-v5-bg p-2 rounded-lg flex items-center justify-between text-[12px] text-v5-muted">
                   <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[15px] text-secondary">inventory_2</span>
+                    <V5Icon name="inventory_2" className="text-[15px] text-secondary" />
                     <span>{task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</span>
                   </span>
                   <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
@@ -1825,7 +1816,7 @@ function MyWorkPageContent() {
                       className="h-11 px-3 rounded-lg bg-secondary text-on-secondary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
+                      <V5Icon name="how_to_reg" className="text-[18px]" />
                       <span>{acceptingId === task.id ? "Đang xác nhận..." : "Nhận việc"}</span>
                     </button>
                   </div>
@@ -1836,7 +1827,7 @@ function MyWorkPageContent() {
                     className="h-11 px-3 rounded-lg bg-v5-bg text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                    <V5Icon name="edit_note" className="text-[18px]" />
                     <span>Cập nhật tiến độ</span>
                   </button>
                   <button
@@ -1844,7 +1835,7 @@ function MyWorkPageContent() {
                     className="h-11 px-3 rounded-lg bg-secondary text-on-secondary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[18px]">task_alt</span>
+                    <V5Icon name="task_alt" className="text-[18px]" />
                     <span>Báo hoàn thành</span>
                   </button>
                 </div>
@@ -1856,7 +1847,7 @@ function MyWorkPageContent() {
                       className="h-10 px-3 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+                      <V5Icon name="manage_accounts" className="text-[18px]" />
                       <span>Sửa giao việc</span>
                     </button>
                     {task.status === "WAITING_REVIEW" ? (
@@ -1866,7 +1857,7 @@ function MyWorkPageContent() {
                         className="h-10 px-3 rounded-lg bg-status-success text-white font-body-semibold text-body-md flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all disabled:opacity-50"
                         type="button"
                       >
-                        <span className="material-symbols-outlined text-[18px]">verified</span>
+                        <V5Icon name="verified" className="text-[18px]" />
                         <span>{approvingId === task.id ? "Đang duyệt..." : "Duyệt hoàn thành"}</span>
                       </button>
                     ) : (
@@ -1874,7 +1865,7 @@ function MyWorkPageContent() {
                         href={`/tasks/${task.id}`}
                         className="h-10 px-3 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
                       >
-                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                        <V5Icon name="visibility" className="text-[18px]" />
                         <span>Chi tiết & duyệt</span>
                       </Link>
                     )}
@@ -1906,7 +1897,7 @@ function MyWorkPageContent() {
             className="h-13 px-4 py-3 rounded-full bg-secondary text-on-secondary shadow-lg flex items-center gap-2 active:scale-95 transition-transform hover:shadow-xl font-body-semibold text-body-md tracking-tight"
             type="button"
           >
-            <span className="material-symbols-outlined text-[24px]">add_task</span>
+            <V5Icon name="add_task" className="text-[24px]" />
             <span>+ Thêm việc</span>
           </button>
         </div>
@@ -1929,7 +1920,7 @@ function MyWorkPageContent() {
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between shrink-0">
               <div className="flex items-center gap-space-sm min-w-0 flex-1">
                 <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-on-secondary shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">fact_check</span>
+                  <V5Icon name="fact_check" className="text-[20px]" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="font-label-sm text-label-sm text-secondary-fixed font-semibold uppercase">
@@ -1945,7 +1936,7 @@ function MyWorkPageContent() {
                 className="p-1 rounded text-on-primary-container hover:text-white hover:bg-primary-container transition-fast shrink-0 ml-2"
                 title="Đóng bảng"
               >
-                <span className="material-symbols-outlined text-[22px]">close</span>
+                <V5Icon name="close" className="text-[22px]" />
               </button>
             </div>
 
@@ -1977,13 +1968,13 @@ function MyWorkPageContent() {
             {/* Action Feedback Alerts */}
             {actionSuccess && (
               <div className="p-3 bg-status-success-bg border-b border-status-success/30 text-status-success text-xs font-semibold flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                <V5Icon name="check_circle" className="text-[18px]" />
                 <span>{actionSuccess}</span>
               </div>
             )}
             {actionError && (
               <div className="p-3 bg-status-danger-bg border-b border-status-danger/30 text-status-danger text-xs font-semibold flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">error</span>
+                <V5Icon name="error" className="text-[18px]" />
                 <span>{actionError}</span>
               </div>
             )}
@@ -2095,7 +2086,7 @@ function MyWorkPageContent() {
                   </label>
                   {uploadingFile && (
                     <span className="text-secondary font-label-sm text-xs flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                      <V5Icon name="progress_activity" className="text-[14px] animate-spin" />
                       Đang tải lên Supabase...
                     </span>
                   )}
@@ -2105,7 +2096,7 @@ function MyWorkPageContent() {
                 <div className="flex flex-col gap-1.5">
                   {attachmentsLoading ? (
                     <div className="p-3 rounded-lg bg-v5-bg text-center text-label-sm text-v5-muted flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      <V5Icon name="progress_activity" className="text-[16px] animate-spin" />
                       Đang tải danh sách tài liệu...
                     </div>
                   ) : attachments.length === 0 ? (
@@ -2134,25 +2125,26 @@ function MyWorkPageContent() {
                           className="flex items-center justify-between p-2.5 rounded-lg bg-v5-bg border border-v5-line hover:border-secondary/40 transition-fast"
                         >
                           <div className="flex items-center gap-2 min-w-0 pr-2">
-                            <span
-                              className={`material-symbols-outlined text-[22px] shrink-0 ${
+                            <V5Icon
+                              name={
+                                isPdf
+                                  ? "picture_as_pdf"
+                                  : isSheet
+                                    ? "table_view"
+                                    : isImage
+                                      ? "image"
+                                      : "description"
+                              }
+                              className={`shrink-0 text-[22px] ${
                                 isPdf
                                   ? "text-status-danger"
                                   : isSheet
-                                  ? "text-status-success"
-                                  : isImage
-                                  ? "text-secondary"
-                                  : "text-v5-muted"
+                                    ? "text-status-success"
+                                    : isImage
+                                      ? "text-secondary"
+                                      : "text-v5-muted"
                               }`}
-                            >
-                              {isPdf
-                                ? "picture_as_pdf"
-                                : isSheet
-                                ? "table_view"
-                                : isImage
-                                ? "image"
-                                : "description"}
-                            </span>
+                            />
                             <div className="flex flex-col min-w-0">
                               <a
                                 href={att.fileUrl}
@@ -2184,7 +2176,7 @@ function MyWorkPageContent() {
                                 className="p-1 text-v5-muted hover:text-secondary transition-fast rounded hover:bg-v5-bg"
                                 title="Xem nhanh tệp"
                               >
-                                <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                <V5Icon name="visibility" className="text-[18px]" />
                               </button>
                             )}
                             <a
@@ -2195,7 +2187,7 @@ function MyWorkPageContent() {
                               className="p-1 text-v5-muted hover:text-secondary transition-fast rounded hover:bg-v5-bg"
                               title="Tải về máy tính"
                             >
-                              <span className="material-symbols-outlined text-[18px]">download</span>
+                              <V5Icon name="download" className="text-[18px]" />
                             </a>
                             <button
                               type="button"
@@ -2203,7 +2195,7 @@ function MyWorkPageContent() {
                               className="p-1 text-v5-muted hover:text-status-danger transition-fast rounded hover:bg-v5-bg"
                               title="Xóa tệp"
                             >
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                              <V5Icon name="delete" className="text-[18px]" />
                             </button>
                           </div>
                         </div>
@@ -2227,9 +2219,10 @@ function MyWorkPageContent() {
                   type="button"
                   className="mt-1 w-full py-2.5 rounded-lg bg-v5-bg text-secondary font-label-md text-label-md hover:bg-v5-bg flex items-center justify-center gap-2 transition-fast active-press border border-v5-line disabled:opacity-50"
                 >
-                  <span className={`material-symbols-outlined text-[18px] ${uploadingFile ? "animate-spin" : ""}`}>
-                    {uploadingFile ? "progress_activity" : "upload_file"}
-                  </span>
+                  <V5Icon
+                    name={uploadingFile ? "progress_activity" : "upload_file"}
+                    className={`text-[18px] ${uploadingFile ? "animate-spin" : ""}`}
+                  />
                   <span>
                     {uploadingFile
                       ? "Đang tải tệp lên..."
@@ -2240,9 +2233,7 @@ function MyWorkPageContent() {
 
               {/* Lưu ý nghiệp vụ */}
               <div className="p-space-sm rounded-lg bg-status-warning-bg/40 flex items-start gap-2 border border-status-warning/30">
-                <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">
-                  info
-                </span>
+                <V5Icon name="info" className="text-status-warning text-[18px] shrink-0 mt-0.5" />
                 <p className="font-label-sm text-label-sm text-v5-muted">
                   Bấm <strong>&quot;Báo hoàn thành &amp; Trình duyệt&quot;</strong> hệ thống sẽ tự động cập nhật Dashboard lãnh đạo và chuyển thông báo tới Trưởng bộ phận.
                 </p>
@@ -2275,7 +2266,7 @@ function MyWorkPageContent() {
                     onClick={() => handleDrawerSubmit(true)}
                     className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:opacity-90 shadow-sm flex items-center gap-1.5 font-semibold transition-fast active-press"
                   >
-                    <span className="material-symbols-outlined text-[18px]">send_time_extension</span>
+                    <V5Icon name="send_time_extension" className="text-[18px]" />
                     <span>{drawerLoading ? "Đang gửi..." : "Báo hoàn thành & Trình duyệt"}</span>
                   </button>
                 )}
@@ -2294,7 +2285,7 @@ function MyWorkPageContent() {
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Sửa giao việc [{editTask.code}]</h3>
               <button onClick={() => setEditTask(null)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <form onSubmit={handleEditAssignSave}>
@@ -2353,9 +2344,7 @@ function MyWorkPageContent() {
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary-fixed text-[22px]">
-                  add_circle
-                </span>
+                <V5Icon name="add_circle" className="text-secondary-fixed text-[22px]" />
                 <h3 className="font-headline-sm text-headline-sm text-white">
                   Thêm Đầu Việc Cá Nhân Tùy Biến
                 </h3>
@@ -2364,7 +2353,7 @@ function MyWorkPageContent() {
                 onClick={() => setIsNewTaskModalOpen(false)}
                 className="text-on-primary-container hover:text-white transition-fast"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
@@ -2496,7 +2485,7 @@ function MyWorkPageContent() {
                 aria-label="Đóng"
                 disabled={quickApproveBusy}
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <div className="p-4 flex flex-col gap-3">
@@ -2560,11 +2549,14 @@ function MyWorkPageContent() {
           >
             <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">
               <div className="flex items-center gap-2 min-w-0 pr-2">
-                <span className="material-symbols-outlined text-secondary text-[22px]">
-                  {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
-                    ? "picture_as_pdf"
-                    : "image"}
-                </span>
+                <V5Icon
+                  name={
+                    previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
+                      ? "picture_as_pdf"
+                      : "image"
+                  }
+                  className="text-[22px] text-secondary"
+                />
                 <span className="font-headline-sm text-sm font-bold text-primary truncate" title={previewFile.name}>
                   {previewFile.name}
                 </span>
@@ -2577,7 +2569,7 @@ function MyWorkPageContent() {
                   download={previewFile.name}
                   className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-fast"
                 >
-                  <span className="material-symbols-outlined text-[15px]">download</span>
+                  <V5Icon name="download" className="text-[15px]" />
                   <span>Tải về</span>
                 </a>
                 <button
@@ -2586,7 +2578,7 @@ function MyWorkPageContent() {
                   className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-primary transition-fast"
                   aria-label="Đóng xem trước"
                 >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
+                  <V5Icon name="close" className="text-[20px]" />
                 </button>
               </div>
             </div>
@@ -2618,9 +2610,7 @@ export default function MyWorkPage() {
       fallback={
         <div className="flex min-h-screen w-full items-center justify-center bg-transparent">
           <div className="flex items-center gap-2 rounded-xl border border-v5-line/50 bg-v5-surface px-4 py-3 text-label-md text-v5-muted shadow-sm">
-            <span className="material-symbols-outlined text-[20px] text-secondary animate-spin">
-              progress_activity
-            </span>
+            <V5Icon name="progress_activity" className="text-[20px] text-secondary animate-spin" />
             <span>Đang tải không gian tác nghiệp...</span>
           </div>
         </div>

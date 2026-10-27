@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
@@ -415,7 +417,7 @@ export default function WorkSourcePicker({
           data-testid="work-source-open-catalog"
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          <span className="material-symbols-outlined text-[15px]">library_books</span>
+          <V5Icon name="library_books" className="text-[15px]" />
           {isMulti ? `Chọn từ danh mục (${selectedProducts.length} SP QĐ1277)` : "Chọn từ danh mục"}
         </button>
         <span className={`text-[10px] ${lockProducts ? "text-amber-700 font-medium" : "text-slate-500"}`}>

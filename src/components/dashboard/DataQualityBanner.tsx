@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React from "react";
 
 export interface MetricDataQuality {
@@ -32,7 +34,7 @@ export function DataQualityBanner({ q, className = "" }: { q?: MetricDataQuality
       data-testid="data-quality-warning"
       className={`rounded-xl border border-amber-300 bg-amber-50 text-amber-900 px-4 py-3 flex items-start gap-2.5 ${className}`}
     >
-      <span className="material-symbols-outlined text-[20px] text-amber-600 shrink-0 mt-0.5">warning</span>
+      <V5Icon name="warning" className="text-[20px] text-amber-600 shrink-0 mt-0.5" />
       <div className="flex flex-col gap-1 text-body-sm leading-snug">
         <span className="font-bold">
           Dữ liệu dùng thử/chưa đối soát — không sử dụng làm số liệu báo cáo chính thức.

@@ -1,9 +1,15 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { PushToggle } from "@/components/ui/PushToggle";
+import { EmptyState } from "@/components/v5/ui/empty-state";
+import { FilterBar, FilterChip } from "@/components/v5/ui/filter-bar";
+import { PageHeader } from "@/components/v5/ui/page-header";
 
 interface NotificationItem {
   id: string;
@@ -143,53 +149,55 @@ export default function NotificationsPage() {
 
   return (
     <div className="w-full min-h-screen bg-transparent pb-24">
-      <div className="max-w-4xl mx-auto px-margin pt-4 flex flex-col gap-4">
-        {/* Interactive Top Action Strip */}
-        <section className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 ? (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wide uppercase bg-status-danger-bg text-status-danger">
-                {unreadCount} CHƯA ĐỌC
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-4">
+        <PageHeader
+          eyebrow="Hộp thư điều hành"
+          title="Thông báo"
+          badges={
+            unreadCount > 0 ? (
+              <span className="inline-flex items-center rounded bg-v5-danger-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-v5-danger">
+                {unreadCount} chưa đọc
               </span>
             ) : (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wide uppercase bg-status-success-bg text-status-success">
-                TẤT CẢ ĐÃ ĐỌC
+              <span className="inline-flex items-center rounded bg-v5-success-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-v5-success">
+                Đã đọc hết
               </span>
-            )}
-            <span className="font-label-sm text-label-sm text-v5-muted font-semibold">
-              Hộp thư điều hành tác nghiệp
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchNotifications}
-              disabled={loading}
-              className="p-1.5 rounded-xl bg-v5-bg hover:bg-v5-bg-high text-v5-muted transition-fast active-press shadow-sm"
-              title="Làm mới thông báo từ máy chủ"
-            >
-              <span className={`material-symbols-outlined text-[18px] ${loading ? "animate-spin" : ""}`}>
-                refresh
-              </span>
-            </button>
-            <button
-              onClick={handleReadAll}
-              disabled={isProcessingAll || unreadCount === 0}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-v5-bg hover:bg-v5-bg-high text-primary font-label-sm text-label-sm transition-fast active-press shadow-sm font-semibold disabled:opacity-50 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[16px] text-primary">done_all</span>
-              <span>{isProcessingAll ? "Đang xử lý..." : "Đã đọc hết"}</span>
-            </button>
-            <div data-tour="push-toggle">
-              <PushToggle />
-            </div>
-          </div>
-        </section>
+            )
+          }
+          description="Cập nhật giao việc, phê duyệt, hạn xử lý và thay đổi dữ liệu liên quan đến anh/chị."
+          actions={
+            <>
+              <button
+                onClick={fetchNotifications}
+                disabled={loading}
+                className="rounded-lg border border-v5-line bg-v5-surface p-2 text-v5-muted transition-colors hover:bg-v5-bg disabled:opacity-50"
+                title="Làm mới thông báo từ máy chủ"
+              >
+                <V5Icon
+                  name="refresh"
+                  className={`text-[18px] ${loading ? "animate-spin" : ""}`}
+                />
+              </button>
+              <button
+                onClick={handleReadAll}
+                disabled={isProcessingAll || unreadCount === 0}
+                className="flex items-center gap-1.5 rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-xs font-semibold text-v5-ink transition-colors hover:bg-v5-bg disabled:opacity-50"
+              >
+                <V5Icon name="done_all" className="text-[16px]" />
+                <span>{isProcessingAll ? "Đang xử lý..." : "Đã đọc hết"}</span>
+              </button>
+              <div data-tour="push-toggle">
+                <PushToggle />
+              </div>
+            </>
+          }
+        />
 
         {/* Error Banner if any */}
         {errorMsg && (
           <div className="p-4 rounded-xl bg-status-danger-bg border border-status-danger text-status-danger flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px]">error</span>
+              <V5Icon name="error" className="text-[20px]" />
               <span className="text-xs font-semibold">{errorMsg}</span>
             </div>
             <button
@@ -201,74 +209,52 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        {/* Filter Pills (Horizontal Scrollable) */}
-        <section data-tour="filter-tabs" className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          <button
-            onClick={() => setActiveFilter("all")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
-              activeFilter === "all"
-                ? "bg-primary text-on-primary font-bold"
-                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
-            }`}
-          >
-            <span>Tất cả</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-v5-surface/20 text-[11px] font-semibold leading-tight">
-              {notifications.length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveFilter("unread")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
-              activeFilter === "unread"
-                ? "bg-status-warning text-on-primary font-bold"
-                : "bg-status-warning-bg/60 text-status-warning hover:bg-status-warning-bg"
-            }`}
-          >
-            <span>Chưa đọc</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-v5-surface/30 text-[11px] font-semibold leading-tight">
-              {unreadCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveFilter("task")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
-              activeFilter === "task"
-                ? "bg-primary text-on-primary font-bold"
-                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
-            }`}
-          >
-            <span>Giao việc mới</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-primary/10 text-primary text-[11px] font-semibold leading-tight">
-              {notifications.filter((n) => n.category === "task").length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveFilter("approval")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
-              activeFilter === "approval"
-                ? "bg-primary text-on-primary font-bold"
-                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
-            }`}
-          >
-            <span>Phê duyệt</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-primary/10 text-primary text-[11px] font-semibold leading-tight">
-              {notifications.filter((n) => n.category === "approval").length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveFilter("deadline")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
-              activeFilter === "deadline"
-                ? "bg-primary text-on-primary font-bold"
-                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
-            }`}
-          >
-            <span>Nhắc hạn</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-status-danger-bg text-status-danger text-[11px] font-semibold leading-tight">
-              {notifications.filter((n) => n.category === "deadline").length}
-            </span>
-          </button>
-        </section>
+        <div data-tour="filter-tabs">
+          <FilterBar>
+            <FilterChip
+              active={activeFilter === "all"}
+              onClick={() => setActiveFilter("all")}
+              className="inline-flex items-center gap-1.5"
+            >
+              Tất cả
+              <span className="rounded bg-v5-surface/20 px-1.5 text-[10px]">{notifications.length}</span>
+            </FilterChip>
+            <FilterChip
+              active={activeFilter === "unread"}
+              onClick={() => setActiveFilter("unread")}
+              tone="gold"
+              className="inline-flex items-center gap-1.5"
+            >
+              Chưa đọc
+              <span className="rounded bg-v5-surface/30 px-1.5 text-[10px]">{unreadCount}</span>
+            </FilterChip>
+            <FilterChip
+              active={activeFilter === "task"}
+              onClick={() => setActiveFilter("task")}
+              className="inline-flex items-center gap-1.5"
+            >
+              Giao việc mới
+              <span className="text-[10px]">{notifications.filter((n) => n.category === "task").length}</span>
+            </FilterChip>
+            <FilterChip
+              active={activeFilter === "approval"}
+              onClick={() => setActiveFilter("approval")}
+              className="inline-flex items-center gap-1.5"
+            >
+              Phê duyệt
+              <span className="text-[10px]">{notifications.filter((n) => n.category === "approval").length}</span>
+            </FilterChip>
+            <FilterChip
+              active={activeFilter === "deadline"}
+              onClick={() => setActiveFilter("deadline")}
+              tone="danger"
+              className="inline-flex items-center gap-1.5"
+            >
+              Nhắc hạn
+              <span className="text-[10px]">{notifications.filter((n) => n.category === "deadline").length}</span>
+            </FilterChip>
+          </FilterBar>
+        </div>
 
         {/* FEED TIMELINE */}
         <div className="flex flex-col gap-4">
@@ -290,15 +276,11 @@ export default function NotificationsPage() {
                 Đang nạp dữ liệu điều hành tác nghiệp...
               </div>
             ) : filteredNotifications.length === 0 ? (
-              <div className="bg-v5-surface p-8 rounded-2xl border border-v5-line/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
-                <div className="w-12 h-12 rounded-full bg-status-success-bg text-status-success flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[28px]">check_circle</span>
-                </div>
-                <p className="font-headline-sm text-primary font-bold">Không có thông báo mới</p>
-                <p className="font-body-md text-v5-muted max-w-sm text-sm">
-                  Tất cả các nhiệm vụ, kế hoạch công tác và thời hạn ca trực đều đang ở trạng thái bình thường.
-                </p>
-              </div>
+              <EmptyState
+                icon={CheckCircle2}
+                title="Không có thông báo mới"
+                description="Tất cả nhiệm vụ, kế hoạch công tác và thời hạn ca trực đang ở trạng thái bình thường."
+              />
             ) : (
               filteredNotifications.map((notif) => (
                 <article
@@ -322,13 +304,16 @@ export default function NotificationsPage() {
                           : "bg-primary-fixed text-primary"
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[22px]">
-                        {notif.category === "deadline"
-                          ? "alarm"
-                          : notif.category === "approval"
-                          ? "verified"
-                          : "assignment_add"}
-                      </span>
+                      <V5Icon
+                        name={
+                          notif.category === "deadline"
+                            ? "alarm"
+                            : notif.category === "approval"
+                              ? "verified"
+                              : "assignment_add"
+                        }
+                        className="text-[22px]"
+                      />
                       {notif.isUnread && notif.tagType === "danger" && (
                         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-danger animate-ping" />
                       )}
@@ -394,7 +379,7 @@ export default function NotificationsPage() {
                             }}
                             className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md shadow-sm transition-fast active-press font-semibold"
                           >
-                            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                            <V5Icon name="arrow_forward" className="text-[16px]" />
                             <span>{notif.actionLabel}</span>
                           </Link>
 
@@ -414,7 +399,7 @@ export default function NotificationsPage() {
                           className="p-1.5 rounded-lg text-v5-muted hover:text-v5-ink transition-colors active-press"
                           title="Ẩn thông báo khỏi danh sách"
                         >
-                          <span className="material-symbols-outlined text-[18px]">close</span>
+                          <V5Icon name="close" className="text-[18px]" />
                         </button>
                       </div>
                     </div>

@@ -247,10 +247,6 @@
   border-radius: 8px;
 }
 
-.v5-shell .material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
 .v5-shell .focus-ring:focus-visible {
   box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #1B3461;
 }

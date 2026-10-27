@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -71,9 +73,7 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
             >
               {active && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}
               <span className="relative flex items-center justify-center">
-                <span aria-hidden="true" className="material-symbols-outlined text-[22px]">
-                  {item.icon}
-                </span>
+                <V5Icon name={item.icon} className="text-[22px]" />
                 {item.hasBadge && (
                   <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-status-danger ring-2 ring-surface" />
                 )}
@@ -95,9 +95,7 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
           }`}
         >
           {mobileMenuOpen && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}
-          <span aria-hidden="true" className="material-symbols-outlined text-[22px]">
-            apps
-          </span>
+          <V5Icon name="apps" className="text-[22px]" />
           <span className="mt-0.5 text-[11px] tracking-tight">Menu</span>
         </button>
       </div>

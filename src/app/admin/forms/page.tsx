@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
@@ -201,7 +203,7 @@ export default function DynamicFormBuilderPage() {
           <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-sm">
             <div className="flex items-center justify-between border-b border-surface-container pb-space-xs">
               <span className="font-headline-sm text-primary font-bold flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[20px]">add_box</span>
+                <V5Icon name="add_box" className="text-secondary text-[20px]" />
                 Thêm trường dữ liệu mới
               </span>
               <span className="font-label-sm text-xs text-v5-muted">{fields.length} trường hiện có</span>
@@ -268,7 +270,7 @@ export default function DynamicFormBuilderPage() {
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5"
                 >
-                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <V5Icon name="add" className="text-[18px]" />
                   <span>Chèn vào biểu mẫu</span>
                 </button>
               </div>
@@ -307,7 +309,7 @@ export default function DynamicFormBuilderPage() {
                       className="w-8 h-8 rounded hover:bg-status-danger-bg text-v5-muted hover:text-status-danger flex items-center justify-center transition-colors"
                       title="Xóa trường"
                     >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                      <V5Icon name="delete" className="text-[18px]" />
                     </button>
                   </div>
                 </div>
@@ -321,7 +323,7 @@ export default function DynamicFormBuilderPage() {
           <div className="bg-v5-surface p-space-lg rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-md sticky top-20">
             <div className="flex items-center justify-between border-b border-surface-container pb-space-xs">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-status-success text-[22px]">visibility</span>
+                <V5Icon name="visibility" className="text-status-success text-[22px]" />
                 <span className="font-headline-sm text-primary font-bold">Xem trước biểu mẫu thực tế</span>
               </div>
               <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success text-xs font-bold">
@@ -432,7 +434,7 @@ export default function DynamicFormBuilderPage() {
                   }}
                   className="w-full py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md text-sm font-semibold shadow-sm hover:bg-secondary/90 transition-all active-press flex items-center justify-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-[18px]">verified</span>
+                  <V5Icon name="verified" className="text-[18px]" />
                   <span>Kiểm tra hợp lệ biểu mẫu (Validate Schema)</span>
                 </button>
               </div>

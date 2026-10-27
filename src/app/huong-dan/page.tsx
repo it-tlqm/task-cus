@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { HELP } from "@/data/page-help";
+import { V5Icon } from "@/components/v5/ui/icon";
 
 /**
  * Sơ đồ hướng dẫn tương tác: bấm vào từng phần của hệ thống
@@ -12,7 +13,7 @@ const MAP: Array<{ hub: string; icon: string; routes: string[] }> = [
   {
     hub: "Tổng quan & điều hành",
     icon: "dashboard",
-    routes: ["/dashboard", "/giao-ban", "/giao-ban/nhap", "/giao-ban/bao-cao", "/meetings"],
+    routes: ["/v5", "/v5/giao-ban", "/v5/giao-ban/nhap", "/giao-ban/bao-cao", "/meetings"],
   },
   { hub: "Nhật ký công việc", icon: "menu_book", routes: ["/my-work", "/notifications"] },
   {
@@ -94,7 +95,7 @@ export default function GuidePage() {
         {MAP.map((g) => (
           <section key={g.hub} className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3">
             <h2 className="text-xs font-bold text-v5-muted uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-v5-accent text-[18px]">{g.icon}</span>
+              <V5Icon name={g.icon} className="text-[18px] text-v5-accent" />
               {g.hub}
             </h2>
             <div className="flex flex-wrap gap-1.5">

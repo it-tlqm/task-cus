@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 import BackButton from "@/components/ui/BackButton";
@@ -396,7 +398,7 @@ export default function NhapSoLieuPage() {
             className="p-2 rounded-lg border border-v5-line bg-v5-surface hover:bg-v5-bg"
             title={`${ENTRY_PERIOD_LABELS[entryPeriod]} trước`}
           >
-            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+            <V5Icon name="chevron_left" className="text-[18px]" />
           </button>
           <input
             type="date"
@@ -412,7 +414,7 @@ export default function NhapSoLieuPage() {
             className="p-2 rounded-lg border border-v5-line bg-v5-surface hover:bg-v5-bg disabled:opacity-40"
             title={`${ENTRY_PERIOD_LABELS[entryPeriod]} sau`}
           >
-            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+            <V5Icon name="chevron_right" className="text-[18px]" />
           </button>
           <button
             onClick={() => setDate(todayVnStr())}
@@ -438,11 +440,11 @@ export default function NhapSoLieuPage() {
           <div className="rounded-xl border border-v5-gold/50 bg-v5-gold-soft p-3 flex flex-col gap-1.5" data-testid="save-warnings">
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold text-v5-gold-ink text-body-sm flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[18px]">warning</span>
+                <V5Icon name="warning" className="text-[18px]" />
                 Cảnh báo giá trị bất thường ({saveWarnings.length}) — số liệu VẪN ĐÃ LƯU, hãy kiểm tra lại
               </span>
               <button onClick={() => setSaveWarnings(null)} className="text-v5-gold-ink hover:bg-v5-gold-soft rounded p-1" title="Đóng">
-                <span className="material-symbols-outlined text-[16px]">close</span>
+                <V5Icon name="close" className="text-[16px]" />
               </button>
             </div>
             <ul className="text-body-xs text-v5-gold-ink list-disc pl-5 flex flex-col gap-0.5">
@@ -458,7 +460,7 @@ export default function NhapSoLieuPage() {
 
         {!loading && data && data.groups.length === 0 && (
           <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-6 text-center">
-            <span className="material-symbols-outlined text-[40px] text-v5-muted">event_note</span>
+            <V5Icon name="event_note" className="text-[40px] text-v5-muted" />
             <p className="text-body-md text-v5-ink mt-2 font-medium">
               Chưa có chỉ tiêu nào cấu hình nhập theo {ENTRY_PERIOD_LABELS[entryPeriod].toLowerCase()}
             </p>
@@ -470,7 +472,7 @@ export default function NhapSoLieuPage() {
 
         {!loading && data && data.groups.length > 0 && !data.anyEditable && (
           <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-6 text-center">
-            <span className="material-symbols-outlined text-[40px] text-v5-muted">lock_person</span>
+            <V5Icon name="lock_person" className="text-[40px] text-v5-muted" />
             <p className="text-body-md text-v5-ink mt-2 font-medium">Bạn chưa được phân công nhập chỉ tiêu nào</p>
             <p className="text-body-sm text-v5-muted mt-1">
               Liên hệ lãnh đạo để được phân công tại mục “Cấu hình số liệu → Phân công”.
@@ -547,7 +549,7 @@ export default function NhapSoLieuPage() {
                                     : `Tính số phát sinh ${ENTRY_PERIOD_LABELS[entryPeriod].toLowerCase()} từ lũy kế cuối kỳ`
                                 }
                               >
-                                <span className="material-symbols-outlined text-[14px]">calculate</span>
+                                <V5Icon name="calculate" className="text-[14px]" />
                                 Tính từ lũy kế
                               </button>
                             )}
@@ -562,7 +564,7 @@ export default function NhapSoLieuPage() {
                                 className="p-1 rounded text-v5-muted hover:bg-v5-bg"
                                 title="Lịch sử sửa"
                               >
-                                <span className="material-symbols-outlined text-[16px]">history</span>
+                                <V5Icon name="history" className="text-[16px]" />
                               </button>
                             )}
 
@@ -678,7 +680,7 @@ export default function NhapSoLieuPage() {
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-v5-muted hover:bg-v5-bg"
                 aria-label="Đóng"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
@@ -778,7 +780,7 @@ export default function NhapSoLieuPage() {
             <div className="flex items-center justify-between mb-3">
               <span className="font-label-md text-label-md text-primary font-bold">Lịch sử sửa — {historyFor.metricName}</span>
               <button onClick={() => setHistoryFor(null)} className="p-1 rounded hover:bg-v5-bg">
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             {history === null && <div className="text-body-sm text-v5-muted py-4 text-center">Đang tải…</div>}

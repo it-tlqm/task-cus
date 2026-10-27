@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -119,7 +121,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
       >
         <div className="flex items-center justify-between gap-2 border-b border-border-default/60 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[20px] text-primary">notifications</span>
+            <V5Icon name="notifications" className="text-[20px] text-primary" />
             <h2 className="font-title-md text-title-md font-bold text-on-surface">Thông báo nhanh</h2>
             {unreadCount > 0 && (
               <span className="rounded-full bg-status-danger px-2 py-0.5 text-[10px] font-bold text-white">
@@ -134,7 +136,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
             aria-label="Đóng thông báo nhanh"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant transition-fast hover:bg-surface-container active-press"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <V5Icon name="close" className="text-[20px]" />
           </button>
         </div>
 
@@ -176,7 +178,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
 
           {!loading && !error && items.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <span className="material-symbols-outlined text-[32px] text-status-success">check_circle</span>
+              <V5Icon name="check_circle" className="text-[32px] text-status-success" />
               <p className="text-body-sm font-semibold text-on-surface">Không có thông báo mới</p>
               <p className="text-body-xs text-on-surface-variant">Các nhiệm vụ và thời hạn đang bình thường.</p>
             </div>
@@ -230,7 +232,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
                     )}
                     <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-secondary">
                       {item.actionLabel}
-                      <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                      <V5Icon name="chevron_right" className="text-[14px]" />
                     </span>
                   </div>
                   {item.isUnread && (
@@ -252,7 +254,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
             className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-label-md font-semibold text-on-primary transition-fast hover:opacity-90 active-press"
           >
             Xem tất cả thông báo
-            <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
+            <V5Icon name="arrow_forward" className="text-[17px]" />
           </Link>
         </div>
       </section>

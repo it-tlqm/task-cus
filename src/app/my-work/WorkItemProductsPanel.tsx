@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/components/ui/Toast";
+import { V5Icon } from "@/components/v5/ui/icon";
 
 interface SpRow {
   id: string;
@@ -224,7 +225,7 @@ export default function WorkItemProductsPanel({
                       meta?.cls || "bg-surface-container text-on-surface-variant border-border-subtle"
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[13px]">{meta?.icon || "help"}</span>
+                    <V5Icon name={meta?.icon || "help"} className="text-[13px]" />
                     {meta?.label || "Chưa xác nhận"}
                   </span>
                 </div>

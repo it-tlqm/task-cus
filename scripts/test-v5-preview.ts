@@ -171,7 +171,7 @@ const plansPage = read("src/app/plans/page.tsx");
 check(
   "Công chức nhận việc dùng header/KPI V5",
   myWorkPage.includes("Công việc của tôi") &&
-    myWorkPage.includes("<Card") &&
+    (myWorkPage.includes("<Card") || myWorkPage.includes("<StatCard")) &&
     !myWorkPage.includes("Audit Trail") &&
     !myWorkPage.includes("bg-surface-container-lowest")
 );
@@ -185,7 +185,8 @@ check(
 const reportsPage = read("src/app/reports/page.tsx");
 check(
   "Báo cáo dùng header/tab V5 và bỏ từ kỹ thuật",
-  reportsPage.includes("text-2xl font-semibold tracking-tight text-v5-ink") &&
+  (reportsPage.includes("<PageHeader") ||
+    reportsPage.includes("text-2xl font-semibold tracking-tight text-v5-ink")) &&
     reportsPage.includes("<Button") &&
     reportsPage.includes("Filter") &&
     reportsPage.includes("Table2") &&
@@ -252,6 +253,28 @@ check(
     routine.includes("Thiết kế biểu mẫu") &&
     !routine.includes("No-Code v") &&
     !routine.includes("Audit Trail")
+);
+
+const componentFiles = ["page-header", "stat-card", "empty-state", "filter-bar", "data-table"];
+check(
+  "Có bộ component V5 dùng chung",
+  componentFiles.every((name) =>
+    fs.existsSync(path.join(root, "src/components/v5/ui", `${name}.tsx`))
+  )
+);
+const sourceFiles: string[] = [];
+const walkSource = (dir: string) => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkSource(full);
+    else if (/\.tsx$/.test(entry.name)) sourceFiles.push(full);
+  }
+};
+walkSource(path.join(root, "src/app"));
+walkSource(path.join(root, "src/components"));
+check(
+  "Không còn icon Material Symbols trong mã nguồn",
+  !sourceFiles.some((file) => fs.readFileSync(file, "utf8").includes("material-symbols-"))
 );
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);

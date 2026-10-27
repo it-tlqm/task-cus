@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +10,7 @@ import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
 import { Card } from "@/components/v5/ui/card";
+import { PageHeader } from "@/components/v5/ui/page-header";
 import { formatVnDateTime } from "@/lib/datetime";
 import ApprovalPreviewModal, {
   type ApprovalCaseType,
@@ -382,28 +385,25 @@ export default function ApprovalsPage() {
   return (
     <div className="w-full pb-4">
       <div className="flex w-full flex-col gap-3">
-        <header className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Phê duyệt</h1>
-              <Badge variant="outline">Lãnh đạo</Badge>
-            </div>
-            <p className="mt-1 text-sm text-v5-muted">
-              Phê duyệt kế hoạch, kết quả nhiệm vụ và đề xuất gia hạn.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              fetchLiveApprovals();
-              fetchMyCases();
-            }}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Làm mới
-          </Button>
-        </header>
+        <PageHeader
+          eyebrow="Trung tâm phê duyệt"
+          title="Phê duyệt"
+          badges={<Badge variant="outline">Lãnh đạo</Badge>}
+          description="Phê duyệt kế hoạch, kết quả nhiệm vụ và đề xuất gia hạn."
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                fetchLiveApprovals();
+                fetchMyCases();
+              }}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Làm mới
+            </Button>
+          }
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <Card className="p-3">
@@ -462,7 +462,7 @@ export default function ApprovalsPage() {
           ) : filteredItems.length === 0 ? (
             <div className="bg-v5-surface p-8 rounded-xl border border-v5-line/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
               <div className="w-12 h-12 rounded-full bg-status-success-bg text-status-success flex items-center justify-center">
-                <span className="material-symbols-outlined text-[28px]">task_alt</span>
+                <V5Icon name="task_alt" className="text-[28px]" />
               </div>
               <p className="font-headline-sm text-primary font-bold">Không có hồ sơ chờ phê duyệt</p>
               <p className="font-body-md text-v5-muted max-w-sm text-sm">
@@ -488,7 +488,7 @@ export default function ApprovalsPage() {
                     <div className="flex items-center gap-space-xs flex-wrap">
                       {item.urgent && (
                         <span className="px-space-xs py-0.5 bg-status-danger-bg text-status-danger rounded font-label-sm text-[11px] font-bold flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px]">alarm</span>
+                          <V5Icon name="alarm" className="text-[13px]" />
                           Khẩn cấp
                         </span>
                       )}
@@ -544,9 +544,7 @@ export default function ApprovalsPage() {
 
                     {item.documentTitle && (
                       <div className="p-2 rounded bg-v5-surface flex items-center gap-2 text-primary font-semibold">
-                        <span className="material-symbols-outlined text-secondary text-[18px]">
-                          description
-                        </span>
+                        <V5Icon name="description" className="text-secondary text-[18px]" />
                         <span className="truncate">{item.documentTitle}</span>
                       </div>
                     )}
@@ -556,9 +554,7 @@ export default function ApprovalsPage() {
                         <div className="text-v5-muted line-through font-mono">
                           {item.oldDeadline}
                         </div>
-                        <span className="material-symbols-outlined text-status-warning text-[18px]">
-                          arrow_forward
-                        </span>
+                        <V5Icon name="arrow_forward" className="text-status-warning text-[18px]" />
                         <div className="text-status-danger font-semibold font-mono flex items-center gap-1">
                           {item.newDeadline}
                           <span className="text-[11px] px-1 py-0.2 bg-status-danger-bg rounded font-bold">
@@ -574,7 +570,7 @@ export default function ApprovalsPage() {
                     <div className="bg-v5-bg border border-v5-line/60 rounded-lg p-space-sm mb-space-sm">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-label-sm text-[11px] font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
-                          <span className="material-symbols-outlined text-[15px] text-secondary">attach_file</span>
+                          <V5Icon name="attach_file" className="text-[15px] text-secondary" />
                           Hồ sơ & Tài liệu nghiệm thu ({item.attachments.length})
                         </span>
                         <span className="text-[10px] text-v5-muted font-medium">Bấm xem trực tiếp hoặc tải về</span>
@@ -593,7 +589,7 @@ export default function ApprovalsPage() {
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span className={`p-1.5 rounded border text-[16px] shrink-0 ${fileStyle.color} flex items-center justify-center`}>
-                                  <span className="material-symbols-outlined text-[18px]">{fileStyle.icon}</span>
+                                  <V5Icon name={fileStyle.icon} className="text-[18px]" />
                                 </span>
                                 <div className="min-w-0 flex-1">
                                   <p className="font-body-semibold text-xs text-primary truncate" title={att.fileName}>
@@ -619,7 +615,7 @@ export default function ApprovalsPage() {
                                     className="px-2 py-1 rounded bg-secondary/10 text-secondary hover:bg-secondary/20 text-[11px] font-semibold transition-fast flex items-center gap-1"
                                     title="Xem nhanh tệp"
                                   >
-                                    <span className="material-symbols-outlined text-[14px]">visibility</span>
+                                    <V5Icon name="visibility" className="text-[14px]" />
                                     <span>Xem</span>
                                   </button>
                                 )}
@@ -631,7 +627,7 @@ export default function ApprovalsPage() {
                                   className="px-2 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg-high text-[11px] font-semibold transition-fast flex items-center gap-1 border border-v5-line"
                                   title="Tải về máy tính"
                                 >
-                                  <span className="material-symbols-outlined text-[14px]">download</span>
+                                  <V5Icon name="download" className="text-[14px]" />
                                   <span>Tải</span>
                                 </a>
                               </div>
@@ -644,7 +640,7 @@ export default function ApprovalsPage() {
 
                   {item.type === "result" && (!item.attachments || item.attachments.length === 0) && (
                     <div className="px-3 py-2 rounded-lg bg-v5-bg/80 border border-dashed border-v5-line text-[11px] text-v5-muted mb-space-sm flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[15px] text-v5-muted">info</span>
+                      <V5Icon name="info" className="text-[15px] text-v5-muted" />
                       <span>Chưa có tệp đính kèm nào được tải lên cho nhiệm vụ này.</span>
                     </div>
                   )}
@@ -659,7 +655,7 @@ export default function ApprovalsPage() {
                         isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-v5-bg active-press"
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[18px]">undo</span>
+                      <V5Icon name="undo" className="text-[18px]" />
                       <span>Trả lại / Giải trình</span>
                     </button>
                     <button
@@ -672,14 +668,12 @@ export default function ApprovalsPage() {
                     >
                       {isItemBusy ? (
                         <>
-                          <span className="material-symbols-outlined text-[18px] animate-spin">
-                            progress_activity
-                          </span>
+                          <V5Icon name="progress_activity" className="text-[18px] animate-spin" />
                           <span>Đang xử lý...</span>
                         </>
                       ) : (
                         <>
-                          <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                          <V5Icon name="check_circle" className="text-[18px]" />
                           <span>Chấp thuận</span>
                         </>
                       )}
@@ -704,11 +698,14 @@ export default function ApprovalsPage() {
           >
             <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">
               <div className="flex items-center gap-2 min-w-0 pr-2">
-                <span className="material-symbols-outlined text-secondary text-[22px]">
-                  {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
-                    ? "picture_as_pdf"
-                    : "image"}
-                </span>
+                <V5Icon
+                  name={
+                    previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
+                      ? "picture_as_pdf"
+                      : "image"
+                  }
+                  className="text-[22px] text-secondary"
+                />
                 <span className="font-headline-sm text-sm font-bold text-primary truncate" title={previewFile.name}>
                   {previewFile.name}
                 </span>
@@ -721,7 +718,7 @@ export default function ApprovalsPage() {
                   download={previewFile.name}
                   className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-fast"
                 >
-                  <span className="material-symbols-outlined text-[15px]">download</span>
+                  <V5Icon name="download" className="text-[15px]" />
                   <span>Tải về</span>
                 </a>
                 <button
@@ -730,7 +727,7 @@ export default function ApprovalsPage() {
                   className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-primary transition-fast"
                   aria-label="Đóng xem trước"
                 >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
+                  <V5Icon name="close" className="text-[20px]" />
                 </button>
               </div>
             </div>
@@ -997,9 +994,7 @@ export default function ApprovalsPage() {
           <div className="bg-v5-surface rounded-xl max-w-lg w-full p-6 shadow-2xl border border-v5-line flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-surface-container pb-3">
               <h3 className="font-headline-sm text-primary font-bold flex items-center gap-2">
-                <span className="material-symbols-outlined text-status-warning text-[24px]">
-                  reply
-                </span>
+                <V5Icon name="reply" className="text-status-warning text-[24px]" />
                 Gửi nội dung giải trình
               </h3>
               <button
@@ -1037,14 +1032,12 @@ export default function ApprovalsPage() {
               >
                 {responding ? (
                   <>
-                    <span className="material-symbols-outlined text-[16px] animate-spin">
-                      progress_activity
-                    </span>
+                    <V5Icon name="progress_activity" className="text-[16px] animate-spin" />
                     Đang gửi...
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[16px]">send</span>
+                    <V5Icon name="send" className="text-[16px]" />
                     Gửi lại
                   </>
                 )}

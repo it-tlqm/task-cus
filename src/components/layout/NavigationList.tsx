@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
+import { V5Icon } from "@/components/v5/ui/icon";
 import {
   filterNavigation,
   findActiveNavigation,
@@ -117,26 +118,22 @@ export function NavigationList({ collapsed = false, variant = "desktop", onNavig
                 title={open ? `Thu gọn ${section.label}` : `Mở ${section.label}`}
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className={`material-symbols-outlined shrink-0 text-[17px] ${
+                  <V5Icon
+                    name={section.icon}
+                    className={`shrink-0 text-[17px] ${
                       sectionHasActive ? "text-secondary-fixed" : "text-on-primary-container"
                     }`}
-                  >
-                    {section.icon}
-                  </span>
+                  />
                   <span className="truncate font-label-sm text-[11px] font-semibold uppercase tracking-[0.08em]">
                     {section.label}
                   </span>
                 </span>
-                <span
-                  aria-hidden="true"
-                  className={`material-symbols-outlined shrink-0 text-[17px] transition-transform duration-200 ${
+                <V5Icon
+                  name="expand_more"
+                  className={`shrink-0 text-[17px] transition-transform duration-200 ${
                     open ? "" : "-rotate-90"
                   }`}
-                >
-                  expand_more
-                </span>
+                />
               </button>
             )}
 
@@ -165,14 +162,12 @@ export function NavigationList({ collapsed = false, variant = "desktop", onNavig
                           : "text-on-primary-container hover:bg-white/10 hover:text-white"
                       } ${collapsed && activeItem ? "ring-1 ring-secondary-fixed/40" : ""}`}
                     >
-                      <span
-                        aria-hidden="true"
-                        className={`material-symbols-outlined shrink-0 text-[20px] ${
+                      <V5Icon
+                        name={item.icon}
+                        className={`shrink-0 text-[20px] ${
                           activeItem ? "text-on-secondary" : "text-on-primary-container group-hover:text-white"
                         }`}
-                      >
-                        {item.icon}
-                      </span>
+                      />
                       {!collapsed && (
                         <span className="flex min-w-0 flex-col">
                           <span

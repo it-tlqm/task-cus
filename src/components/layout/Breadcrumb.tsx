@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getBreadcrumbTrail } from "@/config/navigation";
@@ -20,9 +22,7 @@ export function Breadcrumb({ className = "" }: { className?: string }) {
           return (
             <li key={`${entry.label}-${index}`} className="flex min-w-0 items-center gap-1.5">
               {index > 0 && (
-                <span aria-hidden="true" className="material-symbols-outlined shrink-0 text-[13px] text-outline">
-                  chevron_right
-                </span>
+                <V5Icon name="chevron_right" className="shrink-0 text-[13px] text-outline" />
               )}
               {entry.href && !last ? (
                 <Link
@@ -30,9 +30,7 @@ export function Breadcrumb({ className = "" }: { className?: string }) {
                   className="focus-ring flex shrink-0 items-center gap-1 rounded text-on-surface-variant transition-fast hover:text-secondary"
                 >
                   {index === 0 && (
-                    <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
-                      home
-                    </span>
+                    <V5Icon name="home" className="text-[14px]" />
                   )}
                   <span className={index === 0 ? "hidden sm:inline" : ""}>{entry.label}</span>
                 </Link>

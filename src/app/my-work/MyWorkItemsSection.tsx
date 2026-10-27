@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import { vnDateOnly } from "@/lib/datetime";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
@@ -413,7 +415,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
       <div className="p-space-md bg-surface-subtle border-b border-border-default flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm">
         <div className="flex flex-col gap-0.5">
           <h2 className="font-headline-sm text-headline-sm text-primary font-bold flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-[22px]">checklist</span>
+            <V5Icon name="checklist" className="text-secondary text-[22px]" />
             Đầu việc kế hoạch — hạn xử lý, kết quả &amp; minh chứng
           </h2>
           <p className="text-xs text-outline">
@@ -429,7 +431,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
               className="p-1 rounded hover:bg-surface-container"
               title="Tháng trước"
             >
-              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              <V5Icon name="chevron_left" className="text-[18px]" />
             </button>
             <span className="px-2 text-xs font-semibold text-primary whitespace-nowrap">
               Tháng {pad(month)}/{year}
@@ -440,7 +442,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
               className="p-1 rounded hover:bg-surface-container"
               title="Tháng sau"
             >
-              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              <V5Icon name="chevron_right" className="text-[18px]" />
             </button>
           </div>
           <label className="flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer">
@@ -459,7 +461,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
             className="p-2 rounded-lg hover:bg-surface-container border border-border-subtle disabled:opacity-50"
             title="Làm mới đầu việc"
           >
-            <span className="material-symbols-outlined text-[18px]">sync</span>
+            <V5Icon name="sync" className="text-[18px]" />
           </button>
         </div>
       </div>
@@ -476,7 +478,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
         </span>
         {stats.overdue > 0 && (
           <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-semibold flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px]">warning</span>
+            <V5Icon name="warning" className="text-[13px]" />
             {stats.overdue} quá hạn
           </span>
         )}
@@ -490,7 +492,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
         <div className="p-8 text-center text-sm text-outline">Đang tải đầu việc kế hoạch...</div>
       ) : visibleItems.length === 0 ? (
         <div className="p-8 text-center space-y-1">
-          <span className="material-symbols-outlined text-[32px] text-outline">task</span>
+          <V5Icon name="task" className="text-[32px] text-outline" />
           <p className="text-sm font-semibold text-primary">Tháng này chưa có đầu việc phù hợp</p>
           <p className="text-xs text-outline">
             Đầu việc được thêm từ kế hoạch tuần (/plans). Không bắt buộc có nhiệm vụ, sản phẩm hay minh chứng.
@@ -531,7 +533,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         )}
                         {item.task && (
                           <span className="px-1.5 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-800 text-[10px] font-semibold flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[12px]">link</span>
+                            <V5Icon name="link" className="text-[12px]" />
                             {item.task.code}
                           </span>
                         )}
@@ -566,7 +568,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         }`}
                         title={overdue ? "Đã quá hạn xử lý" : "Hạn xử lý"}
                       >
-                        <span className="material-symbols-outlined text-[14px]">event_upcoming</span>
+                        <V5Icon name="event_upcoming" className="text-[14px]" />
                         Hạn: {formatDate(item.dueDate)}
                         {overdue ? " · Quá hạn" : ""}
                       </span>
@@ -578,7 +580,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         }`}
                         title="Ngày hoàn thành thực tế"
                       >
-                        <span className="material-symbols-outlined text-[14px]">task_alt</span>
+                        <V5Icon name="task_alt" className="text-[14px]" />
                         Hoàn thành: {formatDate(item.completedDate)}
                       </span>
                     </div>
@@ -602,9 +604,10 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                             : "bg-status-success text-on-error border-status-success hover:opacity-90"
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[16px]">
-                          {done ? "undo" : "check_circle"}
-                        </span>
+                        <V5Icon
+                          name={done ? "undo" : "check_circle"}
+                          className="text-[16px]"
+                        />
                         {done ? "Bỏ đánh dấu hoàn thành" : "Đánh dấu đã hoàn thành"}
                       </button>
                     )}
@@ -649,7 +652,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       onClick={() => toggleEvidence(item)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-default bg-surface-container-lowest hover:bg-surface-container active-press"
                     >
-                      <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                      <V5Icon name="attach_file" className="text-[16px]" />
                       Kết quả &amp; minh chứng
                       <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px]">
                         {evidenceCount}
@@ -662,7 +665,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container text-on-surface-variant"
                         title={`Kế hoạch "${item.planItem?.plan?.title || ""}" đã duyệt — hạn xử lý gốc bị khóa. Chưa có quy trình gia hạn được duyệt; vẫn cập nhật được tiến độ/ngày hoàn thành thực tế.`}
                       >
-                        <span className="material-symbols-outlined text-[16px]">lock</span>
+                        <V5Icon name="lock" className="text-[16px]" />
                         Hạn đã khóa
                       </span>
                     ) : (
@@ -674,7 +677,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container-lowest hover:bg-surface-container active-press"
                       >
-                        <span className="material-symbols-outlined text-[16px]">edit_calendar</span>
+                        <V5Icon name="edit_calendar" className="text-[16px]" />
                         Sửa hạn
                       </button>
                     )}
@@ -691,7 +694,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 active-press disabled:opacity-50"
                         title="Chỉ tạo khi người dùng chủ động bấm — hệ thống không tự tạo nhiệm vụ"
                       >
-                        <span className="material-symbols-outlined text-[16px]">add_task</span>
+                        <V5Icon name="add_task" className="text-[16px]" />
                         Giao nhiệm vụ
                       </button>
                     )}
@@ -734,7 +737,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                     >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h3 className="text-xs font-bold text-primary flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[16px] text-secondary">folder_open</span>
+                          <V5Icon name="folder_open" className="text-[16px] text-secondary" />
                           Kết quả &amp; minh chứng
                         </h3>
                         <span className="text-[10px] text-outline">
@@ -770,7 +773,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                                   onClick={() => downloadEvidence(item, ev)}
                                   className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border-subtle text-[11px] hover:bg-surface-container"
                                 >
-                                  <span className="material-symbols-outlined text-[14px]">download</span>
+                                  <V5Icon name="download" className="text-[14px]" />
                                   Tải
                                 </button>
                                 {ev.canDelete && (
@@ -779,7 +782,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                                     onClick={() => deleteEvidence(item, ev)}
                                     className="inline-flex items-center gap-1 px-2 py-1 rounded border border-status-danger/30 text-[11px] text-status-danger hover:bg-status-danger-bg"
                                   >
-                                    <span className="material-symbols-outlined text-[14px]">delete</span>
+                                    <V5Icon name="delete" className="text-[14px]" />
                                     Xóa
                                   </button>
                                 )}
@@ -791,7 +794,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
 
                       {meta?.periodLocked ? (
                         <p className="text-[11px] text-status-warning flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">lock</span>
+                          <V5Icon name="lock" className="text-[14px]" />
                           Kỳ đã chốt số liệu — minh chứng được khóa, chỉ xem/tải.
                         </p>
                       ) : (
@@ -821,7 +824,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                             onClick={() => uploadEvidence(item)}
                             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50 active-press"
                           >
-                            <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                            <V5Icon name="upload_file" className="text-[16px]" />
                             {uploadingId === item.id ? "Đang tải..." : "Tải lên"}
                           </button>
                         </div>

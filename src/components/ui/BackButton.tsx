@@ -1,3 +1,4 @@
+import { V5Icon } from "@/components/v5/ui/icon";
 import Link from "next/link";
 
 type BackButtonProps = {
@@ -20,9 +21,7 @@ export default function BackButton({ href, label = "Quay lại", className = "" 
       data-testid="back-button"
       className={`inline-flex w-fit max-w-full min-h-11 touch-manipulation items-center gap-2 rounded-lg border border-border-default bg-surface-container-lowest px-3.5 py-2 text-label-md font-semibold text-primary shadow-sm transition-fast hover:border-border-subtle hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active-press ${className}`}
     >
-      <span className="material-symbols-outlined shrink-0 text-[20px]" aria-hidden="true">
-        arrow_back
-      </span>
+      <V5Icon name="arrow_back" className="shrink-0 text-[20px]" />
       <span className="truncate">{label}</span>
     </Link>
   );

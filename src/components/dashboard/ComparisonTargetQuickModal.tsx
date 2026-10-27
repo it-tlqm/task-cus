@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -227,7 +229,7 @@ export default function ComparisonTargetQuickModal({
             aria-label="Đóng nhập chỉ tiêu"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container active-press"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <V5Icon name="close" className="text-[20px]" />
           </button>
         </div>
 

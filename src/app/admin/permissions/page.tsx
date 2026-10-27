@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 /**
  * /admin/permissions — Trung tâm cấu hình phân quyền (V3, Giai đoạn 1)
  * A. Tài khoản · B. Vai trò & quyền · C. Phạm vi quản lý · D. Cấp & thu hồi · E. Nhật ký
@@ -405,13 +407,9 @@ export default function AdminPermissionsPage() {
                         {data.roles.map((r) => (
                           <td key={r.id} className="px-3 py-2 text-center">
                             {r.permissions.includes(p.code) ? (
-                              <span className="material-symbols-outlined text-[16px] text-status-success">
-                                check_circle
-                              </span>
+                              <V5Icon name="check_circle" className="text-[16px] text-status-success" />
                             ) : (
-                              <span className="material-symbols-outlined text-[16px] text-border-default">
-                                remove
-                              </span>
+                              <V5Icon name="remove" className="text-[16px] text-border-default" />
                             )}
                           </td>
                         ))}
@@ -443,7 +441,7 @@ export default function AdminPermissionsPage() {
                           return (
                             <td key={r.id} className="px-3 py-2 text-center">
                               {ok ? (
-                                <span className="material-symbols-outlined text-[16px] text-status-success">check</span>
+                                <V5Icon name="check" className="text-[16px] text-status-success" />
                               ) : (
                                 <span className="text-v5-muted">—</span>
                               )}

@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect } from "react";
 import { toast } from "@/components/ui/Toast";
 
@@ -103,13 +105,13 @@ export function PushToggle() {
       {state === "on" ? (
         <button onClick={disable} disabled={busy}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-900 text-xs font-semibold disabled:opacity-50">
-          <span className="material-symbols-outlined text-[16px]">notifications_active</span>
+          <V5Icon name="notifications_active" className="text-[16px]" />
           <span>Đang nhận tin về máy — bấm để tắt</span>
         </button>
       ) : (
         <button onClick={enable} disabled={busy}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold shadow-sm disabled:opacity-50">
-          <span className="material-symbols-outlined text-[16px]">add_alert</span>
+          <V5Icon name="add_alert" className="text-[16px]" />
           <span>{busy ? "Đang bật..." : "Bật thông báo về điện thoại"}</span>
         </button>
       )}

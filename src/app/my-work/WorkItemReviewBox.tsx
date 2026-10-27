@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 /**
  * WorkItemReviewBox — V3.0.1 (phía cán bộ)
  * Nút báo hoàn thành & gửi lãnh đạo trực tiếp + nhãn trạng thái hồ sơ.
@@ -117,7 +119,7 @@ export default function WorkItemReviewBox({
           data-testid={`work-item-review-state-${item.id}`}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${meta.cls}`}
         >
-          <span className="material-symbols-outlined text-[16px]">{meta.icon}</span>
+          <V5Icon name={meta.icon} className="text-[16px]" />
           {meta.label}
         </span>
       )}
@@ -129,7 +131,7 @@ export default function WorkItemReviewBox({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-status-danger/30 bg-status-danger-bg text-status-danger max-w-full"
           title={item.reviewNote}
         >
-          <span className="material-symbols-outlined text-[16px]">feedback</span>
+          <V5Icon name="feedback" className="text-[16px]" />
           Lãnh đạo trả lại: {item.reviewNote}
         </span>
       )}
@@ -142,7 +144,7 @@ export default function WorkItemReviewBox({
           onClick={() => setOpen(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:opacity-90 active-press"
         >
-          <span className="material-symbols-outlined text-[16px]">send</span>
+          <V5Icon name="send" className="text-[16px]" />
           {state === "RETURNED" ? "Sửa kết quả & gửi lại" : "Báo hoàn thành & gửi lãnh đạo"}
         </button>
       )}
@@ -152,7 +154,7 @@ export default function WorkItemReviewBox({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container text-on-surface-variant"
           title="Công việc này đã gắn với một nhiệm vụ nên được duyệt theo quy trình của nhiệm vụ."
         >
-          <span className="material-symbols-outlined text-[16px]">info</span>
+          <V5Icon name="info" className="text-[16px]" />
           Thuộc quy trình duyệt của nhiệm vụ
         </span>
       )}

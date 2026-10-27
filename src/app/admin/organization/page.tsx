@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Building2,
@@ -1104,7 +1106,7 @@ export default function OrganizationAdminPage() {
                               title={`Kiêm nhiệm tại ${u.unitName || ""}`}
                               className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink border border-v5-gold/50 font-medium"
                             >
-                              <span className="material-symbols-outlined text-[11px]">swap_horiz</span>
+                              <V5Icon name="swap_horiz" className="text-[11px]" />
                               {u.unitName}
                             </span>
                           ))}

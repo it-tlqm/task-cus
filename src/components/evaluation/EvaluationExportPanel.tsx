@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState } from "react";
 import { toast } from "@/components/ui/Toast";
 
@@ -104,7 +106,7 @@ export default function EvaluationExportPanel({
       className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2 flex-wrap">
-        <span className="material-symbols-outlined text-secondary text-[20px]">description</span>
+        <V5Icon name="description" className="text-secondary text-[20px]" />
         <div className="flex-1 min-w-[220px]">
           <h3 className="text-sm font-bold text-slate-800">
             Biểu mẫu theo dõi, đánh giá (01A / 01B / 02A / 02B)
@@ -211,7 +213,7 @@ export default function EvaluationExportPanel({
             <ul className="space-y-0.5">
               {preview.warnings.map((w: string, i: number) => (
                 <li key={i} className="text-[11px] text-amber-800 flex items-start gap-1">
-                  <span className="material-symbols-outlined text-[14px] shrink-0">info</span>
+                  <V5Icon name="info" className="text-[14px] shrink-0" />
                   <span>{w}</span>
                 </li>
               ))}

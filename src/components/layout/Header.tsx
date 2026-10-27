@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -153,9 +155,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
           className="flex h-6 items-center justify-between border-b border-border-default/40 bg-primary/10 px-space-md"
         >
           <div className="flex items-center gap-2">
-            <span aria-hidden="true" className="material-symbols-outlined text-[14px] text-primary">
-              verified
-            </span>
+            <V5Icon name="verified" className="text-[14px] text-primary" />
             <span className="font-label-sm text-[11px] font-semibold uppercase tracking-wide text-primary">
               {ENV_HEADER_TITLE} — {UNIT_OFFICIAL_NAME.toUpperCase()}
             </span>
@@ -179,12 +179,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
                 className="relative w-full max-w-md"
                 role="search"
               >
-                <span
-                  aria-hidden="true"
-                  className="material-symbols-outlined absolute left-3 top-2.5 text-[18px] text-outline"
-                >
-                  search
-                </span>
+                <V5Icon name="search" className="absolute left-3 top-2.5 text-[18px] text-outline" />
                 <input
                   type="search"
                   value={searchKeyword}
@@ -230,9 +225,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               title="Tìm nhanh (Ctrl+K)"
               aria-label="Tìm nhanh và hành động"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                search
-              </span>
+              <V5Icon name="search" className="text-[18px]" />
               <kbd className="hidden rounded border border-border-default bg-surface-container px-1 py-0.5 text-[9px] font-semibold 2xl:inline">
                 Ctrl K
               </kbd>
@@ -247,9 +240,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               aria-haspopup="dialog"
               aria-expanded={quickNotificationsOpen}
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[22px] text-on-surface-variant">
-                notifications
-              </span>
+              <V5Icon name="notifications" className="text-[22px] text-on-surface-variant" />
               {unreadCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-status-danger px-1 py-0.2 text-center text-[10px] font-bold leading-tight text-white shadow-sm ring-2 ring-surface-container-lowest">
                   {unreadCount > 99 ? "99+" : unreadCount}
@@ -261,9 +252,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
 
             <div className="flex items-center gap-space-sm">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary shadow-sm">
-                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                  person
-                </span>
+                <V5Icon name="person" className="text-[18px]" />
               </div>
               <div className="hidden min-w-0 flex-col text-left xl:flex">
                 <span
@@ -289,9 +278,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               aria-label="Thay đổi mật khẩu cá nhân"
               className="focus-ring flex items-center gap-1 rounded border border-border-subtle px-space-sm py-1.5 font-label-md text-label-md text-on-surface-variant transition-fast hover:bg-surface-subtle active-press"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[16px] text-secondary">
-                key
-              </span>
+              <V5Icon name="key" className="text-[16px] text-secondary" />
               <span className="hidden xl:inline">Đổi MK</span>
             </button>
 
@@ -302,9 +289,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               aria-label="Đăng xuất khỏi hệ thống"
               className="focus-ring flex items-center gap-1 rounded border border-border-subtle px-space-sm py-1.5 font-label-md text-label-md text-on-surface-variant transition-fast hover:bg-status-danger-bg hover:text-status-danger active-press"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
-                logout
-              </span>
+              <V5Icon name="logout" className="text-[16px]" />
               <span className="hidden xl:inline">Đăng xuất</span>
             </button>
           </div>
@@ -324,9 +309,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               data-testid="mobile-menu-button"
               className="focus-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-primary-container transition-fast hover:bg-surface-subtle active-press"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[23px]">
-                menu
-              </span>
+              <V5Icon name="menu" className="text-[23px]" />
             </button>
 
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2" aria-label="Về bảng điều hành">
@@ -361,9 +344,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               aria-label="Tìm nhanh và hành động"
               className="focus-ring flex h-10 w-10 items-center justify-center rounded-lg text-primary-container transition-fast hover:bg-surface-subtle active-press"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[21px]">
-                search
-              </span>
+              <V5Icon name="search" className="text-[21px]" />
             </button>
             <button
               type="button"
@@ -373,9 +354,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               aria-expanded={quickNotificationsOpen}
               className="focus-ring relative flex h-10 w-10 items-center justify-center rounded-lg text-primary-container transition-fast hover:bg-surface-subtle active-press"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[22px]">
-                notifications
-              </span>
+              <V5Icon name="notifications" className="text-[22px]" />
               {unreadCount > 0 && (
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-status-danger ring-2 ring-surface" />
               )}
@@ -387,9 +366,7 @@ export function Header({ collapsed = false, onOpenMobileMenu, mobileMenuOpen = f
               aria-expanded={mobileMenuOpen}
               className="focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary shadow-sm transition-fast active-press"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                person
-              </span>
+              <V5Icon name="person" className="text-[18px]" />
             </button>
           </div>
         </div>

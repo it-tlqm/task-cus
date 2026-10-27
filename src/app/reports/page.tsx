@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -9,6 +11,8 @@ import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
+import { FilterChip } from "@/components/v5/ui/filter-bar";
+import { PageHeader } from "@/components/v5/ui/page-header";
 
 interface DrilldownTask {
   id: string;
@@ -431,39 +435,35 @@ function ReportsContent() {
 
   return (
     <div className="flex w-full flex-col gap-3 pb-4">
-      {/* DESKTOP TOP BAR (Hidden on Mobile) */}
-      <header className="hidden flex-wrap items-end justify-between gap-2 lg:flex">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Báo cáo &amp; thống kê</h1>
-            <Badge variant="outline">Hải quan Tà Lùng</Badge>
+      <PageHeader
+        className="hidden lg:flex"
+        eyebrow="Điều hành & báo cáo"
+        title="Báo cáo & thống kê"
+        badges={<Badge variant="outline">Hải quan Tà Lùng</Badge>}
+        description="Tra cứu, chốt kỳ báo cáo và xuất biểu mẫu theo chỉ đạo cấp Cục."
+        actions={
+          <div data-tour="export-btns" className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setFilterExpanded(!filterExpanded)}>
+              <Filter className="h-3.5 w-3.5" /> {filterExpanded ? "Ẩn bộ lọc" : "Bộ lọc"}
+            </Button>
+            {canLock && (
+              <Button variant="outline" size="sm" onClick={handleOpenLockModal}>
+                <Lock className="h-3.5 w-3.5" /> Chốt số liệu
+              </Button>
+            )}
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={() => handleExportXlsx("legacy")} disabled={isExporting}>
+                <Download className="h-3.5 w-3.5" /> {isExporting ? "Đang xuất..." : "Mẫu A"}
+              </Button>
+            )}
+            {canExport && (
+              <Button size="sm" onClick={() => handleExportXlsx("detailed")} disabled={isExporting}>
+                <Table2 className="h-3.5 w-3.5" /> {isExporting ? "Đang xuất..." : "Mẫu B"}
+              </Button>
+            )}
           </div>
-          <p className="mt-1 text-sm text-v5-muted">
-            Tra cứu, chốt kỳ báo cáo và xuất biểu mẫu theo chỉ đạo cấp Cục.
-          </p>
-        </div>
-
-        <div data-tour="export-btns" className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setFilterExpanded(!filterExpanded)}>
-            <Filter className="h-3.5 w-3.5" /> {filterExpanded ? "Ẩn bộ lọc" : "Bộ lọc"}
-          </Button>
-          {canLock && (
-            <Button variant="outline" size="sm" onClick={handleOpenLockModal}>
-              <Lock className="h-3.5 w-3.5" /> Chốt số liệu
-            </Button>
-          )}
-          {canExport && (
-            <Button variant="outline" size="sm" onClick={() => handleExportXlsx("legacy")} disabled={isExporting}>
-              <Download className="h-3.5 w-3.5" /> {isExporting ? "Đang xuất..." : "Mẫu A"}
-            </Button>
-          )}
-          {canExport && (
-            <Button size="sm" onClick={() => handleExportXlsx("detailed")} disabled={isExporting}>
-              <Table2 className="h-3.5 w-3.5" /> {isExporting ? "Đang xuất..." : "Mẫu B"}
-            </Button>
-          )}
-        </div>
-      </header>
+        }
+      />
 
       {/* MOBILE HEADER STRIP (Visible only on mobile) */}
       <div className="mb-3 flex flex-col gap-2 lg:hidden">
@@ -482,20 +482,16 @@ function ReportsContent() {
         {[
           { key: "preview" as const, label: "Báo cáo" },
           { key: "builder" as const, label: "Mẫu báo cáo" },
-          { key: "snapshots" as const, label: `Kho Đã chốt (${snapshotsList.length})` },
+          { key: "snapshots" as const, label: `Kho đã chốt (${snapshotsList.length})` },
         ].map((item) => (
-          <button
+          <FilterChip
             key={item.key}
-            type="button"
+            active={activeTab === item.key}
             onClick={() => setActiveTab(item.key)}
-            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-[11px] font-semibold transition-colors ${
-              activeTab === item.key
-                ? "bg-v5-accent text-white shadow-sm"
-                : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
-            }`}
+            className="whitespace-nowrap"
           >
             {item.label}
-          </button>
+          </FilterChip>
         ))}
       </div>
 
@@ -507,7 +503,7 @@ function ReportsContent() {
             <div className="lg:col-span-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
               <div className="flex items-start gap-space-sm">
                 <div className="w-10 h-10 rounded-lg bg-status-success-bg text-status-success flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[24px]">verified_user</span>
+                  <V5Icon name="verified_user" className="text-[24px]" />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -532,7 +528,7 @@ function ReportsContent() {
               </div>
             </div>
             <div className="lg:col-span-4 flex items-center justify-start lg:justify-end gap-space-md bg-v5-bg/60 p-3 rounded-lg">
-              <span className="material-symbols-outlined text-v5-muted text-[20px]">inventory_2</span>
+              <V5Icon name="inventory_2" className="text-v5-muted text-[20px]" />
               <div className="flex flex-col">
                 <span className="font-label-sm text-v5-muted uppercase tracking-wider">Kỳ đã chốt gần nhất</span>
                 {snapshotsList.length > 0 ? (
@@ -559,7 +555,7 @@ function ReportsContent() {
           <div className="p-space-md lg:p-space-lg bg-v5-surface rounded-xl shadow-sm flex flex-col gap-space-md">
             <div className="flex flex-wrap items-center justify-between gap-space-sm">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[20px]">tune</span>
+                <V5Icon name="tune" className="text-secondary text-[20px]" />
                 <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Tham số lọc đa chiều &amp; Khung biểu mẫu xuất khẩu
                 </span>
@@ -632,7 +628,7 @@ function ReportsContent() {
                 {periodLabels.quarterShort}
               </button>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-v5-bg text-v5-ink text-label-md font-label-md">
-                <span className="material-symbols-outlined text-[16px] text-v5-muted">calendar_month</span>
+                <V5Icon name="calendar_month" className="text-[16px] text-v5-muted" />
                 <span>01/10/2026 – 15/10/2026</span>
               </div>
             </div>
@@ -659,9 +655,7 @@ function ReportsContent() {
                       <option disabled value="">Đang tải danh sách đơn vị...</option>
                     )}
                   </select>
-                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]">
-                    expand_more
-                  </span>
+                  <V5Icon name="expand_more" className="absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]" />
                 </div>
               </div>
 
@@ -685,9 +679,7 @@ function ReportsContent() {
                       <option disabled value="">Đang tải danh sách cán bộ...</option>
                     )}
                   </select>
-                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]">
-                    expand_more
-                  </span>
+                  <V5Icon name="expand_more" className="absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]" />
                 </div>
               </div>
 
@@ -711,9 +703,7 @@ function ReportsContent() {
                     <option value="legacy">RPT-PLAN-WEEK-LEGACY (Mẫu công tác tuần chuẩn Tà Lùng)</option>
                     <option value="detailed">RPT-PLAN-DETAILED (Bảng chi tiết theo từng nhiệm vụ &amp; kết quả)</option>
                   </select>
-                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]">
-                    tune
-                  </span>
+                  <V5Icon name="tune" className="absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]" />
                 </div>
               </div>
             </div>
@@ -728,7 +718,7 @@ function ReportsContent() {
                   {dbSummary ? dbSummary.totalTasks : dbTasks.length}
                 </span>
                 <span className="font-label-sm text-status-success flex items-center">
-                  <span className="material-symbols-outlined text-[14px]">arrow_upward</span>100%
+                  <V5Icon name="arrow_upward" className="text-[14px]" />100%
                 </span>
               </div>
               <span className="font-label-sm text-[11px] text-v5-muted mt-1">
@@ -811,7 +801,7 @@ function ReportsContent() {
           <div data-tour="report-table" className="lg:hidden bg-v5-surface rounded-xl shadow-sm p-space-md space-y-space-sm">
             <div className="flex items-center justify-between pb-space-xs">
               <div className="flex items-center gap-space-xs">
-                <span className="material-symbols-outlined text-primary text-[20px]">format_list_bulleted</span>
+                <V5Icon name="format_list_bulleted" className="text-primary text-[20px]" />
                 <h3 className="font-headline-sm text-headline-sm text-primary">Tóm tắt tiến độ ngày (Cột C)</h3>
               </div>
               <span className="font-label-sm text-label-sm text-v5-muted bg-v5-bg px-2 py-0.5 rounded">
@@ -846,9 +836,10 @@ function ReportsContent() {
                                 : "bg-status-warning-bg text-status-warning"
                             }`}
                           >
-                            <span className="material-symbols-outlined text-[12px]">
-                              {task.status === "COMPLETED" ? "check" : task.hasIssue ? "warning" : "hourglass_top"}
-                            </span>
+                            <V5Icon
+                              name={task.status === "COMPLETED" ? "check" : task.hasIssue ? "warning" : "hourglass_top"}
+                              className="text-[12px]"
+                            />
                             {task.status === "COMPLETED" ? "Đạt KH" : task.hasIssue ? "Vướng mắc" : "Đang làm"}
                           </span>
                         </div>
@@ -861,9 +852,7 @@ function ReportsContent() {
                 })
               ) : (
                 <div className="p-space-lg text-center text-v5-muted">
-                  <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-1">
-                    inbox
-                  </span>
+                  <V5Icon name="inbox" className="text-v5-muted text-[32px] block mb-1" />
                   <p className="font-body-md text-body-md">Chưa có đầu việc nào được ghi nhận</p>
                 </div>
               )}
@@ -877,7 +866,7 @@ function ReportsContent() {
                   disabled={isExporting}
                   className="w-full h-11 bg-secondary text-on-secondary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-space-xs shadow-md active-press transition-all"
                 >
-                  <span className="material-symbols-outlined text-[18px]">file_download</span>
+                  <V5Icon name="file_download" className="text-[18px]" />
                   <span>Tải Mẫu A (Kế hoạch tuần .xlsx)</span>
                 </button>
                 <button
@@ -885,7 +874,7 @@ function ReportsContent() {
                   disabled={isExporting}
                   className="w-full h-11 bg-primary text-on-primary rounded-lg font-body-semibold text-body-semibold flex items-center justify-center gap-space-xs shadow-md active-press transition-all"
                 >
-                  <span className="material-symbols-outlined text-[18px]">table_view</span>
+                  <V5Icon name="table_view" className="text-[18px]" />
                   <span>Tải Mẫu B (Chi tiết đầu việc .xlsx)</span>
                 </button>
               </div>
@@ -894,7 +883,7 @@ function ReportsContent() {
               <div className="bg-v5-surface p-space-sm rounded-lg flex items-center justify-between border border-v5-line/40">
                 <div className="flex items-center gap-space-xs">
                   <div className="w-7 h-7 rounded-full bg-status-warning-bg flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-status-warning text-[16px]">admin_panel_settings</span>
+                    <V5Icon name="admin_panel_settings" className="text-status-warning text-[16px]" />
                   </div>
                   <span className="font-label-sm text-label-sm text-primary">Chốt số liệu kỳ lãnh đạo</span>
                 </div>
@@ -902,7 +891,7 @@ function ReportsContent() {
                   onClick={handleOpenLockModal}
                   className="bg-primary text-on-primary font-label-sm text-label-sm px-3 py-1.5 rounded-lg flex items-center gap-1 active-press"
                 >
-                  <span className="material-symbols-outlined text-[14px]">lock_clock</span>
+                  <V5Icon name="lock_clock" className="text-[14px]" />
                   <span>Chốt</span>
                 </button>
               </div>
@@ -915,7 +904,7 @@ function ReportsContent() {
             <div className="p-space-md bg-v5-bg flex flex-col md:flex-row md:items-center justify-between gap-space-md">
               <div className="flex items-center gap-space-sm">
                 <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center text-on-secondary shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">table_view</span>
+                  <V5Icon name="table_view" className="text-[18px]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -949,14 +938,14 @@ function ReportsContent() {
                   className="p-1.5 rounded hover:bg-v5-bg-high text-v5-muted transition-colors"
                   title="Toàn màn hình bảng tính (bấm lại để thoát)"
                 >
-                  <span className="material-symbols-outlined text-[18px]">fullscreen</span>
+                  <V5Icon name="fullscreen" className="text-[18px]" />
                 </button>
                 <button
                   onClick={() => window.print()}
                   className="p-1.5 rounded hover:bg-v5-bg-high text-v5-muted transition-colors"
                   title="In trực tiếp trang"
                 >
-                  <span className="material-symbols-outlined text-[18px]">print</span>
+                  <V5Icon name="print" className="text-[18px]" />
                 </button>
               </div>
             </div>
@@ -964,7 +953,7 @@ function ReportsContent() {
             {/* Watermark Simulation Banner */}
             <div className="bg-status-warning-bg/40 px-space-md py-1.5 flex items-center justify-between text-v5-muted font-label-sm text-[11px]">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[15px] text-status-warning">security</span>
+                <V5Icon name="security" className="text-[15px] text-status-warning" />
                 <span>
                   Bản xuất ra file sẽ tự động chèn Watermark nội bộ (tên đơn vị, người xuất, ngày xuất).
                 </span>
@@ -1091,13 +1080,16 @@ function ReportsContent() {
                                     : "bg-status-warning-bg text-status-warning"
                                 }`}
                               >
-                                <span className="material-symbols-outlined text-[13px]">
-                                  {task.status === "COMPLETED"
-                                    ? "check_circle"
-                                    : task.hasIssue
-                                    ? "warning"
-                                    : "hourglass_top"}
-                                </span>
+                                <V5Icon
+                                  name={
+                                    task.status === "COMPLETED"
+                                      ? "check_circle"
+                                      : task.hasIssue
+                                        ? "warning"
+                                        : "hourglass_top"
+                                  }
+                                  className="text-[13px]"
+                                />
                                 <span>
                                   {task.status === "COMPLETED"
                                     ? "Hoàn thành"
@@ -1117,7 +1109,7 @@ function ReportsContent() {
                                 }}
                                 className="p-1 rounded hover:bg-v5-bg text-v5-muted hover:text-primary transition-colors"
                               >
-                                <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                <V5Icon name="visibility" className="text-[18px]" />
                               </button>
                             </td>
                           </tr>
@@ -1126,9 +1118,7 @@ function ReportsContent() {
                     ) : (
                       <tr>
                         <td colSpan={9} className="py-12 text-center text-v5-muted">
-                          <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-2">
-                            filter_alt_off
-                          </span>
+                          <V5Icon name="filter_alt_off" className="text-v5-muted text-[32px] block mb-2" />
                           Không tìm thấy đầu việc nào phù hợp với bộ lọc đơn vị / cán bộ đã chọn.
                         </td>
                       </tr>
@@ -1136,9 +1126,7 @@ function ReportsContent() {
                   ) : (
                     <tr>
                       <td colSpan={9} className="py-16 text-center text-v5-muted">
-                        <span className="material-symbols-outlined text-v5-muted text-[40px] block mb-2">
-                          assignment_late
-                        </span>
+                        <V5Icon name="assignment_late" className="text-v5-muted text-[40px] block mb-2" />
                         <p className="font-body-semibold text-body-semibold text-v5-ink">
                           Không có dữ liệu đầu việc cho kỳ báo cáo này
                         </p>
@@ -1155,7 +1143,7 @@ function ReportsContent() {
             {/* Table Footnote & Paging Bar */}
             <div className="p-space-md bg-v5-bg flex flex-col sm:flex-row items-center justify-between gap-space-sm">
               <div className="flex items-center gap-2 text-[12px] text-v5-muted">
-                <span className="material-symbols-outlined text-[16px]">info</span>
+                <V5Icon name="info" className="text-[16px]" />
                 <span>Dữ liệu tổng hợp theo kỳ kế hoạch đã chọn</span>
               </div>
               <div className="flex items-center gap-2">
@@ -1185,7 +1173,7 @@ function ReportsContent() {
           <div className="p-space-lg bg-v5-surface rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
             <div className="flex items-start gap-space-sm">
               <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-on-secondary shrink-0">
-                <span className="material-symbols-outlined text-[28px]">schema</span>
+                <V5Icon name="schema" className="text-[28px]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -1237,7 +1225,7 @@ function ReportsContent() {
             {/* General Rules */}
             <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col gap-space-md">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[20px]">tune</span>
+                <V5Icon name="tune" className="text-secondary text-[20px]" />
                 <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Quy tắc gom nhóm &amp; Hiển thị
                 </span>
@@ -1308,7 +1296,7 @@ function ReportsContent() {
             {/* Security & Audit Rules */}
             <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col gap-space-md">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[20px]">verified_user</span>
+                <V5Icon name="verified_user" className="text-secondary text-[20px]" />
                 <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Bảo mật &amp; Dấu vết kiểm toán (Audit)
                 </span>
@@ -1351,7 +1339,7 @@ function ReportsContent() {
             <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col justify-between">
               <div className="flex flex-col gap-space-sm">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">file_present</span>
+                  <V5Icon name="file_present" className="text-secondary text-[20px]" />
                   <span className="font-body-semibold text-body-semibold text-v5-ink">
                     Đặc tả kỹ thuật tệp xuất
                   </span>
@@ -1376,7 +1364,7 @@ function ReportsContent() {
                 </div>
               </div>
               <div className="p-3 bg-secondary-fixed/30 rounded-lg flex items-center gap-2 mt-4">
-                <span className="material-symbols-outlined text-secondary text-[20px]">cloud_done</span>
+                <V5Icon name="cloud_done" className="text-secondary text-[20px]" />
                 <span className="font-label-md text-on-secondary-container">
                   Đã đồng bộ mẫu chuẩn với Cục HQ Cao Bằng
                 </span>
@@ -1388,7 +1376,7 @@ function ReportsContent() {
           <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col">
             <div className="p-space-md bg-v5-bg flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[20px]">view_column</span>
+                <V5Icon name="view_column" className="text-secondary text-[20px]" />
                 <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Bảng ánh xạ các cột (Excel Column Mapping Matrix)
                 </span>
@@ -1531,7 +1519,7 @@ function ReportsContent() {
           <div className="p-space-lg bg-v5-surface rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-v5-line/40">
             <div className="flex items-start gap-space-sm">
               <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[28px]">lock_clock</span>
+                <V5Icon name="lock_clock" className="text-[28px]" />
               </div>
               <div>
                 <h2 className="font-headline-md text-headline-md text-v5-ink">
@@ -1548,7 +1536,7 @@ function ReportsContent() {
                 onClick={handleOpenLockModal}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-md hover:bg-primary/95 transition-all active-press shadow-sm"
               >
-                <span className="material-symbols-outlined text-[18px]">add_task</span>
+                <V5Icon name="add_task" className="text-[18px]" />
                 <span>Chốt kỳ số liệu mới</span>
               </button>
             </div>
@@ -1558,7 +1546,7 @@ function ReportsContent() {
           {snapshotsList.length === 0 && (
             <div className="p-12 bg-v5-surface rounded-xl shadow-sm flex flex-col items-center justify-center text-center gap-3 border border-dashed border-v5-line">
               <div className="w-16 h-16 rounded-full bg-v5-bg flex items-center justify-center text-v5-muted">
-                <span className="material-symbols-outlined text-[32px]">folder_off</span>
+                <V5Icon name="folder_off" className="text-[32px]" />
               </div>
               <h3 className="font-headline-sm text-v5-ink">Chưa có bản chụp số liệu nào được lưu trữ</h3>
               <p className="font-body-md text-v5-muted max-w-md">
@@ -1569,7 +1557,7 @@ function ReportsContent() {
                   onClick={handleOpenLockModal}
                   className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-[18px]">lock_clock</span>
+                  <V5Icon name="lock_clock" className="text-[18px]" />
                   <span>Chốt số liệu kỳ này ngay</span>
                 </button>
               )}
@@ -1590,19 +1578,19 @@ function ReportsContent() {
                     </span>
                     {item.isValid ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
-                        <span className="material-symbols-outlined text-[14px]">verified</span>
+                        <V5Icon name="verified" className="text-[14px]" />
                         <span>Toàn vẹn (mã kiểm tra toàn vẹn)</span>
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-status-danger-bg text-status-danger">
-                        <span className="material-symbols-outlined text-[14px]">warning</span>
+                        <V5Icon name="warning" className="text-[14px]" />
                         <span>Sai lệch hash</span>
                       </span>
                     )}
                   </div>
                   <h3 className="font-body-semibold text-v5-ink text-[15px]">{item.title || item.periodTitle}</h3>
                   <div className="flex items-center gap-2 text-[12px] text-v5-muted font-table-data">
-                    <span className="material-symbols-outlined text-[16px]">calendar_today</span>
+                    <V5Icon name="calendar_today" className="text-[16px]" />
                     <span>{item.periodTitle} ({item.periodType || "WEEK"})</span>
                   </div>
                   {item.metrics && (
@@ -1631,7 +1619,7 @@ function ReportsContent() {
                       }}
                       className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded bg-v5-bg text-v5-ink font-label-sm hover:bg-v5-bg transition-colors active-press"
                     >
-                      <span className="material-symbols-outlined text-[16px]">visibility</span>
+                      <V5Icon name="visibility" className="text-[16px]" />
                       <span>Xem chi tiết</span>
                     </button>
                     <button
@@ -1639,7 +1627,7 @@ function ReportsContent() {
                       className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded bg-primary text-on-primary font-label-sm hover:bg-primary/95 transition-colors active-press"
                       title="Xuất file Excel Mẫu B từ bản chụp đã chốt"
                     >
-                      <span className="material-symbols-outlined text-[16px]">download</span>
+                      <V5Icon name="download" className="text-[16px]" />
                       <span>Tải .xlsx</span>
                     </button>
                   </div>
@@ -1656,7 +1644,7 @@ function ReportsContent() {
           <div className="bg-v5-surface rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 border border-v5-line/40">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">lock_clock</span>
+                <V5Icon name="lock_clock" className="text-[20px]" />
                 <span className="font-headline-sm text-[16px] text-white">
                   Xác Nhận Chốt &amp; Khóa Số Liệu Kỳ Báo Cáo
                 </span>
@@ -1670,20 +1658,20 @@ function ReportsContent() {
                 }}
                 className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
             <div className="p-space-lg flex flex-col gap-space-md text-v5-ink">
               {lockError && (
                 <div className="p-3 bg-status-danger-bg text-status-danger rounded-lg flex items-center gap-2 text-body-sm">
-                  <span className="material-symbols-outlined text-[18px]">error</span>
+                  <V5Icon name="error" className="text-[18px]" />
                   <span>{lockError}</span>
                 </div>
               )}
 
               <div className="p-3 bg-status-warning-bg/40 text-v5-ink rounded-lg flex items-start gap-2 text-body-sm border border-status-warning/30">
-                <span className="material-symbols-outlined text-status-warning text-[20px] shrink-0 mt-0.5">info</span>
+                <V5Icon name="info" className="text-status-warning text-[20px] shrink-0 mt-0.5" />
                 <div>
                   <div className="font-semibold text-primary">Quy định chốt kỳ tác nghiệp:</div>
                   <div className="text-[12px] text-v5-muted mt-0.5">
@@ -1746,12 +1734,12 @@ function ReportsContent() {
                 >
                   {isLocking ? (
                     <>
-                      <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
+                      <V5Icon name="refresh" className="text-[16px] animate-spin" />
                       <span>Đang tổng hợp &amp; băm mã kiểm tra toàn vẹn...</span>
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[16px]">lock</span>
+                      <V5Icon name="lock" className="text-[16px]" />
                       <span>Xác nhận Chốt &amp; Khóa</span>
                     </>
                   )}
@@ -1769,7 +1757,7 @@ function ReportsContent() {
             {/* Modal Header */}
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">verified</span>
+                <V5Icon name="verified" className="text-[20px]" />
                 <div className="flex flex-col">
                   <span className="font-headline-sm text-[16px] text-white">
                     Chi Tiết Bản Chụp Số Liệu: {viewingSnapshot.code || viewingSnapshot.id}
@@ -1786,7 +1774,7 @@ function ReportsContent() {
                 }}
                 className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
@@ -1803,9 +1791,10 @@ function ReportsContent() {
                     disabled={isVerifyingSnapshot}
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-secondary text-on-secondary text-[11px] font-semibold hover:opacity-90 active-press disabled:opacity-50"
                   >
-                    <span className={`material-symbols-outlined text-[14px] ${isVerifyingSnapshot ? "animate-spin" : ""}`}>
-                      {isVerifyingSnapshot ? "refresh" : "verified_user"}
-                    </span>
+                    <V5Icon
+                      name={isVerifyingSnapshot ? "refresh" : "verified_user"}
+                      className={`text-[14px] ${isVerifyingSnapshot ? "animate-spin" : ""}`}
+                    />
                     <span>{isVerifyingSnapshot ? "Đang tính lại hash..." : "Đối soát toàn vẹn"}</span>
                   </button>
                 </div>
@@ -1818,9 +1807,10 @@ function ReportsContent() {
                       ? "bg-status-success-bg text-status-success font-semibold"
                       : "bg-status-danger-bg text-status-danger font-semibold"
                   }`}>
-                    <span className="material-symbols-outlined text-[16px]">
-                      {verificationFeedback.isValid ? "check_circle" : "error"}
-                    </span>
+                    <V5Icon
+                      name={verificationFeedback.isValid ? "check_circle" : "error"}
+                      className="text-[16px]"
+                    />
                     <span>{verificationFeedback.message}</span>
                   </div>
                 )}
@@ -1904,7 +1894,7 @@ function ReportsContent() {
             {/* Modal Header */}
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">manage_search</span>
+                <V5Icon name="manage_search" className="text-[20px]" />
                 <div className="flex flex-col">
                   <span className="font-headline-sm text-[16px] text-white">
                     Chi Tiết Chứng Từ Nguồn &amp; Nhật Ký Tác Nghiệp
@@ -1918,7 +1908,7 @@ function ReportsContent() {
                 onClick={() => setDrilldownTask(null)}
                 className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
@@ -1957,7 +1947,7 @@ function ReportsContent() {
                         className="flex items-center justify-between p-2 bg-v5-bg rounded text-[13px]"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[18px] text-secondary">description</span>
+                          <V5Icon name="description" className="text-[18px] text-secondary" />
                           <span>
                             Tờ khai / Văn bản số <strong>{v.number}</strong> ({v.company})
                           </span>
@@ -2012,7 +2002,7 @@ function ReportsContent() {
       {toastMsg && (
         <div className="fixed bottom-6 left-4 right-4 lg:left-auto lg:right-6 lg:w-96 bg-primary text-on-primary p-space-sm rounded-xl shadow-xl flex items-center justify-between z-50 animate-in fade-in slide-in-from-bottom duration-200">
           <div className="flex items-center gap-space-xs">
-            <span className="material-symbols-outlined text-status-success text-[20px]">task_alt</span>
+            <V5Icon name="task_alt" className="text-status-success text-[20px]" />
             <span className="font-body-semibold text-[13px]">{toastMsg}</span>
           </div>
         </div>
@@ -2026,9 +2016,7 @@ export default function ReportsPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center min-h-[400px]">
-          <span className="material-symbols-outlined text-secondary text-[32px] animate-spin">
-            refresh
-          </span>
+          <V5Icon name="refresh" className="text-secondary text-[32px] animate-spin" />
         </div>
       }
     >

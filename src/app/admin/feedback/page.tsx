@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -202,7 +204,7 @@ export default function AdminFeedbackPage() {
       {/* Đầu trang */}
       <div className="flex flex-col gap-1">
         <h1 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
-          <span className="material-symbols-outlined">campaign</span>
+          <V5Icon name="campaign" />
           Góp ý &amp; Báo lỗi
         </h1>
         <p className="text-sm text-v5-muted">
@@ -251,9 +253,7 @@ export default function AdminFeedbackPage() {
         )}
         <div className="flex-1" />
         <div className="relative">
-          <span className="material-symbols-outlined text-[18px] text-v5-muted absolute left-2.5 top-1/2 -translate-y-1/2">
-            search
-          </span>
+          <V5Icon name="search" className="text-[18px] text-v5-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -326,7 +326,7 @@ export default function AdminFeedbackPage() {
               </span>
               {f.status === "DONE" ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-v5-success-soft text-v5-success border border-v5-success/30">
-                  <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                  <V5Icon name="check_circle" className="text-[13px]" />
                   Đã xử lý
                   {f.resolvedAt ? ` ${new Date(f.resolvedAt).toLocaleDateString("vi-VN")}` : ""}
                 </span>
@@ -344,19 +344,20 @@ export default function AdminFeedbackPage() {
 
             <div className="flex items-center gap-3 flex-wrap text-[12px] text-v5-muted">
               <span className="inline-flex items-center gap-1">
-                <span className="material-symbols-outlined text-[15px]">person</span>
+                <V5Icon name="person" className="text-[15px]" />
                 {f.senderName}
                 {f.senderCode ? ` (${f.senderCode})` : ""}
               </span>
               <span className="inline-flex items-center gap-1" title={f.userAgent || ""}>
-                <span className="material-symbols-outlined text-[15px]">
-                  {deviceLabel(f.userAgent) === "Điện thoại" ? "smartphone" : "computer"}
-                </span>
+                <V5Icon
+                  name={deviceLabel(f.userAgent) === "Điện thoại" ? "smartphone" : "computer"}
+                  className="text-[15px]"
+                />
                 {deviceLabel(f.userAgent)}
               </span>
               {f.pagePath && (
                 <span className="inline-flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[15px]">pin_drop</span>
+                  <V5Icon name="pin_drop" className="text-[15px]" />
                   gửi từ <code className="px-1 rounded bg-v5-bg">{f.pagePath}</code>
                   <a
                     href={f.pagePath}

@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
@@ -63,7 +65,7 @@ export function FeedbackButton() {
           pathname.startsWith("/roster") ? "hidden lg:flex" : "flex"
         }`}
       >
-        <span className="material-symbols-outlined text-[20px]">campaign</span>
+        <V5Icon name="campaign" className="text-[20px]" />
         <span className="text-xs font-bold">Góp ý</span>
       </button>
 
@@ -79,7 +81,7 @@ export function FeedbackButton() {
           >
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-primary flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">campaign</span>
+                <V5Icon name="campaign" className="text-[20px]" />
                 Góp ý &amp; Báo lỗi
               </h3>
               <button
@@ -88,7 +90,7 @@ export function FeedbackButton() {
                 className="p-1 rounded hover:bg-surface-container text-outline disabled:opacity-40"
                 aria-label="Đóng"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
@@ -99,11 +101,11 @@ export function FeedbackButton() {
                   onClick={() => setCategory(c.id)}
                   className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border transition-fast ${
                     category === c.id
-                      ? "bg-secondary text-on-secondary border-secondary"
-                      : "bg-white text-on-surface border-border-subtle hover:bg-surface-container"
+                      ? "border-v5-accent bg-v5-accent text-white"
+                      : "border-v5-line bg-v5-surface text-v5-muted hover:bg-v5-bg"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">{c.icon}</span>
+                  <V5Icon name={c.icon} className="text-[16px]" />
                   {c.label}
                 </button>
               ))}

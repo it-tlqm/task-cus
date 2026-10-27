@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
@@ -123,7 +125,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-3.5 max-w-xl">
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
-                <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+                <V5Icon name="calendar_month" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Kế hoạch tuần &amp; tháng</span>
               </div>
               <p className="text-xs text-white/75 leading-normal">
@@ -133,7 +135,7 @@ export default function LoginPage() {
 
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
-                <span className="material-symbols-outlined text-[20px]">touch_app</span>
+                <V5Icon name="touch_app" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">1-Chạm không phát sinh</span>
               </div>
               <p className="text-xs text-white/75 leading-normal">
@@ -143,7 +145,7 @@ export default function LoginPage() {
 
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
-                <span className="material-symbols-outlined text-[20px]">table_view</span>
+                <V5Icon name="table_view" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Xuất Excel Mẫu A &amp; B</span>
               </div>
               <p className="text-xs text-white/75 leading-normal">
@@ -153,7 +155,7 @@ export default function LoginPage() {
 
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
-                <span className="material-symbols-outlined text-[20px]">verified_user</span>
+                <V5Icon name="verified_user" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Bảo mật &amp; Chốt số liệu</span>
               </div>
               <p className="text-xs text-white/75 leading-normal">
@@ -166,7 +168,7 @@ export default function LoginPage() {
         {/* Bottom Operational Status */}
         <div className="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-xs text-white/70">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary-fixed text-[16px]">lock</span>
+            <V5Icon name="lock" className="text-secondary-fixed text-[16px]" />
             <span>Xác thực an toàn nội bộ</span>
           </div>
           <span className="font-mono text-white/50">Mã đơn vị: HQTL-2026</span>
@@ -181,9 +183,7 @@ export default function LoginPage() {
           {/* Mobile Top Brand Header (Shown only on small screens) */}
           <div className="lg:hidden flex flex-col items-center text-center pb-2">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning-bg shadow-sm mb-3">
-              <span className="material-symbols-outlined text-status-warning text-[14px]">
-                verified_user
-              </span>
+              <V5Icon name="verified_user" className="text-status-warning text-[14px]" />
               <span className="font-label-sm text-[11px] text-status-warning uppercase tracking-wider font-semibold">
                 CỔNG ĐĂNG NHẬP NỘI BỘ
               </span>
@@ -204,7 +204,7 @@ export default function LoginPage() {
           {/* Desktop Form Header Banner */}
           <div className="hidden lg:flex flex-col gap-1">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-status-warning-bg border border-status-warning/30 w-fit mb-1">
-              <span className="material-symbols-outlined text-status-warning text-[13px]">verified_user</span>
+              <V5Icon name="verified_user" className="text-status-warning text-[13px]" />
               <span className="font-label-sm text-[11px] text-status-warning uppercase font-semibold">
                 CỔNG ĐĂNG NHẬP NỘI BỘ CHI CỤC
               </span>
@@ -220,7 +220,7 @@ export default function LoginPage() {
           {/* Authentication Alert Box (Error) */}
           {error && (
             <div className="w-full bg-status-danger-bg rounded-lg p-3 flex items-start gap-2 shadow-sm border border-status-danger/20 transition-panel">
-              <span className="material-symbols-outlined text-status-danger text-[18px] shrink-0 mt-0.5">error</span>
+              <V5Icon name="error" className="text-status-danger text-[18px] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="font-body-semibold text-xs text-status-danger font-bold">Đăng nhập không thành công</span>
@@ -229,7 +229,7 @@ export default function LoginPage() {
                     onClick={() => setError(null)}
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[15px]">close</span>
+                    <V5Icon name="close" className="text-[15px]" />
                   </button>
                 </div>
                 <p className="text-xs text-v5-muted mt-0.5 leading-normal">
@@ -255,9 +255,7 @@ export default function LoginPage() {
                   <span className="font-bold">Mã cán bộ / Tên đăng nhập</span>
                 </label>
                 <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-3 text-v5-muted text-[18px] pointer-events-none">
-                    badge
-                  </span>
+                  <V5Icon name="badge" className="absolute left-3 text-v5-muted text-[18px] pointer-events-none" />
                   <input
                     id="usernameInput"
                     type="text"
@@ -278,9 +276,7 @@ export default function LoginPage() {
                   </label>
                 </div>
                 <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-3 text-v5-muted text-[18px] pointer-events-none">
-                    key
-                  </span>
+                  <V5Icon name="key" className="absolute left-3 text-v5-muted text-[18px] pointer-events-none" />
                   <input
                     id="passwordInput"
                     type={showPassword ? "text" : "password"}
@@ -296,9 +292,10 @@ export default function LoginPage() {
                     aria-label="Hiển thị mật khẩu"
                     className="absolute right-2.5 p-1 text-v5-muted hover:text-v5-ink flex items-center justify-center rounded"
                   >
-                    <span className="material-symbols-outlined text-[18px]">
-                      {showPassword ? "visibility_off" : "visibility"}
-                    </span>
+                    <V5Icon
+                      name={showPassword ? "visibility_off" : "visibility"}
+                      className="text-[18px]"
+                    />
                   </button>
                 </div>
               </div>
@@ -325,12 +322,12 @@ export default function LoginPage() {
               >
                 {loading ? (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                    <V5Icon name="progress_activity" className="animate-spin text-[18px]" />
                     <span>Đang xác thực bảo mật...</span>
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[18px]">login</span>
+                    <V5Icon name="login" className="text-[18px]" />
                     <span>Đăng nhập hệ thống</span>
                   </>
                 )}
@@ -341,7 +338,7 @@ export default function LoginPage() {
           {/* Compliance & Security Footer */}
           <footer className="text-center flex flex-col items-center gap-1 pt-1">
             <div className="inline-flex items-center gap-1.5 text-v5-muted">
-              <span className="material-symbols-outlined text-[13px]">terminal</span>
+              <V5Icon name="terminal" className="text-[13px]" />
               <span className="text-[11px] font-mono">Bản dựng:-TL (Enterprise Build)</span>
             </div>
             <p className="text-[11px] text-v5-muted">

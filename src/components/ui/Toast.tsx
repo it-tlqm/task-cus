@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useState } from "react";
 
 export type ToastType = "success" | "error" | "info" | "warning";
@@ -75,21 +77,21 @@ export function ToastContainer() {
 
         const bgClass =
           t.type === "success"
-            ? "bg-emerald-950/90 border-emerald-500/40 text-emerald-100"
+            ? "border-v5-success/40 bg-v5-surface text-v5-ink"
             : t.type === "error"
-            ? "bg-rose-950/90 border-rose-500/40 text-rose-100"
-            : t.type === "warning"
-            ? "bg-amber-950/90 border-amber-500/40 text-amber-100"
-            : "bg-slate-900/90 border-teal-500/40 text-slate-100";
+              ? "border-v5-danger/40 bg-v5-surface text-v5-ink"
+              : t.type === "warning"
+                ? "border-v5-gold/50 bg-v5-surface text-v5-ink"
+                : "border-v5-line bg-v5-surface text-v5-ink";
 
         const iconColor =
           t.type === "success"
-            ? "text-emerald-400"
+            ? "text-v5-success"
             : t.type === "error"
-            ? "text-rose-400"
-            : t.type === "warning"
-            ? "text-amber-400"
-            : "text-teal-400";
+              ? "text-v5-danger"
+              : t.type === "warning"
+                ? "text-v5-gold-ink"
+                : "text-v5-accent";
 
         return (
           <div
@@ -97,18 +99,16 @@ export function ToastContainer() {
             role="status"
             className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-200 transform translate-y-0 opacity-100 animate-in fade-in slide-in-from-top-2 ${bgClass}`}
           >
-            <span className={`material-symbols-outlined text-[20px] shrink-0 mt-0.5 ${iconColor}`}>
-              {iconName}
-            </span>
+            <V5Icon name={iconName} className={`mt-0.5 shrink-0 text-[20px] ${iconColor}`} />
             <div className="flex-1 text-xs font-medium leading-relaxed break-words">
               {t.message}
             </div>
             <button
               onClick={() => removeToast(t.id)}
-              className="text-slate-400 hover:text-white p-0.5 rounded transition-colors shrink-0"
+              className="shrink-0 rounded p-0.5 text-v5-muted transition-colors hover:text-v5-ink"
               aria-label="Đóng thông báo"
             >
-              <span className="material-symbols-outlined text-[16px]">close</span>
+              <V5Icon name="close" className="text-[16px]" />
             </button>
           </div>
         );

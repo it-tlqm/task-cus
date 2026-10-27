@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { FileDown, Plus, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
@@ -522,7 +524,7 @@ export default function MonthlyResultsPage() {
             <ul className="mt-2 space-y-0.5">
               {scorePreview.reasons.map((r: string, i: number) => (
                 <li key={i} className="text-[11px] text-v5-gold-ink flex items-start gap-1">
-                  <span className="material-symbols-outlined text-[14px] shrink-0">info</span>
+                  <V5Icon name="info" className="text-[14px] shrink-0" />
                   <span>{r}</span>
                 </li>
               ))}
@@ -669,12 +671,12 @@ export default function MonthlyResultsPage() {
                   <div className="font-semibold text-v5-ink">{it.title}</div>
                   {it.officialReady ? (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-v5-success-soft text-v5-success text-[11px] font-semibold" data-testid={`mr-official-${it.id}`}>
-                      <span className="material-symbols-outlined text-[13px]">verified</span>
+                      <V5Icon name="verified" className="text-[13px]" />
                       Đủ điều kiện tổng hợp chính thức
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold" data-testid={`mr-draft-${it.id}`}>
-                      <span className="material-symbols-outlined text-[13px]">edit_note</span>
+                      <V5Icon name="edit_note" className="text-[13px]" />
                       DỰ THẢO — chưa đủ điều kiện tổng hợp chính thức
                     </span>
                   )}

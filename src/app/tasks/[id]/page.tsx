@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, useRef } from "react";
 import { isSelfInitiated, originLabel } from "@/lib/task-origin";
 import TxSourceBadge from "@/components/work/TxSourceBadge";
@@ -1050,7 +1052,7 @@ export default function TaskDetailPage() {
     return (
       <div className="w-full min-h-screen bg-transparent p-8 flex flex-col items-center justify-center">
         <div className="bg-v5-surface p-8 rounded-xl shadow-sm border border-v5-line max-w-md w-full text-center flex flex-col items-center gap-4">
-          <span className="material-symbols-outlined text-[48px] text-status-danger">error</span>
+          <V5Icon name="error" className="text-[48px] text-status-danger" />
           <h2 className="text-headline-md font-bold text-primary">Không thể truy cập nhiệm vụ</h2>
           <p className="text-body-md text-v5-muted">{error || "Nhiệm vụ không tồn tại hoặc đã bị xóa"}</p>
           <button
@@ -1084,7 +1086,7 @@ export default function TaskDetailPage() {
       !snapshotExcludedPrecheckers.includes(permUser.personId));
 
   return (
-    <div className="w-full min-h-screen bg-transparent pb-16">
+    <div className="w-full min-h-screen bg-transparent pb-28">
       <div className="flex flex-col w-full p-space-lg gap-space-lg max-w-7xl mx-auto">
         {/* Nút quay lại nổi bật + mã nhiệm vụ */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1123,9 +1125,10 @@ export default function TaskDetailPage() {
                     : "bg-secondary-fixed text-on-secondary-fixed-variant"
                 }`}
               >
-                <span className="material-symbols-outlined text-[14px]">
-                  {isCompleted ? "check_circle" : isWaiting ? "schedule" : isOverdue ? "warning" : "sync"}
-                </span>
+                <V5Icon
+                  name={isCompleted ? "check_circle" : isWaiting ? "schedule" : isOverdue ? "warning" : "sync"}
+                  className="text-[14px]"
+                />
                 <span>
                   {isCompleted
                     ? "Đã hoàn thành"
@@ -1141,7 +1144,7 @@ export default function TaskDetailPage() {
                   data-testid="task-returned-badge"
                   className="px-2.5 py-0.5 rounded font-bold text-xs inline-flex items-center gap-1 bg-status-danger-bg text-status-danger"
                 >
-                  <span className="material-symbols-outlined text-[14px]">undo</span>
+                  <V5Icon name="undo" className="text-[14px]" />
                   <span>Bị trả lại</span>
                 </span>
               )}
@@ -1151,7 +1154,7 @@ export default function TaskDetailPage() {
                   className="px-2.5 py-0.5 rounded font-semibold text-[11px] inline-flex items-center gap-1 bg-v5-bg text-v5-muted"
                   title="E8-A: trả lại không reset tiến độ/kết quả đã báo"
                 >
-                  <span className="material-symbols-outlined text-[13px]">lock_clock</span>
+                  <V5Icon name="lock_clock" className="text-[13px]" />
                   <span>Giữ nguyên tiến độ</span>
                 </span>
               )}
@@ -1175,7 +1178,7 @@ export default function TaskDetailPage() {
                 disabled={accepting}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary hover:opacity-95 text-on-secondary font-semibold text-sm shadow-sm active-press disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[18px]">handshake</span>
+                <V5Icon name="handshake" className="text-[18px]" />
                 <span>{accepting ? "Đang xác nhận..." : "Nhận việc"}</span>
               </button>
             )}
@@ -1185,7 +1188,7 @@ export default function TaskDetailPage() {
                 onClick={openEditModal}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg text-primary font-semibold text-sm border border-v5-line active-press"
               >
-                <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                <V5Icon name="edit_note" className="text-[18px]" />
                 <span>Chỉnh sửa chỉ đạo</span>
               </button>
             )}
@@ -1195,7 +1198,7 @@ export default function TaskDetailPage() {
                 onClick={() => setShowCancelDupModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-status-danger/10 hover:bg-status-danger/20 text-status-danger font-semibold text-sm border border-status-danger/30 active-press"
               >
-                <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+                <V5Icon name="delete_sweep" className="text-[18px]" />
                 <span>Xóa nhiệm vụ trùng</span>
               </button>
             )}
@@ -1209,7 +1212,7 @@ export default function TaskDetailPage() {
                 }}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-semibold text-sm shadow-sm active-press"
               >
-                <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
+                <V5Icon name="edit_calendar" className="text-[18px]" />
                 <span>{isTaskOwner || canApprove ? "Báo cáo tiến độ / Nộp kết quả" : "Báo phần việc của tôi"}</span>
               </button>
             )}
@@ -1219,7 +1222,7 @@ export default function TaskDetailPage() {
                 onClick={() => setShowExtRequestModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg text-primary font-semibold text-sm border border-v5-line active-press"
               >
-                <span className="material-symbols-outlined text-[18px] text-status-unassigned">update</span>
+                <V5Icon name="update" className="text-[18px] text-status-unassigned" />
                 <span>Xin gia hạn</span>
               </button>
             )}
@@ -1229,7 +1232,7 @@ export default function TaskDetailPage() {
                 onClick={() => setShowApproveModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-status-success text-white font-semibold text-sm shadow-sm active-press"
               >
-                <span className="material-symbols-outlined text-[18px]">verified</span>
+                <V5Icon name="verified" className="text-[18px]" />
                 <span>Ký duyệt kết quả</span>
               </button>
             )}
@@ -1244,7 +1247,7 @@ export default function TaskDetailPage() {
             <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">trending_up</span>
+                  <V5Icon name="trending_up" className="text-secondary text-[20px]" />
                   Tiến Độ Giải Quyết Thực Tế
                 </span>
                 <span className="font-bold text-secondary text-base">{task.progressPercent ?? (isCompleted ? 100 : 0)}%</span>
@@ -1317,9 +1320,7 @@ export default function TaskDetailPage() {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-bold text-primary flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[18px] text-secondary">
-                        verified
-                      </span>
+                      <V5Icon name="verified" className="text-[18px] text-secondary" />
                       Đánh giá chất lượng kết quả
                     </span>
                     <span className="font-bold text-secondary">
@@ -1479,7 +1480,7 @@ export default function TaskDetailPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[20px]">groups</span>
+                    <V5Icon name="groups" className="text-primary text-[20px]" />
                     Phần việc theo người
                   </h3>
                   <span className="text-[11px] text-v5-muted">
@@ -1722,7 +1723,7 @@ export default function TaskDetailPage() {
             <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-v5-line pb-3">
                 <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-[20px]">history</span>
+                  <V5Icon name="history" className="text-primary text-[20px]" />
                   {historyView === "unified" ? "Lịch Sử Hợp Nhất" : "Nhật Ký Tác Nghiệp"}{" "}
                   ({historyView === "unified"
                     ? historyEntries.length
@@ -1798,7 +1799,7 @@ export default function TaskDetailPage() {
                       return (
                         <div key={ev.id} className="flex gap-2.5">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${ks.cls}`}>
-                            <span className="material-symbols-outlined text-[16px]">{ks.icon}</span>
+                            <V5Icon name={ks.icon} className="text-[16px]" />
                           </div>
                           <div className="p-3 rounded-lg bg-v5-bg border border-v5-line/50 flex flex-col gap-1 flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 text-xs">
@@ -1856,7 +1857,7 @@ export default function TaskDetailPage() {
                       onClick={() => fetchTaskHistory(historySource)}
                       className="ml-auto text-[10px] font-semibold text-secondary inline-flex items-center gap-1"
                     >
-                      <span className="material-symbols-outlined text-[13px]">refresh</span>
+                      <V5Icon name="refresh" className="text-[13px]" />
                       Làm mới
                     </button>
                   </div>
@@ -1900,7 +1901,7 @@ export default function TaskDetailPage() {
                       return (
                         <div key={ev.id} className="flex gap-2.5" data-testid={`task-history-${ev.source}`}>
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${style.cls}`}>
-                            <span className="material-symbols-outlined text-[16px]">{style.icon}</span>
+                            <V5Icon name={style.icon} className="text-[16px]" />
                           </div>
                           <div className="p-3 rounded-lg bg-v5-bg border border-v5-line/50 flex flex-col gap-1 flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 text-xs">
@@ -1959,7 +1960,7 @@ export default function TaskDetailPage() {
             {/* Trao đổi trong nhiệm vụ (bình luận phẳng + đính file) */}
       <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3">
         <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2 border-b border-v5-line pb-3">
-          <span className="material-symbols-outlined text-primary text-[20px]">forum</span>
+          <V5Icon name="forum" className="text-primary text-[20px]" />
           Trao Đổi ({comments.length})
         </h3>
         {comments.length === 0 ? (
@@ -1992,7 +1993,7 @@ export default function TaskDetailPage() {
                           title="Sửa bình luận của mình"
                           className="p-0.5 rounded text-v5-muted hover:text-primary"
                         >
-                          <span className="material-symbols-outlined text-[15px]">edit</span>
+                          <V5Icon name="edit" className="text-[15px]" />
                         </button>
                       )}
                       <button
@@ -2000,7 +2001,7 @@ export default function TaskDetailPage() {
                         title="Xóa bình luận (tác giả hoặc lãnh đạo)"
                         className="p-0.5 rounded text-v5-muted hover:text-status-danger"
                       >
-                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                        <V5Icon name="delete" className="text-[15px]" />
                       </button>
                     </span>
                   </div>
@@ -2040,7 +2041,7 @@ export default function TaskDetailPage() {
                           rel="noreferrer"
                           className="text-xs text-secondary hover:underline flex items-center gap-1"
                         >
-                          <span className="material-symbols-outlined text-[14px]">attach_file</span>
+                          <V5Icon name="attach_file" className="text-[14px]" />
                           <span className="truncate">{f.fileName}</span>
                         </a>
                       ))}
@@ -2112,7 +2113,7 @@ export default function TaskDetailPage() {
           </div>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <label className="flex items-center gap-1.5 text-xs text-primary font-semibold cursor-pointer">
-              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+              <V5Icon name="upload_file" className="text-[18px]" />
               <span>{commentFiles.length > 0 ? `${commentFiles.length} tệp` : "Đính file"}</span>
               <input
                 type="file"
@@ -2149,7 +2150,7 @@ export default function TaskDetailPage() {
             {task.deadlineRequests && task.deadlineRequests.length > 0 && (
               <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3">
                 <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
-                  <span className="material-symbols-outlined text-status-unassigned text-[20px]">update</span>
+                  <V5Icon name="update" className="text-status-unassigned text-[20px]" />
                   Lịch Sử Đề Xuất Gia Hạn ({task.deadlineRequests.length})
                 </h3>
                 <div className="flex flex-col gap-2">
@@ -2197,7 +2198,7 @@ export default function TaskDetailPage() {
                 <div>
                   <span className="text-v5-muted block mb-0.5">Cán bộ phụ trách chính:</span>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-secondary text-[18px]">account_circle</span>
+                    <V5Icon name="account_circle" className="text-secondary text-[18px]" />
                     <div>
                       <span className="font-bold text-primary block">{task.owner?.fullName || "Chưa phân công"}</span>
                       <span className="text-[11px] text-v5-muted">{task.owner?.position || "Công chức phụ trách"}</span>
@@ -2211,7 +2212,7 @@ export default function TaskDetailPage() {
                     <div className="flex flex-col gap-1">
                       {task.assignees.map((as, i) => (
                         <div key={i} className="flex items-center gap-1.5 p-1.5 rounded bg-v5-bg">
-                          <span className="material-symbols-outlined text-[15px] text-v5-muted">person</span>
+                          <V5Icon name="person" className="text-[15px] text-v5-muted" />
                           <span className="font-semibold text-primary">{as.person.fullName}</span>
                         </div>
                       ))}
@@ -2262,12 +2263,12 @@ export default function TaskDetailPage() {
             <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3">
               <div className="flex items-center justify-between border-b border-v5-line pb-2">
                 <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[18px] text-secondary">attach_file</span>
+                  <V5Icon name="attach_file" className="text-[18px] text-secondary" />
                   <span>Hồ Sơ &amp; Tệp Đính Kèm ({attachments.length})</span>
                 </h3>
                 {uploadingFile && (
                   <span className="text-secondary font-label-sm text-[11px] flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[12px] animate-spin">progress_activity</span>
+                    <V5Icon name="progress_activity" className="text-[12px] animate-spin" />
                     Đang tải lên...
                   </span>
                 )}
@@ -2277,7 +2278,7 @@ export default function TaskDetailPage() {
               <div className="flex flex-col gap-2">
                 {attachmentsLoading ? (
                   <div className="p-3 rounded-lg bg-v5-bg text-center text-xs text-v5-muted flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                    <V5Icon name="progress_activity" className="text-[16px] animate-spin" />
                     Đang tải...
                   </div>
                 ) : attachments.length === 0 ? (
@@ -2304,25 +2305,26 @@ export default function TaskDetailPage() {
                         className="flex items-center justify-between p-2 rounded-lg bg-v5-bg border border-v5-line text-xs hover:border-secondary/40 transition-fast"
                       >
                         <div className="flex items-center gap-2 min-w-0 pr-1">
-                          <span
-                            className={`material-symbols-outlined text-[20px] shrink-0 ${
+                          <V5Icon
+                            name={
+                              isPdf
+                                ? "picture_as_pdf"
+                                : isSheet
+                                  ? "table_view"
+                                  : isImage
+                                    ? "image"
+                                    : "description"
+                            }
+                            className={`shrink-0 text-[20px] ${
                               isPdf
                                 ? "text-status-danger"
                                 : isSheet
-                                ? "text-status-success"
-                                : isImage
-                                ? "text-secondary"
-                                : "text-v5-muted"
+                                  ? "text-status-success"
+                                  : isImage
+                                    ? "text-secondary"
+                                    : "text-v5-muted"
                             }`}
-                          >
-                            {isPdf
-                              ? "picture_as_pdf"
-                              : isSheet
-                              ? "table_view"
-                              : isImage
-                              ? "image"
-                              : "description"}
-                          </span>
+                          />
                           <div className="flex flex-col min-w-0">
                             <a
                               href={att.fileUrl}
@@ -2354,7 +2356,7 @@ export default function TaskDetailPage() {
                               className="p-1 text-v5-muted hover:text-secondary rounded"
                               title="Xem nhanh tệp"
                             >
-                              <span className="material-symbols-outlined text-[16px]">visibility</span>
+                              <V5Icon name="visibility" className="text-[16px]" />
                             </button>
                           )}
                           <a
@@ -2365,7 +2367,7 @@ export default function TaskDetailPage() {
                             className="p-1 text-v5-muted hover:text-secondary rounded"
                             title="Tải về máy"
                           >
-                            <span className="material-symbols-outlined text-[16px]">download</span>
+                            <V5Icon name="download" className="text-[16px]" />
                           </a>
                           <button
                             type="button"
@@ -2373,7 +2375,7 @@ export default function TaskDetailPage() {
                             className="p-1 text-v5-muted hover:text-status-danger rounded"
                             title="Xóa tệp"
                           >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                            <V5Icon name="delete" className="text-[16px]" />
                           </button>
                         </div>
                       </div>
@@ -2397,13 +2399,59 @@ export default function TaskDetailPage() {
                 disabled={uploadingFile}
                 className="w-full py-2 rounded-lg bg-v5-bg hover:bg-v5-bg-high text-secondary font-semibold text-xs flex items-center justify-center gap-1.5 transition-fast active-press border border-v5-line disabled:opacity-50"
               >
-                <span className={`material-symbols-outlined text-[16px] ${uploadingFile ? "animate-spin" : ""}`}>
-                  {uploadingFile ? "progress_activity" : "upload_file"}
-                </span>
+                <V5Icon
+                  name={uploadingFile ? "progress_activity" : "upload_file"}
+                  className={`text-[16px] ${uploadingFile ? "animate-spin" : ""}`}
+                />
                 <span>{uploadingFile ? "Đang tải lên..." : "Tải lên tệp đính kèm mới"}</span>
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Thanh thao tác cố định trên mobile */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-v5-line bg-v5-surface/95 p-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-3xl items-center gap-2">
+          {task.status === "NOT_STARTED" && isMyTask && !isSelfInitiated(task.originKind) ? (
+            <button
+              onClick={handleAcceptTask}
+              disabled={accepting}
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-v5-accent text-sm font-semibold text-white disabled:opacity-50"
+            >
+              <V5Icon name="handshake" className="text-[18px]" />
+              {accepting ? "Đang xác nhận..." : "Nhận việc"}
+            </button>
+          ) : !isCompleted && !isWaiting ? (
+            <>
+              <button
+                onClick={() => {
+                  setNewProgress(task.progressPercent ?? 0);
+                  setUpdateNotes("");
+                  setShowUpdateModal(true);
+                }}
+                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-v5-accent text-sm font-semibold text-white"
+              >
+                <V5Icon name="edit_calendar" className="text-[18px]" />
+                Báo cáo tiến độ
+              </button>
+              <button
+                onClick={() => setShowExtRequestModal(true)}
+                className="flex h-10 items-center justify-center gap-2 rounded-lg border border-v5-line bg-v5-surface px-3 text-sm font-semibold text-v5-ink"
+              >
+                <V5Icon name="update" className="text-[18px]" />
+                Gia hạn
+              </button>
+            </>
+          ) : isWaiting && canApprove && canFinalByRoute && task.owner?.id !== permUser?.personId ? (
+            <button
+              onClick={() => setShowApproveModal(true)}
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-v5-success text-sm font-semibold text-white"
+            >
+              <V5Icon name="verified" className="text-[18px]" />
+              Ký duyệt kết quả
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -2414,7 +2462,7 @@ export default function TaskDetailPage() {
             <div className="p-space-md bg-secondary text-on-secondary flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Cập Nhật Tiến Độ Thực Hiện</h3>
               <button onClick={() => setShowUpdateModal(false)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <form onSubmit={handleProgressSubmit} className="p-space-md flex flex-col gap-4">
@@ -2517,7 +2565,7 @@ export default function TaskDetailPage() {
             <div className="p-4 bg-secondary text-on-secondary flex items-center justify-between">
               <h3 className="font-headline-sm text-sm font-bold">Báo phần việc của tôi</h3>
               <button type="button" onClick={() => setOwnPartOpen(false)} aria-label="Đóng">
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <form onSubmit={handleOwnPartSubmit} className="p-4 flex flex-col gap-3">
@@ -2567,7 +2615,7 @@ export default function TaskDetailPage() {
             <div className="p-space-md bg-status-unassigned text-white flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Đề Xuất Gia Hạn Nhiệm Vụ</h3>
               <button onClick={() => setShowExtRequestModal(false)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <form onSubmit={handleExtensionSubmit} className="p-space-md flex flex-col gap-4">
@@ -2621,7 +2669,7 @@ export default function TaskDetailPage() {
             <div className="p-space-md bg-status-success text-white flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Phê Duyệt Nghiệm Thu Hoàn Thành</h3>
               <button onClick={() => setShowApproveModal(false)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <div className="p-space-md flex flex-col gap-3">
@@ -2687,7 +2735,7 @@ export default function TaskDetailPage() {
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Chỉnh sửa chỉ đạo [{task.code}]</h3>
               <button onClick={() => setShowEditModal(false)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <form onSubmit={handleEditSubmit}>
@@ -2796,7 +2844,7 @@ export default function TaskDetailPage() {
             <div className="p-space-md bg-status-danger text-white flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Xóa nhiệm vụ trùng</h3>
               <button onClick={() => setShowCancelDupModal(false)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <form onSubmit={handleCancelDuplicate} className="p-space-md flex flex-col gap-3">
@@ -2849,11 +2897,14 @@ export default function TaskDetailPage() {
           >
             <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">
               <div className="flex items-center gap-2 min-w-0 pr-2">
-                <span className="material-symbols-outlined text-secondary text-[22px]">
-                  {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
-                    ? "picture_as_pdf"
-                    : "image"}
-                </span>
+                <V5Icon
+                  name={
+                    previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
+                      ? "picture_as_pdf"
+                      : "image"
+                  }
+                  className="text-[22px] text-secondary"
+                />
                 <span className="font-headline-sm text-sm font-bold text-primary truncate" title={previewFile.name}>
                   {previewFile.name}
                 </span>
@@ -2866,7 +2917,7 @@ export default function TaskDetailPage() {
                   download={previewFile.name}
                   className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-fast"
                 >
-                  <span className="material-symbols-outlined text-[15px]">download</span>
+                  <V5Icon name="download" className="text-[15px]" />
                   <span>Tải về</span>
                 </a>
                 <button
@@ -2875,7 +2926,7 @@ export default function TaskDetailPage() {
                   className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-primary transition-fast"
                   aria-label="Đóng xem trước"
                 >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
+                  <V5Icon name="close" className="text-[20px]" />
                 </button>
               </div>
             </div>

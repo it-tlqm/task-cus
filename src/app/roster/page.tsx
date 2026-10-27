@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
@@ -513,7 +515,7 @@ export default function RosterPage() {
               className="rounded-lg border border-v5-line p-1.5 hover:bg-v5-bg"
               aria-label="Kỳ trước"
             >
-              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              <V5Icon name="chevron_left" className="text-[18px]" />
             </button>
             {view === "week" ? (
               <span className="min-w-[150px] px-2 text-center text-xs font-semibold text-v5-ink">
@@ -534,7 +536,7 @@ export default function RosterPage() {
               className="rounded-lg border border-v5-line p-1.5 hover:bg-v5-bg"
               aria-label="Kỳ sau"
             >
-              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              <V5Icon name="chevron_right" className="text-[18px]" />
             </button>
             <button
               data-testid="roster-today"
@@ -588,10 +590,10 @@ export default function RosterPage() {
           aria-expanded={showTools}
         >
           <span className="inline-flex items-center gap-1">
-            <span className="material-symbols-outlined text-[15px]">tune</span>
+            <V5Icon name="tune" className="text-[15px]" />
             Bộ lọc &amp; công cụ
           </span>
-          <span className="material-symbols-outlined text-[16px]">{showTools ? "expand_less" : "expand_more"}</span>
+          <V5Icon name={showTools ? "expand_less" : "expand_more"} className="text-[16px]" />
         </button>
         <div
           className={`${showTools ? "flex" : "hidden"} flex-wrap items-center gap-2 lg:flex lg:border-t lg:border-v5-line/60 lg:pt-2`}
@@ -635,7 +637,7 @@ export default function RosterPage() {
                 onClick={() => setShowExport(true)}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-v5-line px-3 py-1.5 text-xs font-semibold hover:bg-v5-bg"
               >
-                <span className="material-symbols-outlined text-[16px]">download</span>
+                <V5Icon name="download" className="text-[16px]" />
                 Xuất Excel
               </button>
             )}
@@ -646,7 +648,7 @@ export default function RosterPage() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-v5-line px-3 py-1.5 text-xs font-semibold hover:bg-v5-bg"
                 title="Danh mục vị trí/nhiệm vụ của bộ phận đang xem"
               >
-                <span className="material-symbols-outlined text-[16px]">list_alt</span>
+                <V5Icon name="list_alt" className="text-[16px]" />
                 Danh mục vị trí
               </button>
             )}
@@ -666,16 +668,17 @@ export default function RosterPage() {
             className="flex min-h-6 w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs font-bold uppercase tracking-wide text-v5-gold-ink transition-colors hover:text-v5-gold-ink"
           >
             <span className="inline-flex items-center gap-2">
-              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">warning</span>
+              <V5Icon name="warning" className="text-[16px]" />
               Cảnh báo phân công ({warnings.length})
             </span>
             <span className="inline-flex items-center gap-1 normal-case tracking-normal">
               <span className="text-[11px] font-semibold text-v5-gold-ink">
                 {showWarnings ? "Ẩn chi tiết" : "Xem chi tiết"}
               </span>
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                {showWarnings ? "expand_less" : "expand_more"}
-              </span>
+              <V5Icon
+                name={showWarnings ? "expand_less" : "expand_more"}
+                className="text-[18px]"
+              />
             </span>
           </button>
           <ul id="roster-warnings-list" hidden={!showWarnings} className="mt-1.5 space-y-1">
@@ -693,7 +696,7 @@ export default function RosterPage() {
 
       {/* Quy ước nhóm trực: trực trưa không tính trùng với trực thường */}
       <div className="flex items-start gap-1.5 text-[11px] leading-snug text-v5-muted" data-testid="roster-noon-note">
-        <span className="material-symbols-outlined text-[14px] text-v5-muted">info</span>
+        <V5Icon name="info" className="text-[14px] text-v5-muted" />
         <span>
           Trực trưa là nhóm riêng: một cán bộ có thể vừa trực thường vừa trực trưa trong ngày. Hệ thống chỉ cảnh báo khi
           trùng phân công trong <strong>cùng nhóm trực</strong>.
@@ -758,7 +761,7 @@ export default function RosterPage() {
       {legacyUnassigned.length > 0 && (
         <div className="rounded-xl border border-v5-gold/50 bg-v5-gold-soft/70 p-3" data-testid="roster-legacy-unassigned">
           <div className="flex items-center gap-2 text-v5-gold-ink text-xs font-bold uppercase tracking-wide">
-            <span className="material-symbols-outlined text-[16px]">help</span>
+            <V5Icon name="help" className="text-[16px]" />
             Dữ liệu lịch trực cũ chưa xác định bộ phận cần đối chiếu ({legacyUnassigned.length})
           </div>
           <ul className="mt-1.5 space-y-0.5">
@@ -787,7 +790,7 @@ export default function RosterPage() {
           <div className="hidden overflow-hidden rounded-xl border border-v5-line bg-v5-surface lg:block" data-testid="roster-matrix" data-tour="roster-week">
             {positions.length === 0 ? (
               <div className="px-6 py-10 text-center" data-testid="roster-empty-catalog">
-                <span className="material-symbols-outlined text-[40px] text-v5-muted">assignment_late</span>
+                <V5Icon name="assignment_late" className="text-[40px] text-v5-muted" />
                 <div className="mt-2 text-base font-semibold text-v5-ink">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
                 <p className="mx-auto mt-1 max-w-xl text-sm text-v5-muted">
                   Mỗi bộ phận có bảng phân công riêng. Trưởng bộ phận hoặc Lãnh đạo đơn vị vào “Danh mục vị trí” để thiết lập
@@ -799,7 +802,7 @@ export default function RosterPage() {
                       onClick={() => setShowCatalog(true)}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-v5-accent px-3.5 py-2 text-xs font-semibold text-white hover:bg-v5-accent"
                     >
-                      <span className="material-symbols-outlined text-[16px]">list_alt</span>
+                      <V5Icon name="list_alt" className="text-[16px]" />
                       Thiết lập danh mục
                     </button>
                   )}
@@ -902,12 +905,7 @@ export default function RosterPage() {
                                           {ln.row ? ln.row.person.fullName : "—"}
                                         </span>
                                         {ln.row?.leaveClash && (
-                                          <span
-                                            className="material-symbols-outlined text-[13px] text-v5-gold-ink"
-                                            title={`Trùng đơn nghỉ đã duyệt (${ln.row.leaveClash.type})`}
-                                          >
-                                            warning
-                                          </span>
+                                          <V5Icon name="warning" className="text-[13px] text-v5-gold-ink" />
                                         )}
                                         {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
                                           <span
@@ -948,7 +946,7 @@ export default function RosterPage() {
                 className="rounded-xl border border-dashed border-v5-line bg-v5-surface p-5 text-center"
                 data-testid="roster-mobile-empty-catalog"
               >
-                <span className="material-symbols-outlined text-[32px] text-v5-muted">assignment_late</span>
+                <V5Icon name="assignment_late" className="text-[32px] text-v5-muted" />
                 <div className="mt-1 text-sm font-semibold text-v5-ink">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
                 <p className="mx-auto mt-1 max-w-xs text-xs text-v5-muted">
                   Mỗi bộ phận có bảng phân công riêng. Chọn bộ phận khác ở trên hoặc thiết lập danh mục cho bộ phận này.
@@ -958,7 +956,7 @@ export default function RosterPage() {
                     onClick={() => setShowCatalog(true)}
                     className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-v5-accent px-3.5 py-2 text-xs font-semibold text-white hover:bg-v5-accent"
                   >
-                    <span className="material-symbols-outlined text-[16px]">list_alt</span>
+                    <V5Icon name="list_alt" className="text-[16px]" />
                     Thiết lập danh mục
                   </button>
                 )}
@@ -1007,7 +1005,7 @@ export default function RosterPage() {
                         onClick={() => openEditor(iso)}
                         className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-v5-line bg-v5-surface px-2 py-1 text-[11px] font-semibold text-v5-accent"
                       >
-                        <span className="material-symbols-outlined text-[14px]">add</span>
+                        <V5Icon name="add" className="text-[14px]" />
                         Phân công
                       </button>
                     )}
@@ -1026,9 +1024,7 @@ export default function RosterPage() {
                                   {(ln.label && ln.label.length <= 3 ? `${ln.label}: ` : "") + (ln.row?.person.fullName || "")}
                                 </span>
                                 {ln.row?.leaveClash && (
-                                  <span className="material-symbols-outlined text-[13px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt">
-                                    warning
-                                  </span>
+                                  <V5Icon name="warning" className="text-[13px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt" />
                                 )}
                                 {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
                                   <span className="text-[10px] font-semibold text-v5-gold-ink" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
@@ -1199,7 +1195,7 @@ function DayFormView({
             onClick={onEdit}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent"
           >
-            <span className="material-symbols-outlined text-[16px]">edit</span>
+            <V5Icon name="edit" className="text-[16px]" />
             Phân công ngày này
           </button>
         )}
@@ -1209,13 +1205,13 @@ function DayFormView({
             onClick={() => onQuickExport()}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-v5-line hover:bg-v5-bg"
           >
-            <span className="material-symbols-outlined text-[16px]">download</span>
+            <V5Icon name="download" className="text-[16px]" />
             Xuất Excel ngày này
           </button>
         )}
         {warnings.length > 0 && (
           <span className="inline-flex items-center gap-1 text-xs text-v5-gold-ink">
-            <span className="material-symbols-outlined text-[15px]">warning</span>
+            <V5Icon name="warning" className="text-[15px]" />
             {warnings.length} cảnh báo trong ngày
           </span>
         )}
@@ -1289,9 +1285,7 @@ function DayFormView({
                                 : "đ/c………"}
                           </span>
                           {ln.row?.leaveClash && (
-                            <span className="material-symbols-outlined text-[12px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt">
-                              warning
-                            </span>
+                            <V5Icon name="warning" className="text-[12px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt" />
                           )}
                           {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
                             <span className="text-[10px] font-semibold text-v5-gold-ink" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
@@ -1702,7 +1696,7 @@ function DayEditorModal({
               className="p-1.5 rounded-lg hover:bg-v5-bg"
               aria-label="Đóng"
             >
-              <span className="material-symbols-outlined text-[20px]">close</span>
+              <V5Icon name="close" className="text-[20px]" />
             </button>
           </div>
         </div>
@@ -1831,7 +1825,7 @@ function DayEditorModal({
                       className="inline-flex items-center gap-1 rounded-lg border border-v5-line bg-v5-surface px-2.5 py-1.5 text-[11px] font-semibold text-v5-accent hover:bg-v5-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
                       title={`Thêm một người vào vị trí này, chỉ áp dụng cho ngày ${fmtDMY(dateISO)}`}
                     >
-                      <span className="material-symbols-outlined text-[15px]">person_add</span>
+                      <V5Icon name="person_add" className="text-[15px]" />
                       Thêm người cho ngày này
                     </button>
                     <span className="text-[10px] text-v5-muted">
@@ -1976,9 +1970,7 @@ function SlotRow({
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="font-semibold text-v5-ink truncate">{row!.person.fullName}</span>
                 {row!.leaveClash && (
-                  <span className="material-symbols-outlined text-[14px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt">
-                    warning
-                  </span>
+                  <V5Icon name="warning" className="text-[14px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt" />
                 )}
                 {row!.overlapCount > 1 && !rowPersonIsLeader && (
                   <span
@@ -2021,7 +2013,7 @@ function SlotRow({
                   onClick={() => setPanel(panel === "note" ? null : "note")}
                   className="inline-flex items-center gap-1 rounded-lg border border-v5-line px-2 py-1.5 text-[11px] font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-40"
                 >
-                  <span className="material-symbols-outlined text-[14px]">sticky_note_2</span>
+                  <V5Icon name="sticky_note_2" className="text-[14px]" />
                   {row!.notes ? "Sửa ghi chú" : "Ghi chú"}
                 </button>
                 <button
@@ -2031,7 +2023,7 @@ function SlotRow({
                   onClick={() => setPanel(panel === "change" ? null : "change")}
                   className="inline-flex items-center gap-1 rounded-lg border border-v5-line px-2 py-1.5 text-[11px] font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-40"
                 >
-                  <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
+                  <V5Icon name="swap_horiz" className="text-[14px]" />
                   Đổi người
                 </button>
                 <button
@@ -2294,7 +2286,7 @@ function CatalogModal({
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-v5-bg" aria-label="Đóng" data-testid="catalog-close">
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <V5Icon name="close" className="text-[20px]" />
           </button>
         </div>
 
@@ -2491,7 +2483,7 @@ function ExportModal({
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-v5-bg" aria-label="Đóng">
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <V5Icon name="close" className="text-[20px]" />
           </button>
         </div>
         <div className="p-4 space-y-3">

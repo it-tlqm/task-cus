@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
@@ -235,7 +237,7 @@ export default function GiaoBanPage() {
               href="/giao-ban/nhap"
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-on-primary text-label-md font-semibold hover:opacity-90"
             >
-              <span className="material-symbols-outlined text-[18px]">edit_note</span>
+              <V5Icon name="edit_note" className="text-[18px]" />
               Nhập số liệu
             </Link>
             {showAdminMenu && (
@@ -243,7 +245,7 @@ export default function GiaoBanPage() {
                 href="/giao-ban/cau-hinh"
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-v5-line text-primary text-label-md font-semibold hover:bg-v5-bg"
               >
-                <span className="material-symbols-outlined text-[18px]">tune</span>
+                <V5Icon name="tune" className="text-[18px]" />
                 Cấu hình
               </Link>
             )}
@@ -351,9 +353,10 @@ export default function GiaoBanPage() {
                     className="w-full px-4 py-3 bg-v5-bg border-b border-v5-line/40 flex items-center justify-between"
                   >
                     <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide text-left">{g.name}</span>
-                    <span className="material-symbols-outlined text-[20px] text-v5-muted">
-                      {(expanded[g.id] ?? true) ? "expand_less" : "expand_more"}
-                    </span>
+                    <V5Icon
+                      name={(expanded[g.id] ?? true) ? "expand_less" : "expand_more"}
+                      className="text-[20px] text-v5-muted"
+                    />
                   </button>
                   {(expanded[g.id] ?? true) && (
                     <div className="overflow-x-auto">

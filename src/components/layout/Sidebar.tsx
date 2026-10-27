@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React from "react";
 import Link from "next/link";
 import { NavigationList } from "@/components/layout/NavigationList";
@@ -46,9 +48,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                 title="Mở rộng menu"
                 className="focus-ring flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
               >
-                <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
-                  chevron_right
-                </span>
+                <V5Icon name="chevron_right" className="text-[16px]" />
               </button>
             </>
           ) : (
@@ -79,9 +79,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                 title="Thu gọn menu"
                 className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
               >
-                <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                  chevron_left
-                </span>
+                <V5Icon name="chevron_left" className="text-[18px]" />
               </button>
             </>
           )}
@@ -99,9 +97,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
               href="/huong-dan"
               className="focus-ring mb-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] font-medium text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                help
-              </span>
+              <V5Icon name="help" className="text-[18px]" />
               Hướng dẫn sử dụng
             </Link>
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -125,9 +121,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
               title="Hướng dẫn sử dụng"
               className="focus-ring flex h-8 w-8 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
-                help
-              </span>
+              <V5Icon name="help" className="text-[18px]" />
             </Link>
             <span
               title="Vận hành chính thức v1.2.4"

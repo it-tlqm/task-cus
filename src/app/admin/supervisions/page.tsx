@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "@/components/ui/Toast";
 
@@ -111,7 +113,7 @@ export default function SupervisionsAdminPage() {
       <div className="max-w-5xl mx-auto px-margin pt-5 space-y-4">
         <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-4">
           <h1 className="text-lg font-bold text-v5-ink flex items-center gap-2">
-            <span className="material-symbols-outlined text-v5-gold-ink">account_tree</span>
+            <V5Icon name="account_tree" className="text-v5-gold-ink" />
             Quan hệ phụ trách theo kỳ
           </h1>
           <p className="text-xs text-v5-muted mt-1">

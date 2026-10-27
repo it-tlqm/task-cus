@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState } from "react";
 import Link from "next/link";
 import { fmtDate, fmtMetric, fmtMetricCompact, fmtPercent } from "@/lib/metric-format";
@@ -240,7 +242,7 @@ export function RevenueComparisonSection({
                 className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/10"
                 title={`Mở nhập số thực tế ngày ${actualDate}`}
               >
-                <span className="material-symbols-outlined text-[13px]">edit_note</span>
+                <V5Icon name="edit_note" className="text-[13px]" />
                 Nhập số thực tế
               </Link>
             )}
@@ -253,7 +255,7 @@ export function RevenueComparisonSection({
   return (
     <div className={`bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden ${className}`} data-testid="comparison-section">
       <div className="px-4 py-3 bg-surface-container-low border-b border-border-default/40 flex items-center gap-2 flex-wrap">
-        <span className="material-symbols-outlined text-[18px] text-primary">compare_arrows</span>
+        <V5Icon name="compare_arrows" className="text-[18px] text-primary" />
         <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide">So sánh kết quả thu NSNN</span>
         <span className="text-body-xs text-on-surface-variant">
           ({comparison?.anchors?.monthLabel || ""} — tháng trước: {comparison?.anchors?.prevMonthLabel || ""}, cùng kỳ:{" "}
@@ -273,7 +275,7 @@ export function RevenueComparisonSection({
             title="Nhập nhanh BTC, UBND và KH tháng"
             className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
           >
-            <span className="material-symbols-outlined text-[16px]">edit_note</span>
+            <V5Icon name="edit_note" className="text-[16px]" />
             Nhập chỉ tiêu BTC/UBND/KH
           </button>
         ) : showConfigureLink ? (
@@ -281,7 +283,7 @@ export function RevenueComparisonSection({
             href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
             className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
           >
-            <span className="material-symbols-outlined text-[16px]">edit_note</span>
+            <V5Icon name="edit_note" className="text-[16px]" />
             Cấu hình chỉ tiêu →
           </Link>
         ) : null}

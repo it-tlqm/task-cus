@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect } from "react";
 import { originLabel } from "@/lib/task-origin";
 import Link from "next/link";
@@ -18,6 +20,7 @@ import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
 import { Card } from "@/components/v5/ui/card";
+import { PageHeader } from "@/components/v5/ui/page-header";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 import WorkSourcePicker from "@/components/work/WorkSourcePicker";
 import TxSourceBadge from "@/components/work/TxSourceBadge";
@@ -457,40 +460,39 @@ export default function TasksPage() {
   return (
     <div className="w-full pb-4">
       <div className="flex w-full flex-col gap-3">
-        <header className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Công việc chỉ đạo</h1>
-              <Badge variant="outline">
-                {permUser?.role ? getRoleDisplayName(permUser.role) : "Đang tải..."}
-              </Badge>
-            </div>
-            <p className="mt-1 text-sm text-v5-muted">
-              Giao việc, theo dõi tiến độ, xử lý gia hạn và phê duyệt kết quả công tác.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {canAssign && permUser?.unitId && (
-              <Button size="sm" data-tour="create-btn" onClick={() => setShowCreateModal(true)}>
-                <Plus className="h-3.5 w-3.5" /> Giao nhiệm vụ
-              </Button>
-            )}
-            {canApprove && (
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/reports/excel">
-                  <FileDown className="h-3.5 w-3.5" /> Xuất phiếu
-                </Link>
-              </Button>
-            )}
-            {canAudit && (
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/admin/audit">
-                  <History className="h-3.5 w-3.5" /> Lịch sử
-                </Link>
-              </Button>
-            )}
-          </div>
-        </header>
+        <PageHeader
+          eyebrow="Điều hành công việc"
+          title="Công việc chỉ đạo"
+          badges={
+            <Badge variant="outline">
+              {permUser?.role ? getRoleDisplayName(permUser.role) : "Đang tải..."}
+            </Badge>
+          }
+          description="Giao việc, theo dõi tiến độ, xử lý gia hạn và phê duyệt kết quả công tác."
+          actions={
+            <>
+              {canAssign && permUser?.unitId && (
+                <Button size="sm" data-tour="create-btn" onClick={() => setShowCreateModal(true)}>
+                  <Plus className="h-3.5 w-3.5" /> Giao nhiệm vụ
+                </Button>
+              )}
+              {canApprove && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/reports/excel">
+                    <FileDown className="h-3.5 w-3.5" /> Xuất phiếu
+                  </Link>
+                </Button>
+              )}
+              {canAudit && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/admin/audit">
+                    <History className="h-3.5 w-3.5" /> Lịch sử
+                  </Link>
+                </Button>
+              )}
+            </>
+          }
+        />
 
         {!permissionsLoading && canAssign && !permUser?.unitId && (
           <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
@@ -685,15 +687,15 @@ export default function TasksPage() {
                         <td className="py-3 px-space-sm align-top">
                           {isCompleted ? (
                             <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success text-xs font-bold inline-flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[13px]">check_circle</span> Hoàn thành
+                              <V5Icon name="check_circle" className="text-[13px]" /> Hoàn thành
                             </span>
                           ) : isWaiting ? (
                             <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning text-xs font-bold inline-flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[13px]">schedule</span> Chờ duyệt
+                              <V5Icon name="schedule" className="text-[13px]" /> Chờ duyệt
                             </span>
                           ) : isOverdue ? (
                             <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger text-xs font-bold inline-flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[13px]">warning</span> Quá hạn
+                              <V5Icon name="warning" className="text-[13px]" /> Quá hạn
                             </span>
                           ) : (
                             <div className="flex flex-col gap-1 w-24">
@@ -784,11 +786,11 @@ export default function TasksPage() {
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary-fixed text-[22px]">add_task</span>
+                <V5Icon name="add_task" className="text-secondary-fixed text-[22px]" />
                 <h3 className="font-headline-sm text-headline-sm text-white">Giao Nhiệm Vụ Chỉ Đạo Mới</h3>
               </div>
               <button onClick={() => setShowCreateModal(false)} className="text-on-primary-container hover:text-white">
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
@@ -991,7 +993,7 @@ export default function TasksPage() {
             <div className="p-space-md bg-secondary text-on-secondary flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Phê Duyệt Kết Quả Hoàn Thành</h3>
               <button onClick={() => setShowApproveModal(false)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <div className="p-space-md flex flex-col gap-space-sm">
@@ -1027,7 +1029,7 @@ export default function TasksPage() {
             <div className="p-space-md bg-status-danger text-on-error flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Chỉ Đạo / Cho Phép Gia Hạn</h3>
               <button onClick={() => setShowExtModal(false)}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
             <div className="p-space-md flex flex-col gap-space-sm">

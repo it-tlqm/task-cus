@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useState } from "react";
 import { formatVnDateTime } from "@/lib/datetime";
 import { toast } from "@/components/ui/Toast";
@@ -441,9 +443,7 @@ export default function ApprovalPreviewModal({
         {/* Header */}
         <div className="px-5 py-4 bg-primary text-on-primary rounded-t-2xl flex items-start justify-between gap-3">
           <div className="flex items-start gap-2 min-w-0">
-            <span className="material-symbols-outlined text-secondary-fixed text-[24px] shrink-0">
-              fact_check
-            </span>
+            <V5Icon name="fact_check" className="text-secondary-fixed text-[24px] shrink-0" />
             <div className="min-w-0">
               <h3 className="font-headline-sm text-white font-bold">
                 Xem trước hồ sơ trước khi quyết định
@@ -470,7 +470,7 @@ export default function ApprovalPreviewModal({
         ) : error ? (
           <div className="p-6 space-y-3">
             <div className="flex items-center gap-2 text-status-danger text-sm font-semibold">
-              <span className="material-symbols-outlined text-[18px]">error</span>
+              <V5Icon name="error" className="text-[18px]" />
               Không xem được hồ sơ
             </div>
             <p className="text-xs text-on-surface-variant">{error}</p>
@@ -490,9 +490,7 @@ export default function ApprovalPreviewModal({
                 <div className="rounded-lg bg-status-warning-bg border border-status-warning/30 p-3 space-y-1">
                   {preview.warnings.map((w, i) => (
                     <div key={i} className="flex items-start gap-1.5 text-[11px] text-on-surface">
-                      <span className="material-symbols-outlined text-[15px] text-status-warning shrink-0">
-                        warning
-                      </span>
+                      <V5Icon name="warning" className="text-[15px] text-status-warning shrink-0" />
                       <span>{w}</span>
                     </div>
                   ))}
@@ -1153,11 +1151,10 @@ export default function ApprovalPreviewModal({
                         : "border-border-default hover:bg-surface-container"
                     }`}
                   >
-                    <span
-                      className={`material-symbols-outlined text-[18px] ${opt.tone} block`}
-                    >
-                      {opt.icon}
-                    </span>
+                    <V5Icon
+                      name={opt.icon}
+                      className={`block text-[18px] ${opt.tone}`}
+                    />
                     <span className="text-[12px] font-bold text-primary block">{opt.label}</span>
                     <span className="text-[10px] text-on-surface-variant leading-tight block">
                       {opt.hint}
@@ -1264,14 +1261,12 @@ export default function ApprovalPreviewModal({
                 >
                   {submitting ? (
                     <>
-                      <span className="material-symbols-outlined text-[16px] animate-spin">
-                        progress_activity
-                      </span>
+                      <V5Icon name="progress_activity" className="text-[16px] animate-spin" />
                       Đang ghi...
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[16px]">gavel</span>
+                      <V5Icon name="gavel" className="text-[16px]" />
                       Ghi quyết định
                     </>
                   )}

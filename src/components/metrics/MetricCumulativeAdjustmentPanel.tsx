@@ -8,6 +8,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
+import { V5Icon } from "@/components/v5/ui/icon";
 import { fmtDate, fmtMetric } from "@/lib/metric-format";
 import { getVnDateParts } from "@/lib/period-helper";
 
@@ -190,7 +191,10 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
         <span className="text-body-xs text-on-surface-variant">
           Bắt buộc lý do · lưu old/new · dùng quyền nhập/xác nhận hiện có
         </span>
-        <span className="material-symbols-outlined text-[20px] text-on-surface-variant">{open ? "expand_less" : "expand_more"}</span>
+        <V5Icon
+          name={open ? "expand_less" : "expand_more"}
+          className="text-[20px] text-on-surface-variant"
+        />
       </button>
 
       {open && (

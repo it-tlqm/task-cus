@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React from "react";
 
 export interface PickerPerson {
@@ -45,7 +47,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
           key={id}
           className="flex items-center gap-2 h-10 px-2 rounded bg-surface-container-low border border-border-subtle"
         >
-          <span className="material-symbols-outlined text-[18px] text-secondary shrink-0">group_add</span>
+          <V5Icon name="group_add" className="text-[18px] text-secondary shrink-0" />
           <select
             value={id}
             disabled={disabled}
@@ -70,7 +72,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
             title="Bỏ người phối hợp này"
             className="p-1 rounded text-status-danger hover:bg-status-danger/10 shrink-0 disabled:opacity-40"
           >
-            <span className="material-symbols-outlined text-[18px]">person_remove</span>
+            <V5Icon name="person_remove" className="text-[18px]" />
           </button>
         </div>
       ))}

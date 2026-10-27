@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import Link from "next/link";
@@ -443,11 +445,11 @@ export default function RoutinePage() {
             <div className="flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded bg-primary px-2.5 py-0.5 font-label-sm text-label-sm font-bold uppercase tracking-wider text-on-primary shadow-sm">
-                  <span className="material-symbols-outlined text-[14px]">fact_check</span>
+                  <V5Icon name="fact_check" className="text-[14px]" />
                   Nghiệp vụ hải quan
                 </span>
                 <span className="flex items-center gap-1 font-label-sm text-label-sm text-v5-muted">
-                  <span className="material-symbols-outlined text-[14px] text-status-success">verified</span>
+                  <V5Icon name="verified" className="text-[14px] text-status-success" />
                   Biểu mẫu:{" "}
                   <strong className="font-body-semibold text-v5-ink">
                     {activeFormVersion?.templateCode || "FORM"} v{activeFormVersion?.version || 1}
@@ -466,7 +468,7 @@ export default function RoutinePage() {
             <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto">
               <div className="flex items-center gap-3 rounded-lg border border-v5-line bg-v5-surface px-3 py-2 shadow-sm">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-status-success-bg text-status-success">
-                  <span className="material-symbols-outlined text-[18px]">task_alt</span>
+                  <V5Icon name="task_alt" className="text-[18px]" />
                 </div>
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-label-sm text-label-sm text-v5-muted">
@@ -480,7 +482,7 @@ export default function RoutinePage() {
               </div>
               <div className="flex items-center gap-3 rounded-lg border border-v5-line bg-v5-surface px-3 py-2 shadow-sm">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-status-unassigned-bg text-status-unassigned">
-                  <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+                  <V5Icon name="assignment_turned_in" className="text-[18px]" />
                 </div>
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate font-label-sm text-label-sm text-v5-muted">
@@ -506,7 +508,7 @@ export default function RoutinePage() {
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
+                  <V5Icon name="edit_calendar" className="text-[18px]" />
                   <span className="truncate">Ghi nhận nhật ký</span>
                 </span>
                 <span className="shrink-0 rounded-full bg-secondary-fixed px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-secondary-fixed">
@@ -523,7 +525,7 @@ export default function RoutinePage() {
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">build_circle</span>
+                  <V5Icon name="build_circle" className="text-[18px]" />
                   <span className="truncate">Thiết kế biểu mẫu</span>
                 </span>
                 <span className="shrink-0 rounded bg-primary-fixed px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-primary-fixed">
@@ -541,7 +543,7 @@ export default function RoutinePage() {
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">history_toggle_off</span>
+                  <V5Icon name="history_toggle_off" className="text-[18px]" />
                   <span className="truncate">Lịch sử thay đổi</span>
                 </span>
               </button>
@@ -564,7 +566,7 @@ export default function RoutinePage() {
                 {canDeclare && (
                 <>
                 <div className="flex items-center gap-2 bg-v5-bg px-3 py-1.5 rounded-lg border border-v5-line">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">calendar_today</span>
+                  <V5Icon name="calendar_today" className="text-secondary text-[20px]" />
                   <div className="flex flex-col">
                     <span className="font-label-sm text-[11px] text-v5-muted uppercase font-bold">
                       Ngày ghi nhận (quyết định kỳ)
@@ -609,7 +611,7 @@ export default function RoutinePage() {
                 </div>
 
                 <div className="flex items-center gap-2 bg-v5-bg px-3 py-1.5 rounded-lg border border-v5-line">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+                  <V5Icon name="schedule" className="text-secondary text-[20px]" />
                   <div className="flex flex-col">
                     <span className="font-label-sm text-[11px] text-v5-muted uppercase font-bold">
                       Ca làm việc
@@ -659,7 +661,7 @@ export default function RoutinePage() {
                 className="flex flex-col gap-3 rounded-xl border border-v5-line/50 bg-v5-surface p-space-lg shadow-sm"
               >
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined shrink-0 text-[22px] text-v5-muted">hourglass_top</span>
+                  <V5Icon name="hourglass_top" className="shrink-0 text-[22px] text-v5-muted" />
                   <div className="flex min-w-0 flex-col">
                     <span className="font-body-semibold text-body-semibold text-primary">
                       Đang xác định quyền khai báo đầu việc…
@@ -678,7 +680,7 @@ export default function RoutinePage() {
                 data-testid="routine-declaration-unavailable"
                 className="flex items-start gap-3 rounded-xl border border-v5-line/50 bg-v5-surface p-space-md shadow-sm"
               >
-                <span className="material-symbols-outlined shrink-0 text-[22px] text-v5-muted">help</span>
+                <V5Icon name="help" className="shrink-0 text-[22px] text-v5-muted" />
                 <div className="flex flex-col gap-0.5">
                   <p className="font-body-semibold text-body-semibold text-primary">
                     Chưa xác định được quyền khai báo đầu việc.
@@ -692,7 +694,7 @@ export default function RoutinePage() {
             <div data-tour="log-form" className="bg-v5-surface rounded-xl p-space-lg shadow-sm border border-v5-line/50 flex flex-col gap-space-md">
               <div className="flex flex-col gap-2 border-b border-surface-container pb-space-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="material-symbols-outlined shrink-0 text-secondary text-[22px]">add_task</span>
+                  <V5Icon name="add_task" className="shrink-0 text-secondary text-[22px]" />
                   <div className="flex min-w-0 flex-col">
                     <h3 className="font-headline-sm text-headline-sm text-primary">
                       Khai Báo Đầu Việc Thực Hiện Trong Ca
@@ -710,9 +712,10 @@ export default function RoutinePage() {
                   onClick={() => setIsDeclarationOpen((open) => !open)}
                   className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-secondary/40 bg-secondary/5 px-4 py-2 font-label-md font-semibold text-secondary transition-fast hover:bg-secondary/10 active-press sm:w-auto"
                 >
-                  <span className="material-symbols-outlined text-[18px]">
-                    {isDeclarationOpen ? "expand_less" : "add_task"}
-                  </span>
+                  <V5Icon
+                    name={isDeclarationOpen ? "expand_less" : "add_task"}
+                    className="text-[18px]"
+                  />
                   <span>{isDeclarationOpen ? "Thu gọn khai báo" : "Khai báo đầu việc"}</span>
                 </button>
               </div>
@@ -801,7 +804,7 @@ export default function RoutinePage() {
                     <div className="md:col-span-2 p-3.5 rounded-lg bg-v5-bg border border-v5-line flex flex-col gap-3">
                       <div className="flex items-center justify-between border-b border-v5-line/60 pb-2">
                         <span className="font-label-md text-primary font-bold flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[16px] text-secondary">dynamic_form</span>
+                          <V5Icon name="dynamic_form" className="text-[16px] text-secondary" />
                           Trường dữ liệu biểu mẫu động: {activeFormVersion.templateName || "Biểu mẫu nghiệp vụ"} (v
                           {activeFormVersion.version})
                         </span>
@@ -896,7 +899,7 @@ export default function RoutinePage() {
                     disabled={isSubmitting || !entryWorkDate}
                     className="px-6 py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
                   >
-                    <span className="material-symbols-outlined text-[18px]">save</span>
+                    <V5Icon name="save" className="text-[18px]" />
                     <span>{isSubmitting ? "Đang lưu..." : "Lưu vào sổ nhật ký tác nghiệp"}</span>
                   </button>
                 </div>
@@ -915,7 +918,7 @@ export default function RoutinePage() {
                   onClick={() => handleConfirmNotOccurred("NO_VIOLATION")}
                   className="w-full sm:w-auto px-4 py-2 rounded-lg bg-v5-bg text-v5-ink hover:bg-v5-bg-high font-label-md font-semibold transition-fast active-press flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined shrink-0 text-[18px] text-status-warning">check_circle</span>
+                  <V5Icon name="check_circle" className="shrink-0 text-[18px] text-status-warning" />
                   <span>Ca không phát sinh vụ việc vi phạm/tồn đọng</span>
                 </button>
                 <button
@@ -925,7 +928,7 @@ export default function RoutinePage() {
                   onClick={() => handleConfirmNotOccurred("NO_ACTIVITY")}
                   className="w-full sm:w-auto px-4 py-2 rounded-lg bg-v5-bg text-v5-ink hover:bg-v5-bg-high font-label-md font-semibold transition-fast active-press flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined shrink-0 text-[18px] text-v5-muted">bedtime</span>
+                  <V5Icon name="bedtime" className="shrink-0 text-[18px] text-v5-muted" />
                   <span>Ca không có hoạt động tác nghiệp</span>
                 </button>
               </div>
@@ -936,7 +939,7 @@ export default function RoutinePage() {
                 data-testid="routine-declaration-hidden"
                 className="flex items-start gap-3 rounded-xl border border-v5-line/50 bg-v5-surface p-space-md shadow-sm"
               >
-                <span className="material-symbols-outlined shrink-0 text-[22px] text-v5-muted">visibility</span>
+                <V5Icon name="visibility" className="shrink-0 text-[22px] text-v5-muted" />
                 <div className="flex flex-col gap-0.5">
                   <p className="font-body-semibold text-body-semibold text-primary">
                     Tài khoản này không khai báo đầu việc trong ca.
@@ -1024,7 +1027,7 @@ export default function RoutinePage() {
                       <tr>
                         <td colSpan={6} className="py-12 text-center text-v5-muted">
                           <div className="flex flex-col items-center justify-center gap-2">
-                            <span className="material-symbols-outlined text-[36px] text-v5-muted">history_edu</span>
+                            <V5Icon name="history_edu" className="text-[36px] text-v5-muted" />
                             <p className="font-semibold text-primary">
                               Chưa có nhật ký nào được ghi nhận cho{" "}
                               {filterAllDates ? "bất kỳ ngày nào" : "ngày đang lọc"}
@@ -1134,7 +1137,7 @@ export default function RoutinePage() {
                           <td className="py-3 px-space-sm">
                             {entry.occurrenceStatus === "NOT_OCCURRED" ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-status-warning-bg text-status-warning">
-                                <span className="material-symbols-outlined text-[13px]">block</span>
+                                <V5Icon name="block" className="text-[13px]" />
                                 KHÔNG PHÁT SINH
                               </span>
                             ) : (
@@ -1156,7 +1159,7 @@ export default function RoutinePage() {
                               onClick={() => setInspectEntry(entry)}
                               className="px-2.5 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg text-xs font-semibold inline-flex items-center gap-1 active-press"
                             >
-                              <span className="material-symbols-outlined text-[14px]">visibility</span>
+                              <V5Icon name="visibility" className="text-[14px]" />
                               <span>Chi tiết</span>
                             </button>
                           </td>
@@ -1201,7 +1204,7 @@ export default function RoutinePage() {
                   }}
                   className="px-3 py-1.5 rounded-lg bg-v5-bg text-v5-ink hover:bg-v5-bg-high font-semibold text-xs shadow-sm active-press flex items-center gap-1"
                 >
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  <V5Icon name="add" className="text-[16px]" />
                   <span>+ Thêm trường</span>
                 </button>
                 <button
@@ -1210,7 +1213,7 @@ export default function RoutinePage() {
                   onClick={handlePublishNewVersion}
                   className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-semibold text-xs shadow-sm active-press flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined text-[16px]">publish</span>
+                  <V5Icon name="publish" className="text-[16px]" />
                   <span>{isPublishingVersion ? "Đang lưu..." : "Phát hành phiên bản mới"}</span>
                 </button>
               </div>
@@ -1223,7 +1226,7 @@ export default function RoutinePage() {
                   className="p-3.5 rounded-lg bg-v5-bg border border-v5-line flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-v5-muted text-[20px]">drag_indicator</span>
+                    <V5Icon name="drag_indicator" className="text-v5-muted text-[20px]" />
                     <div className="flex flex-col">
                       <span className="font-semibold text-sm text-primary">{field.label}</span>
                       <span className="text-xs text-v5-muted font-mono">
@@ -1254,7 +1257,7 @@ export default function RoutinePage() {
                       }}
                       className="p-1 text-v5-muted hover:text-status-danger"
                     >
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                      <V5Icon name="delete" className="text-[16px]" />
                     </button>
                   </div>
                 </div>
@@ -1316,7 +1319,7 @@ export default function RoutinePage() {
           <div className="bg-v5-surface rounded-xl max-w-2xl w-full p-6 shadow-xl border border-v5-line flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-v5-line pb-3">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[24px]">description</span>
+                <V5Icon name="description" className="text-secondary text-[24px]" />
                 <h3 className="font-headline-sm text-primary font-bold">
                   Chi Tiết Nhật Ký Tác Nghiệp: {inspectEntry.code}
                 </h3>
@@ -1325,7 +1328,7 @@ export default function RoutinePage() {
                 onClick={() => setInspectEntry(null)}
                 className="p-1 text-v5-muted hover:text-v5-ink"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
 
@@ -1482,7 +1485,7 @@ export default function RoutinePage() {
                 onClick={() => window.print()}
                 className="px-3 py-1.5 rounded-lg bg-v5-bg text-v5-ink hover:bg-v5-bg-high text-xs font-semibold flex items-center gap-1 active-press"
               >
-                <span className="material-symbols-outlined text-[16px]">print</span>
+                <V5Icon name="print" className="text-[16px]" />
                 <span>In phiếu tác nghiệp</span>
               </button>
               <button

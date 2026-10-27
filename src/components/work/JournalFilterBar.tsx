@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React from "react";
 
 /**
@@ -155,7 +157,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="font-headline-sm text-headline-sm text-primary font-bold flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-[20px]">menu_book</span>
+            <V5Icon name="menu_book" className="text-secondary text-[20px]" />
             Nhật ký công việc
           </h2>
           <p className="text-[11px] text-on-surface-variant">
@@ -165,12 +167,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
           </p>
         </div>
         <div className="relative w-full lg:w-72">
-          <span
-            aria-hidden="true"
-            className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]"
-          >
-            search
-          </span>
+          <V5Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]" />
           <input
             type="search"
             value={value.query}

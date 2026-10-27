@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { fmtMetric, fmtMetricCompact, STATUS_LABELS, STATUS_STYLES } from "@/lib/metric-format";
@@ -85,7 +87,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
       <section className={className}>
         <div className="bg-surface-container-lowest rounded-xl border border-dashed border-border-default/60 p-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[20px] text-primary">monitoring</span>
+            <V5Icon name="monitoring" className="text-[20px] text-primary" />
             <span className="text-body-sm text-on-surface-variant">
               Khu vực số liệu giao ban chưa được bật chỉ tiêu. Vào <b>Cấu hình số liệu</b> để chọn chỉ tiêu hiển thị trên Trang chủ.
             </span>
@@ -104,12 +106,12 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
     <section className={className}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[20px] text-primary">monitoring</span>
+          <V5Icon name="monitoring" className="text-[20px] text-primary" />
           <h2 className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide text-[12px]">Số liệu giao ban</h2>
         </div>
         <Link href="/giao-ban" className="text-label-sm font-semibold text-primary hover:underline flex items-center gap-0.5">
           Chi tiết
-          <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+          <V5Icon name="chevron_right" className="text-[16px]" />
         </Link>
       </div>
 

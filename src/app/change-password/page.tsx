@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 /**
  * /change-password — trang BẮT BUỘC đổi mật khẩu lần đầu cho tài khoản
  * quản trị kỹ thuật khởi tạo (middleware chặn mọi API/trang khác).
@@ -43,9 +45,7 @@ function PasswordField({
         </span>
       </label>
       <div className="relative flex items-center">
-        <span className="material-symbols-outlined absolute left-3 text-v5-muted text-[18px] pointer-events-none">
-          lock
-        </span>
+        <V5Icon name="lock" className="absolute left-3 text-v5-muted text-[18px] pointer-events-none" />
         <input
           id={id}
           type={show ? "text" : "password"}
@@ -111,9 +111,7 @@ export default function ChangePasswordPage() {
         {/* Thương hiệu + tiêu đề (đồng bộ trang đăng nhập) */}
         <div className="flex flex-col items-center text-center gap-2">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning-bg border border-status-warning/30">
-            <span className="material-symbols-outlined text-status-warning text-[14px]">
-              verified_user
-            </span>
+            <V5Icon name="verified_user" className="text-status-warning text-[14px]" />
             <span className="font-label-sm text-[11px] text-status-warning uppercase tracking-wider font-semibold">
               Bắt buộc — lần đăng nhập đầu tiên
             </span>
@@ -135,9 +133,7 @@ export default function ChangePasswordPage() {
         {/* Card biểu mẫu */}
         <div className="w-full bg-v5-surface rounded-2xl border border-v5-line/60 shadow-md p-6 flex flex-col gap-4">
           <div className="flex items-start gap-2 rounded-lg bg-status-warning-bg border border-status-warning/20 p-3">
-            <span className="material-symbols-outlined text-status-warning text-[18px] shrink-0 mt-0.5">
-              info
-            </span>
+            <V5Icon name="info" className="text-status-warning text-[18px] shrink-0 mt-0.5" />
             <p className="text-xs text-v5-muted leading-relaxed">
               Đây là tài khoản quản trị kỹ thuật. Sau khi đổi mật khẩu, hệ thống sẽ đăng xuất và yêu cầu
               đăng nhập lại bằng mật khẩu mới.
@@ -146,9 +142,7 @@ export default function ChangePasswordPage() {
 
           {error ? (
             <div className="w-full bg-status-danger-bg rounded-lg p-3 flex items-start gap-2 border border-status-danger/20">
-              <span className="material-symbols-outlined text-status-danger text-[18px] shrink-0 mt-0.5">
-                error
-              </span>
+              <V5Icon name="error" className="text-status-danger text-[18px] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-status-danger font-bold">Không đổi được mật khẩu</span>
@@ -158,7 +152,7 @@ export default function ChangePasswordPage() {
                     className="text-status-danger/70 hover:text-status-danger p-0.5 transition-fast"
                     aria-label="Đóng thông báo"
                   >
-                    <span className="material-symbols-outlined text-[15px]">close</span>
+                    <V5Icon name="close" className="text-[15px]" />
                   </button>
                 </div>
                 <p className="text-xs text-v5-muted mt-0.5 leading-normal">{error}</p>
@@ -215,14 +209,12 @@ export default function ChangePasswordPage() {
             >
               {loading ? (
                 <>
-                  <span className="material-symbols-outlined animate-spin text-[18px]">
-                    progress_activity
-                  </span>
+                  <V5Icon name="progress_activity" className="animate-spin text-[18px]" />
                   <span>Đang cập nhật...</span>
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-[18px]">password</span>
+                  <V5Icon name="password" className="text-[18px]" />
                   <span>Đổi mật khẩu và đăng nhập lại</span>
                 </>
               )}
@@ -242,7 +234,7 @@ export default function ChangePasswordPage() {
         {/* Chân trang tuân thủ (đồng bộ trang đăng nhập) */}
         <footer className="text-center flex flex-col items-center gap-1 pt-1">
           <div className="inline-flex items-center gap-1.5 text-v5-muted">
-            <span className="material-symbols-outlined text-[13px]">lock</span>
+            <V5Icon name="lock" className="text-[13px]" />
             <span className="text-[11px] font-mono">Kết nối an toàn nội bộ</span>
           </div>
           <p className="text-[11px] text-v5-muted">

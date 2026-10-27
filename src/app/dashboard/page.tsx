@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
@@ -206,7 +208,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center justify-between gap-space-md">
             <div className="flex items-center gap-space-md">
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary-container text-on-primary shadow-sm">
-                <span className="material-symbols-outlined text-[28px]">query_stats</span>
+                <V5Icon name="query_stats" className="text-[28px]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -236,7 +238,7 @@ export default function DashboardPage() {
                   title="AI tóm tắt tình hình từ số liệu thật để đọc giao ban"
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg text-primary font-body-semibold text-body-semibold transition-fast shadow-sm active-press disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                  <V5Icon name="auto_awesome" className="text-[18px]" />
                   <span>{aiSummarizing ? "Đang tóm tắt..." : "Tóm tắt AI"}</span>
                 </button>
               )}
@@ -244,14 +246,14 @@ export default function DashboardPage() {
                 href="/dashboard/v4"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/15 text-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press border border-secondary/20"
               >
-                <span className="material-symbols-outlined text-[18px]">insights</span>
+                <V5Icon name="insights" className="text-[18px]" />
                 <span>Bản cũ</span>
               </Link>
               <Link
                 href="/v5"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-on-primary font-body-semibold text-body-semibold transition-fast shadow-sm active-press hover:opacity-90"
               >
-                <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                <V5Icon name="auto_awesome" className="text-[18px]" />
                 <span>Bảng điều hành mới</span>
               </Link>
               {canExport && (
@@ -259,7 +261,7 @@ export default function DashboardPage() {
                   href="/reports/excel"
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg text-primary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
                 >
-                  <span className="material-symbols-outlined text-[18px]">table_view</span>
+                  <V5Icon name="table_view" className="text-[18px]" />
                   <span>Xuất báo cáo giao ban (.xlsx)</span>
                 </Link>
               )}
@@ -268,7 +270,7 @@ export default function DashboardPage() {
                   href="/tasks?new=1"
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
                 >
-                  <span className="material-symbols-outlined text-[18px]">add_task</span>
+                  <V5Icon name="add_task" className="text-[18px]" />
                   <span>Giao nhiệm vụ đột xuất</span>
                 </Link>
               )}
@@ -278,9 +280,10 @@ export default function DashboardPage() {
                 className="p-2 rounded-lg bg-v5-bg hover:bg-v5-bg text-v5-muted transition-fast active-press disabled:opacity-50"
                 title="Làm mới dữ liệu"
               >
-                <span className={`material-symbols-outlined text-[20px] ${loading ? "animate-spin" : ""}`}>
-                  autorenew
-                </span>
+                <V5Icon
+                  name="autorenew"
+                  className={`text-[20px] ${loading ? "animate-spin" : ""}`}
+                />
               </button>
             </div>
           </div>
@@ -290,7 +293,7 @@ export default function DashboardPage() {
             <div className="bg-secondary/10 border border-secondary/30 p-space-md rounded-xl shadow-sm flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="font-label-md text-label-md font-bold text-secondary flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                  <V5Icon name="auto_awesome" className="text-[18px]" />
                   Tóm tắt AI (tham khảo)
                 </span>
                 <button onClick={() => setAiSummary("")} className="text-v5-muted hover:text-primary text-xs font-semibold">
@@ -380,7 +383,7 @@ export default function DashboardPage() {
             {/* Scope Selector */}
             <div className="flex flex-wrap items-center gap-space-sm">
               <div className="flex items-center gap-2 bg-v5-surface px-3 py-1.5 rounded-lg shadow-sm border border-v5-line">
-                <span className="material-symbols-outlined text-v5-muted text-[18px]">date_range</span>
+                <V5Icon name="date_range" className="text-v5-muted text-[18px]" />
                 <span className="font-body-semibold text-body-semibold text-v5-ink text-[13px]">
                   {selectedPeriodInfo?.startAt && selectedPeriodInfo?.endAt
                     ? `${new Date(selectedPeriodInfo.startAt).toLocaleDateString("vi-VN")} — ${new Date(selectedPeriodInfo.endAt).toLocaleDateString("vi-VN")}`
@@ -412,7 +415,7 @@ export default function DashboardPage() {
         {errorMsg && !isAdminBlocked && (
           <div className="p-4 rounded-xl bg-status-danger-bg border border-status-danger text-status-danger flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[22px]">error</span>
+              <V5Icon name="error" className="text-[22px]" />
               <span className="font-semibold text-sm">{errorMsg}</span>
             </div>
             <button
@@ -427,7 +430,7 @@ export default function DashboardPage() {
         {/* PANEL GIẢI THÍCH CHO TÀI KHOẢN QUẢN TRỊ KỸ THUẬT */}
         {isAdminBlocked && (
           <div className="p-6 rounded-xl bg-v5-surface border border-v5-line flex flex-col items-center text-center gap-2">
-            <span className="material-symbols-outlined text-[32px] text-secondary">admin_panel_settings</span>
+            <V5Icon name="admin_panel_settings" className="text-[32px] text-secondary" />
             <p className="font-semibold text-v5-ink">Tài khoản Quản trị hệ thống không xem số liệu điều hành</p>
             <p className="text-sm text-v5-muted max-w-xl">
               Theo phân quyền, tài khoản kỹ thuật chỉ quản trị cơ cấu, tài khoản và cấu hình — không đọc số liệu
@@ -451,7 +454,7 @@ export default function DashboardPage() {
                 Tổng việc giao kỳ
               </span>
               <div className="w-7 h-7 rounded-lg bg-primary-fixed flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-[18px]">assignment</span>
+                <V5Icon name="assignment" className="text-[18px]" />
               </div>
             </div>
             <div className="my-3">
@@ -461,7 +464,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between pt-2 bg-v5-bg/50 px-2 py-1 rounded">
               <span className="text-[11px] font-label-sm text-status-success flex items-center gap-0.5 font-semibold">
-                <span className="material-symbols-outlined text-[13px]">trending_up</span>{" "}
+                <V5Icon name="trending_up" className="text-[13px]" />{" "}
                 {kpis.newTasksCount > 0 ? `+${kpis.newTasksCount} việc mới` : "0 việc mới"}
               </span>
               <span className="text-[11px] font-label-sm text-v5-muted font-medium">
@@ -477,7 +480,7 @@ export default function DashboardPage() {
                 Đang triển khai
               </span>
               <div className="w-7 h-7 rounded-lg bg-status-unassigned-bg flex items-center justify-center text-status-unassigned">
-                <span className="material-symbols-outlined text-[18px]">timelapse</span>
+                <V5Icon name="timelapse" className="text-[18px]" />
               </div>
             </div>
             <div className="my-3">
@@ -502,7 +505,7 @@ export default function DashboardPage() {
                 Đã xong &amp; Nghiệm thu
               </span>
               <div className="w-7 h-7 rounded-lg bg-status-success-bg flex items-center justify-center text-status-success">
-                <span className="material-symbols-outlined text-[18px]">verified</span>
+                <V5Icon name="verified" className="text-[18px]" />
               </div>
             </div>
             <div className="my-3">
@@ -527,7 +530,7 @@ export default function DashboardPage() {
                 Quá hạn / Xử lý khẩn
               </span>
               <div className="w-7 h-7 rounded-lg bg-status-danger-bg flex items-center justify-center text-status-danger">
-                <span className="material-symbols-outlined text-[18px]">error</span>
+                <V5Icon name="error" className="text-[18px]" />
               </div>
             </div>
             <div className="my-3">
@@ -537,7 +540,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between pt-2 bg-status-danger-bg/50 px-2 py-1 rounded">
               <span className="text-[11px] font-label-sm text-status-danger font-semibold flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[13px]">warning</span>{" "}
+                <V5Icon name="warning" className="text-[13px]" />{" "}
                 {kpis.overdue > 0 ? "Cần giải trình" : "Đúng tiến độ"}
               </span>
               <span className="text-[11px] font-label-sm text-status-danger">
@@ -553,7 +556,7 @@ export default function DashboardPage() {
                 Hồ sơ vướng mắc
               </span>
               <div className="w-7 h-7 rounded-lg bg-status-warning-bg flex items-center justify-center text-status-warning">
-                <span className="material-symbols-outlined text-[18px]">report_problem</span>
+                <V5Icon name="report_problem" className="text-[18px]" />
               </div>
             </div>
             <div className="my-3">
@@ -578,7 +581,7 @@ export default function DashboardPage() {
                 Chờ Lãnh đạo duyệt
               </span>
               <div className="w-7 h-7 rounded-lg bg-secondary-fixed flex items-center justify-center text-secondary">
-                <span className="material-symbols-outlined text-[18px]">pending_actions</span>
+                <V5Icon name="pending_actions" className="text-[18px]" />
               </div>
             </div>
             <div className="my-3">
@@ -605,7 +608,7 @@ export default function DashboardPage() {
           <div className="bg-v5-surface rounded-xl p-space-md shadow-sm border border-v5-line/50 flex flex-col justify-between">
             <div className="flex items-center justify-between pb-space-sm border-b border-surface-container">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[20px]">donut_large</span>
+                <V5Icon name="donut_large" className="text-secondary text-[20px]" />
                 <h3 className="font-headline-sm text-headline-sm text-primary">Tiến Độ Theo Bộ Phận</h3>
               </div>
               <span className="font-label-sm text-label-sm text-v5-muted">
@@ -667,7 +670,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 bg-v5-surface rounded-xl p-space-md shadow-sm border border-v5-line/50 flex flex-col justify-between">
             <div className="flex items-center justify-between pb-space-sm border-b border-surface-container">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-status-danger text-[20px]">warning</span>
+                <V5Icon name="warning" className="text-status-danger text-[20px]" />
                 <h3 className="font-headline-sm text-headline-sm text-primary">Nhiệm Vụ Cần Lãnh Đạo Chỉ Đạo Khẩn</h3>
               </div>
               <Link href="/tasks" className="font-label-sm text-label-sm text-secondary font-bold hover:underline">
@@ -691,7 +694,7 @@ export default function DashboardPage() {
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-v5-muted">
                         <div className="flex flex-col items-center justify-center gap-1">
-                          <span className="material-symbols-outlined text-[28px] text-status-success">check_circle</span>
+                          <V5Icon name="check_circle" className="text-[28px] text-status-success" />
                           <span>Không có nhiệm vụ nào cần chỉ đạo khẩn trong phạm vi này</span>
                         </div>
                       </td>
@@ -770,7 +773,7 @@ export default function DashboardPage() {
       <div className="lg:hidden flex flex-col w-full pb-16">
         {/* Official Scope Bar */}
         <div className="w-full bg-primary/10 py-1.5 px-margin flex items-center justify-center gap-1.5 border-b border-v5-line/40">
-          <span className="material-symbols-outlined text-[13px] text-primary">verified</span>
+          <V5Icon name="verified" className="text-[13px] text-primary" />
           <span className="font-label-sm text-label-sm text-primary tracking-wider uppercase text-[10px] font-bold">
             BẢNG ĐIỀU HÀNH TỔNG QUAN — HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
           </span>
@@ -781,7 +784,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-[18px] text-on-primary-fixed">corporate_fare</span>
+                <V5Icon name="corporate_fare" className="text-[18px] text-on-primary-fixed" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="font-label-sm text-label-sm text-v5-muted leading-none text-xs whitespace-nowrap">
@@ -888,7 +891,7 @@ export default function DashboardPage() {
                   Tổng việc giao kỳ
                 </span>
                 <div className="w-6 h-6 rounded bg-primary-fixed flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px] text-primary">assignment</span>
+                  <V5Icon name="assignment" className="text-[15px] text-primary" />
                 </div>
               </div>
               <div>
@@ -896,7 +899,7 @@ export default function DashboardPage() {
                   {kpis.totalTasks}
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 text-status-success text-xs font-semibold">
-                  <span className="material-symbols-outlined text-[13px]">verified_user</span>
+                  <V5Icon name="verified_user" className="text-[13px]" />
                   <span>{kpis.assignedRate !== null ? `${kpis.assignedRate}% có chủ trì` : "Chưa có dữ liệu"}</span>
                 </div>
               </div>
@@ -909,7 +912,7 @@ export default function DashboardPage() {
                   Đang triển khai
                 </span>
                 <div className="w-6 h-6 rounded bg-status-unassigned-bg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px] text-status-unassigned">timelapse</span>
+                  <V5Icon name="timelapse" className="text-[15px] text-status-unassigned" />
                 </div>
               </div>
               <div>
@@ -920,7 +923,7 @@ export default function DashboardPage() {
                   <span className="font-label-sm text-label-sm text-v5-muted text-xs">việc</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 text-status-unassigned text-xs font-semibold">
-                  <span className="material-symbols-outlined text-[13px]">trending_up</span>
+                  <V5Icon name="trending_up" className="text-[13px]" />
                   <span>{kpis.averageProgress !== null ? `Tiến độ TB ${kpis.averageProgress}%` : "Chưa có tiến độ"}</span>
                 </div>
               </div>
@@ -933,7 +936,7 @@ export default function DashboardPage() {
                   Đã xong &amp; Nghiệm thu
                 </span>
                 <div className="w-6 h-6 rounded bg-status-success-bg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px] text-status-success">check_circle</span>
+                  <V5Icon name="check_circle" className="text-[15px] text-status-success" />
                 </div>
               </div>
               <div>
@@ -944,7 +947,7 @@ export default function DashboardPage() {
                   <span className="font-label-sm text-label-sm text-v5-muted text-xs">việc</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 text-v5-muted text-xs">
-                  <span className="material-symbols-outlined text-[13px] text-status-success">trending_up</span>
+                  <V5Icon name="trending_up" className="text-[13px] text-status-success" />
                   <span>{kpis.completionRate !== null ? `${kpis.completionRate}% hoàn thành` : "Chưa có dữ liệu"}</span>
                 </div>
               </div>
@@ -957,7 +960,7 @@ export default function DashboardPage() {
                   Quá hạn / Xử lý khẩn
                 </span>
                 <div className="w-6 h-6 rounded bg-status-danger-bg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px] text-status-danger">error</span>
+                  <V5Icon name="error" className="text-[15px] text-status-danger" />
                 </div>
               </div>
               <div>
@@ -968,7 +971,7 @@ export default function DashboardPage() {
                   <span className="font-label-sm text-label-sm text-v5-muted text-xs">việc</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 text-status-danger text-xs font-semibold">
-                  <span className="material-symbols-outlined text-[13px]">report</span>
+                  <V5Icon name="report" className="text-[13px]" />
                   <span>{kpis.overdue > 0 ? "Cần giải trình" : "Đúng tiến độ"}</span>
                 </div>
               </div>
@@ -981,7 +984,7 @@ export default function DashboardPage() {
                   Hồ sơ vướng mắc
                 </span>
                 <div className="w-6 h-6 rounded bg-status-warning-bg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px] text-status-warning">report_problem</span>
+                  <V5Icon name="report_problem" className="text-[15px] text-status-warning" />
                 </div>
               </div>
               <div>
@@ -992,7 +995,7 @@ export default function DashboardPage() {
                   <span className="font-label-sm text-label-sm text-v5-muted text-xs">hồ sơ</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 text-v5-muted text-xs">
-                  <span className="material-symbols-outlined text-[13px] text-status-warning">info</span>
+                  <V5Icon name="info" className="text-[13px] text-status-warning" />
                   <span>{kpis.hasIssue > 0 ? "Cần hỗ trợ" : "Thông suốt"}</span>
                 </div>
               </div>
@@ -1005,7 +1008,7 @@ export default function DashboardPage() {
                   Chờ Lãnh đạo duyệt
                 </span>
                 <div className="w-6 h-6 rounded bg-status-warning-bg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[15px] text-status-warning">pending_actions</span>
+                  <V5Icon name="pending_actions" className="text-[15px] text-status-warning" />
                 </div>
               </div>
               <div>
@@ -1016,7 +1019,7 @@ export default function DashboardPage() {
                   <span className="font-label-sm text-label-sm text-v5-muted text-xs">việc</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 text-status-warning text-xs font-semibold">
-                  <span className="material-symbols-outlined text-[13px]">alarm</span>
+                  <V5Icon name="alarm" className="text-[13px]" />
                   <span>{kpis.urgentReviewCount > 0 ? `${kpis.urgentReviewCount} việc gấp` : "Chờ nghiệm thu"}</span>
                 </div>
               </div>
@@ -1032,7 +1035,7 @@ export default function DashboardPage() {
                 href="/tasks?new=1"
                 className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-secondary text-on-secondary shadow-sm active:opacity-90 transition-fast active-press"
               >
-                <span className="material-symbols-outlined text-[20px] mb-1">add_task</span>
+                <V5Icon name="add_task" className="text-[20px] mb-1" />
                 <span className="font-label-sm text-label-sm text-center leading-tight">Giao việc đột xuất</span>
               </Link>
             )}
@@ -1042,7 +1045,7 @@ export default function DashboardPage() {
                 className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-v5-bg-highest text-primary shadow-sm active:opacity-80 transition-fast active-press"
               >
                 <div className="relative">
-                  <span className="material-symbols-outlined text-[20px] mb-1">rate_review</span>
+                  <V5Icon name="rate_review" className="text-[20px] mb-1" />
                   {kpis.waitingReview > 0 && (
                     <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-status-warning text-surface-container-lowest font-label-sm text-[9px] flex items-center justify-center rounded-full leading-none font-bold">
                       {kpis.waitingReview}
@@ -1056,7 +1059,7 @@ export default function DashboardPage() {
               href="/reports"
               className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-v5-bg-highest text-primary shadow-sm active:opacity-80 transition-fast active-press"
             >
-              <span className="material-symbols-outlined text-[20px] mb-1">query_stats</span>
+              <V5Icon name="query_stats" className="text-[20px] mb-1" />
               <span className="font-label-sm text-label-sm text-center leading-tight">Báo cáo tuần</span>
             </Link>
           </div>
@@ -1068,7 +1071,7 @@ export default function DashboardPage() {
         <section className="px-margin pt-space-lg">
           <div className="flex items-center justify-between mb-2.5 gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="material-symbols-outlined text-status-danger text-[20px] shrink-0">warning</span>
+              <V5Icon name="warning" className="text-status-danger text-[20px] shrink-0" />
               <h2 className="font-headline-sm text-headline-sm text-primary leading-tight">Nhiệm Vụ Cần Lãnh Đạo Chỉ Đạo Khẩn</h2>
             </div>
             <span className="bg-status-danger-bg text-status-danger font-label-sm text-label-sm px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold shrink-0">
@@ -1080,7 +1083,7 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-2.5">
             {attentionTasks.length === 0 ? (
               <div className="bg-v5-surface rounded-lg p-4 text-center text-xs text-v5-muted border border-v5-line/40">
-                <span className="material-symbols-outlined text-status-success text-[24px] block mb-1">check_circle</span>
+                <V5Icon name="check_circle" className="text-status-success text-[24px] block mb-1" />
                 Không có nhiệm vụ nào cần chỉ đạo khẩn trong phạm vi này
               </div>
             ) : (
@@ -1130,7 +1133,7 @@ export default function DashboardPage() {
                         {task.title}
                       </p>
                       <p className="font-body-md text-xs text-v5-muted mt-0.5 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">schedule</span>
+                        <V5Icon name="schedule" className="text-[14px]" />
                         Hạn: {deadlineLabel}
                         {task.hasIssue && task.issueNotes ? ` · ${task.issueNotes}` : ""}
                       </p>
@@ -1144,7 +1147,7 @@ export default function DashboardPage() {
                         href={`/tasks/${task.id}`}
                         className="bg-status-danger text-surface-container-lowest font-label-sm text-xs px-3 py-1.5 rounded flex items-center gap-1 active:opacity-90 font-semibold shrink-0"
                       >
-                        <span className="material-symbols-outlined text-[15px]">send</span>
+                        <V5Icon name="send" className="text-[15px]" />
                         <span>Chỉ đạo</span>
                       </Link>
                     </div>
@@ -1159,7 +1162,7 @@ export default function DashboardPage() {
         <section className="px-margin pt-space-lg">
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-secondary text-[20px]">domain_verification</span>
+              <V5Icon name="domain_verification" className="text-secondary text-[20px]" />
               <h2 className="font-headline-sm text-headline-sm text-primary">Tiến Độ Theo Bộ Phận</h2>
             </div>
             <span className="font-label-sm text-label-sm text-v5-muted">

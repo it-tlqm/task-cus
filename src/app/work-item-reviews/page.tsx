@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 /**
  * /work-item-reviews — V3.0.1 (phía lãnh đạo)
  * Danh sách công việc cán bộ gửi lên chờ xác nhận; lãnh đạo xác nhận hoặc trả lại.
@@ -146,7 +148,7 @@ export default function WorkItemReviewsPage() {
           onClick={load}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-line bg-v5-surface hover:bg-v5-bg"
         >
-          <span className="material-symbols-outlined text-[16px]">refresh</span>
+          <V5Icon name="refresh" className="text-[16px]" />
           Tải lại
         </button>
       </header>
@@ -229,7 +231,7 @@ export default function WorkItemReviewsPage() {
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-xl border border-v5-line bg-v5-surface p-8 text-center">
-          <span className="material-symbols-outlined text-[32px] text-v5-muted">task_alt</span>
+          <V5Icon name="task_alt" className="text-[32px] text-v5-muted" />
           <p className="mt-2 text-sm font-semibold text-v5-ink">
             {tab === "pending"
               ? "Không có công việc nào đang chờ bạn xác nhận"
@@ -268,7 +270,7 @@ export default function WorkItemReviewsPage() {
                     data-testid={"review-badge-" + it.id}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-success/30 bg-status-success-bg text-status-success"
                   >
-                    <span className="material-symbols-outlined text-[14px]">verified</span>
+                    <V5Icon name="verified" className="text-[14px]" />
                     Đã xác nhận
                   </span>
                 ) : it.reviewState === "RETURNED" ? (
@@ -276,7 +278,7 @@ export default function WorkItemReviewsPage() {
                     data-testid={"review-badge-" + it.id}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-danger/30 bg-status-danger-bg text-status-danger"
                   >
-                    <span className="material-symbols-outlined text-[14px]">undo</span>
+                    <V5Icon name="undo" className="text-[14px]" />
                     Đã trả lại
                   </span>
                 ) : (
@@ -284,7 +286,7 @@ export default function WorkItemReviewsPage() {
                     data-testid={"review-badge-" + it.id}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-warning/30 bg-status-warning-bg text-status-warning"
                   >
-                    <span className="material-symbols-outlined text-[14px]">hourglass_top</span>
+                    <V5Icon name="hourglass_top" className="text-[14px]" />
                     Chờ xác nhận
                   </span>
                 )}
@@ -360,7 +362,7 @@ export default function WorkItemReviewsPage() {
                     onClick={() => decide(it, "CONFIRM")}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-status-success bg-status-success text-on-error hover:opacity-90 disabled:opacity-50"
                   >
-                    <span className="material-symbols-outlined text-[16px]">verified</span>
+                    <V5Icon name="verified" className="text-[16px]" />
                     Xác nhận hoàn thành
                   </button>
                   <button
@@ -373,7 +375,7 @@ export default function WorkItemReviewsPage() {
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-line bg-v5-surface hover:bg-v5-bg disabled:opacity-50"
                   >
-                    <span className="material-symbols-outlined text-[16px]">assignment_return</span>
+                    <V5Icon name="assignment_return" className="text-[16px]" />
                     Trả lại để chỉnh sửa
                   </button>
                 </div>

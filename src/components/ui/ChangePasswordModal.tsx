@@ -1,5 +1,7 @@
 "use client";
 
+import { V5Icon } from "@/components/v5/ui/icon";
+
 import React, { useState } from "react";
 import { toast } from "./Toast";
 
@@ -70,7 +72,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
         <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">password</span>
+              <V5Icon name="password" className="text-[20px]" />
             </div>
             <div>
               <h3 className="font-headline-sm text-primary font-bold text-base">
@@ -86,14 +88,14 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             className="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-subtle transition-fast"
             aria-label="Đóng modal"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <V5Icon name="close" className="text-[20px]" />
           </button>
         </div>
 
         {/* Error message */}
         {error && (
           <div className="p-3 rounded-lg bg-status-danger-bg text-status-danger text-xs flex items-center gap-2 border border-status-danger/20">
-            <span className="material-symbols-outlined text-[16px] shrink-0">error</span>
+            <V5Icon name="error" className="text-[16px] shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -174,12 +176,12 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             >
               {loading ? (
                 <>
-                  <span className="material-symbols-outlined text-[16px] animate-spin">autorenew</span>
+                  <V5Icon name="autorenew" className="text-[16px] animate-spin" />
                   <span>Đang cập nhật...</span>
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-[16px]">check</span>
+                  <V5Icon name="check" className="text-[16px]" />
                   <span>Lưu mật khẩu mới</span>
                 </>
               )}
