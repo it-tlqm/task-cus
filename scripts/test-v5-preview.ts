@@ -143,6 +143,24 @@ check(
     !v5GiaoBan.includes("Mở bản đầy đủ") &&
     !v5GiaoBan.includes('href="/giao-ban"')
 );
+const tasksPage = read("src/app/tasks/page.tsx");
+const approvalsPage = read("src/app/approvals/page.tsx");
+check(
+  "Công việc dùng header/KPI/lọc V5",
+  tasksPage.includes("Công việc chỉ đạo") &&
+    tasksPage.includes("Giao nhiệm vụ") &&
+    tasksPage.includes("Tìm mã việc") &&
+    tasksPage.includes("<Card") &&
+    !tasksPage.includes("min-h-screen bg-app-bg")
+);
+check(
+  "Phê duyệt dùng header/KPI/tab V5",
+  approvalsPage.includes("Hồ sơ của tôi") &&
+    approvalsPage.includes("Làm mới") &&
+    approvalsPage.includes("<Card") &&
+    !approvalsPage.includes("max-w-2xl") &&
+    !approvalsPage.includes("TRUNG TÂM PHÊ DUYỆT")
+);
 const routine = read("src/app/routine/page.tsx");
 check(
   "Nhật ký responsive mobile và bỏ từ kỹ thuật",

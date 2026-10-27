@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Clock3, FileCheck2, History, Inbox, RefreshCw, Reply } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
+import { Badge } from "@/components/v5/ui/badge";
+import { Button } from "@/components/v5/ui/button";
+import { Card } from "@/components/v5/ui/card";
 import { formatVnDateTime } from "@/lib/datetime";
 import ApprovalPreviewModal, {
   type ApprovalCaseType,
@@ -376,114 +380,92 @@ export default function ApprovalsPage() {
   });
 
   return (
-    <div className="w-full min-h-screen bg-app-bg pb-20">
-      {/* Header Mobile / Desktop */}
-      <div className="max-w-2xl mx-auto px-margin pt-4 flex flex-col gap-4">
-        {/* Banner Vận hành Lãnh đạo */}
-        <div className="px-space-sm py-space-xs rounded bg-surface-container text-on-surface-variant flex items-center justify-between shadow-sm border border-border-default/60">
-          <div className="flex items-center gap-space-xs min-w-0">
-            <span className="material-symbols-outlined text-[16px] text-primary shrink-0">
-              verified
-            </span>
-            <span className="font-label-sm text-[11px] truncate uppercase tracking-wider font-semibold">
-              TRUNG TÂM PHÊ DUYỆT & NGHIỆM THU — TRỰC BAN LÃNH ĐẠO
-            </span>
+    <div className="w-full pb-4">
+      <div className="flex w-full flex-col gap-3">
+        <header className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Phê duyệt</h1>
+              <Badge variant="outline">Lãnh đạo</Badge>
+            </div>
+            <p className="mt-1 text-sm text-v5-muted">
+              Phê duyệt kế hoạch, kết quả nhiệm vụ và đề xuất gia hạn.
+            </p>
           </div>
-          <span className="px-1.5 py-0.5 rounded bg-surface-subtle text-primary font-label-sm text-[11px] shrink-0 font-bold">
-            HQ Tà Lùng
-          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchLiveApprovals();
+              fetchMyCases();
+            }}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Làm mới
+          </Button>
+        </header>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ xử lý</span>
+              <FileCheck2 className="h-4 w-4 text-v5-accent" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(approvals.length).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">hồ sơ</span>
+            </div>
+            <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-v5-danger">
+              <Clock3 className="h-3 w-3" /> {approvals.filter((a) => a.urgent).length} yêu cầu khẩn
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Hồ sơ của tôi</span>
+              <FileCheck2 className="h-4 w-4 text-v5-muted" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myCases.length).padStart(2, "0")}</span>
+              <span className="text-[10px] text-v5-muted">đang theo dõi</span>
+            </div>
+            <div className="mt-1 text-[10px] text-v5-muted">Cập nhật trạng thái xử lý</div>
+          </Card>
         </div>
 
-        {/* Operational Overview Metric Bento */}
-        <div className="grid grid-cols-2 gap-space-sm">
-          <div className="bg-surface-container-lowest p-space-sm rounded-xl shadow-sm border border-border-default/50 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">Chờ xử lý</span>
-              <span className="w-2.5 h-2.5 rounded-full bg-status-danger" />
-            </div>
-            <div className="my-space-xs flex items-baseline gap-space-xs">
-              <span className="font-headline-xl text-headline-xl text-primary font-bold">
-                {String(approvals.length).padStart(2, "0")}
-              </span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">hồ sơ</span>
-            </div>
-            <div className="flex items-center gap-1 font-label-sm text-label-sm text-status-danger font-semibold">
-              <span className="material-symbols-outlined text-[14px]">priority_high</span>
-              <span>{approvals.filter((a) => a.urgent).length} yêu cầu khẩn</span>
-            </div>
-          </div>
-
-          <div className="bg-surface-container-lowest p-space-sm rounded-xl shadow-sm border border-border-default/50 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">Trạng thái hệ thống</span>
-              <span className="material-symbols-outlined text-[18px] text-secondary">cloud_done</span>
-            </div>
-            <div className="my-space-xs flex items-baseline gap-space-xs">
-              <span className="font-headline-xl text-headline-xl text-secondary font-bold">100%</span>
-            </div>
-            <div className="font-label-sm text-label-sm text-on-surface-variant truncate text-xs">
-              Đồng bộ CSDL thực tế
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Segmented Tabs */}
-        <div data-tour="filter-tabs" className="w-full bg-surface-container-high p-1 rounded-lg flex items-center justify-between shadow-inner text-center overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveTab("all")}
-            className={`flex-1 py-1.5 px-2 rounded font-label-md text-label-md transition-fast ${
-              activeTab === "all"
-                ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                : "text-on-surface-variant hover:text-primary"
-            }`}
-          >
-            Tất cả ({approvals.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("plan")}
-            className={`flex-1 py-1.5 px-2 rounded font-label-md text-label-md transition-fast ${
-              activeTab === "plan"
-                ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                : "text-on-surface-variant hover:text-primary"
-            }`}
-          >
-            Kế hoạch ({approvals.filter((a) => a.type === "plan").length})
-          </button>
-          <button
-            onClick={() => setActiveTab("result")}
-            className={`flex-1 py-1.5 px-2 rounded font-label-md text-label-md transition-fast ${
-              activeTab === "result"
-                ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                : "text-on-surface-variant hover:text-primary"
-            }`}
-          >
-            Kết quả ({approvals.filter((a) => a.type === "result").length})
-          </button>
-          <button
-            onClick={() => setActiveTab("delay")}
-            className={`flex-1 py-1.5 px-2 rounded font-label-md text-label-md transition-fast ${
-              activeTab === "delay"
-                ? "bg-surface-container-lowest text-primary shadow-sm font-semibold"
-                : "text-on-surface-variant hover:text-primary"
-            }`}
-          >
-            Lùi hạn ({approvals.filter((a) => a.type === "delay").length})
-          </button>
+        <div data-tour="filter-tabs" className="flex w-full flex-wrap items-center gap-1 rounded-md bg-v5-bg p-1">
+          {[
+            { key: "all" as const, label: `Tất cả (${approvals.length})` },
+            { key: "plan" as const, label: `Kế hoạch (${approvals.filter((a) => a.type === "plan").length})` },
+            { key: "result" as const, label: `Kết quả (${approvals.filter((a) => a.type === "result").length})` },
+            { key: "delay" as const, label: `Lùi hạn (${approvals.filter((a) => a.type === "delay").length})` },
+          ].map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setActiveTab(item.key)}
+              className={`flex-1 rounded px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                activeTab === item.key
+                  ? "bg-v5-accent text-white shadow-sm"
+                  : "text-v5-muted hover:bg-v5-surface hover:text-v5-ink"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
         {/* Cards List */}
         <div data-tour="approval-list" className="flex flex-col gap-space-md">
           {loading ? (
-            <div className="p-12 text-center text-outline bg-surface-container-lowest rounded-xl animate-pulse">
+            <div className="p-12 text-center text-outline bg-v5-surface rounded-xl animate-pulse">
               Đang nạp danh sách hồ sơ trình ký và nghiệm thu từ cơ sở dữ liệu...
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="bg-surface-container-lowest p-8 rounded-2xl border border-border-default/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
+            <div className="bg-v5-surface p-8 rounded-xl border border-v5-line/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
               <div className="w-12 h-12 rounded-full bg-status-success-bg text-status-success flex items-center justify-center">
                 <span className="material-symbols-outlined text-[28px]">task_alt</span>
               </div>
               <p className="font-headline-sm text-primary font-bold">Không có hồ sơ chờ phê duyệt</p>
-              <p className="font-body-md text-on-surface-variant max-w-sm text-sm">
+              <p className="font-body-md text-v5-muted max-w-sm text-sm">
                 Tất cả các kế hoạch tuần, đề xuất gia hạn và báo cáo kết quả nhiệm vụ đã được xử lý hoàn tất.
               </p>
             </div>
@@ -494,7 +476,7 @@ export default function ApprovalsPage() {
               return (
                 <div
                   key={`${item.id}-${item.reqId || "main"}`}
-                  className="bg-surface-container-lowest rounded-xl shadow-sm p-space-md relative overflow-hidden transition-fast border border-border-default/50 hover-lift"
+                  className="bg-v5-surface rounded-xl shadow-sm p-space-md relative overflow-hidden transition-fast border border-v5-line/50 hover-lift"
                 >
                   {/* Priority ribbon bar */}
                   {item.urgent && (
@@ -510,7 +492,7 @@ export default function ApprovalsPage() {
                           Khẩn cấp
                         </span>
                       )}
-                      <span className="font-label-sm text-label-sm text-on-surface-variant font-mono font-bold">
+                      <span className="font-label-sm text-label-sm text-v5-muted font-mono font-bold">
                         {item.code}
                       </span>
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
@@ -523,7 +505,7 @@ export default function ApprovalsPage() {
                         {item.type === "plan" ? "Kế hoạch tuần" : item.type === "delay" ? "Đề xuất lùi hạn" : "Nghiệm thu kết quả"}
                       </span>
                     </div>
-                    <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    <span className="font-label-sm text-label-sm text-v5-muted">
                       {item.timeAgo}
                     </span>
                   </div>
@@ -532,7 +514,7 @@ export default function ApprovalsPage() {
                   <h2 className="font-headline-sm text-headline-sm text-primary mb-space-xs font-bold leading-snug">
                     {item.title}
                   </h2>
-                  <div className="flex items-center gap-space-xs mb-space-sm bg-surface-subtle p-space-xs rounded-lg">
+                  <div className="flex items-center gap-space-xs mb-space-sm bg-v5-bg p-space-xs rounded-lg">
                     <div className="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-sm text-label-sm font-semibold">
                       {item.submitter.charAt(0) || "C"}
                     </div>
@@ -540,17 +522,20 @@ export default function ApprovalsPage() {
                       <p className="font-body-semibold text-body-semibold text-primary truncate leading-tight text-xs">
                         {item.submitter}
                       </p>
-                      <p className="font-label-sm text-label-sm text-on-surface-variant truncate text-[11px]">
-                        {item.unit}
+                      <p
+                        className="truncate text-[11px] text-v5-muted"
+                        title="Đơn vị giao việc của nhiệm vụ, không phải chức danh hiện tại"
+                      >
+                        Đơn vị giao: {item.unit}
                       </p>
                     </div>
                   </div>
 
                   {/* Detail Box */}
-                  <div className="bg-surface-container-low rounded-lg p-space-sm mb-space-sm space-y-space-xs text-xs">
+                  <div className="bg-v5-bg rounded-lg p-space-sm mb-space-sm space-y-space-xs text-xs">
                     {item.reason && (
-                      <div className="text-on-surface font-body-md text-body-md">
-                        <span className="text-on-surface-variant font-label-sm text-label-sm block font-semibold">
+                      <div className="text-v5-ink font-body-md text-body-md">
+                        <span className="text-v5-muted font-label-sm text-label-sm block font-semibold">
                           Lý do / Báo cáo nội dung:
                         </span>
                         {item.reason}
@@ -558,7 +543,7 @@ export default function ApprovalsPage() {
                     )}
 
                     {item.documentTitle && (
-                      <div className="p-2 rounded bg-surface-container-lowest flex items-center gap-2 text-primary font-semibold">
+                      <div className="p-2 rounded bg-v5-surface flex items-center gap-2 text-primary font-semibold">
                         <span className="material-symbols-outlined text-secondary text-[18px]">
                           description
                         </span>
@@ -567,8 +552,8 @@ export default function ApprovalsPage() {
                     )}
 
                     {item.oldDeadline && item.newDeadline && (
-                      <div className="pt-space-xs flex items-center justify-between font-label-md text-label-md bg-surface-container-lowest p-space-xs rounded">
-                        <div className="text-on-surface-variant line-through font-mono">
+                      <div className="pt-space-xs flex items-center justify-between font-label-md text-label-md bg-v5-surface p-space-xs rounded">
+                        <div className="text-v5-muted line-through font-mono">
                           {item.oldDeadline}
                         </div>
                         <span className="material-symbols-outlined text-status-warning text-[18px]">
@@ -586,13 +571,13 @@ export default function ApprovalsPage() {
 
                   {/* Hồ sơ & Tài liệu nghiệm thu đính kèm */}
                   {item.attachments && item.attachments.length > 0 && (
-                    <div className="bg-surface-subtle border border-border-default/60 rounded-lg p-space-sm mb-space-sm">
+                    <div className="bg-v5-bg border border-v5-line/60 rounded-lg p-space-sm mb-space-sm">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-label-sm text-[11px] font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
                           <span className="material-symbols-outlined text-[15px] text-secondary">attach_file</span>
                           Hồ sơ & Tài liệu nghiệm thu ({item.attachments.length})
                         </span>
-                        <span className="text-[10px] text-on-surface-variant font-medium">Bấm xem trực tiếp hoặc tải về</span>
+                        <span className="text-[10px] text-v5-muted font-medium">Bấm xem trực tiếp hoặc tải về</span>
                       </div>
                       <div className="space-y-1.5">
                         {item.attachments.map((att) => {
@@ -604,7 +589,7 @@ export default function ApprovalsPage() {
                           return (
                             <div
                               key={att.id}
-                              className="flex items-center justify-between gap-2 p-2 bg-surface-container-lowest rounded-md border border-border-default/50 hover:border-secondary/50 transition-fast"
+                              className="flex items-center justify-between gap-2 p-2 bg-v5-surface rounded-md border border-v5-line/50 hover:border-secondary/50 transition-fast"
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span className={`p-1.5 rounded border text-[16px] shrink-0 ${fileStyle.color} flex items-center justify-center`}>
@@ -614,7 +599,7 @@ export default function ApprovalsPage() {
                                   <p className="font-body-semibold text-xs text-primary truncate" title={att.fileName}>
                                     {att.fileName}
                                   </p>
-                                  <p className="text-[10px] text-on-surface-variant">
+                                  <p className="text-[10px] text-v5-muted">
                                     {formatFileSize(att.fileSize)}
                                     {att.uploadedBy?.fullName && ` · Tải lên bởi ${att.uploadedBy.fullName}`}
                                   </p>
@@ -643,7 +628,7 @@ export default function ApprovalsPage() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download={att.fileName}
-                                  className="px-2 py-1 rounded bg-surface-container text-primary hover:bg-surface-container-high text-[11px] font-semibold transition-fast flex items-center gap-1 border border-border-subtle"
+                                  className="px-2 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg-high text-[11px] font-semibold transition-fast flex items-center gap-1 border border-border-subtle"
                                   title="Tải về máy tính"
                                 >
                                   <span className="material-symbols-outlined text-[14px]">download</span>
@@ -658,7 +643,7 @@ export default function ApprovalsPage() {
                   )}
 
                   {item.type === "result" && (!item.attachments || item.attachments.length === 0) && (
-                    <div className="px-3 py-2 rounded-lg bg-surface-subtle/80 border border-dashed border-border-default text-[11px] text-on-surface-variant mb-space-sm flex items-center gap-1.5">
+                    <div className="px-3 py-2 rounded-lg bg-v5-bg/80 border border-dashed border-v5-line text-[11px] text-v5-muted mb-space-sm flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[15px] text-outline">info</span>
                       <span>Chưa có tệp đính kèm nào được tải lên cho nhiệm vụ này.</span>
                     </div>
@@ -670,8 +655,8 @@ export default function ApprovalsPage() {
                       type="button"
                       disabled={isItemBusy}
                       onClick={() => openPreview(item, "CLARIFY")}
-                      className={`h-11 px-space-xs rounded-lg bg-surface-subtle text-primary font-body-semibold text-body-semibold transition-fast flex items-center justify-center gap-1 text-xs border border-border-default/50 ${
-                        isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-surface-container active-press"
+                      className={`h-11 px-space-xs rounded-lg bg-v5-bg text-primary font-body-semibold text-body-semibold transition-fast flex items-center justify-center gap-1 text-xs border border-v5-line/50 ${
+                        isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-v5-bg active-press"
                       }`}
                     >
                       <span className="material-symbols-outlined text-[18px]">undo</span>
@@ -714,10 +699,10 @@ export default function ApprovalsPage() {
           onClick={() => setPreviewFile(null)}
         >
           <div
-            className="bg-surface-container-lowest rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-border-default"
+            className="bg-v5-surface rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-v5-line"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-3.5 border-b border-border-default flex items-center justify-between bg-surface-subtle">
+            <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">
               <div className="flex items-center gap-2 min-w-0 pr-2">
                 <span className="material-symbols-outlined text-secondary text-[22px]">
                   {previewFile.mimeType.includes("pdf") || previewFile.name.toLowerCase().endsWith(".pdf")
@@ -742,7 +727,7 @@ export default function ApprovalsPage() {
                 <button
                   type="button"
                   onClick={() => setPreviewFile(null)}
-                  className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-primary transition-fast"
+                  className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-primary transition-fast"
                   aria-label="Đóng xem trước"
                 >
                   <span className="material-symbols-outlined text-[20px]">close</span>
@@ -771,50 +756,41 @@ export default function ApprovalsPage() {
       {/* =====================================================================
           YC-37 — "HỒ SƠ CỦA TÔI": theo dõi hồ sơ đã trình + gửi giải trình lại
           ===================================================================== */}
-      <section className="max-w-2xl mx-auto px-margin pt-4">
-        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
+      <section className="pt-1">
+        <div className="overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-v5-line px-4 py-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary text-[20px]">
-                inbox
-              </span>
+              <Inbox className="h-4 w-4 text-v5-accent" />
               <div>
-                <h3 className="font-headline-sm text-headline-sm text-primary font-bold">
-                  Hồ sơ của tôi
-                </h3>
-                <p className="text-[11px] text-on-surface-variant">
+                <h3 className="text-sm font-semibold text-v5-ink">Hồ sơ của tôi</h3>
+                <p className="text-[11px] text-v5-muted">
                   Theo dõi hồ sơ đã trình, lý do bị trả lại và gửi giải trình lại.
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={fetchMyCases}
-              className="text-[11px] font-semibold text-secondary inline-flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-[15px]">refresh</span>
-              Làm mới
-            </button>
+            <Button type="button" variant="ghost" size="sm" onClick={fetchMyCases}>
+              <RefreshCw className="h-3.5 w-3.5" /> Làm mới
+            </Button>
           </div>
 
           {myCasesLoading ? (
-            <div className="p-4 text-[11px] text-on-surface-variant">Đang tải hồ sơ...</div>
+            <div className="p-4 text-[11px] text-v5-muted">Đang tải hồ sơ...</div>
           ) : myCases.length === 0 ? (
-            <div className="p-4 text-[11px] text-on-surface-variant">
+            <div className="p-4 text-[11px] text-v5-muted">
               Chưa có hồ sơ nào được trình duyệt.
             </div>
           ) : (
-            <ul className="divide-y divide-border-default">
+            <ul className="divide-y divide-v5-line">
               {myCases.map((mc) => (
                 <li key={mc.id} className="px-4 py-3 space-y-1">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[12px] font-semibold text-primary min-w-0">
-                      <span className="font-mono text-[11px] text-on-surface-variant">
+                    <p className="min-w-0 text-[12px] font-semibold text-v5-ink">
+                      <span className="font-mono text-[11px] text-v5-muted">
                         [{mc.code ?? ""}]
                       </span>{" "}
                       {mc.title}
                     </p>
-                    <span className="shrink-0 text-[10px] px-2 py-0.5 rounded border border-border-default bg-surface-container text-on-surface-variant font-semibold whitespace-nowrap">
+                    <span className="shrink-0 text-[10px] px-2 py-0.5 rounded border border-v5-line bg-v5-bg text-v5-muted font-semibold whitespace-nowrap">
                       {mc.status === "OPEN"
                         ? "Chờ quyết định"
                         : mc.status === "AGREED"
@@ -827,19 +803,20 @@ export default function ApprovalsPage() {
                     </span>
                   </div>
                   {mc.latestDecision?.reason && (
-                    <p className="text-[11px] text-on-surface-variant">
+                    <p className="text-[11px] text-v5-muted">
                       Lý do: {mc.latestDecision.reason}
                     </p>
                   )}
                   {mc.latestDecision?.content &&
                     mc.status !== "CLARIFY_REQUESTED" && (
-                      <p className="text-[11px] text-on-surface-variant">
+                      <p className="text-[11px] text-v5-muted">
                         Nội dung: {mc.latestDecision.content}
                       </p>
                     )}
                   {mc.status === "CLARIFY_REQUESTED" && (
-                    <button
+                    <Button
                       type="button"
+                      size="sm"
                       onClick={() => {
                         setRespondCase({
                           caseType: mc.caseType as ApprovalCaseType,
@@ -848,11 +825,10 @@ export default function ApprovalsPage() {
                         });
                         setRespondContent("");
                       }}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary text-[11px] font-semibold"
                     >
-                      <span className="material-symbols-outlined text-[15px]">reply</span>
+                      <Reply className="h-3.5 w-3.5" />
                       Gửi giải trình
-                    </button>
+                    </Button>
                   )}
                 </li>
               ))}
@@ -864,49 +840,44 @@ export default function ApprovalsPage() {
       {/* =====================================================================
           YC-12 — "ĐÃ XỬ LÝ": lịch sử quyết định theo thẩm quyền
           ===================================================================== */}
-      <section className="max-w-2xl mx-auto px-margin pt-4">
-        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border-default flex items-center justify-between gap-3">
+      <section className="pt-1">
+        <div className="overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-v5-line px-4 py-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary text-[20px]">history</span>
+              <History className="h-4 w-4 text-v5-accent" />
               <div>
-                <h3 className="font-headline-sm text-headline-sm text-primary font-bold">Đã xử lý</h3>
-                <p className="text-[11px] text-on-surface-variant">
+                <h3 className="text-sm font-semibold text-v5-ink">Đã xử lý</h3>
+                <p className="text-[11px] text-v5-muted">
                   Lịch sử hồ sơ bạn đã quyết định hoặc thuộc phạm vi bạn được xem.
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={fetchDecidedCases}
-              className="text-[11px] font-semibold text-secondary inline-flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-[15px]">refresh</span>
-              Làm mới
-            </button>
+            <Button type="button" variant="ghost" size="sm" onClick={fetchDecidedCases}>
+              <RefreshCw className="h-3.5 w-3.5" /> Làm mới
+            </Button>
           </div>
 
-          <div className="px-4 py-2 flex flex-wrap items-center gap-2 border-b border-border-default">
+          <div className="px-4 py-2 flex flex-wrap items-center gap-2 border-b border-v5-line">
             <input
               data-testid="decided-person-filter"
               value={decidedPerson}
               onChange={(e) => setDecidedPerson(e.target.value)}
               placeholder="Mã hoặc tên cán bộ"
-              className="h-9 flex-1 min-w-[160px] rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+              className="h-9 flex-1 min-w-[160px] rounded-lg border border-v5-line bg-v5-surface px-3 text-xs"
             />
             <input
               data-testid="decided-month-filter"
               value={decidedMonth}
               onChange={(e) => setDecidedMonth(e.target.value.replace(/\D/g, "").slice(0, 2))}
               placeholder="Tháng"
-              className="h-9 w-20 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+              className="h-9 w-20 rounded-lg border border-v5-line bg-v5-surface px-3 text-xs"
             />
             <input
               data-testid="decided-year-filter"
               value={decidedYear}
               onChange={(e) => setDecidedYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
               placeholder="Năm"
-              className="h-9 w-24 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+              className="h-9 w-24 rounded-lg border border-v5-line bg-v5-surface px-3 text-xs"
             />
             {(decidedPerson || decidedMonth || decidedYear) && (
               <button
@@ -924,16 +895,16 @@ export default function ApprovalsPage() {
           </div>
 
           {decidedLoading ? (
-            <div className="p-4 text-[11px] text-on-surface-variant">Đang tải lịch sử...</div>
+            <div className="p-4 text-[11px] text-v5-muted">Đang tải lịch sử...</div>
           ) : decidedCases.length === 0 ? (
-            <div className="p-4 text-[11px] text-on-surface-variant">Chưa có hồ sơ nào đã xử lý.</div>
+            <div className="p-4 text-[11px] text-v5-muted">Chưa có hồ sơ nào đã xử lý.</div>
           ) : (
-            <ul className="divide-y divide-border-default">
+            <ul className="divide-y divide-v5-line">
               {decidedCases.map((dc) => (
                 <li key={dc.id} className="px-4 py-3 space-y-1" data-testid={`decided-case-${dc.id}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[12px] font-semibold text-primary min-w-0">
-                      <span className="font-mono text-[11px] text-on-surface-variant">
+                    <p className="min-w-0 text-[12px] font-semibold text-v5-ink">
+                      <span className="font-mono text-[11px] text-v5-muted">
                         [{dc.code ?? dc.resourceId.slice(0, 8)}]
                       </span>{" "}
                       {dc.title}
@@ -956,24 +927,24 @@ export default function ApprovalsPage() {
                             : dc.status}
                     </span>
                   </div>
-                  <p className="text-[11px] text-on-surface-variant">
-                    Người trình: <b className="text-on-surface">{dc.submittedByName || "—"}</b>
-                    {" · "}Người quyết định: <b className="text-on-surface">{dc.decidedByName || "—"}</b>
+                  <p className="text-[11px] text-v5-muted">
+                    Người trình: <b className="text-v5-ink">{dc.submittedByName || "—"}</b>
+                    {" · "}Người quyết định: <b className="text-v5-ink">{dc.decidedByName || "—"}</b>
                     {dc.decidedAt ? ` · ${formatVnDateTime(dc.decidedAt)}` : ""}
                   </p>
-                  <p className="text-[11px] text-on-surface-variant">
-                    <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                  <p className="text-[11px] text-v5-muted">
+                    <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-primary">
                       Nguồn: {dc.latestDecision?.sourceLabel || "Quyết định duyệt"}
                     </span>
                   </p>
                   {dc.latestDecision?.reason && (
-                    <p className="text-[11px] text-on-surface-variant">Lý do: {dc.latestDecision.reason}</p>
+                    <p className="text-[11px] text-v5-muted">Lý do: {dc.latestDecision.reason}</p>
                   )}
                   {dc.latestDecision?.content && (
-                    <p className="text-[11px] text-on-surface-variant">Nội dung: {dc.latestDecision.content}</p>
+                    <p className="text-[11px] text-v5-muted">Nội dung: {dc.latestDecision.content}</p>
                   )}
                   {Array.isArray(dc.history) && dc.history.length > 1 && (
-                    <details className="text-[11px] text-on-surface-variant">
+                    <details className="text-[11px] text-v5-muted">
                       <summary className="cursor-pointer font-semibold text-secondary">
                         Các vòng đã quyết định ({dc.history.length})
                       </summary>
@@ -981,10 +952,10 @@ export default function ApprovalsPage() {
                         {dc.history.map((h) => (
                           <li
                             key={h.id}
-                            className="rounded border border-border-default px-2 py-1"
+                            className="rounded border border-v5-line px-2 py-1"
                             data-testid={`decided-history-${h.source}`}
                           >
-                            <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                            <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-primary">
                               Nguồn: {h.sourceLabel}
                             </span>{" "}
                             · Vòng {h.round} · {h.actionLabel}
@@ -1023,7 +994,7 @@ export default function ApprovalsPage() {
       {/* Modal gửi giải trình lại */}
       {respondCase && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-border-default flex flex-col gap-4">
+          <div className="bg-v5-surface rounded-xl max-w-lg w-full p-6 shadow-2xl border border-v5-line flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-surface-container pb-3">
               <h3 className="font-headline-sm text-primary font-bold flex items-center gap-2">
                 <span className="material-symbols-outlined text-status-warning text-[24px]">
@@ -1034,27 +1005,27 @@ export default function ApprovalsPage() {
               <button
                 type="button"
                 onClick={() => setRespondCase(null)}
-                className="text-on-surface-variant hover:text-on-surface text-sm"
+                className="text-v5-muted hover:text-v5-ink text-sm"
               >
                 ✕
               </button>
             </div>
-            <p className="text-xs text-on-surface-variant">
-              Hồ sơ: <strong className="text-on-surface">{respondCase.title}</strong>
+            <p className="text-xs text-v5-muted">
+              Hồ sơ: <strong className="text-v5-ink">{respondCase.title}</strong>
             </p>
             <textarea
               rows={5}
               value={respondContent}
               onChange={(e) => setRespondContent(e.target.value)}
               placeholder="Bổ sung nội dung giải trình để hồ sơ được xem trước lại..."
-              className="w-full p-3 rounded-lg border border-border-default bg-surface-container-lowest text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full p-3 rounded-lg border border-v5-line bg-v5-surface text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-container">
               <button
                 type="button"
                 onClick={() => setRespondCase(null)}
                 disabled={responding}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-v5-muted hover:bg-v5-bg"
               >
                 Hủy bỏ
               </button>

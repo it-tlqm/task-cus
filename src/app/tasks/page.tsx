@@ -3,7 +3,21 @@
 import React, { useState, useEffect } from "react";
 import { originLabel } from "@/lib/task-origin";
 import Link from "next/link";
+import {
+  AlertTriangle,
+  CalendarClock,
+  ClipboardList,
+  Clock3,
+  FileDown,
+  History,
+  Plus,
+  Search,
+  Timer,
+} from "lucide-react";
 import { toast } from "@/components/ui/Toast";
+import { Badge } from "@/components/v5/ui/badge";
+import { Button } from "@/components/v5/ui/button";
+import { Card } from "@/components/v5/ui/card";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
 import WorkSourcePicker from "@/components/work/WorkSourcePicker";
 import TxSourceBadge from "@/components/work/TxSourceBadge";
@@ -441,204 +455,122 @@ export default function TasksPage() {
   });
 
   return (
-    <div className="w-full min-h-screen bg-app-bg pb-12">
-      <div className="flex flex-col w-full p-space-lg gap-space-lg">
-        {/* 1. Header Trang & Thao tác trọng tâm */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-border-default/50">
-          <div className="flex flex-col gap-space-xs">
-            <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
-              <span>HQ CK Quốc tế Tà Lùng</span>
-              <span className="text-outline">/</span>
-              <span className="text-secondary font-body-semibold">Nhiệm vụ chỉ đạo &amp; Giao việc</span>
-            </div>
-            <div className="flex items-center gap-space-sm">
-              <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight">
-                Nhiệm Vụ Chỉ Đạo &amp; Điều Hành Giao Việc
-              </h1>
-              <span className="px-2.5 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm uppercase font-bold">
+    <div className="w-full pb-4">
+      <div className="flex w-full flex-col gap-3">
+        <header className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Công việc chỉ đạo</h1>
+              <Badge variant="outline">
                 {permUser?.role ? getRoleDisplayName(permUser.role) : "Đang tải..."}
-              </span>
+              </Badge>
             </div>
-            <p className="font-body-md text-body-md text-on-surface-variant max-w-3xl">
-              Hệ thống phân công chỉ đạo nghiệp vụ đột xuất, giám sát tiến độ thực hiện liên bộ phận, giải quyết đề xuất gia hạn và phê duyệt kết quả công tác.
+            <p className="mt-1 text-sm text-v5-muted">
+              Giao việc, theo dõi tiến độ, xử lý gia hạn và phê duyệt kết quả công tác.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-space-sm shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
             {canAssign && (
-              <button
-                data-tour="create-btn"
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-space-md h-10 bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-md rounded-lg transition-fast shadow-sm active-press font-semibold"
-              >
-                <span className="material-symbols-outlined text-[18px]">add_task</span>
-                <span>+ Giao nhiệm vụ đột xuất / Chỉ đạo mới</span>
-              </button>
+              <Button size="sm" data-tour="create-btn" onClick={() => setShowCreateModal(true)}>
+                <Plus className="h-3.5 w-3.5" /> Giao nhiệm vụ
+              </Button>
             )}
             {canApprove && (
-              <Link
-                href="/reports/excel"
-                className="flex items-center gap-2 px-space-md h-10 bg-surface-container-lowest hover:bg-surface-subtle text-on-surface font-body-semibold text-body-md rounded-lg shadow-sm transition-fast border border-border-default active-press"
-              >
-                <span className="material-symbols-outlined text-[18px] text-secondary">file_download</span>
-                <span>Xuất phiếu giao việc (.xlsx)</span>
-              </Link>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/reports/excel">
+                  <FileDown className="h-3.5 w-3.5" /> Xuất phiếu
+                </Link>
+              </Button>
             )}
             {canAudit && (
-              <Link
-                href="/admin/audit"
-                className="flex items-center gap-2 px-space-md h-10 bg-surface-container hover:bg-surface-container-high text-primary font-body-semibold text-body-md rounded-lg transition-fast active-press"
-              >
-                <span className="material-symbols-outlined text-[18px]">manage_history</span>
-                <span>Lịch sử chỉ đạo</span>
-              </Link>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/admin/audit">
+                  <History className="h-3.5 w-3.5" /> Lịch sử
+                </Link>
+              </Button>
             )}
           </div>
+        </header>
+
+        <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Tổng chỉ đạo</span>
+              <ClipboardList className="h-4 w-4 text-v5-accent" />
+            </div>
+            <div className="mt-2 text-2xl font-bold tabular-nums text-v5-ink">{String(totalCount).padStart(2, "0")}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">nhiệm vụ đã giao</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Đang thực hiện</span>
+              <Timer className="h-4 w-4 text-v5-accent" />
+            </div>
+            <div className="mt-2 text-2xl font-bold tabular-nums text-v5-ink">{String(inProgressCount).padStart(2, "0")}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">đang triển khai</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ phê duyệt</span>
+              <Clock3 className="h-4 w-4 text-v5-warning" />
+            </div>
+            <div className="mt-2 text-2xl font-bold tabular-nums text-v5-warning">{String(waitingReviewCount).padStart(2, "0")}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">hồ sơ đã nộp</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Xin gia hạn</span>
+              <CalendarClock className="h-4 w-4 text-v5-gold-ink" />
+            </div>
+            <div className="mt-2 text-2xl font-bold tabular-nums text-v5-gold-ink">{String(extCount).padStart(2, "0")}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">đề xuất chờ ý kiến</div>
+          </Card>
+          <Card className="border-v5-danger/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Quá hạn</span>
+              <AlertTriangle className="h-4 w-4 text-v5-danger" />
+            </div>
+            <div className="mt-2 text-2xl font-bold tabular-nums text-v5-danger">{String(overdueCount).padStart(2, "0")}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">cần đôn đốc</div>
+          </Card>
         </div>
 
-        {/* 2. Thống kê & Bộ lọc điều hành thông minh */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-space-md">
-          {/* Card KPI 1 */}
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col justify-between hover-lift">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Tổng chỉ đạo lũy kế</span>
-              <span className="material-symbols-outlined text-[20px] text-primary">folder_supervised</span>
-            </div>
-            <div className="my-space-xs">
-              <span className="font-headline-xl text-headline-xl text-primary font-bold">{String(totalCount).padStart(2, "0")}</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">nhiệm vụ</span>
-            </div>
-            <div className="font-label-sm text-label-sm text-secondary flex items-center gap-1 font-semibold">
-              <span className="material-symbols-outlined text-[14px]">insights</span>
-              <span>Toàn bộ phận đã nhận việc</span>
-            </div>
+        <div className="flex flex-col gap-2 rounded-lg border border-v5-line bg-v5-surface p-2 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap items-center gap-1 rounded-md bg-v5-bg p-1">
+            {[
+              { key: "ALL" as const, label: `Tất cả (${totalCount})` },
+              { key: "IN_PROGRESS" as const, label: `Đang thực hiện (${inProgressCount})` },
+              { key: "WAITING_REVIEW" as const, label: `Chờ phê duyệt (${waitingReviewCount})` },
+              { key: "EXTENSIONS" as const, label: `Xin gia hạn (${extCount})` },
+              { key: "OVERDUE" as const, label: `Chậm tiến độ (${overdueCount})` },
+            ].map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveTab(item.key)}
+                className={`rounded px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                  activeTab === item.key
+                    ? item.key === "OVERDUE"
+                      ? "bg-v5-danger text-white shadow-sm"
+                      : "bg-v5-accent text-white shadow-sm"
+                    : item.key === "OVERDUE"
+                      ? "text-v5-danger hover:bg-v5-danger-soft"
+                      : "text-v5-muted hover:bg-v5-surface hover:text-v5-ink"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
 
-          {/* Card KPI 2 */}
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col justify-between hover-lift">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Đang triển khai</span>
-              <span className="material-symbols-outlined text-[20px] text-secondary">sync</span>
-            </div>
-            <div className="my-space-xs">
-              <span className="font-headline-xl text-headline-xl text-primary font-bold">{String(inProgressCount).padStart(2, "0")}</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">đúng tiến độ</span>
-            </div>
-            <div className="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
-              <div className="bg-secondary h-full rounded-full" style={{ width: `${totalCount > 0 ? (inProgressCount / totalCount) * 100 : 0}%` }} />
-            </div>
-          </div>
-
-          {/* Card KPI 3 */}
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col justify-between hover-lift">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Chờ duyệt kết quả</span>
-              <span className="material-symbols-outlined text-[20px] text-status-warning">pending_actions</span>
-            </div>
-            <div className="my-space-xs">
-              <span className="font-headline-xl text-headline-xl text-status-warning font-bold">{String(waitingReviewCount).padStart(2, "0")}</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">hồ sơ nộp</span>
-            </div>
-            <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-label-sm w-fit inline-flex items-center gap-1 font-bold">
-              <span className="material-symbols-outlined text-[12px]">schedule</span> Cần lãnh đạo ký
-            </span>
-          </div>
-
-          {/* Card KPI 4 */}
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col justify-between hover-lift">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-on-surface-variant">Đề xuất xin gia hạn</span>
-              <span className="material-symbols-outlined text-[20px] text-status-unassigned">update</span>
-            </div>
-            <div className="my-space-xs">
-              <span className="font-headline-xl text-headline-xl text-status-unassigned font-bold">{String(extCount).padStart(2, "0")}</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">chờ ý kiến</span>
-            </div>
-            <span className="px-2 py-0.5 rounded bg-status-unassigned-bg text-status-unassigned font-label-sm text-label-sm w-fit inline-flex items-center gap-1 font-semibold">
-              <span className="material-symbols-outlined text-[12px]">info</span> Có văn bản lý do
-            </span>
-          </div>
-
-          {/* Card KPI 5 */}
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-status-danger/30 flex flex-col justify-between hover-lift">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-status-danger font-semibold">Quá hạn / Vướng mắc</span>
-              <span className="material-symbols-outlined text-[20px] text-status-danger">warning</span>
-            </div>
-            <div className="my-space-xs">
-              <span className="font-headline-xl text-headline-xl text-status-danger font-bold">{String(overdueCount).padStart(2, "0")}</span>
-              <span className="font-label-sm text-label-sm text-on-surface-variant ml-1">điểm nghẽn</span>
-            </div>
-            <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-label-sm w-fit inline-flex items-center gap-1 font-bold">
-              <span className="material-symbols-outlined text-[12px]">report_problem</span> Khẩn cấp đôn đốc
-            </span>
-          </div>
-        </div>
-
-        {/* Thanh lọc nghiệp vụ & Tìm kiếm */}
-        <div className="flex flex-col xl:flex-row gap-space-md items-stretch xl:items-center justify-between bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50">
-          {/* Bộ lọc trạng thái Segmented Controls */}
-          <div className="flex flex-wrap items-center bg-surface-container p-1 rounded-lg gap-1">
-            <button
-              onClick={() => setActiveTab("ALL")}
-              className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${
-                activeTab === "ALL"
-                  ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              Tất cả ({totalCount})
-            </button>
-            <button
-              onClick={() => setActiveTab("IN_PROGRESS")}
-              className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${
-                activeTab === "IN_PROGRESS"
-                  ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              Đang thực hiện ({inProgressCount})
-            </button>
-            <button
-              onClick={() => setActiveTab("WAITING_REVIEW")}
-              className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${
-                activeTab === "WAITING_REVIEW"
-                  ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              Chờ phê duyệt ({waitingReviewCount})
-            </button>
-            <button
-              onClick={() => setActiveTab("EXTENSIONS")}
-              className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${
-                activeTab === "EXTENSIONS"
-                  ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              Xin gia hạn ({extCount})
-            </button>
-            <button
-              onClick={() => setActiveTab("OVERDUE")}
-              className={`px-3 py-1.5 rounded font-label-md text-label-md transition-fast ${
-                activeTab === "OVERDUE"
-                  ? "bg-status-danger text-on-error shadow-sm font-semibold"
-                  : "text-status-danger hover:bg-status-danger-bg"
-              }`}
-            >
-              Chậm tiến độ ({overdueCount})
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-space-sm">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={selectedFilterUnit}
               aria-label="Lọc theo đơn vị nghiệp vụ"
               onChange={(e) => setSelectedFilterUnit(e.target.value)}
-              className="h-9 px-3 rounded bg-surface-container-lowest text-xs font-semibold border border-border-default focus:outline-none focus:ring-1 focus:ring-secondary cursor-pointer text-primary"
+              className="h-9 cursor-pointer rounded-md border border-v5-line bg-v5-surface px-2 text-[11px] font-semibold text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent"
             >
-              <option value="ALL">Toàn đơn vị (Tất cả)</option>
+              <option value="ALL">Toàn đơn vị</option>
               {units.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
@@ -647,23 +579,21 @@ export default function TasksPage() {
             </select>
 
             <div className="relative w-full sm:w-64">
-              <span className="material-symbols-outlined absolute left-2.5 top-2 text-outline text-[18px]">
-                search
-              </span>
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-v5-muted" />
               <input
                 data-tour="search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm mã việc, tên chỉ đạo..."
-                className="w-full h-9 pl-8 pr-3 rounded bg-surface-container-lowest text-sm border border-border-default focus:outline-none focus:ring-1 focus:ring-secondary"
+                className="h-9 w-full rounded-md border border-v5-line bg-v5-surface pl-8 pr-3 text-[12px] text-v5-ink outline-none focus:border-v5-accent"
               />
             </div>
           </div>
         </div>
 
         {/* BẢNG DỮ LIỆU NHIỆM VỤ CHỈ ĐẠO */}
-        <div data-tour="task-table" className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col border border-border-default/50">
+        <div data-tour="task-table" className="flex flex-col overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse table-dense">
               <thead>
@@ -676,10 +606,10 @@ export default function TasksPage() {
                   <th className="py-3 px-space-md text-right w-[200px]">THAO TÁC LÃNH ĐẠO</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-container font-table-data text-table-data text-on-surface">
+              <tbody className="divide-y divide-v5-line/60 font-table-data text-table-data text-v5-ink">
                 {filteredTasks.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-outline">
+                    <td colSpan={6} className="py-12 text-center text-v5-muted">
                       Chưa có nhiệm vụ nào trong danh sách hiện tại.
                     </td>
                   </tr>
