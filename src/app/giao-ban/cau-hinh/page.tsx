@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ChevronDown, ChevronLeft, History, Lock, Trash2, X } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { fmtMetric, fmtDate } from "@/lib/metric-format";
@@ -320,7 +322,7 @@ export default function CauHinhSoLieuPage() {
   if (permLoading) {
     return (
       <div className="p-8 flex flex-col items-start gap-3">
-        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
+        <BackButton href="/v5/giao-ban" label="Số liệu giao ban" />
         <div className="text-body-sm text-on-surface-variant">Đang tải cấu hình…</div>
       </div>
     );
@@ -328,8 +330,8 @@ export default function CauHinhSoLieuPage() {
   if (!canConfigMetrics) {
     return (
       <div className="p-8 flex flex-col items-center gap-3 text-center">
-        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
-        <span className="material-symbols-outlined text-[40px] text-on-surface-variant">lock</span>
+        <BackButton href="/v5/giao-ban" label="Số liệu giao ban" />
+        <Lock className="h-10 w-10 text-v5-muted" />
         <p className="text-body-md text-on-surface">Chỉ người được cấp quyền cấu hình số liệu giao ban mới được truy cập.</p>
       </div>
     );
@@ -337,40 +339,44 @@ export default function CauHinhSoLieuPage() {
   if (loading) {
     return (
       <div className="p-8 flex flex-col items-start gap-3">
-        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
+        <BackButton href="/v5/giao-ban" label="Số liệu giao ban" />
         <div className="text-body-sm text-on-surface-variant">Đang tải cấu hình…</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface-container-low">
-      <div className="px-margin pt-space-md pb-space-sm flex flex-col gap-3">
-        <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2">
+        <Link
+          href="/v5/giao-ban"
+          className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-v5-muted transition-colors hover:text-v5-ink"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" /> Số liệu giao ban
+        </Link>
         <div>
-          <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Cấu hình số liệu giao ban</h1>
-          <p className="text-body-sm text-on-surface-variant">
-            Mọi thay đổi (chỉ tiêu, đơn vị, quy trình kiểm tra, chỉ tiêu giao, mốc lũy kế, phân công) thực hiện tại đây — không cần sửa code.
+          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Cấu hình giao ban</h1>
+          <p className="mt-1 text-sm text-v5-muted">
+            Cấu hình chỉ tiêu, mốc lũy kế, phân công nhập, mục nhận xét và cấu trúc báo cáo giao ban.
           </p>
         </div>
       </div>
 
-      <div className="px-margin pb-3 flex gap-2 overflow-x-auto">
+      <div className="flex gap-1 overflow-x-auto rounded-lg border border-v5-line bg-v5-surface p-1">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-label-md font-semibold whitespace-nowrap border ${
-              tab === t.key ? "bg-primary text-on-primary border-primary" : "bg-surface-container-lowest text-on-surface-variant border-border-default hover:bg-surface-container"
+            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+              tab === t.key ? "bg-v5-accent text-white" : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="px-margin pb-space-lg flex flex-col gap-4">
+      <div className="flex flex-col gap-3 pb-4">
         {/* ============ NHÓM & CHỈ TIÊU ============ */}
         {tab === "COMPARISON" && (
           <section className="rounded-xl border border-border-default bg-surface-container-lowest p-4 flex flex-col gap-4">
@@ -695,7 +701,7 @@ export default function CauHinhSoLieuPage() {
                                     }}
                                     className="p-1 rounded text-rose-600 hover:bg-rose-50"
                                   >
-                                    <span className="material-symbols-outlined text-[16px]">close</span>
+                                    <X className="h-4 w-4" />
                                   </button>
                                 </div>
                               ))}
@@ -741,7 +747,7 @@ export default function CauHinhSoLieuPage() {
                                     Hiện
                                   </label>
                                   <button onClick={() => post("classification", "delete", { id: c.id }, "Đã xóa phân loại")} className="p-1 rounded text-rose-600 hover:bg-rose-50" title="Xóa (chỉ khi chưa có số liệu)">
-                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                    <Trash2 className="h-4 w-4" />
                                   </button>
                                 </div>
                               ))}
@@ -897,7 +903,7 @@ export default function CauHinhSoLieuPage() {
                             </button>
                             {st === "PROPOSED" && (
                               <button onClick={() => post("baseline", "delete", { id: b.id }, "Đã xóa mốc")} className="ml-auto p-1 rounded text-rose-600 hover:bg-rose-50">
-                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             )}
                           </div>
@@ -1002,7 +1008,7 @@ export default function CauHinhSoLieuPage() {
                       </td>
                       <td className="px-2 py-1.5">
                         <button onClick={() => post("assignment", "delete", { id: a.id }, "Đã xóa phân công")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
-                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>
@@ -1171,7 +1177,7 @@ export default function CauHinhSoLieuPage() {
                             {s.active ? "Ẩn" : "Bật"}
                           </button>
                           <button onClick={() => post("section", "delete", { id: s.id }, "Đã xóa mục")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </>
@@ -1308,7 +1314,7 @@ export default function CauHinhSoLieuPage() {
                             {b.active ? "Ẩn" : "Bật"}
                           </button>
                           <button onClick={() => post("report_block", "delete", { id: b.id }, "Đã xóa khối")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </>
@@ -1390,10 +1396,10 @@ export default function CauHinhSoLieuPage() {
             data-testid="metric-history-modal"
           >
             <div className="px-4 py-3 border-b border-border-default/40 flex items-center gap-2 sticky top-0 bg-surface-container-lowest">
-              <span className="material-symbols-outlined text-[18px] text-primary">history</span>
+              <History className="h-[18px] w-[18px] text-v5-ink" />
               <span className="font-semibold text-on-surface">Lịch sử: {historyView.title}</span>
               <button onClick={() => setHistoryView(null)} className="ml-auto p-1 rounded hover:bg-surface-container" aria-label="Đóng">
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <X className="h-[18px] w-[18px]" />
               </button>
             </div>
             <div className="p-4 overflow-x-auto">
@@ -1514,7 +1520,7 @@ function PersonPicker({ people, value, onChange }: { people: any[]; value: strin
         <span className={selected ? "" : "text-on-surface-variant"}>
           {selected ? `${selected.code} — ${selected.fullName}${selected.unitName ? ` (${selected.unitName})` : ""}` : "— chọn người —"}
         </span>
-        <span className="material-symbols-outlined text-[16px] text-on-surface-variant">expand_more</span>
+        <ChevronDown className="h-4 w-4 text-v5-muted" />
       </button>
       {open && (
         <div className="absolute z-30 mt-1 w-full bg-surface-container-lowest border border-border-default rounded-lg shadow-lg p-2">

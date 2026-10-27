@@ -96,6 +96,30 @@ check(
   "Giao ban có biểu đồ",
   v5GiaoBan.includes("RevenueCharts") && fs.existsSync(path.join(root, "src/components/v5/RevenueCharts.tsx"))
 );
+const narrativePanel = read("src/components/v5/GiaoBanNarrativePanel.tsx");
+const configPage = read("src/app/giao-ban/cau-hinh/page.tsx");
+const reportPage = read("src/app/giao-ban/bao-cao/page.tsx");
+check(
+  "Giao ban V5 có nhận xét thật",
+  v5GiaoBan.includes("GiaoBanNarrativePanel") &&
+    narrativePanel.includes("/api/narratives") &&
+    narrativePanel.includes("Lưu nhận xét")
+);
+check(
+  "Cấu hình và báo cáo giao ban dùng header V5",
+  configPage.includes("Cấu hình giao ban") &&
+    configPage.includes("/v5/giao-ban") &&
+    configPage.includes("text-2xl") &&
+    reportPage.includes("Báo cáo giao ban") &&
+    reportPage.includes("/v5/giao-ban") &&
+    reportPage.includes("text-2xl")
+);
+check(
+  "Giao ban V5 bỏ nút chết và link bản cũ",
+  !v5GiaoBan.includes("ListFilter") &&
+    !v5GiaoBan.includes("Mở bản đầy đủ") &&
+    !v5GiaoBan.includes('href="/giao-ban"')
+);
 const routine = read("src/app/routine/page.tsx");
 check(
   "Nhật ký responsive mobile và bỏ từ kỹ thuật",

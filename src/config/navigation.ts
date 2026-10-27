@@ -68,7 +68,7 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
       {
         id: "giao-ban",
         label: "Số liệu giao ban",
-        href: "/giao-ban",
+        href: "/v5/giao-ban",
         icon: "monitoring",
         description: "Số liệu nghiệp vụ theo ngày, tuần, tháng",
         exact: true,
@@ -76,7 +76,7 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
       {
         id: "giao-ban-nhap",
         label: "Nhập số liệu giao ban",
-        href: "/giao-ban/nhap",
+        href: "/v5/giao-ban/nhap",
         icon: "edit_note",
       },
       {

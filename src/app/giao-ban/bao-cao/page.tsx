@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { BookmarkPlus, ChevronLeft, Download, PencilLine } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
-import BackButton from "@/components/ui/BackButton";
 
 type Mode = "WEEK" | "MONTH" | "QUARTER" | "YEAR";
 
@@ -209,37 +209,37 @@ export default function GiaoBanBaoCaoPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface-container-low">
-      {/* Header */}
-      <div className="px-margin pt-space-md pb-space-sm flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2">
+        <Link
+          href="/v5/giao-ban"
+          className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-v5-muted transition-colors hover:text-v5-ink"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" /> Số liệu giao ban
+        </Link>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Báo cáo giao ban</h1>
-            <p className="text-body-sm text-on-surface-variant">
-              Xem trước báo cáo tổng hợp theo kỳ, xuất file Word theo mẫu và lưu phiên bản — bản đã lưu là ảnh chụp,
-              số liệu sửa sau không làm thay đổi bản đã xuất.
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Báo cáo giao ban</h1>
+            <p className="mt-1 text-sm text-v5-muted">
+              Xem trước báo cáo theo kỳ, xuất Word theo mẫu và lưu phiên bản. Bản đã lưu là ảnh chụp, không đổi khi sửa số liệu sau.
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <BackButton href="/giao-ban" label="Tổng hợp giao ban" />
-            <Link
-              href="/giao-ban/nhap"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-default text-primary text-label-md font-semibold hover:bg-surface-container"
-            >
-              <span className="material-symbols-outlined text-[18px]">edit_note</span>
-              Nhập số liệu
-            </Link>
-          </div>
+          <Link
+            href="/v5/giao-ban/nhap"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-v5-accent px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-v5-accent/90"
+          >
+            <PencilLine className="h-4 w-4" />
+            Nhập số liệu
+          </Link>
         </div>
 
-        {/* Kỳ */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex rounded-lg border border-border-default overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-md border border-v5-line bg-v5-surface p-0.5">
             {MODE_TABS.map((m) => (
               <button
                 key={m.key}
                 onClick={() => setMode(m.key)}
-                className={`px-3 py-2 text-label-md font-semibold ${mode === m.key ? "bg-secondary text-on-secondary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}
+                className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${mode === m.key ? "bg-v5-accent text-white" : "text-v5-muted hover:text-v5-ink"}`}
               >
                 {m.label}
               </button>
@@ -248,7 +248,7 @@ export default function GiaoBanBaoCaoPage() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+            className="rounded-md border border-v5-line bg-v5-surface px-2 py-1 text-[11px] text-v5-ink"
           >
             {[year - 1, year, year + 1]
               .filter((v, i, a) => a.indexOf(v) === i)
@@ -266,7 +266,7 @@ export default function GiaoBanBaoCaoPage() {
               max={53}
               value={week}
               onChange={(e) => setWeek(Math.max(1, Math.min(53, Number(e.target.value) || 1)))}
-              className="w-24 px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+              className="w-20 rounded-md border border-v5-line bg-v5-surface px-2 py-1 text-[11px] text-v5-ink"
               title="Số tuần (ISO)"
             />
           )}
@@ -274,7 +274,7 @@ export default function GiaoBanBaoCaoPage() {
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+              className="rounded-md border border-v5-line bg-v5-surface px-2 py-1 text-[11px] text-v5-ink"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                 <option key={m} value={m}>
@@ -287,7 +287,7 @@ export default function GiaoBanBaoCaoPage() {
             <select
               value={quarter}
               onChange={(e) => setQuarter(Number(e.target.value))}
-              className="px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+              className="rounded-md border border-v5-line bg-v5-surface px-2 py-1 text-[11px] text-v5-ink"
             >
               {[1, 2, 3, 4].map((q) => (
                 <option key={q} value={q}>
@@ -296,12 +296,12 @@ export default function GiaoBanBaoCaoPage() {
               ))}
             </select>
           )}
-          {data && <span className="text-body-xs text-on-surface-variant">{data.meta.periodLabel} ({data.meta.startDate} – {data.meta.endDate})</span>}
+          {data && <span className="text-[10px] text-v5-muted">{data.meta.periodLabel} ({data.meta.startDate} – {data.meta.endDate})</span>}
         </div>
       </div>
 
-      <div className="px-margin pb-space-lg flex flex-col gap-4">
-        {loading && <div className="text-body-sm text-on-surface-variant py-8 text-center">Đang tổng hợp báo cáo…</div>}
+      <div className="flex flex-col gap-3 pb-4">
+        {loading && <div className="py-8 text-center text-sm text-v5-muted">Đang tổng hợp báo cáo…</div>}
 
         {!loading && data && (
           <>
@@ -349,7 +349,7 @@ export default function GiaoBanBaoCaoPage() {
                   disabled={downloading !== null}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-on-primary text-label-md font-semibold hover:opacity-90 disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined text-[18px]">download</span>
+                  <Download className="h-4 w-4" />
                   {downloading === "current" ? "Đang tạo file…" : "Tải Word (bản hiện tại)"}
                 </button>
                 {data.canManage && (
@@ -358,7 +358,7 @@ export default function GiaoBanBaoCaoPage() {
                     disabled={saving}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-label-md font-semibold hover:bg-primary/5 disabled:opacity-50"
                   >
-                    <span className="material-symbols-outlined text-[18px]">bookmark_add</span>
+                    <BookmarkPlus className="h-4 w-4" />
                     {saving ? "Đang lưu…" : "Lưu phiên bản"}
                   </button>
                 )}

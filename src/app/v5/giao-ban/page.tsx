@@ -3,12 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  CalendarDays,
   ChevronRight,
   FileBarChart2,
   FileDown,
-  FileText,
-  ListFilter,
   Loader2,
   Plus,
   RefreshCw,
@@ -24,6 +21,7 @@ import { Card } from "@/components/v5/ui/card";
 import { RevenueSummaryTable } from "@/components/v5/RevenueSummaryTable";
 import { MetricsSummaryTable } from "@/components/v5/MetricsSummaryTable";
 import { RevenueCharts } from "@/components/v5/RevenueCharts";
+import { GiaoBanNarrativePanel } from "@/components/v5/GiaoBanNarrativePanel";
 
 type PeriodKey = "week" | "month" | "quarter" | "year";
 
@@ -115,6 +113,14 @@ export default function V5GiaoBanPage() {
         : period === "year"
           ? summary?.range?.year?.label || `Năm ${vn.year}`
           : summary?.range?.month?.label || `Tháng ${vn.month}/${vn.year}`;
+  const periodKey =
+    period === "week"
+      ? `${iso.year}-W${String(iso.weekNumber).padStart(2, "0")}`
+      : period === "month"
+        ? `${vn.year}-${String(vn.month).padStart(2, "0")}`
+        : period === "quarter"
+          ? `${vn.year}-Q${quarter}`
+          : String(vn.year);
 
   if (loading) {
     return (
@@ -155,9 +161,6 @@ export default function V5GiaoBanPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm">
-            <CalendarDays className="h-3.5 w-3.5" /> {periodLabel}
-          </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/giao-ban/cau-hinh?tab=TARGET">
               <Target className="h-3.5 w-3.5" /> Chỉ tiêu giao
@@ -174,8 +177,8 @@ export default function V5GiaoBanPage() {
             </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/reports/excel">
-              <FileDown className="h-3.5 w-3.5" /> Xuất báo cáo
+            <Link href="/giao-ban/bao-cao">
+              <FileDown className="h-3.5 w-3.5" /> Báo cáo
             </Link>
           </Button>
           <Button variant="outline" size="icon" onClick={() => load(false)} disabled={refreshing} aria-label="Làm mới">
@@ -226,9 +229,6 @@ export default function V5GiaoBanPage() {
               </button>
             ))}
           </div>
-          <Button variant="outline" size="sm">
-            <ListFilter className="h-3.5 w-3.5" /> Lọc
-          </Button>
         </div>
       </div>
 
@@ -255,14 +255,9 @@ export default function V5GiaoBanPage() {
 
       {tab === "chitiet" && (
         <section className="space-y-2">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-semibold text-v5-ink">Bảng số liệu theo chỉ tiêu</h2>
-              <p className="text-[11px] text-v5-muted">Ngày · Tuần · Tháng · Quý · Năm · trạng thái nhập liệu</p>
-            </div>
-            <Link href="/giao-ban" className="inline-flex items-center gap-1 text-[11px] font-medium text-v5-accent hover:underline">
-              Mở bản đầy đủ <ChevronRight className="h-3 w-3" />
-            </Link>
+          <div>
+            <h2 className="text-sm font-semibold text-v5-ink">Bảng số liệu theo chỉ tiêu</h2>
+            <p className="text-[11px] text-v5-muted">Ngày · Tuần · Tháng · Quý · Năm · trạng thái nhập liệu</p>
           </div>
           <MetricsSummaryTable groups={summary?.groups || []} />
         </section>
@@ -270,14 +265,9 @@ export default function V5GiaoBanPage() {
 
       {tab === "sohieu" && (
         <section className="space-y-3">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-semibold text-v5-ink">Biểu đồ so sánh</h2>
-              <p className="text-[11px] text-v5-muted">Số thu theo kỳ và theo phân loại · đơn vị tỷ đồng</p>
-            </div>
-            <Link href="/giao-ban" className="inline-flex items-center gap-1 text-[11px] font-medium text-v5-accent hover:underline">
-              Mở bản đầy đủ <ChevronRight className="h-3 w-3" />
-            </Link>
+          <div>
+            <h2 className="text-sm font-semibold text-v5-ink">Biểu đồ so sánh</h2>
+            <p className="text-[11px] text-v5-muted">Số thu theo kỳ và theo phân loại · đơn vị tỷ đồng</p>
           </div>
           <RevenueCharts metrics={metrics} comparison={summary?.comparison} />
           <RevenueSummaryTable
@@ -289,23 +279,15 @@ export default function V5GiaoBanPage() {
       )}
 
       {tab === "nhanxet" && (
-        <Card className="p-6 text-center">
-          <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-v5-accent-soft text-v5-accent">
-            <FileText className="h-5 w-5" />
-          </div>
-          <h2 className="mt-3 text-base font-semibold text-v5-ink">Nhận xét giao ban</h2>
-          <p className="mx-auto mt-1 max-w-xl text-[12px] text-v5-muted">
-            Phần nhận xét theo kỳ đang được hiển thị trong bản giao ban đầy đủ. Mở trang nhận xét để nhập hoặc chỉnh sửa nội dung.
-          </p>
-          <Button className="mt-4" asChild>
-            <Link href="/giao-ban">Mở trang nhận xét</Link>
-          </Button>
-        </Card>
+        <GiaoBanNarrativePanel
+          periodType={period.toUpperCase() as "WEEK" | "MONTH" | "QUARTER" | "YEAR"}
+          periodKey={periodKey}
+          periodLabel={periodLabel}
+        />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-v5-line px-4 py-3 text-[10px] text-v5-muted">
-        <span>Bảng tổng hợp số thu đặt trên cùng · dữ liệu trực tiếp.</span>
-        <Link href="/v5" className="font-semibold text-v5-accent hover:underline">
+      <div className="flex justify-end">
+        <Link href="/v5" className="text-[11px] font-semibold text-v5-accent hover:underline">
           Về Bảng điều hành
         </Link>
       </div>
