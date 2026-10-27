@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface Props {
@@ -239,7 +240,7 @@ export default function CommandPalette({ open, onClose }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-start justify-center bg-black/35 px-4 pt-[12vh] backdrop-blur-[1px]"
+      className="v5-shell fixed inset-0 z-[120] flex items-start justify-center bg-black/35 px-4 pt-[12vh] backdrop-blur-[1px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -249,10 +250,10 @@ export default function CommandPalette({ open, onClose }: Props) {
         aria-modal="true"
         aria-label="Tìm nhanh và hành động"
         data-testid="command-palette"
-        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-border-default bg-surface-container-lowest shadow-2xl"
+        className="w-full max-w-2xl overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-2xl"
       >
         <div className="flex items-center gap-3 border-b border-border-default/60 px-4 py-3">
-          <span className="material-symbols-outlined text-[22px] text-primary">search</span>
+          <Search className="h-5 w-5 text-v5-accent" />
           <input
             ref={inputRef}
             value={query}

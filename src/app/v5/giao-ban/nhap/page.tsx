@@ -13,6 +13,7 @@ import {
   Loader2,
   RefreshCw,
   Save,
+  Search,
   Sparkles,
   X,
 } from "lucide-react";
@@ -139,6 +140,7 @@ export default function V5EntryPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlyTodo, setOnlyTodo] = useState(true);
+  const [search, setSearch] = useState("");
   const [helper, setHelper] = useState<HelperState | null>(null);
   const [helperLoading, setHelperLoading] = useState(false);
   const [helperError, setHelperError] = useState<string | null>(null);
@@ -196,6 +198,23 @@ export default function V5EntryPage() {
     }
     return count;
   }, [values, initial]);
+
+  const guardUnsaved = useCallback(() => {
+    if (changedCount === 0) return true;
+    return window.confirm(
+      `Bạn có ${changedCount} thay đổi chưa lưu. Chuyển kỳ sẽ bỏ các thay đổi này. Tiếp tục?`
+    );
+  }, [changedCount]);
+
+  useEffect(() => {
+    if (changedCount === 0) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [changedCount]);
 
   const missingMetrics = useMemo(
     () =>
@@ -307,43 +326,69 @@ export default function V5EntryPage() {
 
   const groups = useMemo(() => {
     if (!data) return [];
-    if (!onlyTodo) return data.groups;
+    const query = search.trim().toLowerCase();
     return data.groups
       .map((group) => ({
         ...group,
-        metrics: group.metrics.filter((metric) =>
-          metric.values.some((value) => {
-            const raw = values[`${metric.id}|${value.classificationId}`] || "";
-            return value.canEdit && raw.trim() === "";
-          })
-        ),
+        metrics: group.metrics.filter((metric) => {
+          if (onlyTodo) {
+            const hasMissing = metric.values.some((value) => {
+              const raw = values[`${metric.id}|${value.classificationId}`] || "";
+              return value.canEdit && raw.trim() === "";
+            });
+            if (!hasMissing) return false;
+          }
+          if (!query) return true;
+          return (
+            metric.name.toLowerCase().includes(query) ||
+            metric.code.toLowerCase().includes(query) ||
+            metric.values.some((value) => (value.label || "").toLowerCase().includes(query))
+          );
+        }),
       }))
       .filter((group) => group.metrics.length > 0);
-  }, [data, onlyTodo, values]);
+  }, [data, onlyTodo, values, search]);
 
   return (
-    <div className="space-y-3 pb-6">
+    <div className="space-y-3 pb-24 lg:pb-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Link href="/v5/giao-ban" className="inline-flex items-center gap-1 text-[11px] text-v5-muted hover:text-v5-ink">
+            <Link
+              href="/v5/giao-ban"
+              onClick={(event) => {
+                if (!guardUnsaved()) event.preventDefault();
+              }}
+              className="inline-flex items-center gap-1 text-[11px] text-v5-muted hover:text-v5-ink"
+            >
               <ArrowLeft className="h-3.5 w-3.5" /> Số liệu giao ban
             </Link>
           </div>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1">
             <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Nhập số liệu</h1>
-            <Badge variant="outline">V5</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
             Chỉ hiện chỉ tiêu bạn được phân công. Số theo kỳ là tổng phát sinh trong kỳ, lưu tại ngày cuối kỳ.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => load(entryPeriod, date)} aria-label="Làm mới">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              if (guardUnsaved()) load(entryPeriod, date);
+            }}
+            aria-label="Làm mới"
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/huong-dan">
+            <Link
+              href="/huong-dan"
+              onClick={(event) => {
+                if (!guardUnsaved()) event.preventDefault();
+              }}
+            >
               <CircleHelp className="h-3.5 w-3.5" /> Hướng dẫn
             </Link>
           </Button>
@@ -356,7 +401,9 @@ export default function V5EntryPage() {
             <button
               key={period}
               type="button"
-              onClick={() => setEntryPeriod(period)}
+              onClick={() => {
+                if (guardUnsaved()) setEntryPeriod(period);
+              }}
               className={`rounded px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                 entryPeriod === period ? "bg-v5-accent text-white" : "text-v5-muted hover:text-v5-ink"
               }`}
@@ -369,7 +416,10 @@ export default function V5EntryPage() {
           <div className="flex items-center gap-1 rounded-md border border-v5-line bg-v5-surface px-1">
             <button
               type="button"
-              onClick={() => setDate(shiftPeriodAnchor(entryPeriod, date, -1))}
+              onClick={() => {
+                const next = shiftPeriodAnchor(entryPeriod, date, -1);
+                if (guardUnsaved()) setDate(next);
+              }}
               className="p-1.5 text-v5-muted hover:text-v5-ink"
               aria-label="Kỳ trước"
             >
@@ -379,12 +429,18 @@ export default function V5EntryPage() {
               type="date"
               value={date}
               max={data?.today || todayVnStr()}
-              onChange={(event) => setDate(event.target.value)}
+              onChange={(event) => {
+                if (guardUnsaved()) setDate(event.target.value);
+                else event.currentTarget.value = date;
+              }}
               className="h-8 border-0 bg-transparent px-1 text-[11px] text-v5-ink focus:ring-0"
             />
             <button
               type="button"
-              onClick={() => setDate(shiftPeriodAnchor(entryPeriod, date, 1))}
+              onClick={() => {
+                const next = shiftPeriodAnchor(entryPeriod, date, 1);
+                if (guardUnsaved()) setDate(next);
+              }}
               disabled={shiftPeriodAnchor(entryPeriod, date, 1) > (data?.today || todayVnStr())}
               className="p-1.5 text-v5-muted hover:text-v5-ink disabled:opacity-30"
               aria-label="Kỳ sau"
@@ -403,7 +459,7 @@ export default function V5EntryPage() {
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_264px]">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-v5-line bg-v5-surface px-3 py-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setOnlyTodo(true)}
@@ -418,10 +474,23 @@ export default function V5EntryPage() {
               >
                 Tất cả
               </button>
+              {changedCount > 0 && <Badge variant="warning">{changedCount} chưa lưu</Badge>}
             </div>
-            <span className="text-[11px] text-v5-muted">
-              Đã nhập {filled}/{total} ô
-            </span>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative min-w-0 flex-1 sm:w-56">
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-v5-muted" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Tìm chỉ tiêu..."
+                  aria-label="Tìm chỉ tiêu"
+                  className="h-8 w-full rounded-md border border-v5-line bg-v5-surface pl-7 pr-2 text-[11px] text-v5-ink outline-none focus:border-v5-accent"
+                />
+              </div>
+              <span className="shrink-0 text-[11px] text-v5-muted">
+                Đã nhập {filled}/{total} ô
+              </span>
+            </div>
           </div>
 
           {loading && (
@@ -434,10 +503,18 @@ export default function V5EntryPage() {
             <div className="rounded-xl border border-dashed border-v5-line bg-v5-surface p-10 text-center">
               <CheckCircle2 className="mx-auto h-7 w-7 text-v5-success" />
               <div className="mt-2 text-sm font-semibold text-v5-ink">
-                {onlyTodo ? "Đã nhập đủ các chỉ tiêu được giao" : "Chưa có chỉ tiêu phù hợp"}
+                {search.trim()
+                  ? "Không tìm thấy chỉ tiêu phù hợp"
+                  : onlyTodo
+                    ? "Đã nhập đủ các chỉ tiêu được giao"
+                    : "Chưa có chỉ tiêu phù hợp"}
               </div>
               <div className="mt-1 text-[11px] text-v5-muted">
-                {onlyTodo ? "Bạn có thể chuyển sang tab Tất cả để kiểm tra lại." : "Kiểm tra phân công hoặc cấu hình kỳ nhập."}
+                {search.trim()
+                  ? "Thử từ khóa khác hoặc chuyển sang tab Tất cả."
+                  : onlyTodo
+                    ? "Bạn có thể chuyển sang tab Tất cả để kiểm tra lại."
+                    : "Kiểm tra phân công hoặc cấu hình kỳ nhập."}
               </div>
             </div>
           )}
@@ -460,7 +537,7 @@ export default function V5EntryPage() {
                             {metric.valueKind === "BALANCE" && <Badge variant="accent">Số dư</Badge>}
                           </div>
                           <div className="mt-0.5 text-[10px] text-v5-muted">
-                            {metric.code} · {metric.unitLabel}
+                            {metric.unitLabel}
                             {metric.note ? ` · ${metric.note}` : ""}
                           </div>
                         </div>
@@ -545,6 +622,17 @@ export default function V5EntryPage() {
             </Button>
           </Card>
         </aside>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-v5-line bg-v5-surface/95 p-2 shadow-[0_-4px_16px_rgba(16,24,40,0.08)] backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-[1760px] items-center gap-2">
+          <div className="min-w-0 flex-1 text-[10px] text-v5-muted">
+            {changedCount > 0 ? `${changedCount} thay đổi chưa lưu` : "Chưa có thay đổi"}
+          </div>
+          <Button size="sm" onClick={save} disabled={saving || changedCount === 0}>
+            <Save className="h-3.5 w-3.5" /> {saving ? "Đang lưu…" : "Lưu thay đổi"}
+          </Button>
+        </div>
       </div>
 
       {helper && (

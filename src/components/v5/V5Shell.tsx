@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
+import CommandPalette from "@/components/layout/CommandPalette";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/v5/ui/button";
 
@@ -244,6 +245,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
   const { user } = usePermissions();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const pageTitle = PAGE_TITLES.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] || "Không gian điều hành";
   const today = new Intl.DateTimeFormat("vi-VN", {
@@ -256,6 +258,17 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     const loadUnread = () => {
@@ -329,13 +342,23 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
             <div className="ml-auto flex items-center gap-1.5">
               <button
                 type="button"
+                onClick={() => setCommandOpen(true)}
                 className="hidden h-8 items-center gap-2 rounded-md border border-v5-line bg-v5-surface px-2.5 text-[11px] text-v5-muted md:flex"
-                title="Tìm kiếm"
+                title="Tìm kiếm (Ctrl/⌘ K)"
               >
                 <Search className="h-3.5 w-3.5" />
                 <span>Tìm kiếm</span>
                 <kbd className="rounded border border-v5-line bg-v5-bg px-1 text-[9px]">⌘K</kbd>
               </button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setCommandOpen(true)}
+                aria-label="Tìm kiếm"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
               <span className="hidden text-[10px] text-v5-muted xl:inline">{today}</span>
               <Button
                 variant="ghost"
@@ -372,6 +395,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
       </div>
 
       <NotificationQuickView open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
     </div>
   );
 }

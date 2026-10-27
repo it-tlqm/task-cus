@@ -43,6 +43,12 @@ check(
 );
 check("Sidebar section thu gọn/mở rộng", v5Shell.includes("collapsed") && v5Shell.includes("aria-expanded"));
 check(
+  "Tìm kiếm toàn cục hoạt động",
+  v5Shell.includes("CommandPalette") &&
+    v5Shell.includes("setCommandOpen(true)") &&
+    v5Shell.includes('event.key.toLowerCase() === "k"')
+);
+check(
   "Tổng quan đạt chỉ tiêu xanh, chưa đạt/chưa nhập đỏ",
   v5Page.includes("revenueTone") && v5Page.includes("text-v5-success") && v5Page.includes("text-v5-danger")
 );
@@ -87,6 +93,14 @@ check(
     v5Entry.includes("Tính từ lũy kế") &&
     v5Entry.includes("/api/metrics/entries/cumulative") &&
     v5Entry.includes("Lưu")
+);
+check(
+  "Nhập số liệu có tìm kiếm, cảnh báo chưa lưu và lưu mobile",
+  v5Entry.includes("Tìm chỉ tiêu") &&
+    v5Entry.includes("thay đổi chưa lưu") &&
+    v5Entry.includes("beforeunload") &&
+    v5Entry.includes("fixed inset-x-0 bottom-0") &&
+    !v5Entry.includes(">V5</Badge>")
 );
 check(
   "Tab V5 có hành vi thật",
