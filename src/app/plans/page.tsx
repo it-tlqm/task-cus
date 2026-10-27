@@ -1498,9 +1498,9 @@ export default function PlansPage() {
       {/* =========================================================================
           DESKTOP VIEW (Pixel-accurate Google Stitch ID d8279bd2bf0c4198b665f567223d0bf4)
           ========================================================================= */}
-      <div className="hidden lg:flex flex-col w-full p-space-lg gap-space-lg">
+      <div className="hidden w-full flex-col gap-3 p-4 lg:flex">
         {/* Top Command Panel & Period Navigator */}
-        <div className="bg-v5-surface p-space-lg rounded-xl shadow-sm border border-v5-line/50">
+        <div className="rounded-xl border border-v5-line bg-v5-surface p-4 shadow-sm">
           <div className="flex flex-col gap-space-md">
             {/* Title & Official Approval Status */}
             <div className="flex min-w-0 flex-col gap-1">
@@ -1532,7 +1532,7 @@ export default function PlansPage() {
                   {activePlan?.period?.code || (activePlan ? "CHƯA CÓ MÃ KỲ" : "CHƯA CÓ KẾ HOẠCH")}
                 </span>
               </div>
-              <h1 className="font-headline-xl text-headline-xl text-primary mt-1 tracking-tight">
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-v5-ink">
                 {activePlan ? activePlan.title : "Chưa có kế hoạch công tác"}
               </h1>
               <div className="flex flex-wrap items-center gap-2 text-body-sm text-v5-muted">
@@ -1551,7 +1551,7 @@ export default function PlansPage() {
             {/* Action Group */}
             <div
               data-tour="workflow-actions"
-              className="flex flex-wrap items-center gap-space-sm border-t border-v5-line/40 pt-space-md"
+              className="flex flex-wrap items-center gap-2 border-t border-v5-line/60 pt-3"
             >
               {planOptions?.canCreatePlan && (
                 <button

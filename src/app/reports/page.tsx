@@ -3,9 +3,12 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Download, Filter, Lock, Table2 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Badge } from "@/components/v5/ui/badge";
+import { Button } from "@/components/v5/ui/button";
 
 interface DrilldownTask {
   id: string;
@@ -427,152 +430,80 @@ function ReportsContent() {
   });
 
   return (
-    <div className="flex flex-col w-full p-space-md lg:p-space-lg pb-16">
+    <div className="flex w-full flex-col gap-3 pb-4">
       {/* DESKTOP TOP BAR (Hidden on Mobile) */}
-      <div className="hidden lg:flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-space-md mb-space-lg">
-        <div className="flex flex-col gap-space-xs min-w-0">
+      <header className="hidden flex-wrap items-end justify-between gap-2 lg:flex">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-primary text-on-primary whitespace-nowrap">
-              TALUNG-CUS-WORK
-            </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-secondary-fixed text-on-secondary-fixed-variant whitespace-nowrap">
-              HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
-            </span>
-            <span className="font-label-sm text-outline whitespace-nowrap">• Phân hệ Thống kê &amp; Trích xuất số liệu</span>
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Báo cáo &amp; thống kê</h1>
+            <Badge variant="outline">Hải quan Tà Lùng</Badge>
           </div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">
-            Trung Tâm Báo Cáo, Thống Kê &amp; Quản Trị Mẫu Xuất XLSX
-          </h1>
-          <p className="font-body-md text-on-surface-variant">
-            Tra cứu động, kiểm soát chốt kỳ báo cáo nghiệp vụ và chuẩn hóa cấu trúc mẫu bảng tính theo chỉ đạo cấp Cục
+          <p className="mt-1 text-sm text-v5-muted">
+            Tra cứu, chốt kỳ báo cáo và xuất biểu mẫu theo chỉ đạo cấp Cục.
           </p>
         </div>
 
-        {/* Desktop Action Area */}
-        <div data-tour="export-btns" className="flex flex-wrap items-center gap-space-sm shrink-0">
-          <button
-            onClick={() => setFilterExpanded(!filterExpanded)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-low text-on-surface-variant font-label-md hover:bg-surface-container-high transition-colors active-press"
-          >
-            <span className="material-symbols-outlined text-[18px]">filter_list</span>
-            <span>{filterExpanded ? "Ẩn bộ lọc" : "Bộ lọc nâng cao"}</span>
-          </button>
+        <div data-tour="export-btns" className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setFilterExpanded(!filterExpanded)}>
+            <Filter className="h-3.5 w-3.5" /> {filterExpanded ? "Ẩn bộ lọc" : "Bộ lọc"}
+          </Button>
           {canLock && (
-            <button
-              onClick={handleOpenLockModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press"
-            >
-              <span className="material-symbols-outlined text-[18px]">lock_clock</span>
-              <span>Chốt số liệu kỳ này</span>
-            </button>
+            <Button variant="outline" size="sm" onClick={handleOpenLockModal}>
+              <Lock className="h-3.5 w-3.5" /> Chốt số liệu
+            </Button>
           )}
           {canExport && (
-            <button
-              onClick={() => handleExportXlsx("legacy")}
-              disabled={isExporting}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-secondary text-on-secondary font-body-semibold shadow-sm hover:opacity-95 transition-all active-press disabled:opacity-50"
-              title="Xuất theo mẫu gốc Kế hoạch công tác.xlsx (8 cột)"
-            >
-              <span className={`material-symbols-outlined text-[18px] ${isExporting ? "animate-spin" : ""}`}>
-                {isExporting ? "refresh" : "download"}
-              </span>
-              <span>Mẫu A (Kế hoạch tuần gốc)</span>
-            </button>
+            <Button variant="outline" size="sm" onClick={() => handleExportXlsx("legacy")} disabled={isExporting}>
+              <Download className="h-3.5 w-3.5" /> {isExporting ? "Đang xuất..." : "Mẫu A"}
+            </Button>
           )}
           {canExport && (
-            <button
-              onClick={() => handleExportXlsx("detailed")}
-              disabled={isExporting}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-primary text-on-primary font-body-semibold shadow-sm hover:opacity-95 transition-all active-press disabled:opacity-50"
-              title="Xuất chi tiết danh mục đầu việc theo từng cán bộ"
-            >
-              <span className={`material-symbols-outlined text-[18px] ${isExporting ? "animate-spin" : ""}`}>
-                {isExporting ? "refresh" : "table_view"}
-              </span>
-              <span>Mẫu B (Chi tiết đầu việc)</span>
-            </button>
+            <Button size="sm" onClick={() => handleExportXlsx("detailed")} disabled={isExporting}>
+              <Table2 className="h-3.5 w-3.5" /> {isExporting ? "Đang xuất..." : "Mẫu B"}
+            </Button>
           )}
         </div>
-      </div>
+      </header>
 
       {/* MOBILE HEADER STRIP (Visible only on mobile) */}
-      <div className="lg:hidden flex flex-col gap-space-xs mb-3">
-        <div className="bg-status-warning-bg p-space-sm rounded-lg flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-space-xs">
-            <span className="material-symbols-outlined text-status-warning text-[18px]">
-              radio_button_checked
-            </span>
-            <span className="font-label-sm text-label-sm text-status-warning uppercase tracking-wide font-semibold">
-              Kỳ {periodLabels.weekShort}: DỮ LIỆU ĐANG MỞ (Thời gian thực)
-            </span>
-          </div>
-          <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-status-warning"></span>
-            Trực tuyến
-          </span>
+      <div className="mb-3 flex flex-col gap-2 lg:hidden">
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-v5-gold/40 bg-v5-gold-soft p-2.5">
+          <span className="text-[11px] font-semibold text-v5-gold-ink">K? {periodLabels.weekShort}: d? li?u ?ang m?</span>
+          <Badge variant="warning">Tr?c tuy?n</Badge>
         </div>
-        <div className="bg-surface-subtle p-space-sm rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-space-xs truncate">
-            <span className="material-symbols-outlined text-status-success text-[16px]">verified_user</span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant truncate">
-              Tuần 40: ĐÃ CHỐT SỐ LIỆU
-            </span>
-          </div>
-          <div className="flex items-center gap-1 bg-surface-container-highest px-1.5 py-0.5 rounded">
-            <span className="font-label-sm text-label-sm text-primary font-mono text-[10px]">MD5: e78f..4b1a</span>
-            <span className="material-symbols-outlined text-status-inactive text-[12px]">lock</span>
-          </div>
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-v5-line bg-v5-surface p-2.5">
+          <span className="text-[11px] text-v5-muted">Tu?n 40: ?? ch?t s? li?u</span>
+          <Badge variant="success">?? ch?t</Badge>
         </div>
       </div>
 
       {/* VIEW TABS BAR */}
-      <div className="flex items-center gap-1 p-1 bg-surface-container-low rounded-xl mb-space-lg w-fit max-w-full overflow-x-auto shadow-sm no-scrollbar">
-        <button
-          onClick={() => setActiveTab("preview")}
-          className={`view-tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-body-semibold text-body-md transition-all whitespace-nowrap ${
-            activeTab === "preview"
-              ? "bg-secondary text-on-secondary shadow-sm"
-              : "text-on-surface-variant hover:text-on-surface"
-          }`}
-        >
-          <span className="material-symbols-outlined text-[18px]">table_chart</span>
-          <span>Trung tâm xem &amp; xuất báo cáo nghiệp vụ</span>
-          <span className="ml-1 px-1.5 py-0.2 bg-white/20 rounded-full text-[11px] font-mono">LIVE</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("builder")}
-          className={`view-tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-body-md text-body-md transition-all whitespace-nowrap ${
-            activeTab === "builder"
-              ? "bg-secondary text-on-secondary font-body-semibold shadow-sm"
-              : "text-on-surface-variant hover:text-on-surface"
-          }`}
-        >
-          <span className="material-symbols-outlined text-[18px]">build_circle</span>
-          <span>Quản trị &amp; Cấu hình mẫu báo cáo (Builder)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("snapshots")}
-          className={`view-tab-btn flex items-center gap-2 px-4 py-2 rounded-lg font-body-md text-body-md transition-all whitespace-nowrap ${
-            activeTab === "snapshots"
-              ? "bg-secondary text-on-secondary font-body-semibold shadow-sm"
-              : "text-on-surface-variant hover:text-on-surface"
-          }`}
-        >
-          <span className="material-symbols-outlined text-[18px]">verified</span>
-          <span>Kho lưu trữ báo cáo đã chốt kỳ (Locked Snapshots)</span>
-          <span className="ml-1 px-1.5 py-0.2 bg-status-success-bg text-status-success rounded text-[11px] font-mono font-semibold">
-            {snapshotsList.length} bản
-          </span>
-        </button>
+      <div className="mb-3 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-v5-line bg-v5-surface p-1">
+        {[
+          { key: "preview" as const, label: "B?o c?o" },
+          { key: "builder" as const, label: "M?u b?o c?o" },
+          { key: "snapshots" as const, label: `Kho ?? ch?t (${snapshotsList.length})` },
+        ].map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setActiveTab(item.key)}
+            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+              activeTab === item.key
+                ? "bg-v5-accent text-white shadow-sm"
+                : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
 
       {/* TAB 1: PREVIEW & EXPORT WORKSPACE */}
       {activeTab === "preview" && (
         <div className="flex flex-col gap-space-lg">
           {/* Period Status & Integrity Banner (Desktop) */}
-          <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-space-md p-space-md bg-surface-container-lowest rounded-xl shadow-sm">
+          <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-space-md p-space-md bg-v5-surface rounded-xl shadow-sm">
             <div className="lg:col-span-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
               <div className="flex items-start gap-space-sm">
                 <div className="w-10 h-10 rounded-lg bg-status-success-bg text-status-success flex items-center justify-center shrink-0">
@@ -580,7 +511,7 @@ function ReportsContent() {
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-headline-sm text-headline-sm text-on-surface">
+                    <span className="font-headline-sm text-headline-sm text-v5-ink">
                       {availablePeriods.length > 0
                         ? `${(availablePeriods.find((p: any) => p.id === selectedPeriodToLock) || availablePeriods[0])?.title}${
                             (availablePeriods.find((p: any) => p.id === selectedPeriodToLock) || availablePeriods[0])?.startAt
@@ -592,27 +523,27 @@ function ReportsContent() {
                     <span className="px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-status-warning-bg text-status-warning">
                       ĐANG MỞ - DỮ LIỆU THỜI GIAN THỰC
                     </span>
-                    <span className="font-label-sm text-outline">| Cập nhật lúc {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} hôm nay</span>
+                    <span className="font-label-sm text-v5-muted">| Cập nhật lúc {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} hôm nay</span>
                   </div>
-                  <p className="font-table-data text-table-data text-on-surface-variant mt-0.5">
+                  <p className="font-table-data text-table-data text-v5-muted mt-0.5">
                     Số liệu tổng hợp trực tiếp từ kế hoạch, nhiệm vụ và nhật ký trong cơ sở dữ liệu.
                   </p>
                 </div>
               </div>
             </div>
-            <div className="lg:col-span-4 flex items-center justify-start lg:justify-end gap-space-md bg-surface-container-low/60 p-3 rounded-lg">
-              <span className="material-symbols-outlined text-outline text-[20px]">inventory_2</span>
+            <div className="lg:col-span-4 flex items-center justify-start lg:justify-end gap-space-md bg-v5-bg/60 p-3 rounded-lg">
+              <span className="material-symbols-outlined text-v5-muted text-[20px]">inventory_2</span>
               <div className="flex flex-col">
-                <span className="font-label-sm text-outline uppercase tracking-wider">Kỳ đã chốt gần nhất</span>
+                <span className="font-label-sm text-v5-muted uppercase tracking-wider">Kỳ đã chốt gần nhất</span>
                 {snapshotsList.length > 0 ? (
                   <>
-                    <span className="font-body-semibold text-[13px] text-on-surface">{snapshotsList[0].periodTitle || snapshotsList[0].title}: ĐÃ CHỐT SỐ LIỆU</span>
+                    <span className="font-body-semibold text-[13px] text-v5-ink">{snapshotsList[0].periodTitle || snapshotsList[0].title}: ĐÃ CHỐT SỐ LIỆU</span>
                     <span className="font-label-sm text-[11px] text-status-success font-mono font-semibold">
                       Checksum: {String(snapshotsList[0].checksum || "").slice(0, 20)}...
                     </span>
                   </>
                 ) : (
-                  <span className="font-body-semibold text-[13px] text-outline">Chưa chốt kỳ nào</span>
+                  <span className="font-body-semibold text-[13px] text-v5-muted">Chưa chốt kỳ nào</span>
                 )}
               </div>
               <button
@@ -625,11 +556,11 @@ function ReportsContent() {
           </div>
 
           {/* Filter Configuration Hub */}
-          <div className="p-space-md lg:p-space-lg bg-surface-container-lowest rounded-xl shadow-sm flex flex-col gap-space-md">
+          <div className="p-space-md lg:p-space-lg bg-v5-surface rounded-xl shadow-sm flex flex-col gap-space-md">
             <div className="flex flex-wrap items-center justify-between gap-space-sm">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary text-[20px]">tune</span>
-                <span className="font-body-semibold text-body-semibold text-on-surface">
+                <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Tham số lọc đa chiều &amp; Khung biểu mẫu xuất khẩu
                 </span>
               </div>
@@ -643,14 +574,14 @@ function ReportsContent() {
                 >
                   Tải lại dữ liệu
                 </button>
-                <span className="text-outline-variant">•</span>
+                <span className="text-v5-muted-variant">•</span>
                 <button
                   onClick={() => {
                     setSelectedUnit("all");
                     setSelectedOfficer("all");
                     setSelectedTemplate("legacy");
                   }}
-                  className="font-label-md text-on-surface-variant hover:text-on-surface"
+                  className="font-label-md text-v5-muted hover:text-v5-ink"
                 >
                   Đặt lại mặc định
                 </button>
@@ -659,13 +590,13 @@ function ReportsContent() {
 
             {/* Quick Period Pills */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="font-label-sm text-outline uppercase tracking-wider mr-2">Kỳ xem:</span>
+              <span className="font-label-sm text-v5-muted uppercase tracking-wider mr-2">Kỳ xem:</span>
               <button
                 onClick={() => setPeriod("today")}
                 className={`px-3 py-1 rounded-full text-label-md font-label-md transition-colors ${
                   period === "today"
                     ? "bg-primary text-on-primary shadow-sm"
-                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
                 }`}
               >
                 Hôm nay
@@ -675,7 +606,7 @@ function ReportsContent() {
                 className={`px-3 py-1 rounded-full text-label-md font-label-md transition-colors ${
                   period === "week"
                     ? "bg-primary text-on-primary shadow-sm"
-                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
                 }`}
               >
                 Tuần này ({periodLabels.weekShort})
@@ -685,7 +616,7 @@ function ReportsContent() {
                 className={`px-3 py-1 rounded-full text-label-md font-label-md transition-colors ${
                   period === "month"
                     ? "bg-primary text-on-primary shadow-sm"
-                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
                 }`}
               >
                 {periodLabels.monthShort}
@@ -695,13 +626,13 @@ function ReportsContent() {
                 className={`px-3 py-1 rounded-full text-label-md font-label-md transition-colors ${
                   period === "quarter"
                     ? "bg-primary text-on-primary shadow-sm"
-                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
                 }`}
               >
                 {periodLabels.quarterShort}
               </button>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low text-on-surface text-label-md font-label-md">
-                <span className="material-symbols-outlined text-[16px] text-outline">calendar_month</span>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-v5-bg text-v5-ink text-label-md font-label-md">
+                <span className="material-symbols-outlined text-[16px] text-v5-muted">calendar_month</span>
                 <span>01/10/2026 – 15/10/2026</span>
               </div>
             </div>
@@ -709,14 +640,14 @@ function ReportsContent() {
             {/* Multi-selectors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
               <div className="flex flex-col gap-1">
-                <label className="font-label-md text-label-md text-on-surface-variant font-medium">
+                <label className="font-label-md text-label-md text-v5-muted font-medium">
                   Phạm vi Đơn vị / Bộ phận
                 </label>
                 <div className="relative">
                   <select
                     value={selectedUnit}
                     onChange={(e) => setSelectedUnit(e.target.value)}
-                    className="w-full h-10 px-3 pr-8 rounded bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-all cursor-pointer"
+                    className="w-full h-10 px-3 pr-8 rounded bg-v5-bg font-body-md text-body-md text-v5-ink focus:outline-none focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-all cursor-pointer"
                   >
                     <option value="all">Toàn Cửa khẩu Quốc tế Tà Lùng ({dbOfficers.length} CBCC)</option>
                     {dbUnits.map((u: any) => (
@@ -728,21 +659,21 @@ function ReportsContent() {
                       <option disabled value="">Đang tải danh sách đơn vị...</option>
                     )}
                   </select>
-                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-outline pointer-events-none text-[20px]">
+                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]">
                     expand_more
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-label-md text-label-md text-on-surface-variant font-medium">
+                <label className="font-label-md text-label-md text-v5-muted font-medium">
                   Cán bộ thực hiện
                 </label>
                 <div className="relative">
                   <select
                     value={selectedOfficer}
                     onChange={(e) => setSelectedOfficer(e.target.value)}
-                    className="w-full h-10 px-3 pr-8 rounded bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-all cursor-pointer"
+                    className="w-full h-10 px-3 pr-8 rounded bg-v5-bg font-body-md text-body-md text-v5-ink focus:outline-none focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-all cursor-pointer"
                   >
                     <option value="all">Tất cả cán bộ ({dbOfficers.length} cán bộ CC)</option>
                     {dbOfficers.map((o: any) => (
@@ -754,14 +685,14 @@ function ReportsContent() {
                       <option disabled value="">Đang tải danh sách cán bộ...</option>
                     )}
                   </select>
-                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-outline pointer-events-none text-[20px]">
+                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]">
                     expand_more
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-label-md text-label-md text-on-surface-variant font-medium">
+                <label className="font-label-md text-label-md text-v5-muted font-medium">
                   Chọn mẫu biểu báo cáo xuất file
                 </label>
                 <div className="relative">
@@ -775,12 +706,12 @@ function ReportsContent() {
                           : "Mẫu A (kế hoạch tuần)";
                       showToast(`Đã chuyển sang ${label}`);
                     }}
-                    className="w-full h-10 px-3 pr-8 rounded bg-surface-container-low font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-all cursor-pointer"
+                    className="w-full h-10 px-3 pr-8 rounded bg-v5-bg font-body-md text-body-md text-v5-ink focus:outline-none focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-all cursor-pointer"
                   >
                     <option value="legacy">RPT-PLAN-WEEK-LEGACY (Mẫu công tác tuần chuẩn Tà Lùng)</option>
                     <option value="detailed">RPT-PLAN-DETAILED (Bảng chi tiết theo từng nhiệm vụ &amp; kết quả)</option>
                   </select>
-                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-outline pointer-events-none text-[20px]">
+                  <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-v5-muted pointer-events-none text-[20px]">
                     tune
                   </span>
                 </div>
@@ -790,8 +721,8 @@ function ReportsContent() {
 
           {/* Active Report Quick Metrics KPI Strip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-space-md">
-            <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between hover-lift">
-              <span className="font-label-md text-label-md text-on-surface-variant">Tổng đầu việc trong kỳ</span>
+            <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col justify-between hover-lift">
+              <span className="font-label-md text-label-md text-v5-muted">Tổng đầu việc trong kỳ</span>
               <div className="flex items-baseline justify-between mt-1">
                 <span className="font-headline-xl text-headline-xl text-primary font-bold">
                   {dbSummary ? dbSummary.totalTasks : dbTasks.length}
@@ -800,13 +731,13 @@ function ReportsContent() {
                   <span className="material-symbols-outlined text-[14px]">arrow_upward</span>100%
                 </span>
               </div>
-              <span className="font-label-sm text-[11px] text-outline mt-1">
+              <span className="font-label-sm text-[11px] text-v5-muted mt-1">
                 {dbTasks.length > 0 ? "Dữ liệu vận hành thời gian thực" : "Hệ thống ghi nhận thời gian thực"}
               </span>
             </div>
 
-            <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between hover-lift">
-              <span className="font-label-md text-label-md text-on-surface-variant">Đã hoàn thành</span>
+            <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col justify-between hover-lift">
+              <span className="font-label-md text-label-md text-v5-muted">Đã hoàn thành</span>
               <div className="flex items-baseline justify-between mt-1">
                 <span className="font-headline-xl text-headline-xl text-status-success font-bold">
                   {dbSummary ? dbSummary.completedTasks : dbTasks.filter((t) => t.status === "COMPLETED").length}
@@ -821,7 +752,7 @@ function ReportsContent() {
                     : "0%"}
                 </span>
               </div>
-              <div className="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden mt-1">
+              <div className="w-full bg-v5-bg h-1.5 rounded-full overflow-hidden mt-1">
                 <div
                   className="bg-status-success h-full rounded-full transition-all duration-500"
                   style={{
@@ -837,15 +768,15 @@ function ReportsContent() {
               </div>
             </div>
 
-            <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between hover-lift">
-              <span className="font-label-md text-label-md text-on-surface-variant">Đang xử lý / Tiếp diễn</span>
+            <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col justify-between hover-lift">
+              <span className="font-label-md text-label-md text-v5-muted">Đang xử lý / Tiếp diễn</span>
               <div className="flex items-baseline justify-between mt-1">
                 <span className="font-headline-xl text-headline-xl text-status-warning font-bold">
                   {dbSummary
                     ? dbSummary.inProgressTasks
                     : dbTasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "WAITING_REVIEW").length}
                 </span>
-                <span className="font-label-sm text-on-surface-variant">
+                <span className="font-label-sm text-v5-muted">
                   {dbTasks.length > 0
                     ? `${Math.round(
                         ((dbTasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "WAITING_REVIEW").length || 0) /
@@ -855,11 +786,11 @@ function ReportsContent() {
                     : "0%"}
                 </span>
               </div>
-              <span className="font-label-sm text-[11px] text-outline mt-1">Đúng tiến độ định kỳ</span>
+              <span className="font-label-sm text-[11px] text-v5-muted mt-1">Đúng tiến độ định kỳ</span>
             </div>
 
-            <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between hover-lift">
-              <span className="font-label-md text-label-md text-on-surface-variant">Tồn đọng / Có vướng mắc</span>
+            <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col justify-between hover-lift">
+              <span className="font-label-md text-label-md text-v5-muted">Tồn đọng / Có vướng mắc</span>
               <div className="flex items-baseline justify-between mt-1">
                 <span className="font-headline-xl text-headline-xl text-status-danger font-bold">
                   {dbSummary ? dbSummary.issueTasks : dbTasks.filter((t) => t.hasIssue).length}
@@ -877,13 +808,13 @@ function ReportsContent() {
           </div>
 
           {/* MOBILE TÓM TẮT TIẾN ĐỘ NGÀY CỘT C (Shown only on small screens) */}
-          <div data-tour="report-table" className="lg:hidden bg-surface-container-lowest rounded-xl shadow-sm p-space-md space-y-space-sm">
+          <div data-tour="report-table" className="lg:hidden bg-v5-surface rounded-xl shadow-sm p-space-md space-y-space-sm">
             <div className="flex items-center justify-between pb-space-xs">
               <div className="flex items-center gap-space-xs">
                 <span className="material-symbols-outlined text-primary text-[20px]">format_list_bulleted</span>
                 <h3 className="font-headline-sm text-headline-sm text-primary">Tóm tắt tiến độ ngày (Cột C)</h3>
               </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant bg-surface-subtle px-2 py-0.5 rounded">
+              <span className="font-label-sm text-label-sm text-v5-muted bg-v5-bg px-2 py-0.5 rounded">
                 {filteredDbTasks.length} đầu việc
               </span>
             </div>
@@ -896,9 +827,9 @@ function ReportsContent() {
                     <div
                       key={task.id}
                       onClick={() => setDrilldownTask(mapDbTaskToDrilldown(task))}
-                      className="bg-surface-subtle p-space-sm rounded-lg flex items-start gap-space-sm cursor-pointer hover:bg-surface-container transition-colors"
+                      className="bg-v5-bg p-space-sm rounded-lg flex items-start gap-space-sm cursor-pointer hover:bg-v5-bg transition-colors"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-lg bg-v5-bg-highest flex items-center justify-center shrink-0 mt-0.5">
                         <span className="font-body-semibold text-body-semibold text-primary">{dayBadge}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -921,7 +852,7 @@ function ReportsContent() {
                             {task.status === "COMPLETED" ? "Đạt KH" : task.hasIssue ? "Vướng mắc" : "Đang làm"}
                           </span>
                         </div>
-                        <p className="font-body-md text-body-md text-on-surface-variant mt-0.5 truncate">
+                        <p className="font-body-md text-body-md text-v5-muted mt-0.5 truncate">
                           {task.owner?.fullName || "Cán bộ"} • {task.code}
                         </p>
                       </div>
@@ -929,8 +860,8 @@ function ReportsContent() {
                   );
                 })
               ) : (
-                <div className="p-space-lg text-center text-on-surface-variant">
-                  <span className="material-symbols-outlined text-outline text-[32px] block mb-1">
+                <div className="p-space-lg text-center text-v5-muted">
+                  <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-1">
                     inbox
                   </span>
                   <p className="font-body-md text-body-md">Chưa có đầu việc nào được ghi nhận</p>
@@ -960,7 +891,7 @@ function ReportsContent() {
               </div>
             )}
             {canLock && (
-              <div className="bg-surface-container-lowest p-space-sm rounded-lg flex items-center justify-between border border-border-default/40">
+              <div className="bg-v5-surface p-space-sm rounded-lg flex items-center justify-between border border-v5-line/40">
                 <div className="flex items-center gap-space-xs">
                   <div className="w-7 h-7 rounded-full bg-status-warning-bg flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined text-status-warning text-[16px]">admin_panel_settings</span>
@@ -979,29 +910,29 @@ function ReportsContent() {
           </div>
 
           {/* DESKTOP LIVE PREVIEW SHEET TABLE FRAME */}
-          <div id="report-table-card" data-tour="report-table" className="hidden lg:flex bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex-col">
+          <div id="report-table-card" data-tour="report-table" className="hidden lg:flex bg-v5-surface rounded-xl shadow-sm overflow-hidden flex-col">
             {/* Excel Emulation Bar & Status Indicator */}
-            <div className="p-space-md bg-surface-subtle flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+            <div className="p-space-md bg-v5-bg flex flex-col md:flex-row md:items-center justify-between gap-space-md">
               <div className="flex items-center gap-space-sm">
                 <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center text-on-secondary shrink-0">
                   <span className="material-symbols-outlined text-[18px]">table_view</span>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-body-semibold text-body-semibold text-on-surface">
+                    <span className="font-body-semibold text-body-semibold text-v5-ink">
                       BẢNG XEM TRƯỚC BÁO CÁO CÔNG TÁC TUẦN
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-primary-fixed text-on-primary-fixed">
                       EXCEL-PREVIEW-MODE
                     </span>
                   </div>
-                  <p className="font-table-data text-[12px] text-outline">
+                  <p className="font-table-data text-[12px] text-v5-muted">
                     Quy chuẩn ánh xạ: Cột C &quot;DANH MỤC ĐẦU VIỆC&quot;, ngắt dòng tự động, số liệu phân tách theo từng ngày
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-table-data text-[12px] text-on-surface-variant">
+                <span className="font-table-data text-[12px] text-v5-muted">
                   Hiển thị: <strong>{filteredDbTasks.length} dòng nghiệp vụ</strong>
                 </span>
                 <div className="h-4 w-px bg-border-subtle mx-1"></div>
@@ -1015,14 +946,14 @@ function ReportsContent() {
                       el.requestFullscreen?.().catch(() => showToast("Trình duyệt không cho phép toàn màn hình", "error"));
                     }
                   }}
-                  className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant transition-colors"
+                  className="p-1.5 rounded hover:bg-v5-bg-high text-v5-muted transition-colors"
                   title="Toàn màn hình bảng tính (bấm lại để thoát)"
                 >
                   <span className="material-symbols-outlined text-[18px]">fullscreen</span>
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="p-1.5 rounded hover:bg-surface-container-high text-on-surface-variant transition-colors"
+                  className="p-1.5 rounded hover:bg-v5-bg-high text-v5-muted transition-colors"
                   title="In trực tiếp trang"
                 >
                   <span className="material-symbols-outlined text-[18px]">print</span>
@@ -1031,21 +962,21 @@ function ReportsContent() {
             </div>
 
             {/* Watermark Simulation Banner */}
-            <div className="bg-status-warning-bg/40 px-space-md py-1.5 flex items-center justify-between text-on-surface-variant font-label-sm text-[11px]">
+            <div className="bg-status-warning-bg/40 px-space-md py-1.5 flex items-center justify-between text-v5-muted font-label-sm text-[11px]">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[15px] text-status-warning">security</span>
                 <span>
                   Bản xuất ra file sẽ tự động chèn Watermark nội bộ (tên đơn vị, người xuất, ngày xuất).
                 </span>
               </div>
-              <span className="font-mono text-outline">Mọi lượt xuất được ghi nhật ký tự động</span>
+              <span className="font-mono text-v5-muted">Mọi lượt xuất được ghi nhật ký tự động</span>
             </div>
 
             {/* The Real Data Table Matching Customs Layout */}
             <div className="overflow-x-auto w-full max-w-full">
               <table className="w-full text-left font-table-data text-table-data">
                 <thead>
-                  <tr className="bg-surface-subtle text-on-surface text-[12px] font-table-header uppercase tracking-wider">
+                  <tr className="bg-v5-bg text-v5-ink text-[12px] font-table-header uppercase tracking-wider">
                     <th className="py-3 px-3 w-[100px] text-center" scope="col">
                       Thứ / Ngày (A)
                     </th>
@@ -1075,7 +1006,7 @@ function ReportsContent() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y-0 text-on-surface">
+                <tbody className="divide-y-0 text-v5-ink">
                   {dbTasks.length > 0 ? (
                     filteredDbTasks.length > 0 ? (
                       filteredDbTasks.map((task: any) => {
@@ -1092,37 +1023,37 @@ function ReportsContent() {
                           <tr
                             key={task.id}
                             onClick={() => setDrilldownTask(mapDbTaskToDrilldown(task))}
-                            className="hover:bg-surface-container-low transition-colors cursor-pointer group border-b border-border-default/30"
+                            className="hover:bg-v5-bg transition-colors cursor-pointer group border-b border-v5-line/30"
                           >
-                            <td className="py-3 px-3 text-center align-top font-mono font-medium text-[12px] text-on-surface-variant bg-surface-subtle/30">
+                            <td className="py-3 px-3 text-center align-top font-mono font-medium text-[12px] text-v5-muted bg-v5-bg/30">
                               {dateStr}
                               <br />
-                              <span className="text-[11px] text-outline">{weekdayStr}</span>
+                              <span className="text-[11px] text-v5-muted">{weekdayStr}</span>
                             </td>
                             <td className="py-3 px-3 align-top font-medium text-primary">
                               {task.unit?.name || "1. Thủ tục hải quan (TTHQ)"}
                             </td>
                             <td className="py-3 px-4 align-top">
                               <div className="flex flex-col gap-1">
-                                <span className="font-body-semibold text-on-surface text-[14px]">
+                                <span className="font-body-semibold text-v5-ink text-[14px]">
                                   {task.title}
                                 </span>
-                                <div className="flex items-center gap-2 text-[11px] text-outline font-mono">
+                                <div className="flex items-center gap-2 text-[11px] text-v5-muted font-mono">
                                   <span>MÃ: {task.code}</span>
                                 </div>
                               </div>
                             </td>
                             <td className="py-3 px-3 align-top">
                               <div className="flex flex-col">
-                                <span className="font-medium text-on-surface">
+                                <span className="font-medium text-v5-ink">
                                   {task.owner?.fullName || "Chưa phân công"}
                                 </span>
-                                <span className="text-[11px] text-outline">
+                                <span className="text-[11px] text-v5-muted">
                                   {task.unit?.name || "BP Nghiệp vụ A"}
                                 </span>
                               </div>
                             </td>
-                            <td className="py-3 px-3 align-top text-on-surface-variant text-[13px]">
+                            <td className="py-3 px-3 align-top text-v5-muted text-[13px]">
                               {task.unit?.name ? `${task.unit.name}, Trạm Cửa khẩu` : "Đơn vị phối hợp"}
                             </td>
                             <td className="py-3 px-2 text-center align-top">
@@ -1140,11 +1071,11 @@ function ReportsContent() {
                             </td>
                             <td className="py-3 px-4 align-top">
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-[13px] font-medium text-on-surface">
+                                <span className="text-[13px] font-medium text-v5-ink">
                                   {task.actualResultText || (task.status === "COMPLETED" ? "Đạt 100% chỉ tiêu" : "Đang triển khai trong ca")}
                                 </span>
                                 {task.expectedResultText && (
-                                  <span className="text-[12px] text-outline">
+                                  <span className="text-[12px] text-v5-muted">
                                     Dự kiến: {task.expectedResultText}
                                   </span>
                                 )}
@@ -1184,7 +1115,7 @@ function ReportsContent() {
                                   e.stopPropagation();
                                   setDrilldownTask(mapDbTaskToDrilldown(task));
                                 }}
-                                className="p-1 rounded hover:bg-surface-container text-outline hover:text-primary transition-colors"
+                                className="p-1 rounded hover:bg-v5-bg text-v5-muted hover:text-primary transition-colors"
                               >
                                 <span className="material-symbols-outlined text-[18px]">visibility</span>
                               </button>
@@ -1194,8 +1125,8 @@ function ReportsContent() {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={9} className="py-12 text-center text-on-surface-variant">
-                          <span className="material-symbols-outlined text-outline text-[32px] block mb-2">
+                        <td colSpan={9} className="py-12 text-center text-v5-muted">
+                          <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-2">
                             filter_alt_off
                           </span>
                           Không tìm thấy đầu việc nào phù hợp với bộ lọc đơn vị / cán bộ đã chọn.
@@ -1204,14 +1135,14 @@ function ReportsContent() {
                     )
                   ) : (
                     <tr>
-                      <td colSpan={9} className="py-16 text-center text-on-surface-variant">
-                        <span className="material-symbols-outlined text-outline text-[40px] block mb-2">
+                      <td colSpan={9} className="py-16 text-center text-v5-muted">
+                        <span className="material-symbols-outlined text-v5-muted text-[40px] block mb-2">
                           assignment_late
                         </span>
-                        <p className="font-body-semibold text-body-semibold text-on-surface">
+                        <p className="font-body-semibold text-body-semibold text-v5-ink">
                           Không có dữ liệu đầu việc cho kỳ báo cáo này
                         </p>
-                        <p className="font-table-data text-[12px] text-outline mt-1">
+                        <p className="font-table-data text-[12px] text-v5-muted mt-1">
                           Vui lòng chọn kỳ kế hoạch khác hoặc đồng bộ công việc từ hệ thống
                         </p>
                       </td>
@@ -1222,21 +1153,21 @@ function ReportsContent() {
             </div>
 
             {/* Table Footnote & Paging Bar */}
-            <div className="p-space-md bg-surface-subtle flex flex-col sm:flex-row items-center justify-between gap-space-sm">
-              <div className="flex items-center gap-2 text-[12px] text-outline">
+            <div className="p-space-md bg-v5-bg flex flex-col sm:flex-row items-center justify-between gap-space-sm">
+              <div className="flex items-center gap-2 text-[12px] text-v5-muted">
                 <span className="material-symbols-outlined text-[16px]">info</span>
                 <span>Dữ liệu tổng hợp theo kỳ kế hoạch đã chọn</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="px-2.5 py-1 rounded bg-surface-container-low text-on-surface-variant font-label-sm hover:bg-surface-container-high transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-muted font-label-sm hover:bg-v5-bg-high transition-colors disabled:opacity-50"
                   disabled
                 >
                   Trang trước
                 </button>
-                <span className="font-label-sm text-on-surface px-2">1 / 1 (Toàn bộ tuần)</span>
+                <span className="font-label-sm text-v5-ink px-2">1 / 1 (Toàn bộ tuần)</span>
                 <button
-                  className="px-2.5 py-1 rounded bg-surface-container-low text-on-surface-variant font-label-sm hover:bg-surface-container-high transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-muted font-label-sm hover:bg-v5-bg-high transition-colors disabled:opacity-50"
                   disabled
                 >
                   Trang sau
@@ -1251,21 +1182,21 @@ function ReportsContent() {
       {activeTab === "builder" && (
         <div className="flex flex-col gap-space-lg">
           {/* Builder Overview Card */}
-          <div className="p-space-lg bg-surface-container-lowest rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+          <div className="p-space-lg bg-v5-surface rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
             <div className="flex items-start gap-space-sm">
               <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-on-secondary shrink-0">
                 <span className="material-symbols-outlined text-[28px]">schema</span>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-headline-md text-headline-md text-on-surface">
+                  <h2 className="font-headline-md text-headline-md text-v5-ink">
                     Cấu Hình Ánh Xạ &amp; Mẫu Xuất XLSX (Builder)
                   </h2>
                   <span className="px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-secondary-fixed text-on-secondary-fixed-variant">
                     Phiên bản: v1.2-STABLE
                   </span>
                 </div>
-                <p className="font-body-md text-on-surface-variant mt-0.5">
+                <p className="font-body-md text-v5-muted mt-0.5">
                   Định nghĩa cấu trúc cột cho mẫu{" "}
                   <span className="font-mono text-primary font-bold">RPT-PLAN-WEEK-LEGACY</span> đảm bảo chuẩn hóa nhãn
                   &quot;DANH MỤC ĐẦU VIỆC&quot;, tự động điền trạng thái và bảo vệ tính toàn vẹn dữ liệu.
@@ -1276,7 +1207,7 @@ function ReportsContent() {
               <button
                 onClick={handlePreviewBuilderFile}
                 disabled={isPreviewingBuilder}
-                className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press disabled:opacity-60"
+                className="px-3 py-2 rounded bg-v5-bg text-primary font-label-md hover:bg-v5-bg-high transition-colors active-press disabled:opacity-60"
               >
                 {isPreviewingBuilder ? "Đang kết xuất..." : "Xem trước file mẫu"}
               </button>
@@ -1284,7 +1215,7 @@ function ReportsContent() {
                 <button
                   onClick={() => handleExportXlsx(selectedTemplate === "detailed" ? "detailed" : "legacy")}
                   disabled={isExporting}
-                  className="px-3 py-2 rounded bg-surface-container text-primary font-label-md hover:bg-surface-container-high transition-colors active-press disabled:opacity-60"
+                  className="px-3 py-2 rounded bg-v5-bg text-primary font-label-md hover:bg-v5-bg-high transition-colors active-press disabled:opacity-60"
                 >
                   {isExporting ? "Đang tải..." : "Tải file mẫu thử nghiệm"}
                 </button>
@@ -1304,28 +1235,28 @@ function ReportsContent() {
           {/* Configuration Options Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-lg">
             {/* General Rules */}
-            <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col gap-space-md">
+            <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col gap-space-md">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary text-[20px]">tune</span>
-                <span className="font-body-semibold text-body-semibold text-on-surface">
+                <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Quy tắc gom nhóm &amp; Hiển thị
                 </span>
               </div>
               <div className="flex flex-col gap-space-sm">
                 <div>
-                  <label className="font-label-md text-on-surface-variant">Phương thức gom nhóm (Grouping mode):</label>
+                  <label className="font-label-md text-v5-muted">Phương thức gom nhóm (Grouping mode):</label>
                   <select
                     value={builderConfig.grouping}
                     onChange={(e) => setBuilderConfig({ ...builderConfig, grouping: e.target.value })}
-                    className="w-full mt-1 h-9 px-3 rounded bg-surface-container-low font-body-md text-on-surface focus:outline-none"
+                    className="w-full mt-1 h-9 px-3 rounded bg-v5-bg font-body-md text-v5-ink focus:outline-none"
                   >
                     <option value="week">Gom theo Nhóm thứ trong tuần (Thứ 2 -&gt; Chủ nhật)</option>
                     <option value="group">Gom theo Nhóm nghiệp vụ (5 nhóm thường xuyên)</option>
                     <option value="officer">Gom theo Cán bộ phụ trách (Cá nhân CC)</option>
                   </select>
                 </div>
-                <div className="p-3 bg-surface-container-low rounded-lg flex flex-col gap-2">
-                  <span className="font-body-semibold text-[13px] text-on-surface">
+                <div className="p-3 bg-v5-bg rounded-lg flex flex-col gap-2">
+                  <span className="font-body-semibold text-[13px] text-v5-ink">
                     Xử lý trường hợp &quot;Không phát sinh&quot;:
                   </span>
                   <label className="flex items-start gap-2 cursor-pointer">
@@ -1335,7 +1266,7 @@ function ReportsContent() {
                       onChange={(e) => setBuilderConfig({ ...builderConfig, showNotOccurredLabel: e.target.checked })}
                       className="mt-1 accent-secondary"
                     />
-                    <span className="font-table-data text-[13px] text-on-surface-variant">
+                    <span className="font-table-data text-[13px] text-v5-muted">
                       Tự động hiển thị nhãn{" "}
                       <code className="bg-surface px-1 py-0.5 rounded text-primary font-mono text-[11px]">
                         (Không phát sinh trong kỳ)
@@ -1350,13 +1281,13 @@ function ReportsContent() {
                       onChange={(e) => setBuilderConfig({ ...builderConfig, highlightNotOccurred: e.target.checked })}
                       className="mt-1 accent-secondary"
                     />
-                    <span className="font-table-data text-[13px] text-on-surface-variant">
+                    <span className="font-table-data text-[13px] text-v5-muted">
                       Tô màu xanh nhạt phân biệt cho dòng không phát sinh
                     </span>
                   </label>
                 </div>
-                <div className="p-3 bg-surface-container-low rounded-lg flex flex-col gap-2">
-                  <span className="font-body-semibold text-[13px] text-on-surface">
+                <div className="p-3 bg-v5-bg rounded-lg flex flex-col gap-2">
+                  <span className="font-body-semibold text-[13px] text-v5-ink">
                     Ngắt dòng nội dung (Wrap text):
                   </span>
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1366,7 +1297,7 @@ function ReportsContent() {
                       onChange={(e) => setBuilderConfig({ ...builderConfig, wrapText: e.target.checked })}
                       className="accent-secondary"
                     />
-                    <span className="font-table-data text-[13px] text-on-surface-variant">
+                    <span className="font-table-data text-[13px] text-v5-muted">
                       Bật tự động co giãn chiều cao dòng theo nội dung Cột C
                     </span>
                   </label>
@@ -1375,72 +1306,72 @@ function ReportsContent() {
             </div>
 
             {/* Security & Audit Rules */}
-            <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col gap-space-md">
+            <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col gap-space-md">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary text-[20px]">verified_user</span>
-                <span className="font-body-semibold text-body-semibold text-on-surface">
+                <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Bảo mật &amp; Dấu vết kiểm toán (Audit)
                 </span>
               </div>
               <div className="flex flex-col gap-space-sm">
-                <div className="flex items-center justify-between p-2.5 bg-surface-container-low rounded">
+                <div className="flex items-center justify-between p-2.5 bg-v5-bg rounded">
                   <div className="flex flex-col">
-                    <span className="font-body-semibold text-[13px] text-on-surface">Yêu cầu quyền reports.export</span>
-                    <span className="font-label-sm text-[11px] text-outline">Chỉ lãnh đạo Đội &amp; Ban chỉ huy</span>
+                    <span className="font-body-semibold text-[13px] text-v5-ink">Yêu cầu quyền reports.export</span>
+                    <span className="font-label-sm text-[11px] text-v5-muted">Chỉ lãnh đạo Đội &amp; Ban chỉ huy</span>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-status-success-bg text-status-success font-semibold">
                     BẮT BUỘC
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2.5 bg-surface-container-low rounded">
+                <div className="flex items-center justify-between p-2.5 bg-v5-bg rounded">
                   <div className="flex flex-col">
-                    <span className="font-body-semibold text-[13px] text-on-surface">Chèn Watermark bảo mật nền</span>
-                    <span className="font-label-sm text-[11px] text-outline">Tên cán bộ xuất + Dấu thời gian</span>
+                    <span className="font-body-semibold text-[13px] text-v5-ink">Chèn Watermark bảo mật nền</span>
+                    <span className="font-label-sm text-[11px] text-v5-muted">Tên cán bộ xuất + Dấu thời gian</span>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-status-success-bg text-status-success font-semibold">
                     BẬT
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2.5 bg-surface-container-low rounded">
+                <div className="flex items-center justify-between p-2.5 bg-v5-bg rounded">
                   <div className="flex flex-col">
-                    <span className="font-body-semibold text-[13px] text-on-surface">Sinh mã Hash Checksum kỳ</span>
-                    <span className="font-label-sm text-[11px] text-outline">Chống sửa đổi nội dung bảng tính</span>
+                    <span className="font-body-semibold text-[13px] text-v5-ink">Sinh mã Hash Checksum kỳ</span>
+                    <span className="font-label-sm text-[11px] text-v5-muted">Chống sửa đổi nội dung bảng tính</span>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-status-success-bg text-status-success font-semibold">
                     SHA-256
                   </span>
                 </div>
-                <div className="mt-2 text-[12px] text-outline leading-relaxed bg-surface-subtle p-2.5 rounded">
+                <div className="mt-2 text-[12px] text-v5-muted leading-relaxed bg-v5-bg p-2.5 rounded">
                   Mọi thao tác tải file XLSX sẽ được ghi nhận tự động vào bảng Audit Log hệ thống kèm địa chỉ IP và mã tài khoản người dùng.
                 </div>
               </div>
             </div>
 
             {/* Export Profile Info */}
-            <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between">
+            <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col justify-between">
               <div className="flex flex-col gap-space-sm">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-secondary text-[20px]">file_present</span>
-                  <span className="font-body-semibold text-body-semibold text-on-surface">
+                  <span className="font-body-semibold text-body-semibold text-v5-ink">
                     Đặc tả kỹ thuật tệp xuất
                   </span>
                 </div>
-                <div className="space-y-2 text-[13px] text-on-surface-variant">
-                  <div className="flex justify-between py-1 border-b border-border-default/40">
-                    <span className="text-outline">Tên tệp mặc định:</span>
+                <div className="space-y-2 text-[13px] text-v5-muted">
+                  <div className="flex justify-between py-1 border-b border-v5-line/40">
+                    <span className="text-v5-muted">Tên tệp mặc định:</span>
                     <span className="font-mono text-primary font-medium">HQTL_BCTuan41_20261010.xlsx</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-border-default/40">
-                    <span className="text-outline">Tiêu chuẩn Font:</span>
-                    <span className="font-medium text-on-surface">Arial / 11pt (Theo mẫu Hải quan)</span>
+                  <div className="flex justify-between py-1 border-b border-v5-line/40">
+                    <span className="text-v5-muted">Tiêu chuẩn Font:</span>
+                    <span className="font-medium text-v5-ink">Arial / 11pt (Theo mẫu Hải quan)</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-border-default/40">
-                    <span className="text-outline">Định dạng ô số:</span>
-                    <span className="font-mono text-on-surface">#,##0 (Monospace tabular)</span>
+                  <div className="flex justify-between py-1 border-b border-v5-line/40">
+                    <span className="text-v5-muted">Định dạng ô số:</span>
+                    <span className="font-mono text-v5-ink">#,##0 (Monospace tabular)</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-border-default/40">
-                    <span className="text-outline">Khổ giấy in ấn:</span>
-                    <span className="font-medium text-on-surface">A4 Ngang (Landscape), Fit 1 trang ngang</span>
+                  <div className="flex justify-between py-1 border-b border-v5-line/40">
+                    <span className="text-v5-muted">Khổ giấy in ấn:</span>
+                    <span className="font-medium text-v5-ink">A4 Ngang (Landscape), Fit 1 trang ngang</span>
                   </div>
                 </div>
               </div>
@@ -1454,11 +1385,11 @@ function ReportsContent() {
           </div>
 
           {/* Column Mapping Matrix Table */}
-          <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
-            <div className="p-space-md bg-surface-subtle flex items-center justify-between">
+          <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col">
+            <div className="p-space-md bg-v5-bg flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary text-[20px]">view_column</span>
-                <span className="font-body-semibold text-body-semibold text-on-surface">
+                <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Bảng ánh xạ các cột (Excel Column Mapping Matrix)
                 </span>
               </div>
@@ -1466,7 +1397,7 @@ function ReportsContent() {
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left font-table-data text-table-data">
                 <thead>
-                  <tr className="bg-surface-subtle text-on-surface text-[12px] font-table-header uppercase">
+                  <tr className="bg-v5-bg text-v5-ink text-[12px] font-table-header uppercase">
                     <th className="py-3 px-3 w-16 text-center">Vị trí</th>
                     <th className="py-3 px-3 w-48">Trường dữ liệu nguồn (DB Field)</th>
                     <th className="py-3 px-4 min-w-[200px]">Tiêu đề hiển thị trên Excel (Header Label)</th>
@@ -1476,34 +1407,34 @@ function ReportsContent() {
                     <th className="py-3 px-3 w-28 text-center">Trạng thái</th>
                   </tr>
                 </thead>
-                <tbody className="text-on-surface divide-y-0">
-                  <tr className="hover:bg-surface-container-low transition-colors">
+                <tbody className="text-v5-ink divide-y-0">
+                  <tr className="hover:bg-v5-bg transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột A</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary">log_date_weekday</td>
                     <td className="py-2.5 px-4 font-body-semibold">Thứ / Ngày</td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">14 (120px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn giữa (Center)</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Date (dd/mm)</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Date (dd/mm)</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         Khóa
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-surface-container-low transition-colors">
+                  <tr className="hover:bg-v5-bg transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột B</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary">duty_category_name</td>
                     <td className="py-2.5 px-4 font-body-semibold">Nhiệm vụ thường xuyên</td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">22 (180px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn trái (Left)</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Text</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Text</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         Khóa
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-surface-container-low transition-colors bg-secondary-fixed/20">
+                  <tr className="hover:bg-v5-bg transition-colors bg-secondary-fixed/20">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột C</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary font-bold">task_catalog_title</td>
                     <td className="py-2.5 px-4 font-body-semibold text-primary">
@@ -1514,72 +1445,72 @@ function ReportsContent() {
                     </td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">45 (380px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn trái, Wrap text</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Text (Multiline)</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Text (Multiline)</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-secondary text-on-secondary">
                         Đã chốt
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-surface-container-low transition-colors">
+                  <tr className="hover:bg-v5-bg transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột D</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary">assignee_officer</td>
                     <td className="py-2.5 px-4 font-body-semibold">Cán bộ / Bộ phận phụ trách</td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">24 (200px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn trái (Left)</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Text</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Text</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         Khóa
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-surface-container-low transition-colors">
+                  <tr className="hover:bg-v5-bg transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột E</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary">coordinating_units</td>
                     <td className="py-2.5 px-4 font-body-semibold">Đơn vị phối hợp</td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">20 (160px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn trái (Left)</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Text</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Text</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         Khóa
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-surface-container-low transition-colors">
+                  <tr className="hover:bg-v5-bg transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột F</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary">priority_level</td>
                     <td className="py-2.5 px-4 font-body-semibold">Mức độ ưu tiên</td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">12 (90px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn giữa (Center)</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Text (Badge)</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Text (Badge)</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         Khóa
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-surface-container-low transition-colors">
+                  <tr className="hover:bg-v5-bg transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột G</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary">result_metrics</td>
                     <td className="py-2.5 px-4 font-body-semibold">Kết quả dự kiến &amp; Thực tế</td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">32 (280px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn trái (Left)</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Mixed (Metric)</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Mixed (Metric)</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         Khóa
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-surface-container-low transition-colors">
+                  <tr className="hover:bg-v5-bg transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-secondary">Cột H</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-primary">completion_status</td>
                     <td className="py-2.5 px-4 font-body-semibold">Tiến độ &amp; Tình trạng</td>
                     <td className="py-2.5 px-3 font-mono text-[13px]">18 (150px)</td>
                     <td className="py-2.5 px-3 text-[13px]">Căn giữa (Center)</td>
-                    <td className="py-2.5 px-3 font-mono text-[12px] text-outline">Status Pill</td>
+                    <td className="py-2.5 px-3 font-mono text-[12px] text-v5-muted">Status Pill</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         Khóa
@@ -1597,22 +1528,22 @@ function ReportsContent() {
       {activeTab === "snapshots" && (
         <div className="flex flex-col gap-space-lg">
           {/* Header info */}
-          <div className="p-space-lg bg-surface-container-lowest rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-border-default/40">
+          <div className="p-space-lg bg-v5-surface rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-v5-line/40">
             <div className="flex items-start gap-space-sm">
               <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-[28px]">lock_clock</span>
               </div>
               <div>
-                <h2 className="font-headline-md text-headline-md text-on-surface">
-                  Kho Lưu Trữ Báo Cáo Đã Chốt Kỳ (Locked Snapshots)
+                <h2 className="font-headline-md text-headline-md text-v5-ink">
+                  Kho Lưu Trữ Báo Cáo Đã Chốt Kỳ
                 </h2>
-                <p className="font-body-md text-on-surface-variant mt-0.5">
+                <p className="font-body-md text-v5-muted mt-0.5">
                   Bản chụp số liệu được tính mã kiểm tra toàn vẹn nội dung, lưu trữ trong hệ thống phục vụ đối soát, kiểm tra tác nghiệp Hải quan.
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-space-sm shrink-0">
-              <span className="font-label-sm text-outline">Tổng: {snapshotsList.length} bản chụp</span>
+              <span className="font-label-sm text-v5-muted">Tổng: {snapshotsList.length} bản chụp</span>
               <button
                 onClick={handleOpenLockModal}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-md hover:bg-primary/95 transition-all active-press shadow-sm"
@@ -1625,12 +1556,12 @@ function ReportsContent() {
 
           {/* Empty state */}
           {snapshotsList.length === 0 && (
-            <div className="p-12 bg-surface-container-lowest rounded-xl shadow-sm flex flex-col items-center justify-center text-center gap-3 border border-dashed border-border-default">
-              <div className="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center text-outline">
+            <div className="p-12 bg-v5-surface rounded-xl shadow-sm flex flex-col items-center justify-center text-center gap-3 border border-dashed border-v5-line">
+              <div className="w-16 h-16 rounded-full bg-v5-bg flex items-center justify-center text-v5-muted">
                 <span className="material-symbols-outlined text-[32px]">folder_off</span>
               </div>
-              <h3 className="font-headline-sm text-on-surface">Chưa có bản chụp số liệu nào được lưu trữ</h3>
-              <p className="font-body-md text-on-surface-variant max-w-md">
+              <h3 className="font-headline-sm text-v5-ink">Chưa có bản chụp số liệu nào được lưu trữ</h3>
+              <p className="font-body-md text-v5-muted max-w-md">
                 Hiện tại chưa có kỳ báo cáo nào được chốt khóa. Nhấn nút bên dưới để tạo bản chụp đầu tiên.
               </p>
               {canLock && (
@@ -1650,7 +1581,7 @@ function ReportsContent() {
             {snapshotsList.map((item) => (
               <div
                 key={item.id}
-                className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow border border-border-default/40"
+                className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow border border-v5-line/40"
               >
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
@@ -1669,28 +1600,28 @@ function ReportsContent() {
                       </span>
                     )}
                   </div>
-                  <h3 className="font-body-semibold text-on-surface text-[15px]">{item.title || item.periodTitle}</h3>
-                  <div className="flex items-center gap-2 text-[12px] text-outline font-table-data">
+                  <h3 className="font-body-semibold text-v5-ink text-[15px]">{item.title || item.periodTitle}</h3>
+                  <div className="flex items-center gap-2 text-[12px] text-v5-muted font-table-data">
                     <span className="material-symbols-outlined text-[16px]">calendar_today</span>
                     <span>{item.periodTitle} ({item.periodType || "WEEK"})</span>
                   </div>
                   {item.metrics && (
-                    <div className="grid grid-cols-2 gap-1.5 p-2 bg-surface-container-low/60 rounded text-[11px]">
+                    <div className="grid grid-cols-2 gap-1.5 p-2 bg-v5-bg/60 rounded text-[11px]">
                       <div>Tổng việc: <span className="font-semibold text-primary">{item.metrics.totalTasks}</span></div>
                       <div>Hoàn thành: <span className="font-semibold text-status-success">{item.metrics.completedTasks} ({item.metrics.completionRate}%)</span></div>
                       <div>Quá hạn: <span className="font-semibold text-status-danger">{item.metrics.overdueTasks}</span></div>
-                      <div>Ca trực: <span className="font-semibold text-on-surface">{item.metrics.totalRoutines}</span></div>
+                      <div>Ca trực: <span className="font-semibold text-v5-ink">{item.metrics.totalRoutines}</span></div>
                     </div>
                   )}
-                  <div className="p-2 bg-surface-container-low rounded font-mono text-[11px] text-on-surface-variant break-all">
-                    <div className="text-[10px] text-outline uppercase font-semibold mb-0.5">Mã băm SHA-256 (64 hex):</div>
+                  <div className="p-2 bg-v5-bg rounded font-mono text-[11px] text-v5-muted break-all">
+                    <div className="text-[10px] text-v5-muted uppercase font-semibold mb-0.5">Mã băm SHA-256 (64 hex):</div>
                     <span className="text-secondary select-all">{item.checksum}</span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 pt-3 mt-3 border-t border-border-default/40">
+                <div className="flex flex-col gap-2 pt-3 mt-3 border-t border-v5-line/40">
                   <div className="flex flex-col text-[11px]">
-                    <span className="text-outline">Người chốt: <strong className="text-on-surface">{item.lockedByName}</strong></span>
-                    <span className="text-on-surface-variant">Thời gian: {new Date(item.lockedAt).toLocaleString("vi-VN")}</span>
+                    <span className="text-v5-muted">Người chốt: <strong className="text-v5-ink">{item.lockedByName}</strong></span>
+                    <span className="text-v5-muted">Thời gian: {new Date(item.lockedAt).toLocaleString("vi-VN")}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <button
@@ -1698,7 +1629,7 @@ function ReportsContent() {
                         setViewingSnapshot(item);
                         setVerificationFeedback(null);
                       }}
-                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded bg-surface-container-low text-on-surface font-label-sm hover:bg-surface-container transition-colors active-press"
+                      className="flex-1 inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded bg-v5-bg text-v5-ink font-label-sm hover:bg-v5-bg transition-colors active-press"
                     >
                       <span className="material-symbols-outlined text-[16px]">visibility</span>
                       <span>Xem chi tiết</span>
@@ -1722,7 +1653,7 @@ function ReportsContent() {
       {/* MODAL XÁC NHẬN CHỐT KỲ SỐ LIỆU */}
       {isLockModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-container/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-surface-container-lowest rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 border border-border-default/40">
+          <div className="bg-v5-surface rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 border border-v5-line/40">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">lock_clock</span>
@@ -1737,13 +1668,13 @@ function ReportsContent() {
                     setLockError(null);
                   }
                 }}
-                className="p-1 rounded text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
-            <div className="p-space-lg flex flex-col gap-space-md text-on-surface">
+            <div className="p-space-lg flex flex-col gap-space-md text-v5-ink">
               {lockError && (
                 <div className="p-3 bg-status-danger-bg text-status-danger rounded-lg flex items-center gap-2 text-body-sm">
                   <span className="material-symbols-outlined text-[18px]">error</span>
@@ -1751,24 +1682,24 @@ function ReportsContent() {
                 </div>
               )}
 
-              <div className="p-3 bg-status-warning-bg/40 text-on-surface rounded-lg flex items-start gap-2 text-body-sm border border-status-warning/30">
+              <div className="p-3 bg-status-warning-bg/40 text-v5-ink rounded-lg flex items-start gap-2 text-body-sm border border-status-warning/30">
                 <span className="material-symbols-outlined text-status-warning text-[20px] shrink-0 mt-0.5">info</span>
                 <div>
                   <div className="font-semibold text-primary">Quy định chốt kỳ tác nghiệp:</div>
-                  <div className="text-[12px] text-on-surface-variant mt-0.5">
+                  <div className="text-[12px] text-v5-muted mt-0.5">
                     Hệ thống sẽ tổng hợp toàn bộ nhiệm vụ, ca trực và chỉ số KPI tại thời điểm hiện tại; tính <strong>mã kiểm tra toàn vẹn</strong> và lưu bản chụp bất biến trong hệ thống.
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-md text-on-surface-variant font-medium">
+                <label className="font-label-md text-v5-muted font-medium">
                   Chọn kỳ công tác cần chốt số liệu:
                 </label>
                 <select
                   value={selectedPeriodToLock}
                   onChange={(e) => setSelectedPeriodToLock(e.target.value)}
-                  className="w-full h-10 px-3 rounded bg-surface-container-low font-body-md text-on-surface border border-border-default/40 focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full h-10 px-3 rounded bg-v5-bg font-body-md text-v5-ink border border-v5-line/40 focus:outline-none focus:ring-1 focus:ring-primary"
                   disabled={isLocking}
                 >
                   {availablePeriods.map((p: any) => (
@@ -1783,19 +1714,19 @@ function ReportsContent() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-md text-on-surface-variant font-medium">
+                <label className="font-label-md text-v5-muted font-medium">
                   Ghi chú / Căn cứ chốt kỳ (Tùy chọn):
                 </label>
                 <textarea
                   value={lockNotes}
                   onChange={(e) => setLockNotes(e.target.value)}
                   placeholder="Ví dụ: Chốt số liệu công tác tuần 41 phục vụ giao ban đầu tuần theo thông báo..."
-                  className="w-full h-20 p-2.5 rounded bg-surface-container-low font-body-sm text-on-surface border border-border-default/40 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  className="w-full h-20 p-2.5 rounded bg-v5-bg font-body-sm text-v5-ink border border-v5-line/40 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                   disabled={isLocking}
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-default/30">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-v5-line/30">
                 <button
                   type="button"
                   onClick={() => {
@@ -1803,7 +1734,7 @@ function ReportsContent() {
                     setLockError(null);
                   }}
                   disabled={isLocking}
-                  className="px-4 py-2 rounded text-on-surface-variant hover:bg-surface-container font-label-md transition-colors"
+                  className="px-4 py-2 rounded text-v5-muted hover:bg-v5-bg font-label-md transition-colors"
                 >
                   Hủy bỏ
                 </button>
@@ -1834,7 +1765,7 @@ function ReportsContent() {
       {/* MODAL CHI TIẾT BẢN CHỤP SNAPSHOT */}
       {viewingSnapshot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-container/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-surface-container-lowest rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 border border-border-default/40">
+          <div className="bg-v5-surface rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 border border-v5-line/40">
             {/* Modal Header */}
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1853,18 +1784,18 @@ function ReportsContent() {
                   setViewingSnapshot(null);
                   setVerificationFeedback(null);
                 }}
-                className="p-1 rounded text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-space-lg overflow-y-auto flex flex-col gap-space-md text-on-surface">
+            <div className="p-space-lg overflow-y-auto flex flex-col gap-space-md text-v5-ink">
               {/* Checksum & Verification Section */}
-              <div className="p-3 bg-surface-container-low rounded-lg flex flex-col gap-2 border border-border-default/40">
+              <div className="p-3 bg-v5-bg rounded-lg flex flex-col gap-2 border border-v5-line/40">
                 <div className="flex items-center justify-between">
-                  <span className="font-label-sm text-outline uppercase font-semibold">
+                  <span className="font-label-sm text-v5-muted uppercase font-semibold">
                     Mã Kiểm Tra Toàn Vẹn SHA-256 (64 hex lowercase):
                   </span>
                   <button
@@ -1878,7 +1809,7 @@ function ReportsContent() {
                     <span>{isVerifyingSnapshot ? "Đang tính lại hash..." : "Đối soát toàn vẹn"}</span>
                   </button>
                 </div>
-                <div className="font-mono text-[12px] bg-surface-container-lowest p-2 rounded border border-border-default/30 break-all select-all text-primary font-semibold">
+                <div className="font-mono text-[12px] bg-v5-surface p-2 rounded border border-v5-line/30 break-all select-all text-primary font-semibold">
                   {viewingSnapshot.checksum}
                 </div>
                 {verificationFeedback && (
@@ -1896,14 +1827,14 @@ function ReportsContent() {
               </div>
 
               {/* Officer and Lock Timestamp */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-surface-container-low/50 rounded-lg text-body-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-v5-bg/50 rounded-lg text-body-sm">
                 <div>
-                  <span className="text-outline">Người thực hiện chốt:</span>
+                  <span className="text-v5-muted">Người thực hiện chốt:</span>
                   <div className="font-semibold text-primary">{viewingSnapshot.lockedByName}</div>
                 </div>
                 <div>
-                  <span className="text-outline">Thời điểm chốt &amp; khóa:</span>
-                  <div className="font-semibold text-on-surface">
+                  <span className="text-v5-muted">Thời điểm chốt &amp; khóa:</span>
+                  <div className="font-semibold text-v5-ink">
                     {new Date(viewingSnapshot.lockedAt).toLocaleString("vi-VN")}
                   </div>
                 </div>
@@ -1912,24 +1843,24 @@ function ReportsContent() {
               {/* KPI Metrics */}
               {viewingSnapshot.metrics && (
                 <div className="flex flex-col gap-1.5">
-                  <span className="font-label-md font-semibold text-on-surface">Chỉ số tổng hợp tại thời điểm chốt:</span>
+                  <span className="font-label-md font-semibold text-v5-ink">Chỉ số tổng hợp tại thời điểm chốt:</span>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <div className="p-2.5 bg-surface-container-low rounded-lg flex flex-col">
-                      <span className="text-[11px] text-outline">Tổng số nhiệm vụ</span>
+                    <div className="p-2.5 bg-v5-bg rounded-lg flex flex-col">
+                      <span className="text-[11px] text-v5-muted">Tổng số nhiệm vụ</span>
                       <span className="font-headline-sm text-primary text-[18px]">{viewingSnapshot.metrics.totalTasks}</span>
                     </div>
                     <div className="p-2.5 bg-status-success-bg/30 rounded-lg flex flex-col">
-                      <span className="text-[11px] text-outline">Đã hoàn thành</span>
+                      <span className="text-[11px] text-v5-muted">Đã hoàn thành</span>
                       <span className="font-headline-sm text-status-success text-[18px]">
                         {viewingSnapshot.metrics.completedTasks} ({viewingSnapshot.metrics.completionRate}%)
                       </span>
                     </div>
                     <div className="p-2.5 bg-status-warning-bg/30 rounded-lg flex flex-col">
-                      <span className="text-[11px] text-outline">Đang thực hiện</span>
+                      <span className="text-[11px] text-v5-muted">Đang thực hiện</span>
                       <span className="font-headline-sm text-status-warning text-[18px]">{viewingSnapshot.metrics.inProgressTasks}</span>
                     </div>
                     <div className="p-2.5 bg-status-danger-bg/30 rounded-lg flex flex-col">
-                      <span className="text-[11px] text-outline">Quá hạn</span>
+                      <span className="text-[11px] text-v5-muted">Quá hạn</span>
                       <span className="font-headline-sm text-status-danger text-[18px]">{viewingSnapshot.metrics.overdueTasks}</span>
                     </div>
                   </div>
@@ -1937,15 +1868,15 @@ function ReportsContent() {
               )}
 
               {/* Actions Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-border-default/40 mt-2">
-                <span className="text-[11px] text-outline">
+              <div className="flex items-center justify-between pt-3 border-t border-v5-line/40 mt-2">
+                <span className="text-[11px] text-v5-muted">
                   Trạng thái bản ghi: <strong className="text-status-success">{viewingSnapshot.status}</strong>
                 </span>
                 <div className="flex items-center gap-2">
                   {canExport && (
                     <button
                       onClick={() => handleExportSnapshotXlsx(viewingSnapshot.id, "legacy")}
-                      className="px-3 py-1.5 rounded bg-surface-container-low text-primary font-label-sm hover:bg-surface-container transition-colors"
+                      className="px-3 py-1.5 rounded bg-v5-bg text-primary font-label-sm hover:bg-v5-bg transition-colors"
                     >
                       Mẫu A (Tổng hợp .xlsx)
                     </button>
@@ -1969,7 +1900,7 @@ function ReportsContent() {
       {/* DRILLDOWN MODAL DIALOG (DRAWER-STYLE) */}
       {drilldownTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-container/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-surface-container-lowest rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-v5-surface rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1985,37 +1916,37 @@ function ReportsContent() {
               </div>
               <button
                 onClick={() => setDrilldownTask(null)}
-                className="p-1 rounded text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-space-lg overflow-y-auto flex flex-col gap-space-md text-on-surface">
-              <div className="p-3 bg-surface-container-low rounded-lg flex flex-col gap-1">
-                <span className="font-label-sm text-outline uppercase tracking-wider">
+            <div className="p-space-lg overflow-y-auto flex flex-col gap-space-md text-v5-ink">
+              <div className="p-3 bg-v5-bg rounded-lg flex flex-col gap-1">
+                <span className="font-label-sm text-v5-muted uppercase tracking-wider">
                   Tên đầu việc nghiệp vụ (Cột C):
                 </span>
                 <span className="font-body-semibold text-[15px] text-primary">{drilldownTask.title}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-space-sm text-[13px]">
-                <div className="p-2.5 bg-surface-subtle rounded flex flex-col">
-                  <span className="text-outline text-[11px]">Cán bộ thực hiện:</span>
-                  <span className="font-body-semibold text-on-surface">{drilldownTask.officer}</span>
-                  <span className="text-[11px] text-on-surface-variant">{drilldownTask.department}</span>
+                <div className="p-2.5 bg-v5-bg rounded flex flex-col">
+                  <span className="text-v5-muted text-[11px]">Cán bộ thực hiện:</span>
+                  <span className="font-body-semibold text-v5-ink">{drilldownTask.officer}</span>
+                  <span className="text-[11px] text-v5-muted">{drilldownTask.department}</span>
                 </div>
-                <div className="p-2.5 bg-surface-subtle rounded flex flex-col">
-                  <span className="text-outline text-[11px]">Thời gian tác nghiệp:</span>
-                  <span className="font-body-semibold text-on-surface">{drilldownTask.shiftTime}</span>
+                <div className="p-2.5 bg-v5-bg rounded flex flex-col">
+                  <span className="text-v5-muted text-[11px]">Thời gian tác nghiệp:</span>
+                  <span className="font-body-semibold text-v5-ink">{drilldownTask.shiftTime}</span>
                   <span className="text-[11px] text-status-success font-medium">Đã chốt kết quả trong ca</span>
                 </div>
               </div>
 
               {/* Source documents */}
               <div className="flex flex-col gap-2">
-                <span className="font-body-semibold text-body-semibold text-on-surface">
+                <span className="font-body-semibold text-body-semibold text-v5-ink">
                   Chứng từ nguồn &amp; Dữ liệu liên kết:
                 </span>
                 <div className="flex flex-col gap-1.5">
@@ -2023,7 +1954,7 @@ function ReportsContent() {
                     drilldownTask.vouchers.map((v, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-2 bg-surface-container-low rounded text-[13px]"
+                        className="flex items-center justify-between p-2 bg-v5-bg rounded text-[13px]"
                       >
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-[18px] text-secondary">description</span>
@@ -2037,7 +1968,7 @@ function ReportsContent() {
                       </div>
                     ))
                   ) : (
-                    <div className="p-2 bg-surface-container-low rounded text-[13px] text-outline">
+                    <div className="p-2 bg-v5-bg rounded text-[13px] text-v5-muted">
                       Không phát sinh chứng từ tờ khai điện tử kèm theo.
                     </div>
                   )}
@@ -2046,11 +1977,11 @@ function ReportsContent() {
 
               {/* Audit timeline */}
               <div className="flex flex-col gap-2">
-                <span className="font-body-semibold text-body-semibold text-on-surface">Nhật ký tác nghiệp cán bộ:</span>
-                <div className="space-y-2 text-[12px] text-on-surface-variant border-l-2 border-secondary pl-3 ml-1">
+                <span className="font-body-semibold text-body-semibold text-v5-ink">Nhật ký tác nghiệp cán bộ:</span>
+                <div className="space-y-2 text-[12px] text-v5-muted border-l-2 border-secondary pl-3 ml-1">
                   {drilldownTask.auditLog.map((log, idx) => (
                     <div key={idx} className="flex flex-col">
-                      <span className="font-mono text-outline">{log.time}</span>
+                      <span className="font-mono text-v5-muted">{log.time}</span>
                       <span>{log.action}</span>
                     </div>
                   ))}
@@ -2059,10 +1990,10 @@ function ReportsContent() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2">
+            <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2">
               <button
                 onClick={() => setDrilldownTask(null)}
-                className="px-3 py-1.5 rounded bg-surface-container text-on-surface-variant font-label-md hover:bg-surface-container-high transition-colors active-press"
+                className="px-3 py-1.5 rounded bg-v5-bg text-v5-muted font-label-md hover:bg-v5-bg-high transition-colors active-press"
               >
                 Đóng
               </button>

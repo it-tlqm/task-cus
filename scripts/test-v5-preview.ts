@@ -178,8 +178,22 @@ check(
 check(
   "Kế hoạch dùng token V5",
   plansPage.includes("Tạo kế hoạch") &&
+    plansPage.includes("text-2xl font-semibold tracking-tight text-v5-ink") &&
     !plansPage.includes("bg-surface-container-lowest") &&
     !plansPage.includes("border-border-default")
+);
+const reportsPage = read("src/app/reports/page.tsx");
+check(
+  "Báo cáo dùng header/tab V5 và bỏ từ kỹ thuật",
+  reportsPage.includes("text-2xl font-semibold tracking-tight text-v5-ink") &&
+    reportsPage.includes("<Button") &&
+    reportsPage.includes("Filter") &&
+    reportsPage.includes("Table2") &&
+    reportsPage.includes("snapshotsList.length") &&
+    !reportsPage.includes("TALUNG-CUS-WORK") &&
+    !reportsPage.includes("Locked Snapshots") &&
+    !reportsPage.includes("MD5:") &&
+    !reportsPage.includes("bg-surface-container-lowest")
 );
 const monthlyResults = read("src/app/monthly-results/page.tsx");
 check(
