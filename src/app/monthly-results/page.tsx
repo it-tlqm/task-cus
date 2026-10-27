@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { FileDown, Plus, RefreshCw } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { calendarDateToIso, toCalendarDate } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/usePermissions";
 import SelfAssessmentPanel from "@/components/evaluation/SelfAssessmentPanel";
 import EvaluationExportPanel from "@/components/evaluation/EvaluationExportPanel";
+import { Badge } from "@/components/v5/ui/badge";
+import { Button } from "@/components/v5/ui/button";
+import { Card } from "@/components/v5/ui/card";
 
 interface MonthlyItem {
   id: string;
@@ -383,70 +387,87 @@ export default function MonthlyResultsPage() {
   const handleExport02C = () => doDownload("02c", `KeHoachThang02C-T${month}-${year}.xlsx`);
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="flex w-full flex-col gap-3 pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-teal-100 text-teal-900 border border-teal-200">
-            Kết quả tháng (chưa chấm điểm)
-          </span>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Kết quả công tác tháng</h1>
-          <p className="text-sm text-slate-600">Ghi nhận sản phẩm thực tế · đúng người, đúng tháng · thiếu mã SP thì chờ đối chiếu</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Kết quả công tác tháng</h1>
+            <Badge variant="outline">Chưa chấm điểm</Badge>
+          </div>
+          <p className="mt-1 text-sm text-v5-muted">
+            Ghi nhận sản phẩm thực tế · đúng người, đúng tháng · thiếu mã sản phẩm thì chờ đối chiếu.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button data-tour="add-btn" onClick={openAdd} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
-            + Ghi nhận kết quả
-          </button>
-          <button data-tour="export-btns" onClick={handleExport} disabled={exporting}
-            className="px-4 py-2 rounded-lg bg-white border border-teal-700 text-teal-900 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50">
-            {exporting ? "Đang xuất..." : "Xuất Bảng 1 + 01A (.xlsx)"}
-          </button>
-          <button onClick={handleExport02C} disabled={exporting}
-            className="px-4 py-2 rounded-lg bg-white border border-teal-700 text-teal-900 text-sm font-semibold hover:bg-teal-50 disabled:opacity-50">
-            {exporting ? "Đang xuất..." : "Xuất KH tháng 02C (.xlsx)"}
-          </button>
+          <Button data-tour="add-btn" size="sm" onClick={openAdd}>
+            <Plus className="h-3.5 w-3.5" /> Ghi nhận kết quả
+          </Button>
+          <Button data-tour="export-btns" variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            <FileDown className="h-3.5 w-3.5" />
+            {exporting ? "Đang xuất..." : "Xuất Bảng 1 + 01A"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport02C} disabled={exporting}>
+            <FileDown className="h-3.5 w-3.5" />
+            {exporting ? "Đang xuất..." : "Xuất KH tháng 02C"}
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-        <label className="text-sm text-slate-600">Tháng</label>
-        <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="h-10 px-2 rounded-lg bg-slate-50 border border-slate-300 text-sm">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-v5-line bg-v5-surface p-3 shadow-sm">
+        <label className="text-xs font-semibold text-v5-muted">Tháng</label>
+        <select
+          value={month}
+          onChange={(e) => setMonth(Number(e.target.value))}
+          className="h-9 rounded-md border border-v5-line bg-v5-surface px-2 text-xs text-v5-ink"
+        >
           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => <option key={m} value={m}>Tháng {m}</option>)}
         </select>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="h-10 px-2 rounded-lg bg-slate-50 border border-slate-300 text-sm">
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+          className="h-9 rounded-md border border-v5-line bg-v5-surface px-2 text-xs text-v5-ink"
+        >
           {[2025, 2026, 2027].map((y) => <option key={y} value={y}>Năm {y}</option>)}
         </select>
         {canPickPerson && (
-          <select value={personId} onChange={(e) => { setPersonId(e.target.value); fetchData(year, month, e.target.value); }}
-            className="h-10 px-2 rounded-lg bg-slate-50 border border-slate-300 text-sm max-w-xs">
+          <select
+            value={personId}
+            onChange={(e) => { setPersonId(e.target.value); fetchData(year, month, e.target.value); }}
+            className="h-9 max-w-xs rounded-md border border-v5-line bg-v5-surface px-2 text-xs text-v5-ink"
+          >
             <option value="">Cán bộ của tôi</option>
             {people.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
           </select>
         )}
-        <button onClick={() => fetchData(year, month, personId)} className="h-10 px-4 rounded-lg bg-slate-100 border border-slate-300 text-sm font-semibold">
-          Tải lại
-        </button>
+        <Button variant="outline" size="sm" onClick={() => fetchData(year, month, personId)}>
+          <RefreshCw className="h-3.5 w-3.5" /> Tải lại
+        </Button>
       </div>
 
       {summary && (
-        <div data-tour="summary" className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-            <div className="text-[11px] text-slate-500 uppercase">Đầu việc ghi nhận</div>
-            <div className="text-2xl font-bold text-slate-900">{summary.totalItems}</div>
-          </div>
-          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-            <div className="text-[11px] text-slate-500 uppercase">Hoàn thành (quy đổi)</div>
-            <div className="text-2xl font-bold text-teal-900">{summary.completedConverted}</div>
-            <div className="text-[11px] text-slate-400">thô: {summary.completedRaw} · giao quy đổi: {summary.assignedConverted}</div>
-          </div>
-          <div className={`p-3 rounded-xl border shadow-sm ${summary.unmappedCount > 0 ? "bg-amber-50 border-amber-200" : "bg-white border-slate-200"}`}>
-            <div className="text-[11px] text-slate-500 uppercase">Chờ đối chiếu mã SP</div>
-            <div className="text-2xl font-bold text-amber-700">{summary.unmappedCount}</div>
-          </div>
-          <div className={`p-3 rounded-xl border shadow-sm ${summary.missingFieldsCount > 0 ? "bg-rose-50 border-rose-200" : "bg-white border-slate-200"}`}>
-            <div className="text-[11px] text-slate-500 uppercase">Thiếu số liệu</div>
-            <div className="text-2xl font-bold text-rose-700">{summary.missingFieldsCount}</div>
-            <div className="text-[11px] text-slate-400">chậm: {summary.lateTotal} · làm lại: {summary.reworkTotal}</div>
-          </div>
+        <div data-tour="summary" className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <Card className="p-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Đầu việc ghi nhận</div>
+            <div className="mt-1 text-2xl font-bold tabular-nums text-v5-ink">{summary.totalItems}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Hoàn thành (quy đổi)</div>
+            <div className="mt-1 text-2xl font-bold tabular-nums text-v5-success">{summary.completedConverted}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">thô: {summary.completedRaw} · giao quy đổi: {summary.assignedConverted}</div>
+          </Card>
+          <Card className={`p-3 ${summary.unmappedCount > 0 ? "border-v5-gold/50 bg-v5-gold-soft" : ""}`}>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ đối chiếu mã SP</div>
+            <div className={`mt-1 text-2xl font-bold tabular-nums ${summary.unmappedCount > 0 ? "text-v5-gold-ink" : "text-v5-ink"}`}>
+              {summary.unmappedCount}
+            </div>
+          </Card>
+          <Card className={`p-3 ${summary.missingFieldsCount > 0 ? "border-v5-danger/30 bg-v5-danger-soft" : ""}`}>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Thiếu số liệu</div>
+            <div className={`mt-1 text-2xl font-bold tabular-nums ${summary.missingFieldsCount > 0 ? "text-v5-danger" : "text-v5-ink"}`}>
+              {summary.missingFieldsCount}
+            </div>
+            <div className="mt-1 text-[10px] text-v5-muted">chậm: {summary.lateTotal} · làm lại: {summary.reworkTotal}</div>
+          </Card>
         </div>
       )}
 
@@ -455,12 +476,12 @@ export default function MonthlyResultsPage() {
           data-testid="yc33-score-preview"
           className={`border rounded-xl p-4 shadow-sm ${
             scorePreview.status === "KNOWN"
-              ? "bg-amber-50 border-amber-200"
-              : "bg-slate-50 border-slate-300"
+              ? "bg-v5-gold-soft border-v5-gold/50"
+              : "bg-v5-bg border-v5-line"
           }`}
         >
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 text-[11px] font-bold uppercase">
+            <span className="px-2 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-bold uppercase">
               Điểm tính thử — chưa chính thức
             </span>
             {/* YC-33: trạng thái tính điểm */}
@@ -470,8 +491,8 @@ export default function MonthlyResultsPage() {
                 scorePreview.status === "KNOWN"
                   ? "bg-emerald-200 text-emerald-900"
                   : scorePreview.status === "PENDING_RULE"
-                    ? "bg-amber-300 text-amber-950"
-                    : "bg-slate-300 text-slate-800"
+                    ? "bg-v5-gold text-v5-gold-ink"
+                    : "bg-v5-line text-v5-ink"
               }`}
             >
               {scorePreview.status === "KNOWN"
@@ -486,13 +507,13 @@ export default function MonthlyResultsPage() {
             </span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
-            <div><div className="text-[11px] text-slate-500">Số lượng (a)</div><div className="text-xl font-bold">{scorePreview.qtyRatio ?? "—"}{scorePreview.qtyRatio !== null && "%"}</div></div>
-            <div><div className="text-[11px] text-slate-500">Tiến độ (b)</div><div className="text-xl font-bold">{scorePreview.progressRatio ?? "—"}{scorePreview.progressRatio !== null && "%"}</div></div>
-            <div><div className="text-[11px] text-slate-500">Chất lượng (c)</div><div className="text-xl font-bold">{scorePreview.qualityRatio ?? "—"}{scorePreview.qualityRatio !== null && "%"}</div></div>
-            <div><div className="text-[11px] text-slate-500">d = (a+b+c)/3</div><div className="text-xl font-bold">{scorePreview.averageD ?? "—"}</div></div>
-            <div><div className="text-[11px] text-slate-500">Điểm KQ ×70%</div><div className="text-xl font-bold text-amber-800">{scorePreview.score70 ?? "—"}</div></div>
+            <div><div className="text-[11px] text-v5-muted">Số lượng (a)</div><div className="text-xl font-bold">{scorePreview.qtyRatio ?? "—"}{scorePreview.qtyRatio !== null && "%"}</div></div>
+            <div><div className="text-[11px] text-v5-muted">Tiến độ (b)</div><div className="text-xl font-bold">{scorePreview.progressRatio ?? "—"}{scorePreview.progressRatio !== null && "%"}</div></div>
+            <div><div className="text-[11px] text-v5-muted">Chất lượng (c)</div><div className="text-xl font-bold">{scorePreview.qualityRatio ?? "—"}{scorePreview.qualityRatio !== null && "%"}</div></div>
+            <div><div className="text-[11px] text-v5-muted">d = (a+b+c)/3</div><div className="text-xl font-bold">{scorePreview.averageD ?? "—"}</div></div>
+            <div><div className="text-[11px] text-v5-muted">Điểm KQ ×70%</div><div className="text-xl font-bold text-v5-gold-ink">{scorePreview.score70 ?? "—"}</div></div>
           </div>
-          <p className="text-[11px] text-slate-500 mt-2">
+          <p className="text-[11px] text-v5-muted mt-2">
             Tính đúng công thức mẫu Bảng 1/01A từ số liệu đã ghi. {scorePreview.note}
           </p>
 
@@ -500,7 +521,7 @@ export default function MonthlyResultsPage() {
           {scorePreview.reasons && scorePreview.reasons.length > 0 && (
             <ul className="mt-2 space-y-0.5">
               {scorePreview.reasons.map((r: string, i: number) => (
-                <li key={i} className="text-[11px] text-amber-900 flex items-start gap-1">
+                <li key={i} className="text-[11px] text-v5-gold-ink flex items-start gap-1">
                   <span className="material-symbols-outlined text-[14px] shrink-0">info</span>
                   <span>{r}</span>
                 </li>
@@ -509,13 +530,13 @@ export default function MonthlyResultsPage() {
           )}
           {scorePreview.rows && scorePreview.rows.length > 0 && (
             <details className="mt-2">
-              <summary className="text-[11px] font-semibold text-slate-600 cursor-pointer">
+              <summary className="text-[11px] font-semibold text-v5-muted cursor-pointer">
                 Chi tiết {scorePreview.rows.length} dòng công việc (nguồn hệ số, trạng thái)
               </summary>
               <div className="mt-2 overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="text-slate-500 text-left">
+                    <tr className="text-v5-muted text-left">
                       <th className="py-1 pr-2">Công việc</th>
                       <th className="py-1 pr-2">Nguồn hệ số</th>
                       <th className="py-1 pr-2 text-right">Hệ số</th>
@@ -528,11 +549,11 @@ export default function MonthlyResultsPage() {
                   </thead>
                   <tbody>
                     {scorePreview.rows.map((r: any) => (
-                      <tr key={r.id} className="border-t border-slate-200">
-                        <td className="py-1 pr-2 text-slate-700 max-w-[260px] truncate">
+                      <tr key={r.id} className="border-t border-v5-line">
+                        <td className="py-1 pr-2 text-v5-ink max-w-[260px] truncate">
                           {r.title}
                         </td>
-                        <td className="py-1 pr-2 text-slate-500">
+                        <td className="py-1 pr-2 text-v5-muted">
                           {r.factorSource === "QD1277_PRODUCT"
                             ? "QĐ1277"
                             : r.factorSource === "TX_CATALOG"
@@ -550,7 +571,7 @@ export default function MonthlyResultsPage() {
                         <td className="py-1 pr-2 text-right font-mono">{r.i ?? "—"}</td>
                         <td className="py-1 pr-2 text-right font-mono">{r.l ?? "—"}</td>
                         <td className="py-1 pr-2 text-right font-mono">{r.n ?? "—"}</td>
-                        <td className="py-1 text-slate-500">
+                        <td className="py-1 text-v5-muted">
                           {r.status === "KNOWN" ? "OK" : r.status}
                         </td>
                       </tr>
@@ -588,23 +609,23 @@ export default function MonthlyResultsPage() {
       {!loading && drafts.length > 0 && (
         <div
           data-testid="monthly-drafts"
-          className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2"
+          className="rounded-xl border border-v5-gold/50 bg-v5-gold-soft/60 p-3 space-y-2"
         >
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold text-amber-900">
+            <p className="text-xs font-semibold text-v5-gold-ink">
               Công việc đã được lãnh đạo xác nhận — chờ ghi nhận kết quả tháng ({drafts.length})
             </p>
-            <span className="text-[11px] text-amber-800">Đây là bản nháp, chưa tính vào điểm chính thức</span>
+            <span className="text-[11px] text-v5-gold-ink">Đây là bản nháp, chưa tính vào điểm chính thức</span>
           </div>
           {drafts.map((d) => (
             <div
               key={d.id}
               data-testid={`monthly-draft-${d.id}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-v5-gold/50 bg-v5-surface px-3 py-2"
             >
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">{d.title}</p>
-                <p className="text-[11px] text-slate-600">
+                <p className="text-sm font-semibold text-v5-ink truncate">{d.title}</p>
+                <p className="text-[11px] text-v5-muted">
                   {d.officialState === "OFFICIAL" ? "Đã xác nhận" : "Chờ xác nhận"} ·{" "}
                   {d.completedDate ? `hoàn thành ${toCalendarDate(d.completedDate)}` : "chưa có ngày hoàn thành"} ·{" "}
                   {d.spTotal > 0
@@ -613,14 +634,14 @@ export default function MonthlyResultsPage() {
                   {d.evidenceCount > 0 ? ` · ${d.evidenceCount} minh chứng` : ""}
                 </p>
                 {d.resultText && (
-                  <p className="text-[11px] text-slate-500 truncate">Kết quả: {d.resultText}</p>
+                  <p className="text-[11px] text-v5-muted truncate">Kết quả: {d.resultText}</p>
                 )}
               </div>
               <button
                 type="button"
                 data-testid={`monthly-draft-open-${d.id}`}
                 onClick={() => openAddForDraft(d)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-amber-500 bg-amber-500 text-white hover:opacity-90"
+                className="rounded-lg border border-v5-gold/60 bg-v5-gold px-3 py-1.5 text-xs font-semibold text-v5-ink hover:opacity-90"
               >
                 Ghi nhận kết quả
               </button>
@@ -629,10 +650,10 @@ export default function MonthlyResultsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+      <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[1000px]">
           <thead>
-            <tr className="bg-slate-50 text-slate-700 text-xs uppercase">
+            <tr className="bg-v5-bg text-v5-ink text-xs uppercase">
               <th className="py-2.5 px-3 text-left">Nhiệm vụ / Sản phẩm</th>
               <th className="py-2.5 px-3 text-left">Mã SP · Hệ số</th>
               <th className="py-2.5 px-3 text-right">Giao</th>
@@ -641,89 +662,89 @@ export default function MonthlyResultsPage() {
               <th className="py-2.5 px-3 text-right">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-v5-line">
             {items.map((it) => (
-              <tr key={it.id} className="hover:bg-slate-50">
+              <tr key={it.id} className="hover:bg-v5-bg">
                 <td className="py-2.5 px-3">
-                  <div className="font-semibold text-slate-900">{it.title}</div>
+                  <div className="font-semibold text-v5-ink">{it.title}</div>
                   {it.officialReady ? (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-emerald-100 text-emerald-800 text-[11px] font-semibold" data-testid={`mr-official-${it.id}`}>
                       <span className="material-symbols-outlined text-[13px]">verified</span>
                       Đủ điều kiện tổng hợp chính thức
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-amber-100 text-amber-800 text-[11px] font-semibold" data-testid={`mr-draft-${it.id}`}>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-1 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold" data-testid={`mr-draft-${it.id}`}>
                       <span className="material-symbols-outlined text-[13px]">edit_note</span>
                       DỰ THẢO — chưa đủ điều kiện tổng hợp chính thức
                     </span>
                   )}
-                  {it.outputText && <div className="text-slate-600 text-xs">{it.outputText}</div>}
+                  {it.outputText && <div className="text-v5-muted text-xs">{it.outputText}</div>}
                   {it.workItem && (
                     <div className="mt-1 flex flex-wrap items-center gap-1">
-                      <span className="px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 text-[11px] font-semibold">
+                      <span className="px-1.5 py-0.5 rounded bg-v5-accent-soft text-v5-accent text-[11px] font-semibold">
                         Đầu việc: {it.workItem.title}
                       </span>
                       {it.workItem.catalogEntry && (
-                        <span className="px-1.5 py-0.5 rounded bg-teal-100 text-teal-800 font-mono text-[10px]">
+                        <span className="px-1.5 py-0.5 rounded bg-v5-accent-soft text-v5-accent font-mono text-[10px]">
                           {it.workItem.catalogEntry.code}
                         </span>
                       )}
                       {typeof it.workItem._count?.evidences === "number" && (
-                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">
+                        <span className="px-1.5 py-0.5 rounded bg-v5-bg text-v5-muted text-[10px]">
                           {it.workItem._count.evidences} minh chứng
                         </span>
                       )}
                     </div>
                   )}
                   <div className="flex gap-1 mt-1">
-                    {it.needsReview && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[11px] font-semibold">Chờ đối chiếu mã SP</span>}
-                    {missing(it) && <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[11px] font-semibold">Thiếu số liệu</span>}
+                    {it.needsReview && <span className="px-1.5 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold">Chờ đối chiếu mã SP</span>}
+                    {missing(it) && <span className="px-1.5 py-0.5 rounded bg-v5-danger-soft text-v5-danger text-[11px] font-semibold">Thiếu số liệu</span>}
                   </div>
                 </td>
                 <td className="py-2.5 px-3 text-xs">
                   {it.productItem
-                    ? <><span className="font-mono font-bold text-teal-900">{it.productItem.code}</span>
-                      <span className="block text-slate-500">hệ số {it.factorSnapshot ?? it.productItem.convertFactor ?? "—"}</span></>
-                    : <span className="text-slate-400">—</span>}
+                    ? <><span className="font-mono font-bold text-v5-accent">{it.productItem.code}</span>
+                      <span className="block text-v5-muted">hệ số {it.factorSnapshot ?? it.productItem.convertFactor ?? "—"}</span></>
+                    : <span className="text-v5-muted">—</span>}
                 </td>
                 <td className="py-2.5 px-3 text-right">{it.assignedQty ?? "—"}</td>
                 <td className="py-2.5 px-3 text-right font-bold">{it.completedQty ?? "—"}</td>
-                <td className="py-2.5 px-3 text-xs text-slate-600">
+                <td className="py-2.5 px-3 text-xs text-v5-muted">
                   {it.evidenceRef || "—"}
-                  <span className="block text-slate-400">
+                  <span className="block text-v5-muted">
                     {it.completedDate ? `xong ${it.completedDate.slice(0, 10)}` : "chưa có ngày xong"}
                   </span>
                 </td>
                 <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                  <button onClick={() => openEdit(it)} className="px-2.5 py-1 rounded bg-slate-100 text-xs font-semibold mr-1">Sửa</button>
-                  <button onClick={() => handleDelete(it.id, it.title)} className="px-2.5 py-1 rounded bg-rose-50 text-rose-700 text-xs font-semibold">Xóa</button>
+                  <button onClick={() => openEdit(it)} className="px-2.5 py-1 rounded bg-v5-bg text-xs font-semibold mr-1">Sửa</button>
+                  <button onClick={() => handleDelete(it.id, it.title)} className="px-2.5 py-1 rounded bg-v5-danger-soft text-v5-danger text-xs font-semibold">Xóa</button>
                 </td>
               </tr>
             ))}
             {!loading && items.length === 0 && (
-              <tr><td colSpan={6} className="py-10 text-center text-slate-500">Chưa có kết quả nào trong tháng {month}/{year}</td></tr>
+              <tr><td colSpan={6} className="py-10 text-center text-v5-muted">Chưa có kết quả nào trong tháng {month}/{year}</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 bg-teal-900 text-white flex items-center justify-between">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-4 bg-v5-accent text-white flex items-center justify-between">
               <h3 className="font-semibold">{editing ? "Sửa kết quả tháng" : "Ghi nhận kết quả tháng"}</h3>
               <button onClick={() => setShowModal(false)}>✕</button>
             </div>
             <form onSubmit={handleSave}>
               <div className="p-4 flex flex-col gap-3 max-h-[70vh] overflow-y-auto">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Tên nhiệm vụ / công việc *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Tên nhiệm vụ / công việc *</label>
                   <input required value={fTitle} onChange={(e) => setFTitle(e.target.value)}
                     placeholder="Nhập tên nhiệm vụ, công việc thực tế..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label className="text-xs font-semibold text-v5-ink">
                     Liên kết đầu việc trong kế hoạch cá nhân (tuỳ chọn — chống ghi nhận trùng)
                   </label>
                   <select
@@ -748,7 +769,7 @@ export default function MonthlyResultsPage() {
                         }
                       }
                     }}
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm"
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm"
                   >
                     <option value="">
                       {workItemsLoading ? "-- Đang tải đầu việc... --" : "-- Không liên kết --"}
@@ -765,7 +786,7 @@ export default function MonthlyResultsPage() {
                     ))}
                   </select>
                   {fWorkItemId && (
-                    <p className="text-[11px] text-teal-700 bg-teal-50 border border-teal-200 rounded px-2 py-1.5">
+                    <p className="text-[11px] text-v5-accent bg-v5-accent-soft border border-v5-line rounded px-2 py-1.5">
                       Đã liên kết đầu việc — mỗi đầu việc chỉ có một kết quả tháng. Hạn xử lý và ngày hoàn thành được
                       kế thừa từ đầu việc, có thể sửa trực tiếp bên dưới.
                     </p>
@@ -776,18 +797,18 @@ export default function MonthlyResultsPage() {
                   {fWorkItemId && spList.length > 0 && (
                     <div
                       data-testid="work-item-sp-list"
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 space-y-1"
+                      className="rounded-lg border border-v5-line bg-v5-bg px-2 py-1.5 space-y-1"
                     >
-                      <p className="text-[11px] font-semibold text-slate-700">
+                      <p className="text-[11px] font-semibold text-v5-ink">
                         Sản phẩm QĐ1277 của công việc ({spList.length})
                       </p>
                       {spList.map((sp) => (
                         <div key={sp.id} className="flex items-center justify-between gap-2 text-[11px]">
-                          <span className="font-mono text-slate-700 truncate">
+                          <span className="font-mono text-v5-ink truncate">
                             {sp.code} — {sp.taskName}
                           </span>
                           <span className="flex items-center gap-2 shrink-0">
-                            <span className="text-slate-500">
+                            <span className="text-v5-muted">
                               hệ số {sp.factorSnapshot ?? sp.factor ?? "chưa có"}
                             </span>
                             <span
@@ -795,8 +816,8 @@ export default function MonthlyResultsPage() {
                                 sp.reviewState === "CONFIRMED"
                                   ? "bg-emerald-100 text-emerald-800"
                                   : sp.reviewState === "REJECTED"
-                                    ? "bg-rose-100 text-rose-700"
-                                    : "bg-amber-100 text-amber-800"
+                                    ? "bg-v5-danger-soft text-v5-danger"
+                                    : "bg-v5-gold-soft text-v5-gold-ink"
                               }`}
                             >
                               {sp.reviewState === "CONFIRMED"
@@ -808,40 +829,40 @@ export default function MonthlyResultsPage() {
                           </span>
                         </div>
                       ))}
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-[10px] text-v5-muted">
                         Sản phẩm chưa được lãnh đạo xác nhận hoặc chưa có hệ số sẽ không tham gia điểm chính thức.
                       </p>
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Mã sản phẩm QĐ1277 (để trống = chờ đối chiếu)</label>
+                  <label className="text-xs font-semibold text-v5-ink">Mã sản phẩm QĐ1277 (để trống = chờ đối chiếu)</label>
                   {fProductId
-                    ? <div className="flex items-center gap-2 h-10 px-2 rounded-lg bg-teal-50 border border-teal-200 text-sm">
+                    ? <div className="flex items-center gap-2 h-10 px-2 rounded-lg bg-v5-accent-soft border border-v5-line text-sm">
                       <span className="flex-1 truncate font-mono">{fProductLabel}</span>
-                      <button type="button" onClick={() => { setFProductId(""); setFProductLabel(""); }} className="text-rose-600 font-bold">✕</button>
+                      <button type="button" onClick={() => { setFProductId(""); setFProductLabel(""); }} className="text-v5-danger font-bold">✕</button>
                     </div>
                     : <>
                       <input value={pSearch} onChange={(e) => searchProducts(e.target.value)}
                         placeholder="Gõ từ 2 ký tự để tìm trong 3386 sản phẩm..."
-                        className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
-                      {pSearching && <span className="text-xs text-slate-400">Đang tìm...</span>}
+                        className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
+                      {pSearching && <span className="text-xs text-v5-muted">Đang tìm...</span>}
                       {pResults.length > 0 && (
-                        <div className="border border-slate-200 rounded-lg max-h-44 overflow-y-auto divide-y">
+                        <div className="border border-v5-line rounded-lg max-h-44 overflow-y-auto divide-y">
                           {pResults.map((p) => (
                             <button type="button" key={p.id}
                               onClick={() => { setFProductId(p.id); setFProductLabel(`${p.code} — ${p.taskName}`); setPResults([]); setPSearch(""); }}
-                              className="w-full text-left p-2 hover:bg-teal-50 text-xs">
-                              <span className="font-mono font-bold text-teal-900">{p.code}</span>
-                              <span className="text-slate-500">
+                              className="w-full text-left p-2 hover:bg-v5-bg text-xs">
+                              <span className="font-mono font-bold text-v5-accent">{p.code}</span>
+                              <span className="text-v5-muted">
                                 {" · hệ số "}
                                 {p.convertFactor !== null && p.convertFactor !== undefined
                                   ? p.convertFactor
                                   : "CHƯA CÓ (chờ đối chiếu)"}
                               </span>
-                              <span className="block text-slate-700">{p.taskName}</span>
+                              <span className="block text-v5-ink">{p.taskName}</span>
                               {p.outputProduct ? (
-                                <span className="block text-slate-500">Sản phẩm đầu ra: {p.outputProduct}</span>
+                                <span className="block text-v5-muted">Sản phẩm đầu ra: {p.outputProduct}</span>
                               ) : null}
                             </button>
                           ))}
@@ -850,61 +871,61 @@ export default function MonthlyResultsPage() {
                     </>}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Sản phẩm thực tế</label>
+                  <label className="text-xs font-semibold text-v5-ink">Sản phẩm thực tế</label>
                   <input value={fOutput} onChange={(e) => setFOutput(e.target.value)}
                     placeholder="Nhập sản phẩm, số lượng cụ thể đã tạo ra..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Số lượng giao</label>
+                    <label className="text-xs font-semibold text-v5-ink">Số lượng giao</label>
                     <input type="number" min={0} value={fAssigned} onChange={(e) => setFAssigned(e.target.value)}
-                      placeholder="Để trống nếu không có" className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      placeholder="Để trống nếu không có" className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Số lượng hoàn thành</label>
+                    <label className="text-xs font-semibold text-v5-ink">Số lượng hoàn thành</label>
                     <input type="number" min={0} value={fCompleted} onChange={(e) => setFCompleted(e.target.value)}
-                      placeholder="Nhập số thực tế..." className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      placeholder="Nhập số thực tế..." className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Ngày phải xong</label>
+                    <label className="text-xs font-semibold text-v5-ink">Ngày phải xong</label>
                     <input type="date" value={fDue} onChange={(e) => setFDue(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Ngày xong thực tế</label>
+                    <label className="text-xs font-semibold text-v5-ink">Ngày xong thực tế</label>
                     <input type="date" value={fDoneDate} onChange={(e) => setFDoneDate(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Số lần chậm</label>
+                    <label className="text-xs font-semibold text-v5-ink">Số lần chậm</label>
                     <input type="number" min={0} value={fLate} onChange={(e) => setFLate(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Số lần làm lại</label>
+                    <label className="text-xs font-semibold text-v5-ink">Số lần làm lại</label>
                     <input type="number" min={0} value={fRework} onChange={(e) => setFRework(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Minh chứng / số hiệu văn bản</label>
+                  <label className="text-xs font-semibold text-v5-ink">Minh chứng / số hiệu văn bản</label>
                   <input value={fEvidence} onChange={(e) => setFEvidence(e.target.value)}
                     placeholder="Nhập số hiệu văn bản, hồ sơ liên quan..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Ghi chú</label>
+                  <label className="text-xs font-semibold text-v5-ink">Ghi chú</label>
                   <textarea rows={2} value={fNotes} onChange={(e) => setFNotes(e.target.value)}
-                    className="p-2.5 rounded-lg border border-slate-300 text-sm" />
+                    className="p-2.5 rounded-lg border border-v5-line text-sm" />
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-v5-muted">
                   Gửi xong lãnh đạo nhận tin duyệt ngay. Chọn mã SP để hệ số quy đổi được chốt theo danh mục hiện hành.
                 </p>
               </div>
-              <div className="p-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
+              <div className="p-4 bg-v5-bg flex items-center justify-end gap-2 border-t">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm">Hủy</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold disabled:opacity-50">
+                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-v5-accent text-white text-sm font-semibold disabled:opacity-50">
                   {saving ? "Đang lưu..." : "Lưu kết quả"}
                 </button>
               </div>

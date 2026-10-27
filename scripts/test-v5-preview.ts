@@ -166,6 +166,15 @@ check(
     !approvalsPage.includes("max-w-2xl") &&
     !approvalsPage.includes("TRUNG TÂM PHÊ DUYỆT")
 );
+const monthlyResults = read("src/app/monthly-results/page.tsx");
+check(
+  "Kết quả tháng dùng header/KPI/token V5",
+  monthlyResults.includes("Kết quả công tác tháng") &&
+    monthlyResults.includes("<Card") &&
+    !monthlyResults.includes("bg-white") &&
+    !monthlyResults.includes("slate-") &&
+    !monthlyResults.includes("teal-")
+);
 const routine = read("src/app/routine/page.tsx");
 check(
   "Nhật ký responsive mobile và bỏ từ kỹ thuật",

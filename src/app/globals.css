@@ -123,6 +123,28 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+.v5-shell .min-h-screen {
+  min-height: 0;
+}
+
+.v5-shell .bg-app-bg {
+  background-color: transparent;
+}
+
+.v5-shell .text-headline-xl {
+  font-size: 1.5rem !important;
+  line-height: 2rem !important;
+}
+
+.v5-shell .text-headline-lg {
+  font-size: 1.25rem !important;
+  line-height: 1.75rem !important;
+}
+
+.v5-shell .rounded-2xl {
+  border-radius: 0.75rem;
+}
+
 .v5-shell h1,
 .v5-shell h2,
 .v5-shell h3 {
