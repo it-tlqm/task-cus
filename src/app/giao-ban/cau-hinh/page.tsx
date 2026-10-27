@@ -323,7 +323,7 @@ export default function CauHinhSoLieuPage() {
     return (
       <div className="p-8 flex flex-col items-start gap-3">
         <BackButton href="/v5/giao-ban" label="Số liệu giao ban" />
-        <div className="text-body-sm text-on-surface-variant">Đang tải cấu hình…</div>
+        <div className="text-body-sm text-v5-muted">Đang tải cấu hình…</div>
       </div>
     );
   }
@@ -332,7 +332,7 @@ export default function CauHinhSoLieuPage() {
       <div className="p-8 flex flex-col items-center gap-3 text-center">
         <BackButton href="/v5/giao-ban" label="Số liệu giao ban" />
         <Lock className="h-10 w-10 text-v5-muted" />
-        <p className="text-body-md text-on-surface">Chỉ người được cấp quyền cấu hình số liệu giao ban mới được truy cập.</p>
+        <p className="text-body-md text-v5-ink">Chỉ người được cấp quyền cấu hình số liệu giao ban mới được truy cập.</p>
       </div>
     );
   }
@@ -340,7 +340,7 @@ export default function CauHinhSoLieuPage() {
     return (
       <div className="p-8 flex flex-col items-start gap-3">
         <BackButton href="/v5/giao-ban" label="Số liệu giao ban" />
-        <div className="text-body-sm text-on-surface-variant">Đang tải cấu hình…</div>
+        <div className="text-body-sm text-v5-muted">Đang tải cấu hình…</div>
       </div>
     );
   }
@@ -379,29 +379,29 @@ export default function CauHinhSoLieuPage() {
       <div className="flex flex-col gap-3 pb-4">
         {/* ============ NHÓM & CHỈ TIÊU ============ */}
         {tab === "COMPARISON" && (
-          <section className="rounded-xl border border-border-default bg-surface-container-lowest p-4 flex flex-col gap-4">
+          <section className="rounded-xl border border-v5-line bg-v5-surface p-4 flex flex-col gap-4">
             <div>
-              <h2 className="text-title-md font-bold text-on-surface">Hiển thị trong So sánh kết quả thu NSNN</h2>
-              <p className="text-body-sm text-on-surface-variant mt-1">
+              <h2 className="text-title-md font-bold text-v5-ink">Hiển thị trong So sánh kết quả thu NSNN</h2>
+              <p className="text-body-sm text-v5-muted mt-1">
                 Chọn từng chỉ tiêu được phép xuất hiện trong khối So sánh. Bảng Số liệu giao ban phía trên không bị ảnh hưởng.
               </p>
             </div>
             <div className="grid gap-3">
               {groups.map((g: any) => (
-                <div key={g.id} className="rounded-lg border border-border-default bg-surface p-3">
-                  <div className="text-label-md font-semibold text-on-surface">{g.name}</div>
+                <div key={g.id} className="rounded-lg border border-v5-line bg-surface p-3">
+                  <div className="text-label-md font-semibold text-v5-ink">{g.name}</div>
                   <div className="grid gap-1.5 mt-2">
                     {(g.metrics || [])
                       .filter((m: any) => m.active !== false)
                       .map((m: any) => (
-                        <label key={m.id} className="flex items-center gap-2 text-body-sm text-on-surface">
+                        <label key={m.id} className="flex items-center gap-2 text-body-sm text-v5-ink">
                           <input
                             type="checkbox"
                             checked={comparisonCodes.includes(m.code)}
                             onChange={() => toggleComparisonCode(m.code)}
                           />
                           <span>{m.name}</span>
-                          <span className="text-body-xs text-on-surface-variant">{m.code}</span>
+                          <span className="text-body-xs text-v5-muted">{m.code}</span>
                         </label>
                       ))}
                   </div>
@@ -416,7 +416,7 @@ export default function CauHinhSoLieuPage() {
               >
                 {busy === "comparison.update" ? "Đang lưu..." : "Lưu cấu hình so sánh"}
               </button>
-              <span className="text-body-xs text-on-surface-variant">
+              <span className="text-body-xs text-v5-muted">
                 Mặc định chỉ bật THU_NSNN; bỏ chọn tất cả để ẩn toàn bộ khối So sánh.
               </span>
             </div>
@@ -431,7 +431,7 @@ export default function CauHinhSoLieuPage() {
                   key={g.id}
                   onClick={() => setSelGroupId(g.id)}
                   className={`px-3 py-1.5 rounded-full text-label-sm font-semibold border ${
-                    selGroup?.id === g.id ? "bg-secondary text-on-secondary border-secondary" : "bg-surface-container-lowest text-on-surface-variant border-border-default"
+                    selGroup?.id === g.id ? "bg-secondary text-on-secondary border-secondary" : "bg-v5-surface text-v5-muted border-v5-line"
                   } ${!g.active ? "opacity-50" : ""}`}
                 >
                   {g.name} <span className="opacity-70">({g.metrics.length})</span>
@@ -446,12 +446,12 @@ export default function CauHinhSoLieuPage() {
             </div>
 
             {newGroupOpen && (
-              <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
+              <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
                 <span className="font-label-md text-label-md text-primary font-bold">Nhóm chỉ tiêu mới</span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input placeholder="Mã nhóm (VD: THUE)" value={newGroup.code} onChange={(e) => setNewGroup({ ...newGroup, code: e.target.value.toUpperCase() })} className="px-3 py-2 rounded-lg border border-border-default text-body-sm" />
-                  <input placeholder="Tên nhóm" value={newGroup.name} onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })} className="px-3 py-2 rounded-lg border border-border-default text-body-sm" />
-                  <input type="number" placeholder="Thứ tự" value={newGroup.sortOrder} onChange={(e) => setNewGroup({ ...newGroup, sortOrder: Number(e.target.value) })} className="px-3 py-2 rounded-lg border border-border-default text-body-sm" />
+                  <input placeholder="Mã nhóm (VD: THUE)" value={newGroup.code} onChange={(e) => setNewGroup({ ...newGroup, code: e.target.value.toUpperCase() })} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm" />
+                  <input placeholder="Tên nhóm" value={newGroup.name} onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm" />
+                  <input type="number" placeholder="Thứ tự" value={newGroup.sortOrder} onChange={(e) => setNewGroup({ ...newGroup, sortOrder: Number(e.target.value) })} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm" />
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -468,7 +468,7 @@ export default function CauHinhSoLieuPage() {
                   >
                     Tạo nhóm
                   </button>
-                  <button onClick={() => setNewGroupOpen(false)} className="px-4 py-2 rounded-lg border border-border-default text-label-sm">
+                  <button onClick={() => setNewGroupOpen(false)} className="px-4 py-2 rounded-lg border border-v5-line text-label-sm">
                     Hủy
                   </button>
                 </div>
@@ -476,16 +476,16 @@ export default function CauHinhSoLieuPage() {
             )}
 
             {selGroup && (
-              <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
+              <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
                 <span className="font-label-md text-label-md text-primary font-bold">Thông tin nhóm: {selGroup.name}</span>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <input value={groupDraft.name || ""} onChange={(e) => setGroupDraft({ ...groupDraft, name: e.target.value })} className="px-3 py-2 rounded-lg border border-border-default text-body-sm" placeholder="Tên nhóm" />
-                  <input type="number" value={groupDraft.sortOrder ?? 0} onChange={(e) => setGroupDraft({ ...groupDraft, sortOrder: Number(e.target.value) })} className="px-3 py-2 rounded-lg border border-border-default text-body-sm" placeholder="Thứ tự" />
+                  <input value={groupDraft.name || ""} onChange={(e) => setGroupDraft({ ...groupDraft, name: e.target.value })} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm" placeholder="Tên nhóm" />
+                  <input type="number" value={groupDraft.sortOrder ?? 0} onChange={(e) => setGroupDraft({ ...groupDraft, sortOrder: Number(e.target.value) })} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm" placeholder="Thứ tự" />
                   <label className="flex items-center gap-2 text-body-sm px-1">
                     <input type="checkbox" checked={!!groupDraft.active} onChange={(e) => setGroupDraft({ ...groupDraft, active: e.target.checked })} />
                     Đang hoạt động
                   </label>
-                  <input value={groupDraft.note || ""} onChange={(e) => setGroupDraft({ ...groupDraft, note: e.target.value })} className="px-3 py-2 rounded-lg border border-border-default text-body-sm" placeholder="Ghi chú" />
+                  <input value={groupDraft.note || ""} onChange={(e) => setGroupDraft({ ...groupDraft, note: e.target.value })} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm" placeholder="Ghi chú" />
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -513,22 +513,22 @@ export default function CauHinhSoLieuPage() {
                 </div>
 
                 {newMetricOpen && (
-                  <div className="border border-dashed border-border-default rounded-lg p-3 flex flex-col gap-3 bg-surface-container-low/50">
+                  <div className="border border-dashed border-v5-line rounded-lg p-3 flex flex-col gap-3 bg-v5-bg/50">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <input placeholder="Mã (VD: THU_NSNN)" value={newMetric.code} onChange={(e) => setNewMetric({ ...newMetric, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" />
-                      <input placeholder="Tên chỉ tiêu" value={newMetric.name} onChange={(e) => setNewMetric({ ...newMetric, name: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" />
-                      <select value={newMetric.valueKind} onChange={(e) => setNewMetric({ ...newMetric, valueKind: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                      <input placeholder="Mã (VD: THU_NSNN)" value={newMetric.code} onChange={(e) => setNewMetric({ ...newMetric, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" />
+                      <input placeholder="Tên chỉ tiêu" value={newMetric.name} onChange={(e) => setNewMetric({ ...newMetric, name: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm col-span-2" />
+                      <select value={newMetric.valueKind} onChange={(e) => setNewMetric({ ...newMetric, valueKind: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                         {Object.entries(KIND_LABELS).map(([k, v]) => (
                           <option key={k} value={k}>{v}</option>
                         ))}
                       </select>
-                      <select value={newMetric.unitType} onChange={(e) => setNewMetric({ ...newMetric, unitType: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                      <select value={newMetric.unitType} onChange={(e) => setNewMetric({ ...newMetric, unitType: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                         <option value="COUNT">Số lượng</option>
                         <option value="VND">Tiền VNĐ</option>
                         <option value="USD">USD</option>
                       </select>
-                      <input placeholder="Đơn vị hiển thị (VD: tờ khai)" value={newMetric.unitLabel} onChange={(e) => setNewMetric({ ...newMetric, unitLabel: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" />
-                      <select value={newMetric.displayScale} onChange={(e) => setNewMetric({ ...newMetric, displayScale: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                      <input placeholder="Đơn vị hiển thị (VD: tờ khai)" value={newMetric.unitLabel} onChange={(e) => setNewMetric({ ...newMetric, unitLabel: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" />
+                      <select value={newMetric.displayScale} onChange={(e) => setNewMetric({ ...newMetric, displayScale: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                         {SCALE_OPTIONS.map((s) => (
                           <option key={s.value} value={s.value}>{s.label}</option>
                         ))}
@@ -536,7 +536,7 @@ export default function CauHinhSoLieuPage() {
                       <select
                         value={newMetric.entryPeriod || "WEEK"}
                         onChange={(e) => setNewMetric({ ...newMetric, entryPeriod: e.target.value })}
-                        className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                        className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
                         title="Kỳ nhập số liệu của chỉ tiêu"
                       >
                         {ENTRY_PERIODS.map((p) => (
@@ -572,7 +572,7 @@ export default function CauHinhSoLieuPage() {
                       >
                         Tạo chỉ tiêu
                       </button>
-                      <span className="text-body-xs text-on-surface-variant self-center">
+                      <span className="text-body-xs text-v5-muted self-center">
                         Tạo xong có thể thêm phân loại, đổi đơn vị, công thức ở nút Sửa bên dưới.
                       </span>
                     </div>
@@ -581,12 +581,12 @@ export default function CauHinhSoLieuPage() {
 
                 <div className="flex flex-col gap-2">
                   {selGroup.metrics.map((m: any) => (
-                    <div key={m.id} className={`border rounded-lg ${m.active ? "border-border-default/50" : "border-border-default/30 opacity-60"} bg-surface-container-lowest`}>
+                    <div key={m.id} className={`border rounded-lg ${m.active ? "border-v5-line/50" : "border-v5-line/30 opacity-60"} bg-v5-surface`}>
                       <div className="px-3 py-2 flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-body-sm text-on-surface">{m.name}</span>
-                        <span className="text-body-xs text-on-surface-variant">{m.code}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant">{m.unitLabelEffective}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant">{KIND_LABELS[m.valueKind]?.split(" (")[0]}</span>
+                        <span className="font-medium text-body-sm text-v5-ink">{m.name}</span>
+                        <span className="text-body-xs text-v5-muted">{m.code}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted">{m.unitLabelEffective}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted">{KIND_LABELS[m.valueKind]?.split(" (")[0]}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
                           Kỳ: {ENTRY_PERIOD_LABELS[(m.entryPeriod || metricEntryPeriod(m)) as keyof typeof ENTRY_PERIOD_LABELS]}
                         </span>
@@ -597,7 +597,7 @@ export default function CauHinhSoLieuPage() {
                         <div className="ml-auto flex items-center gap-1">
                           <button
                             onClick={() => post("metric", "update", { id: m.id, active: !m.active, ...keepMetricFields(m) }, m.active ? "Đã ẩn chỉ tiêu" : "Đã bật chỉ tiêu")}
-                            className="px-2 py-1 rounded border border-border-default text-body-xs hover:bg-surface-container"
+                            className="px-2 py-1 rounded border border-v5-line text-body-xs hover:bg-v5-bg"
                             title={m.active ? "Ẩn (giữ lịch sử)" : "Bật lại"}
                           >
                             {m.active ? "Ẩn" : "Bật"}
@@ -609,28 +609,28 @@ export default function CauHinhSoLieuPage() {
                       </div>
 
                       {editMetricId === m.id && (
-                        <div className="border-t border-border-default/40 p-3 flex flex-col gap-3 bg-surface-container-low/40">
+                        <div className="border-t border-v5-line/40 p-3 flex flex-col gap-3 bg-v5-bg/40">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <input value={metricDraft.name || ""} onChange={(e) => setMetricDraft({ ...metricDraft, name: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Tên" />
-                            <select value={metricDraft.valueKind} onChange={(e) => setMetricDraft({ ...metricDraft, valueKind: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2">
+                            <input value={metricDraft.name || ""} onChange={(e) => setMetricDraft({ ...metricDraft, name: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm col-span-2" placeholder="Tên" />
+                            <select value={metricDraft.valueKind} onChange={(e) => setMetricDraft({ ...metricDraft, valueKind: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm col-span-2">
                               {Object.entries(KIND_LABELS).map(([k, v]) => (
                                 <option key={k} value={k}>{v}</option>
                               ))}
                             </select>
-                            <select value={metricDraft.unitType} onChange={(e) => setMetricDraft({ ...metricDraft, unitType: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                            <select value={metricDraft.unitType} onChange={(e) => setMetricDraft({ ...metricDraft, unitType: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                               <option value="COUNT">Số lượng</option>
                               <option value="VND">Tiền VNĐ</option>
                               <option value="USD">USD</option>
                             </select>
-                            <input value={metricDraft.unitLabel || ""} onChange={(e) => setMetricDraft({ ...metricDraft, unitLabel: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Đơn vị (VD: đồng, tỷ đồng, tờ khai)" />
-                            <select value={metricDraft.displayScale} onChange={(e) => setMetricDraft({ ...metricDraft, displayScale: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                            <input value={metricDraft.unitLabel || ""} onChange={(e) => setMetricDraft({ ...metricDraft, unitLabel: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" placeholder="Đơn vị (VD: đồng, tỷ đồng, tờ khai)" />
+                            <select value={metricDraft.displayScale} onChange={(e) => setMetricDraft({ ...metricDraft, displayScale: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                               {SCALE_OPTIONS.map((s) => (
                                 <option key={s.value} value={s.value}>{s.label}</option>
                               ))}
                             </select>
-                            <input type="number" min={0} max={4} value={metricDraft.decimals ?? 0} onChange={(e) => setMetricDraft({ ...metricDraft, decimals: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Số thập phân hiển thị" />
-                            <input type="number" value={metricDraft.allowBackdateDays ?? 0} onChange={(e) => setMetricDraft({ ...metricDraft, allowBackdateDays: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Số ngày được nhập bù (-1 = không giới hạn)" title="Số ngày được nhập bù (-1 = không giới hạn)" />
-                            <input type="number" value={metricDraft.sortOrder ?? 0} onChange={(e) => setMetricDraft({ ...metricDraft, sortOrder: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Thứ tự" />
+                            <input type="number" min={0} max={4} value={metricDraft.decimals ?? 0} onChange={(e) => setMetricDraft({ ...metricDraft, decimals: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" placeholder="Số thập phân hiển thị" />
+                            <input type="number" value={metricDraft.allowBackdateDays ?? 0} onChange={(e) => setMetricDraft({ ...metricDraft, allowBackdateDays: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" placeholder="Số ngày được nhập bù (-1 = không giới hạn)" title="Số ngày được nhập bù (-1 = không giới hạn)" />
+                            <input type="number" value={metricDraft.sortOrder ?? 0} onChange={(e) => setMetricDraft({ ...metricDraft, sortOrder: Number(e.target.value) })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" placeholder="Thứ tự" />
                             <label className="flex items-center gap-1 text-body-xs">
                               <input type="checkbox" checked={!!metricDraft.expectDaily} onChange={(e) => setMetricDraft({ ...metricDraft, expectDaily: e.target.checked })} />
                               Nhập hằng ngày (cảnh báo thiếu)
@@ -638,7 +638,7 @@ export default function CauHinhSoLieuPage() {
                             <select
                               value={metricDraft.entryPeriod || "WEEK"}
                               onChange={(e) => setMetricDraft({ ...metricDraft, entryPeriod: e.target.value })}
-                              className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
                               title="Kỳ nhập số liệu của chỉ tiêu"
                             >
                               {ENTRY_PERIODS.map((p) => (
@@ -655,7 +655,7 @@ export default function CauHinhSoLieuPage() {
                               <input type="checkbox" checked={!!metricDraft.showOnDashboard} onChange={(e) => setMetricDraft({ ...metricDraft, showOnDashboard: e.target.checked })} />
                               Hiện trên Trang chủ
                             </label>
-                            <input value={metricDraft.note || ""} onChange={(e) => setMetricDraft({ ...metricDraft, note: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" placeholder="Ghi chú / hướng dẫn nhập" />
+                            <input value={metricDraft.note || ""} onChange={(e) => setMetricDraft({ ...metricDraft, note: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm col-span-2" placeholder="Ghi chú / hướng dẫn nhập" />
                           </div>
 
                           {/* Công thức tự tính */}
@@ -671,7 +671,7 @@ export default function CauHinhSoLieuPage() {
                                       terms[i] = { ...t, sign: Number(e.target.value) };
                                       setMetricDraft({ ...metricDraft, derivation: { ...metricDraft.derivation, terms } });
                                     }}
-                                    className="px-2 py-1 rounded border border-border-default text-body-sm"
+                                    className="px-2 py-1 rounded border border-v5-line text-body-sm"
                                   >
                                     <option value={1}>+</option>
                                     <option value={-1}>−</option>
@@ -683,7 +683,7 @@ export default function CauHinhSoLieuPage() {
                                       terms[i] = { ...t, metricId: e.target.value };
                                       setMetricDraft({ ...metricDraft, derivation: { ...metricDraft.derivation, terms } });
                                     }}
-                                    className="flex-1 px-2 py-1 rounded border border-border-default text-body-sm"
+                                    className="flex-1 px-2 py-1 rounded border border-v5-line text-body-sm"
                                   >
                                     <option value="">— chọn chỉ tiêu —</option>
                                     {allMetricsFlat
@@ -740,7 +740,7 @@ export default function CauHinhSoLieuPage() {
                                     onBlur={(e) => {
                                       if (e.target.value !== c.label) post("classification", "update", { id: c.id, label: e.target.value }, "Đã đổi tên phân loại");
                                     }}
-                                    className="flex-1 px-2 py-1 rounded border border-border-default text-body-sm"
+                                    className="flex-1 px-2 py-1 rounded border border-v5-line text-body-sm"
                                   />
                                   <label className="flex items-center gap-1 text-body-xs">
                                     <input type="checkbox" defaultChecked={c.active} onChange={(e) => post("classification", "update", { id: c.id, active: e.target.checked }, e.target.checked ? "Đã bật" : "Đã ẩn")} />
@@ -752,8 +752,8 @@ export default function CauHinhSoLieuPage() {
                                 </div>
                               ))}
                               <div className="flex items-center gap-2">
-                                <input value={newClass.code} onChange={(e) => setNewClass({ ...newClass, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })} placeholder="Mã (VD: O_TO)" className="w-32 px-2 py-1 rounded border border-border-default text-body-sm" />
-                                <input value={newClass.label} onChange={(e) => setNewClass({ ...newClass, label: e.target.value })} placeholder="Tên phân loại" className="flex-1 px-2 py-1 rounded border border-border-default text-body-sm" />
+                                <input value={newClass.code} onChange={(e) => setNewClass({ ...newClass, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })} placeholder="Mã (VD: O_TO)" className="w-32 px-2 py-1 rounded border border-v5-line text-body-sm" />
+                                <input value={newClass.label} onChange={(e) => setNewClass({ ...newClass, label: e.target.value })} placeholder="Tên phân loại" className="flex-1 px-2 py-1 rounded border border-v5-line text-body-sm" />
                                 <button
                                   onClick={async () => {
                                     const r = await post("classification", "create", { metricId: m.id, ...newClass }, "Đã thêm phân loại");
@@ -803,15 +803,15 @@ export default function CauHinhSoLieuPage() {
 
         {/* ============ MỐC LŨY KẾ ============ */}
         {tab === "BASELINE" && (
-          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
+          <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
             <span className="font-label-md text-label-md text-primary font-bold">Mốc lũy kế (chống cộng trùng)</span>
-            <div className="bg-surface-container-low rounded-lg p-3 text-body-xs text-on-surface-variant flex flex-col gap-1">
+            <div className="bg-v5-bg rounded-lg p-3 text-body-xs text-v5-muted flex flex-col gap-1">
               <span>• “Lũy kế Tháng/Quý/Năm”: giá trị đã có tính đến ngày mốc — hệ thống chỉ cộng phần phát sinh SAU ngày mốc.</span>
               <span>• Mốc chỉ áp dụng khi ngày mốc nằm trong đúng kỳ đang xem (mốc tháng chỉ dùng cho tháng đó…).</span>
               <span>• “Số dư liên tục”: dùng cho công nợ/còn phải thu — áp dụng từ ngày mốc trở đi không hết hạn.</span>
               <span>• Chỉ tiêu có phân loại thì tạo mốc cho TỪNG phân loại (ô tô, than cốc…).</span>
             </div>
-            <select value={selBaseMetricId} onChange={(e) => setSelBaseMetricId(e.target.value)} className="px-3 py-2 rounded-lg border border-border-default text-body-sm">
+            <select value={selBaseMetricId} onChange={(e) => setSelBaseMetricId(e.target.value)} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm">
               <option value="">— chọn chỉ tiêu —</option>
               {groups.map((g) => (
                 <optgroup key={g.id} label={g.name}>
@@ -827,7 +827,7 @@ export default function CauHinhSoLieuPage() {
             {selBaseMetric && (
               <>
                 {selBaseMetric.classifications.length > 0 && (
-                  <select value={baseDraft.classificationId} onChange={(e) => setBaseDraft({ ...baseDraft, classificationId: e.target.value })} className="px-3 py-2 rounded-lg border border-border-default text-body-sm">
+                  <select value={baseDraft.classificationId} onChange={(e) => setBaseDraft({ ...baseDraft, classificationId: e.target.value })} className="px-3 py-2 rounded-lg border border-v5-line text-body-sm">
                     <option value="">Phân loại: (chọn phân loại bên dưới khi thêm mốc)</option>
                     {selBaseMetric.classifications.map((c: any) => (
                       <option key={c.id} value={c.id}>
@@ -838,7 +838,7 @@ export default function CauHinhSoLieuPage() {
                 )}
                 <div className="flex flex-col gap-1">
                   {selBaseMetric.baselines.filter((b: any) => b.classificationId === (baseDraft.classificationId || "")).length === 0 && (
-                    <span className="text-body-sm text-on-surface-variant italic">Chưa có mốc nào</span>
+                    <span className="text-body-sm text-v5-muted italic">Chưa có mốc nào</span>
                   )}
                   {selBaseMetric.baselines
                     .filter((b: any) => b.classificationId === (baseDraft.classificationId || ""))
@@ -851,10 +851,10 @@ export default function CauHinhSoLieuPage() {
                             ? "border-emerald-300 bg-emerald-50 text-emerald-800"
                             : "border-amber-300 bg-amber-50 text-amber-800";
                       return (
-                        <div key={b.id} className="border border-border-default/40 rounded px-3 py-2 flex flex-col gap-1">
+                        <div key={b.id} className="border border-v5-line/40 rounded px-3 py-2 flex flex-col gap-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">{CUM_LABELS[b.cumKind] || b.cumKind}</span>
-                            <span className="text-body-xs text-on-surface-variant">đến hết {fmtDate(b.asOfDate)}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted font-semibold">{CUM_LABELS[b.cumKind] || b.cumKind}</span>
+                            <span className="text-body-xs text-v5-muted">đến hết {fmtDate(b.asOfDate)}</span>
                             <span className="text-body-sm tabular-nums font-semibold text-primary">{fmtMetric(b.valueBase, selBaseMetric)}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${stCls}`}>
                               {st === "LOCKED" ? "Đã chốt" : st === "CONFIRMED" ? `Đã xác nhận${b.confirmedByName ? " · " + b.confirmedByName : ""}` : "Đề xuất"}
@@ -863,7 +863,7 @@ export default function CauHinhSoLieuPage() {
                               <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600 font-semibold">DEMO</span>
                             )}
                           </div>
-                          {b.sourceNote && <div className="text-body-xs text-on-surface-variant">Căn cứ: {b.sourceNote}</div>}
+                          {b.sourceNote && <div className="text-body-xs text-v5-muted">Căn cứ: {b.sourceNote}</div>}
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {st !== "LOCKED" && (
                               <button
@@ -879,7 +879,7 @@ export default function CauHinhSoLieuPage() {
                                     classificationId: b.classificationId || "",
                                   });
                                 }}
-                                className="px-2 py-1 rounded border border-border-default text-body-xs font-semibold hover:bg-surface-container"
+                                className="px-2 py-1 rounded border border-v5-line text-body-xs font-semibold hover:bg-v5-bg"
                               >
                                 Sửa
                               </button>
@@ -898,7 +898,7 @@ export default function CauHinhSoLieuPage() {
                                 Chốt mốc
                               </button>
                             )}
-                            <button onClick={() => showHistory("baseline", b.id, `${CUM_LABELS[b.cumKind] || b.cumKind} đến ${fmtDate(b.asOfDate)}`)} className="px-2 py-1 rounded border border-border-default text-body-xs font-semibold hover:bg-surface-container">
+                            <button onClick={() => showHistory("baseline", b.id, `${CUM_LABELS[b.cumKind] || b.cumKind} đến ${fmtDate(b.asOfDate)}`)} className="px-2 py-1 rounded border border-v5-line text-body-xs font-semibold hover:bg-v5-bg">
                               Lịch sử
                             </button>
                             {st === "PROPOSED" && (
@@ -911,25 +911,25 @@ export default function CauHinhSoLieuPage() {
                       );
                     })}
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-t border-border-default/40 pt-3">
-                  <select value={baseDraft.cumKind} onChange={(e) => setBaseDraft({ ...baseDraft, cumKind: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-t border-v5-line/40 pt-3">
+                  <select value={baseDraft.cumKind} onChange={(e) => setBaseDraft({ ...baseDraft, cumKind: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                     {Object.entries(CUM_LABELS).map(([k, v]) => (
                       <option key={k} value={k}>{v}</option>
                     ))}
                   </select>
-                  <input type="date" value={baseDraft.asOfDate} onChange={(e) => setBaseDraft({ ...baseDraft, asOfDate: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" />
-                  <input value={baseDraft.value} onChange={(e) => setBaseDraft({ ...baseDraft, value: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder={`Giá trị đến ngày mốc (${selBaseMetric.unitLabelEffective || "số"})`} />
+                  <input type="date" value={baseDraft.asOfDate} onChange={(e) => setBaseDraft({ ...baseDraft, asOfDate: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" />
+                  <input value={baseDraft.value} onChange={(e) => setBaseDraft({ ...baseDraft, value: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" placeholder={`Giá trị đến ngày mốc (${selBaseMetric.unitLabelEffective || "số"})`} />
                   <select
                     value={baseDraft.dataSource || "REAL"}
                     onChange={(e) => setBaseDraft({ ...baseDraft, dataSource: e.target.value })}
-                    className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                    className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
                     title="Nguồn dữ liệu: REAL dùng chính thức; DEMO chỉ mô phỏng"
                   >
                     <option value="REAL">Số liệu thật</option>
                     <option value="DEMO">DEMO (mô phỏng)</option>
                   </select>
-                  <input value={baseDraft.sourceNote} onChange={(e) => setBaseDraft({ ...baseDraft, sourceNote: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Nguồn (VD: báo cáo tuần 41)" />
-                  <input value={baseDraft.reason || ""} onChange={(e) => setBaseDraft({ ...baseDraft, reason: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm sm:col-span-2" placeholder="Lý do nhập bổ sung/điều chỉnh (bắt buộc)" />
+                  <input value={baseDraft.sourceNote} onChange={(e) => setBaseDraft({ ...baseDraft, sourceNote: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" placeholder="Nguồn (VD: báo cáo tuần 41)" />
+                  <input value={baseDraft.reason || ""} onChange={(e) => setBaseDraft({ ...baseDraft, reason: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm sm:col-span-2" placeholder="Lý do nhập bổ sung/điều chỉnh (bắt buộc)" />
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -956,7 +956,7 @@ export default function CauHinhSoLieuPage() {
                         setEditBaseId("");
                         setBaseDraft({ cumKind: "YEAR", asOfDate: "", value: "", dataSource: "REAL", sourceNote: "", reason: "", classificationId: baseDraft.classificationId || "" });
                       }}
-                      className="px-3 py-2 rounded-lg border border-border-default text-label-sm font-semibold"
+                      className="px-3 py-2 rounded-lg border border-v5-line text-label-sm font-semibold"
                     >
                       Hủy sửa
                     </button>
@@ -969,16 +969,16 @@ export default function CauHinhSoLieuPage() {
 
         {/* ============ PHÂN CÔNG ============ */}
         {tab === "ASSIGN" && (
-          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
+          <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
             <span className="font-label-md text-label-md text-primary font-bold">Phân công nhập liệu / kiểm tra</span>
-            <p className="text-body-xs text-on-surface-variant">
+            <p className="text-body-xs text-v5-muted">
               Lãnh đạo luôn nhập và xác nhận được mọi chỉ tiêu. Cán bộ chỉ nhập/xác nhận theo phân công tại đây (theo nhóm hoặc theo từng chỉ
               tiêu, có giới hạn số ngày được nhập bù).
             </p>
             <div className="overflow-x-auto">
               <table className="w-full text-body-sm min-w-[720px]">
                 <thead>
-                  <tr className="text-left text-body-xs text-on-surface-variant border-b border-border-default/40">
+                  <tr className="text-left text-body-xs text-v5-muted border-b border-v5-line/40">
                     <th className="px-2 py-1.5">Người</th>
                     <th className="px-2 py-1.5">Phạm vi</th>
                     <th className="px-2 py-1.5 text-center">Nhập</th>
@@ -991,7 +991,7 @@ export default function CauHinhSoLieuPage() {
                 </thead>
                 <tbody>
                   {(cfg?.assignments || []).map((a: any) => (
-                    <tr key={a.id} className="border-b border-border-default/20">
+                    <tr key={a.id} className="border-b border-v5-line/20">
                       <td className="px-2 py-1.5 font-medium">{a.personName || a.personId}</td>
                       <td className="px-2 py-1.5">
                         {a.groupId ? `Nhóm: ${groupNameById.get(a.groupId) || "?"}` : `Chỉ tiêu: ${metricById.get(a.metricId)?.name || "?"}`}
@@ -1015,7 +1015,7 @@ export default function CauHinhSoLieuPage() {
                   ))}
                   {(cfg?.assignments || []).length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-2 py-3 text-center text-on-surface-variant italic">
+                      <td colSpan={8} className="px-2 py-3 text-center text-v5-muted italic">
                         Chưa có phân công nào
                       </td>
                     </tr>
@@ -1024,7 +1024,7 @@ export default function CauHinhSoLieuPage() {
               </table>
             </div>
 
-            <div className="border-t border-border-default/40 pt-3 flex flex-col gap-3">
+            <div className="border-t border-v5-line/40 pt-3 flex flex-col gap-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <PersonPicker
                   people={cfg?.people || []}
@@ -1040,7 +1040,7 @@ export default function CauHinhSoLieuPage() {
                     setAssignDraft((d: any) => ({ ...d, scopeType: e.target.value }));
                     setAssignConfirmOpen(false);
                   }}
-                  className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                  className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
                   data-testid="assign-scope-select"
                 >
                   <option value="group">Phân công theo nhóm (1 nhóm)</option>
@@ -1052,7 +1052,7 @@ export default function CauHinhSoLieuPage() {
                 <select
                   value={assignDraft.groupId}
                   onChange={(e) => setAssignDraft((d: any) => ({ ...d, groupId: e.target.value }))}
-                  className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                  className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
                 >
                   <option value="">— chọn nhóm —</option>
                   {groups.map((g) => (
@@ -1083,9 +1083,9 @@ export default function CauHinhSoLieuPage() {
                     Được xác nhận
                   </label>
                 </div>
-                <input value={assignDraft.allowBackdateDays} onChange={(e) => setAssignDraft((d: any) => ({ ...d, allowBackdateDays: e.target.value }))} className="px-2 py-1.5 rounded border border-border-default text-body-sm" placeholder="Nhập bù tối đa (ngày, để trống = theo chỉ tiêu)" />
-                <input type="date" value={assignDraft.validFrom} onChange={(e) => setAssignDraft((d: any) => ({ ...d, validFrom: e.target.value }))} className="px-2 py-1.5 rounded border border-border-default text-body-sm" title="Hiệu lực từ ngày" />
-                <input type="date" value={assignDraft.validTo} onChange={(e) => setAssignDraft((d: any) => ({ ...d, validTo: e.target.value }))} className="px-2 py-1.5 rounded border border-border-default text-body-sm" title="Hiệu lực đến ngày" />
+                <input value={assignDraft.allowBackdateDays} onChange={(e) => setAssignDraft((d: any) => ({ ...d, allowBackdateDays: e.target.value }))} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" placeholder="Nhập bù tối đa (ngày, để trống = theo chỉ tiêu)" />
+                <input type="date" value={assignDraft.validFrom} onChange={(e) => setAssignDraft((d: any) => ({ ...d, validFrom: e.target.value }))} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" title="Hiệu lực từ ngày" />
+                <input type="date" value={assignDraft.validTo} onChange={(e) => setAssignDraft((d: any) => ({ ...d, validTo: e.target.value }))} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" title="Hiệu lực đến ngày" />
                 <button
                   disabled={busy === "assignment.create" || busy === "assignment.create_bulk"}
                   onClick={submitAssignment}
@@ -1111,7 +1111,7 @@ export default function CauHinhSoLieuPage() {
                     >
                       {busy === "assignment.create_bulk" ? "Đang lưu…" : "Lưu phân công"}
                     </button>
-                    <button onClick={() => setAssignConfirmOpen(false)} className="px-3 py-1.5 rounded-lg border border-border-default text-label-sm">
+                    <button onClick={() => setAssignConfirmOpen(false)} className="px-3 py-1.5 rounded-lg border border-v5-line text-label-sm">
                       Hủy
                     </button>
                   </div>
@@ -1123,19 +1123,19 @@ export default function CauHinhSoLieuPage() {
 
         {/* ============ MỤC NHẬN XÉT ============ */}
         {tab === "SECTION" && (
-          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
+          <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
             <span className="font-label-md text-label-md text-primary font-bold">Mục nhận xét theo kỳ (II, III.1–4, IV…)</span>
-            <p className="text-body-xs text-on-surface-variant">
+            <p className="text-body-xs text-v5-muted">
               Mục có gắn nhóm chỉ tiêu: người được phân công nhập của nhóm đó cũng sửa được nội dung. Mục không gắn nhóm: chỉ lãnh đạo sửa.
             </p>
             <div className="flex flex-col gap-1">
               {(cfg?.sections || []).map((s: any) => (
-                <div key={s.id} className="border border-border-default/40 rounded px-3 py-2">
+                <div key={s.id} className="border border-v5-line/40 rounded px-3 py-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     {editSectionId === s.id ? (
                       <>
-                        <input value={sectionDraft.title || ""} onChange={(e) => setSectionDraft({ ...sectionDraft, title: e.target.value })} className="flex-1 px-2 py-1 rounded border border-border-default text-body-sm" />
-                        <select value={sectionDraft.groupId || ""} onChange={(e) => setSectionDraft({ ...sectionDraft, groupId: e.target.value })} className="px-2 py-1 rounded border border-border-default text-body-sm">
+                        <input value={sectionDraft.title || ""} onChange={(e) => setSectionDraft({ ...sectionDraft, title: e.target.value })} className="flex-1 px-2 py-1 rounded border border-v5-line text-body-sm" />
+                        <select value={sectionDraft.groupId || ""} onChange={(e) => setSectionDraft({ ...sectionDraft, groupId: e.target.value })} className="px-2 py-1 rounded border border-v5-line text-body-sm">
                           <option value="">Không gắn nhóm</option>
                           {groups.map((g) => (
                             <option key={g.id} value={g.id}>
@@ -1143,7 +1143,7 @@ export default function CauHinhSoLieuPage() {
                             </option>
                           ))}
                         </select>
-                        <input type="number" value={sectionDraft.sortOrder ?? 0} onChange={(e) => setSectionDraft({ ...sectionDraft, sortOrder: Number(e.target.value) })} className="w-20 px-2 py-1 rounded border border-border-default text-body-sm" />
+                        <input type="number" value={sectionDraft.sortOrder ?? 0} onChange={(e) => setSectionDraft({ ...sectionDraft, sortOrder: Number(e.target.value) })} className="w-20 px-2 py-1 rounded border border-v5-line text-body-sm" />
                         <button
                           onClick={async () => {
                             const r = await post("section", "update", { id: s.id, ...sectionDraft }, "Đã lưu mục");
@@ -1153,14 +1153,14 @@ export default function CauHinhSoLieuPage() {
                         >
                           Lưu
                         </button>
-                        <button onClick={() => setEditSectionId("")} className="px-2 py-1 rounded border border-border-default text-body-xs">
+                        <button onClick={() => setEditSectionId("")} className="px-2 py-1 rounded border border-v5-line text-body-xs">
                           Hủy
                         </button>
                       </>
                     ) : (
                       <>
                         <span className="font-medium text-body-sm">{s.title}</span>
-                        <span className="text-body-xs text-on-surface-variant">{s.code}</span>
+                        <span className="text-body-xs text-v5-muted">{s.code}</span>
                         {s.groupId && <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700">Nhóm: {groupNameById.get(s.groupId)}</span>}
                         {!s.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700">Đã ẩn</span>}
                         <div className="ml-auto flex gap-1">
@@ -1173,7 +1173,7 @@ export default function CauHinhSoLieuPage() {
                           >
                             Sửa
                           </button>
-                          <button onClick={() => post("section", "update", { id: s.id, active: !s.active }, s.active ? "Đã ẩn" : "Đã bật")} className="px-2 py-1 rounded border border-border-default text-body-xs">
+                          <button onClick={() => post("section", "update", { id: s.id, active: !s.active }, s.active ? "Đã ẩn" : "Đã bật")} className="px-2 py-1 rounded border border-v5-line text-body-xs">
                             {s.active ? "Ẩn" : "Bật"}
                           </button>
                           <button onClick={() => post("section", "delete", { id: s.id }, "Đã xóa mục")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
@@ -1186,10 +1186,10 @@ export default function CauHinhSoLieuPage() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-border-default/40 pt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <input placeholder="Mã (VD: KSBL_II)" value={newSection.code} onChange={(e) => setNewSection({ ...newSection, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })} className="px-2 py-1.5 rounded border border-border-default text-body-sm" />
-              <input placeholder="Tiêu đề mục" value={newSection.title} onChange={(e) => setNewSection({ ...newSection, title: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2" />
-              <select value={newSection.groupId} onChange={(e) => setNewSection({ ...newSection, groupId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+            <div className="border-t border-v5-line/40 pt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <input placeholder="Mã (VD: KSBL_II)" value={newSection.code} onChange={(e) => setNewSection({ ...newSection, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm" />
+              <input placeholder="Tiêu đề mục" value={newSection.title} onChange={(e) => setNewSection({ ...newSection, title: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm col-span-2" />
+              <select value={newSection.groupId} onChange={(e) => setNewSection({ ...newSection, groupId: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                 <option value="">Không gắn nhóm</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>
@@ -1212,19 +1212,19 @@ export default function CauHinhSoLieuPage() {
         )}
 
         {tab === "REPORT" && (
-          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-4 flex flex-col gap-3">
+          <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
             <span className="font-label-md text-label-md text-primary font-bold">Cấu trúc báo cáo giao ban (bản xem trước & file Word)</span>
-            <p className="text-body-xs text-on-surface-variant">
+            <p className="text-body-xs text-v5-muted">
               Các khối hiển thị theo thứ tự tăng dần. “Bảng số liệu” tự tổng hợp theo nhóm chỉ tiêu; “Nội dung nhận xét” lấy văn bản theo kỳ đã nhập;
               “Tiêu đề mục” chỉ là dòng tiêu đề (VD: I. CÔNG TÁC NGHIỆP VỤ HẢI QUAN). Sửa tại đây — không cần sửa code.
             </p>
             <div className="flex flex-col gap-1">
               {(cfg?.reportBlocks || []).map((b: any) => (
-                <div key={b.id} className="border border-border-default/40 rounded px-3 py-2">
+                <div key={b.id} className="border border-v5-line/40 rounded px-3 py-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     {editBlockId === b.id ? (
                       <>
-                        <select value={blockDraft.kind} onChange={(e) => setBlockDraft({ ...blockDraft, kind: e.target.value })} className="px-2 py-1 rounded border border-border-default text-body-sm">
+                        <select value={blockDraft.kind} onChange={(e) => setBlockDraft({ ...blockDraft, kind: e.target.value })} className="px-2 py-1 rounded border border-v5-line text-body-sm">
                           {Object.entries(BLOCK_KIND_LABELS).map(([k, v]) => (
                             <option key={k} value={k}>
                               {v}
@@ -1235,10 +1235,10 @@ export default function CauHinhSoLieuPage() {
                           value={blockDraft.title || ""}
                           onChange={(e) => setBlockDraft({ ...blockDraft, title: e.target.value })}
                           placeholder="Tiêu đề (để trống nếu không cần dòng tiêu đề)"
-                          className="flex-1 min-w-[200px] px-2 py-1 rounded border border-border-default text-body-sm"
+                          className="flex-1 min-w-[200px] px-2 py-1 rounded border border-v5-line text-body-sm"
                         />
                         {blockDraft.kind === "METRIC_GROUP" && (
-                          <select value={blockDraft.groupId || ""} onChange={(e) => setBlockDraft({ ...blockDraft, groupId: e.target.value })} className="px-2 py-1 rounded border border-border-default text-body-sm">
+                          <select value={blockDraft.groupId || ""} onChange={(e) => setBlockDraft({ ...blockDraft, groupId: e.target.value })} className="px-2 py-1 rounded border border-v5-line text-body-sm">
                             <option value="">— Chọn nhóm chỉ tiêu —</option>
                             {groups.map((g) => (
                               <option key={g.id} value={g.id}>
@@ -1248,7 +1248,7 @@ export default function CauHinhSoLieuPage() {
                           </select>
                         )}
                         {blockDraft.kind === "NARRATIVE" && (
-                          <select value={blockDraft.sectionId || ""} onChange={(e) => setBlockDraft({ ...blockDraft, sectionId: e.target.value })} className="px-2 py-1 rounded border border-border-default text-body-sm">
+                          <select value={blockDraft.sectionId || ""} onChange={(e) => setBlockDraft({ ...blockDraft, sectionId: e.target.value })} className="px-2 py-1 rounded border border-v5-line text-body-sm">
                             <option value="">— Chọn mục nội dung —</option>
                             {(cfg?.sections || []).map((s: any) => (
                               <option key={s.id} value={s.id}>
@@ -1261,7 +1261,7 @@ export default function CauHinhSoLieuPage() {
                           type="number"
                           value={blockDraft.sortOrder ?? 0}
                           onChange={(e) => setBlockDraft({ ...blockDraft, sortOrder: Number(e.target.value) })}
-                          className="w-20 px-2 py-1 rounded border border-border-default text-body-sm"
+                          className="w-20 px-2 py-1 rounded border border-v5-line text-body-sm"
                           title="Thứ tự hiển thị"
                         />
                         <button
@@ -1273,13 +1273,13 @@ export default function CauHinhSoLieuPage() {
                         >
                           Lưu
                         </button>
-                        <button onClick={() => setEditBlockId("")} className="px-2 py-1 rounded border border-border-default text-body-xs">
+                        <button onClick={() => setEditBlockId("")} className="px-2 py-1 rounded border border-v5-line text-body-xs">
                           Hủy
                         </button>
                       </>
                     ) : (
                       <>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default bg-surface-container-low text-on-surface-variant">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line bg-v5-bg text-v5-muted">
                           {BLOCK_KIND_LABELS[b.kind] || b.kind}
                         </span>
                         <span className="font-medium text-body-sm">{b.title || "(không có dòng tiêu đề)"}</span>
@@ -1292,8 +1292,8 @@ export default function CauHinhSoLieuPage() {
                           </span>
                         )}
                         {!b.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700">Đã ẩn</span>}
-                        <span className="text-body-xs text-on-surface-variant">Thứ tự: {b.sortOrder}</span>
-                        <span className="text-body-xs text-on-surface-variant">· {b.code}</span>
+                        <span className="text-body-xs text-v5-muted">Thứ tự: {b.sortOrder}</span>
+                        <span className="text-body-xs text-v5-muted">· {b.code}</span>
                         <div className="ml-auto flex gap-1">
                           <button
                             onClick={() => {
@@ -1310,7 +1310,7 @@ export default function CauHinhSoLieuPage() {
                           >
                             Sửa
                           </button>
-                          <button onClick={() => post("report_block", "update", { id: b.id, active: !b.active }, b.active ? "Đã ẩn khối" : "Đã bật khối")} className="px-2 py-1 rounded border border-border-default text-body-xs">
+                          <button onClick={() => post("report_block", "update", { id: b.id, active: !b.active }, b.active ? "Đã ẩn khối" : "Đã bật khối")} className="px-2 py-1 rounded border border-v5-line text-body-xs">
                             {b.active ? "Ẩn" : "Bật"}
                           </button>
                           <button onClick={() => post("report_block", "delete", { id: b.id }, "Đã xóa khối")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
@@ -1323,14 +1323,14 @@ export default function CauHinhSoLieuPage() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-border-default/40 pt-3 grid grid-cols-2 sm:grid-cols-6 gap-2">
+            <div className="border-t border-v5-line/40 pt-3 grid grid-cols-2 sm:grid-cols-6 gap-2">
               <input
                 placeholder="Mã (VD: KB_MOI)"
                 value={newBlock.code}
                 onChange={(e) => setNewBlock({ ...newBlock, code: e.target.value.toUpperCase().replace(/\s+/g, "_") })}
-                className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+                className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
               />
-              <select value={newBlock.kind} onChange={(e) => setNewBlock({ ...newBlock, kind: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+              <select value={newBlock.kind} onChange={(e) => setNewBlock({ ...newBlock, kind: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                 {Object.entries(BLOCK_KIND_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>
                     {v}
@@ -1341,10 +1341,10 @@ export default function CauHinhSoLieuPage() {
                 placeholder="Tiêu đề hiển thị trong báo cáo"
                 value={newBlock.title}
                 onChange={(e) => setNewBlock({ ...newBlock, title: e.target.value })}
-                className="px-2 py-1.5 rounded border border-border-default text-body-sm col-span-2"
+                className="px-2 py-1.5 rounded border border-v5-line text-body-sm col-span-2"
               />
               {newBlock.kind === "METRIC_GROUP" && (
-                <select value={newBlock.groupId} onChange={(e) => setNewBlock({ ...newBlock, groupId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                <select value={newBlock.groupId} onChange={(e) => setNewBlock({ ...newBlock, groupId: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                   <option value="">— Chọn nhóm —</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
@@ -1354,7 +1354,7 @@ export default function CauHinhSoLieuPage() {
                 </select>
               )}
               {newBlock.kind === "NARRATIVE" && (
-                <select value={newBlock.sectionId} onChange={(e) => setNewBlock({ ...newBlock, sectionId: e.target.value })} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+                <select value={newBlock.sectionId} onChange={(e) => setNewBlock({ ...newBlock, sectionId: e.target.value })} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
                   <option value="">— Chọn mục —</option>
                   {(cfg?.sections || []).map((s: any) => (
                     <option key={s.id} value={s.id}>
@@ -1369,7 +1369,7 @@ export default function CauHinhSoLieuPage() {
                 placeholder="Thứ tự"
                 value={newBlock.sortOrder}
                 onChange={(e) => setNewBlock({ ...newBlock, sortOrder: Number(e.target.value) })}
-                className="w-full px-2 py-1.5 rounded border border-border-default text-body-sm"
+                className="w-full px-2 py-1.5 rounded border border-v5-line text-body-sm"
                 title="Thứ tự hiển thị"
               />
               <button
@@ -1391,24 +1391,24 @@ export default function CauHinhSoLieuPage() {
       {historyView && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setHistoryView(null)}>
           <div
-            className="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-auto"
+            className="bg-v5-surface rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
             data-testid="metric-history-modal"
           >
-            <div className="px-4 py-3 border-b border-border-default/40 flex items-center gap-2 sticky top-0 bg-surface-container-lowest">
+            <div className="px-4 py-3 border-b border-v5-line/40 flex items-center gap-2 sticky top-0 bg-v5-surface">
               <History className="h-[18px] w-[18px] text-v5-ink" />
-              <span className="font-semibold text-on-surface">Lịch sử: {historyView.title}</span>
-              <button onClick={() => setHistoryView(null)} className="ml-auto p-1 rounded hover:bg-surface-container" aria-label="Đóng">
+              <span className="font-semibold text-v5-ink">Lịch sử: {historyView.title}</span>
+              <button onClick={() => setHistoryView(null)} className="ml-auto p-1 rounded hover:bg-v5-bg" aria-label="Đóng">
                 <X className="h-[18px] w-[18px]" />
               </button>
             </div>
             <div className="p-4 overflow-x-auto">
               {historyView.revisions.length === 0 ? (
-                <p className="text-body-sm text-on-surface-variant italic">Chưa có lịch sử thay đổi.</p>
+                <p className="text-body-sm text-v5-muted italic">Chưa có lịch sử thay đổi.</p>
               ) : (
                 <table className="w-full text-body-sm min-w-[640px] border-collapse">
                   <thead>
-                    <tr className="text-body-xs text-on-surface-variant border-b border-border-default/40 text-left">
+                    <tr className="text-body-xs text-v5-muted border-b border-v5-line/40 text-left">
                       <th className="px-2 py-1.5">Thao tác</th>
                       <th className="px-2 py-1.5">Giá trị cũ → mới</th>
                       <th className="px-2 py-1.5">Trạng thái</th>
@@ -1419,7 +1419,7 @@ export default function CauHinhSoLieuPage() {
                   </thead>
                   <tbody>
                     {historyView.revisions.map((r: any) => (
-                      <tr key={r.id} className="border-b border-border-default/20 align-top">
+                      <tr key={r.id} className="border-b border-v5-line/20 align-top">
                         <td className="px-2 py-1.5 font-semibold">{r.action}</td>
                         <td className="px-2 py-1.5 tabular-nums">
                           {r.oldValue === null ? "—" : r.oldValue.toLocaleString("vi-VN")} →{" "}
@@ -1433,7 +1433,7 @@ export default function CauHinhSoLieuPage() {
                         </td>
                         <td className="px-2 py-1.5 text-body-xs">
                           {r.editedByName || "—"}
-                          <span className="block text-on-surface-variant">{new Date(r.editedAt).toLocaleString("vi-VN")}</span>
+                          <span className="block text-v5-muted">{new Date(r.editedAt).toLocaleString("vi-VN")}</span>
                         </td>
                         <td className="px-2 py-1.5 text-body-xs">{r.reason || "—"}</td>
                       </tr>
@@ -1514,22 +1514,22 @@ function PersonPicker({ people, value, onChange }: { people: any[]; value: strin
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-2 py-1.5 rounded border border-border-default text-body-sm text-left flex items-center justify-between gap-2 bg-surface-container-lowest"
+        className="w-full px-2 py-1.5 rounded border border-v5-line text-body-sm text-left flex items-center justify-between gap-2 bg-v5-surface"
         data-testid="assign-person-button"
       >
-        <span className={selected ? "" : "text-on-surface-variant"}>
+        <span className={selected ? "" : "text-v5-muted"}>
           {selected ? `${selected.code} — ${selected.fullName}${selected.unitName ? ` (${selected.unitName})` : ""}` : "— chọn người —"}
         </span>
         <ChevronDown className="h-4 w-4 text-v5-muted" />
       </button>
       {open && (
-        <div className="absolute z-30 mt-1 w-full bg-surface-container-lowest border border-border-default rounded-lg shadow-lg p-2">
+        <div className="absolute z-30 mt-1 w-full bg-v5-surface border border-v5-line rounded-lg shadow-lg p-2">
           <input
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Tìm theo mã hoặc tên (VD: CB-014)"
-            className="w-full px-2 py-1.5 rounded border border-border-default text-body-sm mb-1"
+            className="w-full px-2 py-1.5 rounded border border-v5-line text-body-sm mb-1"
             data-testid="assign-person-search"
           />
           <div className="max-h-56 overflow-y-auto flex flex-col">
@@ -1542,14 +1542,14 @@ function PersonPicker({ people, value, onChange }: { people: any[]; value: strin
                   setOpen(false);
                   setQ("");
                 }}
-                className={`text-left px-2 py-1.5 rounded text-body-sm hover:bg-surface-container flex items-center gap-1.5 ${
+                className={`text-left px-2 py-1.5 rounded text-body-sm hover:bg-v5-bg flex items-center gap-1.5 ${
                   p.id === value ? "bg-secondary/10" : ""
                 }`}
                 data-testid={`assign-person-option-${p.code}`}
               >
                 <span className="font-medium">{p.code}</span>
                 <span>— {p.fullName}</span>
-                {p.unitName ? <span className="text-body-xs text-on-surface-variant">· {p.unitName}</span> : null}
+                {p.unitName ? <span className="text-body-xs text-v5-muted">· {p.unitName}</span> : null}
                 {p.accountStatus !== "ACTIVE" ? (
                   <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold">
                     chưa có tài khoản
@@ -1558,7 +1558,7 @@ function PersonPicker({ people, value, onChange }: { people: any[]; value: strin
               </button>
             ))}
             {filtered.length === 0 && (
-              <span className="text-body-xs text-on-surface-variant px-2 py-1.5 italic">
+              <span className="text-body-xs text-v5-muted px-2 py-1.5 italic">
                 Không tìm thấy — thử tìm theo mã cán bộ (VD: CB-014)
               </span>
             )}
@@ -1607,16 +1607,16 @@ function MetricMultiPicker({
   const selSet = useMemo(() => new Set(selected), [selected]);
 
   return (
-    <div className="border border-border-default rounded-lg p-2 flex flex-col gap-2" data-testid="assign-metric-picker">
+    <div className="border border-v5-line rounded-lg p-2 flex flex-col gap-2" data-testid="assign-metric-picker">
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Tìm chỉ tiêu theo tên hoặc mã…"
-          className="flex-1 min-w-[180px] px-2 py-1.5 rounded border border-border-default text-body-sm"
+          className="flex-1 min-w-[180px] px-2 py-1.5 rounded border border-v5-line text-body-sm"
           data-testid="assign-metric-search"
         />
-        <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="px-2 py-1.5 rounded border border-border-default text-body-sm">
+        <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="px-2 py-1.5 rounded border border-v5-line text-body-sm">
           <option value="__all">Tất cả nhóm</option>
           {groups.map((g) => (
             <option key={g.id} value={g.id}>
@@ -1635,13 +1635,13 @@ function MetricMultiPicker({
         <button
           type="button"
           onClick={() => onClearInScope(visibleIds)}
-          className="px-2 py-1.5 rounded border border-border-default text-body-xs font-semibold hover:bg-surface-container"
+          className="px-2 py-1.5 rounded border border-v5-line text-body-xs font-semibold hover:bg-v5-bg"
           data-testid="assign-clear-scope"
         >
           Bỏ chọn trong phạm vi lọc
         </button>
       </div>
-      <div className="text-body-xs text-on-surface-variant">
+      <div className="text-body-xs text-v5-muted">
         Đã chọn <b className="text-primary" data-testid="assign-selected-count">{selected.length}</b> chỉ tiêu.
       </div>
       <div className="max-h-64 overflow-y-auto flex flex-col gap-0.5" data-testid="assign-metric-list">
@@ -1649,9 +1649,9 @@ function MetricMultiPicker({
           <div key={g.id}>
             <div className="text-[10px] font-bold uppercase tracking-wide text-primary px-1 pt-1.5">{g.name}</div>
             {g.metrics.map((m: any) => (
-              <label key={m.id} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-surface-container text-body-sm cursor-pointer">
+              <label key={m.id} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-v5-bg text-body-sm cursor-pointer">
                 <input type="checkbox" checked={selSet.has(m.id)} onChange={() => onToggle(m.id)} data-testid={`assign-metric-${m.code}`} />
-                <span className="text-on-surface-variant text-body-xs w-[110px] shrink-0">{m.code}</span>
+                <span className="text-v5-muted text-body-xs w-[110px] shrink-0">{m.code}</span>
                 <span>{m.name}</span>
                 {!m.active && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700 font-semibold">đã ẩn</span>
@@ -1663,7 +1663,7 @@ function MetricMultiPicker({
             ))}
           </div>
         ))}
-        {visibleIds.length === 0 && <span className="text-body-xs text-on-surface-variant italic px-1 py-1.5">Không có chỉ tiêu phù hợp bộ lọc.</span>}
+        {visibleIds.length === 0 && <span className="text-body-xs text-v5-muted italic px-1 py-1.5">Không có chỉ tiêu phù hợp bộ lọc.</span>}
       </div>
     </div>
   );

@@ -306,40 +306,40 @@ export default function GiaoBanBaoCaoPage() {
         {!loading && data && (
           <>
             {/* Tiêu đề & thời gian họp + nút thao tác */}
-            <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 p-4 flex flex-col gap-3">
+            <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 p-4 flex flex-col gap-3">
               <div className="text-label-md font-semibold text-primary">Tiêu đề & thời gian họp (dùng khi lưu bản và xuất Word)</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1">
-                  <span className="text-body-xs text-on-surface-variant">Tiêu đề báo cáo</span>
+                  <span className="text-body-xs text-v5-muted">Tiêu đề báo cáo</span>
                   <input
                     value={metaDraft.title}
                     onChange={(e) => setMetaDraft((p) => ({ ...p, title: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+                    className="px-3 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
                     placeholder="TỔNG HỢP SỐ LIỆU GIAO BAN"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-body-xs text-on-surface-variant">Phụ đề (kỳ)</span>
+                  <span className="text-body-xs text-v5-muted">Phụ đề (kỳ)</span>
                   <input
                     value={metaDraft.subtitle}
                     onChange={(e) => setMetaDraft((p) => ({ ...p, subtitle: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+                    className="px-3 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-body-xs text-on-surface-variant">Bắt đầu họp (VD: 14 giờ 00 ngày 19/10/2026)</span>
+                  <span className="text-body-xs text-v5-muted">Bắt đầu họp (VD: 14 giờ 00 ngày 19/10/2026)</span>
                   <input
                     value={metaDraft.meetingStart}
                     onChange={(e) => setMetaDraft((p) => ({ ...p, meetingStart: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+                    className="px-3 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-body-xs text-on-surface-variant">Kết thúc họp</span>
+                  <span className="text-body-xs text-v5-muted">Kết thúc họp</span>
                   <input
                     value={metaDraft.meetingEnd}
                     onChange={(e) => setMetaDraft((p) => ({ ...p, meetingEnd: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+                    className="px-3 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
                   />
                 </label>
               </div>
@@ -362,17 +362,17 @@ export default function GiaoBanBaoCaoPage() {
                     {saving ? "Đang lưu…" : "Lưu phiên bản"}
                   </button>
                 )}
-                <span className="text-body-xs text-on-surface-variant">
+                <span className="text-body-xs text-v5-muted">
                   Trong bảng: dấu “…” là chưa nhập số liệu (không hiển thị 0 giả).
                 </span>
               </div>
             </div>
 
             {/* Xem trước */}
-            <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 p-5 flex flex-col gap-2">
+            <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 p-5 flex flex-col gap-2">
               <div className="text-center">
                 <div className="font-bold text-primary uppercase text-headline-sm">{metaDraft.title || data.meta.title}</div>
-                <div className="text-body-sm text-on-surface-variant">{(metaDraft.subtitle || data.meta.subtitle) + ` (${data.meta.periodLabel})`}</div>
+                <div className="text-body-sm text-v5-muted">{(metaDraft.subtitle || data.meta.subtitle) + ` (${data.meta.periodLabel})`}</div>
               </div>
               <div className="mt-2 text-body-sm">
                 <div className="font-semibold">THỜI GIAN HỌP GIAO BAN</div>
@@ -382,12 +382,12 @@ export default function GiaoBanBaoCaoPage() {
 
               {data.blocks.map((b) => (
                 <div key={b.id} className="mt-3">
-                  {b.title && <div className="font-bold text-on-surface uppercase text-body-md">{b.title}</div>}
+                  {b.title && <div className="font-bold text-v5-ink uppercase text-body-md">{b.title}</div>}
                   {b.kind === "METRIC_GROUP" && (
                     <div className="overflow-x-auto mt-2">
                       <table className="w-full text-body-sm min-w-[720px] border-collapse">
                         <thead>
-                          <tr className="bg-surface-container-low text-body-xs text-on-surface-variant border-b border-border-default/40">
+                          <tr className="bg-v5-bg text-body-xs text-v5-muted border-b border-v5-line/40">
                             <th className="px-3 py-2 font-semibold text-left">Chỉ tiêu</th>
                             {b.columns.map((c) => (
                               <th key={c.key} className="px-2 py-2 font-semibold text-right">
@@ -402,14 +402,14 @@ export default function GiaoBanBaoCaoPage() {
                         <tbody>
                           {b.rows.length === 0 && (
                             <tr>
-                              <td colSpan={b.columns.length + 4} className="px-3 py-3 text-on-surface-variant italic">
+                              <td colSpan={b.columns.length + 4} className="px-3 py-3 text-v5-muted italic">
                                 Chưa có chỉ tiêu trong nhóm này.
                               </td>
                             </tr>
                           )}
                           {b.rows.map((r, idx) => (
-                            <tr key={idx} className="border-b border-border-default/20">
-                              <td className={`px-3 py-2 ${r.level > 0 ? "pl-7 text-on-surface-variant" : "font-medium text-on-surface"}`}>
+                            <tr key={idx} className="border-b border-v5-line/20">
+                              <td className={`px-3 py-2 ${r.level > 0 ? "pl-7 text-v5-muted" : "font-medium text-v5-ink"}`}>
                                 {r.level > 0 ? `– ${r.name}` : r.name}
                               </td>
                               {r.values.map((v, i) => (
@@ -419,7 +419,7 @@ export default function GiaoBanBaoCaoPage() {
                               ))}
                               <td className="px-2 py-2">{r.target}</td>
                               <td className="px-2 py-2 text-center tabular-nums">{r.percent}</td>
-                              <td className="px-2 py-2 text-body-xs text-on-surface-variant">{r.note}</td>
+                              <td className="px-2 py-2 text-body-xs text-v5-muted">{r.note}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -428,9 +428,9 @@ export default function GiaoBanBaoCaoPage() {
                   )}
                   {b.kind === "NARRATIVE" &&
                     (b.content && b.content.trim() ? (
-                      <div className="text-body-sm text-on-surface whitespace-pre-line mt-1">{b.content}</div>
+                      <div className="text-body-sm text-v5-ink whitespace-pre-line mt-1">{b.content}</div>
                     ) : (
-                      <div className="text-body-sm text-on-surface-variant italic mt-1">
+                      <div className="text-body-sm text-v5-muted italic mt-1">
                         Chưa có nội dung — nhập tại mục “Nhận xét” của trang Số liệu giao ban.
                       </div>
                     ))}
@@ -439,12 +439,12 @@ export default function GiaoBanBaoCaoPage() {
             </div>
 
             {/* Phiên bản đã lưu */}
-            <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
-              <div className="px-4 py-3 bg-surface-container-low border-b border-border-default/40 font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide">
+            <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden">
+              <div className="px-4 py-3 bg-v5-bg border-b border-v5-line/40 font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide">
                 Phiên bản đã lưu ({data.versions.length})
               </div>
               {data.versions.length === 0 ? (
-                <div className="px-4 py-4 text-body-sm text-on-surface-variant">
+                <div className="px-4 py-4 text-body-sm text-v5-muted">
                   Chưa có phiên bản nào cho {data.meta.periodLabel}.
                   {data.canManage ? " Bấm “Lưu phiên bản” để chốt bản hiện tại." : ""}
                 </div>
@@ -452,7 +452,7 @@ export default function GiaoBanBaoCaoPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-body-sm min-w-[680px]">
                     <thead>
-                      <tr className="text-left text-body-xs text-on-surface-variant border-b border-border-default/40">
+                      <tr className="text-left text-body-xs text-v5-muted border-b border-v5-line/40">
                         <th className="px-3 py-2 font-semibold">Phiên bản</th>
                         <th className="px-3 py-2 font-semibold">Lưu lúc</th>
                         <th className="px-3 py-2 font-semibold">Người lưu</th>
@@ -462,11 +462,11 @@ export default function GiaoBanBaoCaoPage() {
                     </thead>
                     <tbody>
                       {data.versions.map((v) => (
-                        <tr key={v.id} className="border-b border-border-default/20">
+                        <tr key={v.id} className="border-b border-v5-line/20">
                           <td className="px-3 py-2 font-semibold text-primary">v{v.versionNo}</td>
                           <td className="px-3 py-2">{fmtDateTime(v.createdAt)}</td>
                           <td className="px-3 py-2">{v.createdByName || "—"}</td>
-                          <td className="px-3 py-2 text-body-xs text-on-surface-variant">
+                          <td className="px-3 py-2 text-body-xs text-v5-muted">
                             {v.meetingStart || v.meetingEnd ? `${v.meetingStart || "…"} → ${v.meetingEnd || "…"}` : "—"}
                           </td>
                           <td className="px-3 py-2 text-right">
@@ -474,7 +474,7 @@ export default function GiaoBanBaoCaoPage() {
                               <button
                                 onClick={() => downloadDocx(v.id, `Bao-cao-giao-ban-${data.meta.periodKey}-v${v.versionNo}.docx`)}
                                 disabled={downloading !== null}
-                                className="px-2.5 py-1.5 rounded-lg border border-border-default text-primary text-body-xs font-semibold hover:bg-surface-container disabled:opacity-50"
+                                className="px-2.5 py-1.5 rounded-lg border border-v5-line text-primary text-body-xs font-semibold hover:bg-v5-bg disabled:opacity-50"
                               >
                                 {downloading === v.id ? "Đang tạo…" : "Tải Word"}
                               </button>

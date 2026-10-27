@@ -115,6 +115,15 @@ check(
     reportPage.includes("text-2xl")
 );
 check(
+  "Cấu hình và báo cáo giao ban dùng token V5",
+  !configPage.includes("bg-surface-container-lowest") &&
+    !configPage.includes("border-border-default") &&
+    !configPage.includes("text-on-surface") &&
+    !reportPage.includes("bg-surface-container-lowest") &&
+    !reportPage.includes("border-border-default") &&
+    !reportPage.includes("text-on-surface")
+);
+check(
   "Giao ban V5 bỏ nút chết và link bản cũ",
   !v5GiaoBan.includes("ListFilter") &&
     !v5GiaoBan.includes("Mở bản đầy đủ") &&
