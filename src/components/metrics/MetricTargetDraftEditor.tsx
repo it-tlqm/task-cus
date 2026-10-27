@@ -46,6 +46,11 @@ export interface MetricTargetDraftEditorProps {
   onLock?: (target: TargetDraftInput) => Promise<boolean | void> | boolean | void;
   onVoid?: (target: TargetDraftInput) => Promise<boolean | void> | boolean | void;
   onHistory?: (target: TargetDraftInput) => void;
+  /** Điều chỉnh chỉ tiêu đã chốt, bắt buộc lý do + nguồn; giữ trạng thái LOCKED. */
+  onCorrect?: (
+    target: TargetDraftInput,
+    input: { value: string; reason: string; sourceNote: string }
+  ) => Promise<boolean | void> | boolean | void;
   /** true khi component đã nối API target-only. */
   apiMode?: boolean;
   showMetricSelect?: boolean;
@@ -95,6 +100,7 @@ export function MetricTargetDraftEditor({
   onLock,
   onVoid,
   onHistory,
+  onCorrect,
   apiMode = false,
   showMetricSelect = true,
   labelCodes = TARGET_LABEL_CODES,
@@ -105,6 +111,12 @@ export function MetricTargetDraftEditor({
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [correcting, setCorrecting] = useState<TargetDraftInput | null>(null);
+  const [correctionValue, setCorrectionValue] = useState("");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [correctionSourceNote, setCorrectionSourceNote] = useState("");
+  const [correctionBusy, setCorrectionBusy] = useState(false);
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
 
   const selectedMetric = metrics.find((m) => m.id === draft.metricId) ?? metrics[0];
   const selectedRule = metricRuleFor(selectedMetric, draft.periodType);
@@ -280,6 +292,53 @@ export function MetricTargetDraftEditor({
       setMessage(error instanceof Error ? error.message : "Lỗi khi lưu chỉ tiêu.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  function openCorrection(target: TargetDraftInput) {
+    setCorrecting(target);
+    setCorrectionValue(target.value);
+    setCorrectionReason("");
+    setCorrectionSourceNote(target.sourceNote || "");
+    setCorrectionError(null);
+  }
+
+  async function submitCorrection() {
+    if (!correcting?.id || !onCorrect) return;
+    const parsed = parseMetricInput(correctionValue);
+    if (parsed === null || parsed < 0) {
+      setCorrectionError("Giá trị chỉ tiêu không hợp lệ.");
+      return;
+    }
+    if (!correctionSourceNote.trim()) {
+      setCorrectionError("Phải nhập nguồn/căn cứ điều chỉnh.");
+      return;
+    }
+    if (correctionReason.trim().length < 10) {
+      setCorrectionError("Phải nhập lý do điều chỉnh (ít nhất 10 ký tự).");
+      return;
+    }
+    setCorrectionBusy(true);
+    setCorrectionError(null);
+    try {
+      const result = await onCorrect(correcting, {
+        value: correctionValue,
+        reason: correctionReason.trim(),
+        sourceNote: correctionSourceNote.trim(),
+      });
+      if (result === false) return;
+      setTargets((current) =>
+        current.map((t) =>
+          t.id === correcting.id
+            ? { ...t, value: correctionValue, sourceNote: correctionSourceNote.trim() }
+            : t
+        )
+      );
+      setCorrecting(null);
+    } catch (error) {
+      setCorrectionError(error instanceof Error ? error.message : "Lỗi điều chỉnh chỉ tiêu đã chốt.");
+    } finally {
+      setCorrectionBusy(false);
     }
   }
 
@@ -553,7 +612,8 @@ export function MetricTargetDraftEditor({
       {message && <div className="text-body-xs text-on-surface-variant">{message}</div>}
 
       <p className="text-body-xs text-on-surface-variant">
-        Chỉ tiêu đã chốt được khóa, không sửa trực tiếp. Chỉ tiêu đã xác nhận có thể điều chỉnh; mọi thay đổi đều lưu lịch sử.
+        Chỉ tiêu đã chốt được khóa; nếu cần điều chỉnh, dùng nút <b>Điều chỉnh</b> và nhập lý do — hệ thống lưu lịch sử.
+        Chỉ tiêu đã xác nhận có thể điều chỉnh trước khi chốt.
       </p>
 
       <div className="overflow-x-auto rounded-lg border border-border-default">
@@ -610,6 +670,17 @@ export function MetricTargetDraftEditor({
                           {t.status === "DRAFT" ? "Sửa" : "Điều chỉnh"}
                         </button>
                       )}
+                      {t.status === "LOCKED" && onCorrect && (
+                        <button
+                          type="button"
+                          disabled={busy || correctionBusy}
+                          onClick={() => openCorrection(t)}
+                          title="Điều chỉnh số đã chốt, bắt buộc lý do và lưu lịch sử"
+                          className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 disabled:opacity-50"
+                        >
+                          Điều chỉnh
+                        </button>
+                      )}
                       {t.status === "DRAFT" && (
                         <button
                           type="button"
@@ -658,6 +729,107 @@ export function MetricTargetDraftEditor({
           </tbody>
         </table>
       </div>
+
+      {correcting && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="target-correction-title"
+          onClick={() => {
+            if (!correctionBusy) setCorrecting(null);
+          }}
+        >
+          <div
+            className="my-auto w-full max-w-lg rounded-xl border border-border-default bg-surface p-4 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 id="target-correction-title" className="font-title-md text-title-md font-bold text-primary">
+                  Điều chỉnh chỉ tiêu đã chốt
+                </h3>
+                <p className="mt-1 text-body-xs text-on-surface-variant">
+                  {correcting.label} · {periodLabel(correcting)} · hiện tại{" "}
+                  <b className="tabular-nums">
+                    {formatNumberVi(parseMetricInput(correcting.value) ?? 0, 2)}{" "}
+                    {metrics.find((m) => m.id === correcting.metricId)?.unitLabel || ""}
+                  </b>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => !correctionBusy && setCorrecting(null)}
+                disabled={correctionBusy}
+                className="rounded p-1 text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50"
+                aria-label="Đóng"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+                Giá trị mới ({metrics.find((m) => m.id === correcting.metricId)?.unitLabel || "đơn vị"})
+                <FormattedNumberInput
+                  className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal tabular-nums text-on-surface"
+                  value={correctionValue}
+                  onValueChange={setCorrectionValue}
+                  placeholder="Nhập số tiền bằng đồng"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+                Nguồn / căn cứ điều chỉnh
+                <textarea
+                  className="min-h-16 rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
+                  value={correctionSourceNote}
+                  onChange={(event) => setCorrectionSourceNote(event.target.value)}
+                  placeholder="VD: Quyết định điều chỉnh số..."
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+                Lý do điều chỉnh (bắt buộc)
+                <textarea
+                  className="min-h-20 rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
+                  value={correctionReason}
+                  onChange={(event) => setCorrectionReason(event.target.value)}
+                  placeholder="Nêu rõ lý do và người xác nhận..."
+                  autoFocus
+                />
+              </label>
+
+              <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
+                Chỉ tiêu vẫn giữ trạng thái <b>Đã chốt</b>. Thay đổi được ghi vào lịch sử và nhật ký hệ thống.
+              </div>
+
+              {correctionError && (
+                <div className="text-body-xs font-semibold text-rose-700">{correctionError}</div>
+              )}
+
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCorrecting(null)}
+                  disabled={correctionBusy}
+                  className="rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={submitCorrection}
+                  disabled={correctionBusy}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {correctionBusy ? "Đang lưu..." : "Lưu điều chỉnh"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

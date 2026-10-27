@@ -59,9 +59,27 @@ interface RevisionView {
 const TARGET_LABEL_CODES_BC2: TargetLabelCode[] = ["BTC", "UBND", "KH_THANG", "KHAC"];
 
 function formatValue(v: number | null): string {
-  if (v === null) return "—";
+  if (v === null) return "-";
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(v);
 }
+
+const TARGET_ACTION_LABELS: Record<string, string> = {
+  CREATE: "Tạo",
+  UPDATE: "Cập nhật",
+  CONFIRM: "Xác nhận",
+  LOCK: "Chốt",
+  DELETE: "Xóa",
+  CORRECT: "Điều chỉnh",
+};
+
+const TARGET_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Nháp",
+  PROPOSED: "Đề xuất",
+  CONFIRMED: "Đã xác nhận",
+  LOCKED: "Đã chốt",
+  VOID: "Đã hủy",
+  SUPERSEDED: "Thay thế",
+};
 
 export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTargetManagerProps) {
   const metricOptions: MetricOption[] = useMemo(
@@ -260,6 +278,27 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
     }
   }
 
+  async function handleCorrect(
+    draft: TargetDraftInput,
+    input: { value: string; reason: string; sourceNote: string }
+  ): Promise<boolean> {
+    if (!draft.id) return false;
+    try {
+      await request(`/api/metrics/targets/${draft.id}`, "POST", {
+        action: "correct",
+        value: input.value,
+        reason: input.reason,
+        sourceNote: input.sourceNote,
+      });
+      toast.success("Đã điều chỉnh chỉ tiêu đã chốt; lịch sử đã được ghi.");
+      refresh();
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi điều chỉnh chỉ tiêu đã chốt.");
+      return false;
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-xl border border-border-default/50 bg-surface-container-lowest p-4 flex flex-col gap-2">
@@ -317,6 +356,7 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
           onLock={handleLock}
           onVoid={handleVoid}
           onHistory={handleHistory}
+          onCorrect={handleCorrect}
         />
       )}
 
@@ -354,10 +394,13 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
                 <tbody>
                   {history.revisions.map((r) => (
                     <tr key={r.id} className="border-t border-border-default/40">
-                      <td className="px-2 py-1.5 font-semibold">{r.action}</td>
+                      <td className="px-2 py-1.5 font-semibold">{TARGET_ACTION_LABELS[r.action] || r.action}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{formatValue(r.oldValue)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{formatValue(r.newValue)}</td>
-                      <td className="px-2 py-1.5">{r.oldStatus || "—"} → {r.newStatus || "—"}</td>
+                      <td className="px-2 py-1.5">
+                        {TARGET_STATUS_LABELS[r.oldStatus || ""] || r.oldStatus || "-"} →{" "}
+                        {TARGET_STATUS_LABELS[r.newStatus || ""] || r.newStatus || "-"}
+                      </td>
                       <td className="max-w-[220px] truncate px-2 py-1.5" title={r.newSourceNote || r.oldSourceNote || ""}>
                         {r.newSourceNote || r.oldSourceNote || "—"}
                       </td>

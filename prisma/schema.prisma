@@ -1755,7 +1755,7 @@ model MetricPlanTarget {
 model MetricPlanTargetRevision {
   id            String    @id @default(uuid())
   targetId      String    @map("target_id")
-  action        String // CREATE | UPDATE | CONFIRM | LOCK | DELETE
+  action        String // CREATE | UPDATE | CORRECT | CONFIRM | LOCK | DELETE
   oldValue      Decimal?  @map("old_value") @db.Decimal(24, 4)
   newValue      Decimal?  @map("new_value") @db.Decimal(24, 4)
   oldStatus     String?   @map("old_status")

@@ -595,6 +595,86 @@ export async function updateMetricTarget(
   return getMetricTarget(user, id);
 }
 
+/**
+ * Điều chỉnh chỉ tiêu đã chốt nhưng KHÔNG mở khóa.
+ * - Chỉ người có quyền metrics.config.
+ * - Bắt buộc lý do và nguồn/căn cứ.
+ * - Giữ nguyên trạng thái LOCKED, ghi revision + audit old/new.
+ */
+export async function correctMetricTarget(
+  user: SessionUser,
+  id: string,
+  input: { value?: unknown; reason?: unknown; sourceNote?: unknown }
+): Promise<MetricTargetView> {
+  ensureCanManage(user);
+  const existing = await getTargetRow(id);
+  if (existing.status !== "LOCKED") {
+    throw new MetricTargetError("Chỉ dùng luồng điều chỉnh cho chỉ tiêu đã chốt.", 400);
+  }
+
+  const reason = str(input.reason);
+  if (!reason || reason.length < 10) {
+    throw new MetricTargetError("Phải nhập lý do điều chỉnh (ít nhất 10 ký tự).", 400);
+  }
+
+  const parsed = parseMetricInput(input.value as string | number);
+  if (parsed === null || parsed < 0) {
+    throw new MetricTargetError("Giá trị chỉ tiêu không hợp lệ.", 400);
+  }
+  const valueBase = new Prisma.Decimal(parsed).mul(existing.metric.displayScale || 1);
+  const sourceNote = str(input.sourceNote) ?? existing.sourceNote;
+  if (!sourceNote) {
+    throw new MetricTargetError("Phải có nguồn/căn cứ điều chỉnh.", 400);
+  }
+  if (valueBase.equals(existing.valueNumeric) && sourceNote === existing.sourceNote) {
+    throw new MetricTargetError("Giá trị và nguồn không thay đổi.", 400);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.metricPlanTarget.update({
+      where: { id },
+      data: {
+        valueNumeric: valueBase,
+        sourceNote,
+        updatedById: user.personId,
+      },
+    });
+    await tx.metricPlanTargetRevision.create({
+      data: {
+        targetId: id,
+        action: "CORRECT",
+        oldValue: existing.valueNumeric,
+        newValue: valueBase,
+        oldStatus: existing.status,
+        newStatus: "LOCKED",
+        oldSourceNote: existing.sourceNote,
+        newSourceNote: sourceNote,
+        reason,
+        editedById: user.personId,
+      },
+    });
+  });
+
+  await recordAuditEvent({
+    actorId: user.id,
+    action: "METRIC_ADMIN_TARGET_CORRECTED",
+    resourceType: "MetricConfig",
+    resourceId: id,
+    oldData: {
+      valueNumeric: existing.valueNumeric.toString(),
+      status: existing.status,
+      sourceNote: existing.sourceNote,
+    },
+    newData: {
+      valueNumeric: valueBase.toString(),
+      status: "LOCKED",
+      sourceNote,
+    },
+  });
+
+  return getMetricTarget(user, id);
+}
+
 export async function confirmMetricTarget(
   user: SessionUser,
   id: string,

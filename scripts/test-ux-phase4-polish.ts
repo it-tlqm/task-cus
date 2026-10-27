@@ -20,6 +20,9 @@ const giaoBan = read("src/app/giao-ban/page.tsx");
 const routine = read("src/lib/routine-declaration.ts");
 const dashboard = read("src/app/dashboard/page.tsx");
 const targetEditor = read("src/components/metrics/MetricTargetDraftEditor.tsx");
+const targetManager = read("src/components/metrics/MetricTargetManager.tsx");
+const targetService = read("src/server/metric-targets.ts");
+const targetRoute = read("src/app/api/metrics/targets/[id]/route.ts");
 
 check(
   "#10 Cảnh báo phân công dùng details thu gọn",
@@ -54,6 +57,16 @@ check(
   !targetEditor.includes("vndTargetLooksTooSmall") &&
     !targetEditor.includes("Nhân 1.000") &&
     targetEditor.includes("Nhập số tiền bằng đồng")
+);
+check(
+  "#11b Có luồng điều chỉnh chỉ tiêu đã chốt, bắt buộc lý do",
+  targetEditor.includes("Điều chỉnh chỉ tiêu đã chốt") &&
+    targetEditor.includes("onCorrect") &&
+    targetEditor.includes("Lý do điều chỉnh (bắt buộc)") &&
+    targetManager.includes('action: "correct"') &&
+    targetService.includes("correctMetricTarget") &&
+    targetService.includes('action: "CORRECT"') &&
+    targetRoute.includes('action === "correct"')
 );
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);

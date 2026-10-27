@@ -4,6 +4,7 @@ import { jsonError } from "@/server/guard";
 import {
   MetricTargetError,
   confirmMetricTarget,
+  correctMetricTarget,
   getMetricTarget,
   lockMetricTarget,
   updateMetricTarget,
@@ -64,6 +65,10 @@ export async function POST(
 
     if (action === "confirm") {
       const target = await confirmMetricTarget(user, id, body as Record<string, unknown>);
+      return NextResponse.json({ success: true, target });
+    }
+    if (action === "correct") {
+      const target = await correctMetricTarget(user, id, body as Record<string, unknown>);
       return NextResponse.json({ success: true, target });
     }
     if (action === "lock") {

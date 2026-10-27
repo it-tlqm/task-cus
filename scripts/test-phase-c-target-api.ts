@@ -12,6 +12,7 @@ import type { SessionUser } from "../src/server/auth";
 import {
   MetricTargetError,
   confirmMetricTarget,
+  correctMetricTarget,
   createMetricTarget,
   getMetricTarget,
   listMetricTargetRevisions,
@@ -130,6 +131,16 @@ async function main() {
     const locked = await lockMetricTarget(manager, base.id, { reason: "test lock" });
     check("A11. Lock → LOCKED", locked.status === "LOCKED" && Boolean(locked.lockedAt));
     check("A12. Update LOCKED → 400", await expectError(() => updateMetricTarget(manager, base.id, { label: `${tag}-A`, periodType: "YEAR", year: 2026, periodNo: null, value: "999", comparisonKind: "NONE", dataSource: "REAL" }), 400, "đã chốt"));
+
+    check("A12b. Correct thiếu lý do → 400", await expectError(() => correctMetricTarget(manager, base.id, { value: "1500", sourceNote: `${tag} nguồn điều chỉnh` }), 400, "lý do"));
+    check("A12c. STAFF correct → 403", await expectError(() => correctMetricTarget(denied, base.id, { value: "1500", reason: "Điều chỉnh test hợp lệ", sourceNote: `${tag} nguồn điều chỉnh` }), 403));
+    const corrected = await correctMetricTarget(manager, base.id, {
+      value: "1500",
+      reason: "Điều chỉnh số đã chốt theo xác nhận của lãnh đạo",
+      sourceNote: `${tag} nguồn điều chỉnh`,
+    });
+    check("A12d. Correct LOCKED giữ LOCKED + giá trị mới", corrected.status === "LOCKED" && corrected.valueBase === 1500);
+    check("A12e. Correct ghi revision CORRECT", (await listMetricTargetRevisions(manager, base.id)).some((r) => r.action === "CORRECT" && r.oldValue === 1000 && r.newValue === 1500));
 
     const revisions = await listMetricTargetRevisions(manager, base.id);
     check("A13. Revision có CREATE/UPDATE/CONFIRM/LOCK", ["CREATE", "UPDATE", "CONFIRM", "LOCK"].every((a) => revisions.some((r) => r.action === a)));
