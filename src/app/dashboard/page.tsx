@@ -276,7 +276,7 @@ export default function DashboardPage() {
                 onClick={fetchDashboardData}
                 disabled={loading}
                 className="p-2 rounded-lg bg-surface-subtle hover:bg-surface-container text-on-surface-variant transition-fast active-press disabled:opacity-50"
-                title="Làm mới dữ liệu tức thì từ PostgreSQL"
+                title="Làm mới dữ liệu"
               >
                 <span className={`material-symbols-outlined text-[20px] ${loading ? "animate-spin" : ""}`}>
                   autorenew
@@ -362,7 +362,7 @@ export default function DashboardPage() {
                     aria-label="Chọn kỳ báo cáo từ CSDL"
                     data-testid="dashboard-period-select-desktop"
                     className="h-9 px-3 pr-8 rounded-lg bg-surface-container-lowest font-body-semibold text-body-semibold text-primary border border-border-default focus:outline-none cursor-pointer shadow-sm text-xs"
-                    title="Chọn kỳ báo cáo từ CSDL PostgreSQL"
+                    title="Chọn kỳ báo cáo"
                   >
                     <option value="" disabled>
                       Kỳ khác…
@@ -758,7 +758,7 @@ export default function DashboardPage() {
 
             <div className="pt-2 border-t border-surface-container text-xs text-outline flex justify-between">
               <span>Hệ thống tự động kích hoạt cảnh báo trễ hạn trên toàn chi cục.</span>
-              <span className="text-secondary font-semibold">Cập nhật PostgreSQL</span>
+              <span className="text-secondary font-semibold">Đã cập nhật</span>
             </div>
           </div>
         </div>

@@ -243,7 +243,7 @@ export default function ChangePasswordPage() {
         <footer className="text-center flex flex-col items-center gap-1 pt-1">
           <div className="inline-flex items-center gap-1.5 text-outline">
             <span className="material-symbols-outlined text-[13px]">lock</span>
-            <span className="text-[11px] font-mono">Kết nối an toàn nội bộ • PostgreSQL</span>
+            <span className="text-[11px] font-mono">Kết nối an toàn nội bộ</span>
           </div>
           <p className="text-[11px] text-on-surface-variant">
             Hải quan cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng

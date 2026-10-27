@@ -1607,7 +1607,7 @@ function ReportsContent() {
                   Kho Lưu Trữ Báo Cáo Đã Chốt Kỳ (Locked Snapshots)
                 </h2>
                 <p className="font-body-md text-on-surface-variant mt-0.5">
-                  Bản chụp số liệu được tính toán mã băm toàn vẹn SHA-256 bảo đảm tính toàn vẹn nội dung, lưu trữ trong PostgreSQL phục vụ đối soát, kiểm tra tác nghiệp Hải quan.
+                  Bản chụp số liệu được tính mã kiểm tra toàn vẹn nội dung, lưu trữ trong hệ thống phục vụ đối soát, kiểm tra tác nghiệp Hải quan.
                 </p>
               </div>
             </div>
@@ -1631,7 +1631,7 @@ function ReportsContent() {
               </div>
               <h3 className="font-headline-sm text-on-surface">Chưa có bản chụp số liệu nào được lưu trữ</h3>
               <p className="font-body-md text-on-surface-variant max-w-md">
-                Hiện tại chưa có kỳ báo cáo nào được chốt khóa trong PostgreSQL. Nhấn nút bên dưới để tạo bản chụp đầu tiên.
+                Hiện tại chưa có kỳ báo cáo nào được chốt khóa. Nhấn nút bên dưới để tạo bản chụp đầu tiên.
               </p>
               {canLock && (
                 <button
@@ -1756,7 +1756,7 @@ function ReportsContent() {
                 <div>
                   <div className="font-semibold text-primary">Quy định chốt kỳ tác nghiệp:</div>
                   <div className="text-[12px] text-on-surface-variant mt-0.5">
-                    Hệ thống sẽ tổng hợp toàn bộ nhiệm vụ, ca trực và chỉ số KPI tại thời điểm hiện tại; tính mã băm <strong>SHA-256 (64 ký tự hex)</strong> bảo đảm tính toàn vẹn và lưu bản chụp bất biến vào PostgreSQL.
+                    Hệ thống sẽ tổng hợp toàn bộ nhiệm vụ, ca trực và chỉ số KPI tại thời điểm hiện tại; tính <strong>mã kiểm tra toàn vẹn</strong> và lưu bản chụp bất biến trong hệ thống.
                   </div>
                 </div>
               </div>

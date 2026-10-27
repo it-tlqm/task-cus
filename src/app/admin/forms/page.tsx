@@ -156,7 +156,7 @@ export default function DynamicFormBuilderPage() {
       if (res.ok) {
         const data = await res.json();
         setActiveVersionNum(data.version?.version || activeVersionNum + 1);
-        toast.success(`Đã phát hành thành công phiên bản v${data.version?.version || activeVersionNum + 1} vào PostgreSQL!`);
+        toast.success(`Đã phát hành thành công phiên bản v${data.version?.version || activeVersionNum + 1}!`);
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || "Không thể phát hành phiên bản mới");

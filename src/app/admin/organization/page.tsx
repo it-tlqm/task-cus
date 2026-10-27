@@ -832,7 +832,7 @@ export default function OrganizationAdminPage() {
         <div className="p-8 bg-white border border-amber-200 rounded-xl text-center space-y-2 shadow-sm">
           <p className="text-lg font-bold text-slate-900">Khu vực dành cho Lãnh đạo đơn vị</p>
           <p className="text-sm text-slate-600">
-            Tài khoản của đồng chí không có quyền quản trị tổ chức & nhân sự. Mọi thao tác (nếu cố tình gọi API) đều bị backend chặn 403 và ghi audit.
+            Tài khoản của đồng chí không có quyền quản trị tổ chức &amp; nhân sự. Mọi thao tác trái quyền đều bị chặn và ghi nhận lịch sử.
           </p>
         </div>
       )}
@@ -843,7 +843,7 @@ export default function OrganizationAdminPage() {
             <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-900 border border-blue-200">
               Quản trị đơn vị & Nhân sự
             </span>
-            <span className="text-xs text-slate-500">Phân hệ P1 FIX 06A • Dữ liệu PostgreSQL thời gian thực</span>
+            <span className="text-xs text-slate-500">Dữ liệu cập nhật theo thời gian thực</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mt-1">Cơ cấu tổ chức & Quản lý cán bộ công chức</h1>
           <p className="text-sm text-slate-600">

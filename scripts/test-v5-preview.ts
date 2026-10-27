@@ -35,7 +35,7 @@ check(
   tailwind.includes("#1B3461") && tailwind.includes("#C62222") && tailwind.includes("#F2C41D")
 );
 check("AppShell bỏ qua chrome cũ cho /v5", shell.includes("isV5Route") && shell.includes('pathname === "/v5"'));
-check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.includes("shadcn/ui"));
+check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.includes("V5 Preview"));
 check("AppShell dùng V5Shell cho toàn bộ màn hình cũ", shell.includes("<V5Shell>"));
 check(
   "Mobile dùng sidebar drawer, không dùng tabbar",
@@ -68,6 +68,13 @@ check(
     v5GiaoBan.includes("MetricsSummaryTable")
 );
 check(
+  "Có lối vào Chỉ tiêu giao / Phân công nhập",
+  v5Shell.includes("tab=TARGET") &&
+    v5Shell.includes("tab=ASSIGN") &&
+    v5GiaoBan.includes("Chỉ tiêu giao") &&
+    v5GiaoBan.includes("Phân công nhập")
+);
+check(
   "V5 có màn hình nhập số liệu tối ưu",
   v5Entry.includes("Cần nhập") &&
     v5Entry.includes("Tính từ lũy kế") &&
@@ -81,6 +88,14 @@ check(
 check(
   "Giao ban có biểu đồ",
   v5GiaoBan.includes("RevenueCharts") && fs.existsSync(path.join(root, "src/components/v5/RevenueCharts.tsx"))
+);
+const routine = read("src/app/routine/page.tsx");
+check(
+  "Nhật ký responsive mobile và bỏ từ kỹ thuật",
+  routine.includes("grid w-full grid-cols-1 gap-2 sm:grid-cols-2") &&
+    routine.includes("Thiết kế biểu mẫu") &&
+    !routine.includes("No-Code v") &&
+    !routine.includes("Audit Trail")
 );
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);

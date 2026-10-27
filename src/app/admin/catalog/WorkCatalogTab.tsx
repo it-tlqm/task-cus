@@ -374,9 +374,6 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2 py-0.5 text-[11px] font-semibold rounded bg-teal-100 text-teal-800">
-              YC-31
-            </span>
             <h2 className="text-lg font-bold text-slate-900">Danh mục công việc thường xuyên</h2>
             {activeVersion ? (
               <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-semibold">

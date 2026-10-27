@@ -207,7 +207,7 @@ export function MetricTargetDraftEditor({
   async function save(status: TargetStatus) {
     if (busy) return;
     if (!selectedRule.officialPercentAllowed) {
-      setMessage("Chưa có quy tắc gán/đánh giá chỉ tiêu cho chỉ tiêu và kỳ này — không thể lưu chỉ tiêu.");
+      setMessage("Chưa có quy tắc đánh giá cho chỉ tiêu và kỳ này — không thể lưu chỉ tiêu.");
       return;
     }
     const next: TargetDraftInput = {
@@ -235,11 +235,11 @@ export function MetricTargetDraftEditor({
       setMessage(
         status === "CONFIRMED"
           ? apiMode
-            ? "Đã gửi xác nhận chỉ tiêu. % chính thức chỉ tính khi đủ quy tắc D5-A."
-            : "Đã xác nhận (mock). Chỉ target CONFIRMED mới đủ điều kiện tính % chính thức."
+            ? "Đã gửi xác nhận chỉ tiêu. Tỷ lệ chính thức chỉ tính khi đủ quy tắc đánh giá."
+            : "Đã xác nhận. Chỉ chỉ tiêu đã xác nhận mới đủ điều kiện tính tỷ lệ chính thức."
           : apiMode
-            ? "Đã lưu nháp/đề xuất (PROPOSED). Chỉ hiển thị tạm tính."
-            : "Đã lưu nháp (mock). Target DRAFT chỉ hiển thị tạm tính, không dùng báo cáo."
+            ? "Đã lưu đề xuất. Chỉ hiển thị tạm tính."
+            : "Đã lưu nháp. Chỉ hiển thị tạm tính, không dùng báo cáo."
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Lỗi khi gọi API target-only.");
@@ -260,7 +260,7 @@ export function MetricTargetDraftEditor({
     try {
       const result = await callback(target);
       if (result === false) {
-        setMessage("API target-only từ chối thao tác.");
+        setMessage("Hệ thống từ chối thao tác.");
         return;
       }
       setTargets((current) =>
@@ -293,25 +293,25 @@ export function MetricTargetDraftEditor({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="font-headline-sm text-headline-sm text-primary">Chỉ tiêu giao — bản nháp UI</h2>
+            <h2 className="font-headline-sm text-headline-sm text-primary">Chỉ tiêu giao</h2>
             <span className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${apiMode ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-sky-300 bg-sky-50 text-sky-800"}`}>
-              {apiMode ? "API TARGET-ONLY" : "MOCK · CHƯA NỐI API"}
+              {apiMode ? "Đã kết nối" : "Bản nháp"}
             </span>
           </div>
           <p className="mt-1 text-body-sm text-on-surface-variant">
-            Chỉ tiêu cấp Cục (Q1=A). Target <b>DRAFT</b> chỉ tạm tính. V3.2/D5-A: chiều/đo lường/baseline lấy từ quy tắc đã duyệt; chưa có quy tắc thì không tính % và không tô đạt/vượt.
+            Chỉ tiêu cấp Cục. Bản nháp chỉ tạm tính; chiều đánh giá, cách đo và mốc so sánh lấy từ quy tắc đã duyệt.
           </p>
         </div>
         <span className="rounded border border-border-default bg-surface-container-low px-2 py-1 text-[11px] font-semibold text-on-surface-variant">
-          {draft.isOfficial ? "Chính thức" : "DEMO / không chính thức"}
+          {draft.isOfficial ? "Chính thức" : "Không chính thức"}
         </span>
       </div>
 
       <div className={`rounded-lg border px-3 py-2 text-body-xs ${selectedRule.officialPercentAllowed ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-300 bg-amber-50 text-amber-900"}`}>
-        {apiMode ? "Đã nối API target-only (/api/metrics/targets). " : "Bản nháp độc lập: không gọi API/DB; dữ liệu dưới đây là mock. "}
+        {apiMode ? "Đã kết nối hệ thống. " : "Bản nháp: dữ liệu dưới đây chỉ để tham khảo. "}
         {selectedRule.officialPercentAllowed ? (
           <>
-            <b>Quy tắc D5-A đã duyệt:</b> {DIRECTION_LABELS[selectedRule.direction]} · {MEASURE_MODE_LABELS[selectedRule.measureMode]} · {BASELINE_SCOPE_LABELS[selectedRule.baselineScope]}.
+            <b>Quy tắc đánh giá đã duyệt:</b> {DIRECTION_LABELS[selectedRule.direction]} · {MEASURE_MODE_LABELS[selectedRule.measureMode]} · {BASELINE_SCOPE_LABELS[selectedRule.baselineScope]}.
           </>
         ) : (
           <>
@@ -431,7 +431,7 @@ export function MetricTargetDraftEditor({
         )}
 
         <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
-          Chiều đánh giá (D5-A/C1)
+          Chiều đánh giá
           <div className="rounded border border-border-default bg-surface-container-low px-2 py-1.5 text-body-sm font-normal text-on-surface">
             {DIRECTION_LABELS[selectedRule.direction]}
             <span className="ml-1 text-[10px] text-on-surface-variant">(theo quy tắc đã duyệt — không sửa tại đây)</span>

@@ -287,7 +287,7 @@ export default function NotificationsPage() {
 
             {loading ? (
               <div className="p-8 text-center bg-surface-container-lowest rounded-xl border border-border-default/50 text-on-surface-variant text-sm animate-pulse">
-                Đang nạp dữ liệu điều hành tác nghiệp từ PostgreSQL...
+                Đang nạp dữ liệu điều hành tác nghiệp...
               </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="bg-surface-container-lowest p-8 rounded-2xl border border-border-default/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">

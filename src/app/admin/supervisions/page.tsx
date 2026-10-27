@@ -112,7 +112,7 @@ export default function SupervisionsAdminPage() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
           <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <span className="material-symbols-outlined text-amber-600">account_tree</span>
-            Quan hệ phụ trách theo kỳ (YC-35)
+            Quan hệ phụ trách theo kỳ
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Khai báo ai phụ trách cho ai. Hệ thống dùng dữ liệu này để tính điểm bình quân cho

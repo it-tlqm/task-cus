@@ -325,7 +325,7 @@ export default function V5DashboardPage() {
             <Badge variant="outline">Dữ liệu thật</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
-            {user?.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"} · {dataDate} · cập nhật từ PostgreSQL
+            {user?.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"} · {dataDate} · dữ liệu trực tiếp
           </p>
         </div>
 
@@ -461,7 +461,7 @@ export default function V5DashboardPage() {
                   </span>
                   <span>so với chỉ tiêu</span>
                   <Badge variant={revenueTone === "success" ? "success" : revenueTone === "warning" ? "warning" : "danger"}>
-                    {revenueTone === "success" ? "Đạt chỉ tiêu" : revenueTone === "warning" ? "Kiểm tra target" : "Chưa đạt"}
+                    {revenueTone === "success" ? "Đạt chỉ tiêu" : revenueTone === "warning" ? "Kiểm tra chỉ tiêu" : "Chưa đạt"}
                   </Badge>
                   <span className="text-v5-line">·</span>
                   <span>
@@ -480,7 +480,7 @@ export default function V5DashboardPage() {
             </div>
             {suspiciousTarget && (
               <div className="mt-3 rounded-md border border-v5-gold/60 bg-v5-gold-soft px-2.5 py-1.5 text-[10px] text-v5-gold-ink">
-                Target đang chênh lớn bất thường — kiểm tra lại đơn vị (đồng/tỷ) trước khi dùng tỷ lệ chính thức.
+                Chỉ tiêu đang chênh lớn bất thường — kiểm tra lại đơn vị (đồng/tỷ) trước khi dùng tỷ lệ chính thức.
               </div>
             )}
           </div>
@@ -547,7 +547,7 @@ export default function V5DashboardPage() {
         <CardHeader className="flex-row items-end justify-between gap-2">
           <div>
             <CardTitle>Số liệu giao ban</CardTitle>
-            <CardDescription>Widget theo chỉ tiêu · {PERIOD_LABEL[period].toLowerCase()}</CardDescription>
+            <CardDescription>Theo chỉ tiêu · {PERIOD_LABEL[period].toLowerCase()}</CardDescription>
           </div>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/v5/giao-ban">

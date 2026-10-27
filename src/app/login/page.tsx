@@ -167,7 +167,7 @@ export default function LoginPage() {
         <div className="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-xs text-white/70">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-secondary-fixed text-[16px]">lock</span>
-            <span>Xác thực an toàn nội bộ • Kết nối cơ sở dữ liệu PostgreSQL</span>
+            <span>Xác thực an toàn nội bộ</span>
           </div>
           <span className="font-mono text-white/50">Mã đơn vị: HQTL-2026</span>
         </div>

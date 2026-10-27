@@ -146,7 +146,7 @@ export default function RoutinePage() {
   const [builderTemplateId, setBuilderTemplateId] = useState<string>("");
   const [isPublishingVersion, setIsPublishingVersion] = useState(false);
 
-  // Tab 3: Audit Trail State
+  // Tab 3: Lịch sử thay đổi
   const [auditEvents, setAuditEvents] = useState<any[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
 
@@ -257,7 +257,7 @@ export default function RoutinePage() {
       .catch(() => {});
   }, []);
 
-  // Fetch Audit Trail when Tab 3 is clicked
+  // Tải lịch sử thay đổi khi mở tab 3
   useEffect(() => {
     if (activeTab === "tab3") {
       setAuditLoading(true);
@@ -436,57 +436,57 @@ export default function RoutinePage() {
 
   return (
     <div className="w-full min-h-screen bg-app-bg pb-12">
-      <div className="flex flex-col w-full p-space-lg gap-space-lg">
+      <div className="flex w-full flex-col gap-3 p-3 sm:p-4 lg:gap-space-lg lg:p-space-lg">
         {/* Top Operational Banner & View Switching Tabs */}
-        <div className="flex flex-col gap-space-md bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-border-default/50">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+        <div className="flex flex-col gap-3 rounded-xl border border-border-default/50 bg-surface-container-lowest p-3 shadow-sm sm:p-4 lg:gap-space-md lg:p-space-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-space-md">
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wider shadow-sm font-bold">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded bg-primary px-2.5 py-0.5 font-label-sm text-label-sm font-bold uppercase tracking-wider text-on-primary shadow-sm">
                   <span className="material-symbols-outlined text-[14px]">fact_check</span>
-                  Nghiệp Vụ Hải Quan
+                  Nghiệp vụ hải quan
                 </span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+                <span className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
                   <span className="material-symbols-outlined text-[14px] text-status-success">verified</span>
-                  Phiên bản biểu mẫu động:{" "}
-                  <strong className="text-on-surface font-body-semibold">
+                  Biểu mẫu:{" "}
+                  <strong className="font-body-semibold text-on-surface">
                     {activeFormVersion?.templateCode || "FORM"} v{activeFormVersion?.version || 1}
                   </strong>
                 </span>
               </div>
               <h1 className="font-headline-xl text-headline-xl text-primary tracking-tight">
-                Nhật Ký Tác Nghiệp Nghiệp Vụ &amp; Biểu Mẫu Động
+                Nhật ký tác nghiệp &amp; biểu mẫu
               </h1>
-              <p className="font-body-md text-body-md text-on-surface-variant max-w-4xl">
-                Ghi nhận khối lượng công việc thực tế theo từng công chức biên giới, lưu trữ nguyên vẹn dữ liệu
-                doanh nghiệp, container và các trường đặc thù vào cơ sở dữ liệu PostgreSQL.
+              <p className="max-w-4xl font-body-md text-body-md text-on-surface-variant">
+                Ghi nhận khối lượng công việc thực tế theo từng công chức; lưu trữ dữ liệu doanh nghiệp, container và các trường đặc thù.
               </p>
             </div>
 
             {/* Quick Metrics Summary */}
-            <div className="flex items-center gap-space-sm shrink-0">
-              <div className="px-space-md py-2.5 rounded bg-surface-container-lowest shadow-sm flex items-center gap-3 border border-border-default">
-                <div className="w-9 h-9 rounded bg-status-success-bg flex items-center justify-center text-status-success">
-                  <span className="material-symbols-outlined text-[20px]">task_alt</span>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto">
+              <div className="flex items-center gap-3 rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 shadow-sm">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-status-success-bg text-status-success">
+                  <span className="material-symbols-outlined text-[18px]">task_alt</span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate font-label-sm text-label-sm text-on-surface-variant">
                     {filterAllDates ? "Tổng bản ghi đã nạp" : "Bản ghi trong ngày"}
                   </span>
-                  <span className="font-headline-sm text-headline-sm text-primary font-bold">
-                    {entries.length} <span className="font-body-md text-label-sm text-on-surface-variant font-normal">Bản ghi</span>
+                  <span className="font-headline-sm text-headline-sm font-bold text-primary">
+                    {entries.length}{" "}
+                    <span className="font-body-md text-label-sm font-normal text-on-surface-variant">bản ghi</span>
                   </span>
                 </div>
               </div>
-              <div className="px-space-md py-2.5 rounded bg-surface-container-lowest shadow-sm flex items-center gap-3 border border-border-default">
-                <div className="w-9 h-9 rounded bg-status-unassigned-bg flex items-center justify-center text-status-unassigned">
-                  <span className="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+              <div className="flex items-center gap-3 rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 shadow-sm">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-status-unassigned-bg text-status-unassigned">
+                  <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate font-label-sm text-label-sm text-on-surface-variant">
                     Không phát sinh {filterAllDates ? "(tất cả)" : "(trong ngày)"}
                   </span>
-                  <span className="font-headline-sm text-headline-sm text-status-warning flex items-center gap-1 font-bold">
+                  <span className="flex items-center gap-1 font-headline-sm text-headline-sm font-bold text-status-warning">
                     {entries.filter((e) => e.occurrenceStatus === "NOT_OCCURRED").length} việc
                   </span>
                 </div>
@@ -495,55 +495,61 @@ export default function RoutinePage() {
           </div>
 
           {/* Segmented Navigation Tabs */}
-          <div className="bg-surface-subtle p-1 rounded-xl flex flex-wrap items-center justify-between gap-2 shadow-sm border border-border-default">
-            <div className="flex items-center gap-1" role="tablist">
+          <div className="flex flex-col gap-2 rounded-xl border border-border-default bg-surface-subtle p-1.5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex w-full flex-col gap-1 sm:flex-row sm:flex-wrap lg:w-auto" role="tablist">
               <button
                 onClick={() => setActiveTab("tab1")}
-                className={`flex items-center gap-2 px-space-md py-2.5 rounded-lg transition-fast ${
+                className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-fast sm:w-auto ${
                   activeTab === "tab1"
-                    ? "bg-secondary text-on-secondary shadow-sm font-body-semibold"
-                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                    ? "bg-secondary font-body-semibold text-on-secondary shadow-sm"
+                    : "text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface"
                 }`}
               >
-                <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
-                <span>1. Ghi nhận nhật ký hàng ngày (Cán bộ)</span>
-                <span className="px-2 py-0.2 rounded-full bg-secondary-fixed text-on-secondary-fixed text-label-sm font-label-sm font-bold">
-                  {entries.length} việc đang xem
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
+                  <span className="truncate">Ghi nhận nhật ký</span>
+                </span>
+                <span className="shrink-0 rounded-full bg-secondary-fixed px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-secondary-fixed">
+                  {entries.length} việc
                 </span>
               </button>
               {canManageForms && (
               <button
                 onClick={() => setActiveTab("tab2")}
-                className={`flex items-center gap-2 px-space-md py-2.5 rounded-lg transition-fast ${
+                className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-fast sm:w-auto ${
                   activeTab === "tab2"
-                    ? "bg-secondary text-on-secondary shadow-sm font-body-semibold"
-                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                    ? "bg-secondary font-body-semibold text-on-secondary shadow-sm"
+                    : "text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface"
                 }`}
               >
-                <span className="material-symbols-outlined text-[18px]">build_circle</span>
-                <span>2. Form Builder — Quản trị thiết kế biểu mẫu động</span>
-                <span className="px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed text-label-sm font-label-sm font-bold">
-                  No-Code v{activeFormVersion?.version || 1}
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">build_circle</span>
+                  <span className="truncate">Thiết kế biểu mẫu</span>
+                </span>
+                <span className="shrink-0 rounded bg-primary-fixed px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-primary-fixed">
+                  v{activeFormVersion?.version || 1}
                 </span>
               </button>
               )}
               {(canManageForms || canAudit) && (
               <button
                 onClick={() => setActiveTab("tab3")}
-                className={`flex items-center gap-2 px-space-md py-2.5 rounded-lg transition-fast ${
+                className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-fast sm:w-auto ${
                   activeTab === "tab3"
-                    ? "bg-secondary text-on-secondary shadow-sm font-body-semibold"
-                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                    ? "bg-secondary font-body-semibold text-on-secondary shadow-sm"
+                    : "text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface"
                 }`}
               >
-                <span className="material-symbols-outlined text-[18px]">history_toggle_off</span>
-                <span>3. Lịch sử kiểm toán Audit Trail</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">history_toggle_off</span>
+                  <span className="truncate">Lịch sử thay đổi</span>
+                </span>
               </button>
               )}
             </div>
-            <div className="flex items-center gap-2 px-2 text-on-surface-variant font-label-sm text-label-sm">
-              <span className="inline-block w-2 h-2 rounded-full bg-status-success" />
-              <span>Hệ thống trực tuyến: Hải quan CKQT Tà Lùng</span>
+            <div className="hidden items-center gap-2 px-2 font-label-sm text-label-sm text-on-surface-variant lg:flex">
+              <span className="inline-block h-2 w-2 rounded-full bg-status-success" />
+              <span>Đang hoạt động</span>
             </div>
           </div>
         </div>
@@ -1011,7 +1017,7 @@ export default function RoutinePage() {
                     {loading ? (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-outline animate-pulse">
-                          Đang nạp dữ liệu nhật ký ca trực từ cơ sở dữ liệu PostgreSQL...
+                          Đang nạp dữ liệu nhật ký ca trực...
                         </td>
                       </tr>
                     ) : entries.length === 0 ? (
@@ -1164,21 +1170,21 @@ export default function RoutinePage() {
           </section>
         )}
 
-        {/* TAB 2: FORM BUILDER (ADMIN NO-CODE VIEW WITH REAL BACKEND) */}
+        {/* TAB 2: THIẾT KẾ BIỂU MẪU */}
         {activeTab === "tab2" && (
           <section className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
             <div className="flex items-center justify-between border-b border-surface-container pb-space-sm">
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-headline-sm text-headline-sm text-primary">
-                    Dynamic Form Builder — Tùy Biến Trường Biểu Mẫu Tác Nghiệp
+                    Thiết kế biểu mẫu tác nghiệp
                   </h3>
                   <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
                     PHIÊN BẢN v{activeFormVersion?.version || 1}
                   </span>
                 </div>
                 <p className="text-xs text-on-surface-variant">
-                  Cấu hình các trường động được lưu trữ trực tiếp vào bảng FormTemplateVersion trong PostgreSQL.
+                  Cấu hình các trường thông tin dùng trong biểu mẫu tác nghiệp.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1257,14 +1263,14 @@ export default function RoutinePage() {
           </section>
         )}
 
-        {/* TAB 3: AUDIT TRAIL FROM POSTGRESQL */}
+        {/* TAB 3: LỊCH SỬ THAY ĐỔI */}
         {activeTab === "tab3" && (
           <section className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-border-default/50 flex flex-col gap-space-md">
             <div className="flex items-center justify-between border-b border-surface-container pb-space-sm">
               <h3 className="font-headline-sm text-headline-sm text-primary">
-                Nhật Ký Kiểm Toán Hệ Thống (Audit Trail)
+                Lịch sử thay đổi hệ thống
               </h3>
-              <span className="text-xs text-outline">Nguồn: /api/admin/audit (PostgreSQL)</span>
+              <span className="text-xs text-outline">Nguồn: hệ thống</span>
             </div>
 
             {auditLoading ? (
@@ -1446,7 +1452,7 @@ export default function RoutinePage() {
             {inspectEntry.formValues && Object.keys(inspectEntry.formValues).length > 0 && (
               <div className="flex flex-col gap-2 border-t border-border-default/60 pt-3">
                 <span className="text-outline text-xs font-bold uppercase">
-                  Dữ liệu số hóa chi tiết (SubmissionValues từ PostgreSQL)
+                  Dữ liệu chi tiết đã ghi nhận
                 </span>
                 <div className="rounded border border-border-default overflow-hidden">
                   <table className="w-full text-left text-xs">

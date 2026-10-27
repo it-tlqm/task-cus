@@ -32,11 +32,14 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  Target,
+  UserPlus,
   Users,
   UserCheck,
   X,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
@@ -54,6 +57,10 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
       { label: "Tổng quan", href: "/v5", icon: LayoutDashboard },
       { label: "Số liệu giao ban", href: "/v5/giao-ban", icon: FileBarChart2 },
       { label: "Nhập số liệu", href: "/v5/giao-ban/nhap", icon: PlusSquare },
+      { label: "Cấu hình giao ban", href: "/giao-ban/cau-hinh", icon: Settings2 },
+      { label: "Chỉ tiêu giao", href: "/giao-ban/cau-hinh?tab=TARGET", icon: Target },
+      { label: "Phân công nhập", href: "/giao-ban/cau-hinh?tab=ASSIGN", icon: UserPlus },
+      { label: "Báo cáo giao ban", href: "/giao-ban/bao-cao", icon: FileText },
     ],
   },
   {
@@ -61,7 +68,7 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { label: "Công việc", href: "/tasks", icon: ClipboardList },
       { label: "Kế hoạch", href: "/plans", icon: CalendarDays },
-      { label: "Duyệt hồ sơ", href: "/approvals", icon: CheckCheck },
+      { label: "Phê duyệt", href: "/approvals", icon: CheckCheck },
       { label: "Công chức nhận việc", href: "/my-work", icon: UserCheck },
       { label: "Nhật ký ca trực", href: "/routine", icon: BookOpenCheck },
       { label: "Cuộc họp", href: "/meetings", icon: Users },
@@ -109,12 +116,12 @@ const PAGE_TITLES: Array<[string, string]> = [
   ["/dashboard", "Bảng điều hành"],
   ["/v5/giao-ban/nhap", "Nhập số liệu"],
   ["/giao-ban/nhap", "Nhập số liệu"],
-  ["/giao-ban/cau-hinh", "Cấu hình số liệu"],
+  ["/giao-ban/cau-hinh", "Cấu hình giao ban"],
   ["/giao-ban/bao-cao", "Báo cáo giao ban"],
   ["/giao-ban", "Số liệu giao ban"],
   ["/tasks", "Công việc"],
   ["/plans", "Kế hoạch"],
-  ["/approvals", "Duyệt hồ sơ"],
+  ["/approvals", "Phê duyệt"],
   ["/my-work", "Công chức nhận việc"],
   ["/routine", "Nhật ký ca trực"],
   ["/meetings", "Cuộc họp"],
@@ -238,6 +245,8 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = usePermissions();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pageTitle = PAGE_TITLES.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] || "Không gian điều hành";
   const today = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
@@ -249,6 +258,20 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const loadUnread = () => {
+      fetch("/api/notifications", { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (typeof json?.unreadCount === "number") setUnreadCount(json.unreadCount);
+        })
+        .catch(() => {});
+    };
+    loadUnread();
+    window.addEventListener("notifications-updated", loadUnread);
+    return () => window.removeEventListener("notifications-updated", loadUnread);
+  }, []);
 
   return (
     <div className="v5-shell min-h-screen bg-v5-bg text-v5-ink">
@@ -317,11 +340,19 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                 <kbd className="rounded border border-v5-line bg-v5-bg px-1 text-[9px]">⌘K</kbd>
               </button>
               <span className="hidden text-[10px] text-v5-muted xl:inline">{today}</span>
-              <Button variant="ghost" size="icon" aria-label="Thông báo" className="relative" asChild>
-                <Link href="/notifications">
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-v5-danger ring-2 ring-v5-surface" />
-                </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Thông báo${unreadCount > 0 ? ` (${unreadCount} chưa đọc)` : ""}`}
+                className="relative"
+                onClick={() => setNotificationsOpen(true)}
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-v5-danger px-1 text-center text-[8px] font-bold leading-4 text-white ring-2 ring-v5-surface">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
               </Button>
               <Button variant="ghost" size="icon" aria-label="Cấu hình" asChild>
                 <Link href="/admin">
@@ -345,9 +376,11 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
 
       <div className="fixed bottom-4 right-4 z-40 hidden xl:block">
         <div className="flex items-center gap-1 rounded-full border border-v5-line bg-v5-surface px-2.5 py-1.5 text-[10px] text-v5-muted shadow-sm">
-          <Command className="h-3 w-3" /> V5 · shadcn/ui
+          <Command className="h-3 w-3" /> V5 Preview
         </div>
       </div>
+
+      <NotificationQuickView open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
     </div>
   );
 }

@@ -12,6 +12,9 @@ import {
   Loader2,
   Plus,
   RefreshCw,
+  Settings2,
+  Target,
+  UserPlus,
 } from "lucide-react";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -148,12 +151,27 @@ export default function V5GiaoBanPage() {
             <Badge variant="outline">Dữ liệu thật</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
-            {user?.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"} · {periodLabel} · cập nhật từ PostgreSQL
+            {user?.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"} · {periodLabel} · dữ liệu trực tiếp
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm">
             <CalendarDays className="h-3.5 w-3.5" /> {periodLabel}
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/giao-ban/cau-hinh?tab=TARGET">
+              <Target className="h-3.5 w-3.5" /> Chỉ tiêu giao
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/giao-ban/cau-hinh?tab=ASSIGN">
+              <UserPlus className="h-3.5 w-3.5" /> Phân công nhập
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/giao-ban/cau-hinh">
+              <Settings2 className="h-3.5 w-3.5" /> Cấu hình
+            </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/reports/excel">
@@ -286,7 +304,7 @@ export default function V5GiaoBanPage() {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-v5-line px-4 py-3 text-[10px] text-v5-muted">
-        <span>V5 preview · bảng tổng hợp số thu đặt trên cùng; dữ liệu thật từ API hiện có.</span>
+        <span>Bảng tổng hợp số thu đặt trên cùng · dữ liệu trực tiếp.</span>
         <Link href="/v5" className="font-semibold text-v5-accent hover:underline">
           Về Bảng điều hành
         </Link>

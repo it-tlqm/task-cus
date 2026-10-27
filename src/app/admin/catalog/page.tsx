@@ -440,9 +440,6 @@ export default function CatalogAdminPage() {
           }`}
         >
           Danh mục công việc thường xuyên
-          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px]">
-            YC-31
-          </span>
         </button>
       </div>
 

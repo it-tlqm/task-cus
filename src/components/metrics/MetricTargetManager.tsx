@@ -265,9 +265,9 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
       <div className="rounded-xl border border-border-default/50 bg-surface-container-lowest p-4 flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div className="font-label-md text-label-md text-primary font-bold">Chỉ tiêu giao — target-only</div>
+            <div className="font-label-md text-label-md text-primary font-bold">Chỉ tiêu giao</div>
             <div className="text-body-xs text-on-surface-variant">
-              D7=A · API <code>/api/metrics/targets</code> · quyền <code>metrics.config</code> · V3.2/D5-A + C1-A
+              Cấu hình chỉ tiêu theo năm, quý, tháng và xác nhận trước khi dùng tính tỷ lệ.
             </div>
           </div>
           <button
@@ -297,8 +297,8 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
           </select>
         </label>
         <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
-          <b>V3.2/D5-A + C1-A:</b> chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đã duyệt (hiện chỉ <b>THU_NSNN</b>); chỉ tiêu khác hiển thị
-          “Chưa có quy tắc gán chỉ tiêu” và không tô đạt/vượt. Không tự gán chỉ tiêu cho mọi chỉ tiêu.
+          Chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đánh giá đã duyệt (hiện chỉ <b>THU_NSNN</b>);
+          chỉ tiêu khác hiển thị “Chưa có quy tắc gán chỉ tiêu” và không tô đạt/vượt.
         </div>
         {error && <div className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-body-xs text-rose-800">{error}</div>}
         {loading && <div className="text-body-xs text-on-surface-variant">Đang tải chỉ tiêu giao…</div>}

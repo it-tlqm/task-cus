@@ -185,7 +185,7 @@ export default function SystemAdminPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-3">
         <RefreshCw className="w-8 h-8 text-blue-900 animate-spin" />
-        <p className="text-sm font-medium text-slate-600">Đang nạp dữ liệu trung tâm quản trị từ PostgreSQL...</p>
+        <p className="text-sm font-medium text-slate-600">Đang nạp dữ liệu quản trị...</p>
       </div>
     );
   }
@@ -238,7 +238,7 @@ export default function SystemAdminPage() {
               Quản trị kỹ thuật
             </span>
             <span className="text-xs text-slate-500 font-mono">
-              SYSTEM_ADMIN • PostgreSQL Live State
+              Quản trị hệ thống • Dữ liệu trực tiếp
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mt-1">
@@ -336,7 +336,7 @@ export default function SystemAdminPage() {
             </div>
             <div className="text-xl font-bold text-slate-900 mt-1">{data.audit.totalEvents} sự kiện</div>
             <div className="text-[11px] text-slate-500 mt-0.5">
-              Chuỗi AuditEvent PostgreSQL
+              Lịch sử thao tác hệ thống
             </div>
           </div>
         </div>
@@ -413,7 +413,7 @@ export default function SystemAdminPage() {
             <div className="text-xs text-blue-950 space-y-1">
               <p className="font-bold text-sm">Cơ chế quản trị tham số có căn cứ nghiệp vụ:</p>
               <p className="leading-relaxed">
-                Mọi tham số dưới đây được lưu trữ thực tế trong bảng <code>system_configs</code> của PostgreSQL và kiểm tra quyền <code>system.config</code> trước khi thay đổi. Các module cảnh báo hạn định và luồng nghiệp vụ đọc trực tiếp các tham số này thời gian thực.
+                Các tham số dưới đây được lưu trữ và kiểm tra quyền trước khi thay đổi. Các module cảnh báo và luồng nghiệp vụ đọc trực tiếp các tham số này.
               </p>
             </div>
           </div>
@@ -562,7 +562,7 @@ export default function SystemAdminPage() {
             <div className="text-xs text-amber-950 space-y-1">
               <p className="font-bold text-sm">Chế độ xem an toàn (Read-Only Security View):</p>
               <p className="leading-relaxed">
-                Ma trận phân quyền dưới đây phản ánh nguyên trạng từ các bảng <code>roles</code>, <code>permissions</code>, và <code>role_permissions</code> trong PostgreSQL. Quản trị viên kỹ thuật <strong>không được phép tự ý cấp cho mình các quyền phê duyệt hoặc can thiệp nghiệp vụ nhạy cảm</strong>. Gán vai trò cho cán bộ được thực hiện tại trang Quản trị cán bộ theo đúng thẩm quyền.
+                Ma trận phân quyền dưới đây phản ánh quyền hiện tại. Quản trị viên kỹ thuật <strong>không được tự cấp cho mình các quyền phê duyệt hoặc can thiệp nghiệp vụ nhạy cảm</strong>. Gán vai trò cho cán bộ được thực hiện tại trang Quản trị cán bộ theo đúng thẩm quyền.
               </p>
             </div>
           </div>
