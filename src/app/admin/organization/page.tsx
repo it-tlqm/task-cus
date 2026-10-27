@@ -847,7 +847,7 @@ export default function OrganizationAdminPage() {
           </div>
           <h1 className="text-2xl font-bold text-v5-ink mt-1">Cơ cấu tổ chức & Quản lý cán bộ công chức</h1>
           <p className="text-sm text-v5-muted">
-            Quản trị sơ đồ đơn vị, hồ sơ cán bộ, lịch sử điều chuyển công tác và cấp tài khoản ph?n quy?n thực chất
+            Quản trị sơ đồ đơn vị, hồ sơ cán bộ, lịch sử điều chuyển công tác và cấp tài khoản phân quyền thực chất
           </p>
         </div>
 
@@ -897,6 +897,14 @@ export default function OrganizationAdminPage() {
           )}
         </div>
       </div>
+
+      {people.some(
+        (p) => p.status === "ACTIVE" && !(p.assignments || []).some((a) => a.isPrimary)
+      ) && (
+        <div className="rounded-lg border border-v5-gold/50 bg-v5-gold-soft px-3 py-2 text-[11px] text-v5-gold-ink">
+          Có cán bộ chưa có phân công chính. Vào hồ sơ cán bộ để bổ sung trước khi giao việc hoặc phân quyền.
+        </div>
+      )}
 
       {/* Global Alerts */}
       {actionMessage && (

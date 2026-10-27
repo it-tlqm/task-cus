@@ -114,17 +114,17 @@ export default function AdminAuditPage() {
   return (
     <div className="flex w-full flex-col gap-3 pb-4">
       <div>
-        <BackButton href="/admin/system" label="C?u h?nh h? th?ng" />
+        <BackButton href="/admin/system" label="Cấu hình hệ thống" />
       </div>
 
       <header className="flex flex-wrap items-end justify-between gap-2 rounded-xl border border-v5-line bg-v5-surface p-3 shadow-sm">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Nh?t k? h? th?ng</h1>
-            <Badge variant="success">B?o v? d? li?u</Badge>
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Nhật ký hệ thống</h1>
+            <Badge variant="success">Bảo vệ dữ liệu</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
-            Theo d?i thao t?c thay ??i d? li?u, c?p ph?t quy?n, xu?t b?o c?o v? truy c?p b?t th??ng.
+            Theo dõi thao tác thay đổi dữ liệu, cấp phát quyền, xuất báo cáo và truy cập bất thường.
           </p>
         </div>
       </header>

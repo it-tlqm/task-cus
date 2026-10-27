@@ -255,11 +255,11 @@ export default function AdminPermissionsPage() {
     <main className="space-y-3 pb-4">
       <header>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Ph?n quy?n</h1>
-          <span className="rounded border border-v5-line bg-v5-surface px-2 py-0.5 text-[11px] font-semibold text-v5-muted">Qu?n tr?</span>
+          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Phân quyền</h1>
+          <span className="rounded border border-v5-line bg-v5-surface px-2 py-0.5 text-[11px] font-semibold text-v5-muted">Quản trị</span>
         </div>
         <p className="mt-1 text-sm text-v5-muted">
-          Vai tr?, quy?n theo ch?c n?ng, ph?m vi qu?n l? v? nh?t k? thay ??i.
+          Vai trò, quyền theo chức năng, phạm vi quản lý và nhật ký thay đổi.
         </p>
       </header>
 

@@ -25,6 +25,14 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig = {
+  // Đưa các màn hình legacy về luồng V5; /dashboard/v4 vẫn giữ để rollback.
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/v5", permanent: false },
+      { source: "/giao-ban", destination: "/v5/giao-ban", permanent: false },
+      { source: "/giao-ban/nhap", destination: "/v5/giao-ban/nhap", permanent: false },
+    ];
+  },
   output: process.env.DOCKER_BUILD === "1" ? "standalone" : undefined,
   poweredByHeader: false,
   reactStrictMode: true,

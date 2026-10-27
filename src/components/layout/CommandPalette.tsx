@@ -28,7 +28,7 @@ const COMMANDS: Command[] = [
     group: "Điều hướng",
     label: "Bảng điều hành",
     description: "Tổng quan KPI, việc cần chú ý",
-    href: "/dashboard",
+    href: "/v5",
     icon: "dashboard",
     keywords: "trang chủ home",
   },

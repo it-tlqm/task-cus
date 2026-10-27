@@ -359,7 +359,7 @@ function ReportsContent() {
         return;
       }
 
-      showToast(`Đã chốt và khóa thành công số liệu ${data.snapshot.periodTitle}! Mã băm m? ki?m tra to?n v?n: ${data.snapshot.checksum}`, "success");
+      showToast(`Đã chốt và khóa thành công số liệu ${data.snapshot.periodTitle}! Mã kiểm tra toàn vẹn: ${data.snapshot.checksum}`, "success");
       setIsLockModalOpen(false);
       setLockNotes("");
       loadData();
@@ -412,7 +412,7 @@ function ReportsContent() {
       }
       setVerificationFeedback(data);
       if (data.isValid) {
-        showToast("Mã m? ki?m tra to?n v?n hoàn toàn trùng khớp với nội dung bản chụp đã lưu!", "success");
+        showToast("Mã mã kiểm tra toàn vẹn hoàn toàn trùng khớp với nội dung bản chụp đã lưu!", "success");
       } else {
         showToast("CẢNH BÁO: Phát hiện sai lệch mã băm so với nội dung lưu trữ!", "error");
       }
@@ -468,21 +468,21 @@ function ReportsContent() {
       {/* MOBILE HEADER STRIP (Visible only on mobile) */}
       <div className="mb-3 flex flex-col gap-2 lg:hidden">
         <div className="flex items-center justify-between gap-2 rounded-lg border border-v5-gold/40 bg-v5-gold-soft p-2.5">
-          <span className="text-[11px] font-semibold text-v5-gold-ink">K? {periodLabels.weekShort}: d? li?u ?ang m?</span>
-          <Badge variant="warning">Tr?c tuy?n</Badge>
+          <span className="text-[11px] font-semibold text-v5-gold-ink">Kỳ {periodLabels.weekShort}: dữ liệu đang mở</span>
+          <Badge variant="warning">Trực tuyến</Badge>
         </div>
         <div className="flex items-center justify-between gap-2 rounded-lg border border-v5-line bg-v5-surface p-2.5">
-          <span className="text-[11px] text-v5-muted">Tu?n 40: ?? ch?t s? li?u</span>
-          <Badge variant="success">?? ch?t</Badge>
+          <span className="text-[11px] text-v5-muted">Tuần 40: đã chốt số liệu</span>
+          <Badge variant="success">Đã chốt</Badge>
         </div>
       </div>
 
       {/* VIEW TABS BAR */}
       <div className="mb-3 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-lg border border-v5-line bg-v5-surface p-1">
         {[
-          { key: "preview" as const, label: "B?o c?o" },
-          { key: "builder" as const, label: "M?u b?o c?o" },
-          { key: "snapshots" as const, label: `Kho ?? ch?t (${snapshotsList.length})` },
+          { key: "preview" as const, label: "Báo cáo" },
+          { key: "builder" as const, label: "Mẫu báo cáo" },
+          { key: "snapshots" as const, label: `Kho Đã chốt (${snapshotsList.length})` },
         ].map((item) => (
           <button
             key={item.key}
@@ -1338,11 +1338,11 @@ function ReportsContent() {
                     <span className="font-label-sm text-[11px] text-v5-muted">Chống sửa đổi nội dung bảng tính</span>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-status-success-bg text-status-success font-semibold">
-                    m? ki?m tra to?n v?n
+                    mã kiểm tra toàn vẹn
                   </span>
                 </div>
                 <div className="mt-2 text-[12px] text-v5-muted leading-relaxed bg-v5-bg p-2.5 rounded">
-                  Mọi thao tác tải file Excel sẽ được ghi nhận tự động vào bảng nh?t k? h? th?ng hệ thống kèm địa chỉ IP và mã tài khoản người dùng.
+                  Mọi thao tác tải file Excel sẽ được ghi nhận tự động vào bảng nhật ký hệ thống kèm địa chỉ IP và mã tài khoản người dùng.
                 </div>
               </div>
             </div>
@@ -1591,7 +1591,7 @@ function ReportsContent() {
                     {item.isValid ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         <span className="material-symbols-outlined text-[14px]">verified</span>
-                        <span>Toàn vẹn (m? ki?m tra to?n v?n)</span>
+                        <span>Toàn vẹn (mã kiểm tra toàn vẹn)</span>
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-status-danger-bg text-status-danger">
@@ -1614,7 +1614,7 @@ function ReportsContent() {
                     </div>
                   )}
                   <div className="p-2 bg-v5-bg rounded font-mono text-[11px] text-v5-muted break-all">
-                    <div className="text-[10px] text-v5-muted uppercase font-semibold mb-0.5">Mã băm m? ki?m tra to?n v?n (64 hex):</div>
+                    <div className="text-[10px] text-v5-muted uppercase font-semibold mb-0.5">Mã kiểm tra toàn vẹn (64 hex):</div>
                     <span className="text-secondary select-all">{item.checksum}</span>
                   </div>
                 </div>
@@ -1747,7 +1747,7 @@ function ReportsContent() {
                   {isLocking ? (
                     <>
                       <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
-                      <span>Đang tổng hợp &amp; băm m? ki?m tra to?n v?n...</span>
+                      <span>Đang tổng hợp &amp; băm mã kiểm tra toàn vẹn...</span>
                     </>
                   ) : (
                     <>
@@ -1796,7 +1796,7 @@ function ReportsContent() {
               <div className="p-3 bg-v5-bg rounded-lg flex flex-col gap-2 border border-v5-line/40">
                 <div className="flex items-center justify-between">
                   <span className="font-label-sm text-v5-muted uppercase font-semibold">
-                    Mã Kiểm Tra Toàn Vẹn m? ki?m tra to?n v?n (64 hex lowercase):
+                    Mã Kiểm Tra Toàn Vẹn mã kiểm tra toàn vẹn (64 hex lowercase):
                   </span>
                   <button
                     onClick={() => handleVerifySnapshot(viewingSnapshot.id)}

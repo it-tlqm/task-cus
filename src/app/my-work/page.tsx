@@ -1463,25 +1463,25 @@ function MyWorkPageContent() {
         <header className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <h1 className="truncate text-xl font-semibold tracking-tight text-v5-ink">C?ng vi?c c?a t?i</h1>
-              <Badge variant="success">S?n s?ng</Badge>
+              <h1 className="truncate text-xl font-semibold tracking-tight text-v5-ink">Công việc của tôi</h1>
+              <Badge variant="success">Sẵn sàng</Badge>
             </div>
             <p className="mt-0.5 truncate text-[11px] text-v5-muted">
-              {currentUser.fullName} ? {currentUser.unitName}
+              {currentUser.fullName} · {currentUser.unitName}
             </p>
-            <p className="mt-0.5 text-[10px] text-v5-muted">{ENV_BADGE_LABEL} ? Ca ch?nh 07:30 - 17:00</p>
+            <p className="mt-0.5 text-[10px] text-v5-muted">{ENV_BADGE_LABEL} · Ca chính 07:30 - 17:00</p>
           </div>
-          <Button variant="outline" size="icon" onClick={() => fetchTasks()} aria-label="L?m m?i">
+          <Button variant="outline" size="icon" onClick={() => fetchTasks()} aria-label="Làm mới">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </header>
 
         <div data-tour="time-filter" className="flex flex-wrap items-center gap-1 rounded-md bg-v5-bg p-1">
           {[
-            { key: "DAY" as const, label: `H?m nay (${todayShort || "..."})` },
+            { key: "DAY" as const, label: `Hôm nay (${todayShort || "..."})` },
             { key: "WEEK" as const, label: periodLabels.weekShort },
             { key: "MONTH" as const, label: periodLabels.monthShort },
-            { key: "ALL" as const, label: "T?t c?" },
+            { key: "ALL" as const, label: "Tất cả" },
           ].map((item) => (
             <button
               key={item.key}
@@ -1499,51 +1499,51 @@ function MyWorkPageContent() {
         <div className="grid grid-cols-2 gap-2">
           <Card className="p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">C?n x? l?</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Cần xử lý</span>
               <ClipboardList className="h-4 w-4 text-v5-accent" />
             </div>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.active).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">??u vi?c</span>
+              <span className="text-[10px] text-v5-muted">đầu việc</span>
             </div>
             <div className="mt-1 text-[10px] font-semibold text-v5-danger">
-              {myStats.high > 0 ? `${myStats.high} ?u ti?n cao` : "Kh?ng c? vi?c g?p"}
+              {myStats.high > 0 ? `${myStats.high} ưu tiên cao` : "Không có việc gấp"}
             </div>
           </Card>
           <Card className="p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">S?p ??n h?n</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Sắp đến hạn</span>
               <Timer className="h-4 w-4 text-v5-warning" />
             </div>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-2xl font-bold tabular-nums text-v5-warning">{String(myStats.dueSoon).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">24 gi?</span>
+              <span className="text-[10px] text-v5-muted">24 giờ</span>
             </div>
-            <div className="mt-1 text-[10px] text-v5-muted">{myStats.dueSoon > 0 ? "C?n x? l?" : "Kh?ng c? vi?c g?p"}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">{myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}</div>
           </Card>
           <Card className="border-v5-danger/30 p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Qu? h?n</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Quá hạn</span>
               <AlertTriangle className="h-4 w-4 text-v5-danger" />
             </div>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-2xl font-bold tabular-nums text-v5-danger">{String(myStats.overdue).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">h? s?</span>
+              <span className="text-[10px] text-v5-muted">hồ sơ</span>
             </div>
             <div className="mt-1 text-[10px] font-semibold text-v5-danger">
-              {myStats.overdue > 0 ? `Ch?m ${myStats.maxOverdueDays} ng?y` : "??ng h?n"}
+              {myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}
             </div>
           </Card>
           <Card className="p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Ch? ph? duy?t</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ phê duyệt</span>
               <CheckCircle2 className="h-4 w-4 text-v5-muted" />
             </div>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-2xl font-bold tabular-nums text-v5-ink">{String(myStats.waiting).padStart(2, "0")}</span>
-              <span className="text-[10px] text-v5-muted">?? n?p</span>
+              <span className="text-[10px] text-v5-muted">đã nộp</span>
             </div>
-            <div className="mt-1 text-[10px] text-v5-muted">Ch? Tr??ng BP k?</div>
+            <div className="mt-1 text-[10px] text-v5-muted">Chờ Trưởng BP ký</div>
           </Card>
         </div>
 

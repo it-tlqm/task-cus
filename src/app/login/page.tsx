@@ -108,7 +108,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-v5-surface/10 backdrop-blur-md border border-white/15 w-fit">
               <span className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
               <span className="text-xs font-semibold tracking-wide uppercase text-secondary-fixed">
-                HỆ THỐNG ĐIỀU HÀNH SỐ HÓA H?I QUAN T? L?NG
+                HỆ THỐNG ĐIỀU HÀNH SỐ HÓA HẢI QUAN TÀ LÙNG
               </span>
             </div>
             <h1 className="text-2xl xl:text-3xl font-extrabold text-white tracking-tight leading-tight mt-1">

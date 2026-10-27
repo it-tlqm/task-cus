@@ -61,7 +61,7 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
       {
         id: "dashboard",
         label: "Bảng điều hành",
-        href: "/dashboard",
+        href: "/v5",
         icon: "space_dashboard",
         description: "Chỉ số điều hành, thuế, kim ngạch và tình hình đơn vị",
       },
@@ -370,7 +370,7 @@ export interface BreadcrumbEntry {
 }
 
 export function getBreadcrumbTrail(pathname: string): BreadcrumbEntry[] {
-  const home: BreadcrumbEntry = { label: "Trang chủ", href: "/dashboard" };
+  const home: BreadcrumbEntry = { label: "Trang chủ", href: "/v5" };
   const special = EXTRA_TRAILS[pathname];
   const active = findActiveNavigation(pathname);
 
