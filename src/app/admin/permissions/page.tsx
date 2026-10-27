@@ -252,26 +252,28 @@ export default function AdminPermissionsPage() {
   ];
 
   return (
-    <main className="p-4 md:p-6 space-y-4">
+    <main className="space-y-3 pb-4">
       <header>
-        <h1 className="text-xl font-bold text-on-surface">Trung tâm cấu hình phân quyền</h1>
-        <p className="text-xs text-on-surface-variant mt-1">
-          Vai trò, quyền theo chức năng, phạm vi quản lý và nhật ký thay đổi. Mọi thao tác cấp/thu hồi
-          đều được kiểm tra phía máy chủ và ghi lại người thực hiện.
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Ph?n quy?n</h1>
+          <span className="rounded border border-v5-line bg-v5-surface px-2 py-0.5 text-[11px] font-semibold text-v5-muted">Qu?n tr?</span>
+        </div>
+        <p className="mt-1 text-sm text-v5-muted">
+          Vai tr?, quy?n theo ch?c n?ng, ph?m vi qu?n l? v? nh?t k? thay ??i.
         </p>
       </header>
 
-      <div className="flex flex-wrap gap-1 border-b border-border-subtle">
+      <div className="flex flex-wrap items-center gap-1 rounded-lg border border-v5-line bg-v5-surface p-1">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             data-testid={`perm-tab-${t.id}`}
             onClick={() => setTab(t.id)}
-            className={`px-3 py-2 text-xs font-semibold rounded-t-lg ${
+            className={`rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
               tab === t.id
-                ? "bg-surface-container text-on-surface border border-b-0 border-border-subtle"
-                : "text-on-surface-variant hover:bg-surface-container-low"
+                ? "bg-v5-accent text-white shadow-sm"
+                : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
             }`}
           >
             {t.label}
@@ -280,7 +282,7 @@ export default function AdminPermissionsPage() {
       </div>
 
       {loading ? (
-        <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-6 text-sm text-on-surface-variant">
+        <div className="rounded-xl border border-v5-line bg-v5-surface p-6 text-sm text-v5-muted">
           Đang tải cấu hình phân quyền…
         </div>
       ) : !data ? (
@@ -297,11 +299,11 @@ export default function AdminPermissionsPage() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Tìm theo tên đăng nhập, họ tên, mã cán bộ hoặc bộ phận…"
-                className="w-full max-w-md rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                className="w-full max-w-md rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm"
               />
-              <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface-container-lowest">
+              <div className="overflow-x-auto rounded-xl border border-v5-line bg-v5-surface">
                 <table className="w-full text-xs">
-                  <thead className="bg-surface-container text-on-surface-variant">
+                  <thead className="bg-v5-bg text-v5-muted">
                     <tr>
                       {["Tài khoản", "Cán bộ", "Bộ phận", "Vai trò & phạm vi", "Hiệu lực", "Trạng thái"].map((h) => (
                         <th key={h} className="text-left px-3 py-2 font-semibold">
@@ -312,33 +314,33 @@ export default function AdminPermissionsPage() {
                   </thead>
                   <tbody>
                     {filtered.map((a) => (
-                      <tr key={a.id} data-testid={`perm-account-${a.username}`} className="border-t border-border-subtle">
-                        <td className="px-3 py-2 font-semibold text-on-surface">{a.username}</td>
-                        <td className="px-3 py-2 text-on-surface">
-                          {a.fullName} <span className="text-on-surface-variant">({a.personCode})</span>
+                      <tr key={a.id} data-testid={`perm-account-${a.username}`} className="border-t border-v5-line">
+                        <td className="px-3 py-2 font-semibold text-v5-ink">{a.username}</td>
+                        <td className="px-3 py-2 text-v5-ink">
+                          {a.fullName} <span className="text-v5-muted">({a.personCode})</span>
                         </td>
-                        <td className="px-3 py-2 text-on-surface-variant">{a.unit?.name || "—"}</td>
+                        <td className="px-3 py-2 text-v5-muted">{a.unit?.name || "—"}</td>
                         <td className="px-3 py-2">
-                          {a.grants.length === 0 && <span className="text-on-surface-variant">Chưa có vai trò</span>}
+                          {a.grants.length === 0 && <span className="text-v5-muted">Chưa có vai trò</span>}
                           {a.grants.map((g) => (
                             <div key={g.id} className="flex flex-wrap items-center gap-1 mb-0.5">
                               <span
                                 className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold ${
                                   g.active
                                     ? "bg-status-success-bg text-status-success border-status-success/30"
-                                    : "bg-surface-container text-on-surface-variant border-border-subtle"
+                                    : "bg-v5-bg text-v5-muted border-v5-line"
                                 }`}
                               >
                                 {g.roleName}
                               </span>
-                              <span className="text-on-surface-variant">
+                              <span className="text-v5-muted">
                                 {SCOPE_LABEL[g.scopeType] || g.scopeType}
                                 {g.scopeUnit ? ` · ${g.scopeUnit.name}` : ""}
                               </span>
                             </div>
                           ))}
                         </td>
-                        <td className="px-3 py-2 text-on-surface-variant">
+                        <td className="px-3 py-2 text-v5-muted">
                           {a.grants.map((g) => (
                             <div key={g.id}>
                               {fmtDate(g.validFrom)} → {g.validTo ? fmtDate(g.validTo) : "không hạn"}
@@ -369,20 +371,20 @@ export default function AdminPermissionsPage() {
             <section className="space-y-4">
               <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
                 {data.roles.map((r) => (
-                  <div key={r.id} className="rounded-xl border border-border-subtle bg-surface-container-lowest p-3">
-                    <p className="text-sm font-bold text-on-surface">{r.name}</p>
-                    <p className="text-[11px] text-on-surface-variant mt-0.5">
+                  <div key={r.id} className="rounded-xl border border-v5-line bg-v5-surface p-3">
+                    <p className="text-sm font-bold text-v5-ink">{r.name}</p>
+                    <p className="text-[11px] text-v5-muted mt-0.5">
                       {r.code} · {r.accountCount} tài khoản
                     </p>
-                    <p className="text-[11px] text-on-surface-variant mt-1">{r.description}</p>
+                    <p className="text-[11px] text-v5-muted mt-1">{r.description}</p>
                   </div>
                 ))}
               </div>
 
-              <h2 className="text-sm font-bold text-on-surface">Quyền theo chức năng</h2>
-              <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface-container-lowest">
+              <h2 className="text-sm font-bold text-v5-ink">Quyền theo chức năng</h2>
+              <div className="overflow-x-auto rounded-xl border border-v5-line bg-v5-surface">
                 <table className="w-full text-xs">
-                  <thead className="bg-surface-container text-on-surface-variant">
+                  <thead className="bg-v5-bg text-v5-muted">
                     <tr>
                       <th className="text-left px-3 py-2 font-semibold">Chức năng / quyền</th>
                       {data.roles.map((r) => (
@@ -394,11 +396,11 @@ export default function AdminPermissionsPage() {
                   </thead>
                   <tbody>
                     {data.permissions.map((p) => (
-                      <tr key={p.id} className="border-t border-border-subtle">
+                      <tr key={p.id} className="border-t border-v5-line">
                         <td className="px-3 py-2">
-                          <span className="text-on-surface font-medium">{p.name}</span>
-                          <span className="text-on-surface-variant"> · {p.module}</span>
-                          <div className="text-[10px] text-on-surface-variant">{p.code}</div>
+                          <span className="text-v5-ink font-medium">{p.name}</span>
+                          <span className="text-v5-muted"> · {p.module}</span>
+                          <div className="text-[10px] text-v5-muted">{p.code}</div>
                         </td>
                         {data.roles.map((r) => (
                           <td key={r.id} className="px-3 py-2 text-center">
@@ -419,10 +421,10 @@ export default function AdminPermissionsPage() {
                 </table>
               </div>
 
-              <h2 className="text-sm font-bold text-on-surface">Ma trận thao tác</h2>
-              <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface-container-lowest">
+              <h2 className="text-sm font-bold text-v5-ink">Ma trận thao tác</h2>
+              <div className="overflow-x-auto rounded-xl border border-v5-line bg-v5-surface">
                 <table className="w-full text-xs">
-                  <thead className="bg-surface-container text-on-surface-variant">
+                  <thead className="bg-v5-bg text-v5-muted">
                     <tr>
                       <th className="text-left px-3 py-2 font-semibold">Thao tác</th>
                       {data.roles.map((r) => (
@@ -434,8 +436,8 @@ export default function AdminPermissionsPage() {
                   </thead>
                   <tbody>
                     {OP_MATRIX.map((row) => (
-                      <tr key={row.op} className="border-t border-border-subtle">
-                        <td className="px-3 py-2 font-medium text-on-surface">{row.op}</td>
+                      <tr key={row.op} className="border-t border-v5-line">
+                        <td className="px-3 py-2 font-medium text-v5-ink">{row.op}</td>
                         {data.roles.map((r) => {
                           const ok = row.codes.some((c) => r.permissions.includes(c));
                           return (
@@ -443,7 +445,7 @@ export default function AdminPermissionsPage() {
                               {ok ? (
                                 <span className="material-symbols-outlined text-[16px] text-status-success">check</span>
                               ) : (
-                                <span className="text-on-surface-variant">—</span>
+                                <span className="text-v5-muted">—</span>
                               )}
                             </td>
                           );
@@ -453,7 +455,7 @@ export default function AdminPermissionsPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-[11px] text-on-surface-variant">
+              <p className="text-[11px] text-v5-muted">
                 Ô trống nghĩa là vai trò đó không có quyền tương ứng. Hệ thống không có quyền “xoá”
                 riêng — thao tác xoá luôn đi kèm quyền quản lý của chức năng đó.
               </p>
@@ -464,10 +466,10 @@ export default function AdminPermissionsPage() {
           {tab === "scope" && (
             <section className="space-y-4">
               <div>
-                <h2 className="text-sm font-bold text-on-surface mb-2">Đơn vị & bộ phận</h2>
-                <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface-container-lowest">
+                <h2 className="text-sm font-bold text-v5-ink mb-2">Đơn vị & bộ phận</h2>
+                <div className="overflow-x-auto rounded-xl border border-v5-line bg-v5-surface">
                   <table className="w-full text-xs">
-                    <thead className="bg-surface-container text-on-surface-variant">
+                    <thead className="bg-v5-bg text-v5-muted">
                       <tr>
                         {["Mã", "Tên đơn vị", "Cấp trên", "Số cán bộ"].map((h) => (
                           <th key={h} className="text-left px-3 py-2 font-semibold">
@@ -478,10 +480,10 @@ export default function AdminPermissionsPage() {
                     </thead>
                     <tbody>
                       {data.units.map((u) => (
-                        <tr key={u.id} className="border-t border-border-subtle">
+                        <tr key={u.id} className="border-t border-v5-line">
                           <td className="px-3 py-2 font-semibold">{u.code}</td>
-                          <td className="px-3 py-2 text-on-surface">{u.name}</td>
-                          <td className="px-3 py-2 text-on-surface-variant">
+                          <td className="px-3 py-2 text-v5-ink">{u.name}</td>
+                          <td className="px-3 py-2 text-v5-muted">
                             {data.units.find((x) => x.id === u.parentId)?.name || "—"}
                           </td>
                           <td className="px-3 py-2">{u.staffCount}</td>
@@ -493,12 +495,12 @@ export default function AdminPermissionsPage() {
               </div>
 
               <div>
-                <h2 className="text-sm font-bold text-on-surface mb-2">
+                <h2 className="text-sm font-bold text-v5-ink mb-2">
                   Quan hệ quản lý trực tiếp (cơ sở xác nhận công việc)
                 </h2>
-                <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface-container-lowest">
+                <div className="overflow-x-auto rounded-xl border border-v5-line bg-v5-surface">
                   <table className="w-full text-xs">
-                    <thead className="bg-surface-container text-on-surface-variant">
+                    <thead className="bg-v5-bg text-v5-muted">
                       <tr>
                         {["Lãnh đạo trực tiếp", "Cán bộ", "Trạng thái", "Hiệu lực"].map((h) => (
                           <th key={h} className="text-left px-3 py-2 font-semibold">
@@ -510,21 +512,21 @@ export default function AdminPermissionsPage() {
                     <tbody>
                       {data.supervision.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="px-3 py-3 text-on-surface-variant">
+                          <td colSpan={4} className="px-3 py-3 text-v5-muted">
                             Chưa khai báo quan hệ quản lý trực tiếp.
                           </td>
                         </tr>
                       )}
                       {data.supervision.map((s) => (
-                        <tr key={s.id} className="border-t border-border-subtle">
+                        <tr key={s.id} className="border-t border-v5-line">
                           <td className="px-3 py-2 font-semibold">
-                            {s.managerName} <span className="text-on-surface-variant">({s.manager})</span>
+                            {s.managerName} <span className="text-v5-muted">({s.manager})</span>
                           </td>
                           <td className="px-3 py-2">
-                            {s.subordinateName} <span className="text-on-surface-variant">({s.subordinate})</span>
+                            {s.subordinateName} <span className="text-v5-muted">({s.subordinate})</span>
                           </td>
                           <td className="px-3 py-2">{s.status === "CONFIRMED" ? "Đang hiệu lực" : s.status}</td>
-                          <td className="px-3 py-2 text-on-surface-variant">
+                          <td className="px-3 py-2 text-v5-muted">
                             {fmtDate(s.effectiveFrom)} → {s.effectiveTo ? fmtDate(s.effectiveTo) : "không hạn"}
                           </td>
                         </tr>
@@ -532,7 +534,7 @@ export default function AdminPermissionsPage() {
                     </tbody>
                   </table>
                 </div>
-                <p className="text-[11px] text-on-surface-variant mt-1">
+                <p className="text-[11px] text-v5-muted mt-1">
                   Quyền xác nhận công việc chỉ dành cho lãnh đạo trực tiếp có quan hệ còn hiệu lực tại
                   đây — khác với quyền theo đơn vị.
                 </p>
@@ -543,14 +545,14 @@ export default function AdminPermissionsPage() {
           {/* ---------------- D. Cấp & thu hồi ---------------- */}
           {tab === "grant" && (
             <section className="grid lg:grid-cols-2 gap-4">
-              <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-4 space-y-3">
-                <h2 className="text-sm font-bold text-on-surface">Cấp vai trò</h2>
-                <label className="block text-xs font-semibold text-on-surface">Tài khoản</label>
+              <div className="rounded-xl border border-v5-line bg-v5-surface p-4 space-y-3">
+                <h2 className="text-sm font-bold text-v5-ink">Cấp vai trò</h2>
+                <label className="block text-xs font-semibold text-v5-ink">Tài khoản</label>
                 <select
                   data-testid="grant-account"
                   value={gAccount}
                   onChange={(e) => setGAccount(e.target.value)}
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm"
                 >
                   <option value="">— Chọn tài khoản —</option>
                   {data.accounts.map((a) => (
@@ -560,7 +562,7 @@ export default function AdminPermissionsPage() {
                   ))}
                 </select>
 
-                <label className="block text-xs font-semibold text-on-surface">Vai trò</label>
+                <label className="block text-xs font-semibold text-v5-ink">Vai trò</label>
                 <select
                   data-testid="grant-role"
                   value={gRole}
@@ -572,7 +574,7 @@ export default function AdminPermissionsPage() {
                       setGUnit("");
                     }
                   }}
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm"
                 >
                   {data.roles.map((r) => (
                     <option key={r.id} value={r.code}>
@@ -591,13 +593,13 @@ export default function AdminPermissionsPage() {
                   </div>
                 )}
 
-                <label className="block text-xs font-semibold text-on-surface">Phạm vi</label>
+                <label className="block text-xs font-semibold text-v5-ink">Phạm vi</label>
                 <select
                   data-testid="grant-scope"
                   value={gScope}
                   onChange={(e) => setGScope(e.target.value)}
                   disabled={gRole === "SYSTEM_ADMIN"}
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm disabled:opacity-60"
+                  className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm disabled:opacity-60"
                 >
                   {Object.entries(SCOPE_LABEL).map(([k, v]) => (
                     <option key={k} value={k}>
@@ -608,12 +610,12 @@ export default function AdminPermissionsPage() {
 
                 {gRole !== "SYSTEM_ADMIN" && (gScope === "DEPARTMENT" || gScope === "SUBTREE") && (
                   <>
-                    <label className="block text-xs font-semibold text-on-surface">Đơn vị</label>
+                    <label className="block text-xs font-semibold text-v5-ink">Đơn vị</label>
                     <select
                       data-testid="grant-unit"
                       value={gUnit}
                       onChange={(e) => setGUnit(e.target.value)}
-                      className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm"
                     >
                       <option value="">— Chọn đơn vị —</option>
                       {data.units.map((u) => (
@@ -627,34 +629,34 @@ export default function AdminPermissionsPage() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-semibold text-on-surface">Hiệu lực từ</label>
+                    <label className="block text-xs font-semibold text-v5-ink">Hiệu lực từ</label>
                     <input
                       data-testid="grant-from"
                       type="date"
                       value={gFrom}
                       onChange={(e) => setGFrom(e.target.value)}
-                      className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-on-surface">Đến (không hạn nếu để trống)</label>
+                    <label className="block text-xs font-semibold text-v5-ink">Đến (không hạn nếu để trống)</label>
                     <input
                       data-testid="grant-to"
                       type="date"
                       value={gTo}
                       onChange={(e) => setGTo(e.target.value)}
-                      className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm"
                     />
                   </div>
                 </div>
 
-                <label className="block text-xs font-semibold text-on-surface">Lý do (ghi vào nhật ký)</label>
+                <label className="block text-xs font-semibold text-v5-ink">Lý do (ghi vào nhật ký)</label>
                 <input
                   data-testid="grant-reason"
                   value={gReason}
                   onChange={(e) => setGReason(e.target.value)}
                   placeholder="Ví dụ: bàn giao công tác khi đi công tác"
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm"
                 />
 
                 <button
@@ -666,28 +668,28 @@ export default function AdminPermissionsPage() {
                 >
                   Cấp vai trò
                 </button>
-                <p className="text-[11px] text-on-surface-variant">
+                <p className="text-[11px] text-v5-muted">
                   Không thể cấp vai trò cao hơn vai trò của bạn, không thể tự cấp quyền cho mình, và
                   không thể cấp quyền ngoài đơn vị bạn phụ trách. Quản trị hệ thống chỉ do Quản trị
                   hệ thống hiện hữu cấp, có lý do và ghi nhật ký; không thể thu hồi admin cuối cùng.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-4">
-                <h2 className="text-sm font-bold text-on-surface mb-2">Lượt cấp quyền đang có</h2>
+              <div className="rounded-xl border border-v5-line bg-v5-surface p-4">
+                <h2 className="text-sm font-bold text-v5-ink mb-2">Lượt cấp quyền đang có</h2>
                 <div className="space-y-2 max-h-[520px] overflow-y-auto">
                   {data.accounts.flatMap((a) =>
                     a.grants.map((g) => (
                       <div
                         key={g.id}
                         data-testid={`grant-row-${g.id}`}
-                        className="flex items-start justify-between gap-2 border border-border-subtle rounded-lg p-2"
+                        className="flex items-start justify-between gap-2 border border-v5-line rounded-lg p-2"
                       >
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-on-surface">
+                          <p className="text-xs font-semibold text-v5-ink">
                             {a.username} — {g.roleName}
                           </p>
-                          <p className="text-[11px] text-on-surface-variant">
+                          <p className="text-[11px] text-v5-muted">
                             {SCOPE_LABEL[g.scopeType] || g.scopeType}
                             {g.scopeUnit ? ` · ${g.scopeUnit.name}` : ""} · {fmtDate(g.validFrom)} →{" "}
                             {g.validTo ? fmtDate(g.validTo) : "không hạn"}
@@ -698,7 +700,7 @@ export default function AdminPermissionsPage() {
                             className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
                               g.active
                                 ? "bg-status-success-bg text-status-success border-status-success/30"
-                                : "bg-surface-container text-on-surface-variant border-border-subtle"
+                                : "bg-v5-bg text-v5-muted border-v5-line"
                             }`}
                           >
                             {g.active ? "Còn hiệu lực" : "Đã hết hạn"}
@@ -726,25 +728,25 @@ export default function AdminPermissionsPage() {
           {/* ---------------- E. Nhật ký ---------------- */}
           {tab === "audit" && (
             <section className="space-y-2">
-              <h2 className="text-sm font-bold text-on-surface">Nhật ký phân quyền</h2>
+              <h2 className="text-sm font-bold text-v5-ink">Nhật ký phân quyền</h2>
               {data.audit.length === 0 && (
-                <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-4 text-xs text-on-surface-variant">
+                <div className="rounded-xl border border-v5-line bg-v5-surface p-4 text-xs text-v5-muted">
                   Chưa có thay đổi phân quyền nào được ghi nhận.
                 </div>
               )}
               {data.audit.map((a) => (
-                <div key={a.id} className="rounded-xl border border-border-subtle bg-surface-container-lowest p-3 text-xs">
-                  <p className="font-semibold text-on-surface">
+                <div key={a.id} className="rounded-xl border border-v5-line bg-v5-surface p-3 text-xs">
+                  <p className="font-semibold text-v5-ink">
                     {a.action === "ROLE_GRANT_CREATE" ? "Cấp vai trò" : "Thu hồi vai trò"} ·{" "}
                     {fmtDate(a.timestamp)}
                   </p>
-                  <p className="text-on-surface-variant mt-1">
+                  <p className="text-v5-muted mt-1">
                     Tài khoản: {(a.newData as any)?.account || "—"} · Vai trò:{" "}
                     {(a.newData as any)?.roleCode || "—"} · Phạm vi:{" "}
                     {(a.newData as any)?.scopeType || "—"}
                     {(a.newData as any)?.reason ? ` · Lý do: ${(a.newData as any).reason}` : ""}
                   </p>
-                  <p className="text-on-surface-variant">Người thực hiện: {a.actorId || "—"}</p>
+                  <p className="text-v5-muted">Người thực hiện: {a.actorId || "—"}</p>
                 </div>
               ))}
             </section>

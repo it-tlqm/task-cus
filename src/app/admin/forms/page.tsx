@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Upload } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import BackButton from "@/components/ui/BackButton";
+import { Badge } from "@/components/v5/ui/badge";
+import { Button } from "@/components/v5/ui/button";
 
 interface FormFieldDef {
   key: string;
@@ -169,58 +172,39 @@ export default function DynamicFormBuilderPage() {
   };
 
   return (
-    <div className="flex flex-col w-full p-space-md lg:p-space-lg gap-space-lg pb-16">
+    <div className="flex w-full flex-col gap-3 pb-4">
       <div>
         <BackButton href="/admin/system" label="Cấu hình hệ thống" />
       </div>
 
-      {/* Top Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
-        <div className="flex items-center gap-space-md">
-          <div className="w-12 h-12 rounded bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-[28px]">dynamic_form</span>
+      <header className="flex flex-wrap items-end justify-between gap-2 rounded-xl border border-v5-line bg-v5-surface p-3 shadow-sm">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Thiết kế biểu mẫu</h1>
+            <Badge variant="outline">Bản nháp v{activeVersionNum}.0</Badge>
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-headline-md text-headline-md text-primary tracking-tight">
-                BỘ THIẾT KẾ BIỂU MẪU ĐỘNG &amp; QUẢN TRỊ PHIÊN BẢN (DYNAMIC FORM BUILDER)
-              </span>
-              <span className="px-2 py-0.5 rounded text-label-sm font-label-sm bg-secondary-fixed text-on-secondary-fixed uppercase font-semibold">
-                PHIÊN BẢN BẤT BIẾN v{activeVersionNum}.0
-              </span>
-            </div>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Tự do cấu hình trường dữ liệu, chỉ tiêu kiểm tra và biểu mẫu số liệu Hải quan mà không cần chỉnh sửa mã nguồn backend.
-            </p>
-          </div>
+          <p className="mt-1 text-sm text-v5-muted">
+            Cấu hình trường dữ liệu, chỉ tiêu kiểm tra và biểu mẫu số liệu Hải quan.
+          </p>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handlePublishVersion}
-            disabled={isPublishing}
-            className="flex items-center gap-2 px-4 py-2 rounded bg-secondary text-on-secondary font-body-semibold shadow-sm hover:opacity-95 transition-all active-press disabled:opacity-50"
-          >
-            <span className={`material-symbols-outlined text-[18px] ${isPublishing ? "animate-spin" : ""}`}>
-              {isPublishing ? "refresh" : "publish"}
-            </span>
-            <span>{isPublishing ? "Đang phát hành..." : `Phát hành v${activeVersionNum + 1}.0`}</span>
-          </button>
-        </div>
-      </div>
+        <Button size="sm" onClick={handlePublishVersion} disabled={isPublishing}>
+          <Upload className="h-3.5 w-3.5" />
+          {isPublishing ? "Đang phát hành..." : `Phát hành v${activeVersionNum + 1}.0`}
+        </Button>
+      </header>
 
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
         {/* Left Column: Form Schema Builder (7 Cols) */}
         <div className="lg:col-span-7 flex flex-col gap-space-md">
           {/* Add New Field Box */}
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-space-sm">
+          <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-sm">
             <div className="flex items-center justify-between border-b border-surface-container pb-space-xs">
               <span className="font-headline-sm text-primary font-bold flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary text-[20px]">add_box</span>
                 Thêm trường dữ liệu mới
               </span>
-              <span className="font-label-sm text-xs text-outline">{fields.length} trường hiện có</span>
+              <span className="font-label-sm text-xs text-v5-muted">{fields.length} trường hiện có</span>
             </div>
 
             <form onSubmit={handleAddField} className="grid grid-cols-1 md:grid-cols-2 gap-space-sm pt-2">
@@ -232,7 +216,7 @@ export default function DynamicFormBuilderPage() {
                   value={newFieldLabel}
                   onChange={(e) => setNewFieldLabel(e.target.value)}
                   placeholder="Ví dụ: Tỷ lệ hao hụt nguyên liệu gia công (%)..."
-                  className="h-10 px-3 rounded bg-surface-subtle border border-border-default text-body-md text-on-surface focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none focus:ring-1 focus:ring-secondary"
                 />
               </div>
 
@@ -241,7 +225,7 @@ export default function DynamicFormBuilderPage() {
                 <select
                   value={newFieldType}
                   onChange={(e) => setNewFieldType(e.target.value as any)}
-                  className="h-10 px-3 rounded bg-surface-subtle border border-border-default text-body-md text-on-surface focus:outline-none"
+                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none"
                 >
                   <option value="text">Văn bản ngắn (Text)</option>
                   <option value="number">Số liệu / Định lượng (Number)</option>
@@ -260,7 +244,7 @@ export default function DynamicFormBuilderPage() {
                     onChange={(e) => setNewFieldRequired(e.target.checked)}
                     className="w-4 h-4 rounded text-secondary"
                   />
-                  <span className="font-label-md text-sm text-on-surface font-semibold">Bắt buộc nhập</span>
+                  <span className="font-label-md text-sm text-v5-ink font-semibold">Bắt buộc nhập</span>
                 </label>
               </div>
 
@@ -274,7 +258,7 @@ export default function DynamicFormBuilderPage() {
                     value={newFieldOptions}
                     onChange={(e) => setNewFieldOptions(e.target.value)}
                     placeholder="Lựa chọn 1, Lựa chọn 2, Lựa chọn 3"
-                    className="h-10 px-3 rounded bg-surface-subtle border border-border-default text-body-md text-on-surface focus:outline-none"
+                    className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none"
                   />
                 </div>
               )}
@@ -292,14 +276,14 @@ export default function DynamicFormBuilderPage() {
           </div>
 
           {/* Active Fields List */}
-          <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-space-sm">
+          <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-sm">
             <span className="font-headline-sm text-primary font-bold">Danh sách trường trong biểu mẫu (Schema v{activeVersionNum}.0)</span>
 
             <div className="flex flex-col divide-y divide-surface-container">
               {fields.map((f, idx) => (
-                <div key={f.key} className="py-3 flex items-center justify-between gap-space-sm hover:bg-surface-subtle/50 px-2 rounded transition-fast">
+                <div key={f.key} className="py-3 flex items-center justify-between gap-space-sm hover:bg-v5-bg/50 px-2 rounded transition-fast">
                   <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-surface-container text-primary flex items-center justify-center font-mono text-xs font-bold">
+                    <span className="w-6 h-6 rounded-full bg-v5-bg text-primary flex items-center justify-center font-mono text-xs font-bold">
                       {idx + 1}
                     </span>
                     <div className="flex flex-col">
@@ -311,7 +295,7 @@ export default function DynamicFormBuilderPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-mono text-outline">
+                      <span className="text-xs font-mono text-v5-muted">
                         key: {f.key} | type: {f.type.toUpperCase()}
                       </span>
                     </div>
@@ -320,7 +304,7 @@ export default function DynamicFormBuilderPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleRemoveField(idx)}
-                      className="w-8 h-8 rounded hover:bg-status-danger-bg text-outline hover:text-status-danger flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded hover:bg-status-danger-bg text-v5-muted hover:text-status-danger flex items-center justify-center transition-colors"
                       title="Xóa trường"
                     >
                       <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -334,7 +318,7 @@ export default function DynamicFormBuilderPage() {
 
         {/* Right Column: Live Form Interactive Preview (5 Cols) */}
         <div className="lg:col-span-5 flex flex-col gap-space-md">
-          <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-border-default/50 flex flex-col gap-space-md sticky top-20">
+          <div className="bg-v5-surface p-space-lg rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-md sticky top-20">
             <div className="flex items-center justify-between border-b border-surface-container pb-space-xs">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-status-success text-[22px]">visibility</span>
@@ -345,7 +329,7 @@ export default function DynamicFormBuilderPage() {
               </span>
             </div>
 
-            <p className="font-label-sm text-xs text-on-surface-variant">
+            <p className="font-label-sm text-xs text-v5-muted">
               Đây là giao diện tương tác động chính xác mà công chức Hải quan sẽ thao tác khi ghi nhận nhật ký nghiệp vụ.
             </p>
 
@@ -356,7 +340,7 @@ export default function DynamicFormBuilderPage() {
                     <span>
                       {field.label} {field.required && <span className="text-status-danger">*</span>}
                     </span>
-                    <span className="text-[10px] font-mono text-outline">{field.type}</span>
+                    <span className="text-[10px] font-mono text-v5-muted">{field.type}</span>
                   </label>
 
                   {field.type === "text" && (
@@ -365,7 +349,7 @@ export default function DynamicFormBuilderPage() {
                       placeholder={field.placeholder || "Nhập giá trị..."}
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
                     />
                   )}
 
@@ -375,7 +359,7 @@ export default function DynamicFormBuilderPage() {
                       placeholder={field.placeholder || "0"}
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
                     />
                   )}
 
@@ -383,7 +367,7 @@ export default function DynamicFormBuilderPage() {
                     <select
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
                     >
                       <option value="">-- Chọn phương án --</option>
                       {field.options?.map((opt) => (
@@ -400,7 +384,7 @@ export default function DynamicFormBuilderPage() {
                       placeholder={field.placeholder || "Nội dung chi tiết..."}
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="p-2 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none resize-none"
+                      className="p-2 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none resize-none"
                     />
                   )}
 
@@ -412,7 +396,7 @@ export default function DynamicFormBuilderPage() {
                         onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.checked })}
                         className="w-4 h-4 rounded text-secondary"
                       />
-                      <span className="text-xs text-on-surface font-medium">Xác nhận đúng / hợp lệ</span>
+                      <span className="text-xs text-v5-ink font-medium">Xác nhận đúng / hợp lệ</span>
                     </label>
                   )}
 
@@ -421,7 +405,7 @@ export default function DynamicFormBuilderPage() {
                       type="date"
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-surface-container-low text-body-md text-on-surface border border-border-subtle focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
                     />
                   )}
                 </div>

@@ -195,6 +195,21 @@ check(
     !reportsPage.includes("MD5:") &&
     !reportsPage.includes("bg-surface-container-lowest")
 );
+const formsPage = read("src/app/admin/forms/page.tsx");
+const auditPage = read("src/app/admin/audit/page.tsx");
+const permissionsPage = read("src/app/admin/permissions/page.tsx");
+check(
+  "Biểu mẫu dùng header V5",
+  formsPage.includes("bg-v5-surface") && formsPage.includes("<Button") && !formsPage.includes("DYNAMIC FORM BUILDER")
+);
+check(
+  "Nhật ký hệ thống dùng header V5",
+  auditPage.includes("<Badge") && !auditPage.includes("AUDIT TRAIL")
+);
+check(
+  "Phân quyền dùng tab V5",
+  permissionsPage.includes("bg-v5-accent") && !permissionsPage.includes("border-border-default")
+);
 const rosterPage = read("src/app/roster/page.tsx");
 const adminOrgPage = read("src/app/admin/organization/page.tsx");
 check(

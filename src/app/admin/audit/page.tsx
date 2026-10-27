@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import BackButton from "@/components/ui/BackButton";
+import { Badge } from "@/components/v5/ui/badge";
 
 interface AuditEntry {
   id: string;
@@ -108,46 +109,36 @@ export default function AdminAuditPage() {
   }, [page, debouncedSearch, filterAction]);
 
   const pageBtn =
-    "px-2.5 h-8 rounded bg-surface-subtle hover:bg-surface-container text-[12px] font-semibold text-on-surface transition-fast active-press disabled:opacity-40 disabled:cursor-not-allowed";
+    "px-2.5 h-8 rounded bg-v5-bg hover:bg-v5-bg text-[12px] font-semibold text-v5-ink transition-fast active-press disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
-    <div className="flex flex-col w-full p-space-md lg:p-space-lg gap-space-lg pb-16">
+    <div className="flex w-full flex-col gap-3 pb-4">
       <div>
-        <BackButton href="/admin/system" label="Cấu hình hệ thống" />
+        <BackButton href="/admin/system" label="C?u h?nh h? th?ng" />
       </div>
 
-      {/* Top Breadcrumb & Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
-        <div className="flex items-center gap-space-md">
-          <div className="w-12 h-12 rounded bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-[28px]">manage_history</span>
+      <header className="flex flex-wrap items-end justify-between gap-2 rounded-xl border border-v5-line bg-v5-surface p-3 shadow-sm">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Nh?t k? h? th?ng</h1>
+            <Badge variant="success">B?o v? d? li?u</Badge>
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-headline-md text-headline-md text-primary tracking-tight">
-                NHẬT KÝ HỆ THỐNG VÀ DẤU VẾT KIỂM TOÁN (AUDIT TRAIL)
-              </span>
-              <span className="px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-success-bg text-status-success uppercase font-semibold">
-                BẢO VỆ CHỐNG SỬA ĐỔI
-              </span>
-            </div>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Theo dõi 100% thao tác thay đổi dữ liệu, cấp phát quyền, trích xuất tệp XLSX và cảnh báo truy cập trái phép.
-            </p>
-          </div>
+          <p className="mt-1 text-sm text-v5-muted">
+            Theo d?i thao t?c thay ??i d? li?u, c?p ph?t quy?n, xu?t b?o c?o v? truy c?p b?t th??ng.
+          </p>
         </div>
-      </div>
+      </header>
 
       {/* Filter Strip */}
-      <div className="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-md">
+      <div className="p-space-md bg-v5-surface rounded-xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-md">
         <div className="relative flex-1 w-full sm:max-w-md">
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">
+          <span className="material-symbols-outlined absolute left-3 top-2.5 text-v5-muted text-[18px]">
             search
           </span>
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary transition-all"
+            className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-v5-line font-body-md text-body-md text-v5-ink placeholder:text-v5-muted focus:outline-none focus:border-secondary transition-all"
             placeholder="Tìm theo người dùng, hành động, mục tiêu... (không cần dấu)"
             type="text"
           />
@@ -160,7 +151,7 @@ export default function AdminAuditPage() {
               setFilterAction(e.target.value);
               setPage(1);
             }}
-            className="h-9 px-3 rounded bg-surface border border-border-subtle font-body-md text-body-md text-on-surface focus:outline-none cursor-pointer max-w-[320px]"
+            className="h-9 px-3 rounded bg-surface border border-v5-line font-body-md text-body-md text-v5-ink focus:outline-none cursor-pointer max-w-[320px]"
           >
             <option value="ALL">Tất cả hành động</option>
             {actions.map((a) => (
@@ -173,11 +164,11 @@ export default function AdminAuditPage() {
       </div>
 
       {/* Audit Log Table */}
-      <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left font-table-data text-table-data">
             <thead>
-              <tr className="bg-surface-subtle text-on-surface text-[12px] font-table-header uppercase tracking-wider">
+              <tr className="bg-v5-bg text-v5-ink text-[12px] font-table-header uppercase tracking-wider">
                 <th className="py-3 px-3 w-36">Mã bản ghi</th>
                 <th className="py-3 px-3 w-40">Thời gian</th>
                 <th className="py-3 px-3 w-48">Người thực hiện</th>
@@ -187,11 +178,11 @@ export default function AdminAuditPage() {
                 <th className="py-3 px-3 w-28 text-center">Trạng thái</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-default/40 text-on-surface">
+            <tbody className="divide-y divide-border-default/40 text-v5-ink">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-on-surface-variant">
-                    <span className="material-symbols-outlined text-outline text-[32px] block mb-2 animate-spin">
+                  <td colSpan={7} className="py-12 text-center text-v5-muted">
+                    <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-2 animate-spin">
                       progress_activity
                     </span>
                     Đang nạp dữ liệu kiểm toán từ hệ thống...
@@ -199,8 +190,8 @@ export default function AdminAuditPage() {
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-on-surface-variant">
-                    <span className="material-symbols-outlined text-outline text-[32px] block mb-2">
+                  <td colSpan={7} className="py-12 text-center text-v5-muted">
+                    <span className="material-symbols-outlined text-v5-muted text-[32px] block mb-2">
                       manage_history
                     </span>
                     Không tìm thấy bản ghi kiểm toán nào phù hợp với bộ lọc tìm kiếm.
@@ -208,19 +199,19 @@ export default function AdminAuditPage() {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-surface-container-low transition-colors">
+                  <tr key={log.id} className="hover:bg-v5-bg transition-colors">
                     <td className="py-3 px-3 font-mono text-[12px] text-secondary font-semibold">
                       {log.id}
                     </td>
-                    <td className="py-3 px-3 font-mono text-[12px] text-outline">
+                    <td className="py-3 px-3 font-mono text-[12px] text-v5-muted">
                       {log.timestamp}
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex flex-col">
-                        <span className="font-body-semibold text-[13px] text-on-surface">
+                        <span className="font-body-semibold text-[13px] text-v5-ink">
                           {log.user}
                         </span>
-                        <span className="font-label-sm text-[11px] text-outline">
+                        <span className="font-label-sm text-[11px] text-v5-muted">
                           {log.role}
                         </span>
                       </div>
@@ -233,10 +224,10 @@ export default function AdminAuditPage() {
                         {log.action}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-on-surface-variant font-medium">
+                    <td className="py-3 px-4 text-v5-muted font-medium">
                       {log.target}
                     </td>
-                    <td className="py-3 px-3 font-mono text-[12px] text-outline">
+                    <td className="py-3 px-3 font-mono text-[12px] text-v5-muted">
                       {log.ip}
                     </td>
                     <td className="py-3 px-3 text-center">
@@ -260,8 +251,8 @@ export default function AdminAuditPage() {
         </div>
 
         {/* Phân trang phía máy chủ */}
-        <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-border-default/40 flex-wrap">
-          <span className="font-label-sm text-[12px] text-on-surface-variant">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-v5-line/40 flex-wrap">
+          <span className="font-label-sm text-[12px] text-v5-muted">
             Tổng <b>{total.toLocaleString("vi-VN")}</b> bản ghi • Trang <b>{page}</b>/{totalPages} •{" "}
             {PAGE_SIZE} bản ghi/trang
           </span>
