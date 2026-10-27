@@ -109,12 +109,12 @@ export default function SupervisionsAdminPage() {
   return (
     <div className="w-full min-h-screen bg-app-bg pb-12">
       <div className="max-w-5xl mx-auto px-margin pt-5 space-y-4">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-          <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span className="material-symbols-outlined text-amber-600">account_tree</span>
+        <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-4">
+          <h1 className="text-lg font-bold text-v5-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-v5-gold-ink">account_tree</span>
             Quan hệ phụ trách theo kỳ
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-v5-muted mt-1">
             Khai báo ai phụ trách cho ai. Hệ thống dùng dữ liệu này để tính điểm bình quân cho
             lãnh đạo (Đội trưởng = bình quân Đội phó; Đội phó = bình quân công chức phụ trách)
             và xuất biểu 01B/02B. Hệ thống KHÔNG tự suy diễn từ chức vụ.
@@ -124,14 +124,14 @@ export default function SupervisionsAdminPage() {
         <form
           onSubmit={submit}
           data-testid="supervision-form"
-          className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-3"
+          className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-3"
         >
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-600">Người phụ trách</label>
+            <label className="text-xs font-semibold text-v5-muted">Người phụ trách</label>
             <select
               value={managerId}
               onChange={(e) => setManagerId(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+              className="px-2 py-1.5 rounded-lg border border-v5-line text-xs bg-v5-surface"
             >
               <option value="">— Chọn —</option>
               {people.map((p) => (
@@ -142,11 +142,11 @@ export default function SupervisionsAdminPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-600">Cán bộ được phụ trách</label>
+            <label className="text-xs font-semibold text-v5-muted">Cán bộ được phụ trách</label>
             <select
               value={subordinateId}
               onChange={(e) => setSubordinateId(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+              className="px-2 py-1.5 rounded-lg border border-v5-line text-xs bg-v5-surface"
             >
               <option value="">— Chọn —</option>
               {people.map((p) => (
@@ -157,74 +157,74 @@ export default function SupervisionsAdminPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-600">Phạm vi phụ trách</label>
+            <label className="text-xs font-semibold text-v5-muted">Phạm vi phụ trách</label>
             <select
               value={scopeType}
               onChange={(e) => setScopeType(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
+              className="px-2 py-1.5 rounded-lg border border-v5-line text-xs bg-v5-surface"
             >
               <option value="UNIT">Đơn vị công tác</option>
               <option value="WORK_AREA">Mảng công việc</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-600">Ghi chú mảng công việc</label>
+            <label className="text-xs font-semibold text-v5-muted">Ghi chú mảng công việc</label>
             <input
               value={scopeNote}
               onChange={(e) => setScopeNote(e.target.value)}
               placeholder="VD: Kiểm tra giám sát hải quan"
-              className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs"
+              className="px-2 py-1.5 rounded-lg border border-v5-line text-xs"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-600">Hiệu lực từ</label>
+            <label className="text-xs font-semibold text-v5-muted">Hiệu lực từ</label>
             <input
               type="date"
               value={effectiveFrom}
               onChange={(e) => setEffectiveFrom(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs"
+              className="px-2 py-1.5 rounded-lg border border-v5-line text-xs"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-600">Hiệu lực đến (để trống = còn)</label>
+            <label className="text-xs font-semibold text-v5-muted">Hiệu lực đến (để trống = còn)</label>
             <input
               type="date"
               value={effectiveTo}
               onChange={(e) => setEffectiveTo(e.target.value)}
-              className="px-2 py-1.5 rounded-lg border border-slate-300 text-xs"
+              className="px-2 py-1.5 rounded-lg border border-v5-line text-xs"
             />
           </div>
           <div className="md:col-span-2 flex justify-end">
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 rounded-lg bg-amber-700 text-white text-xs font-semibold disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-v5-gold text-white text-xs font-semibold disabled:opacity-50"
             >
               {saving ? "Đang lưu..." : "Xác nhận quan hệ phụ trách"}
             </button>
           </div>
         </form>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-800">Quan hệ đang có</h2>
+        <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-v5-line/60 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-v5-ink">Quan hệ đang có</h2>
             <button
               onClick={load}
-              className="text-[11px] font-semibold text-amber-700"
+              className="text-[11px] font-semibold text-v5-gold-ink"
               type="button"
             >
               Làm mới
             </button>
           </div>
           {loading ? (
-            <div className="p-4 text-xs text-slate-500">Đang tải...</div>
+            <div className="p-4 text-xs text-v5-muted">Đang tải...</div>
           ) : rows.length === 0 ? (
-            <div className="p-4 text-xs text-slate-500">
+            <div className="p-4 text-xs text-v5-muted">
               Chưa có quan hệ phụ trách nào. Thêm ở biểu mẫu phía trên.
             </div>
           ) : (
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-600">
+              <thead className="bg-v5-bg text-v5-muted">
                 <tr>
                   <th className="text-left py-2 px-3">Người phụ trách</th>
                   <th className="text-left py-2 px-3">Cán bộ được phụ trách</th>
@@ -234,7 +234,7 @@ export default function SupervisionsAdminPage() {
                   <th className="text-right py-2 px-3">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-v5-line/60">
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td className="py-2 px-3">{nameOf(r.managerPersonId)}</td>

@@ -25,9 +25,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_STYLES: Record<string, string> = {
-  GOP_Y: "bg-sky-50 text-sky-700 border-sky-200",
-  BAO_LOI: "bg-rose-50 text-rose-700 border-rose-200",
-  DE_XUAT: "bg-amber-50 text-amber-700 border-amber-200",
+  GOP_Y: "bg-v5-accent-soft text-v5-accent border-v5-line",
+  BAO_LOI: "bg-v5-danger-soft text-v5-danger border-v5-danger/30",
+  DE_XUAT: "bg-v5-gold-soft text-v5-gold-ink border-v5-gold/50",
 };
 
 const PAGE_SIZE = 20;
@@ -191,7 +191,7 @@ export default function AdminFeedbackPage() {
 
   if (!permLoading && !showAdminMenu) {
     return (
-      <div className="p-6 text-sm text-slate-500">
+      <div className="p-6 text-sm text-v5-muted">
         Trang này dành cho lãnh đạo đơn vị và quản trị kỹ thuật.
       </div>
     );
@@ -211,7 +211,7 @@ export default function AdminFeedbackPage() {
       </div>
 
       {/* Bộ lọc */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+      <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3 flex flex-col sm:flex-row gap-2 sm:items-center">
         <div className="flex gap-1.5">
           {(
             [
@@ -229,7 +229,7 @@ export default function AdminFeedbackPage() {
               className={`h-9 px-3 rounded-lg text-xs font-bold border transition-fast ${
                 tab === t.id
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-on-surface border-slate-300 hover:bg-surface-container"
+                  : "bg-v5-surface text-on-surface border-v5-line hover:bg-surface-container"
               }`}
             >
               {t.label}
@@ -237,7 +237,7 @@ export default function AdminFeedbackPage() {
           ))}
         </div>
         {tab !== "DONE" && selectableIds.length > 0 && (
-          <label className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600">
+          <label className="flex h-9 items-center gap-2 rounded-lg border border-v5-line bg-v5-bg px-3 text-xs font-semibold text-v5-muted">
             <input
               type="checkbox"
               checked={allSelected}
@@ -251,14 +251,14 @@ export default function AdminFeedbackPage() {
         )}
         <div className="flex-1" />
         <div className="relative">
-          <span className="material-symbols-outlined text-[18px] text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2">
+          <span className="material-symbols-outlined text-[18px] text-v5-muted absolute left-2.5 top-1/2 -translate-y-1/2">
             search
           </span>
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Tìm trong nội dung phản hồi... (gõ không dấu vẫn ra)"
-            className="h-9 w-full sm:w-80 pl-9 pr-3 rounded-lg border border-slate-300 text-sm"
+            className="h-9 w-full sm:w-80 pl-9 pr-3 rounded-lg border border-v5-line text-sm"
           />
         </div>
       </div>
@@ -272,7 +272,7 @@ export default function AdminFeedbackPage() {
             value={bulkNote}
             onChange={(event) => setBulkNote(event.target.value)}
             placeholder="Ghi chú chung (tùy chọn)"
-            className="h-8 min-w-0 flex-1 rounded-lg border border-slate-300 px-2.5 text-xs"
+            className="h-8 min-w-0 flex-1 rounded-lg border border-v5-line px-2.5 text-xs"
           />
           <button
             type="button"
@@ -285,7 +285,7 @@ export default function AdminFeedbackPage() {
           <button
             type="button"
             onClick={() => setSelectedIds([])}
-            className="h-8 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-600"
+            className="h-8 rounded-lg border border-v5-line bg-v5-surface px-3 text-xs font-semibold text-v5-muted"
           >
             Bỏ chọn
           </button>
@@ -294,10 +294,10 @@ export default function AdminFeedbackPage() {
 
       {/* Danh sách */}
       <div className="flex flex-col gap-3">
-        {loading && <p className="text-sm text-slate-400 text-center py-8">Đang tải phản hồi...</p>}
+        {loading && <p className="text-sm text-v5-muted text-center py-8">Đang tải phản hồi...</p>}
         {!loading && items.length === 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
-            <p className="text-sm text-slate-400">
+          <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-8 text-center">
+            <p className="text-sm text-v5-muted">
               {tab === "NEW"
                 ? "Không còn phản hồi nào chưa xử lý — sạch sẽ!"
                 : "Chưa có phản hồi nào khớp bộ lọc."}
@@ -306,7 +306,7 @@ export default function AdminFeedbackPage() {
         )}
 
         {items.map((f) => (
-          <div key={f.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2">
+          <div key={f.id} className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-4 flex flex-col gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               {f.status === "NEW" && (
                 <input
@@ -319,30 +319,30 @@ export default function AdminFeedbackPage() {
               )}
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border ${
-                  CATEGORY_STYLES[f.category] || "bg-slate-50 text-slate-600 border-slate-200"
+                  CATEGORY_STYLES[f.category] || "bg-v5-bg text-v5-muted border-v5-line"
                 }`}
               >
                 {CATEGORY_LABELS[f.category] || f.category}
               </span>
               {f.status === "DONE" ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-v5-success-soft text-v5-success border border-v5-success/30">
                   <span className="material-symbols-outlined text-[13px]">check_circle</span>
                   Đã xử lý
                   {f.resolvedAt ? ` ${new Date(f.resolvedAt).toLocaleDateString("vi-VN")}` : ""}
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-v5-danger-soft text-v5-danger border border-v5-danger/30">
                   Mới
                 </span>
               )}
-              <span className="text-[11px] text-slate-400 ml-auto">
+              <span className="text-[11px] text-v5-muted ml-auto">
                 {new Date(f.createdAt).toLocaleString("vi-VN")}
               </span>
             </div>
 
-            <p className="text-sm text-slate-900 whitespace-pre-wrap">{f.content}</p>
+            <p className="text-sm text-v5-ink whitespace-pre-wrap">{f.content}</p>
 
-            <div className="flex items-center gap-3 flex-wrap text-[12px] text-slate-500">
+            <div className="flex items-center gap-3 flex-wrap text-[12px] text-v5-muted">
               <span className="inline-flex items-center gap-1">
                 <span className="material-symbols-outlined text-[15px]">person</span>
                 {f.senderName}
@@ -357,10 +357,10 @@ export default function AdminFeedbackPage() {
               {f.pagePath && (
                 <span className="inline-flex items-center gap-1">
                   <span className="material-symbols-outlined text-[15px]">pin_drop</span>
-                  gửi từ <code className="px-1 rounded bg-slate-100">{f.pagePath}</code>
+                  gửi từ <code className="px-1 rounded bg-v5-bg">{f.pagePath}</code>
                   <a
                     href={f.pagePath}
-                    className="font-bold text-teal-800 hover:underline"
+                    className="font-bold text-v5-accent hover:underline"
                     title="Mở lại màn hình người gửi đang đứng lúc gửi"
                   >
                     Mở lại trang ›
@@ -370,12 +370,12 @@ export default function AdminFeedbackPage() {
             </div>
 
             {f.adminNote && (
-              <p className="text-[12px] text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+              <p className="text-[12px] text-v5-muted bg-v5-bg border border-v5-line rounded-lg px-2.5 py-1.5">
                 <b>Ghi chú xử lý:</b> {f.adminNote}
               </p>
             )}
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1 border-t border-v5-line/60">
               {f.status === "NEW" ? (
                 <button
                   onClick={() => act(f.id, "resolve")}
@@ -388,7 +388,7 @@ export default function AdminFeedbackPage() {
                 <button
                   onClick={() => act(f.id, "reopen")}
                   disabled={busyId === f.id}
-                  className="h-8 px-3 rounded-lg bg-white border border-slate-300 text-xs font-bold text-slate-600 disabled:opacity-50"
+                  className="h-8 px-3 rounded-lg bg-v5-surface border border-v5-line text-xs font-bold text-v5-muted disabled:opacity-50"
                 >
                   Mở lại
                 </button>
@@ -397,12 +397,12 @@ export default function AdminFeedbackPage() {
                 value={noteDraft[f.id] ?? f.adminNote ?? ""}
                 onChange={(e) => setNoteDraft((prev) => ({ ...prev, [f.id]: e.target.value }))}
                 placeholder="Ghi chú xử lý (tùy chọn) — VD: đã sửa ở bản cập nhật tối nay"
-                className="h-8 flex-1 min-w-0 px-2.5 rounded-lg border border-slate-300 text-xs"
+                className="h-8 flex-1 min-w-0 px-2.5 rounded-lg border border-v5-line text-xs"
               />
               <button
                 onClick={() => act(f.id, "note")}
                 disabled={busyId === f.id || (noteDraft[f.id] ?? f.adminNote ?? "").trim() === (f.adminNote ?? "").trim()}
-                className="h-8 px-3 rounded-lg bg-surface-subtle border border-slate-200 text-xs font-semibold text-slate-600 disabled:opacity-40"
+                className="h-8 px-3 rounded-lg bg-surface-subtle border border-v5-line text-xs font-semibold text-v5-muted disabled:opacity-40"
               >
                 Lưu ghi chú
               </button>
@@ -413,8 +413,8 @@ export default function AdminFeedbackPage() {
 
       {/* Phân trang thật (phía máy chủ) */}
       {!loading && total > 0 && (
-        <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-between bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5">
-          <span className="text-[12px] text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-between bg-v5-surface rounded-xl border border-v5-line shadow-sm px-4 py-2.5">
+          <span className="text-[12px] text-v5-muted">
             Tổng <b>{total.toLocaleString("vi-VN")}</b> phản hồi • Trang <b>{page}</b>/{totalPages}
           </span>
           <div className="flex items-center gap-1.5">

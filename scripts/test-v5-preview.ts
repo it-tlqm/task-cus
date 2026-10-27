@@ -195,6 +195,19 @@ check(
     !reportsPage.includes("MD5:") &&
     !reportsPage.includes("bg-surface-container-lowest")
 );
+const rosterPage = read("src/app/roster/page.tsx");
+const adminOrgPage = read("src/app/admin/organization/page.tsx");
+check(
+  "Lịch trực dùng header/token V5",
+  rosterPage.includes("Phân công nhiệm vụ") &&
+    rosterPage.includes("<Button") &&
+    !/(text-slate-|bg-slate-|border-slate-|divide-slate-|text-teal-|bg-teal-|border-teal-|bg-white)/.test(rosterPage)
+);
+check(
+  "Quản trị tổ chức dùng token V5",
+  adminOrgPage.includes("bg-v5-surface") &&
+    !/(text-slate-|bg-slate-|border-slate-|divide-slate-|text-teal-|bg-teal-|border-teal-|bg-white|bg-blue-)/.test(adminOrgPage)
+);
 const monthlyResults = read("src/app/monthly-results/page.tsx");
 check(
   "Kết quả tháng dùng header/KPI/token V5",

@@ -746,8 +746,8 @@ export default function OrganizationAdminPage() {
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           className={`flex items-center justify-between py-2 pr-3 rounded-lg cursor-pointer transition-colors text-xs font-medium ${
             isSelected
-              ? "bg-blue-900 text-white font-semibold shadow-sm"
-              : "text-slate-700 hover:bg-slate-100"
+              ? "bg-v5-accent text-white font-semibold shadow-sm"
+              : "text-v5-ink hover:bg-v5-bg"
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0">
@@ -755,7 +755,7 @@ export default function OrganizationAdminPage() {
               <button
                 type="button"
                 onClick={(e) => toggleExpand(node.id, e)}
-                className="p-0.5 rounded hover:bg-white/20"
+                className="p-0.5 rounded hover:bg-v5-surface/20"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-3.5 h-3.5" />
@@ -766,14 +766,14 @@ export default function OrganizationAdminPage() {
             ) : (
               <span className="w-4" />
             )}
-            <Building2 className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-amber-300" : "text-blue-700"}`} />
+            <Building2 className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-v5-gold-ink" : "text-v5-accent"}`} />
             <span className="truncate">{node.name}</span>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 ml-2">
             <span
               className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${
-                isSelected ? "bg-blue-800 text-blue-100" : "bg-slate-100 text-slate-600"
+                isSelected ? "bg-v5-accent text-white" : "bg-v5-bg text-v5-muted"
               }`}
             >
               {node.code}
@@ -781,7 +781,7 @@ export default function OrganizationAdminPage() {
             {typeof node.personnelCount === "number" && (
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isSelected ? "bg-amber-400 text-blue-950 font-bold" : "bg-slate-200 text-slate-700"
+                  isSelected ? "bg-v5-gold text-v5-ink font-bold" : "bg-v5-bg text-v5-ink"
                 }`}
               >
                 {node.personnelCount}
@@ -796,7 +796,7 @@ export default function OrganizationAdminPage() {
                     e.stopPropagation();
                     handleOpenRenameUnit(node);
                   }}
-                  className="p-1 rounded hover:bg-white/20 text-white"
+                  className="p-1 rounded hover:bg-v5-surface/20 text-white"
                 >
                   <Edit2 className="w-3 h-3" />
                 </button>
@@ -808,7 +808,7 @@ export default function OrganizationAdminPage() {
                     setDeletingUnit(node);
                     setModalError(null);
                   }}
-                  className="p-1 rounded hover:bg-white/20 text-white"
+                  className="p-1 rounded hover:bg-v5-surface/20 text-white"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -829,9 +829,9 @@ export default function OrganizationAdminPage() {
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-6 pb-20">
       {!permLoading && !canManageOrg && (
-        <div className="p-8 bg-white border border-amber-200 rounded-xl text-center space-y-2 shadow-sm">
-          <p className="text-lg font-bold text-slate-900">Khu vực dành cho Lãnh đạo đơn vị</p>
-          <p className="text-sm text-slate-600">
+        <div className="p-8 bg-v5-surface border border-v5-gold/50 rounded-xl text-center space-y-2 shadow-sm">
+          <p className="text-lg font-bold text-v5-ink">Khu vực dành cho Lãnh đạo đơn vị</p>
+          <p className="text-sm text-v5-muted">
             Tài khoản của đồng chí không có quyền quản trị tổ chức &amp; nhân sự. Mọi thao tác trái quyền đều bị chặn và ghi nhận lịch sử.
           </p>
         </div>
@@ -840,13 +840,13 @@ export default function OrganizationAdminPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-900 border border-blue-200">
+            <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent-soft text-v5-accent border border-v5-line">
               Quản trị đơn vị & Nhân sự
             </span>
-            <span className="text-xs text-slate-500">Dữ liệu cập nhật theo thời gian thực</span>
+            <span className="text-xs text-v5-muted">Dữ liệu cập nhật theo thời gian thực</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Cơ cấu tổ chức & Quản lý cán bộ công chức</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-v5-ink mt-1">Cơ cấu tổ chức & Quản lý cán bộ công chức</h1>
+          <p className="text-sm text-v5-muted">
             Quản trị sơ đồ đơn vị, hồ sơ cán bộ, lịch sử điều chuyển công tác và cấp tài khoản RBAC thực chất
           </p>
         </div>
@@ -855,9 +855,9 @@ export default function OrganizationAdminPage() {
           <button
             onClick={fetchData}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-v5-ink bg-v5-surface border border-v5-line rounded-lg hover:bg-v5-bg shadow-sm transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-v5-accent" : ""}`} />
             Làm mới
           </button>
           {canManageOrg && (
@@ -866,7 +866,7 @@ export default function OrganizationAdminPage() {
                 setModalError(null);
                 setShowAddUnitModal(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-accent bg-v5-accent-soft border border-v5-line rounded-lg hover:bg-v5-accent-soft transition-colors"
             >
               <Building2 className="w-3.5 h-3.5" />
               Thêm bộ phận
@@ -880,7 +880,7 @@ export default function OrganizationAdminPage() {
                 setModalError(null);
                 setShowPositionModal(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-accent bg-v5-accent-soft border border-v5-line rounded-lg hover:bg-v5-accent-soft transition-colors"
             >
               <BadgeAlert className="w-3.5 h-3.5" />
               Chức vụ
@@ -889,7 +889,7 @@ export default function OrganizationAdminPage() {
           {canManageOrg && (
             <button
               onClick={handleOpenAddPerson}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
               Thêm cán bộ mới
@@ -900,24 +900,24 @@ export default function OrganizationAdminPage() {
 
       {/* Global Alerts */}
       {actionMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center justify-between shadow-sm">
+        <div className="p-3 bg-v5-success-soft border border-v5-success/30 text-v5-success rounded-lg text-xs flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-v5-success shrink-0" />
             <span className="font-medium">{actionMessage}</span>
           </div>
-          <button onClick={() => setActionMessage(null)} className="text-emerald-600 hover:underline">
+          <button onClick={() => setActionMessage(null)} className="text-v5-success hover:underline">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
       {actionError && (
-        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center justify-between shadow-sm">
+        <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-v5-danger shrink-0" />
             <span className="font-medium">{actionError}</span>
           </div>
-          <button onClick={() => setActionError(null)} className="text-rose-600 hover:underline">
+          <button onClick={() => setActionError(null)} className="text-v5-danger hover:underline">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -926,18 +926,18 @@ export default function OrganizationAdminPage() {
       {/* Split-pane container (35% Left Tree, 65% Right People list) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Pane (35% ~ 4 cols): Sơ đồ tổ chức */}
-        <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-              <FolderTree className="w-4 h-4 text-blue-900" />
+        <div className="lg:col-span-4 bg-v5-surface rounded-xl border border-v5-line p-4 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-v5-line/60">
+            <div className="flex items-center gap-2 text-v5-ink font-bold text-sm">
+              <FolderTree className="w-4 h-4 text-v5-accent" />
               Sơ đồ đơn vị Hải quan
             </div>
             <button
               onClick={() => setSelectedUnit(null)}
               className={`text-xs px-2 py-1 rounded transition-colors ${
                 selectedUnit === null
-                  ? "bg-blue-100 text-blue-900 font-semibold"
-                  : "text-blue-700 hover:bg-slate-100"
+                  ? "bg-v5-accent-soft text-v5-accent font-semibold"
+                  : "text-v5-accent hover:bg-v5-bg"
               }`}
             >
               Xem tất cả ({people.length})
@@ -946,9 +946,9 @@ export default function OrganizationAdminPage() {
 
           <div className="space-y-1 max-h-[620px] overflow-y-auto pr-1">
             {loading ? (
-              <div className="text-center py-8 text-xs text-slate-400">Đang tải sơ đồ tổ chức...</div>
+              <div className="text-center py-8 text-xs text-v5-muted">Đang tải sơ đồ tổ chức...</div>
             ) : orgTree.length === 0 ? (
-              <div className="text-center py-8 text-xs text-slate-400">Chưa có dữ liệu đơn vị</div>
+              <div className="text-center py-8 text-xs text-v5-muted">Chưa có dữ liệu đơn vị</div>
             ) : (
               <>
                 {orgTree.map((node) => renderTreeNode(node, 0))}
@@ -966,21 +966,21 @@ export default function OrganizationAdminPage() {
                     }
                     className={`flex items-center justify-between py-2 pr-3 rounded-lg cursor-pointer transition-colors text-xs font-medium ${
                       selectedUnit?.id === UNASSIGNED_UNIT_ID
-                        ? "bg-amber-500 text-white font-semibold shadow-sm"
-                        : "text-slate-700 hover:bg-slate-100"
+                        ? "bg-v5-gold text-white font-semibold shadow-sm"
+                        : "text-v5-ink hover:bg-v5-bg"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="w-4" />
-                      <UserX className="w-3.5 w-3.5 shrink-0 text-amber-600" />
+                      <UserX className="w-3.5 w-3.5 shrink-0 text-v5-gold-ink" />
                       <span className="truncate">Chưa gán đơn vị</span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       <span
                         className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${
                           selectedUnit?.id === UNASSIGNED_UNIT_ID
-                            ? "bg-amber-600 text-white"
-                            : "bg-slate-100 text-slate-600"
+                            ? "bg-v5-gold text-white"
+                            : "bg-v5-bg text-v5-muted"
                         }`}
                       >
                         CHƯA GÁN
@@ -988,8 +988,8 @@ export default function OrganizationAdminPage() {
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                           selectedUnit?.id === UNASSIGNED_UNIT_ID
-                            ? "bg-white text-amber-800 font-bold"
-                            : "bg-amber-100 text-amber-800"
+                            ? "bg-v5-surface text-v5-gold-ink font-bold"
+                            : "bg-v5-gold-soft text-v5-gold-ink"
                         }`}
                       >
                         {unassignedCount}
@@ -1003,17 +1003,17 @@ export default function OrganizationAdminPage() {
         </div>
 
         {/* Right Pane (65% ~ 8 cols): Danh sách cán bộ */}
-        <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="lg:col-span-8 bg-v5-surface rounded-xl border border-v5-line p-5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-v5-line/60">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-900" />
+              <h2 className="text-base font-bold text-v5-ink flex items-center gap-2">
+                <Users className="w-4 h-4 text-v5-accent" />
                 {selectedUnit ? selectedUnit.name : "Tất cả cán bộ công chức trong đơn vị"}
-                <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-mono">
+                <span className="text-xs font-normal text-v5-muted bg-v5-bg px-2 py-0.5 rounded-full font-mono">
                   {filteredPeople.length} cán bộ
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-v5-muted mt-0.5">
                 {selectedUnit
                   ? selectedUnit.id === UNASSIGNED_UNIT_ID
                     ? "Cán bộ chưa được phân công vào đơn vị nào — cần gán đơn vị"
@@ -1027,7 +1027,7 @@ export default function OrganizationAdminPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="text-xs px-2.5 py-1.5 bg-v5-bg border border-v5-line rounded-lg text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
               >
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="ACTIVE">Đang công tác</option>
@@ -1036,13 +1036,13 @@ export default function OrganizationAdminPage() {
 
               {/* Ô tìm kiếm */}
               <div className="relative w-full sm:w-56">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-v5-muted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Tìm tên, mã CC, chức vụ, user..."
                   value={searchPerson}
                   onChange={(e) => setSearchPerson(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-v5-bg border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
             </div>
@@ -1052,7 +1052,7 @@ export default function OrganizationAdminPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-semibold">
+                <tr className="border-b border-v5-line bg-v5-bg text-v5-ink font-semibold">
                   <th className="py-2.5 px-3">Mã CC & Họ tên</th>
                   <th className="py-2.5 px-3">Bộ phận & Chức vụ</th>
                   <th className="py-2.5 px-3">Tài khoản & Phân quyền</th>
@@ -1060,25 +1060,25 @@ export default function OrganizationAdminPage() {
                   <th className="py-2.5 px-3 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-v5-line/60">
                 {filteredPeople.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-slate-400">
+                    <td colSpan={5} className="py-10 text-center text-v5-muted">
                       Không tìm thấy cán bộ công chức nào phù hợp với bộ lọc
                     </td>
                   </tr>
                 ) : (
                   filteredPeople.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={p.id} className="hover:bg-v5-bg/80 transition-colors">
                       {/* Mã & Họ tên */}
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded text-[11px] border border-blue-200">
+                          <span className="font-mono font-bold text-v5-accent bg-v5-accent-soft px-1.5 py-0.5 rounded text-[11px] border border-v5-line">
                             {p.code}
                           </span>
-                          <span className="font-bold text-slate-900">{p.fullName}</span>
+                          <span className="font-bold text-v5-ink">{p.fullName}</span>
                         </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 space-x-2">
+                        <div className="text-[11px] text-v5-muted mt-0.5 space-x-2">
                           {p.email && <span>{p.email}</span>}
                           {p.phone && <span>• {p.phone}</span>}
                         </div>
@@ -1086,15 +1086,15 @@ export default function OrganizationAdminPage() {
 
                       {/* Bộ phận & Chức vụ */}
                       <td className="py-3 px-3">
-                        <div className="font-medium text-slate-800">{p.position}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
-                          <Building2 className="w-3 h-3 text-slate-400" />
+                        <div className="font-medium text-v5-ink">{p.position}</div>
+                        <div className="text-[11px] text-v5-muted mt-0.5 flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-v5-muted" />
                           <span>{p.unitName || "Chưa phân công"}</span>
                           {(p.secondaryUnits || []).map((u) => (
                             <span
                               key={u.unitId}
                               title={`Kiêm nhiệm tại ${u.unitName || ""}`}
-                              className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium"
+                              className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink border border-v5-gold/50 font-medium"
                             >
                               <span className="material-symbols-outlined text-[11px]">swap_horiz</span>
                               {u.unitName}
@@ -1108,25 +1108,25 @@ export default function OrganizationAdminPage() {
                         {p.account ? (
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
-                              <Shield className="w-3.5 h-3.5 text-blue-700" />
-                              <span className="font-mono font-medium text-slate-900">
+                              <Shield className="w-3.5 h-3.5 text-v5-accent" />
+                              <span className="font-mono font-medium text-v5-ink">
                                 {p.account.username}
                               </span>
-                              <span className="px-1.5 py-0.2 bg-blue-50 text-blue-800 border border-blue-200 rounded text-[10px] font-semibold">
+                              <span className="px-1.5 py-0.2 bg-v5-accent-soft text-v5-accent border border-v5-line rounded text-[10px] font-semibold">
                                 {p.account.role}
                               </span>
                             </div>
                             <div>
                               {p.account.status === "ACTIVE" ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-v5-success">
                                   <CheckCircle2 className="w-3 h-3" /> Hoạt động
                                 </span>
                               ) : p.account.status === "DISABLED" ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-700">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-v5-danger">
                                   <XCircle className="w-3 h-3" /> Vô hiệu hóa
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-v5-gold-ink">
                                   <Lock className="w-3 h-3" /> Tạm khóa
                                 </span>
                               )}
@@ -1134,10 +1134,10 @@ export default function OrganizationAdminPage() {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-400 italic text-[11px]">Chưa cấp</span>
+                            <span className="text-v5-muted italic text-[11px]">Chưa cấp</span>
                             <button
                               onClick={() => handleOpenAccountModal(p, "CREATE")}
-                              className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 transition-colors"
+                              className="text-[10px] font-semibold text-v5-accent hover:text-v5-accent bg-v5-accent-soft hover:bg-v5-accent-soft px-2 py-0.5 rounded border border-v5-line transition-colors"
                             >
                               + Cấp tài khoản
                             </button>
@@ -1148,11 +1148,11 @@ export default function OrganizationAdminPage() {
                       {/* Trạng thái hồ sơ */}
                       <td className="py-3 px-3 text-center">
                         {p.status === "ACTIVE" ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-v5-success-soft text-v5-success border border-v5-success/30">
                             <UserCheck className="w-3 h-3" /> Đang công tác
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-v5-bg text-v5-muted border border-v5-line">
                             <UserX className="w-3 h-3" /> Ngừng công tác
                           </span>
                         )}
@@ -1165,7 +1165,7 @@ export default function OrganizationAdminPage() {
                           <button
                             onClick={() => handleOpenEditPerson(p)}
                             title="Chỉnh sửa thông tin cán bộ"
-                            className="p-1 text-slate-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
+                            className="p-1 text-v5-muted hover:text-v5-accent hover:bg-v5-accent-soft rounded transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -1174,7 +1174,7 @@ export default function OrganizationAdminPage() {
                           <button
                             onClick={() => handleOpenTransfer(p)}
                             title="Điều chuyển đơn vị công tác"
-                            className="p-1 text-slate-600 hover:text-amber-800 hover:bg-amber-50 rounded transition-colors"
+                            className="p-1 text-v5-muted hover:text-v5-gold-ink hover:bg-v5-gold-soft rounded transition-colors"
                           >
                             <ArrowRightLeft className="w-3.5 h-3.5" />
                           </button>
@@ -1191,8 +1191,8 @@ export default function OrganizationAdminPage() {
                                 }
                                 className={`p-1 rounded transition-colors ${
                                   p.account.status === "ACTIVE"
-                                    ? "text-slate-600 hover:text-rose-700 hover:bg-rose-50"
-                                    : "text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                    ? "text-v5-muted hover:text-v5-danger hover:bg-v5-danger-soft"
+                                    : "text-v5-muted hover:text-v5-success hover:bg-v5-success-soft"
                                 }`}
                               >
                                 {p.account.status === "ACTIVE" ? (
@@ -1205,7 +1205,7 @@ export default function OrganizationAdminPage() {
                               <button
                                 onClick={() => handleOpenAccountModal(p, "RESET_PASSWORD")}
                                 title="Đặt lại mật khẩu"
-                                className="p-1 text-slate-600 hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors"
+                                className="p-1 text-v5-muted hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors"
                               >
                                 <KeyRound className="w-3.5 h-3.5" />
                               </button>
@@ -1227,24 +1227,24 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {showAddPersonModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-900" />
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
+              <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
+                <Users className="w-4 h-4 text-v5-accent" />
                 Thêm mới cán bộ công chức
               </h3>
               <button
                 type="button"
                 onClick={() => setShowAddPersonModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-v5-muted hover:text-v5-muted"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
@@ -1252,37 +1252,37 @@ export default function OrganizationAdminPage() {
             <form onSubmit={handleAddPerson} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Mã cán bộ *</label>
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">Mã cán bộ *</label>
                   <input
                     type="text"
                     required
                     placeholder="Ví dụ: CB-050"
                     value={newPersonData.code}
                     onChange={(e) => setNewPersonData({ ...newPersonData, code: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono uppercase font-semibold"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono uppercase font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Họ và tên *</label>
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">Họ và tên *</label>
                   <input
                     type="text"
                     required
                     placeholder="Ví dụ: Đ/c Vũ Mạnh Hùng"
                     value={newPersonData.fullName}
                     onChange={(e) => setNewPersonData({ ...newPersonData, fullName: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Đơn vị / Bộ phận trực thuộc *</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Đơn vị / Bộ phận trực thuộc *</label>
                 <select
                   required
                   value={newPersonData.unitId}
                   onChange={(e) => setNewPersonData({ ...newPersonData, unitId: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 >
                   <option value="">-- Chọn đơn vị công tác --</option>
                   {flatUnits.map((u) => (
@@ -1294,11 +1294,11 @@ export default function OrganizationAdminPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Chức vụ</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Chức vụ</label>
                 <select
                   value={newPersonData.positionId}
                   onChange={(e) => setNewPersonData({ ...newPersonData, positionId: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 >
                   <option value="">-- Chọn chức vụ công tác --</option>
                   {activePositions.map((pos) => (
@@ -1311,52 +1311,52 @@ export default function OrganizationAdminPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Email công vụ</label>
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">Email công vụ</label>
                   <input
                     type="email"
                     placeholder="hung.vm@talung.cus.demo"
                     value={newPersonData.email}
                     onChange={(e) => setNewPersonData({ ...newPersonData, email: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Số điện thoại liên hệ</label>
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">Số điện thoại liên hệ</label>
                   <input
                     type="text"
                     placeholder="0912.xxx.xxx"
                     value={newPersonData.phone}
                     onChange={(e) => setNewPersonData({ ...newPersonData, phone: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Ghi chú nghiệp vụ</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Ghi chú nghiệp vụ</label>
                 <textarea
                   rows={2}
                   placeholder="Ghi chú về phân công, chuyên môn..."
                   value={newPersonData.notes}
                   onChange={(e) => setNewPersonData({ ...newPersonData, notes: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setShowAddPersonModal(false)}
                   disabled={isSubmitting}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting ? "Đang lưu..." : "Lưu vào cơ sở dữ liệu"}
                 </button>
@@ -1371,81 +1371,81 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {editingPerson && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-blue-900" />
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
+              <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-v5-accent" />
                 Chỉnh sửa hồ sơ cán bộ: {editingPerson.fullName}
               </h3>
               <button
                 type="button"
                 onClick={() => setEditingPerson(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-v5-muted hover:text-v5-muted"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
 
             <form onSubmit={handleEditPerson} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+              <div className="grid grid-cols-2 gap-3 bg-v5-bg p-2.5 rounded-lg border border-v5-line">
                 <div>
-                  <span className="text-[11px] text-slate-500 block">Mã cán bộ (Bất biến):</span>
-                  <span className="font-mono font-bold text-blue-950 text-xs">{editingPerson.code}</span>
+                  <span className="text-[11px] text-v5-muted block">Mã cán bộ (Bất biến):</span>
+                  <span className="font-mono font-bold text-v5-ink text-xs">{editingPerson.code}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block">Bộ phận hiện tại:</span>
-                  <span className="font-semibold text-slate-800 text-xs">{editingPerson.unitName}</span>
+                  <span className="text-[11px] text-v5-muted block">Bộ phận hiện tại:</span>
+                  <span className="font-semibold text-v5-ink text-xs">{editingPerson.unitName}</span>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Họ và tên *</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Họ và tên *</label>
                 <input
                   type="text"
                   required
                   value={editPersonData.fullName}
                   onChange={(e) => setEditPersonData({ ...editPersonData, fullName: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Email công vụ</label>
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">Email công vụ</label>
                   <input
                     type="email"
                     value={editPersonData.email}
                     onChange={(e) => setEditPersonData({ ...editPersonData, email: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Số điện thoại</label>
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">Số điện thoại</label>
                   <input
                     type="text"
                     value={editPersonData.phone}
                     onChange={(e) => setEditPersonData({ ...editPersonData, phone: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Chức vụ <span className="font-normal text-slate-500">(hiện tại: {editingPerson.position || "chưa rõ"})</span>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
+                  Chức vụ <span className="font-normal text-v5-muted">(hiện tại: {editingPerson.position || "chưa rõ"})</span>
                 </label>
                 <select
                   value={editPersonData.positionId}
                   onChange={(e) => setEditPersonData({ ...editPersonData, positionId: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 >
                   <option value="">-- Giữ nguyên chức vụ hiện tại --</option>
                   {activePositions.map((pos) => (
@@ -1457,19 +1457,19 @@ export default function OrganizationAdminPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Trạng thái hồ sơ cán bộ</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Trạng thái hồ sơ cán bộ</label>
                 <select
                   value={editPersonData.status}
                   onChange={(e) =>
                     setEditPersonData({ ...editPersonData, status: e.target.value as "ACTIVE" | "INACTIVE" })
                   }
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 >
                   <option value="ACTIVE">ACTIVE — Đang công tác</option>
                   <option value="INACTIVE">INACTIVE — Ngừng công tác (Vô hiệu hóa tài khoản liên kết)</option>
                 </select>
                 {editPersonData.status === "INACTIVE" && (
-                  <p className="text-[11px] text-amber-700 mt-1 flex items-center gap-1 font-medium">
+                  <p className="text-[11px] text-v5-gold-ink mt-1 flex items-center gap-1 font-medium">
                     <BadgeAlert className="w-3.5 h-3.5" />
                     Khi chuyển sang Ngừng công tác, tài khoản của cán bộ sẽ tự động bị khóa truy cập ngay lập tức.
                   </p>
@@ -1477,28 +1477,28 @@ export default function OrganizationAdminPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Ghi chú</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Ghi chú</label>
                 <textarea
                   rows={2}
                   value={editPersonData.notes}
                   onChange={(e) => setEditPersonData({ ...editPersonData, notes: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setEditingPerson(null)}
                   disabled={isSubmitting}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting ? "Đang cập nhật..." : "Cập nhật hồ sơ"}
                 </button>
@@ -1513,53 +1513,53 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {transferringPerson && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <ArrowRightLeft className="w-4 h-4 text-blue-900" />
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
+              <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
+                <ArrowRightLeft className="w-4 h-4 text-v5-accent" />
                 Quy trình điều chuyển công tác cán bộ
               </h3>
               <button
                 type="button"
                 onClick={() => setTransferringPerson(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-v5-muted hover:text-v5-muted"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
 
-            <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-lg text-xs space-y-1">
-              <div className="font-bold text-blue-950">
+            <div className="p-3 bg-v5-accent-soft/70 border border-v5-line rounded-lg text-xs space-y-1">
+              <div className="font-bold text-v5-ink">
                 {transferringPerson.fullName} ({transferringPerson.code})
               </div>
-              <div className="text-slate-600">
-                Đơn vị hiện tại: <span className="font-semibold text-slate-800">{transferringPerson.unitName}</span>
+              <div className="text-v5-muted">
+                Đơn vị hiện tại: <span className="font-semibold text-v5-ink">{transferringPerson.unitName}</span>
               </div>
-              <div className="text-slate-600">
-                Chức vụ hiện tại: <span className="font-semibold text-slate-800">{transferringPerson.position}</span>
+              <div className="text-v5-muted">
+                Chức vụ hiện tại: <span className="font-semibold text-v5-ink">{transferringPerson.position}</span>
               </div>
-              <p className="text-[11px] text-slate-500 pt-1 italic">
+              <p className="text-[11px] text-v5-muted pt-1 italic">
                 * Toàn bộ lịch sử nhiệm vụ, kế hoạch và sổ nhật ký đã phát sinh tại đơn vị cũ sẽ được bảo toàn nguyên vẹn.
               </p>
             </div>
 
             <form onSubmit={handleTransfer} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Đơn vị tiếp nhận mới *
                 </label>
                 <select
                   required
                   value={transferData.newUnitId}
                   onChange={(e) => setTransferData({ ...transferData, newUnitId: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 >
                   <option value="">-- Chọn đơn vị tiếp nhận mới --</option>
                   {flatUnits.map((u) => (
@@ -1571,13 +1571,13 @@ export default function OrganizationAdminPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Chức vụ tại đơn vị mới
                 </label>
                 <select
                   value={transferData.newPositionId}
                   onChange={(e) => setTransferData({ ...transferData, newPositionId: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 >
                   <option value="">-- Giữ nguyên chức vụ hiện tại --</option>
                   {activePositions.map((pos) => (
@@ -1590,7 +1590,7 @@ export default function OrganizationAdminPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Ngày có hiệu lực điều chuyển *
                   </label>
                   <input
@@ -1599,13 +1599,13 @@ export default function OrganizationAdminPage() {
                     max={new Date().toISOString().slice(0, 10)}
                     value={transferData.effectiveDate}
                     onChange={(e) => setTransferData({ ...transferData, effectiveDate: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   />
-                  <p className="text-[10px] text-slate-500 mt-0.5">Chỉ chấp nhận ngày hiện tại hoặc quá khứ</p>
+                  <p className="text-[10px] text-v5-muted mt-0.5">Chỉ chấp nhận ngày hiện tại hoặc quá khứ</p>
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Số Quyết định điều động
                   </label>
                   <input
@@ -1613,35 +1613,35 @@ export default function OrganizationAdminPage() {
                     placeholder="Ví dụ: QĐ-12/HQTL"
                     value={transferData.decisionNumber}
                     onChange={(e) => setTransferData({ ...transferData, decisionNumber: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Lý do & Ghi chú</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Lý do & Ghi chú</label>
                 <textarea
                   rows={2}
                   placeholder="Căn cứ yêu cầu công tác, luân chuyển định kỳ..."
                   value={transferData.notes}
                   onChange={(e) => setTransferData({ ...transferData, notes: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setTransferringPerson(null)}
                   disabled={isSubmitting}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting ? "Đang xử lý..." : "Xác nhận điều chuyển"}
                 </button>
@@ -1656,10 +1656,10 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {accountModalPerson && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-900" />
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
+              <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
+                <Shield className="w-4 h-4 text-v5-accent" />
                 {accountFormData.mode === "CREATE"
                   ? "Cấp tài khoản mới"
                   : accountFormData.mode === "RESET_PASSWORD"
@@ -1669,23 +1669,23 @@ export default function OrganizationAdminPage() {
               <button
                 type="button"
                 onClick={() => setAccountModalPerson(null)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-v5-muted hover:text-v5-muted"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
 
-            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
-              <span className="text-slate-500">Cán bộ: </span>
-              <span className="font-bold text-slate-900">{accountModalPerson.fullName}</span>{" "}
-              <span className="font-mono text-slate-600">({accountModalPerson.code})</span>
+            <div className="p-2.5 bg-v5-bg border border-v5-line rounded-lg text-xs">
+              <span className="text-v5-muted">Cán bộ: </span>
+              <span className="font-bold text-v5-ink">{accountModalPerson.fullName}</span>{" "}
+              <span className="font-mono text-v5-muted">({accountModalPerson.code})</span>
             </div>
 
             <form onSubmit={handleAccountAction} className="space-y-3">
@@ -1693,7 +1693,7 @@ export default function OrganizationAdminPage() {
               {accountFormData.mode === "CREATE" && (
                 <>
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    <label className="text-xs font-semibold text-v5-ink block mb-1">
                       Tên đăng nhập (Username) *
                     </label>
                     <input
@@ -1704,12 +1704,12 @@ export default function OrganizationAdminPage() {
                       onChange={(e) =>
                         setAccountFormData({ ...accountFormData, username: e.target.value.toLowerCase() })
                       }
-                      className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                      className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    <label className="text-xs font-semibold text-v5-ink block mb-1">
                       Mật khẩu khởi tạo * (tối thiểu 8 ký tự, gồm cả chữ và số)
                     </label>
                     <input
@@ -1719,16 +1719,16 @@ export default function OrganizationAdminPage() {
                       placeholder="Nhập mật khẩu an toàn..."
                       value={accountFormData.password}
                       onChange={(e) => setAccountFormData({ ...accountFormData, password: e.target.value })}
-                      className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Vai trò hệ thống (Role) *</label>
+                    <label className="text-xs font-semibold text-v5-ink block mb-1">Vai trò hệ thống (Role) *</label>
                     <select
                       value={accountFormData.roleCode}
                       onChange={(e) => setAccountFormData({ ...accountFormData, roleCode: e.target.value })}
-                      className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                     >
                       {roles.map((r) => (
                         <option key={r.id} value={r.code}>
@@ -1739,11 +1739,11 @@ export default function OrganizationAdminPage() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">Phạm vi thẩm quyền (Scope)</label>
+                    <label className="text-xs font-semibold text-v5-ink block mb-1">Phạm vi thẩm quyền (Scope)</label>
                     <select
                       value={accountFormData.scopeType}
                       onChange={(e) => setAccountFormData({ ...accountFormData, scopeType: e.target.value })}
-                      className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                     >
                       <option value="DEPARTMENT">DEPARTMENT — Phạm vi Bộ phận / Đội trực thuộc</option>
                       <option value="ORGANIZATION">ORGANIZATION — Toàn bộ đơn vị</option>
@@ -1755,15 +1755,15 @@ export default function OrganizationAdminPage() {
               {/* Form đặt lại mật khẩu */}
               {accountFormData.mode === "RESET_PASSWORD" && (
                 <>
-                  <div className="text-xs text-slate-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                  <div className="text-xs text-v5-muted bg-v5-gold-soft p-2.5 rounded-lg border border-v5-gold/50">
                     Đặt lại mật khẩu cho tài khoản:{" "}
-                    <span className="font-mono font-bold text-amber-950">
+                    <span className="font-mono font-bold text-v5-gold-ink">
                       {accountModalPerson.account?.username}
                     </span>
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    <label className="text-xs font-semibold text-v5-ink block mb-1">
                       Mật khẩu mới * (tối thiểu 8 ký tự, gồm cả chữ và số)
                     </label>
                     <input
@@ -1773,25 +1773,25 @@ export default function OrganizationAdminPage() {
                       placeholder="Nhập mật khẩu mới..."
                       value={accountFormData.newPassword}
                       onChange={(e) => setAccountFormData({ ...accountFormData, newPassword: e.target.value })}
-                      className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                     />
                   </div>
                 </>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setAccountModalPerson(null)}
                   disabled={isSubmitting}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting
                     ? "Đang lưu..."
@@ -1810,63 +1810,63 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {showAddUnitModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Thêm Đơn vị / Bộ phận mới</h3>
-            <p className="text-xs text-slate-500">
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <h3 className="text-base font-bold text-v5-ink">Thêm Đơn vị / Bộ phận mới</h3>
+            <p className="text-xs text-v5-muted">
               {selectedUnit
                 ? `Thêm đơn vị trực thuộc "${selectedUnit.name}"`
                 : "Thêm đơn vị ở cấp cao nhất"}
             </p>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
 
             <form onSubmit={handleAddUnit} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Mã đơn vị *</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Mã đơn vị *</label>
                 <input
                   type="text"
                   required
                   placeholder="Ví dụ: TO_GS_02"
                   value={newUnitData.code}
                   onChange={(e) => setNewUnitData({ ...newUnitData, code: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono uppercase"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono uppercase"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Tên bộ phận / tổ *</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Tên bộ phận / tổ *</label>
                 <input
                   type="text"
                   required
                   placeholder="Ví dụ: Tổ Giám sát 2"
                   value={newUnitData.name}
                   onChange={(e) => setNewUnitData({ ...newUnitData, name: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
-              <div className="rounded-lg bg-slate-50 border border-slate-200 p-2.5 text-[11px] text-slate-600">
+              <div className="rounded-lg bg-v5-bg border border-v5-line p-2.5 text-[11px] text-v5-muted">
                 Cấp của đơn vị được tính tự động theo đơn vị cha đang chọn trong cây
                 {selectedUnit ? ` (“${selectedUnit.name}”)` : " (cấp 1 nếu không chọn đơn vị cha)"}.
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setShowAddUnitModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting ? "Đang tạo..." : "Tạo đơn vị"}
                 </button>
@@ -1881,43 +1881,43 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {editingUnit && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Đổi tên đơn vị</h3>
-            <p className="text-xs text-slate-500">
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <h3 className="text-base font-bold text-v5-ink">Đổi tên đơn vị</h3>
+            <p className="text-xs text-v5-muted">
               Mã <span className="font-mono font-semibold">{editingUnit.code}</span> giữ nguyên để bảo toàn liên kết dữ liệu.
             </p>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
 
             <form onSubmit={handleRenameUnit} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Tên đơn vị *</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Tên đơn vị *</label>
                 <input
                   type="text"
                   required
                   value={editUnitName}
                   onChange={(e) => setEditUnitName(e.target.value)}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setEditingUnit(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting ? "Đang lưu..." : "Lưu tên mới"}
                 </button>
@@ -1932,25 +1932,25 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {deletingUnit && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
-            <h3 className="text-base font-bold text-rose-700">Xóa đơn vị "{deletingUnit.name}"?</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <h3 className="text-base font-bold text-v5-danger">Xóa đơn vị "{deletingUnit.name}"?</h3>
+            <p className="text-xs text-v5-muted leading-relaxed">
               Chỉ xóa được đơn vị <strong>không còn</strong> đơn vị con, cán bộ, nhiệm vụ, kế hoạch và bản chốt kỳ.
               Hệ thống sẽ tự kiểm tra và từ chối nếu còn dữ liệu liên quan.
             </p>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
               <button
                 type="button"
                 onClick={() => setDeletingUnit(null)}
-                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
               >
                 Hủy
               </button>
@@ -1958,7 +1958,7 @@ export default function OrganizationAdminPage() {
                 type="button"
                 onClick={handleDeleteUnit}
                 disabled={isSubmitting}
-                className="px-4 py-1.5 text-xs font-semibold text-white bg-rose-700 rounded-lg hover:bg-rose-800 shadow-sm disabled:opacity-50"
+                className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-danger rounded-lg hover:bg-v5-danger shadow-sm disabled:opacity-50"
               >
                 {isSubmitting ? "Đang xóa..." : "Xóa đơn vị"}
               </button>
@@ -1972,33 +1972,33 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {showPositionModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Quản lý chức vụ</h3>
+              <h3 className="text-base font-bold text-v5-ink">Quản lý chức vụ</h3>
               <button
                 type="button"
                 onClick={() => setShowPositionModal(false)}
-                className="p-1 rounded hover:bg-slate-100 text-slate-500"
+                className="p-1 rounded hover:bg-v5-bg text-v5-muted"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-v5-danger" />
                 <span>{modalError}</span>
               </div>
             )}
 
-            <form onSubmit={handleSavePosition} className="flex flex-col sm:flex-row gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <form onSubmit={handleSavePosition} className="flex flex-col sm:flex-row gap-2 p-3 bg-v5-bg rounded-lg border border-v5-line">
               <input
                 type="text"
                 required
                 placeholder="Mã (VD: PHO_DOI_TRUONG)"
                 value={posForm.code}
                 onChange={(e) => setPosForm({ ...posForm, code: e.target.value.toUpperCase() })}
-                className="flex-1 min-w-0 text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono uppercase"
+                className="flex-1 min-w-0 text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono uppercase"
               />
               <input
                 type="text"
@@ -2006,12 +2006,12 @@ export default function OrganizationAdminPage() {
                 placeholder="Tên chức vụ (VD: Phó Đội trưởng)"
                 value={posForm.title}
                 onChange={(e) => setPosForm({ ...posForm, title: e.target.value })}
-                className="flex-[2] min-w-0 text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="flex-[2] min-w-0 text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
               />
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-3 py-2 text-xs font-semibold text-white bg-blue-900 rounded-lg hover:bg-blue-800 disabled:opacity-50 shrink-0"
+                className="px-3 py-2 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent disabled:opacity-50 shrink-0"
               >
                 Thêm
               </button>
@@ -2019,16 +2019,16 @@ export default function OrganizationAdminPage() {
 
             <div className="space-y-1.5">
               {positions.length === 0 && (
-                <div className="text-center py-4 text-xs text-slate-400">Chưa có chức vụ nào</div>
+                <div className="text-center py-4 text-xs text-v5-muted">Chưa có chức vụ nào</div>
               )}
               {positions.map((pos) => {
                 const inactive = (pos.status || "ACTIVE") === "INACTIVE";
                 return (
                   <div
                     key={pos.id}
-                    className={`flex items-center gap-2 p-2 rounded-lg border ${inactive ? "bg-slate-50 border-slate-200 opacity-70" : "bg-white border-slate-200"}`}
+                    className={`flex items-center gap-2 p-2 rounded-lg border ${inactive ? "bg-v5-bg border-v5-line opacity-70" : "bg-v5-surface border-v5-line"}`}
                   >
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded shrink-0">
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 bg-v5-bg text-v5-muted rounded shrink-0">
                       {pos.code}
                     </span>
                     {editingPositionId === pos.id ? (
@@ -2036,15 +2036,15 @@ export default function OrganizationAdminPage() {
                         type="text"
                         value={editPositionTitle}
                         onChange={(e) => setEditPositionTitle(e.target.value)}
-                        className="flex-1 min-w-0 text-xs p-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="flex-1 min-w-0 text-xs p-1.5 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                       />
                     ) : (
-                      <span className="flex-1 min-w-0 text-xs font-medium text-slate-800 truncate" title={pos.title}>
+                      <span className="flex-1 min-w-0 text-xs font-medium text-v5-ink truncate" title={pos.title}>
                         {pos.title}
                       </span>
                     )}
                     {inactive && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-v5-bg text-v5-muted rounded shrink-0">
                         Ngừng dùng
                       </span>
                     )}
@@ -2054,14 +2054,14 @@ export default function OrganizationAdminPage() {
                           type="button"
                           onClick={() => handleRenamePosition(pos.id)}
                           disabled={isSubmitting}
-                          className="text-[11px] font-semibold text-blue-900 hover:underline shrink-0"
+                          className="text-[11px] font-semibold text-v5-accent hover:underline shrink-0"
                         >
                           Lưu
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingPositionId(null)}
-                          className="text-[11px] text-slate-500 hover:underline shrink-0"
+                          className="text-[11px] text-v5-muted hover:underline shrink-0"
                         >
                           Hủy
                         </button>
@@ -2076,7 +2076,7 @@ export default function OrganizationAdminPage() {
                             setEditPositionTitle(pos.title);
                             setModalError(null);
                           }}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-500 shrink-0"
+                          className="p-1 rounded hover:bg-v5-bg text-v5-muted shrink-0"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -2085,7 +2085,7 @@ export default function OrganizationAdminPage() {
                           title={inactive ? "Kích hoạt lại" : "Ngừng dùng"}
                           onClick={() => handleTogglePosition(pos.id, !inactive)}
                           disabled={isSubmitting}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-500 shrink-0"
+                          className="p-1 rounded hover:bg-v5-bg text-v5-muted shrink-0"
                         >
                           {inactive ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
                         </button>
@@ -2095,7 +2095,7 @@ export default function OrganizationAdminPage() {
                 );
               })}
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
+            <p className="text-[11px] text-v5-muted leading-relaxed">
               Mã chức vụ không đổi sau khi tạo. Chức vụ đang có cán bộ giữ không thể ngừng dùng.
             </p>
           </div>
@@ -2107,20 +2107,20 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {confirmDialog && confirmDialog.isOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-xl max-w-sm w-full p-5 space-y-4">
             <h3
               className={`text-base font-bold ${
-                confirmDialog.isDangerous ? "text-rose-700" : "text-slate-900"
+                confirmDialog.isDangerous ? "text-v5-danger" : "text-v5-ink"
               }`}
             >
               {confirmDialog.title}
             </h3>
-            <p className="text-xs text-slate-600 leading-relaxed">{confirmDialog.message}</p>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <p className="text-xs text-v5-muted leading-relaxed">{confirmDialog.message}</p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-v5-line/60">
               <button
                 type="button"
                 onClick={() => setConfirmDialog(null)}
-                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-3 py-1.5 text-xs text-v5-muted hover:bg-v5-bg rounded-lg"
               >
                 Hủy bỏ
               </button>
@@ -2129,8 +2129,8 @@ export default function OrganizationAdminPage() {
                 onClick={confirmDialog.onConfirm}
                 className={`px-4 py-1.5 text-xs font-semibold text-white rounded-lg shadow-sm ${
                   confirmDialog.isDangerous
-                    ? "bg-rose-700 hover:bg-rose-800"
-                    : "bg-blue-900 hover:bg-blue-800"
+                    ? "bg-v5-danger hover:bg-v5-danger"
+                    : "bg-v5-accent hover:bg-v5-accent"
                 }`}
               >
                 Xác nhận thực hiện

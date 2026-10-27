@@ -371,28 +371,28 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
   return (
     <div className="space-y-5">
       {/* Trạng thái áp dụng */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="bg-v5-surface border border-v5-line rounded-xl p-4 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg font-bold text-slate-900">Danh mục công việc thường xuyên</h2>
+            <h2 className="text-lg font-bold text-v5-ink">Danh mục công việc thường xuyên</h2>
             {activeVersion ? (
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-semibold">
+              <span className="px-2 py-0.5 rounded bg-v5-success-soft text-v5-success text-[11px] font-semibold">
                 Đang áp dụng: {activeVersion.code}
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[11px] font-semibold">
+              <span className="px-2 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold">
                 Chưa nhập danh mục TX
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-v5-muted">
             {activeVersion
               ? `${activeVersion.entryCount} đầu việc • ${departments.length} bộ phận • nhập ngày ${formatDate(
                   activeVersion.importedAt
                 )}${activeVersion.importedBy ? ` bởi ${activeVersion.importedBy.fullName}` : ""}.`
               : "Khi chưa có danh mục TX, hệ thống vẫn cho chọn 48 mẫu cũ để không gián đoạn nghiệp vụ."}
           </p>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-v5-muted">
             {mappingRows.some((r) => r.isActive && r.unitId && r.activeEntryCount > 0)
               ? `${mappingRows.filter((r) => r.isActive && r.unitId && r.activeEntryCount > 0).length}/${mappingRows.length} nhóm đã kích hoạt. Bộ phận chưa kích hoạt vẫn dùng 48 mẫu cũ bình thường.`
               : "Chưa kích hoạt nhóm TX nào — tất cả bộ phận vẫn chọn được 48 mẫu cũ; dữ liệu lịch sử luôn giữ nguyên."}
@@ -402,7 +402,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
           <button
             onClick={fetchAll}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-ink bg-v5-surface border border-v5-line rounded-lg hover:bg-v5-bg"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Làm mới
@@ -413,7 +413,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                 resetImport();
                 setIsImportOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 rounded-lg shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shadow-sm"
             >
               <Upload className="w-3.5 h-3.5" />
               Nhập từ Excel
@@ -424,12 +424,12 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
 
       {/* Chế độ chọn đầu việc — khi Hải quan chưa xác nhận ánh xạ bộ phận */}
       {activeVersion && canManage && (
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="bg-v5-surface border border-v5-line rounded-xl shadow-sm px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-start gap-2">
-            <ShieldCheck className="w-4 h-4 text-teal-700 mt-0.5 shrink-0" />
+            <ShieldCheck className="w-4 h-4 text-v5-accent mt-0.5 shrink-0" />
             <div>
-              <h3 className="text-sm font-bold text-slate-800">Phạm vi cán bộ được chọn đầu việc</h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <h3 className="text-sm font-bold text-v5-ink">Phạm vi cán bộ được chọn đầu việc</h3>
+              <p className="text-[11px] text-v5-muted mt-0.5">
                 {activeVersion.selectionMode === "ALL"
                   ? "Đang mở: mọi cán bộ chọn được đầu việc của cả 6 nhóm. Áp dụng khi Hải quan chưa xác nhận ánh xạ bộ phận."
                   : "Đang giới hạn: cán bộ chỉ chọn được nhóm đã ánh xạ và kích hoạt cho bộ phận của mình."}
@@ -439,7 +439,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
           <button
             onClick={() => toggleSelectionMode()}
             disabled={savingSelectionMode}
-            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 rounded-lg disabled:opacity-50"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg disabled:opacity-50"
           >
             {savingSelectionMode ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -454,34 +454,34 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
       )}
 
       {/* Ánh xạ nhóm TX → bộ phận thật + kích hoạt theo bộ phận */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-2">
+      <div className="bg-v5-surface border border-v5-line rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-v5-line/60 flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-teal-700" />
-            <h3 className="text-sm font-bold text-slate-800">
+            <Link2 className="w-4 h-4 text-v5-accent" />
+            <h3 className="text-sm font-bold text-v5-ink">
               Ánh xạ &amp; kích hoạt danh mục theo bộ phận
             </h3>
-            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">
+            <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-ink text-[10px] font-semibold">
               {mappingRows.filter((r) => r.isActive && r.unitId && r.activeEntryCount > 0).length}/
               {mappingRows.length} nhóm
             </span>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-v5-muted">
             Tên nhóm giữ nguyên từ file nguồn. Chỉ nhóm đã xác nhận mới được phát cho cán bộ thuộc
             bộ phận tương ứng.
           </p>
         </div>
 
         {!activeVersion ? (
-          <div className="p-6 text-center text-xs text-slate-500">
+          <div className="p-6 text-center text-xs text-v5-muted">
             Cần nhập danh mục TX trước, sau đó ánh xạ từng nhóm với bộ phận thật trong org_units.
           </div>
         ) : mappingRows.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500">Chưa có nhóm bộ phận để ánh xạ.</div>
+          <div className="p-6 text-center text-xs text-v5-muted">Chưa có nhóm bộ phận để ánh xạ.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] tracking-wide">
+              <thead className="bg-v5-bg text-v5-muted uppercase text-[10px] tracking-wide">
                 <tr>
                   <th className="px-3 py-2.5 text-left font-semibold">Nhóm trong file nguồn</th>
                   <th className="px-3 py-2.5 text-center font-semibold">Đầu việc</th>
@@ -491,17 +491,17 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                   {canManage && <th className="px-3 py-2.5 text-right font-semibold">Lưu</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-v5-line/60">
                 {mappingRows.map((row) => {
                   const draft =
                     mappingDrafts[row.department] || { unitId: row.unitId || "", isActive: row.isActive };
                   const effectiveActive = draft.isActive && !!draft.unitId && row.activeEntryCount > 0;
                   return (
-                    <tr key={row.department} className="hover:bg-slate-50/70">
-                      <td className="px-3 py-2 text-slate-800 font-medium min-w-[220px]">
+                    <tr key={row.department} className="hover:bg-v5-bg/70">
+                      <td className="px-3 py-2 text-v5-ink font-medium min-w-[220px]">
                         {row.department}
                       </td>
-                      <td className="px-3 py-2 text-center text-slate-600">
+                      <td className="px-3 py-2 text-center text-v5-muted">
                         {row.activeEntryCount}/{row.entryCount}
                       </td>
                       <td className="px-3 py-2 min-w-[240px]">
@@ -514,7 +514,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                               [row.department]: { ...draft, unitId: e.target.value },
                             }))
                           }
-                          className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg bg-white text-slate-700 disabled:bg-slate-50"
+                          className="w-full px-2 py-1.5 text-xs border border-v5-line rounded-lg bg-v5-surface text-v5-ink disabled:bg-v5-bg"
                         >
                           <option value="">-- Chưa gán bộ phận --</option>
                           {orgUnits.map((u) => (
@@ -535,19 +535,19 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                               [row.department]: { ...draft, isActive: e.target.checked },
                             }))
                           }
-                          className="h-4 w-4 rounded border-slate-300 text-teal-700"
+                          className="h-4 w-4 rounded border-v5-line text-v5-accent"
                           title="Bật để phát danh mục TX cho đúng bộ phận đã chọn"
                         />
                       </td>
                       <td className="px-3 py-2">
                         {effectiveActive ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-v5-success-soft text-v5-success text-[10px] font-semibold">
                             <ShieldCheck className="w-3 h-3" /> Đang phát cho {row.unitName || "bộ phận"}
                           </span>
                         ) : draft.isActive && !draft.unitId ? (
-                          <span className="text-[11px] text-rose-700">Thiếu bộ phận thật</span>
+                          <span className="text-[11px] text-v5-danger">Thiếu bộ phận thật</span>
                         ) : (
-                          <span className="text-[11px] text-amber-800">
+                          <span className="text-[11px] text-v5-gold-ink">
                             Chưa kích hoạt — mẫu cũ vẫn dùng được
                           </span>
                         )}
@@ -557,7 +557,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                           <button
                             onClick={() => saveMapping(row)}
                             disabled={savingDept === row.department}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white bg-teal-700 hover:bg-teal-800 rounded disabled:opacity-50"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded disabled:opacity-50"
                           >
                             {savingDept === row.department ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -573,19 +573,19 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
             </table>
           </div>
         )}
-        <p className="px-4 py-2 border-t border-slate-100 text-[11px] text-slate-500">
+        <p className="px-4 py-2 border-t border-v5-line/60 text-[11px] text-v5-muted">
           Quy tắc: chỉ áp dụng cho đúng bộ phận đã kích hoạt; bộ phận khác không bị ảnh hưởng.
           Không tự tạo org_units từ file Excel. Nhóm chưa xác nhận để trống/không kích hoạt.
         </p>
       </div>
 
       {/* Bộ lọc */}
-      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-v5-surface p-3 rounded-xl border border-v5-line shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white text-slate-700"
+            className="px-3 py-2 text-xs border border-v5-line rounded-lg bg-v5-surface text-v5-ink"
           >
             <option value="ALL">Tất cả bộ phận ({departments.reduce((n, d) => n + d.count, 0)})</option>
             {departments.map((d) => (
@@ -597,7 +597,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white text-slate-700"
+            className="px-3 py-2 text-xs border border-v5-line rounded-lg bg-v5-surface text-v5-ink"
           >
             <option value="ACTIVE">Đang sử dụng</option>
             <option value="INACTIVE">Đã ngừng</option>
@@ -605,40 +605,40 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
           </select>
         </div>
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-v5-muted absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên hoặc mã đầu việc..."
-            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+            className="w-full pl-9 pr-3 py-2 text-xs border border-v5-line rounded-lg focus:outline-none focus:ring-2 focus:ring-v5-accent/20"
           />
         </div>
       </div>
 
       {/* Bảng đầu việc */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
+          <div className="p-10 text-center text-sm text-v5-muted flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Đang tải danh mục...
           </div>
         ) : !activeVersion ? (
           <div className="p-10 text-center space-y-2">
-            <FileSpreadsheet className="w-10 h-10 text-slate-300 mx-auto" />
-            <p className="text-sm font-semibold text-slate-700">Chưa có danh mục TX đang áp dụng</p>
-            <p className="text-xs text-slate-500">
+            <FileSpreadsheet className="w-10 h-10 text-v5-muted mx-auto" />
+            <p className="text-sm font-semibold text-v5-ink">Chưa có danh mục TX đang áp dụng</p>
+            <p className="text-xs text-v5-muted">
               {canManage
                 ? "Bấm “Nhập từ Excel” để đọc file danh mục, xem trước báo cáo rồi xác nhận nhập."
                 : "Vui lòng liên hệ quản trị danh mục để nhập file Danh mục TX."}
             </p>
           </div>
         ) : filteredEntries.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-500">
+          <div className="p-10 text-center text-sm text-v5-muted">
             Không có đầu việc phù hợp bộ lọc.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] tracking-wide">
+              <thead className="bg-v5-bg text-v5-muted uppercase text-[10px] tracking-wide">
                 <tr>
                   <th className="px-3 py-2.5 text-left font-semibold">Mã</th>
                   <th className="px-3 py-2.5 text-left font-semibold">Bộ phận</th>
@@ -649,19 +649,19 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                   {canManage && <th className="px-3 py-2.5 text-right font-semibold">Thao tác</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-v5-line/60">
                 {filteredEntries.map((e) => (
-                  <tr key={e.id} className="hover:bg-slate-50/70">
-                    <td className="px-3 py-2 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                  <tr key={e.id} className="hover:bg-v5-bg/70">
+                    <td className="px-3 py-2 font-mono text-[11px] text-v5-muted whitespace-nowrap">
                       {e.code}
                     </td>
-                    <td className="px-3 py-2 text-slate-700 min-w-[160px]">
+                    <td className="px-3 py-2 text-v5-ink min-w-[160px]">
                       <span className="block">{e.department}</span>
-                      <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-600">
+                      <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-mono text-v5-muted">
                         {e.groupCode}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-slate-900 font-medium min-w-[280px]">{e.title}</td>
+                    <td className="px-3 py-2 text-v5-ink font-medium min-w-[280px]">{e.title}</td>
                     <td className="px-3 py-2 text-center whitespace-nowrap">
                       {canManage ? (
                         <input
@@ -677,27 +677,27 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                           onKeyDown={(ev) => {
                             if (ev.key === "Enter") (ev.target as HTMLInputElement).blur();
                           }}
-                          className="w-24 px-2 py-1 text-center font-mono text-[11px] border border-slate-300 rounded bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                          className="w-24 px-2 py-1 text-center font-mono text-[11px] border border-v5-line rounded bg-v5-surface text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/20"
                           title="Bổ sung / chỉnh sửa hệ số quy đổi (để trống = chưa có hệ số)"
                         />
                       ) : e.convertFactor === null || e.convertFactor === undefined ? (
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-muted text-[10px] font-semibold">
                           Chưa có
                         </span>
                       ) : (
-                        <span className="font-mono text-[11px] font-semibold text-teal-800">
+                        <span className="font-mono text-[11px] font-semibold text-v5-accent">
                           {e.convertFactor}
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-center text-slate-500">{e.sourceRow || "—"}</td>
+                    <td className="px-3 py-2 text-center text-v5-muted">{e.sourceRow || "—"}</td>
                     <td className="px-3 py-2 text-center">
                       {e.status === "ACTIVE" ? (
-                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-v5-success-soft text-v5-success text-[10px] font-semibold">
                           Đang sử dụng
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-ink text-[10px] font-semibold">
                           Đã ngừng
                         </span>
                       )}
@@ -707,7 +707,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                         <button
                           onClick={() => toggleEntry(e)}
                           disabled={togglingId === e.id}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-600 border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-v5-muted border border-v5-line rounded hover:bg-v5-bg disabled:opacity-50"
                           title={e.status === "ACTIVE" ? "Ngừng sử dụng" : "Bật lại"}
                         >
                           {togglingId === e.id ? (
@@ -726,24 +726,24 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
           </div>
         )}
         {activeVersion && (
-          <div className="px-3 py-2 border-t border-slate-100 text-[11px] text-slate-500">
+          <div className="px-3 py-2 border-t border-v5-line/60 text-[11px] text-v5-muted">
             Hiển thị {filteredEntries.length}/{entries.length} đầu việc của phiên bản {activeVersion.code}.
           </div>
         )}
       </div>
 
       {/* Lịch sử phiên bản */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-          <History className="w-4 h-4 text-slate-500" />
-          <h3 className="text-sm font-bold text-slate-800">Lịch sử phiên bản danh mục</h3>
+      <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-v5-line/60 flex items-center gap-2">
+          <History className="w-4 h-4 text-v5-muted" />
+          <h3 className="text-sm font-bold text-v5-ink">Lịch sử phiên bản danh mục</h3>
         </div>
         {versions.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500">Chưa có phiên bản nào.</div>
+          <div className="p-6 text-center text-xs text-v5-muted">Chưa có phiên bản nào.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] tracking-wide">
+              <thead className="bg-v5-bg text-v5-muted uppercase text-[10px] tracking-wide">
                 <tr>
                   <th className="px-3 py-2.5 text-left font-semibold">Mã phiên bản</th>
                   <th className="px-3 py-2.5 text-left font-semibold">Thời điểm nhập</th>
@@ -753,35 +753,35 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                   <th className="px-3 py-2.5 text-left font-semibold">Ghi chú</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-v5-line/60">
                 {versions.map((v) => (
-                  <tr key={v.id} className="hover:bg-slate-50/70">
-                    <td className="px-3 py-2 font-mono text-[11px] text-slate-700">{v.code}</td>
-                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.importedAt)}</td>
-                    <td className="px-3 py-2 text-slate-700">
+                  <tr key={v.id} className="hover:bg-v5-bg/70">
+                    <td className="px-3 py-2 font-mono text-[11px] text-v5-ink">{v.code}</td>
+                    <td className="px-3 py-2 text-v5-muted whitespace-nowrap">{formatDate(v.importedAt)}</td>
+                    <td className="px-3 py-2 text-v5-ink">
                       {v.importedBy?.fullName || "—"}
                       {v.importedBy?.code ? (
-                        <span className="text-slate-400 font-mono text-[10px]"> ({v.importedBy.code})</span>
+                        <span className="text-v5-muted font-mono text-[10px]"> ({v.importedBy.code})</span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2 text-center text-slate-700">
+                    <td className="px-3 py-2 text-center text-v5-ink">
                       {v.activeEntries ?? v.entryCount}
                       {v.inactiveEntries ? (
-                        <span className="text-slate-400"> / ngừng {v.inactiveEntries}</span>
+                        <span className="text-v5-muted"> / ngừng {v.inactiveEntries}</span>
                       ) : null}
                     </td>
                     <td className="px-3 py-2 text-center">
                       {v.status === "ACTIVE" ? (
-                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-v5-success-soft text-v5-success text-[10px] font-semibold">
                           Đang áp dụng
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-ink text-[10px] font-semibold">
                           Đã thay thế
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-slate-500 max-w-[280px] truncate" title={v.note || ""}>
+                    <td className="px-3 py-2 text-v5-muted max-w-[280px] truncate" title={v.note || ""}>
                       {v.note || v.sourceFileName || "—"}
                     </td>
                   </tr>
@@ -794,26 +794,26 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
 
       {/* Modal nhập danh mục */}
       {isImportOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="flex items-center justify-between p-4 border-b border-v5-line/60 bg-v5-bg">
               <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-teal-700" />
-                <h3 className="text-sm font-bold text-slate-900">Nhập Danh mục công việc thường xuyên</h3>
+                <FileSpreadsheet className="w-4 h-4 text-v5-accent" />
+                <h3 className="text-sm font-bold text-v5-ink">Nhập Danh mục công việc thường xuyên</h3>
               </div>
               <button
                 onClick={() => {
                   setIsImportOpen(false);
                   resetImport();
                 }}
-                className="p-1 text-slate-500 hover:bg-slate-200 rounded"
+                className="p-1 text-v5-muted hover:bg-v5-bg rounded"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="p-4 space-y-4 overflow-y-auto">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900 space-y-1">
+              <div className="p-3 bg-v5-gold-soft border border-v5-gold/50 rounded-lg text-[11px] text-v5-gold-ink space-y-1">
                 <p className="font-semibold">Quy trình 2 bước (bắt buộc):</p>
                 <p>
                   1) Chọn file <span className="font-mono">.xlsx</span> → hệ thống đọc và báo cáo số đầu
@@ -824,7 +824,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-v5-ink mb-1">
                     Tệp danh mục (.xlsx)
                   </label>
                   <input
@@ -836,65 +836,65 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                       setCanImport(false);
                       setImportError(null);
                     }}
-                    className="block w-full text-xs text-slate-600 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-800 hover:file:bg-teal-100"
+                    className="block w-full text-xs text-v5-muted file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-v5-accent-soft file:text-v5-accent hover:file:bg-v5-accent-soft"
                   />
                   {file && (
-                    <p className="mt-1 text-[11px] text-slate-500">
+                    <p className="mt-1 text-[11px] text-v5-muted">
                       {file.name} • {(file.size / 1024).toFixed(0)} KB
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Ghi chú phiên bản</label>
+                  <label className="block text-xs font-semibold text-v5-ink mb-1">Ghi chú phiên bản</label>
                   <input
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Ví dụ: Danh mục TX đợt 1 — Hải quan xác nhận"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                    className="w-full px-3 py-2 text-xs border border-v5-line rounded-lg focus:outline-none focus:ring-2 focus:ring-v5-accent/20"
                   />
                 </div>
               </div>
 
               {importError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-start gap-2">
+                <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 rounded-lg text-xs text-v5-danger flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{importError}</span>
                 </div>
               )}
 
               {report && (
-                <div className="space-y-3 border border-slate-200 rounded-lg p-3">
+                <div className="space-y-3 border border-v5-line rounded-lg p-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="font-semibold text-slate-800">Báo cáo đọc tệp:</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                    <span className="font-semibold text-v5-ink">Báo cáo đọc tệp:</span>
+                    <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-ink">
                       Sheet: {report.sheetName}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-semibold">
+                    <span className="px-2 py-0.5 rounded bg-v5-accent-soft text-v5-accent font-semibold">
                       {report.totalEntries} đầu việc
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                    <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-ink">
                       {report.departments.length} bộ phận
                     </span>
                     {report.activeVersion && (
-                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                      <span className="px-2 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink">
                         So với: {report.activeVersion.code} ({report.activeVersion.entryCount})
                       </span>
                     )}
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[11px] border border-slate-200 rounded">
-                      <thead className="bg-slate-50 text-slate-600">
+                    <table className="w-full text-[11px] border border-v5-line rounded">
+                      <thead className="bg-v5-bg text-v5-muted">
                         <tr>
                           <th className="px-2 py-1.5 text-left font-semibold">Bộ phận</th>
                           <th className="px-2 py-1.5 text-right font-semibold">Số đầu việc</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-v5-line/60">
                         {report.departments.map((d) => (
                           <tr key={d.name}>
-                            <td className="px-2 py-1.5 text-slate-700">{d.name}</td>
-                            <td className="px-2 py-1.5 text-right text-slate-900 font-semibold">{d.count}</td>
+                            <td className="px-2 py-1.5 text-v5-ink">{d.name}</td>
+                            <td className="px-2 py-1.5 text-right text-v5-ink font-semibold">{d.count}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -902,26 +902,26 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
-                    <div className="p-2 rounded bg-emerald-50 border border-emerald-200">
-                      <span className="font-semibold text-emerald-800">Mới: {report.newEntries.length}</span>
+                    <div className="p-2 rounded bg-v5-success-soft border border-v5-success/30">
+                      <span className="font-semibold text-v5-success">Mới: {report.newEntries.length}</span>
                     </div>
-                    <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                      <span className="font-semibold text-slate-700">Không đổi: {report.unchangedCount}</span>
+                    <div className="p-2 rounded bg-v5-bg border border-v5-line">
+                      <span className="font-semibold text-v5-ink">Không đổi: {report.unchangedCount}</span>
                     </div>
-                    <div className="p-2 rounded bg-amber-50 border border-amber-200">
-                      <span className="font-semibold text-amber-800">
+                    <div className="p-2 rounded bg-v5-gold-soft border border-v5-gold/50">
+                      <span className="font-semibold text-v5-gold-ink">
                         Không còn trong tệp: {report.removedEntries.length}
                       </span>
                     </div>
                   </div>
 
                   {report.unchangedHash && (
-                    <p className="text-[11px] text-amber-800">
+                    <p className="text-[11px] text-v5-gold-ink">
                       Nội dung không thay đổi so với phiên bản đang áp dụng — không cần nhập lại.
                     </p>
                   )}
                   {report.errors.length > 0 && (
-                    <div className="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-800 max-h-28 overflow-y-auto">
+                    <div className="p-2 bg-v5-danger-soft border border-v5-danger/30 rounded text-[11px] text-v5-danger max-h-28 overflow-y-auto">
                       <p className="font-semibold">Lỗi ({report.errors.length}):</p>
                       <ul className="list-disc pl-4">
                         {report.errors.map((e, idx) => (
@@ -934,7 +934,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                     </div>
                   )}
                   {report.duplicates.length > 0 && (
-                    <div className="p-2 bg-rose-50 border border-rose-200 rounded text-[11px] text-rose-800 max-h-28 overflow-y-auto">
+                    <div className="p-2 bg-v5-danger-soft border border-v5-danger/30 rounded text-[11px] text-v5-danger max-h-28 overflow-y-auto">
                       <p className="font-semibold">Trùng trong cùng bộ phận ({report.duplicates.length}):</p>
                       <ul className="list-disc pl-4">
                         {report.duplicates.map((d, idx) => (
@@ -947,10 +947,10 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                   )}
                   {report.newEntries.length > 0 && (
                     <details className="text-[11px]">
-                      <summary className="cursor-pointer font-semibold text-emerald-800">
+                      <summary className="cursor-pointer font-semibold text-v5-success">
                         Xem {report.newEntries.length} đầu việc mới
                       </summary>
-                      <ul className="mt-1 max-h-32 overflow-y-auto list-disc pl-4 text-slate-700">
+                      <ul className="mt-1 max-h-32 overflow-y-auto list-disc pl-4 text-v5-ink">
                         {report.newEntries.map((e, idx) => (
                           <li key={idx}>
                             [{e.department}] {e.title}
@@ -961,11 +961,11 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                   )}
                   {report.removedEntries.length > 0 && (
                     <details className="text-[11px]">
-                      <summary className="cursor-pointer font-semibold text-amber-800">
+                      <summary className="cursor-pointer font-semibold text-v5-gold-ink">
                         Xem {report.removedEntries.length} đầu việc không còn trong tệp (sẽ ngừng áp dụng,
                         không xóa lịch sử)
                       </summary>
-                      <ul className="mt-1 max-h-32 overflow-y-auto list-disc pl-4 text-slate-700">
+                      <ul className="mt-1 max-h-32 overflow-y-auto list-disc pl-4 text-v5-ink">
                         {report.removedEntries.map((e, idx) => (
                           <li key={idx}>
                             [{e.department}] {e.title}
@@ -978,8 +978,8 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-slate-500">
+            <div className="p-4 border-t border-v5-line/60 bg-v5-bg flex items-center justify-between gap-2">
+              <p className="text-[11px] text-v5-muted">
                 {report
                   ? canImport
                     ? "Báo cáo hợp lệ — có thể xác nhận nhập."
@@ -993,14 +993,14 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                     resetImport();
                   }}
                   disabled={previewing || committing}
-                  className="px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg"
+                  className="px-3 py-2 text-xs font-medium text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={runPreview}
                   disabled={!file || previewing || committing}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-teal-800 bg-teal-100 hover:bg-teal-200 rounded-lg disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-v5-accent bg-v5-accent-soft hover:bg-v5-accent/20 rounded-lg disabled:opacity-50"
                 >
                   {previewing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                   Đọc & xem trước
@@ -1008,7 +1008,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                 <button
                   onClick={runCommit}
                   disabled={!report || !canImport || committing || previewing}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 rounded-lg shadow-sm disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shadow-sm disabled:opacity-40"
                 >
                   {committing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                   Xác nhận nhập

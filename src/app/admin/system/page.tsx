@@ -184,24 +184,24 @@ export default function SystemAdminPage() {
   if (loading && !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-3">
-        <RefreshCw className="w-8 h-8 text-blue-900 animate-spin" />
-        <p className="text-sm font-medium text-slate-600">Đang nạp dữ liệu quản trị...</p>
+        <RefreshCw className="w-8 h-8 text-v5-accent animate-spin" />
+        <p className="text-sm font-medium text-v5-muted">Đang nạp dữ liệu quản trị...</p>
       </div>
     );
   }
 
   if (error && !data) {
     return (
-      <div className="p-6 max-w-2xl mx-auto mt-12 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 space-y-3">
+      <div className="p-6 max-w-2xl mx-auto mt-12 bg-v5-danger-soft border border-v5-danger/30 rounded-xl text-v5-danger space-y-3">
         <div className="flex items-center gap-2 font-bold text-base">
-          <AlertCircle className="w-5 h-5 text-rose-600" />
+          <AlertCircle className="w-5 h-5 text-v5-danger" />
           <span>Từ chối quyền truy cập hoặc lỗi kết nối</span>
         </div>
         <p className="text-sm leading-relaxed">{error}</p>
         <div className="pt-2">
           <button
             onClick={fetchOverview}
-            className="px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-semibold hover:bg-rose-700"
+            className="px-4 py-2 bg-v5-danger text-white rounded-lg text-xs font-semibold hover:bg-v5-danger"
           >
             Thử tải lại
           </button>
@@ -217,14 +217,14 @@ export default function SystemAdminPage() {
         <div
           className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
             toastMessage.type === "success"
-              ? "bg-emerald-50 text-emerald-900 border-emerald-200"
-              : "bg-rose-50 text-rose-900 border-rose-200"
+              ? "bg-v5-success-soft text-v5-success border-v5-success/30"
+              : "bg-v5-danger-soft text-v5-danger border-v5-danger/30"
           }`}
         >
           {toastMessage.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-v5-success shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-v5-danger shrink-0" />
           )}
           <span>{toastMessage.text}</span>
         </div>
@@ -234,17 +234,17 @@ export default function SystemAdminPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 text-xs font-semibold rounded bg-slate-900 text-white">
+            <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent text-white">
               Quản trị kỹ thuật
             </span>
-            <span className="text-xs text-slate-500 font-mono">
+            <span className="text-xs text-v5-muted font-mono">
               Quản trị hệ thống • Dữ liệu trực tiếp
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">
+          <h1 className="text-2xl font-bold text-v5-ink mt-1">
             Trung tâm Quản trị Kỹ thuật & Cấu hình Vận hành
           </h1>
-          <p className="text-xs md:text-sm text-slate-600 mt-0.5">
+          <p className="text-xs md:text-sm text-v5-muted mt-0.5">
             Giám sát toàn diện dữ liệu cơ cấu tổ chức, ma trận phân quyền RBAC, kiểm toán an ninh và quản trị tham số cấu hình hệ thống thực tế.
           </p>
         </div>
@@ -253,14 +253,14 @@ export default function SystemAdminPage() {
           <button
             onClick={fetchOverview}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-ink bg-v5-surface border border-v5-line rounded-lg hover:bg-v5-bg shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Làm mới
           </button>
           <Link
             href="/admin/organization"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-accent bg-v5-accent-soft border border-v5-line rounded-lg hover:bg-v5-accent-soft shadow-sm"
           >
             <Building2 className="w-3.5 h-3.5" />
             Cơ cấu & Cán bộ
@@ -274,7 +274,7 @@ export default function SystemAdminPage() {
           </Link>
           <Link
             href="/admin/audit"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-amber-900 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-gold-ink bg-v5-gold-soft border border-v5-gold/50 rounded-lg hover:bg-v5-gold-soft shadow-sm"
           >
             <History className="w-3.5 h-3.5" />
             Nhật ký kiểm toán
@@ -285,57 +285,57 @@ export default function SystemAdminPage() {
       {/* 5 Real Metric Overview Cards */}
       {data && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500">
+          <div className="bg-v5-surface p-3.5 rounded-xl border border-v5-line shadow-sm">
+            <div className="flex items-center justify-between text-v5-muted">
               <span className="text-[11px] font-semibold uppercase">Cơ cấu tổ chức</span>
-              <Building2 className="w-4 h-4 text-blue-900" />
+              <Building2 className="w-4 h-4 text-v5-accent" />
             </div>
-            <div className="text-xl font-bold text-slate-900 mt-1">{data.organization.totalUnits} đơn vị</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-xl font-bold text-v5-ink mt-1">{data.organization.totalUnits} đơn vị</div>
+            <div className="text-[11px] text-v5-muted mt-0.5">
               {data.organization.activePersons} cán bộ đang công tác
             </div>
           </div>
 
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500">
+          <div className="bg-v5-surface p-3.5 rounded-xl border border-v5-line shadow-sm">
+            <div className="flex items-center justify-between text-v5-muted">
               <span className="text-[11px] font-semibold uppercase">Phân quyền RBAC</span>
-              <Shield className="w-4 h-4 text-emerald-700" />
+              <Shield className="w-4 h-4 text-v5-success" />
             </div>
-            <div className="text-xl font-bold text-slate-900 mt-1">{data.rbac.totalRoles} vai trò</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-xl font-bold text-v5-ink mt-1">{data.rbac.totalRoles} vai trò</div>
+            <div className="text-[11px] text-v5-muted mt-0.5">
               {data.rbac.totalPermissions} mã quyền hệ thống
             </div>
           </div>
 
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500">
+          <div className="bg-v5-surface p-3.5 rounded-xl border border-v5-line shadow-sm">
+            <div className="flex items-center justify-between text-v5-muted">
               <span className="text-[11px] font-semibold uppercase">Danh mục mẫu</span>
               <Layers className="w-4 h-4 text-purple-700" />
             </div>
-            <div className="text-xl font-bold text-slate-900 mt-1">{data.catalog.totalTemplates} hoạt động</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-xl font-bold text-v5-ink mt-1">{data.catalog.totalTemplates} hoạt động</div>
+            <div className="text-[11px] text-v5-muted mt-0.5">
               {data.catalog.activeTemplates} áp dụng • {data.catalog.retiredTemplates} ngừng
             </div>
           </div>
 
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500">
+          <div className="bg-v5-surface p-3.5 rounded-xl border border-v5-line shadow-sm">
+            <div className="flex items-center justify-between text-v5-muted">
               <span className="text-[11px] font-semibold uppercase">Biểu mẫu động</span>
               <FileCode2 className="w-4 h-4 text-indigo-700" />
             </div>
-            <div className="text-xl font-bold text-slate-900 mt-1">{data.forms.totalForms} biểu mẫu</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-xl font-bold text-v5-ink mt-1">{data.forms.totalForms} biểu mẫu</div>
+            <div className="text-[11px] text-v5-muted mt-0.5">
               Versioned Form Engine
             </div>
           </div>
 
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
-            <div className="flex items-center justify-between text-slate-500">
+          <div className="bg-v5-surface p-3.5 rounded-xl border border-v5-line shadow-sm col-span-2 sm:col-span-1">
+            <div className="flex items-center justify-between text-v5-muted">
               <span className="text-[11px] font-semibold uppercase">Kiểm toán an ninh</span>
-              <History className="w-4 h-4 text-amber-700" />
+              <History className="w-4 h-4 text-v5-gold-ink" />
             </div>
-            <div className="text-xl font-bold text-slate-900 mt-1">{data.audit.totalEvents} sự kiện</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-xl font-bold text-v5-ink mt-1">{data.audit.totalEvents} sự kiện</div>
+            <div className="text-[11px] text-v5-muted mt-0.5">
               Lịch sử thao tác hệ thống
             </div>
           </div>
@@ -343,13 +343,13 @@ export default function SystemAdminPage() {
       )}
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-v5-line pb-2">
         <button
           onClick={() => setActiveTab("configs")}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
             activeTab === "configs"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100"
+              ? "bg-v5-accent text-white"
+              : "text-v5-muted hover:bg-v5-bg"
           }`}
         >
           <Sliders className="w-3.5 h-3.5" />
@@ -360,8 +360,8 @@ export default function SystemAdminPage() {
           onClick={() => setActiveTab("org")}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
             activeTab === "org"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100"
+              ? "bg-v5-accent text-white"
+              : "text-v5-muted hover:bg-v5-bg"
           }`}
         >
           <Building2 className="w-3.5 h-3.5" />
@@ -372,8 +372,8 @@ export default function SystemAdminPage() {
           onClick={() => setActiveTab("rbac")}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
             activeTab === "rbac"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100"
+              ? "bg-v5-accent text-white"
+              : "text-v5-muted hover:bg-v5-bg"
           }`}
         >
           <Shield className="w-3.5 h-3.5" />
@@ -384,8 +384,8 @@ export default function SystemAdminPage() {
           onClick={() => setActiveTab("audit")}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
             activeTab === "audit"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100"
+              ? "bg-v5-accent text-white"
+              : "text-v5-muted hover:bg-v5-bg"
           }`}
         >
           <History className="w-3.5 h-3.5" />
@@ -396,8 +396,8 @@ export default function SystemAdminPage() {
           onClick={() => setActiveTab("backup")}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
             activeTab === "backup"
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100"
+              ? "bg-v5-accent text-white"
+              : "text-v5-muted hover:bg-v5-bg"
           }`}
         >
           <Database className="w-3.5 h-3.5" />
@@ -408,9 +408,9 @@ export default function SystemAdminPage() {
       {/* TAB 1: THAM SỐ CẤU HÌNH VẬN HÀNH */}
       {activeTab === "configs" && data && (
         <div className="space-y-4">
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-900 shrink-0 mt-0.5" />
-            <div className="text-xs text-blue-950 space-y-1">
+          <div className="p-4 bg-v5-accent-soft border border-v5-line rounded-xl flex items-start gap-3">
+            <Info className="w-5 h-5 text-v5-accent shrink-0 mt-0.5" />
+            <div className="text-xs text-v5-ink space-y-1">
               <p className="font-bold text-sm">Cơ chế quản trị tham số có căn cứ nghiệp vụ:</p>
               <p className="leading-relaxed">
                 Các tham số dưới đây được lưu trữ và kiểm tra quyền trước khi thay đổi. Các module cảnh báo và luồng nghiệp vụ đọc trực tiếp các tham số này.
@@ -418,11 +418,11 @@ export default function SystemAdminPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-semibold">
+                  <tr className="border-b border-v5-line bg-v5-bg text-v5-ink font-semibold">
                     <th className="py-3 px-4 w-48">Khóa cấu hình (Key)</th>
                     <th className="py-3 px-4">Tên nghiệp vụ & Mô tả</th>
                     <th className="py-3 px-3 w-28 text-center">Kiểu dữ liệu</th>
@@ -431,18 +431,18 @@ export default function SystemAdminPage() {
                     <th className="py-3 px-3 w-24 text-right">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-v5-line/60">
                   {data.configs.map((cfg) => (
-                    <tr key={cfg.key} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-blue-900">
+                    <tr key={cfg.key} className="hover:bg-v5-bg/80 transition-colors">
+                      <td className="py-3 px-4 font-mono font-bold text-v5-accent">
                         {cfg.key}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900">{cfg.description}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 font-mono">Phân nhóm: {cfg.category}</div>
+                        <div className="font-semibold text-v5-ink">{cfg.description}</div>
+                        <div className="text-[11px] text-v5-muted mt-0.5 font-mono">Phân nhóm: {cfg.category}</div>
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-mono font-semibold">
+                        <span className="px-2 py-0.5 bg-v5-bg text-v5-ink rounded text-[10px] font-mono font-semibold">
                           {cfg.dataType}
                         </span>
                       </td>
@@ -451,28 +451,28 @@ export default function SystemAdminPage() {
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                               cfg.value === "true"
-                                ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
-                                : "bg-slate-100 text-slate-700 border border-slate-200"
+                                ? "bg-v5-success-soft text-v5-success border border-v5-success/30"
+                                : "bg-v5-bg text-v5-ink border border-v5-line"
                             }`}
                           >
                             {cfg.value === "true" ? "BẬT (true)" : "TẮT (false)"}
                           </span>
                         ) : (
-                          <span className="font-mono font-semibold text-slate-900 bg-slate-100 px-2 py-1 rounded">
+                          <span className="font-mono font-semibold text-v5-ink bg-v5-bg px-2 py-1 rounded">
                             {cfg.value}
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-slate-600 text-[11px]">
+                      <td className="py-3 px-3 text-v5-muted text-[11px]">
                         <div>{cfg.updatedBy || "Mặc định hệ thống"}</div>
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[10px] text-v5-muted">
                           {new Date(cfg.updatedAt).toLocaleDateString("vi-VN")}
                         </div>
                       </td>
                       <td className="py-3 px-3 text-right">
                         <button
                           onClick={() => handleOpenEditConfig(cfg)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-blue-900 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-v5-accent hover:bg-v5-accent-soft rounded-lg transition-colors border border-v5-line"
                         >
                           <Edit3 className="w-3 h-3" />
                           Sửa
@@ -490,18 +490,18 @@ export default function SystemAdminPage() {
       {/* TAB 2: TỔNG QUAN CƠ CẤU TỔ CHỨC */}
       {activeTab === "org" && data && (
         <div className="space-y-4">
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="p-4 bg-v5-bg border border-v5-line rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="space-y-1">
-              <h3 className="font-bold text-sm text-slate-900">
+              <h3 className="font-bold text-sm text-v5-ink">
                 Toàn bộ dữ liệu cơ cấu tổ chức và nhân sự đã được chuyển giao sang phân hệ chuyên trách
               </h3>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-v5-muted">
                 Để thêm cán bộ, điều chuyển công tác, cấp tài khoản hoặc quản lý các phòng ban, vui lòng chuyển sang trang Cơ cấu tổ chức.
               </p>
             </div>
             <Link
               href="/admin/organization"
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shrink-0 shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shrink-0 shadow-sm"
             >
               Mở Quản trị Cơ cấu & Nhân sự
               <ArrowRight className="w-3.5 h-3.5" />
@@ -509,44 +509,44 @@ export default function SystemAdminPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-              <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-blue-900" />
+            <div className="p-4 bg-v5-surface rounded-xl border border-v5-line shadow-sm space-y-3">
+              <h4 className="font-bold text-sm text-v5-ink flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-v5-accent" />
                 Thông số Cơ cấu Đơn vị
               </h4>
-              <div className="divide-y divide-slate-100 text-xs">
+              <div className="divide-y divide-v5-line/60 text-xs">
                 <div className="py-2 flex justify-between">
-                  <span className="text-slate-600">Tổng số đơn vị / bộ phận:</span>
-                  <span className="font-bold text-slate-900">{data.organization.totalUnits} đơn vị</span>
+                  <span className="text-v5-muted">Tổng số đơn vị / bộ phận:</span>
+                  <span className="font-bold text-v5-ink">{data.organization.totalUnits} đơn vị</span>
                 </div>
                 <div className="py-2 flex justify-between">
-                  <span className="text-slate-600">Số chức danh công tác:</span>
-                  <span className="font-bold text-slate-900">{data.organization.totalPositions} chức danh</span>
+                  <span className="text-v5-muted">Số chức danh công tác:</span>
+                  <span className="font-bold text-v5-ink">{data.organization.totalPositions} chức danh</span>
                 </div>
                 <div className="py-2 flex justify-between">
-                  <span className="text-slate-600">Phạm vi chỉ huy cao nhất:</span>
-                  <span className="font-bold text-slate-900">Hải quan cửa khẩu Quốc tế Tà Lùng</span>
+                  <span className="text-v5-muted">Phạm vi chỉ huy cao nhất:</span>
+                  <span className="font-bold text-v5-ink">Hải quan cửa khẩu Quốc tế Tà Lùng</span>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-              <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-700" />
+            <div className="p-4 bg-v5-surface rounded-xl border border-v5-line shadow-sm space-y-3">
+              <h4 className="font-bold text-sm text-v5-ink flex items-center gap-2">
+                <Users className="w-4 h-4 text-v5-success" />
                 Hồ sơ Nhân sự & Tài khoản
               </h4>
-              <div className="divide-y divide-slate-100 text-xs">
+              <div className="divide-y divide-v5-line/60 text-xs">
                 <div className="py-2 flex justify-between">
-                  <span className="text-slate-600">Tổng số hồ sơ cán bộ:</span>
-                  <span className="font-bold text-slate-900">{data.organization.totalPersons} cán bộ</span>
+                  <span className="text-v5-muted">Tổng số hồ sơ cán bộ:</span>
+                  <span className="font-bold text-v5-ink">{data.organization.totalPersons} cán bộ</span>
                 </div>
                 <div className="py-2 flex justify-between">
-                  <span className="text-slate-600">Cán bộ đang hoạt động:</span>
-                  <span className="font-bold text-emerald-700">{data.organization.activePersons} cán bộ</span>
+                  <span className="text-v5-muted">Cán bộ đang hoạt động:</span>
+                  <span className="font-bold text-v5-success">{data.organization.activePersons} cán bộ</span>
                 </div>
                 <div className="py-2 flex justify-between">
-                  <span className="text-slate-600">Tài khoản hệ thống đã cấp:</span>
-                  <span className="font-bold text-slate-900">{data.organization.totalAccounts} ({data.organization.activeAccounts} hoạt động)</span>
+                  <span className="text-v5-muted">Tài khoản hệ thống đã cấp:</span>
+                  <span className="font-bold text-v5-ink">{data.organization.totalAccounts} ({data.organization.activeAccounts} hoạt động)</span>
                 </div>
               </div>
             </div>
@@ -557,9 +557,9 @@ export default function SystemAdminPage() {
       {/* TAB 3: MA TRẬN PHÂN QUYỀN RBAC */}
       {activeTab === "rbac" && data && (
         <div className="space-y-4">
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <Lock className="w-5 h-5 text-amber-800 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-950 space-y-1">
+          <div className="p-4 bg-v5-gold-soft border border-v5-gold/50 rounded-xl flex items-start gap-3">
+            <Lock className="w-5 h-5 text-v5-gold-ink shrink-0 mt-0.5" />
+            <div className="text-xs text-v5-gold-ink space-y-1">
               <p className="font-bold text-sm">Chế độ xem an toàn (Read-Only Security View):</p>
               <p className="leading-relaxed">
                 Ma trận phân quyền dưới đây phản ánh quyền hiện tại. Quản trị viên kỹ thuật <strong>không được tự cấp cho mình các quyền phê duyệt hoặc can thiệp nghiệp vụ nhạy cảm</strong>. Gán vai trò cho cán bộ được thực hiện tại trang Quản trị cán bộ theo đúng thẩm quyền.
@@ -569,32 +569,32 @@ export default function SystemAdminPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data.rbac.roles.map((role) => (
-              <div key={role.id} className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div key={role.id} className="p-4 bg-v5-surface rounded-xl border border-v5-line shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-v5-line/60 pb-2">
                   <div>
-                    <span className="font-bold text-sm text-slate-900">{role.name}</span>
-                    <span className="ml-2 font-mono text-xs px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-semibold">
+                    <span className="font-bold text-sm text-v5-ink">{role.name}</span>
+                    <span className="ml-2 font-mono text-xs px-2 py-0.5 bg-v5-bg text-v5-ink rounded font-semibold">
                       {role.code}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 font-medium">
+                  <span className="text-xs text-v5-muted font-medium">
                     {role.grantsCount} cán bộ được gán
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-v5-muted leading-relaxed">
                   {role.description || "Vai trò thẩm quyền trong hệ thống điều hành công việc Chi cục."}
                 </p>
 
                 <div>
-                  <div className="text-[11px] font-semibold text-slate-500 mb-1.5 uppercase">
+                  <div className="text-[11px] font-semibold text-v5-muted mb-1.5 uppercase">
                     Quyền hạn được cấp ({role.permissions.length} quyền):
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {role.permissions.map((perm) => (
                       <span
                         key={perm}
-                        className="px-2 py-0.5 bg-blue-50 text-blue-900 border border-blue-200 rounded text-[10px] font-mono font-medium"
+                        className="px-2 py-0.5 bg-v5-accent-soft text-v5-accent border border-v5-line rounded text-[10px] font-mono font-medium"
                       >
                         {perm}
                       </span>
@@ -611,23 +611,23 @@ export default function SystemAdminPage() {
       {activeTab === "audit" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-v5-muted">
               Hiển thị 10 sự kiện an ninh và thay đổi quản trị gần nhất được ghi vào cơ sở dữ liệu.
             </div>
             <Link
               href="/admin/audit"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900 hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-v5-accent hover:underline"
             >
               Mở trang Nhật ký kiểm toán đầy đủ
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-semibold">
+                  <tr className="border-b border-v5-line bg-v5-bg text-v5-ink font-semibold">
                     <th className="py-3 px-4 w-40">Thời điểm</th>
                     <th className="py-3 px-3 w-48">Hành động (Action)</th>
                     <th className="py-3 px-3 w-36">Đối tượng</th>
@@ -635,31 +635,31 @@ export default function SystemAdminPage() {
                     <th className="py-3 px-3 w-32 font-mono">Địa chỉ IP</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-v5-line/60">
                   {recentAudits.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400">
+                      <td colSpan={5} className="py-8 text-center text-v5-muted">
                         Chưa có sự kiện kiểm toán nào được ghi nhận
                       </td>
                     </tr>
                   ) : (
                     recentAudits.map((evt) => (
-                      <tr key={evt.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                      <tr key={evt.id} className="hover:bg-v5-bg/80 transition-colors">
+                        <td className="py-3 px-4 text-v5-muted font-mono text-[11px]">
                           {new Date(evt.timestamp).toLocaleString("vi-VN")}
                         </td>
                         <td className="py-3 px-3">
-                          <span className="font-mono font-semibold text-blue-900 bg-blue-50 px-2 py-0.5 rounded text-[11px]">
+                          <span className="font-mono font-semibold text-v5-accent bg-v5-accent-soft px-2 py-0.5 rounded text-[11px]">
                             {evt.action}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-slate-700 font-medium">
+                        <td className="py-3 px-3 text-v5-ink font-medium">
                           {evt.resourceType}
                         </td>
-                        <td className="py-3 px-4 text-slate-900 font-medium">
+                        <td className="py-3 px-4 text-v5-ink font-medium">
                           {evt.actorFullName} ({evt.actorUsername})
                         </td>
-                        <td className="py-3 px-3 font-mono text-slate-500 text-[11px]">
+                        <td className="py-3 px-3 font-mono text-v5-muted text-[11px]">
                           {evt.ipAddress || "127.0.0.1"}
                         </td>
                       </tr>
@@ -675,18 +675,18 @@ export default function SystemAdminPage() {
       {/* TAB 5: TRẠNG THÁI SAO LƯU & PHỤC HỒI */}
       {activeTab === "backup" && data && (
         <div className="space-y-4">
-          <div className="p-5 bg-slate-50 border border-slate-300 rounded-xl space-y-3">
+          <div className="p-5 bg-v5-bg border border-v5-line rounded-xl space-y-3">
             <div className="flex items-center gap-2">
-              <Server className="w-5 h-5 text-slate-700" />
-              <h3 className="font-bold text-base text-slate-900">
+              <Server className="w-5 h-5 text-v5-ink" />
+              <h3 className="font-bold text-base text-v5-ink">
                 {data.backupStatus.message}
               </h3>
             </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
+            <p className="text-xs text-v5-ink leading-relaxed">
               {data.backupStatus.note}
             </p>
 
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1">
+            <div className="p-3 bg-v5-gold-soft border border-v5-gold/50 rounded-lg text-xs text-v5-gold-ink space-y-1">
               <p className="font-bold">Nguyên tắc bảo vệ an ninh và toàn vẹn dữ liệu:</p>
               <ul className="list-disc list-inside space-y-0.5 text-[11px]">
                 <li>Hệ thống <strong>không hỗ trợ nạp đè dữ liệu trực tiếp trên giao diện WebApp</strong> nhằm ngăn chặn nguy cơ ghi đè dữ liệu nghiệp vụ và giả lập trạng thái backup.</li>
@@ -700,18 +700,18 @@ export default function SystemAdminPage() {
 
       {/* MODAL: Chỉnh sửa tham số cấu hình */}
       {editingConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-v5-line/60 pb-3">
               <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-blue-900" />
-                <h3 className="font-bold text-sm text-slate-900">
+                <Sliders className="w-4 h-4 text-v5-accent" />
+                <h3 className="font-bold text-sm text-v5-ink">
                   Cập nhật tham số cấu hình
                 </h3>
               </div>
               <button
                 onClick={() => setEditingConfig(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="p-1 text-v5-muted hover:text-v5-muted rounded-lg"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -719,42 +719,42 @@ export default function SystemAdminPage() {
 
             <form onSubmit={handleSaveConfig} className="space-y-3.5">
               {editError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-2 text-xs text-rose-800">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 rounded-lg flex items-start gap-2 text-xs text-v5-danger">
+                  <AlertCircle className="w-4 h-4 text-v5-danger shrink-0 mt-0.5" />
                   <span>{editError}</span>
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Mã tham số (Key)
                 </label>
                 <input
                   type="text"
                   disabled
                   value={editingConfig.key}
-                  className="w-full text-xs p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 font-mono cursor-not-allowed"
+                  className="w-full text-xs p-2 bg-v5-bg border border-v5-line rounded-lg text-v5-muted font-mono cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Nghiệp vụ áp dụng
                 </label>
-                <div className="text-xs text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                <div className="text-xs text-v5-ink bg-v5-bg p-2 rounded-lg border border-v5-line">
                   {editingConfig.description}
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Giá trị mới *
                 </label>
                 {editingConfig.dataType === "BOOLEAN" ? (
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   >
                     <option value="true">BẬT (true)</option>
                     <option value="false">TẮT (false)</option>
@@ -765,7 +765,7 @@ export default function SystemAdminPage() {
                     required
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono"
                   />
                 ) : (
                   <input
@@ -773,24 +773,24 @@ export default function SystemAdminPage() {
                     required
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   />
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setEditingConfig(null)}
                   disabled={savingConfig}
-                  className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs font-medium text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={savingConfig}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shadow-sm"
                 >
                   {savingConfig ? "Đang lưu..." : "Lưu vào cơ sở dữ liệu"}
                 </button>

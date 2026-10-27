@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Badge } from "@/components/v5/ui/badge";
+import { Button } from "@/components/v5/ui/button";
 import { isNoonDutyTitle, MAX_EXTRA_SLOTS_PER_POSITION, NOTES_REQUIRE_PERSON_MESSAGE, hasAssignedPerson } from "@/lib/duty-roster";
 
 /**
@@ -461,57 +464,43 @@ export default function RosterPage() {
   };
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-24" data-testid="roster-page">
-      {/* Tiêu đề + hành động chính */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-teal-50/80 via-white to-white p-3 lg:flex-row lg:items-center lg:justify-between lg:p-4">
-        <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm lg:h-10 lg:w-10">
-            <span className="material-symbols-outlined text-[20px] lg:text-[22px]">assignment</span>
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-base font-bold text-slate-800 lg:text-xl">Phân công nhiệm vụ &amp; lịch trực</h1>
-            <p className="hidden text-xs text-slate-500 sm:block">
-              Bám biểu mẫu “Sổ phân công nhiệm vụ công tác giám sát quản lý” — Hải quan cửa khẩu Quốc tế Tà Lùng
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-              <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-teal-50 px-2 py-0.5 font-semibold text-teal-800">
-                <span className="material-symbols-outlined text-[13px]">apartment</span>
-                {selUnit?.name || "Chưa chọn bộ phận"}
-              </span>
-              <span className="hidden items-center gap-1 sm:inline-flex">
-                <span className="material-symbols-outlined text-[13px]">event</span>
-                {view === "week" ? "Bảng tuần" : fmtDMY(selDay)}
-              </span>
-            </div>
+    <div className="flex w-full flex-col gap-3 pb-4" data-testid="roster-page">
+      <header className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Phân công nhiệm vụ &amp; lịch trực</h1>
+            <Badge variant="outline">{selUnit?.name || "Chưa chọn bộ phận"}</Badge>
           </div>
+          <p className="mt-1 text-sm text-v5-muted">
+            Sổ phân công nhiệm vụ giám sát quản lý · {view === "week" ? "Bảng tuần" : fmtDMY(selDay)}
+          </p>
         </div>
         {canApprove && (
-          <button
+          <Button
             data-testid="roster-btn-assign"
+            size="sm"
             onClick={() => openEditor(view === "day" ? selDay : todayISO)}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 lg:w-auto lg:py-2.5"
           >
-            <span className="material-symbols-outlined text-[18px]">add_task</span>
-            Phân công
-          </button>
+            <Plus className="h-3.5 w-3.5" /> Phân công
+          </Button>
         )}
-      </div>
+      </header>
 
       {/* Thanh điều khiển */}
-      <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-2.5" data-tour="roster-toolbar">
+      <div className="space-y-2 rounded-xl border border-v5-line bg-v5-surface p-2.5" data-tour="roster-toolbar">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex overflow-hidden rounded-lg border border-slate-200">
+          <div className="inline-flex overflow-hidden rounded-lg border border-v5-line">
             <button
               data-testid="roster-view-week"
               onClick={() => setView("week")}
-              className={`px-3 py-1.5 text-xs font-semibold ${view === "week" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+              className={`px-3 py-1.5 text-xs font-semibold ${view === "week" ? "bg-v5-accent text-white" : "bg-v5-surface text-v5-muted hover:bg-v5-bg"}`}
             >
               Theo tuần
             </button>
             <button
               data-testid="roster-view-day"
               onClick={() => setView("day")}
-              className={`border-l border-slate-200 px-3 py-1.5 text-xs font-semibold ${view === "day" ? "bg-teal-700 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+              className={`border-l border-v5-line px-3 py-1.5 text-xs font-semibold ${view === "day" ? "bg-v5-accent text-white" : "bg-v5-surface text-v5-muted hover:bg-v5-bg"}`}
             >
               Theo ngày
             </button>
@@ -521,13 +510,13 @@ export default function RosterPage() {
             <button
               data-testid="roster-prev"
               onClick={prevPeriod}
-              className="rounded-lg border border-slate-200 p-1.5 hover:bg-slate-50"
+              className="rounded-lg border border-v5-line p-1.5 hover:bg-v5-bg"
               aria-label="Kỳ trước"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
             {view === "week" ? (
-              <span className="min-w-[150px] px-2 text-center text-xs font-semibold text-slate-700">
+              <span className="min-w-[150px] px-2 text-center text-xs font-semibold text-v5-ink">
                 Tuần {fmtDM(weekStart)} – {fmtDM(addDays(weekStart, 6))}/{addDays(weekStart, 6).getFullYear()}
               </span>
             ) : (
@@ -536,13 +525,13 @@ export default function RosterPage() {
                 type="date"
                 value={selDay}
                 onChange={(e) => e.target.value && setSelDay(e.target.value)}
-                className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                className="rounded-lg border border-v5-line px-2 py-1 text-xs"
               />
             )}
             <button
               data-testid="roster-next"
               onClick={nextPeriod}
-              className="rounded-lg border border-slate-200 p-1.5 hover:bg-slate-50"
+              className="rounded-lg border border-v5-line p-1.5 hover:bg-v5-bg"
               aria-label="Kỳ sau"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
@@ -550,7 +539,7 @@ export default function RosterPage() {
             <button
               data-testid="roster-today"
               onClick={goToday}
-              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold hover:bg-slate-50"
+              className="rounded-lg border border-v5-line px-2.5 py-1.5 text-xs font-semibold hover:bg-v5-bg"
             >
               Hôm nay
             </button>
@@ -564,7 +553,7 @@ export default function RosterPage() {
                 data-testid="roster-unit-select"
                 value={selUnitId}
                 onChange={(e) => setSelUnitId(e.target.value)}
-                className="w-full max-w-full rounded-lg border border-teal-300 bg-teal-50/60 px-2 py-1.5 text-xs font-semibold text-teal-900 sm:max-w-[270px]"
+                className="w-full max-w-full rounded-lg border border-v5-line bg-v5-accent-soft/60 px-2 py-1.5 text-xs font-semibold text-v5-accent sm:max-w-[270px]"
                 title="Chọn bộ phận để xem/lập bảng phân công (mỗi bộ phận có bảng riêng)"
               >
                 {units.map((u) => {
@@ -582,7 +571,7 @@ export default function RosterPage() {
               selUnit && (
                 <span
                   data-testid="roster-unit-static"
-                  className="block max-w-full truncate rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-semibold text-slate-700 sm:max-w-[270px]"
+                  className="block max-w-full truncate rounded-lg border border-v5-line bg-v5-bg px-2 py-1.5 text-xs font-semibold text-v5-ink sm:max-w-[270px]"
                   title="Bộ phận đang xem"
                 >
                   {selUnit.name}
@@ -595,7 +584,7 @@ export default function RosterPage() {
         <button
           type="button"
           onClick={() => setShowTools((v) => !v)}
-          className="flex w-full items-center justify-between border-t border-slate-100 pt-2 text-[11px] font-semibold text-slate-600 lg:hidden"
+          className="flex w-full items-center justify-between border-t border-v5-line/60 pt-2 text-[11px] font-semibold text-v5-muted lg:hidden"
           aria-expanded={showTools}
         >
           <span className="inline-flex items-center gap-1">
@@ -605,14 +594,14 @@ export default function RosterPage() {
           <span className="material-symbols-outlined text-[16px]">{showTools ? "expand_less" : "expand_more"}</span>
         </button>
         <div
-          className={`${showTools ? "flex" : "hidden"} flex-wrap items-center gap-2 lg:flex lg:border-t lg:border-slate-100 lg:pt-2`}
+          className={`${showTools ? "flex" : "hidden"} flex-wrap items-center gap-2 lg:flex lg:border-t lg:border-v5-line/60 lg:pt-2`}
         >
-          <span className="hidden text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:inline">Lọc</span>
+          <span className="hidden text-[10px] font-bold uppercase tracking-wide text-v5-muted sm:inline">Lọc</span>
           <select
             data-testid="roster-filter-person"
             value={fPersonId}
             onChange={(e) => setFPersonId(e.target.value)}
-            className="max-w-[170px] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+            className="max-w-[170px] rounded-lg border border-v5-line px-2 py-1.5 text-xs"
             title="Lọc theo cán bộ"
           >
             <option value="">Tất cả cán bộ</option>
@@ -626,7 +615,7 @@ export default function RosterPage() {
             data-testid="roster-filter-position"
             value={fPositionId}
             onChange={(e) => setFPositionId(e.target.value)}
-            className="max-w-[210px] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+            className="max-w-[210px] rounded-lg border border-v5-line px-2 py-1.5 text-xs"
             title="Lọc theo vị trí/nhiệm vụ"
           >
             <option value="">Tất cả vị trí</option>
@@ -644,7 +633,7 @@ export default function RosterPage() {
               <button
                 data-testid="roster-btn-export"
                 onClick={() => setShowExport(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-v5-line px-3 py-1.5 text-xs font-semibold hover:bg-v5-bg"
               >
                 <span className="material-symbols-outlined text-[16px]">download</span>
                 Xuất Excel
@@ -654,7 +643,7 @@ export default function RosterPage() {
               <button
                 data-testid="roster-btn-catalog"
                 onClick={() => setShowCatalog(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-v5-line px-3 py-1.5 text-xs font-semibold hover:bg-v5-bg"
                 title="Danh mục vị trí/nhiệm vụ của bộ phận đang xem"
               >
                 <span className="material-symbols-outlined text-[16px]">list_alt</span>
@@ -667,21 +656,21 @@ export default function RosterPage() {
 
       {/* Cảnh báo — mặc định thu gọn, chỉ mở khi bấm */}
       {warnings.length > 0 && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 p-3" data-testid="roster-warnings">
+        <div className="rounded-xl border border-v5-gold/50 bg-v5-gold-soft p-3" data-testid="roster-warnings">
           <button
             type="button"
             data-testid="roster-warnings-toggle"
             onClick={() => setShowWarnings((v) => !v)}
             aria-expanded={showWarnings}
             aria-controls="roster-warnings-list"
-            className="flex min-h-6 w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs font-bold uppercase tracking-wide text-amber-800 transition-colors hover:text-amber-900"
+            className="flex min-h-6 w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs font-bold uppercase tracking-wide text-v5-gold-ink transition-colors hover:text-v5-gold-ink"
           >
             <span className="inline-flex items-center gap-2">
               <span aria-hidden="true" className="material-symbols-outlined text-[16px]">warning</span>
               Cảnh báo phân công ({warnings.length})
             </span>
             <span className="inline-flex items-center gap-1 normal-case tracking-normal">
-              <span className="text-[11px] font-semibold text-amber-700">
+              <span className="text-[11px] font-semibold text-v5-gold-ink">
                 {showWarnings ? "Ẩn chi tiết" : "Xem chi tiết"}
               </span>
               <span aria-hidden="true" className="material-symbols-outlined text-[18px]">
@@ -691,20 +680,20 @@ export default function RosterPage() {
           </button>
           <ul id="roster-warnings-list" hidden={!showWarnings} className="mt-1.5 space-y-1">
             {warnings.slice(0, 8).map((w, i) => (
-              <li key={i} className="text-xs text-amber-800">
+              <li key={i} className="text-xs text-v5-gold-ink">
                 • {w}
               </li>
             ))}
             {warnings.length > 8 && (
-              <li className="text-xs text-amber-700 italic">… và {warnings.length - 8} cảnh báo khác</li>
+              <li className="text-xs text-v5-gold-ink italic">… và {warnings.length - 8} cảnh báo khác</li>
             )}
           </ul>
         </div>
       )}
 
       {/* Quy ước nhóm trực: trực trưa không tính trùng với trực thường */}
-      <div className="flex items-start gap-1.5 text-[11px] leading-snug text-slate-500" data-testid="roster-noon-note">
-        <span className="material-symbols-outlined text-[14px] text-slate-400">info</span>
+      <div className="flex items-start gap-1.5 text-[11px] leading-snug text-v5-muted" data-testid="roster-noon-note">
+        <span className="material-symbols-outlined text-[14px] text-v5-muted">info</span>
         <span>
           Trực trưa là nhóm riêng: một cán bộ có thể vừa trực thường vừa trực trưa trong ngày. Hệ thống chỉ cảnh báo khi
           trùng phân công trong <strong>cùng nhóm trực</strong>.
@@ -713,17 +702,17 @@ export default function RosterPage() {
 
       {/* Bộ phận đang xem + trạng thái thiết lập của các bộ phận trong phạm vi (Lãnh đạo chuyển nhanh) */}
       <div className="flex flex-wrap items-center gap-1.5" data-testid="roster-unit-strip">
-        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Đang xem</span>
+        <span className="text-[10px] font-bold uppercase tracking-wide text-v5-muted">Đang xem</span>
         <span
           data-testid="roster-unit-label"
-          className="max-w-[280px] truncate rounded-full bg-teal-700 px-2.5 py-0.5 text-[11px] font-semibold text-white"
+          className="max-w-[280px] truncate rounded-full bg-v5-accent px-2.5 py-0.5 text-[11px] font-semibold text-white"
         >
           {selUnit?.name || "—"}
         </span>
         {units.length > 1 && (
           <div className="hidden flex-wrap items-center gap-1 lg:flex" data-testid="roster-unit-status">
             {unitsWithBoard.length === 0 ? (
-              <span className="text-[11px] italic text-slate-400">Chưa bộ phận nào thiết lập danh mục trong kỳ này.</span>
+              <span className="text-[11px] italic text-v5-muted">Chưa bộ phận nào thiết lập danh mục trong kỳ này.</span>
             ) : (
               unitsWithBoard.map((u) => {
                 const st = boardFor(u.id);
@@ -739,19 +728,19 @@ export default function RosterPage() {
                     onClick={() => setSelUnitId(u.id)}
                     className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
                       active
-                        ? "border-teal-300 bg-teal-50 font-semibold text-teal-800"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        ? "border-v5-line bg-v5-accent-soft font-semibold text-v5-accent"
+                        : "border-v5-line bg-v5-surface text-v5-muted hover:bg-v5-bg"
                     }`}
                     title={`${u.name} — ${stateText}`}
                   >
-                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${has ? "bg-emerald-500" : catalog > 0 ? "bg-sky-400" : "bg-slate-300"}`} />
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${has ? "bg-v5-success" : catalog > 0 ? "bg-v5-accent" : "bg-v5-line"}`} />
                     {/* Bộ phận đang xem đã có nhãn riêng phía trên — chỉ hiện trạng thái để không lặp tên. */}
                     {active ? (
                       <span className="text-[10px]">{catalog > 0 ? `đã có ${catalog} vị trí` : "chưa thiết lập"}</span>
                     ) : (
                       <>
                         {u.name}
-                        <span className="text-[10px] text-slate-400">{stateText}</span>
+                        <span className="text-[10px] text-v5-muted">{stateText}</span>
                       </>
                     )}
                   </button>
@@ -759,7 +748,7 @@ export default function RosterPage() {
               })
             )}
             {unitsWithBoard.length < units.length && (
-              <span className="text-[11px] text-slate-400">· {units.length - unitsWithBoard.length} bộ phận chưa thiết lập</span>
+              <span className="text-[11px] text-v5-muted">· {units.length - unitsWithBoard.length} bộ phận chưa thiết lập</span>
             )}
           </div>
         )}
@@ -767,40 +756,40 @@ export default function RosterPage() {
 
       {/* Dữ liệu lịch trực cũ CHƯA xác định được bộ phận — chỉ Lãnh đạo đơn vị thấy, để đối chiếu; không tự gán bộ phận */}
       {legacyUnassigned.length > 0 && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3" data-testid="roster-legacy-unassigned">
-          <div className="flex items-center gap-2 text-amber-800 text-xs font-bold uppercase tracking-wide">
+        <div className="rounded-xl border border-v5-gold/50 bg-v5-gold-soft/70 p-3" data-testid="roster-legacy-unassigned">
+          <div className="flex items-center gap-2 text-v5-gold-ink text-xs font-bold uppercase tracking-wide">
             <span className="material-symbols-outlined text-[16px]">help</span>
             Dữ liệu lịch trực cũ chưa xác định bộ phận cần đối chiếu ({legacyUnassigned.length})
           </div>
           <ul className="mt-1.5 space-y-0.5">
             {legacyUnassigned.slice(0, 10).map((r) => (
-              <li key={r.id} className="text-xs text-amber-800">
+              <li key={r.id} className="text-xs text-v5-gold-ink">
                 • {fmtDMY(r.date)} — {r.person.fullName} — {r.post?.trim() || SHIFT_LABELS[r.shift] || r.shift}
               </li>
             ))}
             {legacyUnassigned.length > 10 && (
-              <li className="text-xs italic text-amber-700">… và {legacyUnassigned.length - 10} bản ghi khác</li>
+              <li className="text-xs italic text-v5-gold-ink">… và {legacyUnassigned.length - 10} bản ghi khác</li>
             )}
           </ul>
-          <div className="mt-1 text-[11px] text-amber-700">
+          <div className="mt-1 text-[11px] text-v5-gold-ink">
             Hệ thống không tự suy đoán bộ phận cho các bản ghi này — đề nghị rà soát dữ liệu gốc trước khi gán.
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+        <div className="rounded-xl border border-v5-line bg-v5-surface p-8 text-center text-sm text-v5-muted">
           Đang tải phân công…
         </div>
       ) : view === "week" ? (
         <>
           {/* Desktop: ma trận Vị trí × Ngày */}
-          <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white lg:block" data-testid="roster-matrix" data-tour="roster-week">
+          <div className="hidden overflow-hidden rounded-xl border border-v5-line bg-v5-surface lg:block" data-testid="roster-matrix" data-tour="roster-week">
             {positions.length === 0 ? (
               <div className="px-6 py-10 text-center" data-testid="roster-empty-catalog">
-                <span className="material-symbols-outlined text-[40px] text-slate-300">assignment_late</span>
-                <div className="mt-2 text-base font-semibold text-slate-700">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
-                <p className="mx-auto mt-1 max-w-xl text-sm text-slate-500">
+                <span className="material-symbols-outlined text-[40px] text-v5-muted">assignment_late</span>
+                <div className="mt-2 text-base font-semibold text-v5-ink">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
+                <p className="mx-auto mt-1 max-w-xl text-sm text-v5-muted">
                   Mỗi bộ phận có bảng phân công riêng. Trưởng bộ phận hoặc Lãnh đạo đơn vị vào “Danh mục vị trí” để thiết lập
                   (có thể khôi phục 8 vị trí mẫu của biểu mẫu).
                 </p>
@@ -808,7 +797,7 @@ export default function RosterPage() {
                   {canApprove && (
                     <button
                       onClick={() => setShowCatalog(true)}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-teal-800"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-v5-accent px-3.5 py-2 text-xs font-semibold text-white hover:bg-v5-accent"
                     >
                       <span className="material-symbols-outlined text-[16px]">list_alt</span>
                       Thiết lập danh mục
@@ -818,7 +807,7 @@ export default function RosterPage() {
                     <select
                       value=""
                       onChange={(e) => e.target.value && setSelUnitId(e.target.value)}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                      className="rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-xs font-semibold text-v5-ink"
                       title="Chuyển sang bộ phận đã có danh mục"
                     >
                       <option value="" disabled>
@@ -840,7 +829,7 @@ export default function RosterPage() {
                 <table className="w-full border-collapse text-[13px]">
                   <thead>
                     <tr>
-                      <th className="sticky left-0 z-10 min-w-[210px] border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-left font-bold text-slate-700">
+                      <th className="sticky left-0 z-10 min-w-[210px] border-b border-v5-line bg-v5-bg px-3 py-2.5 text-left font-bold text-v5-ink">
                         Nhiệm vụ được phân công
                       </th>
                       {days.map((d, i) => {
@@ -851,21 +840,21 @@ export default function RosterPage() {
                         return (
                           <th
                             key={iso}
-                            className={`min-w-[124px] border-b border-l border-slate-200 px-2 py-2 text-center ${
-                              isToday ? "bg-teal-50" : isWeekend ? "bg-slate-100/80" : "bg-slate-50"
+                            className={`min-w-[124px] border-b border-l border-v5-line px-2 py-2 text-center ${
+                              isToday ? "bg-v5-accent-soft" : isWeekend ? "bg-v5-bg/80" : "bg-v5-bg"
                             }`}
                           >
-                            <div className={`font-bold ${isToday ? "text-teal-800" : "text-slate-700"}`}>{WEEKDAYS[i]}</div>
-                            <div className="text-[11px] text-slate-500">
+                            <div className={`font-bold ${isToday ? "text-v5-accent" : "text-v5-ink"}`}>{WEEKDAYS[i]}</div>
+                            <div className="text-[11px] text-v5-muted">
                               {fmtDM(d)}
                               {isToday && (
-                                <span className="ml-1 rounded bg-teal-600 px-1 py-0.5 text-[9px] font-semibold uppercase text-white">
+                                <span className="ml-1 rounded bg-v5-accent px-1 py-0.5 text-[9px] font-semibold uppercase text-white">
                                   hôm nay
                                 </span>
                               )}
                             </div>
                             {info && (info.presentStaff !== null || info.absentCount !== null) && (
-                              <div className="mt-0.5 text-[10px] text-teal-700">
+                              <div className="mt-0.5 text-[10px] text-v5-accent">
                                 Có mặt {info.presentStaff ?? "…"} / Vắng {info.absentCount ?? "…"}
                               </div>
                             )}
@@ -877,12 +866,12 @@ export default function RosterPage() {
                   <tbody>
                     {groups.map((g) => (
                       <tr key={`${g.kind}-${g.code}`} className="align-top">
-                        <td className="sticky left-0 z-10 border-b border-slate-100 bg-white px-3 py-2.5">
-                          <div className="font-semibold leading-snug text-slate-800">
+                        <td className="sticky left-0 z-10 border-b border-v5-line/60 bg-v5-surface px-3 py-2.5">
+                          <div className="font-semibold leading-snug text-v5-ink">
                             {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
                           </div>
-                          {g.detail && <div className="mt-0.5 text-[11px] leading-snug text-slate-500">{g.detail}</div>}
-                          {g.kind === "orphan" && <div className="text-[10px] italic text-amber-600">Ngoài danh mục hiện hành</div>}
+                          {g.detail && <div className="mt-0.5 text-[11px] leading-snug text-v5-muted">{g.detail}</div>}
+                          {g.kind === "orphan" && <div className="text-[10px] italic text-v5-gold-ink">Ngoài danh mục hiện hành</div>}
                         </td>
                         {days.map((d) => {
                           const iso = toISODate(d);
@@ -895,26 +884,26 @@ export default function RosterPage() {
                               data-testid={`roster-cell-${iso}-${g.code}`}
                               onClick={canApprove ? () => openEditor(iso, g.code) : undefined}
                               title={canApprove ? `Bấm để phân công ngày ${fmtDMY(iso)}` : undefined}
-                              className={`border-b border-l border-slate-100 px-2 py-2 align-top ${
-                                isToday ? "bg-teal-50/40" : ""
-                              } ${canApprove ? "cursor-pointer hover:bg-teal-100/40" : ""}`}
+                              className={`border-b border-l border-v5-line/60 px-2 py-2 align-top ${
+                                isToday ? "bg-v5-accent-soft/40" : ""
+                              } ${canApprove ? "cursor-pointer hover:bg-v5-accent-soft/40" : ""}`}
                             >
                               {(() => {
                                 const filled = lines.filter((l) => l.row);
                                 if (filled.length === 0) {
-                                  return <span className="block text-center text-slate-200">—</span>;
+                                  return <span className="block text-center text-v5-muted">—</span>;
                                 }
                                 return (
                                   <div className="space-y-1">
                                     {lines.map((ln) => (
                                       <div key={ln.key} className="flex flex-wrap items-start gap-1">
-                                        <span className={ln.row ? "font-medium leading-snug text-slate-800" : "text-slate-300"}>
+                                        <span className={ln.row ? "font-medium leading-snug text-v5-ink" : "text-v5-muted"}>
                                           {ln.label && (ln.label.length <= 3 || g.kind === "legacy") ? `${ln.label}: ` : ""}
                                           {ln.row ? ln.row.person.fullName : "—"}
                                         </span>
                                         {ln.row?.leaveClash && (
                                           <span
-                                            className="material-symbols-outlined text-[13px] text-amber-500"
+                                            className="material-symbols-outlined text-[13px] text-v5-gold-ink"
                                             title={`Trùng đơn nghỉ đã duyệt (${ln.row.leaveClash.type})`}
                                           >
                                             warning
@@ -922,7 +911,7 @@ export default function RosterPage() {
                                         )}
                                         {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
                                           <span
-                                            className="text-[10px] font-semibold leading-tight text-amber-700"
+                                            className="text-[10px] font-semibold leading-tight text-v5-gold-ink"
                                             title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)"
                                           >
                                             Trùng phân công
@@ -930,7 +919,7 @@ export default function RosterPage() {
                                         )}
                                         {ln.row?.notes && (
                                           <span
-                                            className="block w-full truncate text-[10px] italic text-slate-500"
+                                            className="block w-full truncate text-[10px] italic text-v5-muted"
                                             title={`Ghi chú: ${ln.row.notes}`}
                                           >
                                             Ghi chú: {ln.row.notes}
@@ -956,18 +945,18 @@ export default function RosterPage() {
           <div className="space-y-3 lg:hidden" data-testid="roster-mobile" data-tour="roster-week">
             {positions.length === 0 ? (
               <div
-                className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center"
+                className="rounded-xl border border-dashed border-v5-line bg-v5-surface p-5 text-center"
                 data-testid="roster-mobile-empty-catalog"
               >
-                <span className="material-symbols-outlined text-[32px] text-slate-300">assignment_late</span>
-                <div className="mt-1 text-sm font-semibold text-slate-700">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
-                <p className="mx-auto mt-1 max-w-xs text-xs text-slate-500">
+                <span className="material-symbols-outlined text-[32px] text-v5-muted">assignment_late</span>
+                <div className="mt-1 text-sm font-semibold text-v5-ink">Bộ phận này chưa có danh mục vị trí/nhiệm vụ</div>
+                <p className="mx-auto mt-1 max-w-xs text-xs text-v5-muted">
                   Mỗi bộ phận có bảng phân công riêng. Chọn bộ phận khác ở trên hoặc thiết lập danh mục cho bộ phận này.
                 </p>
                 {canApprove && (
                   <button
                     onClick={() => setShowCatalog(true)}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-teal-800"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-v5-accent px-3.5 py-2 text-xs font-semibold text-white hover:bg-v5-accent"
                   >
                     <span className="material-symbols-outlined text-[16px]">list_alt</span>
                     Thiết lập danh mục
@@ -988,10 +977,10 @@ export default function RosterPage() {
               return (
                 <div
                   key={iso}
-                  className={`overflow-hidden rounded-xl border bg-white ${isToday ? "border-teal-300 ring-1 ring-teal-100" : "border-slate-200"}`}
+                  className={`overflow-hidden rounded-xl border bg-v5-surface ${isToday ? "border-v5-line ring-1 ring-v5-accent/20" : "border-v5-line"}`}
                   data-testid={`roster-day-card-${iso}`}
                 >
-                  <div className={`flex items-center justify-between gap-2 border-b px-3 py-2 ${isToday ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-slate-50"}`}>
+                  <div className={`flex items-center justify-between gap-2 border-b px-3 py-2 ${isToday ? "border-v5-line bg-v5-accent-soft" : "border-v5-line bg-v5-bg"}`}>
                     <button
                       className="min-w-0 text-left"
                       onClick={() => {
@@ -1000,11 +989,11 @@ export default function RosterPage() {
                       }}
                     >
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`text-sm font-bold ${isToday ? "text-teal-800" : "text-slate-700"}`}>{WEEKDAYS[i]}</span>
-                        <span className="text-xs text-slate-500">{fmtDM(d)}</span>
-                        {isToday && <span className="rounded-full bg-teal-700 px-1.5 py-0.5 text-[10px] font-semibold text-white">Hôm nay</span>}
+                        <span className={`text-sm font-bold ${isToday ? "text-v5-accent" : "text-v5-ink"}`}>{WEEKDAYS[i]}</span>
+                        <span className="text-xs text-v5-muted">{fmtDM(d)}</span>
+                        {isToday && <span className="rounded-full bg-v5-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">Hôm nay</span>}
                       </div>
-                      <div className="mt-0.5 text-[11px] text-slate-500">
+                      <div className="mt-0.5 text-[11px] text-v5-muted">
                         {positions.length === 0
                           ? "Chưa có danh mục vị trí"
                           : assignmentCount > 0
@@ -1016,7 +1005,7 @@ export default function RosterPage() {
                       <button
                         data-testid={`roster-day-assign-${iso}`}
                         onClick={() => openEditor(iso)}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-teal-200 bg-white px-2 py-1 text-[11px] font-semibold text-teal-700"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-v5-line bg-v5-surface px-2 py-1 text-[11px] font-semibold text-v5-accent"
                       >
                         <span className="material-symbols-outlined text-[14px]">add</span>
                         Phân công
@@ -1027,27 +1016,27 @@ export default function RosterPage() {
                     <div className="space-y-2 px-3 py-2">
                       {filledGroups.map(({ g, filled }) => (
                         <div key={g.code}>
-                          <div className="text-[11px] font-semibold text-slate-600">
+                          <div className="text-[11px] font-semibold text-v5-muted">
                             {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
                           </div>
                           <div className="mt-0.5 space-y-0.5">
                             {filled.map((ln) => (
-                              <div key={ln.key} className="flex flex-wrap items-center gap-1 text-xs text-slate-700">
+                              <div key={ln.key} className="flex flex-wrap items-center gap-1 text-xs text-v5-ink">
                                 <span className="truncate">
                                   {(ln.label && ln.label.length <= 3 ? `${ln.label}: ` : "") + (ln.row?.person.fullName || "")}
                                 </span>
                                 {ln.row?.leaveClash && (
-                                  <span className="material-symbols-outlined text-[13px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
+                                  <span className="material-symbols-outlined text-[13px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt">
                                     warning
                                   </span>
                                 )}
                                 {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
-                                  <span className="text-[10px] font-semibold text-amber-700" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
+                                  <span className="text-[10px] font-semibold text-v5-gold-ink" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
                                     Trùng phân công
                                   </span>
                                 )}
                                 {ln.row?.notes && (
-                                  <span className="w-full break-words text-[10px] italic leading-snug text-slate-500">
+                                  <span className="w-full break-words text-[10px] italic leading-snug text-v5-muted">
                                     Ghi chú: {ln.row.notes}
                                   </span>
                                 )}
@@ -1208,7 +1197,7 @@ function DayFormView({
           <button
             data-testid="roster-btn-edit-day"
             onClick={onEdit}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent"
           >
             <span className="material-symbols-outlined text-[16px]">edit</span>
             Phân công ngày này
@@ -1218,42 +1207,42 @@ function DayFormView({
           <button
             data-testid="roster-btn-export-day"
             onClick={() => onQuickExport()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-v5-line hover:bg-v5-bg"
           >
             <span className="material-symbols-outlined text-[16px]">download</span>
             Xuất Excel ngày này
           </button>
         )}
         {warnings.length > 0 && (
-          <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+          <span className="inline-flex items-center gap-1 text-xs text-v5-gold-ink">
             <span className="material-symbols-outlined text-[15px]">warning</span>
             {warnings.length} cảnh báo trong ngày
           </span>
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 overflow-x-auto" data-testid="roster-day-form">
+      <div className="rounded-xl border border-v5-line bg-v5-surface p-4 overflow-x-auto" data-testid="roster-day-form">
         <div className="text-center min-w-[520px]">
-          <div className="text-sm font-bold text-slate-800 uppercase">Hải quan cửa khẩu Quốc tế Tà Lùng</div>
-          <div className="text-sm font-bold text-slate-800 uppercase mt-0.5" data-testid="roster-day-form-title">
+          <div className="text-sm font-bold text-v5-ink uppercase">Hải quan cửa khẩu Quốc tế Tà Lùng</div>
+          <div className="text-sm font-bold text-v5-ink uppercase mt-0.5" data-testid="roster-day-form-title">
             Phân công nhiệm vụ {unitName || "bộ phận"}
           </div>
-          <div className="text-xs italic text-slate-600 mt-0.5 underline underline-offset-4">
+          <div className="text-xs italic text-v5-muted mt-0.5 underline underline-offset-4">
             Ngày {String(new Date(dateISO).getDate()).padStart(2, "0")} tháng {new Date(dateISO).getMonth() + 1} năm{" "}
             {new Date(dateISO).getFullYear()}
           </div>
         </div>
         {groups.length === 0 && (
-          <div className="mt-2 text-xs text-slate-500 border border-dashed border-slate-300 rounded-lg p-2" data-testid="dayform-empty-catalog">
+          <div className="mt-2 text-xs text-v5-muted border border-dashed border-v5-line rounded-lg p-2" data-testid="dayform-empty-catalog">
             Bộ phận đang chọn chưa có danh mục vị trí/nhiệm vụ — vào “Danh mục vị trí” để thiết lập.
           </div>
         )}
         <table className="w-full mt-3 text-xs border-collapse min-w-[520px]">
           <thead>
             <tr>
-              <th className="border border-slate-400 px-1 py-1 w-8 font-bold">TT</th>
-              <th className="border border-slate-400 px-2 py-1 font-bold text-left">Nhiệm vụ được phân công</th>
-              <th className="border border-slate-400 px-2 py-1 font-bold text-left w-[38%]">Người thực hiện</th>
+              <th className="border border-v5-line px-1 py-1 w-8 font-bold">TT</th>
+              <th className="border border-v5-line px-2 py-1 font-bold text-left">Nhiệm vụ được phân công</th>
+              <th className="border border-v5-line px-2 py-1 font-bold text-left w-[38%]">Người thực hiện</th>
             </tr>
           </thead>
           <tbody>
@@ -1262,12 +1251,12 @@ function DayFormView({
               if (g.kind !== "legacy" && lines.length === 0) {
                 return (
                   <tr key={g.code}>
-                    <td className="border border-slate-400 px-1 py-1 text-center align-top">{gi + 1}</td>
-                    <td className="border border-slate-400 px-2 py-1 align-top">
+                    <td className="border border-v5-line px-1 py-1 text-center align-top">{gi + 1}</td>
+                    <td className="border border-v5-line px-2 py-1 align-top">
                       <div className="font-semibold">{g.title}</div>
-                      {g.detail && <div className="text-[11px] text-slate-600">{g.detail}</div>}
+                      {g.detail && <div className="text-[11px] text-v5-muted">{g.detail}</div>}
                     </td>
-                    <td className="border border-slate-400 px-2 py-1 align-top text-slate-400">—</td>
+                    <td className="border border-v5-line px-2 py-1 align-top text-v5-muted">—</td>
                   </tr>
                 );
               }
@@ -1278,20 +1267,20 @@ function DayFormView({
               }
               return (
                 <tr key={g.code}>
-                  <td className="border border-slate-400 px-1 py-1 text-center align-top font-bold">{gi + 1}</td>
-                  <td className="border border-slate-400 px-2 py-1 align-top">
+                  <td className="border border-v5-line px-1 py-1 text-center align-top font-bold">{gi + 1}</td>
+                  <td className="border border-v5-line px-2 py-1 align-top">
                     {taskLines.map((t, i) => (
-                      <div key={i} className={i === 0 ? "font-semibold" : "text-[11px] text-slate-600"}>
+                      <div key={i} className={i === 0 ? "font-semibold" : "text-[11px] text-v5-muted"}>
                         {t}
                       </div>
                     ))}
                   </td>
-                  <td className="border border-slate-400 px-2 py-1 align-top">
+                  <td className="border border-v5-line px-2 py-1 align-top">
                     {lines.length === 0 ? (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-v5-muted">—</span>
                     ) : (
                       lines.map((ln) => (
-                        <div key={ln.key} className={`flex flex-wrap items-center gap-1 ${ln.row ? "text-slate-800" : "text-slate-300"}`}>
+                        <div key={ln.key} className={`flex flex-wrap items-center gap-1 ${ln.row ? "text-v5-ink" : "text-v5-muted"}`}>
                           <span>
                             {ln.row
                               ? `${ln.label && ln.label.length <= 3 ? ln.label + " " : ""}đ/c ${ln.row.person.fullName}`
@@ -1300,17 +1289,17 @@ function DayFormView({
                                 : "đ/c………"}
                           </span>
                           {ln.row?.leaveClash && (
-                            <span className="material-symbols-outlined text-[12px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
+                            <span className="material-symbols-outlined text-[12px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt">
                               warning
                             </span>
                           )}
                           {ln.row && ln.row.overlapCount > 1 && !leaderIds.has(ln.row.personId) && (
-                            <span className="text-[10px] font-semibold text-amber-700" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
+                            <span className="text-[10px] font-semibold text-v5-gold-ink" title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)">
                               Trùng phân công
                             </span>
                           )}
                           {ln.row?.notes && (
-                            <span className="w-full text-[10px] font-normal italic text-slate-600">
+                            <span className="w-full text-[10px] font-normal italic text-v5-muted">
                               Ghi chú: {ln.row.notes}
                             </span>
                           )}
@@ -1323,7 +1312,7 @@ function DayFormView({
             })}
           </tbody>
         </table>
-        <div className="mt-3 text-xs text-slate-700 min-w-[520px]">
+        <div className="mt-3 text-xs text-v5-ink min-w-[520px]">
           <div className="font-semibold">
             Tổng số công chức: {info?.totalStaff ?? "………"} — Có mặt: {info?.presentStaff ?? "……"} — Vắng:{" "}
             {info?.absentCount ?? "……………"}
@@ -1398,13 +1387,13 @@ function DayInfoPanel({
   };
 
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white ${compact ? "p-3" : "p-4"}`}>
-      <div className="text-xs font-bold text-slate-700 uppercase">
+    <div className={`rounded-xl border border-v5-line bg-v5-surface ${compact ? "p-3" : "p-4"}`}>
+      <div className="text-xs font-bold text-v5-ink uppercase">
         Thông tin tổng hợp ngày {fmtDMY(dateISO)}{unitName ? ` — ${unitName}` : ""}
       </div>
       {canAssign ? (
         <div className="mt-2 grid grid-cols-2 lg:grid-cols-5 gap-2 items-end">
-          <label className="text-[11px] text-slate-500">
+          <label className="text-[11px] text-v5-muted">
             Tổng số công chức
             <input
               data-testid="dayinfo-total"
@@ -1412,10 +1401,10 @@ function DayInfoPanel({
               min={0}
               value={total}
               onChange={(e) => setTotal(e.target.value)}
-              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              className="mt-0.5 w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
             />
           </label>
-          <label className="text-[11px] text-slate-500">
+          <label className="text-[11px] text-v5-muted">
             Có mặt
             <input
               data-testid="dayinfo-present"
@@ -1423,10 +1412,10 @@ function DayInfoPanel({
               min={0}
               value={present}
               onChange={(e) => setPresent(e.target.value)}
-              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              className="mt-0.5 w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
             />
           </label>
-          <label className="text-[11px] text-slate-500">
+          <label className="text-[11px] text-v5-muted">
             Vắng
             <input
               data-testid="dayinfo-absent"
@@ -1434,30 +1423,30 @@ function DayInfoPanel({
               min={0}
               value={absent}
               onChange={(e) => setAbsent(e.target.value)}
-              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              className="mt-0.5 w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
             />
           </label>
-          <label className="text-[11px] text-slate-500 col-span-2 lg:col-span-1">
+          <label className="text-[11px] text-v5-muted col-span-2 lg:col-span-1">
             Lý do vắng
             <input
               data-testid="dayinfo-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="VD: nghỉ phép, đi công tác…"
-              className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              className="mt-0.5 w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
             />
           </label>
           <button
             data-testid="dayinfo-save"
             onClick={save}
             disabled={busy}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-50"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent disabled:opacity-50"
           >
             {busy ? "Đang lưu…" : "Lưu tổng hợp"}
           </button>
         </div>
       ) : (
-        <div className="mt-1 text-xs text-slate-700">
+        <div className="mt-1 text-xs text-v5-ink">
           Tổng số công chức: {info?.totalStaff ?? "—"} · Có mặt: {info?.presentStaff ?? "—"} · Vắng: {info?.absentCount ?? "—"}
           {info?.absentReason ? ` · Lý do: ${info.absentReason}` : ""}
         </div>
@@ -1685,17 +1674,17 @@ function DayEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-slate-900/50 p-0 lg:p-4">
+    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-black/40 p-0 lg:p-4">
       <div
-        className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-white rounded-none lg:rounded-2xl shadow-xl"
+        className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-v5-surface rounded-none lg:rounded-2xl shadow-xl"
         data-testid="editor-modal"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 bg-white border-b border-slate-200">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 bg-v5-surface border-b border-v5-line">
           <div>
-            <div className="text-sm font-bold text-slate-800" data-testid="editor-title">
+            <div className="text-sm font-bold text-v5-ink" data-testid="editor-title">
               Phiếu phân công ngày {fmtDMY(dateISO)}{unitName ? ` — ${unitName}` : ""}
             </div>
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-v5-muted">
               Chọn cán bộ cho từng ô; trực trưa tính riêng, không trùng với trực thường. Ghi chú chỉ lưu cho ô đã có người; “Đổi người” phải ghi lý do (lưu vết).
             </div>
           </div>
@@ -1705,12 +1694,12 @@ function DayEditorModal({
               type="date"
               value={dateISO}
               onChange={(e) => e.target.value && onDateChange(e.target.value)}
-              className="rounded-lg border border-slate-200 px-2 py-1 text-xs"
+              className="rounded-lg border border-v5-line px-2 py-1 text-xs"
             />
             <button
               data-testid="editor-close"
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100"
+              className="p-1.5 rounded-lg hover:bg-v5-bg"
               aria-label="Đóng"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
@@ -1720,7 +1709,7 @@ function DayEditorModal({
 
         <div className="p-4 space-y-4">
           {activeGroups.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500" data-testid="editor-empty-catalog">
+            <div className="rounded-xl border border-dashed border-v5-line p-4 text-sm text-v5-muted" data-testid="editor-empty-catalog">
               Bộ phận đang chọn chưa có danh mục vị trí/nhiệm vụ — vào “Danh mục vị trí” trên thanh công cụ để thiết lập trước khi phân công.
             </div>
           )}
@@ -1737,18 +1726,18 @@ function DayEditorModal({
               <div
                 key={g.code}
                 className={`overflow-hidden rounded-xl border ${
-                  g.code === focusCode ? "border-teal-400 ring-2 ring-teal-100" : "border-slate-200"
+                  g.code === focusCode ? "border-v5-accent/40 ring-2 ring-v5-accent/20" : "border-v5-line"
                 }`}
                 data-testid={`editor-pos-${g.code}`}
               >
-                <div className="px-3 py-2 bg-slate-50 border-b border-slate-200">
-                  <span className="text-xs font-bold text-slate-700">
+                <div className="px-3 py-2 bg-v5-bg border-b border-v5-line">
+                  <span className="text-xs font-bold text-v5-ink">
                     {g.kind === "legacy" ? g.title : `${g.sortOrder}. ${g.title}`}
                   </span>
-                  {g.detail && <span className="text-[11px] text-slate-500"> — {g.detail}</span>}
-                  {g.kind === "orphan" && <span className="text-[10px] text-amber-600 italic"> (ngoài danh mục hiện hành)</span>}
+                  {g.detail && <span className="text-[11px] text-v5-muted"> — {g.detail}</span>}
+                  {g.kind === "orphan" && <span className="text-[10px] text-v5-gold-ink italic"> (ngoài danh mục hiện hành)</span>}
                 </div>
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-v5-line/60">
                   {g.kind === "legacy"
                     ? lines.map((ln, idx) => (
                         <SlotRow
@@ -1833,19 +1822,19 @@ function DayEditorModal({
                       )}
                 </div>
                 {canAssign && g.kind === "catalog" && (
-                  <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-teal-50/30 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-v5-line/60 bg-v5-accent-soft/30 px-3 py-2">
                     <button
                       type="button"
                       data-testid={`editor-add-person-${g.code}`}
                       onClick={() => addExtraLine(g)}
                       disabled={atExtraLimit}
-                      className="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-lg border border-v5-line bg-v5-surface px-2.5 py-1.5 text-[11px] font-semibold text-v5-accent hover:bg-v5-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
                       title={`Thêm một người vào vị trí này, chỉ áp dụng cho ngày ${fmtDMY(dateISO)}`}
                     >
                       <span className="material-symbols-outlined text-[15px]">person_add</span>
                       Thêm người cho ngày này
                     </button>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-[10px] text-v5-muted">
                       {atExtraLimit
                         ? `Đã đạt tối đa ${MAX_EXTRA_SLOTS_PER_POSITION} dòng bổ sung.`
                         : "Chỉ áp dụng ngày đang xem; muốn cố định, dùng “Danh mục vị trí”."}
@@ -1975,25 +1964,25 @@ function SlotRow({
   return (
     <div className="px-3 py-2" data-testid={`slot-row-${testKey}`}>
       <div className="flex flex-col lg:flex-row lg:items-start gap-2">
-        <div className="lg:w-[24%] text-[11px] font-semibold text-slate-600">
+        <div className="lg:w-[24%] text-[11px] font-semibold text-v5-muted">
           {label || "—"}
           {occupied && row!.reason && (
-            <span className="block text-[10px] text-slate-400 font-normal">Lý do đổi gần nhất: {row!.reason}</span>
+            <span className="block text-[10px] text-v5-muted font-normal">Lý do đổi gần nhất: {row!.reason}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
           {occupied ? (
             <>
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="font-semibold text-slate-800 truncate">{row!.person.fullName}</span>
+                <span className="font-semibold text-v5-ink truncate">{row!.person.fullName}</span>
                 {row!.leaveClash && (
-                  <span className="material-symbols-outlined text-[14px] text-amber-500" title="Trùng đơn nghỉ đã duyệt">
+                  <span className="material-symbols-outlined text-[14px] text-v5-gold-ink" title="Trùng đơn nghỉ đã duyệt">
                     warning
                   </span>
                 )}
                 {row!.overlapCount > 1 && !rowPersonIsLeader && (
                   <span
-                    className="text-[10px] font-semibold text-amber-700"
+                    className="text-[10px] font-semibold text-v5-gold-ink"
                     title="Trùng phân công cùng nhóm trực trong ngày (chỉ cảnh báo, không chặn)"
                   >
                     Trùng phân công
@@ -2001,20 +1990,20 @@ function SlotRow({
                 )}
               </div>
               {row!.notes ? (
-                <div className="mt-0.5 text-[10px] italic leading-snug text-slate-500" data-testid={`slot-notes-view-${testKey}`}>
+                <div className="mt-0.5 text-[10px] italic leading-snug text-v5-muted" data-testid={`slot-notes-view-${testKey}`}>
                   Ghi chú: {row!.notes}
                 </div>
               ) : (
-                <div className="mt-0.5 text-[10px] italic text-slate-400" data-testid={`slot-notes-view-${testKey}`}>
+                <div className="mt-0.5 text-[10px] italic text-v5-muted" data-testid={`slot-notes-view-${testKey}`}>
                   Chưa có ghi chú
                 </div>
               )}
             </>
           ) : (
-            <span className="text-xs text-slate-400 italic">— trống —</span>
+            <span className="text-xs text-v5-muted italic">— trống —</span>
           )}
           {prewarns.length > 0 && (
-            <div className="mt-0.5 text-[10px] text-amber-700" data-testid={`slot-warn-${testKey}`}>
+            <div className="mt-0.5 text-[10px] text-v5-gold-ink" data-testid={`slot-warn-${testKey}`}>
               {prewarns.map((w, i) => (
                 <div key={i}>⚠ {w}</div>
               ))}
@@ -2030,7 +2019,7 @@ function SlotRow({
                   data-testid={`slot-notes-${testKey}`}
                   disabled={busy}
                   onClick={() => setPanel(panel === "note" ? null : "note")}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  className="inline-flex items-center gap-1 rounded-lg border border-v5-line px-2 py-1.5 text-[11px] font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-40"
                 >
                   <span className="material-symbols-outlined text-[14px]">sticky_note_2</span>
                   {row!.notes ? "Sửa ghi chú" : "Ghi chú"}
@@ -2040,7 +2029,7 @@ function SlotRow({
                   data-testid={`slot-change-${testKey}`}
                   disabled={busy}
                   onClick={() => setPanel(panel === "change" ? null : "change")}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  className="inline-flex items-center gap-1 rounded-lg border border-v5-line px-2 py-1.5 text-[11px] font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-40"
                 >
                   <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
                   Đổi người
@@ -2050,14 +2039,14 @@ function SlotRow({
                   data-testid={`slot-remove-${testKey}`}
                   disabled={busy}
                   onClick={() => onRemove(row!, key)}
-                  className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                  className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-v5-danger/30 text-v5-danger hover:bg-v5-danger-soft disabled:opacity-40"
                 >
                   Gỡ
                 </button>
               </div>
 
               {panel === "note" && (
-                <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-2">
+                <div className="rounded-lg border border-v5-line bg-v5-accent-soft/30 p-2">
                   <textarea
                     data-testid={`slot-notes-input-${testKey}`}
                     value={noteDraft}
@@ -2065,17 +2054,17 @@ function SlotRow({
                     rows={2}
                     onChange={(e) => setNoteDraft(e.target.value)}
                     placeholder="Ghi chú cho người/vị trí này (VD: bàn giao ca, kiêm nhiệm…)"
-                    className="w-full resize-y rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                    className="w-full resize-y rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
                   />
                   <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
-                    <span className="text-[10px] text-slate-400">{noteDraft.trim().length}/1000 ký tự</span>
+                    <span className="text-[10px] text-v5-muted">{noteDraft.trim().length}/1000 ký tự</span>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         data-testid={`slot-notes-save-${testKey}`}
                         disabled={!noteChanged || busy}
                         onClick={saveNotes}
-                        className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
+                        className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent disabled:opacity-40"
                       >
                         {busy ? "…" : "Lưu ghi chú"}
                       </button>
@@ -2085,7 +2074,7 @@ function SlotRow({
                           setNoteDraft(row!.notes || "");
                           setPanel(null);
                         }}
-                        className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-v5-line text-v5-muted hover:bg-v5-bg"
                       >
                         Hủy
                       </button>
@@ -2095,12 +2084,12 @@ function SlotRow({
               )}
 
               {panel === "change" && (
-                <div className="space-y-1.5 rounded-lg border border-amber-200 bg-amber-50/30 p-2">
+                <div className="space-y-1.5 rounded-lg border border-v5-gold/50 bg-v5-gold-soft/30 p-2">
                   <select
                     data-testid={`slot-select-${testKey}`}
                     value={selected}
                     onChange={(e) => setSel((s) => ({ ...s, [key]: e.target.value }))}
-                    className="w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                    className="w-full min-w-0 rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
                   >
                     <option value="">Chọn người thay thế…</option>
                     {options.map((p) => (
@@ -2115,7 +2104,7 @@ function SlotRow({
                       value={reasons[key] || ""}
                       onChange={(e) => setReasons((s) => ({ ...s, [key]: e.target.value }))}
                       placeholder="Lý do thay đổi (bắt buộc, tối thiểu 3 ký tự)"
-                      className="w-full min-w-0 rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs"
+                      className="w-full min-w-0 rounded-lg border border-v5-gold/50 bg-v5-surface px-2 py-1.5 text-xs"
                     />
                   )}
                   <div className="flex items-center gap-1">
@@ -2124,7 +2113,7 @@ function SlotRow({
                       data-testid={`slot-save-${testKey}`}
                       disabled={!changed || busy}
                       onClick={saveChange}
-                      className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
+                      className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent disabled:opacity-40"
                     >
                       {busy ? "…" : "Lưu đổi người"}
                     </button>
@@ -2135,7 +2124,7 @@ function SlotRow({
                         setReasons((s) => ({ ...s, [key]: "" }));
                         setPanel(null);
                       }}
-                      className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      className="px-2 py-1.5 text-[11px] font-semibold rounded-lg border border-v5-line text-v5-muted hover:bg-v5-bg"
                     >
                       Hủy
                     </button>
@@ -2149,7 +2138,7 @@ function SlotRow({
                 data-testid={`slot-select-${testKey}`}
                 value={selected}
                 onChange={(e) => setSel((s) => ({ ...s, [key]: e.target.value }))}
-                className="flex-1 min-w-0 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                className="flex-1 min-w-0 rounded-lg border border-v5-line px-2 py-1.5 text-xs"
               >
                 <option value="">Chọn cán bộ…</option>
                 {options.map((p) => (
@@ -2163,7 +2152,7 @@ function SlotRow({
                 data-testid={`slot-save-${testKey}`}
                 disabled={!selected || busy}
                 onClick={onAssign}
-                className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-40"
+                className="px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent disabled:opacity-40"
               >
                 {busy ? "…" : "Phân công"}
               </button>
@@ -2294,17 +2283,17 @@ function CatalogModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-slate-900/50 p-0 lg:p-4">
-      <div className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-white rounded-none lg:rounded-2xl shadow-xl" data-testid="catalog-modal">
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
+    <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-black/40 p-0 lg:p-4">
+      <div className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-v5-surface rounded-none lg:rounded-2xl shadow-xl" data-testid="catalog-modal">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-v5-surface border-b border-v5-line">
           <div>
-            <div className="text-sm font-bold text-slate-800">Danh mục vị trí/nhiệm vụ phân công</div>
-            <div className="text-[11px] text-slate-500">
-              Bộ phận: <span className="font-semibold text-slate-700">{unitName || "—"}</span>. Sửa/xếp lại danh mục không làm thay đổi phân công đã ghi.
+            <div className="text-sm font-bold text-v5-ink">Danh mục vị trí/nhiệm vụ phân công</div>
+            <div className="text-[11px] text-v5-muted">
+              Bộ phận: <span className="font-semibold text-v5-ink">{unitName || "—"}</span>. Sửa/xếp lại danh mục không làm thay đổi phân công đã ghi.
               Muốn thêm người riêng cho một ngày, dùng “Thêm người cho ngày này” trong phiếu phân công.
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100" aria-label="Đóng" data-testid="catalog-close">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-v5-bg" aria-label="Đóng" data-testid="catalog-close">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -2316,11 +2305,11 @@ function CatalogModal({
                 data-testid="catalog-seed-btn"
                 onClick={seedDefaults}
                 disabled={busy === "seed"}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-v5-line hover:bg-v5-bg disabled:opacity-50"
               >
                 Khôi phục 8 vị trí mẫu còn thiếu (cho bộ phận đang xem)
               </button>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-v5-muted">
                 Danh mục mẫu gắn với ĐÚNG bộ phận đang chọn — không tự áp dụng cho bộ phận khác; phân công đã ghi giữ nguyên.
               </span>
             </div>
@@ -2329,14 +2318,14 @@ function CatalogModal({
           {positions.map((p) => {
             const d = draftOf(p);
             return (
-              <div key={p.id} className="rounded-xl border border-slate-200 p-3 space-y-2" data-testid={`catalog-pos-${p.code}`}>
+              <div key={p.id} className="rounded-xl border border-v5-line p-3 space-y-2" data-testid={`catalog-pos-${p.code}`}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-bold text-slate-500">{p.code}</span>
+                  <span className="text-[11px] font-bold text-v5-muted">{p.code}</span>
                   <input
                     data-testid={`catalog-title-${p.code}`}
                     value={d.title}
                     onChange={(e) => patchDraft(p, { title: e.target.value })}
-                    className="flex-1 min-w-[200px] rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold"
+                    className="flex-1 min-w-[200px] rounded-lg border border-v5-line px-2 py-1.5 text-xs font-semibold"
                     placeholder="Tên nhiệm vụ (dòng 1)"
                   />
                   <input
@@ -2345,13 +2334,13 @@ function CatalogModal({
                     max={99}
                     value={d.sortOrder}
                     onChange={(e) => patchDraft(p, { sortOrder: Number(e.target.value) || 1 })}
-                    className="w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                    className="w-16 rounded-lg border border-v5-line px-2 py-1.5 text-xs"
                     title="Số TT trên biểu"
                   />
                   <button
                     data-testid={`catalog-toggle-${p.code}`}
                     onClick={() => patchDraft(p, { status: d.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })}
-                    className={`px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border ${d.status === "ACTIVE" ? "border-emerald-200 text-emerald-700 bg-emerald-50" : "border-slate-200 text-slate-500 bg-slate-50"}`}
+                    className={`px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border ${d.status === "ACTIVE" ? "border-v5-success/30 text-v5-success bg-v5-success-soft" : "border-v5-line text-v5-muted bg-v5-bg"}`}
                   >
                     {d.status === "ACTIVE" ? "Đang dùng" : "Ngừng dùng"}
                   </button>
@@ -2360,13 +2349,13 @@ function CatalogModal({
                   data-testid={`catalog-detail-${p.code}`}
                   value={d.detail}
                   onChange={(e) => patchDraft(p, { detail: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                  className="w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
                   placeholder="Dòng phụ (nếu mẫu có) — VD: Kiểm tra Thuế, lệ phí HQ & Đối chiếu phí cơ sở hạ tầng"
                 />
                 <div className="space-y-1.5">
                   {d.slots.map((s, idx) => (
                     <div key={s.k} className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-400 w-8">Ô {idx + 1}</span>
+                      <span className="text-[10px] text-v5-muted w-8">Ô {idx + 1}</span>
                       <input
                         data-testid={`catalog-slot-${p.code}-${idx}`}
                         value={s.l ?? ""}
@@ -2374,13 +2363,13 @@ function CatalogModal({
                           const slots = d.slots.map((x, i) => (i === idx ? { ...x, l: e.target.value.trim() === "" ? null : e.target.value } : x));
                           patchDraft(p, { slots });
                         }}
-                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                        className="flex-1 rounded-lg border border-v5-line px-2 py-1 text-xs"
                         placeholder="Nhãn ô (VD: NC, XC, Vị trí bãi Phú Anh) — để trống nếu ô không nhãn"
                       />
                       <button
                         onClick={() => patchDraft(p, { slots: d.slots.filter((_, i) => i !== idx) })}
                         disabled={d.slots.length <= 1}
-                        className="px-2 py-1 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                        className="px-2 py-1 text-[11px] rounded-lg border border-v5-danger/30 text-v5-danger hover:bg-v5-danger-soft disabled:opacity-40"
                       >
                         Bỏ
                       </button>
@@ -2390,7 +2379,7 @@ function CatalogModal({
                     data-testid={`catalog-slot-add-${p.code}`}
                     onClick={() => patchDraft(p, { slots: [...d.slots, { k: nextSlotKey(d.slots), l: null }] })}
                     disabled={d.slots.length >= 12}
-                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                    className="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-v5-line hover:bg-v5-bg disabled:opacity-40"
                   >
                     + Thêm ô
                   </button>
@@ -2400,7 +2389,7 @@ function CatalogModal({
                     data-testid={`catalog-save-${p.code}`}
                     onClick={() => save(p)}
                     disabled={busy === p.id}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent disabled:opacity-50"
                   >
                     Lưu {p.code}
                   </button>
@@ -2409,20 +2398,20 @@ function CatalogModal({
             );
           })}
 
-          <div className="rounded-xl border border-dashed border-slate-300 p-3 space-y-2">
-            <div className="text-xs font-bold text-slate-600">Thêm vị trí mới</div>
+          <div className="rounded-xl border border-dashed border-v5-line p-3 space-y-2">
+            <div className="text-xs font-bold text-v5-muted">Thêm vị trí mới</div>
             <input
               data-testid="catalog-new-title"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              className="w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
               placeholder="Tên vị trí/nhiệm vụ"
             />
             <input
               data-testid="catalog-new-detail"
               value={newDetail}
               onChange={(e) => setNewDetail(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+              className="w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
               placeholder="Dòng phụ (không bắt buộc)"
             />
             <div className="flex justify-end">
@@ -2430,7 +2419,7 @@ function CatalogModal({
                 data-testid="catalog-add-btn"
                 onClick={createNew}
                 disabled={busy === "new"}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-teal-200 text-teal-700 hover:bg-teal-50 disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-v5-line text-v5-accent hover:bg-v5-accent-soft disabled:opacity-50"
               >
                 Thêm vị trí
               </button>
@@ -2492,63 +2481,63 @@ function ExportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl" data-testid="export-dialog">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md bg-v5-surface rounded-2xl shadow-xl" data-testid="export-dialog">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-v5-line">
           <div>
-            <div className="text-sm font-bold text-slate-800">Xuất Excel phân công nhiệm vụ</div>
-            <div className="text-[11px] text-slate-500">
-              Bộ phận xuất: <span className="font-semibold text-slate-700">{unitName || "—"}</span>
+            <div className="text-sm font-bold text-v5-ink">Xuất Excel phân công nhiệm vụ</div>
+            <div className="text-[11px] text-v5-muted">
+              Bộ phận xuất: <span className="font-semibold text-v5-ink">{unitName || "—"}</span>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100" aria-label="Đóng">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-v5-bg" aria-label="Đóng">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
         <div className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <label className="text-[11px] text-slate-500">
+            <label className="text-[11px] text-v5-muted">
               Từ ngày
               <input
                 data-testid="export-from"
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                className="mt-0.5 w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
               />
             </label>
-            <label className="text-[11px] text-slate-500">
+            <label className="text-[11px] text-v5-muted">
               Đến ngày
               <input
                 data-testid="export-to"
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="mt-0.5 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                className="mt-0.5 w-full rounded-lg border border-v5-line px-2 py-1.5 text-xs"
               />
             </label>
           </div>
-          <label className="flex items-center gap-2 text-xs text-slate-600">
+          <label className="flex items-center gap-2 text-xs text-v5-muted">
             <input data-testid="export-skip-empty" type="checkbox" checked={skipEmpty} onChange={(e) => setSkipEmpty(e.target.checked)} />
             Bỏ qua ngày chưa có phân công (không in khối trống)
           </label>
-          <label className="flex items-center gap-2 text-xs text-slate-600">
+          <label className="flex items-center gap-2 text-xs text-v5-muted">
             <input data-testid="export-cover" type="checkbox" checked={cover} onChange={(e) => setCover(e.target.checked)} />
             Kèm trang bìa “Sổ phân công nhiệm vụ”
           </label>
-          <div className="text-[11px] text-slate-500 bg-slate-50 rounded-lg p-2">
+          <div className="text-[11px] text-v5-muted bg-v5-bg rounded-lg p-2">
             File giữ cấu trúc mẫu: mỗi ngày một khối, 4 khối/trang in A4 ngang; tiêu đề &amp; trang bìa thể hiện đúng bộ phận được
             xuất; ô tổng hợp chỉ điền khi đã nhập.
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50">
+            <button onClick={onClose} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-v5-line hover:bg-v5-bg">
               Hủy
             </button>
             <button
               data-testid="export-download"
               onClick={download}
               disabled={busy || !unitId}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent disabled:opacity-50"
             >
               {busy ? "Đang tạo file…" : "Tải xuống .xlsx"}
             </button>

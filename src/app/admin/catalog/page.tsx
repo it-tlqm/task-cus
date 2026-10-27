@@ -403,31 +403,31 @@ export default function CatalogAdminPage() {
         <div
           className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
             toastMessage.type === "success"
-              ? "bg-emerald-50 text-emerald-900 border-emerald-200"
-              : "bg-rose-50 text-rose-900 border-rose-200"
+              ? "bg-v5-success-soft text-v5-success border-v5-success/30"
+              : "bg-v5-danger-soft text-v5-danger border-v5-danger/30"
           }`}
         >
           {toastMessage.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-v5-success shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-v5-danger shrink-0" />
           )}
           <span>{toastMessage.text}</span>
         </div>
       )}
 
       {/* Chọn nhóm danh mục */}
-      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-v5-line overflow-x-auto">
         <button
           onClick={() => setActiveTab("legacy")}
           className={`px-4 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors ${
             activeTab === "legacy"
               ? "border-purple-600 text-purple-700"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              : "border-transparent text-v5-muted hover:text-v5-ink"
           }`}
         >
           Hoạt động mẫu (48 mẫu)
-          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px]">
+          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-v5-bg text-v5-muted text-[10px]">
             {templates.length}
           </span>
         </button>
@@ -435,8 +435,8 @@ export default function CatalogAdminPage() {
           onClick={() => setActiveTab("tx")}
           className={`px-4 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors ${
             activeTab === "tx"
-              ? "border-teal-600 text-teal-700"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "border-v5-line text-v5-accent"
+              : "border-transparent text-v5-muted hover:text-v5-ink"
           }`}
         >
           Danh mục công việc thường xuyên
@@ -448,9 +448,9 @@ export default function CatalogAdminPage() {
       ) : (
       <div className="space-y-6">
       {!permLoading && !canManageCatalog && (
-        <div className="p-8 bg-white border border-amber-200 rounded-xl text-center space-y-2 shadow-sm">
-          <p className="text-lg font-bold text-slate-900">Khu vực quản trị danh mục</p>
-          <p className="text-sm text-slate-600">
+        <div className="p-8 bg-v5-surface border border-v5-gold/50 rounded-xl text-center space-y-2 shadow-sm">
+          <p className="text-lg font-bold text-v5-ink">Khu vực quản trị danh mục</p>
+          <p className="text-sm text-v5-muted">
             Tài khoản của đồng chí chỉ được xem danh mục đầu việc mẫu. Thao tác thêm/sửa/phê duyệt do backend chặn 403 và ghi audit.
           </p>
         </div>
@@ -462,12 +462,12 @@ export default function CatalogAdminPage() {
             <span className="px-2 py-0.5 text-xs font-semibold rounded bg-purple-100 text-purple-800">
               Quản trị danh mục
             </span>
-            <span className="text-xs text-slate-500 font-mono">
+            <span className="text-xs text-v5-muted font-mono">
               ActivityGroup • ActivityTemplate • PersonalWorkItem
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Danh mục hoạt động mẫu tham khảo</h1>
-          <p className="text-xs md:text-sm text-slate-600 mt-0.5">
+          <h1 className="text-2xl font-bold text-v5-ink mt-1">Danh mục hoạt động mẫu tham khảo</h1>
+          <p className="text-xs md:text-sm text-v5-muted mt-0.5">
             {groups.length} nhóm nghiệp vụ và {templates.length} hoạt động mẫu nguyên văn làm cơ sở gợi ý cho cán bộ; cán bộ được linh hoạt tạo đầu việc tự do mà không bắt buộc theo danh mục cố định.
           </p>
         </div>
@@ -476,7 +476,7 @@ export default function CatalogAdminPage() {
           <button
             onClick={fetchCatalog}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-ink bg-v5-surface border border-v5-line rounded-lg hover:bg-v5-bg shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Làm mới
@@ -484,7 +484,7 @@ export default function CatalogAdminPage() {
           {canManageCatalog && (
             <button
               onClick={handleOpenAddGroup}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-v5-accent bg-v5-accent-soft border border-v5-line hover:bg-v5-accent-soft rounded-lg shadow-sm transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Thêm nhóm nghiệp vụ
@@ -493,7 +493,7 @@ export default function CatalogAdminPage() {
           {canManageCatalog && (
             <button
               onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shadow-sm transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Thêm đầu việc mẫu
@@ -501,7 +501,7 @@ export default function CatalogAdminPage() {
           )}
           <Link
             href="/admin/organization"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-v5-accent bg-v5-accent-soft border border-v5-line rounded-lg hover:bg-v5-accent-soft shadow-sm"
           >
             Quản trị nhân sự
             <ArrowRight className="w-3.5 h-3.5" />
@@ -511,10 +511,10 @@ export default function CatalogAdminPage() {
 
       {/* Status & Warning Banner */}
       {isAllVerified ? (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
+        <div className="p-4 bg-v5-success-soft border border-v5-success/30 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
-            <div className="space-y-1 text-xs text-emerald-900">
+            <CheckCircle2 className="w-5 h-5 text-v5-success shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs text-v5-success">
               <p className="font-bold text-sm">
                 Trạng thái danh mục: ĐÃ PHÊ DUYỆT CHÍNH THỨC ({activeCount} Đang áp dụng • {retiredCount} Ngừng áp dụng)
               </p>
@@ -527,17 +527,17 @@ export default function CatalogAdminPage() {
             <button
               onClick={handleApproveAll}
               disabled={approving}
-              className="px-3.5 py-2 text-xs font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-100 transition-colors shrink-0 shadow-sm"
+              className="px-3.5 py-2 text-xs font-semibold bg-v5-surface border border-v5-success/30 text-v5-success rounded-lg hover:bg-v5-success-soft transition-colors shrink-0 shadow-sm"
             >
               {approving ? "Đang xử lý..." : "Chuyển về xem xét (Reset)"}
             </button>
           )}
         </div>
       ) : (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
+        <div className="p-4 bg-v5-gold-soft border border-v5-gold/50 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
           <div className="flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-            <div className="space-y-1 text-xs text-amber-900">
+            <ShieldAlert className="w-5 h-5 text-v5-gold-ink shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs text-v5-gold-ink">
               <p className="font-bold text-sm">
                 Trạng thái danh mục: CÓ {needsReviewCount} ĐẦU VIỆC CHƯA XÁC NHẬN CHÍNH THỨC (NEEDS_REVIEW)
               </p>
@@ -550,7 +550,7 @@ export default function CatalogAdminPage() {
             <button
               onClick={handleApproveAll}
               disabled={approving}
-              className="px-3.5 py-2 text-xs font-semibold bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition-colors shrink-0 shadow-sm"
+              className="px-3.5 py-2 text-xs font-semibold bg-v5-success text-white rounded-lg hover:bg-v5-success transition-colors shrink-0 shadow-sm"
             >
               {approving ? "Đang xử lý..." : "Phê duyệt chính thức toàn bộ"}
             </button>
@@ -564,8 +564,8 @@ export default function CatalogAdminPage() {
           onClick={() => setSelectedGroupId("ALL")}
           className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
             selectedGroupId === "ALL"
-              ? "bg-blue-900 text-white shadow-sm ring-2 ring-blue-500/20 border-blue-900"
-              : "bg-white text-slate-800 border-slate-200 hover:border-slate-300"
+              ? "bg-v5-accent text-white shadow-sm ring-2 ring-v5-accent/20 border-v5-accent"
+              : "bg-v5-surface text-v5-ink border-v5-line hover:border-v5-line"
           }`}
         >
           <div className="text-[11px] font-semibold uppercase opacity-80">Tất cả nhóm</div>
@@ -591,8 +591,8 @@ export default function CatalogAdminPage() {
               onClick={() => setSelectedGroupId(grp.id)}
               className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
                 isSelected
-                  ? "bg-blue-900 text-white shadow-sm ring-2 ring-blue-500/20 border-blue-900"
-                  : "bg-white text-slate-800 border-slate-200 hover:border-slate-300"
+                  ? "bg-v5-accent text-white shadow-sm ring-2 ring-v5-accent/20 border-v5-accent"
+                  : "bg-v5-surface text-v5-ink border-v5-line hover:border-v5-line"
               }`}
             >
               <div className="text-[11px] font-mono font-bold uppercase opacity-80 flex items-center justify-between gap-1">
@@ -603,7 +603,7 @@ export default function CatalogAdminPage() {
                       type="button"
                       title="Đổi tên nhóm"
                       onClick={() => handleOpenRenameGroup(grp)}
-                      className={`p-0.5 rounded ${isSelected ? "hover:bg-white/20" : "hover:bg-slate-200 text-slate-500"}`}
+                      className={`p-0.5 rounded ${isSelected ? "hover:bg-v5-surface/20" : "hover:bg-v5-bg text-v5-muted"}`}
                     >
                       <Edit2 className="w-3 h-3" />
                     </button>
@@ -614,7 +614,7 @@ export default function CatalogAdminPage() {
                         setDeletingGroup(grp);
                         setFormError(null);
                       }}
-                      className={`p-0.5 rounded ${isSelected ? "hover:bg-white/20" : "hover:bg-slate-200 text-slate-500"}`}
+                      className={`p-0.5 rounded ${isSelected ? "hover:bg-v5-surface/20" : "hover:bg-v5-bg text-v5-muted"}`}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -631,16 +631,16 @@ export default function CatalogAdminPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-v5-surface p-3 rounded-xl border border-v5-line shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Status Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          <span className="text-xs font-semibold text-slate-500 mr-1 shrink-0">Trạng thái:</span>
+          <span className="text-xs font-semibold text-v5-muted mr-1 shrink-0">Trạng thái:</span>
           <button
             onClick={() => setStatusFilter("ALL")}
             className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors whitespace-nowrap ${
               statusFilter === "ALL"
-                ? "bg-slate-900 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-v5-accent text-white"
+                : "bg-v5-bg text-v5-muted hover:bg-v5-bg"
             }`}
           >
             Tất cả ({templates.length})
@@ -649,8 +649,8 @@ export default function CatalogAdminPage() {
             onClick={() => setStatusFilter("VERIFIED")}
             className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors whitespace-nowrap ${
               statusFilter === "VERIFIED"
-                ? "bg-emerald-700 text-white"
-                : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                ? "bg-v5-success text-white"
+                : "bg-v5-success-soft text-v5-success hover:bg-v5-success-soft"
             }`}
           >
             Đang áp dụng ({activeCount})
@@ -659,8 +659,8 @@ export default function CatalogAdminPage() {
             onClick={() => setStatusFilter("NEEDS_REVIEW")}
             className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors whitespace-nowrap ${
               statusFilter === "NEEDS_REVIEW"
-                ? "bg-amber-700 text-white"
-                : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                ? "bg-v5-gold text-white"
+                : "bg-v5-gold-soft text-v5-gold-ink hover:bg-v5-gold-soft"
             }`}
           >
             Chưa xác nhận ({needsReviewCount})
@@ -669,8 +669,8 @@ export default function CatalogAdminPage() {
             onClick={() => setStatusFilter("RETIRED")}
             className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors whitespace-nowrap ${
               statusFilter === "RETIRED"
-                ? "bg-slate-700 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-v5-accent text-white"
+                : "bg-v5-bg text-v5-muted hover:bg-v5-bg"
             }`}
           >
             Ngừng áp dụng ({retiredCount})
@@ -679,23 +679,23 @@ export default function CatalogAdminPage() {
 
         {/* Search */}
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-v5-muted absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Tìm theo mã, tên hoặc trích đoạn..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-v5-bg border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
           />
         </div>
       </div>
 
       {/* Catalog Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-semibold">
+              <tr className="border-b border-v5-line bg-v5-bg text-v5-ink font-semibold">
                 <th className="py-3 px-3 w-24">Mã mẫu</th>
                 <th className="py-3 px-3 w-40">Nhóm nghiệp vụ</th>
                 <th className="py-3 px-4">Tên hoạt động mẫu</th>
@@ -706,17 +706,17 @@ export default function CatalogAdminPage() {
                 <th className="py-3 px-3 w-28 text-right">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-v5-line/60">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-slate-400" />
+                  <td colSpan={8} className="py-12 text-center text-v5-muted">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-v5-muted" />
                     Đang nạp danh mục hoạt động mẫu từ cơ sở dữ liệu...
                   </td>
                 </tr>
               ) : filteredTemplates.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-v5-muted">
                     Không tìm thấy hoạt động mẫu nào phù hợp với bộ lọc
                   </td>
                 </tr>
@@ -729,27 +729,27 @@ export default function CatalogAdminPage() {
                   return (
                     <tr
                       key={tpl.id}
-                      className={`hover:bg-slate-50/80 transition-colors ${
-                        isRetired ? "bg-slate-50/50 opacity-70" : ""
+                      className={`hover:bg-v5-bg/80 transition-colors ${
+                        isRetired ? "bg-v5-bg/50 opacity-70" : ""
                       }`}
                     >
-                      <td className="py-3 px-3 font-mono font-bold text-blue-900">
+                      <td className="py-3 px-3 font-mono font-bold text-v5-accent">
                         {tpl.code}
                       </td>
                       <td className="py-3 px-3">
-                        <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-medium truncate max-w-[150px]">
+                        <span className="inline-block px-2 py-0.5 bg-v5-bg text-v5-ink rounded text-[11px] font-medium truncate max-w-[150px]">
                           {tplGroup?.code || "Chưa phân nhóm"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-900 leading-snug">
+                      <td className="py-3 px-4 font-semibold text-v5-ink leading-snug">
                         <div>{tpl.title}</div>
                         {tpl.description && (
-                          <div className="text-[11px] font-normal text-slate-500 mt-0.5 line-clamp-1">
+                          <div className="text-[11px] font-normal text-v5-muted mt-0.5 line-clamp-1">
                             {tpl.description}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-slate-600">
+                      <td className="py-3 px-3 text-v5-muted">
                         <span className="font-medium">
                           {getReportingModeLabel(tpl.reportingMode, tpl.frequencyType)}
                         </span>
@@ -758,10 +758,10 @@ export default function CatalogAdminPage() {
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
                             tpl.defaultPriority === "Cao"
-                              ? "bg-rose-50 text-rose-700 border border-rose-200"
+                              ? "bg-v5-danger-soft text-v5-danger border border-v5-danger/30"
                               : tpl.defaultPriority === "Thấp"
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-blue-50 text-blue-700 border border-blue-200"
+                              ? "bg-v5-bg text-v5-muted"
+                              : "bg-v5-accent-soft text-v5-accent border border-v5-line"
                           }`}
                         >
                           {tpl.defaultPriority || "Trung bình"}
@@ -769,7 +769,7 @@ export default function CatalogAdminPage() {
                       </td>
                       <td className="py-3 px-3 text-center">
                         <span
-                          className="font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded"
+                          className="font-mono text-v5-muted bg-v5-bg px-2 py-0.5 rounded"
                           title="Số lượt liên kết trong đầu việc và nhật ký"
                         >
                           {tpl.usageCount || 0}
@@ -777,18 +777,18 @@ export default function CatalogAdminPage() {
                       </td>
                       <td className="py-3 px-3 text-center">
                         {isVerified ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-v5-success-soft text-v5-success border border-v5-success/30">
+                            <CheckCircle2 className="w-3 h-3 text-v5-success" />
                             Đang áp dụng
                           </span>
                         ) : isRetired ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 text-slate-700 border border-slate-300">
-                            <EyeOff className="w-3 h-3 text-slate-600" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-v5-bg text-v5-ink border border-v5-line">
+                            <EyeOff className="w-3 h-3 text-v5-muted" />
                             Ngừng áp dụng
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
-                            <AlertTriangle className="w-3 h-3 text-amber-700" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-v5-gold-soft text-v5-gold-ink border border-v5-gold/50">
+                            <AlertTriangle className="w-3 h-3 text-v5-gold-ink" />
                             Chưa xác nhận
                           </span>
                         )}
@@ -798,7 +798,7 @@ export default function CatalogAdminPage() {
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleOpenEditModal(tpl)}
-                              className="p-1.5 text-slate-600 hover:text-blue-900 hover:bg-slate-100 rounded-md transition-colors"
+                              className="p-1.5 text-v5-muted hover:text-v5-accent hover:bg-v5-bg rounded-md transition-colors"
                               title="Chỉnh sửa thông tin"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -812,7 +812,7 @@ export default function CatalogAdminPage() {
                                     nextStatus: "VERIFIED",
                                   })
                                 }
-                                className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-md transition-colors"
+                                className="p-1.5 text-v5-success hover:text-v5-success hover:bg-v5-success-soft rounded-md transition-colors"
                                 title="Kích hoạt lại áp dụng"
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -825,7 +825,7 @@ export default function CatalogAdminPage() {
                                     nextStatus: "RETIRED",
                                   })
                                 }
-                                className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors"
+                                className="p-1.5 text-v5-muted hover:text-v5-danger hover:bg-v5-danger-soft rounded-md transition-colors"
                                 title="Ngừng áp dụng mẫu này"
                               >
                                 <EyeOff className="w-3.5 h-3.5" />
@@ -845,16 +845,16 @@ export default function CatalogAdminPage() {
 
       {/* MODAL: Thêm mới hoạt động mẫu */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-4 border-b border-v5-line/60 bg-v5-bg">
               <div className="flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-900" />
-                <h3 className="font-bold text-sm text-slate-900">Thêm mới hoạt động mẫu</h3>
+                <Plus className="w-4 h-4 text-v5-accent" />
+                <h3 className="font-bold text-sm text-v5-ink">Thêm mới hoạt động mẫu</h3>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="p-1 text-v5-muted hover:text-v5-muted rounded-lg"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -862,15 +862,15 @@ export default function CatalogAdminPage() {
 
             <form onSubmit={handleSaveAdd} className="p-4 space-y-3.5 overflow-y-auto">
               {formError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-2 text-xs text-rose-800">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 rounded-lg flex items-start gap-2 text-xs text-v5-danger">
+                  <AlertCircle className="w-4 h-4 text-v5-danger shrink-0 mt-0.5" />
                   <span>{formError}</span>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Mã hoạt động * (Ví dụ: TTHQ-23)
                   </label>
                   <input
@@ -879,19 +879,19 @@ export default function CatalogAdminPage() {
                     placeholder="TTHQ-23"
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono uppercase"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono uppercase"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Nhóm nghiệp vụ *
                   </label>
                   <select
                     required
                     value={formData.groupId}
                     onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   >
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>
@@ -903,7 +903,7 @@ export default function CatalogAdminPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Tên hoạt động mẫu *
                 </label>
                 <input
@@ -912,12 +912,12 @@ export default function CatalogAdminPage() {
                   placeholder="Nhập tên hoạt động mẫu chuẩn hóa..."
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Mô tả / Hướng dẫn thực hiện
                 </label>
                 <textarea
@@ -925,19 +925,19 @@ export default function CatalogAdminPage() {
                   placeholder="Mô tả tóm tắt nội dung thực hiện, căn cứ quy trình..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Chế độ báo cáo
                   </label>
                   <select
                     value={formData.reportingMode}
                     onChange={(e) => setFormData({ ...formData, reportingMode: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   >
                     <option value="UNCONFIGURED">UNCONFIGURED — Chưa cấu hình</option>
                     <option value="EVERY_PERIOD">EVERY_PERIOD — Định kỳ hằng tuần</option>
@@ -950,13 +950,13 @@ export default function CatalogAdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Mức độ ưu tiên
                   </label>
                   <select
                     value={formData.defaultPriority}
                     onChange={(e) => setFormData({ ...formData, defaultPriority: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   >
                     <option value="Cao">Cao</option>
                     <option value="Trung bình">Trung bình</option>
@@ -965,19 +965,19 @@ export default function CatalogAdminPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3.5 py-2 text-xs font-medium text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shadow-sm"
                 >
                   {isSubmitting ? "Đang lưu..." : "Thêm mới vào cơ sở dữ liệu"}
                 </button>
@@ -989,18 +989,18 @@ export default function CatalogAdminPage() {
 
       {/* MODAL: Sửa thông tin hoạt động mẫu */}
       {editingTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-4 border-b border-v5-line/60 bg-v5-bg">
               <div className="flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-blue-900" />
-                <h3 className="font-bold text-sm text-slate-900">
-                  Chỉnh sửa hoạt động mẫu: <span className="font-mono text-blue-900">{editingTemplate.code}</span>
+                <Edit2 className="w-4 h-4 text-v5-accent" />
+                <h3 className="font-bold text-sm text-v5-ink">
+                  Chỉnh sửa hoạt động mẫu: <span className="font-mono text-v5-accent">{editingTemplate.code}</span>
                 </h3>
               </div>
               <button
                 onClick={() => setEditingTemplate(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="p-1 text-v5-muted hover:text-v5-muted rounded-lg"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1008,34 +1008,34 @@ export default function CatalogAdminPage() {
 
             <form onSubmit={handleSaveEdit} className="p-4 space-y-3.5 overflow-y-auto">
               {formError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-2 text-xs text-rose-800">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 rounded-lg flex items-start gap-2 text-xs text-v5-danger">
+                  <AlertCircle className="w-4 h-4 text-v5-danger shrink-0 mt-0.5" />
                   <span>{formError}</span>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Mã hoạt động (Cố định)
                   </label>
                   <input
                     type="text"
                     disabled
                     value={formData.code}
-                    className="w-full text-xs p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 font-mono cursor-not-allowed"
+                    className="w-full text-xs p-2 bg-v5-bg border border-v5-line rounded-lg text-v5-muted font-mono cursor-not-allowed"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Nhóm nghiệp vụ *
                   </label>
                   <select
                     required
                     value={formData.groupId}
                     onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   >
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>
@@ -1047,7 +1047,7 @@ export default function CatalogAdminPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Tên hoạt động mẫu *
                 </label>
                 <input
@@ -1055,31 +1055,31 @@ export default function CatalogAdminPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                <label className="text-xs font-semibold text-v5-ink block mb-1">
                   Mô tả / Hướng dẫn
                 </label>
                 <textarea
                   rows={2}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Chế độ báo cáo
                   </label>
                   <select
                     value={formData.reportingMode}
                     onChange={(e) => setFormData({ ...formData, reportingMode: e.target.value })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   >
                     <option value="UNCONFIGURED">UNCONFIGURED — Chưa cấu hình</option>
                     <option value="EVERY_PERIOD">EVERY_PERIOD — Định kỳ hằng tuần</option>
@@ -1092,7 +1092,7 @@ export default function CatalogAdminPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">
                     Trạng thái áp dụng
                   </label>
                   <select
@@ -1103,7 +1103,7 @@ export default function CatalogAdminPage() {
                         reviewStatus: e.target.value as "VERIFIED" | "NEEDS_REVIEW" | "RETIRED",
                       })
                     }
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                   >
                     <option value="VERIFIED">VERIFIED — Đang áp dụng</option>
                     <option value="NEEDS_REVIEW">NEEDS_REVIEW — Chưa xác nhận</option>
@@ -1112,23 +1112,23 @@ export default function CatalogAdminPage() {
                 </div>
               </div>
 
-              <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-[11px] text-blue-900 leading-relaxed">
+              <div className="p-2.5 bg-v5-accent-soft rounded-lg border border-v5-line text-[11px] text-v5-accent leading-relaxed">
                 <strong>Bảo toàn dữ liệu lịch sử:</strong> Các thay đổi tên hoặc nhóm của hoạt động mẫu sẽ áp dụng cho các lượt tạo mới, trong khi các nhiệm vụ và kế hoạch trong quá khứ vẫn giữ nguyên vẹn liên kết và nội dung lịch sử.
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setEditingTemplate(null)}
                   disabled={isSubmitting}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3.5 py-2 text-xs font-medium text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shadow-sm"
                 >
                   {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
@@ -1140,14 +1140,14 @@ export default function CatalogAdminPage() {
 
       {/* CONFIRM DIALOG: Chuyển đổi trạng thái Áp dụng / Ngừng áp dụng */}
       {statusConfirmTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden p-5 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
             <div className="flex items-start gap-3">
               <div
                 className={`p-2 rounded-lg shrink-0 ${
                   statusConfirmTarget.nextStatus === "RETIRED"
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-emerald-100 text-emerald-800"
+                    ? "bg-v5-gold-soft text-v5-gold-ink"
+                    : "bg-v5-success-soft text-v5-success"
                 }`}
               >
                 {statusConfirmTarget.nextStatus === "RETIRED" ? (
@@ -1157,19 +1157,19 @@ export default function CatalogAdminPage() {
                 )}
               </div>
               <div className="space-y-1">
-                <h3 className="font-bold text-sm text-slate-900">
+                <h3 className="font-bold text-sm text-v5-ink">
                   {statusConfirmTarget.nextStatus === "RETIRED"
                     ? "Xác nhận ngừng áp dụng hoạt động mẫu?"
                     : "Kích hoạt lại áp dụng hoạt động mẫu?"}
                 </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Hoạt động: <strong className="font-mono text-blue-900">{statusConfirmTarget.template.code}</strong> — {statusConfirmTarget.template.title}
+                <p className="text-xs text-v5-muted leading-relaxed">
+                  Hoạt động: <strong className="font-mono text-v5-accent">{statusConfirmTarget.template.code}</strong> — {statusConfirmTarget.template.title}
                 </p>
               </div>
             </div>
 
             {statusConfirmTarget.nextStatus === "RETIRED" ? (
-              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div className="p-3 bg-v5-gold-soft rounded-lg border border-v5-gold/50 text-xs text-v5-gold-ink space-y-1">
                 <p className="font-semibold">Quy tắc bảo toàn dữ liệu:</p>
                 <ul className="list-disc list-inside space-y-0.5 text-[11px]">
                   <li>Mẫu này sẽ bị ẩn khỏi danh sách lựa chọn khi tạo đầu việc cá nhân mới.</li>
@@ -1177,17 +1177,17 @@ export default function CatalogAdminPage() {
                 </ul>
               </div>
             ) : (
-              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-xs text-emerald-900">
+              <div className="p-3 bg-v5-success-soft rounded-lg border border-v5-success/30 text-xs text-v5-success">
                 Mẫu sẽ xuất hiện trở lại trong danh mục gợi ý khi cán bộ lập kế hoạch và nhật ký tác nghiệp.
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-v5-line/60">
               <button
                 type="button"
                 onClick={() => setStatusConfirmTarget(null)}
                 disabled={isSubmitting}
-                className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-3.5 py-2 text-xs font-medium text-v5-muted hover:bg-v5-bg rounded-lg"
               >
                 Hủy bỏ
               </button>
@@ -1197,8 +1197,8 @@ export default function CatalogAdminPage() {
                 disabled={isSubmitting}
                 className={`px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-sm ${
                   statusConfirmTarget.nextStatus === "RETIRED"
-                    ? "bg-amber-700 hover:bg-amber-800"
-                    : "bg-emerald-700 hover:bg-emerald-800"
+                    ? "bg-v5-gold hover:bg-v5-gold"
+                    : "bg-v5-success hover:bg-v5-success"
                 }`}
               >
                 {isSubmitting ? "Đang xử lý..." : "Xác nhận thực hiện"}
@@ -1210,72 +1210,72 @@ export default function CatalogAdminPage() {
 
       {/* MODAL: Thêm / Đổi tên nhóm nghiệp vụ */}
       {isGroupModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-v5-line/60">
+              <h3 className="font-bold text-sm text-v5-ink">
                 {editingGroup ? `Đổi tên nhóm: ${editingGroup.code}` : "Thêm nhóm nghiệp vụ mới"}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsGroupModalOpen(false)}
-                className="p-1 rounded hover:bg-slate-100 text-slate-500"
+                className="p-1 rounded hover:bg-v5-bg text-v5-muted"
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleSaveGroup} className="p-4 space-y-3.5">
               {formError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs">
+                <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs">
                   {formError}
                 </div>
               )}
               {!editingGroup && (
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Mã nhóm * (viết hoa, không đổi sau khi tạo)</label>
+                  <label className="text-xs font-semibold text-v5-ink block mb-1">Mã nhóm * (viết hoa, không đổi sau khi tạo)</label>
                   <input
                     type="text"
                     required
                     placeholder="Ví dụ: KHO_BAI"
                     value={groupForm.code}
                     onChange={(e) => setGroupForm({ ...groupForm, code: e.target.value.toUpperCase() })}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono uppercase"
+                    className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30 font-mono uppercase"
                   />
                 </div>
               )}
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Tên nhóm nghiệp vụ *</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Tên nhóm nghiệp vụ *</label>
                 <input
                   type="text"
                   required
                   placeholder="Ví dụ: Quản lý kho, bãi tập kết"
                   value={groupForm.name}
                   onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Mô tả</label>
+                <label className="text-xs font-semibold text-v5-ink block mb-1">Mô tả</label>
                 <textarea
                   rows={2}
                   value={groupForm.description}
                   onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                  className="w-full text-xs p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2 border border-v5-line rounded-lg focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
                 />
               </div>
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-v5-line/60">
                 <button
                   type="button"
                   onClick={() => setIsGroupModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3.5 py-2 text-xs font-medium text-v5-muted hover:bg-v5-bg rounded-lg"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-900 hover:bg-blue-800 rounded-lg shadow-sm"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-v5-accent hover:bg-v5-accent rounded-lg shadow-sm"
                 >
                   {isSubmitting ? "Đang lưu..." : editingGroup ? "Lưu tên mới" : "Thêm nhóm"}
                 </button>
@@ -1287,23 +1287,23 @@ export default function CatalogAdminPage() {
 
       {/* CONFIRM: Xóa nhóm nghiệp vụ trống */}
       {deletingGroup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden p-5 space-y-4">
-            <h3 className="font-bold text-sm text-rose-700">Xóa nhóm "{deletingGroup.name}"?</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
+            <h3 className="font-bold text-sm text-v5-danger">Xóa nhóm "{deletingGroup.name}"?</h3>
+            <p className="text-xs text-v5-muted leading-relaxed">
               Chỉ xóa được nhóm <strong>không còn hoạt động mẫu nào</strong>. Hệ thống sẽ từ chối nếu còn mẫu liên quan.
             </p>
             {formError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs">
+              <div className="p-3 bg-v5-danger-soft border border-v5-danger/30 text-v5-danger rounded-lg text-xs">
                 {formError}
               </div>
             )}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-v5-line/60">
               <button
                 type="button"
                 onClick={() => setDeletingGroup(null)}
                 disabled={isSubmitting}
-                className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-3.5 py-2 text-xs font-medium text-v5-muted hover:bg-v5-bg rounded-lg"
               >
                 Hủy bỏ
               </button>
@@ -1311,7 +1311,7 @@ export default function CatalogAdminPage() {
                 type="button"
                 onClick={handleDeleteGroup}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-semibold text-white bg-rose-700 hover:bg-rose-800 rounded-lg shadow-sm"
+                className="px-4 py-2 text-xs font-semibold text-white bg-v5-danger hover:bg-v5-danger rounded-lg shadow-sm"
               >
                 {isSubmitting ? "Đang xóa..." : "Xóa nhóm"}
               </button>
