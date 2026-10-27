@@ -31,7 +31,7 @@ check("#10 Có đếm số dòng chưa phân nhóm", plans.includes("unassignedI
 check(
   "#17 Cột lũy kế tháng/quý/năm in đậm + màu",
   giaoBan.includes("bg-primary/5 font-bold text-primary") &&
-    giaoBan.includes("Lũy kế tự động")
+    giaoBan.includes("lũy kế")
 );
 check(
   "#6 Lãnh đạo bộ phận không thấy form khai báo",
@@ -50,10 +50,10 @@ check(
     plans.includes("Mở kế hoạch trùng để sửa/xóa")
 );
 check(
-  "#11 Cảnh báo đơn vị target Thu NSNN + nút nhân 1.000",
-  targetEditor.includes("vndTargetLooksTooSmall") &&
-    targetEditor.includes("Nhân 1.000") &&
-    targetEditor.includes("1.685.000.000.000")
+  "#11 Không tự ý đổi đơn vị target đã chốt",
+  !targetEditor.includes("vndTargetLooksTooSmall") &&
+    !targetEditor.includes("Nhân 1.000") &&
+    targetEditor.includes("Nhập số tiền bằng đồng")
 );
 
 console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);

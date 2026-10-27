@@ -268,20 +268,10 @@ export default function V5DashboardPage() {
     matchingTarget?.percent ??
     comparisonRow?.monthPlan?.percent ??
     (revenueValue !== null && revenueTarget ? (revenueValue / revenueTarget) * 100 : null);
-  const suspiciousTarget = rawPercent !== null && Math.abs(rawPercent) > 300;
-  const displayPercent = suspiciousTarget ? null : rawPercent;
-  const revenueTone: "success" | "danger" | "warning" =
-    suspiciousTarget
-      ? "warning"
-      : displayPercent !== null && displayPercent >= 100
-        ? "success"
-        : "danger";
-  const revenuePercentTone =
-    revenueTone === "success"
-      ? "text-v5-success"
-      : revenueTone === "warning"
-        ? "text-v5-gold-ink"
-        : "text-v5-danger";
+  const displayPercent = rawPercent;
+  const revenueTone: "success" | "danger" =
+    displayPercent !== null && displayPercent >= 100 ? "success" : "danger";
+  const revenuePercentTone = revenueTone === "success" ? "text-v5-success" : "text-v5-danger";
 
   const latestMetrics = useMemo(
     () => (summary?.groups || []).flatMap((g) => g.metrics).slice(0, 12),
@@ -460,8 +450,8 @@ export default function V5DashboardPage() {
                     {displayPercent === null ? "Chưa tính %" : `${displayPercent.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`}
                   </span>
                   <span>so với chỉ tiêu</span>
-                  <Badge variant={revenueTone === "success" ? "success" : revenueTone === "warning" ? "warning" : "danger"}>
-                    {revenueTone === "success" ? "Đạt chỉ tiêu" : revenueTone === "warning" ? "Kiểm tra chỉ tiêu" : "Chưa đạt"}
+                  <Badge variant={revenueTone === "success" ? "success" : "danger"}>
+                    {revenueTone === "success" ? "Đạt chỉ tiêu" : "Chưa đạt"}
                   </Badge>
                   <span className="text-v5-line">·</span>
                   <span>
@@ -478,11 +468,6 @@ export default function V5DashboardPage() {
                 </Link>
               </Button>
             </div>
-            {suspiciousTarget && (
-              <div className="mt-3 rounded-md border border-v5-gold/60 bg-v5-gold-soft px-2.5 py-1.5 text-[10px] text-v5-gold-ink">
-                Chỉ tiêu đang chênh lớn bất thường — kiểm tra lại đơn vị (đồng/tỷ) trước khi dùng tỷ lệ chính thức.
-              </div>
-            )}
           </div>
           <div className="grid grid-cols-2 divide-x divide-v5-line/70 sm:grid-cols-4">
             {[

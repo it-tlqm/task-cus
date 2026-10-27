@@ -69,7 +69,7 @@ function emptyDraft(metric: MetricOption | undefined): TargetDraftInput {
     sourceNote: "",
     note: "",
     status: "DRAFT",
-    isOfficial: true,
+    isOfficial: false,
   };
 }
 
@@ -104,6 +104,7 @@ export function MetricTargetDraftEditor({
   const [draft, setDraft] = useState<TargetDraftInput>(emptyDraft(metrics[0]));
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [touched, setTouched] = useState(false);
 
   const selectedMetric = metrics.find((m) => m.id === draft.metricId) ?? metrics[0];
   const selectedRule = metricRuleFor(selectedMetric, draft.periodType);
@@ -180,20 +181,14 @@ export function MetricTargetDraftEditor({
     });
   }, [draft, selectedMetric, selectedRule]);
 
-  const parsedTargetValue = parseMetricInput(draft.value);
-  const vndTargetLooksTooSmall =
-    selectedMetric?.code === "THU_NSNN" &&
-    selectedMetric.unitType === "VND" &&
-    parsedTargetValue !== null &&
-    parsedTargetValue > 0 &&
-    parsedTargetValue < 1_000_000_000_000;
-
   function patch(patchValue: Partial<TargetDraftInput>) {
+    setTouched(true);
     setDraft((current) => ({ ...current, ...patchValue }));
   }
 
   function handleMetricChange(metricId: string) {
     const metric = metrics.find((m) => m.id === metricId);
+    setTouched(true);
     setDraft((current) => ({
       ...current,
       metricId,
@@ -220,11 +215,12 @@ export function MetricTargetDraftEditor({
       return;
     }
     const callback = status === "CONFIRMED" ? onConfirm : onSaveDraft;
+    setTouched(true);
     setBusy(true);
     try {
       const result = await callback?.(next);
       if (result === false) {
-        setMessage("API target-only từ chối thao tác. Kiểm tra lỗi/validation.");
+        setMessage("Hệ thống từ chối thao tác. Kiểm tra lại thông tin.");
         return;
       }
       setTargets((current) => {
@@ -242,7 +238,7 @@ export function MetricTargetDraftEditor({
             : "Đã lưu nháp. Chỉ hiển thị tạm tính, không dùng báo cáo."
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Lỗi khi gọi API target-only.");
+      setMessage(error instanceof Error ? error.message : "Lỗi khi lưu chỉ tiêu.");
     } finally {
       setBusy(false);
     }
@@ -256,6 +252,7 @@ export function MetricTargetDraftEditor({
     }
     const callback = action === "confirm" ? onConfirm : action === "lock" ? onLock : onVoid;
     if (!callback) return;
+    setTouched(true);
     setBusy(true);
     try {
       const result = await callback(target);
@@ -274,19 +271,20 @@ export function MetricTargetDraftEditor({
       );
       setMessage(
         action === "confirm"
-          ? "Đã xác nhận chỉ tiêu. Chưa tính % chính thức cho tới B-C-3."
+          ? "Đã xác nhận chỉ tiêu."
           : action === "lock"
             ? "Đã chốt chỉ tiêu giao."
-            : "Đã hủy chỉ tiêu giao (chỉ áp dụng cho PROPOSED)."
+            : "Đã hủy chỉ tiêu giao (chỉ áp dụng cho chỉ tiêu nháp)."
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Lỗi khi gọi API target-only.");
+      setMessage(error instanceof Error ? error.message : "Lỗi khi lưu chỉ tiêu.");
     } finally {
       setBusy(false);
     }
   }
 
   const nextConfirm = nextTargetStatus(draft.status, "CONFIRM");
+  const showDraftState = Boolean(draft.id) || touched;
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border-default bg-surface p-4">
@@ -299,11 +297,13 @@ export function MetricTargetDraftEditor({
             </span>
           </div>
           <p className="mt-1 text-body-sm text-on-surface-variant">
-            Chỉ tiêu cấp Cục. Bản nháp chỉ tạm tính; chiều đánh giá, cách đo và mốc so sánh lấy từ quy tắc đã duyệt.
+            {apiMode
+              ? "Chỉ tiêu cấp Cục. Chỉ tiêu đã xác nhận hoặc đã chốt được dùng để tính tỷ lệ chính thức; mọi thay đổi đều được lưu lịch sử."
+              : "Chỉ tiêu cấp Cục. Bản nháp chỉ tạm tính; chiều đánh giá, cách đo và mốc so sánh lấy từ quy tắc đã duyệt."}
           </p>
         </div>
         <span className="rounded border border-border-default bg-surface-container-low px-2 py-1 text-[11px] font-semibold text-on-surface-variant">
-          {draft.isOfficial ? "Chính thức" : "Không chính thức"}
+          {draft.id ? (draft.isOfficial ? "Chính thức" : "Không chính thức") : "Chưa lưu"}
         </span>
       </div>
 
@@ -410,25 +410,9 @@ export function MetricTargetDraftEditor({
             className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal tabular-nums text-on-surface"
             value={draft.value}
             onValueChange={(raw) => patch({ value: raw })}
-            placeholder="VD: 1.685.000.000.000"
+            placeholder="Nhập số tiền bằng đồng"
           />
         </label>
-
-        {vndTargetLooksTooSmall && (
-          <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
-            <div className="font-semibold">Kiểm tra đơn vị: giá trị đang nhỏ hơn 1.000 tỷ đồng.</div>
-            <div className="mt-0.5">
-              Nếu Quyết định ghi <b>1.685 tỷ</b>, phải nhập <b>1.685.000.000.000</b> (đồng).
-            </div>
-            <button
-              type="button"
-              onClick={() => patch({ value: String(Math.round((parsedTargetValue || 0) * 1000)) })}
-              className="mt-1.5 rounded border border-amber-400 bg-white px-2 py-1 font-semibold text-amber-900 hover:bg-amber-100"
-            >
-              Nhân 1.000 (đổi tỷ → đồng)
-            </button>
-          </div>
-        )}
 
         <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
           Chiều đánh giá
@@ -464,7 +448,7 @@ export function MetricTargetDraftEditor({
             className="min-h-20 rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
             value={draft.sourceNote}
             onChange={(e) => patch({ sourceNote: e.target.value })}
-            placeholder="VD: Quyết định giao chỉ tiêu số ... (mock)"
+            placeholder="VD: Quyết định giao chỉ tiêu số..."
           />
         </label>
         <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
@@ -478,28 +462,31 @@ export function MetricTargetDraftEditor({
         </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[draft.status]}`}>
-          {TARGET_STATE_LABELS[draft.status === "DRAFT" ? "DRAFT" : draft.status === "CONFIRMED" ? "CONFIRMED" : draft.status === "LOCKED" ? "LOCKED" : draft.status === "VOID" ? "VOID" : "SUPERSEDED"]}
-        </span>
-        <span className="text-body-xs text-on-surface-variant">
-          {periodLabel(draft)} · {draft.classificationId ? "theo phân loại" : "tổng"} · {draft.labelCode || "chưa chọn loại"}
-        </span>
-        {nextConfirm && (
-          <span className="text-body-xs text-on-surface-variant">
-            Có thể xác nhận từ trạng thái nháp.
+      {showDraftState && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[draft.status]}`}>
+            {TARGET_STATE_LABELS[draft.status === "DRAFT" ? "DRAFT" : draft.status === "CONFIRMED" ? "CONFIRMED" : draft.status === "LOCKED" ? "LOCKED" : draft.status === "VOID" ? "VOID" : "SUPERSEDED"]}
           </span>
-        )}
-      </div>
+          <span className="text-body-xs text-on-surface-variant">
+            {periodLabel(draft)} · {draft.classificationId ? "theo phân loại" : "tổng"} · {draft.labelCode || "chưa chọn loại"}
+          </span>
+          {nextConfirm && (
+            <span className="text-body-xs text-on-surface-variant">
+              Có thể xác nhận từ trạng thái nháp.
+            </span>
+          )}
+        </div>
+      )}
 
       {rulesPending || !selectedRule.officialPercentAllowed ? (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-sm text-amber-900">
-          <b>Chưa có quy tắc đánh giá (D5-A):</b> chưa đủ direction/measureMode/baselineScope cho chỉ tiêu/kỳ này. Không tính % chính thức.
+          <b>Chưa có quy tắc đánh giá:</b> chưa đủ thông tin đánh giá cho chỉ tiêu/kỳ này. Không tính % chính thức.
         </div>
       ) : (
+        !apiMode &&
         preview && (
           <div className="rounded-lg border border-border-default bg-surface-container-low px-3 py-2 text-body-sm">
-            <b>Tạm tính (mock):</b>{" "}
+            <b>Xem trước:</b>{" "}
             {preview.state === "COMPUTED" ? (
               <span className="font-semibold tabular-nums text-primary">{preview.displayValue}</span>
             ) : (
@@ -508,13 +495,13 @@ export function MetricTargetDraftEditor({
               </span>
             )}
             <span className="ml-2 text-body-xs text-on-surface-variant">
-              (số thực hiện giả lập = 80% chỉ tiêu; target DRAFT/DEMO không dùng báo cáo)
+              (chỉ để tham khảo, không dùng báo cáo)
             </span>
           </div>
         )
       )}
 
-      {(errors.length > 0 || warnings.length > 0) && (
+      {showDraftState && (errors.length > 0 || warnings.length > 0) && (
         <div className="flex flex-col gap-1 rounded-lg border border-border-default bg-surface-container-lowest p-3">
           {errors.length > 0 && (
             <div className="text-body-xs font-semibold text-rose-700">Lỗi cần sửa trước khi xác nhận</div>
@@ -539,7 +526,7 @@ export function MetricTargetDraftEditor({
           className="rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50"
           onClick={() => save("DRAFT")}
         >
-          {apiMode ? "Lưu nháp (PROPOSED)" : "Lưu nháp (mock)"}
+          {apiMode ? "Lưu đề xuất" : "Lưu nháp"}
         </button>
         <button
           type="button"
@@ -547,19 +534,27 @@ export function MetricTargetDraftEditor({
           disabled={busy || errors.length > 0 || draft.status !== "DRAFT"}
           onClick={() => save("CONFIRMED")}
         >
-          {apiMode ? "Xác nhận chỉ tiêu" : "Xác nhận (mock)"}
+          Xác nhận chỉ tiêu
         </button>
         <button
           type="button"
           disabled={busy}
           className="rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-sm font-semibold text-on-surface hover:bg-surface-container-low disabled:opacity-50"
-          onClick={() => setDraft(emptyDraft(selectedMetric))}
+          onClick={() => {
+            setDraft(emptyDraft(selectedMetric));
+            setTouched(false);
+            setMessage(null);
+          }}
         >
           Tạo mới
         </button>
       </div>
 
       {message && <div className="text-body-xs text-on-surface-variant">{message}</div>}
+
+      <p className="text-body-xs text-on-surface-variant">
+        Chỉ tiêu đã chốt được khóa, không sửa trực tiếp. Chỉ tiêu đã xác nhận có thể điều chỉnh; mọi thay đổi đều lưu lịch sử.
+      </p>
 
       <div className="overflow-x-auto rounded-lg border border-border-default">
         <table className="w-full min-w-[900px] border-collapse text-body-xs">
@@ -598,7 +593,7 @@ export function MetricTargetDraftEditor({
                     <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_STYLE[t.status]}`}>
                       {TARGET_STATE_LABELS[t.status === "DRAFT" ? "DRAFT" : t.status === "CONFIRMED" ? "CONFIRMED" : t.status === "LOCKED" ? "LOCKED" : t.status === "VOID" ? "VOID" : "SUPERSEDED"]}
                     </span>
-                    <span className="ml-1 text-[10px] text-on-surface-variant">{t.isOfficial ? "official" : "DEMO"}</span>
+                    <span className="ml-1 text-[10px] text-on-surface-variant">{t.isOfficial ? "chính thức" : "mô phỏng"}</span>
                   </td>
                   <td className="px-2 py-1.5">
                     <div className="flex flex-wrap items-center gap-1">
@@ -606,10 +601,13 @@ export function MetricTargetDraftEditor({
                         <button
                           type="button"
                           disabled={busy}
-                          onClick={() => setDraft({ ...t })}
+                          onClick={() => {
+                            setDraft({ ...t });
+                            setTouched(true);
+                          }}
                           className="rounded border border-border-default px-1.5 py-0.5 text-[10px] font-semibold disabled:opacity-50"
                         >
-                          Sửa
+                          {t.status === "DRAFT" ? "Sửa" : "Điều chỉnh"}
                         </button>
                       )}
                       {t.status === "DRAFT" && (

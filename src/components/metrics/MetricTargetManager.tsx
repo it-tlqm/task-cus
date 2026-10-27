@@ -192,7 +192,7 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
       const realId = draft.id && !draft.id.startsWith("temp-") ? draft.id : null;
       if (realId) await request(`/api/metrics/targets/${realId}`, "PATCH", payload);
       else await request("/api/metrics/targets", "POST", payload);
-      toast.success(realId ? "Đã cập nhật chỉ tiêu giao (PROPOSED)." : "Đã tạo chỉ tiêu giao (PROPOSED).");
+      toast.success(realId ? "Đã lưu đề xuất chỉ tiêu giao." : "Đã tạo chỉ tiêu giao.");
       refresh();
       return true;
     } catch (e) {
@@ -207,9 +207,9 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
       await request(`/api/metrics/targets/${draft.id}`, "POST", {
         action: "confirm",
         sourceNote: draft.sourceNote,
-        reason: "Xác nhận từ UI target-only",
+        reason: "Xác nhận từ giao diện",
       });
-      toast.success("Đã xác nhận chỉ tiêu giao. % chính thức chỉ tính khi đủ quy tắc D5-A.");
+      toast.success("Đã xác nhận chỉ tiêu giao.");
       refresh();
       return true;
     } catch (e) {
@@ -223,7 +223,7 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
     try {
       await request(`/api/metrics/targets/${draft.id}`, "POST", {
         action: "lock",
-        reason: "Chốt từ UI target-only",
+        reason: "Chốt từ giao diện",
       });
       toast.success("Đã chốt chỉ tiêu giao.");
       refresh();
@@ -239,9 +239,9 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
     try {
       await request(`/api/metrics/targets/${draft.id}`, "POST", {
         action: "void",
-        reason: "Hủy từ UI target-only",
+        reason: "Hủy từ giao diện",
       });
-      toast.success("Đã hủy chỉ tiêu giao (PROPOSED).");
+      toast.success("Đã hủy chỉ tiêu giao.");
       refresh();
       return true;
     } catch (e) {
