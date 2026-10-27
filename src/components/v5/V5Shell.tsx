@@ -15,7 +15,6 @@ import {
   ChevronRight,
   CircleHelp,
   ClipboardList,
-  Command,
   FileBarChart2,
   FileCog,
   FileText,
@@ -41,7 +40,6 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
 
 type NavItem = {
@@ -326,7 +324,6 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
             <div className="hidden min-w-0 items-center gap-2 lg:flex">
               <PanelLeft className="h-4 w-4 text-v5-muted" />
               <span className="text-[13px] font-semibold text-v5-ink">{pageTitle}</span>
-              <Badge variant="outline" className="ml-1 hidden xl:inline-flex">V5</Badge>
             </div>
 
             <div className="ml-auto flex items-center gap-1.5">
@@ -372,12 +369,6 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-3 lg:px-5 lg:pt-4">{children}</main>
-      </div>
-
-      <div className="fixed bottom-4 right-4 z-40 hidden xl:block">
-        <div className="flex items-center gap-1 rounded-full border border-v5-line bg-v5-surface px-2.5 py-1.5 text-[10px] text-v5-muted shadow-sm">
-          <Command className="h-3 w-3" /> V5 Preview
-        </div>
       </div>
 
       <NotificationQuickView open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />

@@ -245,14 +245,14 @@ export default function DashboardPage() {
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/15 text-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press border border-secondary/20"
               >
                 <span className="material-symbols-outlined text-[18px]">insights</span>
-                <span>Thử giao diện V4</span>
+                <span>Bản cũ</span>
               </Link>
               <Link
                 href="/v5"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-on-primary font-body-semibold text-body-semibold transition-fast shadow-sm active-press hover:opacity-90"
               >
                 <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-                <span>V5 Preview</span>
+                <span>Bảng điều hành mới</span>
               </Link>
               {canExport && (
                 <Link

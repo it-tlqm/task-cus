@@ -12,11 +12,9 @@ import {
   CircleDollarSign,
   ClipboardList,
   Gauge,
-  ListFilter,
   Loader2,
   Plus,
   RefreshCw,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -152,6 +150,8 @@ function MetricWidget({ metric, period }: { metric: MetricRow; period: PeriodKey
     unitLabel: metric.unitLabel,
   };
   const value = metric.cols?.[PERIOD_COL[period]] ?? null;
+  const missing = value === null;
+  const missingLabel = period === "month" ? "Chưa nhập" : "Chưa có số";
   return (
     <div className="flex min-w-0 flex-col justify-between gap-2 rounded-lg border border-v5-line/70 bg-v5-surface p-3 transition-colors hover:border-v5-accent/35">
       <div className="flex items-start justify-between gap-2">
@@ -159,13 +159,21 @@ function MetricWidget({ metric, period }: { metric: MetricRow; period: PeriodKey
           <div className="truncate text-[12px] font-semibold text-v5-ink" title={metric.name}>
             {metric.name}
           </div>
-          <div className="mt-0.5 text-[9px] text-v5-muted">
-            {metric.code}
-            {metric.unitLabel ? ` · ${metric.unitLabel}` : ""}
-          </div>
+          <div className="mt-0.5 text-[9px] text-v5-muted">{metric.unitLabel || ""}</div>
         </div>
-        <Badge variant={statusVariant(metric.status?.monthState)} className="shrink-0">
-          {statusLabel(metric.status?.monthState)}
+        <Badge
+          variant={
+            missing
+              ? period === "month"
+                ? "danger"
+                : "warning"
+              : period === "month"
+                ? statusVariant(metric.status?.monthState)
+                : "accent"
+          }
+          className="shrink-0"
+        >
+          {missing ? missingLabel : period === "month" ? statusLabel(metric.status?.monthState) : "Đã có số"}
         </Badge>
       </div>
       <div className="flex items-end justify-between gap-2">
@@ -263,22 +271,43 @@ export default function V5DashboardPage() {
   const revenueValue = revenueMetric?.cols?.[PERIOD_COL[period]] ?? null;
   const comparisonRow = summary?.comparison?.rows?.[0];
   const matchingTarget = revenueMetric?.targets?.find((t) => t.periodType === period.toUpperCase());
-  const revenueTarget = matchingTarget?.targetValue ?? comparisonRow?.monthPlan?.targetValue ?? null;
+  const targetBlock =
+    period === "month"
+      ? matchingTarget ?? comparisonRow?.monthPlan
+      : period === "year"
+        ? comparisonRow?.btc ?? matchingTarget
+        : matchingTarget;
+  const revenueTarget = targetBlock?.targetValue ?? null;
   const rawPercent =
-    matchingTarget?.percent ??
-    comparisonRow?.monthPlan?.percent ??
+    targetBlock?.percent ??
     (revenueValue !== null && revenueTarget ? (revenueValue / revenueTarget) * 100 : null);
   const displayPercent = rawPercent;
-  const revenueTone: "success" | "danger" =
-    displayPercent !== null && displayPercent >= 100 ? "success" : "danger";
-  const revenuePercentTone = revenueTone === "success" ? "text-v5-success" : "text-v5-danger";
+  const revenueTone: "success" | "danger" | "warning" =
+    displayPercent === null ? "warning" : displayPercent >= 100 ? "success" : "danger";
+  const revenuePercentTone =
+    revenueTone === "success"
+      ? "text-v5-success"
+      : revenueTone === "danger"
+        ? "text-v5-danger"
+        : "text-v5-muted";
+  const revenueBadgeLabel =
+    revenueTarget === null ? "Chưa có chỉ tiêu" : displayPercent === null ? "Chưa tính %" : displayPercent >= 100 ? "Đạt chỉ tiêu" : "Chưa đạt";
+  const revenueTargetLabel =
+    period === "month" ? "Kế hoạch tháng" : period === "year" ? "Chỉ tiêu BTC" : "Chỉ tiêu tuần";
 
   const latestMetrics = useMemo(
     () => (summary?.groups || []).flatMap((g) => g.metrics).slice(0, 12),
     [summary]
   );
 
-  const dataDate = summary?.range?.month?.label || kpi?.selectedPeriod?.title || "kỳ hiện tại";
+  const dataDate =
+    (period === "week"
+      ? summary?.range?.week?.label
+      : period === "year"
+        ? summary?.range?.year?.label
+        : summary?.range?.month?.label) ||
+    kpi?.selectedPeriod?.title ||
+    "kỳ hiện tại";
 
   if (loading) {
     return (
@@ -378,9 +407,6 @@ export default function V5DashboardPage() {
           ))}
         </nav>
         <div className="flex items-center gap-2 pb-2">
-          <Button variant="outline" size="sm">
-            <ListFilter className="h-3.5 w-3.5" /> Bộ lọc
-          </Button>
           <Button size="sm" asChild>
             <Link href="/v5/giao-ban/nhap">
               <Plus className="h-3.5 w-3.5" /> Nhập số liệu
@@ -401,7 +427,7 @@ export default function V5DashboardPage() {
         <KpiTile
           label="Thu NSNN"
           value={fmtMetricCompact(revenueValue, { displayScale: 1, decimals: 0, unitLabel: "đồng" }, { withUnit: false })}
-          note={`${PERIOD_LABEL[period]} · lũy kế`}
+          note={`${PERIOD_LABEL[period]} · số thuế phát sinh`}
           icon={CircleDollarSign}
           tone={revenueTone}
         />
@@ -447,17 +473,23 @@ export default function V5DashboardPage() {
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-v5-muted">
                   <span className={`font-semibold ${revenuePercentTone}`}>
-                    {displayPercent === null ? "Chưa tính %" : `${displayPercent.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`}
+                    {displayPercent === null
+                      ? revenueTarget === null
+                        ? "Chưa có chỉ tiêu"
+                        : "Chưa tính %"
+                      : `${displayPercent.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%`}
                   </span>
-                  <span>so với chỉ tiêu</span>
-                  <Badge variant={revenueTone === "success" ? "success" : "danger"}>
-                    {revenueTone === "success" ? "Đạt chỉ tiêu" : "Chưa đạt"}
+                  {displayPercent !== null && <span>so với chỉ tiêu</span>}
+                  <Badge variant={revenueTone === "success" ? "success" : revenueTone === "warning" ? "warning" : "danger"}>
+                    {revenueBadgeLabel}
                   </Badge>
                   <span className="text-v5-line">·</span>
                   <span>
-                    Chỉ tiêu:{" "}
+                    {revenueTargetLabel}:{" "}
                     <b className="font-semibold text-v5-ink">
-                      {fmtMetricCompact(revenueTarget, { displayScale: 1, decimals: 0, unitLabel: "đồng" }, { withUnit: false })}
+                      {revenueTarget !== null
+                        ? fmtMetricCompact(revenueTarget, { displayScale: 1, decimals: 0, unitLabel: "đồng" }, { withUnit: false })
+                        : "—"}
                     </b>
                   </span>
                 </div>
@@ -474,7 +506,7 @@ export default function V5DashboardPage() {
               { label: "Kỳ này", value: revenueValue },
               { label: comparisonRow?.prevMonth?.label || "Tháng trước", value: comparisonRow?.prevMonth?.value ?? null },
               { label: comparisonRow?.samePeriodLastYear?.label || "Cùng kỳ", value: comparisonRow?.samePeriodLastYear?.value ?? null },
-              { label: "Chỉ tiêu", value: revenueTarget },
+              { label: revenueTargetLabel, value: revenueTarget },
             ].map((item) => (
               <div key={item.label} className="px-4 py-3">
                 <div className="text-[9px] font-semibold uppercase tracking-wide text-v5-muted">{item.label}</div>
@@ -619,14 +651,6 @@ export default function V5DashboardPage() {
         </Card>
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-v5-line px-4 py-3 text-[10px] text-v5-muted">
-        <span className="inline-flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-v5-gold-ink" /> V5 preview · shadcn/ui · không ảnh hưởng production
-        </span>
-        <Link href="/dashboard" className="font-semibold text-v5-accent hover:underline">
-          Quay lại bản hiện tại
-        </Link>
-      </div>
     </div>
   );
 }

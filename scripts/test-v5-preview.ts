@@ -35,7 +35,7 @@ check(
   tailwind.includes("#1B3461") && tailwind.includes("#C62222") && tailwind.includes("#F2C41D")
 );
 check("AppShell bỏ qua chrome cũ cho /v5", shell.includes("isV5Route") && shell.includes('pathname === "/v5"'));
-check("V5 có shell riêng", v5Shell.includes("V5Shell") && v5Shell.includes("V5 Preview"));
+check("V5 có shell riêng", v5Shell.includes("export function V5Shell"));
 check("AppShell dùng V5Shell cho toàn bộ màn hình cũ", shell.includes("<V5Shell>"));
 check(
   "Mobile dùng sidebar drawer, không dùng tabbar",
@@ -45,6 +45,13 @@ check("Sidebar section thu gọn/mở rộng", v5Shell.includes("collapsed") && 
 check(
   "Tổng quan đạt chỉ tiêu xanh, chưa đạt/chưa nhập đỏ",
   v5Page.includes("revenueTone") && v5Page.includes("text-v5-success") && v5Page.includes("text-v5-danger")
+);
+check(
+  "Chỉ tiêu Thu NSNN khớp kỳ đang chọn",
+  v5Page.includes('period === "month"') &&
+    v5Page.includes("comparisonRow?.btc") &&
+    v5Page.includes("Chưa có chỉ tiêu") &&
+    !v5Page.includes("V5 preview")
 );
 check("V5 layout dùng shell", v5Layout.includes("V5Shell"));
 check("V5 dashboard dùng widget, không bảng", v5Page.includes("MetricWidget") && !v5Page.includes("<table"));
