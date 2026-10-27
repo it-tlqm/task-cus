@@ -1729,7 +1729,7 @@ export default function PlansPage() {
                   title="Xuất dữ liệu Excel chuẩn mẫu báo cáo Hải quan (8 cột A-H)"
                 >
                   <span className="material-symbols-outlined text-[18px] text-status-success">download</span>
-                  <span>Xuất .XLSX</span>
+                  <span>Xuất .Excel</span>
                 </a>
               )}
             </div>

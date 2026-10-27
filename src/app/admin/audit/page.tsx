@@ -26,7 +26,7 @@ const ACTION_LABELS: Record<string, string> = {
   AI_EXTRACT: "AI tách kết luận họp",
   TASK_PROGRESS_UPDATE: "Cập nhật tiến độ",
   TASK_ACCEPT: "Tiếp nhận đầu việc",
-  REPORT_EXPORTED: "Xuất báo cáo XLSX",
+  REPORT_EXPORTED: "Xuất báo cáo Excel",
   ROUTINE_ENTRY_CREATED: "Ghi nhật ký tác nghiệp",
   ROUTINE_ENTRY_NOT_OCCURRED: "Xác nhận không phát sinh",
 };

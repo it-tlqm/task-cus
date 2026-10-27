@@ -245,7 +245,7 @@ export default function SystemAdminPage() {
             Trung tâm Quản trị Kỹ thuật & Cấu hình Vận hành
           </h1>
           <p className="text-xs md:text-sm text-v5-muted mt-0.5">
-            Giám sát toàn diện dữ liệu cơ cấu tổ chức, ma trận phân quyền RBAC, kiểm toán an ninh và quản trị tham số cấu hình hệ thống thực tế.
+            Giám sát toàn diện dữ liệu cơ cấu tổ chức, ma trận phân quyền ph?n quy?n, kiểm toán an ninh và quản trị tham số cấu hình hệ thống thực tế.
           </p>
         </div>
 
@@ -298,7 +298,7 @@ export default function SystemAdminPage() {
 
           <div className="bg-v5-surface p-3.5 rounded-xl border border-v5-line shadow-sm">
             <div className="flex items-center justify-between text-v5-muted">
-              <span className="text-[11px] font-semibold uppercase">Phân quyền RBAC</span>
+              <span className="text-[11px] font-semibold uppercase">Phân quyền ph?n quy?n</span>
               <Shield className="w-4 h-4 text-v5-success" />
             </div>
             <div className="text-xl font-bold text-v5-ink mt-1">{data.rbac.totalRoles} vai trò</div>
@@ -377,7 +377,7 @@ export default function SystemAdminPage() {
           }`}
         >
           <Shield className="w-3.5 h-3.5" />
-          Ma trận Phân quyền (RBAC)
+          Ma trận Phân quyền (ph?n quy?n)
         </button>
 
         <button
@@ -554,7 +554,7 @@ export default function SystemAdminPage() {
         </div>
       )}
 
-      {/* TAB 3: MA TRẬN PHÂN QUYỀN RBAC */}
+      {/* TAB 3: MA TRẬN PHÂN QUYỀN ph?n quy?n */}
       {activeTab === "rbac" && data && (
         <div className="space-y-4">
           <div className="p-4 bg-v5-gold-soft border border-v5-gold/50 rounded-xl flex items-start gap-3">

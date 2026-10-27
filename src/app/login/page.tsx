@@ -108,7 +108,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 w-fit">
               <span className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
               <span className="text-xs font-semibold tracking-wide uppercase text-secondary-fixed">
-                HỆ THỐNG ĐIỀU HÀNH SỐ HÓA TALUNG-CUS-WORK v1.2.4
+                HỆ THỐNG ĐIỀU HÀNH SỐ HÓA H?I QUAN T? L?NG
               </span>
             </div>
             <h1 className="text-2xl xl:text-3xl font-extrabold text-white tracking-tight leading-tight mt-1">
@@ -342,7 +342,7 @@ export default function LoginPage() {
           <footer className="text-center flex flex-col items-center gap-1 pt-1">
             <div className="inline-flex items-center gap-1.5 text-outline">
               <span className="material-symbols-outlined text-[13px]">terminal</span>
-              <span className="text-[11px] font-mono">Bản dựng: v1.2.4-TL (Enterprise Build)</span>
+              <span className="text-[11px] font-mono">Bản dựng:-TL (Enterprise Build)</span>
             </div>
             <p className="text-[11px] text-on-surface-variant">
               Hải quan cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng

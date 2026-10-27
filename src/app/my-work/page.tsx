@@ -2233,7 +2233,7 @@ function MyWorkPageContent() {
                   <span>
                     {uploadingFile
                       ? "Đang tải tệp lên..."
-                      : "Tải thêm tệp tin đính kèm (PDF, XLSX, DOCX, Ảnh)"}
+                      : "Tải thêm tệp tin đính kèm (PDF, Excel, DOCX, Ảnh)"}
                   </span>
                 </button>
               </div>

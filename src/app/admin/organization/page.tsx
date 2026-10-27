@@ -847,7 +847,7 @@ export default function OrganizationAdminPage() {
           </div>
           <h1 className="text-2xl font-bold text-v5-ink mt-1">Cơ cấu tổ chức & Quản lý cán bộ công chức</h1>
           <p className="text-sm text-v5-muted">
-            Quản trị sơ đồ đơn vị, hồ sơ cán bộ, lịch sử điều chuyển công tác và cấp tài khoản RBAC thực chất
+            Quản trị sơ đồ đơn vị, hồ sơ cán bộ, lịch sử điều chuyển công tác và cấp tài khoản ph?n quy?n thực chất
           </p>
         </div>
 

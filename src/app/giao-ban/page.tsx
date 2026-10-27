@@ -377,7 +377,7 @@ export default function GiaoBanPage() {
                             })}
                             <th
                               className="px-2 py-2 font-semibold text-center"
-                              title="V3.2/D5-A + C1-A: chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đánh giá đã duyệt; chưa có quy tắc thì hiển thị lý do, không tô đạt/vượt."
+                              title="chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đánh giá đã duyệt; chưa có quy tắc thì hiển thị lý do, không tô đạt/vượt."
                             >
                               % chỉ tiêu giao
                             </th>
@@ -437,8 +437,8 @@ export default function GiaoBanPage() {
                                       className="text-[11px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold"
                                       title={
                                         m.targetPolicy.configured
-                                          ? "V3.2/C1-A: chỉ tiêu/kỳ này chưa được duyệt gán chỉ tiêu; không tính % và không tô đạt/vượt."
-                                          : "V3.2/C1-A: chưa có cấu hình quy tắc gán chỉ tiêu; không tự gán cho mọi chỉ tiêu."
+                                          ? "chỉ tiêu/kỳ này chưa được duyệt gán chỉ tiêu; không tính % và không tô đạt/vượt."
+                                          : "chưa có cấu hình quy tắc gán chỉ tiêu; không tự gán cho mọi chỉ tiêu."
                                       }
                                     >
                                       Chưa có quy tắc gán chỉ tiêu

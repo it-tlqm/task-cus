@@ -359,7 +359,7 @@ function ReportsContent() {
         return;
       }
 
-      showToast(`Đã chốt và khóa thành công số liệu ${data.snapshot.periodTitle}! Mã băm SHA-256: ${data.snapshot.checksum}`, "success");
+      showToast(`Đã chốt và khóa thành công số liệu ${data.snapshot.periodTitle}! Mã băm m? ki?m tra to?n v?n: ${data.snapshot.checksum}`, "success");
       setIsLockModalOpen(false);
       setLockNotes("");
       loadData();
@@ -412,7 +412,7 @@ function ReportsContent() {
       }
       setVerificationFeedback(data);
       if (data.isValid) {
-        showToast("Mã SHA-256 hoàn toàn trùng khớp với nội dung bản chụp đã lưu!", "success");
+        showToast("Mã m? ki?m tra to?n v?n hoàn toàn trùng khớp với nội dung bản chụp đã lưu!", "success");
       } else {
         showToast("CẢNH BÁO: Phát hiện sai lệch mã băm so với nội dung lưu trữ!", "error");
       }
@@ -1190,7 +1190,7 @@ function ReportsContent() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="font-headline-md text-headline-md text-v5-ink">
-                    Cấu Hình Ánh Xạ &amp; Mẫu Xuất XLSX (Builder)
+                    Cấu Hình Ánh Xạ &amp; Mẫu Xuất Excel (Builder)
                   </h2>
                   <span className="px-2 py-0.5 rounded text-[11px] font-label-sm font-semibold bg-secondary-fixed text-on-secondary-fixed-variant">
                     Phiên bản: v1.2-STABLE
@@ -1338,11 +1338,11 @@ function ReportsContent() {
                     <span className="font-label-sm text-[11px] text-v5-muted">Chống sửa đổi nội dung bảng tính</span>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-status-success-bg text-status-success font-semibold">
-                    SHA-256
+                    m? ki?m tra to?n v?n
                   </span>
                 </div>
                 <div className="mt-2 text-[12px] text-v5-muted leading-relaxed bg-v5-bg p-2.5 rounded">
-                  Mọi thao tác tải file XLSX sẽ được ghi nhận tự động vào bảng Audit Log hệ thống kèm địa chỉ IP và mã tài khoản người dùng.
+                  Mọi thao tác tải file Excel sẽ được ghi nhận tự động vào bảng nh?t k? h? th?ng hệ thống kèm địa chỉ IP và mã tài khoản người dùng.
                 </div>
               </div>
             </div>
@@ -1591,7 +1591,7 @@ function ReportsContent() {
                     {item.isValid ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-status-success-bg text-status-success">
                         <span className="material-symbols-outlined text-[14px]">verified</span>
-                        <span>Toàn vẹn (SHA-256)</span>
+                        <span>Toàn vẹn (m? ki?m tra to?n v?n)</span>
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-status-danger-bg text-status-danger">
@@ -1614,7 +1614,7 @@ function ReportsContent() {
                     </div>
                   )}
                   <div className="p-2 bg-v5-bg rounded font-mono text-[11px] text-v5-muted break-all">
-                    <div className="text-[10px] text-v5-muted uppercase font-semibold mb-0.5">Mã băm SHA-256 (64 hex):</div>
+                    <div className="text-[10px] text-v5-muted uppercase font-semibold mb-0.5">Mã băm m? ki?m tra to?n v?n (64 hex):</div>
                     <span className="text-secondary select-all">{item.checksum}</span>
                   </div>
                 </div>
@@ -1747,7 +1747,7 @@ function ReportsContent() {
                   {isLocking ? (
                     <>
                       <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
-                      <span>Đang tổng hợp &amp; băm SHA-256...</span>
+                      <span>Đang tổng hợp &amp; băm m? ki?m tra to?n v?n...</span>
                     </>
                   ) : (
                     <>
@@ -1796,7 +1796,7 @@ function ReportsContent() {
               <div className="p-3 bg-v5-bg rounded-lg flex flex-col gap-2 border border-v5-line/40">
                 <div className="flex items-center justify-between">
                   <span className="font-label-sm text-v5-muted uppercase font-semibold">
-                    Mã Kiểm Tra Toàn Vẹn SHA-256 (64 hex lowercase):
+                    Mã Kiểm Tra Toàn Vẹn m? ki?m tra to?n v?n (64 hex lowercase):
                   </span>
                   <button
                     onClick={() => handleVerifySnapshot(viewingSnapshot.id)}
