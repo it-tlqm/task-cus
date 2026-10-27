@@ -470,7 +470,7 @@ export default function TasksPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {canAssign && (
+            {canAssign && permUser?.unitId && (
               <Button size="sm" data-tour="create-btn" onClick={() => setShowCreateModal(true)}>
                 <Plus className="h-3.5 w-3.5" /> Giao nhiệm vụ
               </Button>
@@ -491,6 +491,12 @@ export default function TasksPage() {
             )}
           </div>
         </header>
+
+        {!permissionsLoading && canAssign && !permUser?.unitId && (
+          <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
+            Tài khoản chưa được gán bộ phận chính. Liên hệ quản trị tổ chức để cập nhật phân công trước khi giao việc.
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
           <Card className="p-3">

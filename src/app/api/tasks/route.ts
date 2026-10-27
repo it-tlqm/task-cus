@@ -299,6 +299,12 @@ export async function POST(req: NextRequest) {
     if (user.role === "SYSTEM_ADMIN") {
       return jsonError("Quản trị kỹ thuật không có thẩm quyền tạo nhiệm vụ nghiệp vụ", 403);
     }
+    if (!user.unitId) {
+      return jsonError(
+        "Tài khoản chưa được gán bộ phận chính. Liên hệ quản trị tổ chức để cập nhật phân công trước khi giao việc.",
+        403
+      );
+    }
 
     const body = await req.json();
     const {

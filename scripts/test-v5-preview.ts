@@ -154,6 +154,11 @@ check(
     !tasksPage.includes("min-h-screen bg-app-bg")
 );
 check(
+  "Chặn giao việc khi tài khoản thiếu bộ phận chính",
+  read("src/app/api/tasks/route.ts").includes("Tài khoản chưa được gán bộ phận chính") &&
+    tasksPage.includes("chưa được gán bộ phận chính")
+);
+check(
   "Phê duyệt dùng header/KPI/tab V5",
   approvalsPage.includes("Hồ sơ của tôi") &&
     approvalsPage.includes("Làm mới") &&
