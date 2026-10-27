@@ -603,7 +603,7 @@ export default function TasksPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse table-dense">
               <thead>
-                <tr className="bg-surface-subtle text-primary font-table-header text-table-header border-b border-border-default">
+                <tr className="bg-v5-bg text-primary font-table-header text-table-header border-b border-v5-line">
                   <th className="py-3 px-space-md w-[280px]">MÃ &amp; NỘI DUNG CHỈ ĐẠO</th>
                   <th className="py-3 px-space-sm w-[150px]">NGUỒN GIAO VIỆC</th>
                   <th className="py-3 px-space-sm w-[200px]">ĐƠN VỊ &amp; CHỦ TRÌ</th>
@@ -632,12 +632,12 @@ export default function TasksPage() {
                     const planItemTitle = task.planLinks?.[0]?.planItem?.title;
 
                     return (
-                      <tr key={task.id} className="hover:bg-surface-container-low transition-fast">
+                      <tr key={task.id} className="hover:bg-v5-bg transition-fast">
                         <td className="py-3 px-space-md align-top">
                           <div className="flex flex-col gap-0.5">
                             <span className="font-bold text-primary">{task.code}</span>
-                            <span className="font-semibold text-on-surface">{task.title}</span>
-                            <span className="text-xs text-outline">{task.description || "Nhiệm vụ trực tiếp"}</span>
+                            <span className="font-semibold text-v5-ink">{task.title}</span>
+                            <span className="text-xs text-v5-muted">{task.description || "Nhiệm vụ trực tiếp"}</span>
                           </div>
                         </td>
 
@@ -645,13 +645,13 @@ export default function TasksPage() {
                           <div className="flex flex-col gap-1">
                             {/* YC-38 UAT fix: ma TX + nguon phat sinh thay cho nhan hard-code */}
                             <TxSourceBadge source={task.txSource} />
-                            <span className="text-[11px] text-outline">
+                            <span className="text-[11px] text-v5-muted">
                               {originLabel(task.originKind)}
                             </span>
                             <span className="text-xs font-semibold text-primary">
                               {planTitle || "Chỉ đạo Chi cục"}
                             </span>
-                            <span className="text-[11px] text-outline">
+                            <span className="text-[11px] text-v5-muted">
                               {planItemTitle || (task.expectedResultText ? "Có sản phẩm yêu cầu" : "Giao việc trực tiếp")}
                             </span>
                           </div>
@@ -660,7 +660,7 @@ export default function TasksPage() {
                         <td className="py-3 px-space-sm align-top">
                           <div className="flex flex-col">
                             <span className="font-semibold text-primary">{task.owner?.fullName || "Chưa phân công"}</span>
-                            <span className="text-xs text-on-surface-variant">
+                            <span className="text-xs text-v5-muted">
                               {task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}
                               {task.assignees && task.assignees.length > 0 ? ` (+${task.assignees.length} phối hợp)` : ""}
                             </span>
@@ -674,7 +674,7 @@ export default function TasksPage() {
                             ) : (
                               <span className="text-primary font-semibold text-xs">{formatDateTime(task.currentDeadline)}</span>
                             )}
-                            <span className="text-[11px] text-outline">
+                            <span className="text-[11px] text-v5-muted">
                               {task.originalDeadline && task.originalDeadline !== task.currentDeadline
                                 ? `Gốc: ${formatDateTime(task.originalDeadline)}`
                                 : "Hạn hoàn thành"}
@@ -700,7 +700,7 @@ export default function TasksPage() {
                               <div className="flex justify-between text-xs font-semibold text-secondary">
                                 <span>{task.progressPercent ?? 0}%</span>
                               </div>
-                              <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                              <div className="w-full bg-v5-bg h-1.5 rounded-full overflow-hidden">
                                 <div
                                   className="bg-secondary h-full rounded-full transition-all"
                                   style={{ width: `${Math.min(100, task.progressPercent ?? 0)}%` }}
@@ -747,7 +747,7 @@ export default function TasksPage() {
                             )}
                             <Link
                               href={`/tasks/${task.id}`}
-                              className="px-2.5 py-1 rounded bg-surface-subtle text-primary hover:bg-surface-container text-xs font-semibold active-press"
+                              className="px-2.5 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg text-xs font-semibold active-press"
                             >
                               Chi tiết
                             </Link>
@@ -761,15 +761,15 @@ export default function TasksPage() {
             </table>
           </div>
           {/* UX: tải thêm khi còn trang (API giới hạn 50/trang) */}
-          <div className="flex items-center justify-center gap-3 p-3 border-t border-border-default/50">
-            <span className="text-xs text-outline">
+          <div className="flex items-center justify-center gap-3 p-3 border-t border-v5-line/50">
+            <span className="text-xs text-v5-muted">
               Đã tải {tasks.length}/{totalCount} nhiệm vụ
             </span>
             {page < totalPages && (
               <button
                 onClick={() => fetchTasks({ page: page + 1, append: true })}
                 disabled={loadingMore}
-                className="px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-xs font-bold active-press disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg-high text-primary text-xs font-bold active-press disabled:opacity-50"
               >
                 {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
               </button>
@@ -781,7 +781,7 @@ export default function TasksPage() {
       {/* MODAL GIAO NHIỆM VỤ ĐỘT XUẤT */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary-fixed text-[22px]">add_task</span>
@@ -801,7 +801,7 @@ export default function TasksPage() {
                       value={aiIdea}
                       onChange={(e) => setAiIdea(e.target.value)}
                       placeholder="Gõ vài từ khóa, AI soạn nháp giúp..."
-                      className="flex-1 h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-dashed border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="flex-1 h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-dashed border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                     <button
                       type="button"
@@ -824,7 +824,7 @@ export default function TasksPage() {
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="Nhập nội dung công việc chỉ đạo..."
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
 
@@ -849,7 +849,7 @@ export default function TasksPage() {
                     <select
                       value={selectedUnitId}
                       onChange={(e) => setSelectedUnitId(e.target.value)}
-                      className="h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       {units.length > 0 ? (
                         units.map((u) => (
@@ -867,7 +867,7 @@ export default function TasksPage() {
                     <select
                       value={selectedOwnerId}
                       onChange={(e) => setSelectedOwnerId(e.target.value)}
-                      className="h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       {people.length > 0 ? (
                         people.map((p) => (
@@ -896,7 +896,7 @@ export default function TasksPage() {
                     <select
                       value={newPriority}
                       onChange={(e) => setNewPriority(e.target.value as any)}
-                      className="h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="Khẩn">Khẩn cấp</option>
                       <option value="Cao">Cao</option>
@@ -910,7 +910,7 @@ export default function TasksPage() {
                       type="datetime-local"
                       value={newDeadline}
                       onChange={(e) => setNewDeadline(e.target.value)}
-                      className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
                 </div>
@@ -922,7 +922,7 @@ export default function TasksPage() {
                     value={newSource}
                     onChange={(e) => setNewSource(e.target.value)}
                     placeholder="Chỉ đạo đột xuất Lãnh đạo Chi cục..."
-                    className="h-10 px-3 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
 
@@ -933,7 +933,7 @@ export default function TasksPage() {
                     value={newExpectedResult}
                     onChange={(e) => setNewExpectedResult(e.target.value)}
                     placeholder="Biên bản kiểm tra điện tử, xác nhận thông quan đúng hạn..."
-                    className="p-2.5 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                    className="p-2.5 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
                   />
                 </div>
 
@@ -957,17 +957,17 @@ export default function TasksPage() {
                       }).slice(0, 5);
                       setNewAttachFiles(valid);
                     }}
-                    className="text-body-md font-body-md text-on-surface file:mr-2 file:px-3 file:py-1.5 file:rounded file:bg-surface-container file:text-primary file:text-xs file:font-semibold file:border file:border-border-subtle"
+                    className="text-body-md font-body-md text-v5-ink file:mr-2 file:px-3 file:py-1.5 file:rounded file:bg-v5-bg file:text-primary file:text-xs file:font-semibold file:border file:border-v5-line"
                   />
-                  <p className="text-[11px] text-on-surface-variant">Tối đa 5 tệp, mỗi tệp ≤ 10MB. Tải lên sau khi nhiệm vụ được tạo.</p>
+                  <p className="text-[11px] text-v5-muted">Tối đa 5 tệp, mỗi tệp ≤ 10MB. Tải lên sau khi nhiệm vụ được tạo.</p>
                 </div>
               </div>
 
-              <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-space-sm border-t border-border-default">
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container border border-border-subtle active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line active-press"
                 >
                   Hủy
                 </button>
@@ -987,7 +987,7 @@ export default function TasksPage() {
       {/* MODAL DUYỆT KẾT QUẢ */}
       {showApproveModal && selectedTask && (
         <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-secondary text-on-secondary flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Phê Duyệt Kết Quả Hoàn Thành</h3>
               <button onClick={() => setShowApproveModal(false)}>
@@ -1002,11 +1002,11 @@ export default function TasksPage() {
                 value={approvalNotes}
                 onChange={(e) => setApprovalNotes(e.target.value)}
                 placeholder="Đạt yêu cầu, thống nhất lưu biên bản điện tử..."
-                className="w-full p-2.5 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                className="w-full p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
               />
             </div>
-            <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
-              <button onClick={() => setShowApproveModal(false)} className="px-4 py-2 rounded bg-surface-container-lowest text-xs font-semibold">
+            <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
+              <button onClick={() => setShowApproveModal(false)} className="px-4 py-2 rounded bg-v5-surface text-xs font-semibold">
                 Hủy
               </button>
               <button
@@ -1023,7 +1023,7 @@ export default function TasksPage() {
       {/* MODAL GIA HẠN / ĐÔN ĐỐC */}
       {showExtModal && selectedTask && (
         <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col border border-border-default transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="p-space-md bg-status-danger text-on-error flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Chỉ Đạo / Cho Phép Gia Hạn</h3>
               <button onClick={() => setShowExtModal(false)}>
@@ -1038,11 +1038,11 @@ export default function TasksPage() {
                 value={extDecisionNotes}
                 onChange={(e) => setExtDecisionNotes(e.target.value)}
                 placeholder="Đồng ý gia hạn giải quyết đến 18:30..."
-                className="w-full p-2.5 rounded bg-surface-container-low text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                className="w-full p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
               />
             </div>
-            <div className="p-space-md bg-surface-subtle flex items-center justify-end gap-2 border-t border-border-default">
-              <button onClick={() => setShowExtModal(false)} className="px-4 py-2 rounded bg-surface-container-lowest text-xs font-semibold">
+            <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
+              <button onClick={() => setShowExtModal(false)} className="px-4 py-2 rounded bg-v5-surface text-xs font-semibold">
                 Hủy
               </button>
               <button

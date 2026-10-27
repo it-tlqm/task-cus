@@ -90,7 +90,7 @@ function formatFileSize(bytes: number) {
 function getFileIcon(mimeType: string, fileName: string) {
   const name = fileName.toLowerCase();
   if (mimeType.includes("pdf") || name.endsWith(".pdf")) {
-    return { icon: "picture_as_pdf", color: "text-rose-600 bg-rose-50 border-rose-200" };
+    return { icon: "picture_as_pdf", color: "text-v5-danger bg-v5-danger-soft border-v5-danger/30" };
   }
   if (
     mimeType.includes("spreadsheet") ||
@@ -98,7 +98,7 @@ function getFileIcon(mimeType: string, fileName: string) {
     name.endsWith(".xls") ||
     name.endsWith(".csv")
   ) {
-    return { icon: "table_view", color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
+    return { icon: "table_view", color: "text-emerald-600 bg-v5-success-soft border-v5-success/30" };
   }
   if (
     mimeType.startsWith("image/") ||
@@ -107,9 +107,9 @@ function getFileIcon(mimeType: string, fileName: string) {
     name.endsWith(".jpeg") ||
     name.endsWith(".webp")
   ) {
-    return { icon: "image", color: "text-blue-600 bg-blue-50 border-blue-200" };
+    return { icon: "image", color: "text-v5-accent bg-v5-accent-soft border-v5-line" };
   }
-  return { icon: "description", color: "text-slate-600 bg-slate-50 border-slate-200" };
+  return { icon: "description", color: "text-v5-muted bg-v5-bg border-v5-line" };
 }
 
 export default function ApprovalsPage() {
@@ -456,7 +456,7 @@ export default function ApprovalsPage() {
         {/* Cards List */}
         <div data-tour="approval-list" className="flex flex-col gap-space-md">
           {loading ? (
-            <div className="p-12 text-center text-outline bg-v5-surface rounded-xl animate-pulse">
+            <div className="p-12 text-center text-v5-muted bg-v5-surface rounded-xl animate-pulse">
               Đang nạp danh sách hồ sơ trình ký và nghiệm thu từ cơ sở dữ liệu...
             </div>
           ) : filteredItems.length === 0 ? (
@@ -628,7 +628,7 @@ export default function ApprovalsPage() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download={att.fileName}
-                                  className="px-2 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg-high text-[11px] font-semibold transition-fast flex items-center gap-1 border border-border-subtle"
+                                  className="px-2 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg-high text-[11px] font-semibold transition-fast flex items-center gap-1 border border-v5-line"
                                   title="Tải về máy tính"
                                 >
                                   <span className="material-symbols-outlined text-[14px]">download</span>
@@ -644,7 +644,7 @@ export default function ApprovalsPage() {
 
                   {item.type === "result" && (!item.attachments || item.attachments.length === 0) && (
                     <div className="px-3 py-2 rounded-lg bg-v5-bg/80 border border-dashed border-v5-line text-[11px] text-v5-muted mb-space-sm flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[15px] text-outline">info</span>
+                      <span className="material-symbols-outlined text-[15px] text-v5-muted">info</span>
                       <span>Chưa có tệp đính kèm nào được tải lên cho nhiệm vụ này.</span>
                     </div>
                   )}
@@ -739,7 +739,7 @@ export default function ApprovalsPage() {
                 <iframe
                   src={previewFile.url}
                   title={previewFile.name}
-                  className="w-full h-[75vh] rounded-lg border border-border-subtle shadow-sm bg-white"
+                  className="w-full h-[75vh] rounded-lg border border-v5-line shadow-sm bg-v5-surface"
                 />
               ) : (
                 <img

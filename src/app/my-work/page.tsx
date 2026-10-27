@@ -1109,12 +1109,12 @@ function MyWorkPageContent() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm theo mã việc, tên việc..."
-                  className="w-full h-8 pl-8 pr-3 rounded bg-v5-surface text-body-md font-body-md text-v5-ink placeholder:text-v5-muted border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary transition-fast"
+                  className="w-full h-8 pl-8 pr-3 rounded bg-v5-surface text-body-md font-body-md text-v5-ink placeholder:text-v5-muted border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary transition-fast"
                 />
               </div>
               <button
                 onClick={() => fetchTasks()}
-                className="h-8 px-2.5 rounded bg-v5-surface text-v5-muted font-label-md text-label-md hover:bg-v5-bg flex items-center gap-1 shadow-sm border border-border-subtle transition-fast active-press"
+                className="h-8 px-2.5 rounded bg-v5-surface text-v5-muted font-label-md text-label-md hover:bg-v5-bg flex items-center gap-1 shadow-sm border border-v5-line transition-fast active-press"
               >
                 <span className="material-symbols-outlined text-[16px]">tune</span>
                 <span className="hidden sm:inline">Phân loại</span>
@@ -1920,7 +1920,7 @@ function MyWorkPageContent() {
         <div className="fixed inset-0 z-50 overflow-hidden flex justify-end">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
             onClick={() => setIsDrawerOpen(false)}
           />
 
@@ -2080,7 +2080,7 @@ function MyWorkPageContent() {
                   value={drawerNotes}
                   onChange={(e) => setDrawerNotes(e.target.value)}
                   placeholder="Nhập tóm tắt kết quả, số hồ sơ xử lý, số tờ khai..."
-                  className="w-full p-2.5 rounded-lg bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
+                  className="w-full p-2.5 rounded-lg bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
                 />
                 <span className="font-label-sm text-[12px] text-v5-muted">
                   Gợi ý: Ghi rõ số lượng tờ khai, vướng mắc nếu có để cấp trên kiểm tra.
@@ -2225,7 +2225,7 @@ function MyWorkPageContent() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
                   type="button"
-                  className="mt-1 w-full py-2.5 rounded-lg bg-v5-bg text-secondary font-label-md text-label-md hover:bg-v5-bg flex items-center justify-center gap-2 transition-fast active-press border border-border-subtle disabled:opacity-50"
+                  className="mt-1 w-full py-2.5 rounded-lg bg-v5-bg text-secondary font-label-md text-label-md hover:bg-v5-bg flex items-center justify-center gap-2 transition-fast active-press border border-v5-line disabled:opacity-50"
                 >
                   <span className={`material-symbols-outlined text-[18px] ${uploadingFile ? "animate-spin" : ""}`}>
                     {uploadingFile ? "progress_activity" : "upload_file"}
@@ -2253,7 +2253,7 @@ function MyWorkPageContent() {
             <div className="p-space-md bg-v5-bg flex items-center justify-between gap-space-sm shrink-0 border-t border-v5-line">
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="px-4 py-2 rounded-lg bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg transition-fast border border-border-subtle active-press"
+                className="px-4 py-2 rounded-lg bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg transition-fast border border-v5-line active-press"
               >
                 Hủy bỏ
               </button>
@@ -2303,13 +2303,13 @@ function MyWorkPageContent() {
                   <label className="text-xs font-semibold text-primary">Tên / Nội dung chỉ đạo *</label>
                   <input type="text" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
                     placeholder="Nhập nội dung công việc chỉ đạo..."
-                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary" />
                 </div>
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-semibold text-primary">Cán bộ chủ trì</label>
                     <select value={editOwnerId} onChange={(e) => setEditOwnerId(e.target.value)}
-                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
+                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary">
                       {editTask.owner && <option value={editTask.owner.id}>{editTask.owner.fullName}</option>}
                       {people.filter((p) => p.id !== editTask.owner?.id).map((p) => (
                         <option key={p.id} value={p.id}>{p.fullName}</option>
@@ -2319,7 +2319,7 @@ function MyWorkPageContent() {
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-semibold text-primary">Ưu tiên</label>
                     <select value={editPriority} onChange={(e) => setEditPriority(e.target.value)}
-                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary">
+                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary">
                       <option value="Khẩn">Khẩn cấp</option>
                       <option value="Cao">Cao</option>
                       <option value="Trung bình">Trung bình</option>
@@ -2331,7 +2331,7 @@ function MyWorkPageContent() {
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-primary">Hạn hoàn thành</label>
                   <input type="datetime-local" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)}
-                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary" />
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary" />
                 </div>
               </div>
               <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
@@ -2380,7 +2380,7 @@ function MyWorkPageContent() {
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Nhập nội dung kết quả, số hồ sơ liên quan..."
-                    className="h-9 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-9 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
 
@@ -2406,7 +2406,7 @@ function MyWorkPageContent() {
                     </label>                    <select
                       value={newTaskSource}
                       onChange={(e) => setNewTaskSource(e.target.value)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="PLAN">Kế hoạch công tác tuần</option>
                       <option value="SELF_INITIATED">Tự khởi tạo phát sinh</option>
@@ -2422,7 +2422,7 @@ function MyWorkPageContent() {
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="Cao">Cao</option>
                       <option value="Trung bình">Trung bình</option>
@@ -2440,7 +2440,7 @@ function MyWorkPageContent() {
                       type="date"
                       value={newTaskDeadline}
                       onChange={(e) => setNewTaskDeadline(e.target.value)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -2451,7 +2451,7 @@ function MyWorkPageContent() {
                       type="time"
                       value={newTaskTime}
                       onChange={(e) => setNewTaskTime(e.target.value)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
                 </div>
@@ -2461,7 +2461,7 @@ function MyWorkPageContent() {
                 <button
                   type="button"
                   onClick={() => setIsNewTaskModalOpen(false)}
-                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -2512,7 +2512,7 @@ function MyWorkPageContent() {
                 value={quickApproveQuality}
                 onChange={(e) => setQuickApproveQuality(e.target.value)}
                 disabled={quickApproveBusy}
-                className="w-full p-2.5 rounded bg-v5-bg text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                className="w-full p-2.5 rounded bg-v5-bg text-xs border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
               >
                 <option value="">— Chọn mức chất lượng —</option>
                 {[65, 70, 75, 80, 85, 90, 95, 100].map((v) => (
@@ -2595,7 +2595,7 @@ function MyWorkPageContent() {
                 <iframe
                   src={previewFile.url}
                   title={previewFile.name}
-                  className="w-full h-[75vh] rounded-lg border border-border-subtle shadow-sm bg-white"
+                  className="w-full h-[75vh] rounded-lg border border-v5-line shadow-sm bg-v5-surface"
                 />
               ) : (
                 <img

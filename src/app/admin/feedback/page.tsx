@@ -187,7 +187,7 @@ export default function AdminFeedbackPage() {
   };
 
   const pageBtn =
-    "px-2.5 h-8 rounded bg-surface-subtle hover:bg-surface-container text-[12px] font-semibold text-on-surface transition-fast active-press disabled:opacity-40 disabled:cursor-not-allowed";
+    "px-2.5 h-8 rounded bg-v5-bg hover:bg-v5-bg text-[12px] font-semibold text-v5-ink transition-fast active-press disabled:opacity-40 disabled:cursor-not-allowed";
 
   if (!permLoading && !showAdminMenu) {
     return (
@@ -205,7 +205,7 @@ export default function AdminFeedbackPage() {
           <span className="material-symbols-outlined">campaign</span>
           Góp ý &amp; Báo lỗi
         </h1>
-        <p className="text-sm text-on-surface-variant">
+        <p className="text-sm text-v5-muted">
           Phản hồi công chức gửi từ nút <b>Góp ý</b> trong app — xem xong đánh dấu đã xử lý để không sót.
         </p>
       </div>
@@ -229,7 +229,7 @@ export default function AdminFeedbackPage() {
               className={`h-9 px-3 rounded-lg text-xs font-bold border transition-fast ${
                 tab === t.id
                   ? "bg-primary text-white border-primary"
-                  : "bg-v5-surface text-on-surface border-v5-line hover:bg-surface-container"
+                  : "bg-v5-surface text-v5-ink border-v5-line hover:bg-v5-bg"
               }`}
             >
               {t.label}
@@ -402,7 +402,7 @@ export default function AdminFeedbackPage() {
               <button
                 onClick={() => act(f.id, "note")}
                 disabled={busyId === f.id || (noteDraft[f.id] ?? f.adminNote ?? "").trim() === (f.adminNote ?? "").trim()}
-                className="h-8 px-3 rounded-lg bg-surface-subtle border border-v5-line text-xs font-semibold text-v5-muted disabled:opacity-40"
+                className="h-8 px-3 rounded-lg bg-v5-bg border border-v5-line text-xs font-semibold text-v5-muted disabled:opacity-40"
               >
                 Lưu ghi chú
               </button>

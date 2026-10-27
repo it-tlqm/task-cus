@@ -135,8 +135,8 @@ export default function WorkItemReviewsPage() {
     <main className="p-4 md:p-6 space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-on-surface">Công việc chờ bạn xác nhận</h1>
-          <p className="text-xs text-on-surface-variant mt-1">
+          <h1 className="text-xl font-bold text-v5-ink">Công việc chờ bạn xác nhận</h1>
+          <p className="text-xs text-v5-muted mt-1">
             Công việc cán bộ gửi lên kèm nội dung kết quả và ngày hoàn thành thực tế. Xác nhận thì
             kết quả được khóa; trả lại thì cán bộ sửa và gửi lại.
           </p>
@@ -144,7 +144,7 @@ export default function WorkItemReviewsPage() {
         <button
           type="button"
           onClick={load}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-default bg-surface-container-lowest hover:bg-surface-container"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-line bg-v5-surface hover:bg-v5-bg"
         >
           <span className="material-symbols-outlined text-[16px]">refresh</span>
           Tải lại
@@ -152,7 +152,7 @@ export default function WorkItemReviewsPage() {
       </header>
 
       {/* P1: các tab lịch sử phê duyệt */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-border-subtle">
+      <div className="flex flex-wrap items-center gap-1 border-b border-v5-line">
         {([
           ["pending", "Chờ xác nhận"],
           ["confirmed", "Đã xác nhận"],
@@ -165,8 +165,8 @@ export default function WorkItemReviewsPage() {
             data-testid={"review-tab-" + k}
             onClick={() => setTab(k)}
             className={"px-3 py-2 text-xs font-semibold rounded-t-lg " + (tab === k
-              ? "bg-surface-container text-on-surface border border-b-0 border-border-subtle"
-              : "text-on-surface-variant hover:bg-surface-container-low")}
+              ? "bg-v5-bg text-v5-ink border border-b-0 border-v5-line"
+              : "text-v5-muted hover:bg-v5-bg")}
           >
             {l}
           </button>
@@ -178,21 +178,21 @@ export default function WorkItemReviewsPage() {
           value={staffFilter}
           onChange={(e) => setStaffFilter(e.target.value)}
           placeholder="Mã hoặc tên cán bộ (lọc)"
-          className="h-9 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+          className="h-9 rounded-lg border border-v5-line bg-v5-surface px-3 text-xs"
         />
         <input
           data-testid="review-month-filter"
           value={monthFilter}
           onChange={(e) => setMonthFilter(e.target.value.replace(/\D/g, "").slice(0, 2))}
           placeholder="Tháng (1-12)"
-          className="h-9 w-28 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+          className="h-9 w-28 rounded-lg border border-v5-line bg-v5-surface px-3 text-xs"
         />
         <input
           data-testid="review-year-filter"
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value.replace(/\D/g, "").slice(0, 4))}
           placeholder="Năm"
-          className="h-9 w-24 rounded-lg border border-border-default bg-surface-container-lowest px-3 text-xs"
+          className="h-9 w-24 rounded-lg border border-v5-line bg-v5-surface px-3 text-xs"
         />
         {(staffFilter || monthFilter || yearFilter) && (
           <button
@@ -211,7 +211,7 @@ export default function WorkItemReviewsPage() {
       {lastDecided && (
         <div
           data-testid="review-last-decided"
-          className="rounded-lg border border-status-success/30 bg-status-success-bg px-3 py-2 text-xs text-on-surface"
+          className="rounded-lg border border-status-success/30 bg-status-success-bg px-3 py-2 text-xs text-v5-ink"
         >
           <b>{lastDecided.action === "CONFIRM" ? "Đã xác nhận" : "Đã trả lại"}</b> hồ sơ “{lastDecided.title}”.{" "}
           <button
@@ -224,13 +224,13 @@ export default function WorkItemReviewsPage() {
         </div>
       )}
       {loading || permLoading ? (
-        <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-6 text-sm text-on-surface-variant">
+        <div className="rounded-xl border border-v5-line bg-v5-surface p-6 text-sm text-v5-muted">
           Đang tải danh sách công việc…
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-border-subtle bg-surface-container-lowest p-8 text-center">
-          <span className="material-symbols-outlined text-[32px] text-on-surface-variant">task_alt</span>
-          <p className="mt-2 text-sm font-semibold text-on-surface">
+        <div className="rounded-xl border border-v5-line bg-v5-surface p-8 text-center">
+          <span className="material-symbols-outlined text-[32px] text-v5-muted">task_alt</span>
+          <p className="mt-2 text-sm font-semibold text-v5-ink">
             {tab === "pending"
               ? "Không có công việc nào đang chờ bạn xác nhận"
               : tab === "confirmed"
@@ -239,7 +239,7 @@ export default function WorkItemReviewsPage() {
                   ? "Chưa có hồ sơ nào bị trả lại"
                   : "Chưa có lịch sử xử lý"}
           </p>
-          <p className="mt-1 text-xs text-on-surface-variant">
+          <p className="mt-1 text-xs text-v5-muted">
             {tab === "pending"
               ? "Khi cán bộ gửi công việc lên, hồ sơ sẽ xuất hiện tại đây."
               : "Lịch sử chỉ hiển thị hồ sơ bạn có quyền xem hoặc đã trực tiếp xử lý."}
@@ -251,12 +251,12 @@ export default function WorkItemReviewsPage() {
             <article
               key={it.id}
               data-testid={`review-item-${it.id}`}
-              className="rounded-xl border border-border-subtle bg-surface-container-lowest p-4 shadow-sm"
+              className="rounded-xl border border-v5-line bg-v5-surface p-4 shadow-sm"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-on-surface truncate">{it.title}</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">
+                  <p className="text-sm font-semibold text-v5-ink truncate">{it.title}</p>
+                  <p className="text-xs text-v5-muted mt-0.5">
                     {it.person.fullName} ·{" "}
                     {it.catalogEntry?.code || it.product?.code || "Công việc tự ghi nhận"} · gửi lúc{" "}
                     {fmtTime(it.submittedAt)}
@@ -290,21 +290,21 @@ export default function WorkItemReviewsPage() {
                 )}
               </div>
               {(it.reviewState === "CONFIRMED" || it.reviewState === "RETURNED") && it.reviewedBy && (
-                <p className="text-[11px] text-on-surface-variant mt-1">
-                  Người xử lý: <b className="text-on-surface">{it.reviewedBy.fullName}</b>
+                <p className="text-[11px] text-v5-muted mt-1">
+                  Người xử lý: <b className="text-v5-ink">{it.reviewedBy.fullName}</b>
                   {it.reviewedAt ? ` · ${fmtTime(it.reviewedAt)}` : ""}
                   {it.reviewNote ? ` · Lý do: ${it.reviewNote}` : ""}
                 </p>
               )}
 
-              <div className="mt-3 rounded-lg bg-surface-container p-3">
-                <p className="text-[11px] font-semibold text-on-surface-variant mb-1">
+              <div className="mt-3 rounded-lg bg-v5-bg p-3">
+                <p className="text-[11px] font-semibold text-v5-muted mb-1">
                   Nội dung kết quả công việc
                 </p>
-                <p className="text-sm text-on-surface whitespace-pre-wrap">
+                <p className="text-sm text-v5-ink whitespace-pre-wrap">
                   {it.resultText || "(không có nội dung)"}
                 </p>
-                <p className="text-[11px] text-on-surface-variant mt-2">
+                <p className="text-[11px] text-v5-muted mt-2">
                   Ngày hoàn thành thực tế: <b>{fmtDate(it.completedDate)}</b> · Minh chứng đính kèm:{" "}
                   <b>{it.evidenceCount}</b> tệp
                 </p>
@@ -322,10 +322,10 @@ export default function WorkItemReviewsPage() {
               {expanded === it.id && (
                 <div
                   data-testid={"review-history-" + it.id}
-                  className="mt-1 rounded-lg border border-border-subtle bg-surface-container p-2 space-y-1"
+                  className="mt-1 rounded-lg border border-v5-line bg-v5-bg p-2 space-y-1"
                 >
                   {(it.history || []).map((h) => (
-                    <div key={h.id} className="text-[11px] text-on-surface">
+                    <div key={h.id} className="text-[11px] text-v5-ink">
                       <b>
                         {h.action === "SUBMITTED"
                           ? "Gửi lãnh đạo"
@@ -344,7 +344,7 @@ export default function WorkItemReviewsPage() {
                     </div>
                   ))}
                   {(it.history || []).length === 0 && (
-                    <div className="text-[11px] text-on-surface-variant">Chưa có thao tác xử lý nào.</div>
+                    <div className="text-[11px] text-v5-muted">Chưa có thao tác xử lý nào.</div>
                   )}
                 </div>
               )}
@@ -371,14 +371,14 @@ export default function WorkItemReviewsPage() {
                       setReturning(it);
                       setReturnNote("");
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-default bg-surface-container-lowest hover:bg-surface-container disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-line bg-v5-surface hover:bg-v5-bg disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[16px]">assignment_return</span>
                     Trả lại để chỉnh sửa
                   </button>
                 </div>
               ) : (
-                <div className="mt-3 rounded-lg bg-surface-container px-3 py-2 text-[11px] text-on-surface-variant">
+                <div className="mt-3 rounded-lg bg-v5-bg px-3 py-2 text-[11px] text-v5-muted">
                   {it.reviewState === "CONFIRMED"
                     ? "Hồ sơ đã được xác nhận — chỉ xem lịch sử, không còn thao tác duyệt."
                     : it.reviewState === "RETURNED"
@@ -399,11 +399,11 @@ export default function WorkItemReviewsPage() {
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
           <div
             data-testid="review-return-modal"
-            className="w-full max-w-lg bg-surface-container-lowest rounded-2xl shadow-xl border border-border-subtle p-5"
+            className="w-full max-w-lg bg-v5-surface rounded-2xl shadow-xl border border-v5-line p-5"
           >
-            <h3 className="text-base font-bold text-on-surface mb-1">Trả lại công việc</h3>
-            <p className="text-xs text-on-surface-variant mb-4">{returning.title}</p>
-            <label className="block text-xs font-semibold text-on-surface mb-1">
+            <h3 className="text-base font-bold text-v5-ink mb-1">Trả lại công việc</h3>
+            <p className="text-xs text-v5-muted mb-4">{returning.title}</p>
+            <label className="block text-xs font-semibold text-v5-ink mb-1">
               Lý do trả lại <span className="text-status-danger">*</span>
             </label>
             <textarea
@@ -412,13 +412,13 @@ export default function WorkItemReviewsPage() {
               onChange={(e) => setReturnNote(e.target.value)}
               rows={4}
               placeholder="Nêu rõ nội dung cần chỉnh sửa"
-              className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-status-primary"
+              className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm text-v5-ink focus:outline-none focus:border-status-primary"
             />
             <div className="flex justify-end gap-2 mt-5">
               <button
                 type="button"
                 onClick={() => setReturning(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-border-default bg-surface-container text-on-surface hover:bg-surface-container-low"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-line bg-v5-bg text-v5-ink hover:bg-v5-bg"
               >
                 Huỷ
               </button>

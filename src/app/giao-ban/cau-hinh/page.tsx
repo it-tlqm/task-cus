@@ -503,7 +503,7 @@ export default function CauHinhSoLieuPage() {
                         setSelGroupId("");
                       }
                     }}
-                    className="px-4 py-2 rounded-lg border border-rose-300 text-rose-700 text-label-sm font-semibold hover:bg-rose-50 disabled:opacity-40"
+                    className="px-4 py-2 rounded-lg border border-v5-danger/30 text-v5-danger text-label-sm font-semibold hover:bg-v5-danger-soft disabled:opacity-40"
                   >
                     Xóa nhóm
                   </button>
@@ -587,13 +587,13 @@ export default function CauHinhSoLieuPage() {
                         <span className="text-body-xs text-v5-muted">{m.code}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted">{m.unitLabelEffective}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted">{KIND_LABELS[m.valueKind]?.split(" (")[0]}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-success/30 bg-v5-success-soft text-v5-success font-semibold">
                           Kỳ: {ENTRY_PERIOD_LABELS[(m.entryPeriod || metricEntryPeriod(m)) as keyof typeof ENTRY_PERIOD_LABELS]}
                         </span>
                         {m.classifications.length > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700">{m.classifications.length} phân loại</span>
                         )}
-                        {!m.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700">Đã ẩn</span>}
+                        {!m.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-danger/30 bg-v5-danger-soft text-v5-danger">Đã ẩn</span>}
                         <div className="ml-auto flex items-center gap-1">
                           <button
                             onClick={() => post("metric", "update", { id: m.id, active: !m.active, ...keepMetricFields(m) }, m.active ? "Đã ẩn chỉ tiêu" : "Đã bật chỉ tiêu")}
@@ -699,7 +699,7 @@ export default function CauHinhSoLieuPage() {
                                       const terms = metricDraft.derivation.terms.filter((_: any, j: number) => j !== i);
                                       setMetricDraft({ ...metricDraft, derivation: { ...metricDraft.derivation, terms } });
                                     }}
-                                    className="p-1 rounded text-rose-600 hover:bg-rose-50"
+                                    className="p-1 rounded text-v5-danger hover:bg-v5-danger-soft"
                                   >
                                     <X className="h-4 w-4" />
                                   </button>
@@ -746,7 +746,7 @@ export default function CauHinhSoLieuPage() {
                                     <input type="checkbox" defaultChecked={c.active} onChange={(e) => post("classification", "update", { id: c.id, active: e.target.checked }, e.target.checked ? "Đã bật" : "Đã ẩn")} />
                                     Hiện
                                   </label>
-                                  <button onClick={() => post("classification", "delete", { id: c.id }, "Đã xóa phân loại")} className="p-1 rounded text-rose-600 hover:bg-rose-50" title="Xóa (chỉ khi chưa có số liệu)">
+                                  <button onClick={() => post("classification", "delete", { id: c.id }, "Đã xóa phân loại")} className="p-1 rounded text-v5-danger hover:bg-v5-danger-soft" title="Xóa (chỉ khi chưa có số liệu)">
                                     <Trash2 className="h-4 w-4" />
                                   </button>
                                 </div>
@@ -782,7 +782,7 @@ export default function CauHinhSoLieuPage() {
                                   post("metric", "delete", { id: m.id }, "Đã xóa chỉ tiêu");
                                 }
                               }}
-                              className="px-4 py-2 rounded-lg border border-rose-300 text-rose-700 text-label-sm font-semibold hover:bg-rose-50 disabled:opacity-40"
+                              className="px-4 py-2 rounded-lg border border-v5-danger/30 text-v5-danger text-label-sm font-semibold hover:bg-v5-danger-soft disabled:opacity-40"
                             >
                               Xóa chỉ tiêu
                             </button>
@@ -848,8 +848,8 @@ export default function CauHinhSoLieuPage() {
                         st === "LOCKED"
                           ? "border-violet-300 bg-violet-50 text-violet-800"
                           : st === "CONFIRMED"
-                            ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                            : "border-amber-300 bg-amber-50 text-amber-800";
+                            ? "border-v5-success/30 bg-v5-success-soft text-v5-success"
+                            : "border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink";
                       return (
                         <div key={b.id} className="border border-v5-line/40 rounded px-3 py-2 flex flex-col gap-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -860,7 +860,7 @@ export default function CauHinhSoLieuPage() {
                               {st === "LOCKED" ? "Đã chốt" : st === "CONFIRMED" ? `Đã xác nhận${b.confirmedByName ? " · " + b.confirmedByName : ""}` : "Đề xuất"}
                             </span>
                             {b.dataSource === "DEMO" && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600 font-semibold">DEMO</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line bg-v5-bg text-v5-muted font-semibold">DEMO</span>
                             )}
                           </div>
                           {b.sourceNote && <div className="text-body-xs text-v5-muted">Căn cứ: {b.sourceNote}</div>}
@@ -889,7 +889,7 @@ export default function CauHinhSoLieuPage() {
                                 const reason = window.prompt("Lý do xác nhận mốc lũy kế (bắt buộc):");
                                 if (!reason?.trim()) return;
                                 post("baseline", "confirm", { id: b.id, reason }, "Đã xác nhận mốc");
-                              }} className="px-2 py-1 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 text-body-xs font-semibold hover:bg-emerald-100">
+                              }} className="px-2 py-1 rounded border border-v5-success/30 bg-v5-success-soft text-v5-success text-body-xs font-semibold hover:bg-v5-success-soft">
                                 Xác nhận mốc
                               </button>
                             )}
@@ -902,7 +902,7 @@ export default function CauHinhSoLieuPage() {
                               Lịch sử
                             </button>
                             {st === "PROPOSED" && (
-                              <button onClick={() => post("baseline", "delete", { id: b.id }, "Đã xóa mốc")} className="ml-auto p-1 rounded text-rose-600 hover:bg-rose-50">
+                              <button onClick={() => post("baseline", "delete", { id: b.id }, "Đã xóa mốc")} className="ml-auto p-1 rounded text-v5-danger hover:bg-v5-danger-soft">
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             )}
@@ -1007,7 +1007,7 @@ export default function CauHinhSoLieuPage() {
                         </label>
                       </td>
                       <td className="px-2 py-1.5">
-                        <button onClick={() => post("assignment", "delete", { id: a.id }, "Đã xóa phân công")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
+                        <button onClick={() => post("assignment", "delete", { id: a.id }, "Đã xóa phân công")} className="p-1 rounded text-v5-danger hover:bg-v5-danger-soft">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </td>
@@ -1097,7 +1097,7 @@ export default function CauHinhSoLieuPage() {
               </div>
 
               {assignConfirmOpen && assignDraft.scopeType === "metric" && (
-                <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-sm" data-testid="assign-confirm-bar">
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-v5-gold/50 bg-v5-gold-soft px-3 py-2 text-body-sm" data-testid="assign-confirm-bar">
                   <span>
                     Xác nhận lưu phân công <b>{assignDraft.metricIds.length}</b> chỉ tiêu cho{" "}
                     <b>{assignPerson ? `${assignPerson.code} — ${assignPerson.fullName}` : "?"}</b>?
@@ -1162,7 +1162,7 @@ export default function CauHinhSoLieuPage() {
                         <span className="font-medium text-body-sm">{s.title}</span>
                         <span className="text-body-xs text-v5-muted">{s.code}</span>
                         {s.groupId && <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700">Nhóm: {groupNameById.get(s.groupId)}</span>}
-                        {!s.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700">Đã ẩn</span>}
+                        {!s.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-danger/30 bg-v5-danger-soft text-v5-danger">Đã ẩn</span>}
                         <div className="ml-auto flex gap-1">
                           <button
                             onClick={() => {
@@ -1176,7 +1176,7 @@ export default function CauHinhSoLieuPage() {
                           <button onClick={() => post("section", "update", { id: s.id, active: !s.active }, s.active ? "Đã ẩn" : "Đã bật")} className="px-2 py-1 rounded border border-v5-line text-body-xs">
                             {s.active ? "Ẩn" : "Bật"}
                           </button>
-                          <button onClick={() => post("section", "delete", { id: s.id }, "Đã xóa mục")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
+                          <button onClick={() => post("section", "delete", { id: s.id }, "Đã xóa mục")} className="p-1 rounded text-v5-danger hover:bg-v5-danger-soft">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -1287,11 +1287,11 @@ export default function CauHinhSoLieuPage() {
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700">Nhóm: {groupNameById.get(b.groupId) || "?"}</span>
                         )}
                         {b.sectionId && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-success/30 bg-v5-success-soft text-v5-success">
                             Mục: {sectionTitleById.get(b.sectionId) || "?"}
                           </span>
                         )}
-                        {!b.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700">Đã ẩn</span>}
+                        {!b.active && <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-danger/30 bg-v5-danger-soft text-v5-danger">Đã ẩn</span>}
                         <span className="text-body-xs text-v5-muted">Thứ tự: {b.sortOrder}</span>
                         <span className="text-body-xs text-v5-muted">· {b.code}</span>
                         <div className="ml-auto flex gap-1">
@@ -1313,7 +1313,7 @@ export default function CauHinhSoLieuPage() {
                           <button onClick={() => post("report_block", "update", { id: b.id, active: !b.active }, b.active ? "Đã ẩn khối" : "Đã bật khối")} className="px-2 py-1 rounded border border-v5-line text-body-xs">
                             {b.active ? "Ẩn" : "Bật"}
                           </button>
-                          <button onClick={() => post("report_block", "delete", { id: b.id }, "Đã xóa khối")} className="p-1 rounded text-rose-600 hover:bg-rose-50">
+                          <button onClick={() => post("report_block", "delete", { id: b.id }, "Đã xóa khối")} className="p-1 rounded text-v5-danger hover:bg-v5-danger-soft">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -1551,7 +1551,7 @@ function PersonPicker({ people, value, onChange }: { people: any[]; value: strin
                 <span>— {p.fullName}</span>
                 {p.unitName ? <span className="text-body-xs text-v5-muted">· {p.unitName}</span> : null}
                 {p.accountStatus !== "ACTIVE" ? (
-                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold">
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink font-semibold">
                     chưa có tài khoản
                   </span>
                 ) : null}
@@ -1654,7 +1654,7 @@ function MetricMultiPicker({
                 <span className="text-v5-muted text-body-xs w-[110px] shrink-0">{m.code}</span>
                 <span>{m.name}</span>
                 {!m.active && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700 font-semibold">đã ẩn</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-danger/30 bg-v5-danger-soft text-v5-danger font-semibold">đã ẩn</span>
                 )}
                 {alreadyAssigned.has(m.id) && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700 font-semibold">đã có phân công</span>

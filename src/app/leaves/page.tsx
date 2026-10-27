@@ -15,7 +15,7 @@ const STATUS_LABELS: Record<string, { text: string; cls: string }> = {
   PENDING: { text: "Chờ duyệt", cls: "bg-status-warning-bg text-status-warning" },
   APPROVED: { text: "Đã duyệt", cls: "bg-status-success-bg text-status-success" },
   REJECTED: { text: "Từ chối", cls: "bg-status-danger-bg text-status-danger" },
-  CANCELED: { text: "Đã hủy", cls: "bg-surface-container text-outline" },
+  CANCELED: { text: "Đã hủy", cls: "bg-v5-bg text-v5-muted" },
 };
 
 interface LeaveRow {
@@ -226,7 +226,7 @@ export default function LeavesPage() {
                 )}
                 {r.status === "PENDING" && (
                   <button onClick={() => handleCancel(r.id)}
-                    className="h-10 px-4 rounded-lg bg-surface-container text-sm font-semibold">
+                    className="h-10 px-4 rounded-lg bg-v5-bg text-sm font-semibold">
                     Hủy đơn
                   </button>
                 )}

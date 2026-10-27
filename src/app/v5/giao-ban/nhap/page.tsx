@@ -563,7 +563,7 @@ export default function V5EntryPage() {
                                 onValueChange={(raw) => setValues((prev) => ({ ...prev, [key]: raw }))}
                                 disabled={!value.canEdit || saving}
                                 placeholder={value.canEdit ? "Nhập số…" : "—"}
-                                className="h-9 w-full border border-v5-line bg-white px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent focus:ring-2 focus:ring-v5-accent/10 disabled:bg-v5-bg disabled:text-v5-muted"
+                                className="h-9 w-full border border-v5-line bg-v5-surface px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent focus:ring-2 focus:ring-v5-accent/10 disabled:bg-v5-bg disabled:text-v5-muted"
                               />
                               <div className="flex items-center justify-end gap-1">
                                 {canUseHelper && (
@@ -639,7 +639,7 @@ export default function V5EntryPage() {
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/35 backdrop-blur-[1px]"
+            className="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
             onClick={() => setHelper(null)}
             aria-label="Đóng"
           />
@@ -662,7 +662,7 @@ export default function V5EntryPage() {
                 <FormattedNumberInput
                   value={helperToday}
                   onValueChange={setHelperToday}
-                  className="h-9 w-full rounded-md border border-v5-line bg-white px-2.5 text-right text-[12px] tabular-nums outline-none focus:border-v5-accent"
+                  className="h-9 w-full rounded-md border border-v5-line bg-v5-surface px-2.5 text-right text-[12px] tabular-nums outline-none focus:border-v5-accent"
                   placeholder="Nhập lũy kế…"
                 />
               </label>

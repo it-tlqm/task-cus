@@ -481,7 +481,7 @@ export default function GiaoBanBaoCaoPage() {
                               {data.canManage && (
                                 <button
                                   onClick={() => deleteVersion(v)}
-                                  className="px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-600 text-body-xs font-semibold hover:bg-rose-50"
+                                  className="px-2.5 py-1.5 rounded-lg border border-v5-danger/30 text-v5-danger text-body-xs font-semibold hover:bg-v5-danger-soft"
                                 >
                                   Xóa
                                 </button>

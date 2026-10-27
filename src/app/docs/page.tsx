@@ -24,7 +24,7 @@ interface DocRow {
 const STATUS_LABELS: Record<string, { text: string; cls: string }> = {
   DANG_XU_LY: { text: "Đang xử lý", cls: "bg-status-warning-bg text-status-warning" },
   HOAN_THANH: { text: "Xong", cls: "bg-status-success-bg text-status-success" },
-  LUU_TRU: { text: "Lưu", cls: "bg-surface-container text-outline" },
+  LUU_TRU: { text: "Lưu", cls: "bg-v5-bg text-v5-muted" },
 };
 
 /** Sổ văn bản đến/đi gọn: tra số hiệu, ai đang giữ, hạn nào — chuyển thành việc khi cần. */

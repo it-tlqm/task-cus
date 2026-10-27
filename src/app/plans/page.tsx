@@ -1539,10 +1539,10 @@ export default function PlansPage() {
                 <span className="font-semibold text-v5-ink">
                   {activePlan?.unit?.name || "Chưa xác định đơn vị"}
                 </span>
-                <span className="rounded-full border border-border-subtle bg-v5-bg px-2 py-0.5 text-[11px] font-semibold">
+                <span className="rounded-full border border-v5-line bg-v5-bg px-2 py-0.5 text-[11px] font-semibold">
                   Kế hoạch cấp đơn vị
                 </span>
-                <span className="rounded-full border border-border-subtle bg-v5-bg px-2 py-0.5 text-[11px] font-semibold">
+                <span className="rounded-full border border-v5-line bg-v5-bg px-2 py-0.5 text-[11px] font-semibold">
                   Dữ liệu theo phân quyền
                 </span>
               </div>
@@ -1644,7 +1644,7 @@ export default function PlansPage() {
                   </button>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-border-subtle cursor-default"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-v5-line cursor-default"
                     title="Bạn không có quyền trình duyệt kế hoạch này."
                   >
                     <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
@@ -1672,7 +1672,7 @@ export default function PlansPage() {
                   </>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-border-subtle cursor-default"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-v5-line cursor-default"
                     title={
                       selfApprovalBlocked
                         ? "Người lập/trình không được tự phê duyệt kế hoạch của mình."
@@ -1702,7 +1702,7 @@ export default function PlansPage() {
                   </button>
                 ) : (
                   <span
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-border-subtle cursor-default"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg text-v5-muted font-label-md text-label-md border border-v5-line cursor-default"
                     title="Kế hoạch đã phê duyệt, chờ lãnh đạo ban hành hiệu lực thi hành."
                   >
                     <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
@@ -1774,7 +1774,7 @@ export default function PlansPage() {
             {/* Filter Controls Bar */}
             <div className="flex flex-wrap items-center gap-space-sm">
               {/* Scope Switcher: All vs Personal Plan */}
-              <div className="inline-flex p-1 rounded-lg bg-v5-bg border border-border-subtle gap-1">
+              <div className="inline-flex p-1 rounded-lg bg-v5-bg border border-v5-line gap-1">
                 <button
                   onClick={() => setSelectedScope("all")}
                   className={`px-3 py-1.5 rounded text-xs font-semibold transition-fast ${
@@ -1801,7 +1801,7 @@ export default function PlansPage() {
 
               {filteredPlans.length > 0 && (
                 <div
-                  className="flex min-w-0 items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-border-subtle"
+                  className="flex min-w-0 items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-v5-line"
                   title={activePlan?.title}
                 >
                   <span className="font-label-sm text-label-sm text-v5-muted">Chọn kế hoạch:</span>
@@ -1820,7 +1820,7 @@ export default function PlansPage() {
                   </select>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-border-subtle">
+              <div className="flex items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-v5-line">
                 <span className="font-label-sm text-label-sm text-v5-muted">Phụ trách:</span>
                 <select
                   value={selectedOfficerFilter}
@@ -1835,7 +1835,7 @@ export default function PlansPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-border-subtle">
+              <div className="flex items-center gap-1.5 bg-v5-bg px-3 py-1.5 rounded text-v5-ink border border-v5-line">
                 <span className="font-label-sm text-label-sm text-v5-muted">Ưu tiên:</span>
                 <select
                   value={selectedPriorityFilter}
@@ -1930,7 +1930,7 @@ export default function PlansPage() {
                     const overdue = !done && dl < Date.now();
                     const color = done ? "bg-status-success" : t.status === "WAITING_REVIEW" ? "bg-status-warning" : overdue ? "bg-status-danger" : "bg-secondary";
                     return (
-                      <div key={t.id} className="flex items-center py-1.5 border-t border-border-subtle/50">
+                      <div key={t.id} className="flex items-center py-1.5 border-t border-v5-line/50">
                         <div className="w-64 shrink-0 pr-2 min-w-0">
                           <div className="text-xs font-semibold text-v5-ink truncate" title={t.title}>
                             [{t.code}] {t.title}
@@ -2286,7 +2286,7 @@ export default function PlansPage() {
                               </span>
                             )}
                             {row.deptWorkItemTitle && (
-                              <span className="px-2 py-0.5 rounded text-[11px] bg-v5-bg-high text-primary font-semibold border border-border-subtle">
+                              <span className="px-2 py-0.5 rounded text-[11px] bg-v5-bg-high text-primary font-semibold border border-v5-line">
                                 BỘ PHẬN: {row.deptWorkItemTitle}
                               </span>
                             )}
@@ -2304,7 +2304,7 @@ export default function PlansPage() {
                               </span>
                             ))}
                             {row.deadlineText && (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-v5-bg-high text-primary font-semibold border border-border-subtle">
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-v5-bg-high text-primary font-semibold border border-v5-line">
                                 Hạn hoàn thành: {row.deadlineText}
                               </span>
                             )}
@@ -2766,7 +2766,7 @@ export default function PlansPage() {
                                 {(wi.deptWorkItem || products.length > 0) && (
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {wi.deptWorkItem && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-v5-bg-high text-primary border border-border-subtle">
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-v5-bg-high text-primary border border-v5-line">
                                         {wi.deptWorkItem.title}
                                       </span>
                                     )}
@@ -2938,7 +2938,7 @@ export default function PlansPage() {
                 {/* 1. YC-23 + YC-25: Khu vực chọn đầu việc từ danh mục — mỗi nguồn một cột riêng */}
                 <div
                   data-testid="catalog-picker"
-                  className="rounded-xl border border-border-subtle bg-v5-bg/50 p-3 flex flex-col gap-3"
+                  className="rounded-xl border border-v5-line bg-v5-bg/50 p-3 flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="font-label-md text-label-md text-primary font-semibold flex items-center gap-1.5">
@@ -2951,7 +2951,7 @@ export default function PlansPage() {
                   {/* YC-31 — TX và QĐ1277 được chọn tại một bộ chọn thống nhất bên dưới. */}
                   <div
                     data-testid="modal-tx-picker"
-                    className="text-[11px] text-v5-muted rounded border border-dashed border-border-subtle p-2.5 flex items-start gap-1.5"
+                    className="text-[11px] text-v5-muted rounded border border-dashed border-v5-line p-2.5 flex items-start gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[14px] shrink-0">info</span>
                     <span>
@@ -2996,7 +2996,7 @@ export default function PlansPage() {
                       data-testid="modal-dept-item-select"
                       value={modalDeptWorkItemId}
                       onChange={(e) => handleSelectDeptWorkItem(e.target.value)}
-                      className="h-10 px-3 rounded bg-v5-surface text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-surface text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="">-- Không chọn từ danh mục bộ phận --</option>
                       {modalDeptWorkItemId &&
@@ -3027,7 +3027,7 @@ export default function PlansPage() {
                       data-testid="picker-col-routine"
                       className={`${!legacyTemplatesSelectable && !modalTemplateId ? "hidden" : "flex"} rounded-lg border border-v5-line bg-v5-surface flex-col min-w-0`}
                     >
-                      <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-2">
+                      <div className="px-3 py-2 border-b border-v5-line flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-primary uppercase tracking-wide">
                           Cột A · Công việc thường xuyên (48 mẫu)
                         </span>
@@ -3059,13 +3059,13 @@ export default function PlansPage() {
                             </option>
                           ))}
                       </select>
-                      <div className="p-2 border-b border-border-subtle">
+                      <div className="p-2 border-b border-v5-line">
                         <input
                           data-testid="picker-col-routine-search"
                           value={templateSearch}
                           onChange={(e) => setTemplateSearch(e.target.value)}
                           placeholder="Tìm nhanh theo mã hoặc tên mẫu..."
-                          className="w-full h-8 px-2 rounded bg-v5-bg text-xs border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                          className="w-full h-8 px-2 rounded bg-v5-bg text-xs border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                         />
                       </div>
                       <div className="max-h-52 overflow-y-auto flex flex-col">
@@ -3086,7 +3086,7 @@ export default function PlansPage() {
                                   }
                                   handleSelectRoutineTemplate(tpl.id);
                                 }}
-                                className={`text-left px-3 py-2 border-b border-border-subtle/60 flex flex-col gap-0.5 transition-colors ${
+                                className={`text-left px-3 py-2 border-b border-v5-line/60 flex flex-col gap-0.5 transition-colors ${
                                   active
                                     ? "bg-secondary/10 border-l-2 border-l-secondary"
                                     : "hover:bg-v5-bg"
@@ -3134,7 +3134,7 @@ export default function PlansPage() {
                     }}
                     placeholder="Nhập tên nhiệm vụ trong kỳ kế hoạch..."
                     className={`p-2.5 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary resize-none ${
-                      modalFieldErrors.title ? "border-status-danger" : "border-border-subtle"
+                      modalFieldErrors.title ? "border-status-danger" : "border-v5-line"
                     }`}
                   />
                   {modalFieldErrors.title && (
@@ -3158,7 +3158,7 @@ export default function PlansPage() {
                       }
                     }}
                     className={`h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary ${
-                      modalFieldErrors.planItemId ? "border-status-danger" : "border-border-subtle"
+                      modalFieldErrors.planItemId ? "border-status-danger" : "border-v5-line"
                     }`}
                   >
                     {!(activePlan?.items || []).length && (
@@ -3198,7 +3198,7 @@ export default function PlansPage() {
                   {editingItem ? (
                     <div
                       data-testid="modal-person-readonly"
-                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle flex items-center justify-between gap-2"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line flex items-center justify-between gap-2"
                     >
                       <span className="truncate">
                         {editingItem.person?.fullName || "Không xác định"}
@@ -3227,7 +3227,7 @@ export default function PlansPage() {
                           }
                         }}
                         className={`h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-70 ${
-                          modalFieldErrors.personId ? "border-status-danger" : "border-border-subtle"
+                          modalFieldErrors.personId ? "border-status-danger" : "border-v5-line"
                         }`}
                       >
                         <option value="">
@@ -3318,7 +3318,7 @@ export default function PlansPage() {
                       }
                     }}
                     className={`h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border focus:outline-none focus:ring-1 focus:ring-secondary ${
-                      modalFieldErrors.groupId ? "border-status-danger" : "border-border-subtle"
+                      modalFieldErrors.groupId ? "border-status-danger" : "border-v5-line"
                     }`}
                   >
                     {groups.length === 0 && <option value="">Chưa có nhóm nhiệm vụ</option>}
@@ -3343,7 +3343,7 @@ export default function PlansPage() {
                       data-testid="modal-workdate-select"
                       value={modalWorkDate}
                       onChange={(e) => setModalWorkDate(e.target.value)}
-                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="">Cả tuần / Thực hiện thường xuyên</option>
                       {weekDaysOptions.map((opt) => (
@@ -3362,7 +3362,7 @@ export default function PlansPage() {
                       data-testid="modal-priority-select"
                       value={modalPriority}
                       onChange={(e) => setModalPriority(e.target.value)}
-                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="Cao">Cao (Khẩn cấp / Trọng điểm)</option>
                       <option value="Trung bình">Trung bình (Thường quy)</option>
@@ -3381,7 +3381,7 @@ export default function PlansPage() {
                     type="date"
                     value={modalDueDate}
                     onChange={(e) => setModalDueDate(e.target.value)}
-                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                   <span className="text-[10px] text-v5-muted">
                     Mốc cam kết xử lý. Ngày hoàn thành thực tế và xác nhận của lãnh đạo được ghi nhận tại
@@ -3401,7 +3401,7 @@ export default function PlansPage() {
                       value={modalCoordination}
                       onChange={(e) => setModalCoordination(e.target.value)}
                       placeholder="VD: Doanh nghiệp XNK, Trạm BP..."
-                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     />
                   </div>
 
@@ -3413,7 +3413,7 @@ export default function PlansPage() {
                       data-testid="modal-status-select"
                       value={modalStatus}
                       onChange={(e) => setModalStatus(e.target.value)}
-                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                     >
                       <option value="NOT_STARTED">Chưa thực hiện</option>
                       <option value="IN_PROGRESS">Đang thực hiện</option>
@@ -3437,7 +3437,7 @@ export default function PlansPage() {
                     value={modalExpectedResult}
                     onChange={(e) => setModalExpectedResult(e.target.value)}
                     placeholder="VD: 100% hồ sơ thông quan đúng quy trình, theo dõi 100% seal GPS..."
-                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                 </div>
               </div>
@@ -3446,7 +3446,7 @@ export default function PlansPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -3529,7 +3529,7 @@ export default function PlansPage() {
                       setPlanFormFieldErrors((prev) => ({ ...prev, unitId: "" }));
                     }}
                     className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
-                      planFormFieldErrors.unitId ? "border-status-danger" : "border-border-subtle"
+                      planFormFieldErrors.unitId ? "border-status-danger" : "border-v5-line"
                     }`}
                   >
                     {planOptions.units.length === 0 && <option value="">Chưa có đơn vị trong phạm vi</option>}
@@ -3559,7 +3559,7 @@ export default function PlansPage() {
                         className={`h-10 rounded-lg text-sm font-semibold border transition-fast ${
                           planFormType === type
                             ? "bg-primary text-on-primary border-primary"
-                            : "bg-v5-bg text-v5-muted border-border-subtle"
+                            : "bg-v5-bg text-v5-muted border-v5-line"
                         }`}
                       >
                         {label}
@@ -3579,7 +3579,7 @@ export default function PlansPage() {
                       setPlanFormFieldErrors((prev) => ({ ...prev, date: "" }));
                     }}
                     className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
-                      planFormFieldErrors.date ? "border-status-danger" : "border-border-subtle"
+                      planFormFieldErrors.date ? "border-status-danger" : "border-v5-line"
                     }`}
                   />
                   <span className="text-[10px] text-v5-muted font-normal">
@@ -3602,7 +3602,7 @@ export default function PlansPage() {
                     }}
                     placeholder="VD: Kế hoạch công tác tuần 43"
                     className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
-                      planFormFieldErrors.title ? "border-status-danger" : "border-border-subtle"
+                      planFormFieldErrors.title ? "border-status-danger" : "border-v5-line"
                     }`}
                   />
                   {planFormFieldErrors.title && (
@@ -3622,7 +3622,7 @@ export default function PlansPage() {
                     }}
                     placeholder="VD: I. Công tác trọng tâm"
                     className={`h-10 px-3 rounded bg-v5-bg text-body-md border focus:outline-none focus:ring-1 focus:ring-secondary ${
-                      planFormFieldErrors.firstItem ? "border-status-danger" : "border-border-subtle"
+                      planFormFieldErrors.firstItem ? "border-status-danger" : "border-v5-line"
                     }`}
                   />
                   {planFormFieldErrors.firstItem && (
@@ -3635,7 +3635,7 @@ export default function PlansPage() {
                 <button
                   type="button"
                   onClick={() => setShowPlanCreateModal(false)}
-                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -3704,7 +3704,7 @@ export default function PlansPage() {
                       setPlanTitleError(null);
                     }}
                     placeholder="VD: Kế hoạch công tác tuần 43"
-                    className="h-10 px-3 rounded bg-v5-bg text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                   />
                   <span className="text-[10px] text-v5-muted font-normal">
                     {planTitleDraft.trim().length}/300 ký tự
@@ -3720,7 +3720,7 @@ export default function PlansPage() {
                 <button
                   type="button"
                   onClick={() => setShowPlanTitleModal(false)}
-                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line transition-fast active-press"
                 >
                   Hủy
                 </button>
@@ -3776,7 +3776,7 @@ export default function PlansPage() {
                   </div>
                 )}
 
-                <div className="rounded-lg bg-v5-bg border border-border-subtle px-3 py-2 text-xs text-v5-muted">
+                <div className="rounded-lg bg-v5-bg border border-v5-line px-3 py-2 text-xs text-v5-muted">
                   Kế hoạch: <strong className="text-primary">{activePlan.title}</strong>
                   <br />
                   Hủy mềm chỉ chuyển trạng thái sang <strong>CANCELED</strong>; dữ liệu vẫn được
@@ -3797,7 +3797,7 @@ export default function PlansPage() {
                       setPlanCancelError(null);
                     }}
                     placeholder="VD: Trùng với kế hoạch tuần 43 đã lập cho cùng đơn vị"
-                    className="px-3 py-2 rounded bg-v5-bg text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-y"
+                    className="px-3 py-2 rounded bg-v5-bg text-body-md border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-y"
                   />
                   <span className="text-[10px] text-v5-muted font-normal">
                     {planCancelReason.trim().length}/500 ký tự
@@ -3809,7 +3809,7 @@ export default function PlansPage() {
                 <button
                   type="button"
                   onClick={() => setShowPlanCancelModal(false)}
-                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
+                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line transition-fast active-press"
                 >
                   Giữ lại
                 </button>
@@ -3861,7 +3861,7 @@ export default function PlansPage() {
               )}
 
               {!canEditActivePlanContent && (
-                <div className="rounded-lg border border-border-subtle bg-v5-bg px-3 py-2 text-xs text-v5-muted flex items-start gap-1.5">
+                <div className="rounded-lg border border-v5-line bg-v5-bg px-3 py-2 text-xs text-v5-muted flex items-start gap-1.5">
                   <span className="material-symbols-outlined text-[16px]">lock</span>
                   <span>
                     Kế hoạch đang {activePlan.status === "SUBMITTED" ? "chờ duyệt" : "khóa nội dung"} — chỉ xem
@@ -3883,14 +3883,14 @@ export default function PlansPage() {
                   }}
                   disabled={!canEditActivePlanContent || planItemBusy}
                   placeholder="Tên hạng mục *"
-                  className="h-10 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
+                  className="h-10 px-3 rounded bg-v5-surface text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
                 />
                 <select
                   data-testid="plan-item-group"
                   value={planItemGroupId}
                   onChange={(e) => setPlanItemGroupId(e.target.value)}
                   disabled={!canEditActivePlanContent || planItemBusy}
-                  className="h-10 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
+                  className="h-10 px-3 rounded bg-v5-surface text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-60"
                 >
                   <option value="">Không gán nhóm nghiệp vụ</option>
                   {(groups.length ? groups : planOptions?.groups || []).map((g) => (
@@ -3908,7 +3908,7 @@ export default function PlansPage() {
                         setPlanItemTitle("");
                         setPlanItemError(null);
                       }}
-                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-v5-bg"
+                      className="px-3 py-1.5 rounded text-xs border border-v5-line hover:bg-v5-bg"
                     >
                       Hủy sửa
                     </button>
@@ -3926,7 +3926,7 @@ export default function PlansPage() {
               </div>
 
               {activePlan.items.length === 0 ? (
-                <div className="text-center text-xs text-v5-muted rounded-lg border border-dashed border-border-subtle p-6">
+                <div className="text-center text-xs text-v5-muted rounded-lg border border-dashed border-v5-line p-6">
                   Kế hoạch chưa có hạng mục. Thêm hạng mục đầu tiên ở biểu mẫu phía trên.
                 </div>
               ) : (
@@ -3996,7 +3996,7 @@ export default function PlansPage() {
               <button
                 type="button"
                 onClick={() => setShowPlanItemsModal(false)}
-                className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-border-subtle transition-fast active-press"
+                className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line transition-fast active-press"
               >
                 Đóng
               </button>
@@ -4043,7 +4043,7 @@ export default function PlansPage() {
                       setDeptFormDesc("");
                       loadDeptManageItems(e.target.value);
                     }}
-                    className="h-10 px-3 rounded bg-v5-bg text-body-md border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-body-md border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                   >
                     {deptCatalogUnits.map((u) => (
                       <option key={u.id} value={u.id}>
@@ -4064,14 +4064,14 @@ export default function PlansPage() {
                   value={deptFormTitle}
                   onChange={(e) => setDeptFormTitle(e.target.value)}
                   placeholder="Tên đầu việc * (VD: Kiểm tra niêm phong GPS ca đêm)"
-                  className="h-9 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="h-9 px-3 rounded bg-v5-surface text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                 />
                 <input
                   data-testid="dept-form-desc"
                   value={deptFormDesc}
                   onChange={(e) => setDeptFormDesc(e.target.value)}
                   placeholder="Mô tả ngắn (tuỳ chọn)"
-                  className="h-9 px-3 rounded bg-v5-surface text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="h-9 px-3 rounded bg-v5-surface text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
                 />
                 <div className="flex justify-end gap-2">
                   {deptEditingId && (
@@ -4082,7 +4082,7 @@ export default function PlansPage() {
                         setDeptFormTitle("");
                         setDeptFormDesc("");
                       }}
-                      className="px-3 py-1.5 rounded text-xs border border-border-subtle hover:bg-v5-bg"
+                      className="px-3 py-1.5 rounded text-xs border border-v5-line hover:bg-v5-bg"
                     >
                       Huỷ sửa
                     </button>
@@ -4176,7 +4176,7 @@ export default function PlansPage() {
                 value={returnNotes}
                 onChange={(e) => setReturnNotes(e.target.value)}
                 placeholder="Nhập ý kiến chỉ đạo, nội dung cần bổ sung..."
-                className="w-full p-2.5 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                className="w-full p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
               />
             </div>
             <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
@@ -4236,7 +4236,7 @@ export default function PlansPage() {
                   value={amendmentNotes}
                   onChange={(e) => setAmendmentNotes(e.target.value)}
                   placeholder="Nhập tên hạng mục bổ sung, số văn bản liên quan..."
-                  className="w-full p-2.5 rounded bg-v5-bg text-sm border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                  className="w-full p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
                 />
               </div>
             </div>

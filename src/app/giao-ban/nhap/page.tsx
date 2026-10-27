@@ -347,15 +347,15 @@ export default function NhapSoLieuPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface-container-low pb-24">
+    <div className="flex flex-col min-h-screen bg-v5-bg pb-24">
       <div className="px-margin pt-space-md pb-space-sm flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Nhập số liệu</h1>
-            <p className="text-body-sm text-on-surface-variant">
+            <p className="text-body-sm text-v5-muted">
               Thuế nhập theo ngày; các chỉ tiêu khác nhập theo tuần/tháng/quý/năm theo cấu hình. Chỉ hiện các chỉ tiêu bạn được phân công.
             </p>
-            <p className="text-body-xs text-on-surface-variant">
+            <p className="text-body-xs text-v5-muted">
               Số nhập theo kỳ là <b>tổng phát sinh trong kỳ</b>, lưu tại ngày cuối kỳ; có thể nhập ngay cả khi kỳ chưa kết thúc.
             </p>
           </div>
@@ -363,7 +363,7 @@ export default function NhapSoLieuPage() {
         </div>
 
         <div
-          className="grid w-full max-w-2xl grid-cols-5 gap-1 rounded-lg border border-border-default/40 bg-surface-container-lowest p-1 shadow-sm"
+          className="grid w-full max-w-2xl grid-cols-5 gap-1 rounded-lg border border-v5-line/40 bg-v5-surface p-1 shadow-sm"
           data-testid="entry-period-tabs"
         >
           {ENTRY_PERIODS.map((p) => (
@@ -375,7 +375,7 @@ export default function NhapSoLieuPage() {
               className={`min-w-0 rounded-lg px-2 py-1.5 text-label-md font-label-md leading-tight transition-fast ${
                 entryPeriod === p
                   ? "bg-primary text-on-primary shadow-sm font-semibold"
-                  : "text-on-surface-variant hover:text-primary"
+                  : "text-v5-muted hover:text-primary"
               }`}
               title={ENTRY_PERIOD_HINTS[p]}
             >
@@ -393,7 +393,7 @@ export default function NhapSoLieuPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setDate(shiftPeriodAnchor(entryPeriod, date, -1))}
-            className="p-2 rounded-lg border border-border-default bg-surface-container-lowest hover:bg-surface-container"
+            className="p-2 rounded-lg border border-v5-line bg-v5-surface hover:bg-v5-bg"
             title={`${ENTRY_PERIOD_LABELS[entryPeriod]} trước`}
           >
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
@@ -403,20 +403,20 @@ export default function NhapSoLieuPage() {
             value={date}
             max={data?.today || todayVnStr()}
             onChange={(e) => setDate(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+            className="px-3 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
             title={entryPeriod === "DAY" ? "Chọn ngày" : "Chọn một ngày trong kỳ cần nhập"}
           />
           <button
             onClick={() => setDate(shiftPeriodAnchor(entryPeriod, date, 1))}
             disabled={shiftPeriodAnchor(entryPeriod, date, 1) > (data?.today || todayVnStr())}
-            className="p-2 rounded-lg border border-border-default bg-surface-container-lowest hover:bg-surface-container disabled:opacity-40"
+            className="p-2 rounded-lg border border-v5-line bg-v5-surface hover:bg-v5-bg disabled:opacity-40"
             title={`${ENTRY_PERIOD_LABELS[entryPeriod]} sau`}
           >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
           <button
             onClick={() => setDate(todayVnStr())}
-            className="px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-label-sm font-semibold hover:bg-surface-container"
+            className="px-3 py-2 rounded-lg border border-v5-line bg-v5-surface text-label-sm font-semibold hover:bg-v5-bg"
           >
             Kỳ hiện tại
           </button>
@@ -426,7 +426,7 @@ export default function NhapSoLieuPage() {
             </span>
           )}
           {data && !data.isToday && (
-            <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-body-xs text-amber-700">
+            <span className="rounded border border-v5-gold/50 bg-v5-gold-soft px-2 py-1 text-body-xs text-v5-gold-ink">
               Đang nhập cho {data.period?.label || `ngày ${fmtDate(date)}`} — kiểm tra phạm vi được phân công
             </span>
           )}
@@ -435,17 +435,17 @@ export default function NhapSoLieuPage() {
 
       <div className="px-margin flex flex-col gap-4">
         {saveWarnings && saveWarnings.length > 0 && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 flex flex-col gap-1.5" data-testid="save-warnings">
+          <div className="rounded-xl border border-v5-gold/50 bg-v5-gold-soft p-3 flex flex-col gap-1.5" data-testid="save-warnings">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-semibold text-amber-800 text-body-sm flex items-center gap-1.5">
+              <span className="font-semibold text-v5-gold-ink text-body-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[18px]">warning</span>
                 Cảnh báo giá trị bất thường ({saveWarnings.length}) — số liệu VẪN ĐÃ LƯU, hãy kiểm tra lại
               </span>
-              <button onClick={() => setSaveWarnings(null)} className="text-amber-800 hover:bg-amber-100 rounded p-1" title="Đóng">
+              <button onClick={() => setSaveWarnings(null)} className="text-v5-gold-ink hover:bg-v5-gold-soft rounded p-1" title="Đóng">
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
-            <ul className="text-body-xs text-amber-900 list-disc pl-5 flex flex-col gap-0.5">
+            <ul className="text-body-xs text-v5-gold-ink list-disc pl-5 flex flex-col gap-0.5">
               {saveWarnings.map((w, i) => (
                 <li key={i}>
                   <b>{w.metricName}</b> ({w.metricCode}): {w.message}
@@ -454,25 +454,25 @@ export default function NhapSoLieuPage() {
             </ul>
           </div>
         )}
-        {loading && <div className="text-body-sm text-on-surface-variant py-8 text-center">Đang tải…</div>}
+        {loading && <div className="text-body-sm text-v5-muted py-8 text-center">Đang tải…</div>}
 
         {!loading && data && data.groups.length === 0 && (
-          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-6 text-center">
-            <span className="material-symbols-outlined text-[40px] text-on-surface-variant">event_note</span>
-            <p className="text-body-md text-on-surface mt-2 font-medium">
+          <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-6 text-center">
+            <span className="material-symbols-outlined text-[40px] text-v5-muted">event_note</span>
+            <p className="text-body-md text-v5-ink mt-2 font-medium">
               Chưa có chỉ tiêu nào cấu hình nhập theo {ENTRY_PERIOD_LABELS[entryPeriod].toLowerCase()}
             </p>
-            <p className="text-body-sm text-on-surface-variant mt-1">
+            <p className="text-body-sm text-v5-muted mt-1">
               Vào “Cấu hình số liệu → Nhóm &amp; chỉ tiêu” để đổi Kỳ nhập, hoặc chọn kỳ khác ở trên.
             </p>
           </div>
         )}
 
         {!loading && data && data.groups.length > 0 && !data.anyEditable && (
-          <div className="bg-surface-container-lowest rounded-xl border border-border-default/50 p-6 text-center">
-            <span className="material-symbols-outlined text-[40px] text-on-surface-variant">lock_person</span>
-            <p className="text-body-md text-on-surface mt-2 font-medium">Bạn chưa được phân công nhập chỉ tiêu nào</p>
-            <p className="text-body-sm text-on-surface-variant mt-1">
+          <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-6 text-center">
+            <span className="material-symbols-outlined text-[40px] text-v5-muted">lock_person</span>
+            <p className="text-body-md text-v5-ink mt-2 font-medium">Bạn chưa được phân công nhập chỉ tiêu nào</p>
+            <p className="text-body-sm text-v5-muted mt-1">
               Liên hệ lãnh đạo để được phân công tại mục “Cấu hình số liệu → Phân công”.
             </p>
           </div>
@@ -480,8 +480,8 @@ export default function NhapSoLieuPage() {
 
         {!loading &&
           data?.groups.map((g) => (
-            <div key={g.id} className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
-              <div className="px-4 py-3 bg-surface-container-low border-b border-border-default/40">
+            <div key={g.id} className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden">
+              <div className="px-4 py-3 bg-v5-bg border-b border-v5-line/40">
                 <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide">{g.name}</span>
               </div>
               <div className="divide-y divide-border-default/20">
@@ -494,24 +494,24 @@ export default function NhapSoLieuPage() {
                     }`}
                   >
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-body-md text-on-surface">{m.name}</span>
+                      <span className="font-medium text-body-md text-v5-ink">{m.name}</span>
                       {m.valueKind === "BALANCE" && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700 font-semibold" title="Nhập số dư tại thời điểm — hệ thống lấy giá trị mới nhất">
                           SỐ DƯ
                         </span>
                       )}
                       {m.requireConfirm && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 font-semibold">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink font-semibold">
                           CẦN KIỂM TRA
                         </span>
                       )}
                       {!m.canEnter && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold" title="Bạn chỉ được xem/kiểm tra chỉ tiêu này">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted font-semibold" title="Bạn chỉ được xem/kiểm tra chỉ tiêu này">
                           CHỈ KIỂM TRA
                         </span>
                       )}
                     </div>
-                    {m.note && <div className="text-body-xs text-on-surface-variant mt-0.5">{m.note}</div>}
+                    {m.note && <div className="text-body-xs text-v5-muted mt-0.5">{m.note}</div>}
 
                     <div className="mt-2 flex flex-col gap-2">
                       {m.values.map((v) => {
@@ -519,7 +519,7 @@ export default function NhapSoLieuPage() {
                         const status = v.status || "";
                         return (
                           <div key={key} className="flex items-center gap-2 flex-wrap">
-                            <span className="text-body-sm text-on-surface-variant w-40 shrink-0 truncate" title={v.label}>
+                            <span className="text-body-sm text-v5-muted w-40 shrink-0 truncate" title={v.label}>
                               {v.label || "—"}
                             </span>
                             <FormattedNumberInput
@@ -527,9 +527,9 @@ export default function NhapSoLieuPage() {
                               onValueChange={(raw) => setValues((p) => ({ ...p, [key]: raw }))}
                               disabled={!v.canEdit}
                               placeholder={v.canEdit ? "Nhập số…" : "—"}
-                              className="w-44 px-3 py-1.5 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm text-right tabular-nums focus:outline-none focus:border-primary disabled:bg-surface-container disabled:text-on-surface-variant"
+                              className="w-44 px-3 py-1.5 rounded-lg border border-v5-line bg-v5-surface text-body-sm text-right tabular-nums focus:outline-none focus:border-primary disabled:bg-v5-bg disabled:text-v5-muted"
                             />
-                            <span className="text-body-xs text-on-surface-variant w-24">{m.unitLabel}</span>
+                            <span className="text-body-xs text-v5-muted w-24">{m.unitLabel}</span>
 
                             {v.canEdit && m.valueKind !== "BALANCE" && (
                               <button
@@ -552,14 +552,14 @@ export default function NhapSoLieuPage() {
                               </button>
                             )}
 
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${STATUS_STYLES[status] || "border-border-default text-on-surface-variant"}`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${STATUS_STYLES[status] || "border-v5-line text-v5-muted"}`}>
                               {STATUS_LABELS[status] || "Chưa nhập"}
                             </span>
 
                             {v.entryId && (
                               <button
                                 onClick={() => openHistory(v.entryId!, m.name)}
-                                className="p-1 rounded text-on-surface-variant hover:bg-surface-container"
+                                className="p-1 rounded text-v5-muted hover:bg-v5-bg"
                                 title="Lịch sử sửa"
                               >
                                 <span className="material-symbols-outlined text-[16px]">history</span>
@@ -570,7 +570,7 @@ export default function NhapSoLieuPage() {
                               <button
                                 onClick={() => doAction(v.entryId!, "submit")}
                                 disabled={busyKey === v.entryId}
-                                className="px-2 py-1 rounded border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-semibold hover:bg-amber-100 disabled:opacity-40"
+                                className="px-2 py-1 rounded border border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold hover:bg-v5-gold-soft disabled:opacity-40"
                               >
                                 Gửi kiểm tra
                               </button>
@@ -579,7 +579,7 @@ export default function NhapSoLieuPage() {
                               <button
                                 onClick={() => doAction(v.entryId!, "confirm")}
                                 disabled={busyKey === v.entryId}
-                                className="px-2 py-1 rounded border border-emerald-300 bg-emerald-50 text-emerald-800 text-[11px] font-semibold hover:bg-emerald-100 disabled:opacity-40"
+                                className="px-2 py-1 rounded border border-v5-success/30 bg-v5-success-soft text-v5-success text-[11px] font-semibold hover:bg-v5-success-soft disabled:opacity-40"
                               >
                                 Xác nhận
                               </button>
@@ -592,13 +592,13 @@ export default function NhapSoLieuPage() {
                                   doAction(v.entryId!, "needs_fix", reason);
                                 }}
                                 disabled={busyKey === v.entryId}
-                                className="px-2 py-1 rounded border border-rose-300 bg-rose-50 text-rose-800 text-[11px] font-semibold hover:bg-rose-100 disabled:opacity-40"
+                                className="px-2 py-1 rounded border border-v5-danger/30 bg-v5-danger-soft text-v5-danger text-[11px] font-semibold hover:bg-v5-danger-soft disabled:opacity-40"
                               >
                                 Cần điều chỉnh
                               </button>
                             )}
                             {v.enteredByName && (
-                              <span className="text-body-xs text-on-surface-variant">{v.enteredByName}</span>
+                              <span className="text-body-xs text-v5-muted">{v.enteredByName}</span>
                             )}
                           </div>
                         );
@@ -662,12 +662,12 @@ export default function NhapSoLieuPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Tính từ lũy kế"
-            className="relative w-full max-w-lg rounded-2xl border border-border-default bg-surface-container-lowest p-4 shadow-2xl"
+            className="relative w-full max-w-lg rounded-2xl border border-v5-line bg-v5-surface p-4 shadow-2xl"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-title-md font-bold text-on-surface">Tính từ lũy kế</h2>
-                <p className="mt-0.5 text-body-xs text-on-surface-variant">
+                <h2 className="text-title-md font-bold text-v5-ink">Tính từ lũy kế</h2>
+                <p className="mt-0.5 text-body-xs text-v5-muted">
                   {cumulativeHelper.label}
                   {cumulativeHelper.entryPeriod !== "DAY" ? ` · ${cumulativeHelper.periodLabel}` : ""}
                 </p>
@@ -675,7 +675,7 @@ export default function NhapSoLieuPage() {
               <button
                 type="button"
                 onClick={() => setCumulativeHelper(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-v5-muted hover:bg-v5-bg"
                 aria-label="Đóng"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -683,7 +683,7 @@ export default function NhapSoLieuPage() {
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
                 {cumulativeHelper.entryPeriod === "DAY"
                   ? "Lũy kế hôm nay"
                   : `Lũy kế đến cuối kỳ (${fmtDate(cumulativeHelper.periodEnd)})`}
@@ -691,10 +691,10 @@ export default function NhapSoLieuPage() {
                   value={cumulativeToday}
                   onValueChange={setCumulativeToday}
                   placeholder="VD: 1.334.441.535.806"
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm tabular-nums text-on-surface focus:border-primary focus:outline-none"
+                  className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-body-sm tabular-nums text-v5-ink focus:border-primary focus:outline-none"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
                 <span className="flex items-center gap-1.5">
                   {cumulativeHelper.entryPeriod === "DAY"
                     ? `Lũy kế đến ${cumulativePreviousDate || "hôm trước"}`
@@ -709,7 +709,7 @@ export default function NhapSoLieuPage() {
                   readOnly={!cumulativeError}
                   disabled={cumulativeLoading}
                   placeholder={cumulativeLoading ? "Đang tính..." : "Chưa có dữ liệu"}
-                  className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm tabular-nums text-on-surface focus:border-primary focus:outline-none read-only:bg-surface-container disabled:opacity-60"
+                  className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-body-sm tabular-nums text-v5-ink focus:border-primary focus:outline-none read-only:bg-v5-bg disabled:opacity-60"
                 />
               </label>
             </div>
@@ -721,13 +721,13 @@ export default function NhapSoLieuPage() {
               </div>
             )}
             {!cumulativeError && cumulativePreviousDate && (
-              <div className="mt-2 text-[11px] text-on-surface-variant">
+              <div className="mt-2 text-[11px] text-v5-muted">
                 Đã lấy lũy kế từ {cumulativeEntryCount || 0} bản ghi trước ngày {cumulativePreviousDate}.
               </div>
             )}
 
-            <div className="mt-3 rounded-lg border border-border-default bg-surface-container-low p-3">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+            <div className="mt-3 rounded-lg border border-v5-line bg-v5-bg p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">
                 {cumulativeHelper.entryPeriod === "DAY"
                   ? "Số phát sinh ngày = lũy kế hôm nay − lũy kế hôm trước"
                   : "Số phát sinh trong kỳ = lũy kế cuối kỳ − lũy kế cuối kỳ trước"}
@@ -743,7 +743,7 @@ export default function NhapSoLieuPage() {
               </div>
             </div>
 
-            <p className="mt-2 text-[11px] text-on-surface-variant">
+            <p className="mt-2 text-[11px] text-v5-muted">
               Hệ thống chỉ điền vào ô nhập; chưa lưu. Kiểm tra lại rồi bấm <b>Lưu số liệu</b>.
             </p>
 
@@ -751,7 +751,7 @@ export default function NhapSoLieuPage() {
               <button
                 type="button"
                 onClick={() => setCumulativeHelper(null)}
-                className="rounded-lg border border-border-default px-3 py-2 text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container"
+                className="rounded-lg border border-v5-line px-3 py-2 text-body-sm font-semibold text-v5-muted hover:bg-v5-bg"
               >
                 Hủy
               </button>
@@ -772,39 +772,39 @@ export default function NhapSoLieuPage() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setHistoryFor(null)}>
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-lg max-h-[75vh] overflow-y-auto p-4"
+            className="relative bg-v5-surface rounded-xl shadow-2xl w-full max-w-lg max-h-[75vh] overflow-y-auto p-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
               <span className="font-label-md text-label-md text-primary font-bold">Lịch sử sửa — {historyFor.metricName}</span>
-              <button onClick={() => setHistoryFor(null)} className="p-1 rounded hover:bg-surface-container">
+              <button onClick={() => setHistoryFor(null)} className="p-1 rounded hover:bg-v5-bg">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
-            {history === null && <div className="text-body-sm text-on-surface-variant py-4 text-center">Đang tải…</div>}
+            {history === null && <div className="text-body-sm text-v5-muted py-4 text-center">Đang tải…</div>}
             {history !== null && history.length === 0 && (
-              <div className="text-body-sm text-on-surface-variant py-4 text-center">Chưa có lịch sử</div>
+              <div className="text-body-sm text-v5-muted py-4 text-center">Chưa có lịch sử</div>
             )}
             <div className="flex flex-col gap-2">
               {history?.map((r) => (
-                <div key={r.id} className="border border-border-default/40 rounded-lg px-3 py-2">
+                <div key={r.id} className="border border-v5-line/40 rounded-lg px-3 py-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-label-sm font-semibold text-on-surface">{ACTION_LABELS[r.action] || r.action}</span>
-                    <span className="text-body-xs text-on-surface-variant">
+                    <span className="text-label-sm font-semibold text-v5-ink">{ACTION_LABELS[r.action] || r.action}</span>
+                    <span className="text-body-xs text-v5-muted">
                       {new Date(r.editedAt).toLocaleString("vi-VN")} {r.editedByName ? `· ${r.editedByName}` : ""}
                     </span>
                   </div>
                   {(r.oldValue !== null || r.newValue !== null) && (
-                    <div className="text-body-xs text-on-surface-variant mt-0.5 tabular-nums">
+                    <div className="text-body-xs text-v5-muted mt-0.5 tabular-nums">
                       {r.oldValue !== null ? r.oldValue.toLocaleString("vi-VN") : "—"} → {r.newValue !== null ? r.newValue.toLocaleString("vi-VN") : "—"}
                     </div>
                   )}
                   {r.oldStatus !== r.newStatus && r.newStatus && (
-                    <div className="text-body-xs text-on-surface-variant mt-0.5">
+                    <div className="text-body-xs text-v5-muted mt-0.5">
                       {STATUS_LABELS[r.oldStatus || ""] || r.oldStatus || "—"} → {STATUS_LABELS[r.newStatus] || r.newStatus}
                     </div>
                   )}
-                  {r.reason && <div className="text-body-xs text-on-surface mt-0.5">Lý do: {r.reason}</div>}
+                  {r.reason && <div className="text-body-xs text-v5-ink mt-0.5">Lý do: {r.reason}</div>}
                 </div>
               ))}
             </div>

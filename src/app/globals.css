@@ -145,6 +145,22 @@
   border-radius: 0.75rem;
 }
 
+.v5-shell .p-space-lg {
+  padding: 1rem;
+}
+
+.v5-shell .p-space-md {
+  padding: 0.75rem;
+}
+
+.v5-shell .gap-space-lg {
+  gap: 1rem;
+}
+
+.v5-shell .gap-space-md {
+  gap: 0.75rem;
+}
+
 .v5-shell h1,
 .v5-shell h2,
 .v5-shell h3 {

@@ -385,7 +385,7 @@ export default function MeetingDetailPage() {
           <span className="text-xs font-bold text-secondary">✨ Dán biên bản thô, AI tách kết luận giúp</span>
           <textarea rows={3} value={minutes} onChange={(e) => setMinutes(e.target.value)}
             placeholder="Dán nội dung biên bản họp vào đây..."
-            className="p-2.5 rounded-lg border border-border-subtle text-sm bg-v5-surface" />
+            className="p-2.5 rounded-lg border border-v5-line text-sm bg-v5-surface" />
           <button onClick={handleExtract} disabled={extracting}
             className="self-start px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-bold disabled:opacity-50">
             {extracting ? "Đang tách..." : "Tách kết luận bằng AI"}

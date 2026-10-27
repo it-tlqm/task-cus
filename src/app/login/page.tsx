@@ -73,7 +73,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-app-bg text-on-surface flex flex-col lg:flex-row antialiased">
+    <div className="w-full min-h-screen bg-transparent text-v5-ink flex flex-col lg:flex-row antialiased">
       {/* =========================================================================
           LEFT HERO PANEL (DESKTOP ONLY — Split-screen Enterprise Layout)
           ========================================================================= */}
@@ -89,7 +89,7 @@ export default function LoginPage() {
             <img
               src="/images/logo-haiquan.png"
               alt="Logo Hải quan Việt Nam"
-              className="w-14 h-14 rounded-full object-cover shadow-lg ring-4 ring-white/10 shrink-0 bg-white"
+              className="w-14 h-14 rounded-full object-cover shadow-lg ring-4 ring-white/10 shrink-0 bg-v5-surface"
             />
             <div className="flex flex-col">
               <h2 className="text-lg xl:text-xl font-bold tracking-tight text-white leading-snug">
@@ -105,7 +105,7 @@ export default function LoginPage() {
         {/* Center Main Showcase & Bento Operational Highlights */}
         <div className="relative z-10 my-auto py-8 flex flex-col gap-6">
           <div className="flex flex-col gap-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 w-fit">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-v5-surface/10 backdrop-blur-md border border-white/15 w-fit">
               <span className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
               <span className="text-xs font-semibold tracking-wide uppercase text-secondary-fixed">
                 HỆ THỐNG ĐIỀU HÀNH SỐ HÓA H?I QUAN T? L?NG
@@ -121,7 +121,7 @@ export default function LoginPage() {
 
           {/* 4 Feature Highlights Grid */}
           <div className="grid grid-cols-2 gap-3.5 max-w-xl">
-            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+            <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
                 <span className="material-symbols-outlined text-[20px]">calendar_month</span>
                 <span className="text-xs font-bold uppercase tracking-wider">Kế hoạch tuần &amp; tháng</span>
@@ -131,7 +131,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+            <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
                 <span className="material-symbols-outlined text-[20px]">touch_app</span>
                 <span className="text-xs font-bold uppercase tracking-wider">1-Chạm không phát sinh</span>
@@ -141,7 +141,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+            <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
                 <span className="material-symbols-outlined text-[20px]">table_view</span>
                 <span className="text-xs font-bold uppercase tracking-wider">Xuất Excel Mẫu A &amp; B</span>
@@ -151,7 +151,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-white/10 transition-colors">
+            <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
               <div className="flex items-center gap-2 text-secondary-fixed">
                 <span className="material-symbols-outlined text-[20px]">verified_user</span>
                 <span className="text-xs font-bold uppercase tracking-wider">Bảo mật &amp; Chốt số liệu</span>
@@ -176,7 +176,7 @@ export default function LoginPage() {
       {/* =========================================================================
           RIGHT AUTHENTICATION PANEL (Responsive for both Mobile & Desktop)
           ========================================================================= */}
-      <section className="w-full lg:w-1/2 xl:w-[46%] flex flex-col justify-center items-center p-6 sm:p-10 lg:p-12 xl:p-14 min-h-screen bg-app-bg overflow-y-auto">
+      <section className="w-full lg:w-1/2 xl:w-[46%] flex flex-col justify-center items-center p-6 sm:p-10 lg:p-12 xl:p-14 min-h-screen bg-transparent overflow-y-auto">
         <div className="w-full max-w-[420px] flex flex-col gap-space-md py-4">
           {/* Mobile Top Brand Header (Shown only on small screens) */}
           <div className="lg:hidden flex flex-col items-center text-center pb-2">
@@ -191,9 +191,9 @@ export default function LoginPage() {
             <img
               src="/images/logo-haiquan.png"
               alt="Logo Hải quan Việt Nam"
-              className="w-12 h-12 rounded-full object-cover bg-white shadow-md mb-2"
+              className="w-12 h-12 rounded-full object-cover bg-v5-surface shadow-md mb-2"
             />
-            <p className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold">
+            <p className="font-label-sm text-[11px] text-v5-muted uppercase tracking-widest font-semibold">
               HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
             </p>
             <h1 className="font-headline-md text-primary mt-0.5 leading-snug font-bold">
@@ -212,7 +212,7 @@ export default function LoginPage() {
             <h2 className="font-headline-lg text-primary font-bold tracking-tight text-2xl">
               Đăng Nhập Cổng Tác Nghiệp
             </h2>
-            <p className="text-on-surface-variant text-sm">
+            <p className="text-v5-muted text-sm">
               Nhập mã định danh công chức và mật khẩu được cấp để truy cập:
             </p>
           </div>
@@ -232,7 +232,7 @@ export default function LoginPage() {
                     <span className="material-symbols-outlined text-[15px]">close</span>
                   </button>
                 </div>
-                <p className="text-xs text-on-surface-variant mt-0.5 leading-normal">
+                <p className="text-xs text-v5-muted mt-0.5 leading-normal">
                   {error}
                 </p>
               </div>
@@ -240,7 +240,7 @@ export default function LoginPage() {
           )}
 
           {/* Main Login Card Container */}
-          <div className="w-full bg-surface-container-lowest rounded-2xl p-6 shadow-md border border-border-default/60">
+          <div className="w-full bg-v5-surface rounded-2xl p-6 shadow-md border border-v5-line/60">
             <form
               className="flex flex-col gap-4"
               id="loginForm"
@@ -251,11 +251,11 @@ export default function LoginPage() {
             >
               {/* Username Field */}
               <div className="flex flex-col gap-1">
-                <label className="font-body-semibold text-xs text-on-surface flex items-center justify-between" htmlFor="usernameInput">
+                <label className="font-body-semibold text-xs text-v5-ink flex items-center justify-between" htmlFor="usernameInput">
                   <span className="font-bold">Mã cán bộ / Tên đăng nhập</span>
                 </label>
                 <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">
+                  <span className="material-symbols-outlined absolute left-3 text-v5-muted text-[18px] pointer-events-none">
                     badge
                   </span>
                   <input
@@ -265,7 +265,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Nhập tên đăng nhập hoặc mã cán bộ..."
-                    className="w-full h-11 pl-10 pr-3 rounded-lg bg-surface-subtle font-body-md text-sm text-on-surface placeholder:text-outline/70 outline-none border border-border-subtle focus:border-secondary focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-fast"
+                    className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg font-body-md text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-fast"
                   />
                 </div>
               </div>
@@ -273,12 +273,12 @@ export default function LoginPage() {
               {/* Password Field */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <label className="font-body-semibold text-xs text-on-surface font-bold" htmlFor="passwordInput">
+                  <label className="font-body-semibold text-xs text-v5-ink font-bold" htmlFor="passwordInput">
                     Mật khẩu bảo mật
                   </label>
                 </div>
                 <div className="relative flex items-center">
-                  <span className="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">
+                  <span className="material-symbols-outlined absolute left-3 text-v5-muted text-[18px] pointer-events-none">
                     key
                   </span>
                   <input
@@ -288,13 +288,13 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Nhập mật khẩu..."
-                    className="w-full h-11 pl-10 pr-10 rounded-lg bg-surface-subtle font-body-md text-sm text-on-surface placeholder:text-outline/70 outline-none border border-border-subtle focus:border-secondary focus:bg-surface-container-lowest focus:ring-1 focus:ring-secondary transition-fast"
+                    className="w-full h-11 pl-10 pr-10 rounded-lg bg-v5-bg font-body-md text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-fast"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label="Hiển thị mật khẩu"
-                    className="absolute right-2.5 p-1 text-outline hover:text-on-surface flex items-center justify-center rounded"
+                    className="absolute right-2.5 p-1 text-v5-muted hover:text-v5-ink flex items-center justify-center rounded"
                   >
                     <span className="material-symbols-outlined text-[18px]">
                       {showPassword ? "visibility_off" : "visibility"}
@@ -311,7 +311,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberSession(e.target.checked)}
                   className="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-[#006a62]"
                 />
-                <span className="text-xs text-on-surface-variant">
+                <span className="text-xs text-v5-muted">
                   Ghi nhớ phiên làm việc trên thiết bị công vụ này
                 </span>
               </label>
@@ -340,11 +340,11 @@ export default function LoginPage() {
 
           {/* Compliance & Security Footer */}
           <footer className="text-center flex flex-col items-center gap-1 pt-1">
-            <div className="inline-flex items-center gap-1.5 text-outline">
+            <div className="inline-flex items-center gap-1.5 text-v5-muted">
               <span className="material-symbols-outlined text-[13px]">terminal</span>
               <span className="text-[11px] font-mono">Bản dựng:-TL (Enterprise Build)</span>
             </div>
-            <p className="text-[11px] text-on-surface-variant">
+            <p className="text-[11px] text-v5-muted">
               Hải quan cửa khẩu Quốc tế Tà Lùng • Tỉnh Cao Bằng
             </p>
           </footer>

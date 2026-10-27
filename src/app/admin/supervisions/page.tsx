@@ -107,7 +107,7 @@ export default function SupervisionsAdminPage() {
   const nameOf = (id: string) => people.find((p) => p.id === id)?.fullName || id;
 
   return (
-    <div className="w-full min-h-screen bg-app-bg pb-12">
+    <div className="w-full min-h-screen bg-transparent pb-12">
       <div className="max-w-5xl mx-auto px-margin pt-5 space-y-4">
         <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-4">
           <h1 className="text-lg font-bold text-v5-ink flex items-center gap-2">

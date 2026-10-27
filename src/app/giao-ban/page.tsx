@@ -220,13 +220,13 @@ export default function GiaoBanPage() {
   const cols = ["week", "month", "quarter", "year"] as const;
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface-container-low">
+    <div className="flex flex-col min-h-screen bg-v5-bg">
       {/* Header */}
       <div className="px-margin pt-space-md pb-space-sm flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="font-headline-sm text-headline-sm text-primary font-bold">Số liệu giao ban</h1>
-            <p className="text-body-sm text-on-surface-variant">
+            <p className="text-body-sm text-v5-muted">
               Nhập số liệu theo ngày — hệ thống tự cộng lũy kế tuần/tháng/quý/năm theo cấu hình.
             </p>
           </div>
@@ -241,7 +241,7 @@ export default function GiaoBanPage() {
             {showAdminMenu && (
               <Link
                 href="/giao-ban/cau-hinh"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-default text-primary text-label-md font-semibold hover:bg-surface-container"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-v5-line text-primary text-label-md font-semibold hover:bg-v5-bg"
               >
                 <span className="material-symbols-outlined text-[18px]">tune</span>
                 Cấu hình
@@ -252,24 +252,24 @@ export default function GiaoBanPage() {
 
         {/* Tabs + kỳ */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex rounded-lg border border-border-default overflow-hidden">
+          <div className="flex rounded-lg border border-v5-line overflow-hidden">
             {(["DATA", "NOTES"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 text-label-md font-semibold ${tab === t ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}
+                className={`px-4 py-2 text-label-md font-semibold ${tab === t ? "bg-primary text-on-primary" : "bg-v5-surface text-v5-muted hover:bg-v5-bg"}`}
               >
                 {t === "DATA" ? "Số liệu" : "Nhận xét"}
               </button>
             ))}
           </div>
 
-          <div className="flex rounded-lg border border-border-default overflow-hidden ml-auto">
+          <div className="flex rounded-lg border border-v5-line overflow-hidden ml-auto">
             {MODE_TABS.map((m) => (
               <button
                 key={m.key}
                 onClick={() => setMode(m.key)}
-                className={`px-3 py-2 text-label-md font-semibold ${mode === m.key ? "bg-secondary text-on-secondary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}
+                className={`px-3 py-2 text-label-md font-semibold ${mode === m.key ? "bg-secondary text-on-secondary" : "bg-v5-surface text-v5-muted hover:bg-v5-bg"}`}
               >
                 {m.label}
               </button>
@@ -279,7 +279,7 @@ export default function GiaoBanPage() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+            className="px-2 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
           >
             {[year - 1, year, year + 1].filter((v, i, a) => a.indexOf(v) === i).sort().map((y) => (
               <option key={y} value={y}>
@@ -294,7 +294,7 @@ export default function GiaoBanPage() {
               max={53}
               value={week}
               onChange={(e) => setWeek(Math.max(1, Math.min(53, Number(e.target.value) || 1)))}
-              className="w-24 px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+              className="w-24 px-2 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
               title="Số tuần (ISO)"
             />
           )}
@@ -302,7 +302,7 @@ export default function GiaoBanPage() {
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+              className="px-2 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                 <option key={m} value={m}>
@@ -315,7 +315,7 @@ export default function GiaoBanPage() {
             <select
               value={quarter}
               onChange={(e) => setQuarter(Number(e.target.value))}
-              className="px-2 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm"
+              className="px-2 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm"
             >
               {[1, 2, 3, 4].map((q) => (
                 <option key={q} value={q}>
@@ -326,7 +326,7 @@ export default function GiaoBanPage() {
           )}
         </div>
         {data && (
-          <div className="text-body-xs text-on-surface-variant">
+          <div className="text-body-xs text-v5-muted">
             {data.range.week.label} · {data.range.month.label} · {data.range.quarter.label} · {data.range.year.label}
           </div>
         )}
@@ -336,22 +336,22 @@ export default function GiaoBanPage() {
       <div className="px-margin pb-space-lg flex flex-col gap-4">
         {tab === "DATA" && (
           <>
-            {loading && <div className="text-body-sm text-on-surface-variant py-8 text-center">Đang tải số liệu…</div>}
+            {loading && <div className="text-body-sm text-v5-muted py-8 text-center">Đang tải số liệu…</div>}
             {!loading && data && data.groups.length === 0 && (
-              <div className="text-body-sm text-on-surface-variant py-8 text-center">
+              <div className="text-body-sm text-v5-muted py-8 text-center">
                 Chưa có chỉ tiêu nào được bật. {showAdminMenu ? "Vào Cấu hình để thiết lập." : "Liên hệ lãnh đạo để thiết lập."}
               </div>
             )}
             {!loading && data && <DataQualityBanner q={data.dataQuality} />}
             {!loading &&
               data?.groups.map((g) => (
-                <div key={g.id} className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
+                <div key={g.id} className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden">
                   <button
                     onClick={() => setExpanded((p) => ({ ...p, [g.id]: !(p[g.id] ?? true) }))}
-                    className="w-full px-4 py-3 bg-surface-container-low border-b border-border-default/40 flex items-center justify-between"
+                    className="w-full px-4 py-3 bg-v5-bg border-b border-v5-line/40 flex items-center justify-between"
                   >
                     <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide text-left">{g.name}</span>
-                    <span className="material-symbols-outlined text-[20px] text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[20px] text-v5-muted">
                       {(expanded[g.id] ?? true) ? "expand_less" : "expand_more"}
                     </span>
                   </button>
@@ -359,7 +359,7 @@ export default function GiaoBanPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-body-sm min-w-[720px]">
                         <thead>
-                          <tr className="text-left text-body-xs text-on-surface-variant border-b border-border-default/40">
+                          <tr className="text-left text-body-xs text-v5-muted border-b border-v5-line/40">
                             <th className="px-3 py-2 font-semibold">Chỉ tiêu</th>
                             {cols.map((c) => {
                               const cumulative = c === "month" || c === "quarter" || c === "year";
@@ -387,10 +387,10 @@ export default function GiaoBanPage() {
                         <tbody>
                           {g.metrics.map((m) => (
                             <React.Fragment key={m.id}>
-                              <tr className="border-b border-border-default/20 align-top">
+                              <tr className="border-b border-v5-line/20 align-top">
                                 <td className="px-3 py-2">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-medium text-on-surface">{m.name}</span>
+                                    <span className="font-medium text-v5-ink">{m.name}</span>
                                     {m.valueKind === "BALANCE" && (
                                       <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700 font-semibold">SỐ DƯ</span>
                                     )}
@@ -398,18 +398,18 @@ export default function GiaoBanPage() {
                                       <span className="text-[10px] px-1.5 py-0.5 rounded border border-violet-200 bg-violet-50 text-violet-700 font-semibold">TỰ TÍNH</span>
                                     )}
                                     {m.requireConfirm && (
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 font-semibold" title="Chỉ tiêu bật quy trình: Nháp → Gửi kiểm tra → Xác nhận">
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink font-semibold" title="Chỉ tiêu bật quy trình: Nháp → Gửi kiểm tra → Xác nhận">
                                         KIỂM TRA
                                       </span>
                                     )}
                                     <span
-                                      className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold"
+                                      className="text-[10px] px-1.5 py-0.5 rounded border border-v5-success/30 bg-v5-success-soft text-v5-success font-semibold"
                                       title="Kỳ nhập số liệu của chỉ tiêu"
                                     >
                                       Kỳ: {ENTRY_PERIOD_LABELS[m.entryPeriod] || m.entryPeriod}
                                     </span>
                                   </div>
-                                  {m.note && <div className="text-body-xs text-on-surface-variant mt-0.5">{m.note}</div>}
+                                  {m.note && <div className="text-body-xs text-v5-muted mt-0.5">{m.note}</div>}
                                 </td>
                                 {cols.map((c) => {
                                   const cumulative = c === "month" || c === "quarter" || c === "year";
@@ -434,7 +434,7 @@ export default function GiaoBanPage() {
                                   {m.targetPolicy && !m.targetPolicy.targetApplicable ? (
                                     <span
                                       data-testid={`target-policy-${m.code}`}
-                                      className="text-[11px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold"
+                                      className="text-[11px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted font-semibold"
                                       title={
                                         m.targetPolicy.configured
                                           ? "chỉ tiêu/kỳ này chưa được duyệt gán chỉ tiêu; không tính % và không tô đạt/vượt."
@@ -444,7 +444,7 @@ export default function GiaoBanPage() {
                                       Chưa có quy tắc gán chỉ tiêu
                                     </span>
                                   ) : m.targets.length === 0 ? (
-                                    <span className="text-on-surface-variant">Chưa giao chỉ tiêu</span>
+                                    <span className="text-v5-muted">Chưa giao chỉ tiêu</span>
                                   ) : (
                                     <div className="flex items-center justify-center gap-1 flex-wrap">
                                       {m.targets.map((t, i) => {
@@ -455,7 +455,7 @@ export default function GiaoBanPage() {
                                               key={i}
                                               data-testid={`target-demo-${m.code}`}
                                               title={`${t.label}: ${fmtMetric(t.targetValue, m)} · Dữ liệu MÔ PHỎNG (DEMO), không dùng tính tỷ lệ chính thức`}
-                                              className="text-[11px] px-1.5 py-0.5 rounded border border-dashed border-slate-300 bg-slate-50 text-slate-500 font-semibold"
+                                              className="text-[11px] px-1.5 py-0.5 rounded border border-dashed border-v5-line bg-v5-bg text-v5-muted font-semibold"
                                             >
                                               DEMO · {t.label}
                                             </span>
@@ -473,9 +473,9 @@ export default function GiaoBanPage() {
                                           const tone =
                                             t.direction === "HIGHER_IS_BETTER"
                                               ? t.percent >= 100
-                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                : "border-amber-200 bg-amber-50 text-amber-700"
-                                              : "border-border-default text-on-surface-variant";
+                                                ? "border-v5-success/30 bg-v5-success-soft text-v5-success"
+                                                : "border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink"
+                                              : "border-v5-line text-v5-muted";
                                           return (
                                             <span
                                               key={i}
@@ -493,7 +493,7 @@ export default function GiaoBanPage() {
                                             key={i}
                                             data-testid={`target-status-${m.code}`}
                                             title={`${t.label}: ${fmtMetric(t.targetValue, m)} · ${statusLabel} · ${ruleText}`}
-                                            className="text-[11px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold"
+                                            className="text-[11px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted font-semibold"
                                           >
                                             {t.label} · {fmtMetricCompact(t.targetValue, m, { withUnit: false })} · {statusLabel} · {reasonLabel}
                                           </span>
@@ -505,21 +505,21 @@ export default function GiaoBanPage() {
                                 <td className="px-2 py-2">
                                   <div className="flex flex-col gap-1 items-start">
                                     {m.latest ? (
-                                      <span className="text-body-xs text-on-surface-variant">
+                                      <span className="text-body-xs text-v5-muted">
                                         {fmtDate(m.latest.date)}
                                         {m.latest.byName ? ` · ${m.latest.byName}` : ""}
                                       </span>
                                     ) : (
-                                      <span className="text-body-xs text-on-surface-variant italic">Chưa có số liệu</span>
+                                      <span className="text-body-xs text-v5-muted italic">Chưa có số liệu</span>
                                     )}
                                     {m.latest && (
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${STATUS_STYLES[m.latest.status] || "border-border-default"}`}>
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${STATUS_STYLES[m.latest.status] || "border-v5-line"}`}>
                                         {STATUS_LABELS[m.latest.status] || m.latest.status}
                                       </span>
                                     )}
                                     {m.missingDates.length > 0 && (
                                       <span
-                                        className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold"
+                                        className="text-[10px] px-1.5 py-0.5 rounded border border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink font-semibold"
                                         title={`Chưa nhập: ${m.missingDates.map((d) => fmtDate(d)).join(", ")}`}
                                       >
                                         Thiếu {m.missingDates.length} ngày
@@ -529,14 +529,14 @@ export default function GiaoBanPage() {
                                 </td>
                               </tr>
                               {m.classCols.map((cc) => (
-                                <tr key={m.id + cc.classificationId} className="border-b border-border-default/20 bg-surface-container-lowest/60">
-                                  <td className="px-3 py-1.5 pl-8 text-on-surface-variant">↳ {cc.label}</td>
+                                <tr key={m.id + cc.classificationId} className="border-b border-v5-line/20 bg-v5-surface/60">
+                                  <td className="px-3 py-1.5 pl-8 text-v5-muted">↳ {cc.label}</td>
                                   {cols.map((c) => {
                                     const applies = entryPeriodColumnAllowed(m.entryPeriod, c);
                                     return (
                                       <td
                                         key={c}
-                                        className={`px-2 py-1.5 text-right tabular-nums text-on-surface-variant ${selectedCol === c ? "bg-secondary/5" : ""}`}
+                                        className={`px-2 py-1.5 text-right tabular-nums text-v5-muted ${selectedCol === c ? "bg-secondary/5" : ""}`}
                                         title={
                                           applies
                                             ? fmtMetric(cc.cols[c], m)
@@ -548,7 +548,7 @@ export default function GiaoBanPage() {
                                     );
                                   })}
                                   <td className="px-2 py-1.5" />
-                                  <td className="px-2 py-1.5 text-body-xs text-on-surface-variant">{cc.latestDate ? fmtDate(cc.latestDate) : ""}</td>
+                                  <td className="px-2 py-1.5 text-body-xs text-v5-muted">{cc.latestDate ? fmtDate(cc.latestDate) : ""}</td>
                                 </tr>
                               ))}
                             </React.Fragment>
@@ -562,7 +562,7 @@ export default function GiaoBanPage() {
             {!loading && (
               <RevenueComparisonSection comparison={comparison} showConfigureLink={showAdminMenu} />
             )}
-            <p className="text-body-xs text-on-surface-variant">
+            <p className="text-body-xs text-v5-muted">
               Số liệu được cộng tự động từ các bản ghi nhập theo ngày hoặc theo kỳ (tuần/tháng/quý/năm).
               Cột lũy kế áp dụng "mốc đã xác nhận" (nếu có) để tránh cộng trùng. Đơn vị hiển thị theo cấu hình từng chỉ tiêu.
             </p>
@@ -571,16 +571,16 @@ export default function GiaoBanPage() {
 
         {tab === "NOTES" && (
           <div className="flex flex-col gap-4">
-            <p className="text-body-sm text-on-surface-variant">
+            <p className="text-body-sm text-v5-muted">
               Nội dung nhận xét cho {modeLabel(mode).toLowerCase()}: <span className="font-semibold text-primary">{periodKey}</span>
             </p>
-            {notesLoading && <div className="text-body-sm text-on-surface-variant py-8 text-center">Đang tải…</div>}
+            {notesLoading && <div className="text-body-sm text-v5-muted py-8 text-center">Đang tải…</div>}
             {!notesLoading &&
               sections.map((s) => (
-                <div key={s.id} className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 p-4 flex flex-col gap-2">
+                <div key={s.id} className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 p-4 flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="font-label-md text-label-md text-primary font-bold">{s.title}</span>
-                    <span className="text-body-xs text-on-surface-variant">
+                    <span className="text-body-xs text-v5-muted">
                       {s.updatedAt ? `Cập nhật ${fmtDate(s.updatedAt.slice(0, 10))}${s.updatedByName ? ` · ${s.updatedByName}` : ""}` : "Chưa có nội dung"}
                     </span>
                   </div>
@@ -590,7 +590,7 @@ export default function GiaoBanPage() {
                     disabled={!s.canEdit || savingNote === s.id}
                     rows={4}
                     placeholder={s.canEdit ? "Nhập nhận xét/đánh giá cho kỳ này…" : "Bạn không được phân công nhập mục này"}
-                    className="w-full px-3 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-body-sm focus:outline-none focus:border-primary disabled:bg-surface-container disabled:text-on-surface-variant"
+                    className="w-full px-3 py-2 rounded-lg border border-v5-line bg-v5-surface text-body-sm focus:outline-none focus:border-primary disabled:bg-v5-bg disabled:text-v5-muted"
                   />
                   <div className="flex justify-end">
                     <button
@@ -604,7 +604,7 @@ export default function GiaoBanPage() {
                 </div>
               ))}
             {!notesLoading && sections.length === 0 && (
-              <div className="text-body-sm text-on-surface-variant py-8 text-center">
+              <div className="text-body-sm text-v5-muted py-8 text-center">
                 Chưa có mục nhận xét nào. {showAdminMenu ? "Vào Cấu hình → Mục nhận xét để tạo." : ""}
               </div>
             )}

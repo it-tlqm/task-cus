@@ -142,7 +142,7 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n) => n.isUnread).length;
 
   return (
-    <div className="w-full min-h-screen bg-app-bg pb-24">
+    <div className="w-full min-h-screen bg-transparent pb-24">
       <div className="max-w-4xl mx-auto px-margin pt-4 flex flex-col gap-4">
         {/* Interactive Top Action Strip */}
         <section className="flex items-center justify-between py-2">
@@ -156,7 +156,7 @@ export default function NotificationsPage() {
                 TẤT CẢ ĐÃ ĐỌC
               </span>
             )}
-            <span className="font-label-sm text-label-sm text-on-surface-variant font-semibold">
+            <span className="font-label-sm text-label-sm text-v5-muted font-semibold">
               Hộp thư điều hành tác nghiệp
             </span>
           </div>
@@ -164,7 +164,7 @@ export default function NotificationsPage() {
             <button
               onClick={fetchNotifications}
               disabled={loading}
-              className="p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-fast active-press shadow-sm"
+              className="p-1.5 rounded-xl bg-v5-bg hover:bg-v5-bg-high text-v5-muted transition-fast active-press shadow-sm"
               title="Làm mới thông báo từ máy chủ"
             >
               <span className={`material-symbols-outlined text-[18px] ${loading ? "animate-spin" : ""}`}>
@@ -174,7 +174,7 @@ export default function NotificationsPage() {
             <button
               onClick={handleReadAll}
               disabled={isProcessingAll || unreadCount === 0}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-fast active-press shadow-sm font-semibold disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-v5-bg hover:bg-v5-bg-high text-primary font-label-sm text-label-sm transition-fast active-press shadow-sm font-semibold disabled:opacity-50 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px] text-primary">done_all</span>
               <span>{isProcessingAll ? "Đang xử lý..." : "Đã đọc hết"}</span>
@@ -208,11 +208,11 @@ export default function NotificationsPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
               activeFilter === "all"
                 ? "bg-primary text-on-primary font-bold"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
             }`}
           >
             <span>Tất cả</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[11px] font-semibold leading-tight">
+            <span className="px-1.5 py-0.2 rounded-full bg-v5-surface/20 text-[11px] font-semibold leading-tight">
               {notifications.length}
             </span>
           </button>
@@ -225,7 +225,7 @@ export default function NotificationsPage() {
             }`}
           >
             <span>Chưa đọc</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-white/30 text-[11px] font-semibold leading-tight">
+            <span className="px-1.5 py-0.2 rounded-full bg-v5-surface/30 text-[11px] font-semibold leading-tight">
               {unreadCount}
             </span>
           </button>
@@ -234,7 +234,7 @@ export default function NotificationsPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
               activeFilter === "task"
                 ? "bg-primary text-on-primary font-bold"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
             }`}
           >
             <span>Giao việc mới</span>
@@ -247,7 +247,7 @@ export default function NotificationsPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
               activeFilter === "approval"
                 ? "bg-primary text-on-primary font-bold"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
             }`}
           >
             <span>Phê duyệt</span>
@@ -260,7 +260,7 @@ export default function NotificationsPage() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md whitespace-nowrap shadow-sm transition-fast active-press ${
               activeFilter === "deadline"
                 ? "bg-primary text-on-primary font-bold"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                : "bg-v5-bg text-v5-muted hover:text-v5-ink"
             }`}
           >
             <span>Nhắc hạn</span>
@@ -278,7 +278,7 @@ export default function NotificationsPage() {
                 Cập nhật mới nhất
               </span>
               <span
-                className="font-label-sm text-label-sm text-on-surface-variant capitalize"
+                className="font-label-sm text-label-sm text-v5-muted capitalize"
                 suppressHydrationWarning
               >
                 {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric", year: "numeric" })}
@@ -286,16 +286,16 @@ export default function NotificationsPage() {
             </div>
 
             {loading ? (
-              <div className="p-8 text-center bg-surface-container-lowest rounded-xl border border-border-default/50 text-on-surface-variant text-sm animate-pulse">
+              <div className="p-8 text-center bg-v5-surface rounded-xl border border-v5-line/50 text-v5-muted text-sm animate-pulse">
                 Đang nạp dữ liệu điều hành tác nghiệp...
               </div>
             ) : filteredNotifications.length === 0 ? (
-              <div className="bg-surface-container-lowest p-8 rounded-2xl border border-border-default/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
+              <div className="bg-v5-surface p-8 rounded-2xl border border-v5-line/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
                 <div className="w-12 h-12 rounded-full bg-status-success-bg text-status-success flex items-center justify-center">
                   <span className="material-symbols-outlined text-[28px]">check_circle</span>
                 </div>
                 <p className="font-headline-sm text-primary font-bold">Không có thông báo mới</p>
-                <p className="font-body-md text-on-surface-variant max-w-sm text-sm">
+                <p className="font-body-md text-v5-muted max-w-sm text-sm">
                   Tất cả các nhiệm vụ, kế hoạch công tác và thời hạn ca trực đều đang ở trạng thái bình thường.
                 </p>
               </div>
@@ -303,12 +303,12 @@ export default function NotificationsPage() {
               filteredNotifications.map((notif) => (
                 <article
                   key={notif.id}
-                  className={`relative overflow-hidden rounded-xl p-3.5 shadow-sm transition-fast border border-border-default/50 hover-lift ${
+                  className={`relative overflow-hidden rounded-xl p-3.5 shadow-sm transition-fast border border-v5-line/50 hover-lift ${
                     notif.isUnread
                       ? notif.tagType === "danger"
                         ? "bg-status-danger-bg/45 border-status-danger/40 border-l-4 border-l-status-danger ring-1 ring-status-danger/15"
                         : "bg-status-warning-bg/45 border-status-warning/40 border-l-4 border-l-status-warning ring-1 ring-status-warning/15"
-                      : "bg-surface-container-lowest"
+                      : "bg-v5-surface"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -352,31 +352,31 @@ export default function NotificationsPage() {
                             <span className="w-2 h-2 rounded-full bg-secondary" title="Chưa đọc" />
                           )}
                         </div>
-                        <span className="font-label-sm text-label-sm text-on-surface-variant text-[11px]">
+                        <span className="font-label-sm text-label-sm text-v5-muted text-[11px]">
                           {notif.time}
                         </span>
                       </div>
 
-                      <p className="font-body-semibold text-body-semibold text-on-surface leading-snug mb-1 font-bold">
+                      <p className="font-body-semibold text-body-semibold text-v5-ink leading-snug mb-1 font-bold">
                         {notif.title}
                       </p>
-                      <p className="font-body-md text-body-md text-on-surface-variant text-[13px] leading-relaxed mb-2">
+                      <p className="font-body-md text-body-md text-v5-muted text-[13px] leading-relaxed mb-2">
                         {notif.description}
                       </p>
 
                       {/* Metadata Box if any */}
                       {notif.taskCode && (
-                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 py-1.5 px-2.5 rounded-lg bg-surface-container/70 mb-3 text-[12px]">
-                          <div className="flex items-center gap-1 text-on-surface-variant">
+                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 py-1.5 px-2.5 rounded-lg bg-v5-bg/70 mb-3 text-[12px]">
+                          <div className="flex items-center gap-1 text-v5-muted">
                             <span>Mã việc:</span>
                             <span className="font-semibold text-primary font-mono">{notif.taskCode}</span>
                           </div>
                           {notif.assigner && (
                             <>
-                              <div className="text-on-surface-variant/40">•</div>
-                              <div className="flex items-center gap-1 text-on-surface-variant">
+                              <div className="text-v5-muted/40">•</div>
+                              <div className="flex items-center gap-1 text-v5-muted">
                                 <span>Người giao:</span>
-                                <span className="font-semibold text-on-surface">{notif.assigner}</span>
+                                <span className="font-semibold text-v5-ink">{notif.assigner}</span>
                               </div>
                             </>
                           )}
@@ -401,7 +401,7 @@ export default function NotificationsPage() {
                           {notif.isUnread && (
                             <button
                               onClick={() => handleMarkAsRead(notif.id)}
-                              className="px-2.5 py-1.5 rounded-lg border border-border-default hover:bg-surface-container text-on-surface-variant font-label-sm text-label-sm transition-fast active-press"
+                              className="px-2.5 py-1.5 rounded-lg border border-v5-line hover:bg-v5-bg text-v5-muted font-label-sm text-label-sm transition-fast active-press"
                               title="Đánh dấu đã đọc"
                             >
                               Đã đọc
@@ -411,7 +411,7 @@ export default function NotificationsPage() {
 
                         <button
                           onClick={() => handleDismiss(notif.id)}
-                          className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface transition-colors active-press"
+                          className="p-1.5 rounded-lg text-v5-muted hover:text-v5-ink transition-colors active-press"
                           title="Ẩn thông báo khỏi danh sách"
                         >
                           <span className="material-symbols-outlined text-[18px]">close</span>
