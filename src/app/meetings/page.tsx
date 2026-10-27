@@ -69,39 +69,39 @@ export default function MeetingsPage() {
   };
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
+    <div className="flex w-full flex-col gap-3 pb-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-teal-100 text-teal-900 border border-teal-200">
+          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent-soft text-v5-accent border border-v5-line">
             Họp → Việc
           </span>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Biên bản giao ban</h1>
-          <p className="text-sm text-slate-600">Nhập kết luận họp, bấm chuyển là thành nhiệm vụ — không nhập lại</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink mt-1">Biên bản giao ban</h1>
+          <p className="text-sm text-v5-muted">Nhập kết luận họp, bấm chuyển là thành nhiệm vụ — không nhập lại</p>
         </div>
         {canApprove && (
-          <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+          <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-v5-accent text-white text-sm font-semibold hover:bg-v5-accent">
             + Lập biên bản
           </button>
         )}
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-500 text-center py-8">Đang tải...</p>
+        <p className="text-sm text-v5-muted text-center py-8">Đang tải...</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-slate-500 text-center py-8">Chưa có biên bản giao ban nào</p>
+        <p className="text-sm text-v5-muted text-center py-8">Chưa có biên bản giao ban nào</p>
       ) : (
         <div data-tour="meeting-list" className="flex flex-col gap-2">
           {rows.map((m) => {
             const total = m._count?.conclusions ?? m.conclusionsCount ?? 0;
             return (
               <Link key={m.id} href={`/meetings/${m.id}`}
-                className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 block hover:border-teal-400">
-                <div className="font-bold text-slate-900">{m.title}</div>
-                <div className="text-xs text-slate-500 mt-1">
+                className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3.5 block hover:border-v5-accent/40">
+                <div className="font-bold text-v5-ink">{m.title}</div>
+                <div className="text-xs text-v5-muted mt-1">
                   {new Date(m.meetingAt).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
                   {m.chair ? ` · Chủ trì: ${m.chair}` : ""}
                 </div>
-                <div className="text-xs mt-1 font-semibold text-teal-800">
+                <div className="text-xs mt-1 font-semibold text-v5-accent">
                   {total} kết luận · {m.convertedCount || 0} đã thành việc
                 </div>
               </Link>
@@ -111,37 +111,37 @@ export default function MeetingsPage() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-4 bg-teal-900 text-white flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden">
+            <div className="p-4 bg-v5-accent text-white flex items-center justify-between">
               <h3 className="font-semibold">Lập biên bản giao ban</h3>
               <button onClick={() => setShowModal(false)}>✕</button>
             </div>
             <form onSubmit={handleSave}>
               <div className="p-4 flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Tiêu đề *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Tiêu đề *</label>
                   <input required value={fTitle} onChange={(e) => setFTitle(e.target.value)}
                     placeholder="Giao ban tuần 42..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Ngày họp *</label>
+                    <label className="text-xs font-semibold text-v5-ink">Ngày họp *</label>
                     <input type="date" required value={fDate} onChange={(e) => setFDate(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Chủ trì</label>
+                    <label className="text-xs font-semibold text-v5-ink">Chủ trì</label>
                     <input value={fChair} onChange={(e) => setFChair(e.target.value)}
                       placeholder="Nhập tên chủ trì..."
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                 </div>
               </div>
-              <div className="p-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
+              <div className="p-4 bg-v5-bg flex items-center justify-end gap-2 border-t">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm">Hủy</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold disabled:opacity-50">
+                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-v5-accent text-white text-sm font-semibold disabled:opacity-50">
                   {saving ? "Đang lưu..." : "Lập biên bản"}
                 </button>
               </div>

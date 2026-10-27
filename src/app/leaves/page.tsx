@@ -161,24 +161,24 @@ export default function LeavesPage() {
   };
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
+    <div className="flex w-full flex-col gap-3 pb-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-teal-100 text-teal-900 border border-teal-200">
+          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent-soft text-v5-accent border border-v5-line">
             Nghỉ phép · Bù · Công tác
           </span>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Quản lý nghỉ & công tác</h1>
-          <p className="text-sm text-slate-600">Ai nghỉ vào báo trên hệ thống — lãnh đạo duyệt theo phạm vi</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink mt-1">Quản lý nghỉ & công tác</h1>
+          <p className="text-sm text-v5-muted">Ai nghỉ vào báo trên hệ thống — lãnh đạo duyệt theo phạm vi</p>
         </div>
-        <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+        <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-v5-accent text-white text-sm font-semibold hover:bg-v5-accent">
           + Báo nghỉ / công tác
         </button>
       </div>
 
-      <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-        <label className="text-sm text-slate-600">Trạng thái</label>
+      <div className="flex items-center gap-2 bg-v5-surface p-3 rounded-xl border border-v5-line shadow-sm">
+        <label className="text-sm text-v5-muted">Trạng thái</label>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-10 px-2 rounded-lg bg-slate-50 border border-slate-300 text-sm">
+          className="h-10 px-2 rounded-lg bg-v5-bg border border-v5-line text-sm">
           <option value="">Tất cả</option>
           <option value="PENDING">Chờ duyệt</option>
           <option value="APPROVED">Đã duyệt</option>
@@ -188,26 +188,26 @@ export default function LeavesPage() {
       </div>
 
       <div data-tour="leave-list" className="flex flex-col gap-2">
-        {loading && <p className="text-sm text-slate-500 text-center py-8">Đang tải...</p>}
+        {loading && <p className="text-sm text-v5-muted text-center py-8">Đang tải...</p>}
         {!loading && rows.length === 0 && (
-          <p className="text-sm text-slate-500 text-center py-8">Chưa có đơn nghỉ nào</p>
+          <p className="text-sm text-v5-muted text-center py-8">Chưa có đơn nghỉ nào</p>
         )}
         {rows.map((r) => {
           const st = STATUS_LABELS[r.status] || STATUS_LABELS.PENDING;
           return (
-            <div key={r.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 flex flex-col gap-2">
+            <div key={r.id} className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3.5 flex flex-col gap-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="font-bold text-slate-900">{r.person.fullName} <span className="font-normal text-slate-500">· {LEAVE_LABELS[r.type] || r.type}</span></div>
-                  <div className="text-xs text-slate-600 mt-0.5">
+                  <div className="font-bold text-v5-ink">{r.person.fullName} <span className="font-normal text-v5-muted">· {LEAVE_LABELS[r.type] || r.type}</span></div>
+                  <div className="text-xs text-v5-muted mt-0.5">
                     {fmtDate(r.startDate)} → {fmtDate(r.endDate)} · Lý do: {r.reason}
                   </div>
                   {r.handoverTo && (
-                    <div className="text-xs text-teal-800 mt-0.5">
+                    <div className="text-xs text-v5-accent mt-0.5">
                       Bàn giao: {r.handoverTo.fullName}{r.handoverNotes ? ` — ${r.handoverNotes}` : ""}
                     </div>
                   )}
-                  {r.reviewNotes && <div className="text-xs text-slate-500 mt-0.5">Ý kiến lãnh đạo: {r.reviewNotes}</div>}
+                  {r.reviewNotes && <div className="text-xs text-v5-muted mt-0.5">Ý kiến lãnh đạo: {r.reviewNotes}</div>}
                 </div>
                 <span className={`px-2 py-0.5 rounded text-[11px] font-bold shrink-0 ${st.cls}`}>{st.text}</span>
               </div>
@@ -219,7 +219,7 @@ export default function LeavesPage() {
                       Duyệt
                     </button>
                     <button onClick={() => setReviewId(reviewId === r.id ? null : r.id)}
-                      className="h-10 px-4 rounded-lg bg-white border border-slate-300 text-sm font-semibold">
+                      className="h-10 px-4 rounded-lg bg-v5-surface border border-v5-line text-sm font-semibold">
                       Từ chối
                     </button>
                   </>
@@ -235,7 +235,7 @@ export default function LeavesPage() {
                 <div className="flex flex-col gap-2 pt-1">
                   <textarea rows={2} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)}
                     placeholder="Nhập lý do từ chối..."
-                    className="p-2.5 rounded-lg border border-slate-300 text-sm" />
+                    className="p-2.5 rounded-lg border border-v5-line text-sm" />
                   <button onClick={() => handleReview(r.id, "REJECT")} disabled={reviewing}
                     className="h-10 px-4 rounded-lg bg-status-danger text-white text-sm font-semibold disabled:opacity-50 self-start">
                     {reviewing ? "Đang xử lý..." : "Xác nhận từ chối"}
@@ -248,9 +248,9 @@ export default function LeavesPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-4 bg-teal-900 text-white flex items-center justify-between">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden">
+            <div className="p-4 bg-v5-accent text-white flex items-center justify-between">
               <h3 className="font-semibold">Báo nghỉ / công tác</h3>
               <button onClick={() => setShowModal(false)}>✕</button>
             </div>
@@ -258,52 +258,52 @@ export default function LeavesPage() {
               <div className="p-4 flex flex-col gap-3 max-h-[70vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Loại *</label>
+                    <label className="text-xs font-semibold text-v5-ink">Loại *</label>
                     <select value={fType} onChange={(e) => setFType(e.target.value)}
-                      className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                      className="h-10 px-2 rounded-lg border border-v5-line text-sm">
                       {Object.entries(LEAVE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Từ ngày *</label>
+                    <label className="text-xs font-semibold text-v5-ink">Từ ngày *</label>
                     <input type="date" required value={fStart} onChange={(e) => setFStart(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Đến ngày *</label>
+                    <label className="text-xs font-semibold text-v5-ink">Đến ngày *</label>
                     <input type="date" required value={fEnd} onChange={(e) => setFEnd(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Lý do *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Lý do *</label>
                   <textarea rows={2} required value={fReason} onChange={(e) => setFReason(e.target.value)}
                     placeholder="Nhập lý do nghỉ, nội dung công tác..."
-                    className="p-2.5 rounded-lg border border-slate-300 text-sm" />
+                    className="p-2.5 rounded-lg border border-v5-line text-sm" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Người bàn giao (nếu có)</label>
+                  <label className="text-xs font-semibold text-v5-ink">Người bàn giao (nếu có)</label>
                   <select value={fHandoverId} onChange={(e) => setFHandoverId(e.target.value)}
-                    className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                    className="h-10 px-2 rounded-lg border border-v5-line text-sm">
                     <option value="">— Không bàn giao —</option>
                     {people.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Nội dung bàn giao</label>
+                  <label className="text-xs font-semibold text-v5-ink">Nội dung bàn giao</label>
                   <input value={fHandoverNotes} onChange={(e) => setFHandoverNotes(e.target.value)}
                     placeholder="Nhập việc cần tiếp nhận khi vắng mặt..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-v5-muted">
                   Gửi xong lãnh đạo và người bàn giao đều nhận tin ngay. Đơn đang chờ thì tự hủy được.
                 </p>
               </div>
-              <div className="p-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
+              <div className="p-4 bg-v5-bg flex items-center justify-end gap-2 border-t">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm">Hủy</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold disabled:opacity-50">
+                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-v5-accent text-white text-sm font-semibold disabled:opacity-50">
                   {saving ? "Đang gửi..." : "Gửi đơn"}
                 </button>
               </div>

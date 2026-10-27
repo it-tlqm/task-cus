@@ -151,58 +151,58 @@ export default function DocsPage() {
   };
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
+    <div className="flex w-full flex-col gap-3 pb-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-teal-100 text-teal-900 border border-teal-200">
+          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent-soft text-v5-accent border border-v5-line">
             Văn bản đến · đi
           </span>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Sổ văn bản</h1>
-          <p className="text-sm text-slate-600">Tra số hiệu, ai đang giữ, hạn nào — cần thì chuyển thành việc</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink mt-1">Sổ văn bản</h1>
+          <p className="text-sm text-v5-muted">Tra số hiệu, ai đang giữ, hạn nào — cần thì chuyển thành việc</p>
         </div>
-        <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold hover:bg-teal-700">
+        <button data-tour="add-btn" onClick={() => setShowModal(true)} className="px-4 py-2 rounded-lg bg-v5-accent text-white text-sm font-semibold hover:bg-v5-accent">
           + Vào sổ văn bản
         </button>
       </div>
 
-      <form onSubmit={onSearch} className="flex flex-col md:flex-row gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+      <form onSubmit={onSearch} className="flex flex-col md:flex-row gap-2 bg-v5-surface p-3 rounded-xl border border-v5-line shadow-sm">
         <div className="flex gap-1">
           {["", "DEN", "DI"].map((d) => (
             <button key={d} type="button" onClick={() => setDirection(d)}
-              className={`h-10 px-4 rounded-lg text-sm font-semibold ${direction === d ? "bg-teal-800 text-white" : "bg-slate-100 text-slate-600"}`}>
+              className={`h-10 px-4 rounded-lg text-sm font-semibold ${direction === d ? "bg-v5-accent text-white" : "bg-v5-bg text-v5-muted"}`}>
               {d === "" ? "Tất cả" : d === "DEN" ? "Đến" : "Đi"}
             </button>
           ))}
         </div>
         <input value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Tìm số hiệu, trích yếu, nơi gửi..."
-          className="flex-1 h-10 px-3 rounded-lg bg-slate-50 border border-slate-300 text-sm" />
-        <button type="submit" className="h-10 px-5 rounded-lg bg-slate-800 text-white text-sm font-semibold">Tìm</button>
+          className="flex-1 h-10 px-3 rounded-lg bg-v5-bg border border-v5-line text-sm" />
+        <button type="submit" className="h-10 px-5 rounded-lg bg-v5-accent text-white text-sm font-semibold">Tìm</button>
       </form>
 
       {loading ? (
-        <p className="text-sm text-slate-500 text-center py-8">Đang tải...</p>
+        <p className="text-sm text-v5-muted text-center py-8">Đang tải...</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-slate-500 text-center py-8">Chưa có văn bản nào</p>
+        <p className="text-sm text-v5-muted text-center py-8">Chưa có văn bản nào</p>
       ) : (
         <div data-tour="doc-list" className="flex flex-col gap-2">
           {rows.map((r) => {
             const st = STATUS_LABELS[r.status] || STATUS_LABELS.DANG_XU_LY;
             const overdue = r.deadline && r.status === "DANG_XU_LY" && new Date(r.deadline) < new Date();
             return (
-              <div key={r.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 flex flex-col gap-1.5">
+              <div key={r.id} className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3.5 flex flex-col gap-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded mr-1.5 ${r.direction === "DEN" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}>
+                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded mr-1.5 ${r.direction === "DEN" ? "bg-v5-accent-soft text-v5-accent" : "bg-purple-100 text-purple-800"}`}>
                       {r.direction === "DEN" ? "ĐẾN" : "ĐI"}
                     </span>
-                    <span className="font-mono text-xs font-bold text-slate-900">{r.number}</span>
-                    <div className="font-semibold text-slate-900 text-sm mt-0.5">{r.title}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">
+                    <span className="font-mono text-xs font-bold text-v5-ink">{r.number}</span>
+                    <div className="font-semibold text-v5-ink text-sm mt-0.5">{r.title}</div>
+                    <div className="text-xs text-v5-muted mt-0.5">
                       {r.fromTo || ""}{r.docDate ? ` · ${new Date(r.docDate).toLocaleDateString("vi-VN")}` : ""}
                       {r.handler ? ` · Giữ: ${r.handler.fullName}` : ""}
                       {r.deadline && (
-                        <span className={overdue ? "text-rose-600 font-bold" : ""}>
+                        <span className={overdue ? "text-v5-danger font-bold" : ""}>
                           {` · Hạn: ${new Date(r.deadline).toLocaleDateString("vi-VN")}${overdue ? " (TRỄ!)" : ""}`}
                         </span>
                       )}
@@ -213,19 +213,19 @@ export default function DocsPage() {
                 <div className="flex flex-wrap gap-2">
                   {r.status === "DANG_XU_LY" && (
                     <button onClick={() => handleStatus(r.id, "HOAN_THANH")}
-                      className="h-9 px-3 rounded-lg bg-teal-50 border border-teal-200 text-teal-900 text-xs font-bold">
+                      className="h-9 px-3 rounded-lg bg-v5-accent-soft border border-v5-line text-v5-accent text-xs font-bold">
                       Xong
                     </button>
                   )}
                   {r.status !== "LUU_TRU" && (
                     <button onClick={() => handleStatus(r.id, "LUU_TRU")}
-                      className="h-9 px-3 rounded-lg bg-slate-100 text-xs font-semibold">
+                      className="h-9 px-3 rounded-lg bg-v5-bg text-xs font-semibold">
                       Lưu trữ
                     </button>
                   )}
                   {r.task ? (
                     <Link href={`/tasks/${r.task.id}`}
-                      className="h-9 px-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold flex items-center">
+                      className="h-9 px-3 rounded-lg bg-v5-accent-soft border border-v5-line text-v5-accent text-xs font-bold flex items-center">
                       Việc [{r.task.code}] ›
                     </Link>
                   ) : canApprove ? (
@@ -242,9 +242,9 @@ export default function DocsPage() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-4 bg-teal-900 text-white flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden">
+            <div className="p-4 bg-v5-accent text-white flex items-center justify-between">
               <h3 className="font-semibold">Vào sổ văn bản</h3>
               <button onClick={() => setShowModal(false)}>✕</button>
             </div>
@@ -252,61 +252,61 @@ export default function DocsPage() {
               <div className="p-4 flex flex-col gap-3 max-h-[70vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Sổ *</label>
+                    <label className="text-xs font-semibold text-v5-ink">Sổ *</label>
                     <select value={fDirection} onChange={(e) => setFDirection(e.target.value)}
-                      className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                      className="h-10 px-2 rounded-lg border border-v5-line text-sm">
                       <option value="DEN">Văn bản đến</option>
                       <option value="DI">Văn bản đi</option>
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Số hiệu *</label>
+                    <label className="text-xs font-semibold text-v5-ink">Số hiệu *</label>
                     <input required value={fNumber} onChange={(e) => setFNumber(e.target.value)}
                       placeholder="123/HQTL..."
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Trích yếu *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Trích yếu *</label>
                   <input required value={fTitle} onChange={(e) => setFTitle(e.target.value)}
                     placeholder="Nhập trích yếu văn bản..."
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Nơi gửi/nhận</label>
+                    <label className="text-xs font-semibold text-v5-ink">Nơi gửi/nhận</label>
                     <input value={fFromTo} onChange={(e) => setFFromTo(e.target.value)}
                       placeholder="Nhập đơn vị gửi/nhận..."
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Ngày văn bản</label>
+                    <label className="text-xs font-semibold text-v5-ink">Ngày văn bản</label>
                     <input type="date" value={fDocDate} onChange={(e) => setFDocDate(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Người xử lý</label>
+                    <label className="text-xs font-semibold text-v5-ink">Người xử lý</label>
                     <select value={fHandlerId} onChange={(e) => setFHandlerId(e.target.value)}
-                      className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                      className="h-10 px-2 rounded-lg border border-v5-line text-sm">
                       <option value="">— Chưa phân —</option>
                       {people.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-700">Hạn xử lý</label>
+                    <label className="text-xs font-semibold text-v5-ink">Hạn xử lý</label>
                     <input type="date" value={fDeadline} onChange={(e) => setFDeadline(e.target.value)}
-                      className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                      className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Ghi chú</label>
+                  <label className="text-xs font-semibold text-v5-ink">Ghi chú</label>
                   <input value={fNotes} onChange={(e) => setFNotes(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
               </div>
-              <div className="p-4 bg-slate-50 flex items-center justify-end gap-2 border-t">
+              <div className="p-4 bg-v5-bg flex items-center justify-end gap-2 border-t">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm">Hủy</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-teal-800 text-white text-sm font-semibold disabled:opacity-50">
+                <button type="submit" disabled={saving} className="px-4 py-2 rounded-lg bg-v5-accent text-white text-sm font-semibold disabled:opacity-50">
                   {saving ? "Đang ghi..." : "Ghi vào sổ"}
                 </button>
               </div>

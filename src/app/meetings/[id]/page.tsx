@@ -306,33 +306,33 @@ export default function MeetingDetailPage() {
     }
   };
 
-  if (loading) return <div className="p-6 text-sm text-slate-500">Đang tải biên bản...</div>;
+  if (loading) return <div className="p-6 text-sm text-v5-muted">Đang tải biên bản...</div>;
   if (!meeting)
     return (
       <div className="p-6 flex flex-col items-start gap-3">
         <BackButton href="/meetings" label="Danh sách biên bản" />
-        <p className="text-sm text-slate-500">{loadError || "Không tìm thấy biên bản."}</p>
+        <p className="text-sm text-v5-muted">{loadError || "Không tìm thấy biên bản."}</p>
       </div>
     );
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
+    <div className="flex w-full flex-col gap-3 pb-4">
       <BackButton href="/meetings" label="Danh sách biên bản" />
       <div>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{meeting.title}</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-v5-ink">{meeting.title}</h1>
+            <p className="text-sm text-v5-muted">
               {new Date(meeting.meetingAt).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
               {meeting.chair ? ` · Chủ trì: ${meeting.chair}` : ""}
             </p>
             {meeting.notes && (
-              <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">{meeting.notes}</p>
+              <p className="text-xs text-v5-muted mt-1 whitespace-pre-line">{meeting.notes}</p>
             )}
           </div>
           {meeting.canEdit && !editingMeeting && (
             <button onClick={startMeetingEdit}
-              className="shrink-0 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:border-teal-400">
+              className="shrink-0 px-3 py-1.5 rounded-lg border border-v5-line text-xs font-semibold text-v5-ink hover:border-v5-accent/40">
               Sửa biên bản
             </button>
           )}
@@ -340,40 +340,40 @@ export default function MeetingDetailPage() {
       </div>
 
       {editingMeeting && (
-        <form onSubmit={handleMeetingSave} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col gap-2">
-          <span className="text-xs font-bold text-slate-700">Sửa thông tin biên bản</span>
+        <form onSubmit={handleMeetingSave} className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3 flex flex-col gap-2">
+          <span className="text-xs font-bold text-v5-ink">Sửa thông tin biên bản</span>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-700">Tiêu đề *</label>
+            <label className="text-xs font-semibold text-v5-ink">Tiêu đề *</label>
             <input required value={mTitle} onChange={(e) => setMTitle(e.target.value)}
               placeholder="Giao ban tuần 42..."
-              className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+              className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Ngày họp *</label>
+              <label className="text-xs font-semibold text-v5-ink">Ngày họp *</label>
               <input type="date" required value={mDate} onChange={(e) => setMDate(e.target.value)}
-                className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-700">Chủ trì</label>
+              <label className="text-xs font-semibold text-v5-ink">Chủ trì</label>
               <input value={mChair} onChange={(e) => setMChair(e.target.value)}
                 placeholder="Nhập tên chủ trì..."
-                className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-slate-700">Ghi chú</label>
+            <label className="text-xs font-semibold text-v5-ink">Ghi chú</label>
             <textarea rows={2} value={mNotes} onChange={(e) => setMNotes(e.target.value)}
               placeholder="Ghi chú biên bản..."
-              className="p-2.5 rounded-lg border border-slate-300 text-sm" />
+              className="p-2.5 rounded-lg border border-v5-line text-sm" />
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={savingMeeting}
-              className="px-4 py-2 rounded-lg bg-teal-800 text-white text-xs font-bold disabled:opacity-50">
+              className="px-4 py-2 rounded-lg bg-v5-accent text-white text-xs font-bold disabled:opacity-50">
               {savingMeeting ? "Đang lưu..." : "Lưu biên bản"}
             </button>
             <button type="button" onClick={() => setEditingMeeting(false)}
-              className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">
+              className="px-4 py-2 rounded-lg border border-v5-line text-xs font-semibold text-v5-ink">
               Hủy
             </button>
           </div>
@@ -385,7 +385,7 @@ export default function MeetingDetailPage() {
           <span className="text-xs font-bold text-secondary">✨ Dán biên bản thô, AI tách kết luận giúp</span>
           <textarea rows={3} value={minutes} onChange={(e) => setMinutes(e.target.value)}
             placeholder="Dán nội dung biên bản họp vào đây..."
-            className="p-2.5 rounded-lg border border-border-subtle text-sm bg-white" />
+            className="p-2.5 rounded-lg border border-border-subtle text-sm bg-v5-surface" />
           <button onClick={handleExtract} disabled={extracting}
             className="self-start px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-bold disabled:opacity-50">
             {extracting ? "Đang tách..." : "Tách kết luận bằng AI"}
@@ -394,22 +394,22 @@ export default function MeetingDetailPage() {
       )}
 
       {canApprove && meeting.canEdit && (
-        <form onSubmit={handleAdd} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col gap-2">
-          <span className="text-xs font-bold text-slate-700">+ Thêm kết luận</span>
+        <form onSubmit={handleAdd} className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3 flex flex-col gap-2">
+          <span className="text-xs font-bold text-v5-ink">+ Thêm kết luận</span>
           <input value={cContent} onChange={(e) => setCContent(e.target.value)}
             placeholder="Nhập kết luận giao việc..."
-            className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+            className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
           <div className="grid grid-cols-2 gap-2">
             <select value={cOwner} onChange={(e) => setCOwner(e.target.value)}
-              className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+              className="h-10 px-2 rounded-lg border border-v5-line text-sm">
               <option value="">Chủ trì...</option>
               {people.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
             </select>
             <input type="date" value={cDeadline} onChange={(e) => setCDeadline(e.target.value)}
-              className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+              className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
           </div>
           <CollaboratorPicker people={people} value={cCollabs} onChange={setCCollabs} excludeId={cOwner} disabled={adding} />
-          <button type="submit" disabled={adding} className="self-start px-4 py-2 rounded-lg bg-teal-800 text-white text-xs font-bold disabled:opacity-50">
+          <button type="submit" disabled={adding} className="self-start px-4 py-2 rounded-lg bg-v5-accent text-white text-xs font-bold disabled:opacity-50">
             {adding ? "Đang thêm..." : "Thêm kết luận"}
           </button>
         </form>
@@ -417,19 +417,19 @@ export default function MeetingDetailPage() {
 
       <div className="flex flex-col gap-2">
         {meeting.conclusions.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-6">Chưa có kết luận nào.</p>
+          <p className="text-sm text-v5-muted text-center py-6">Chưa có kết luận nào.</p>
         )}
         {meeting.conclusions.map((c, idx) => (
-          <div key={c.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col gap-1.5">
+          <div key={c.id} className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-3 flex flex-col gap-1.5">
             {editingConclusionId === c.id ? (
               <form onSubmit={(e) => handleConclusionSave(e, c.id)} className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-slate-700">Sửa kết luận {idx + 1}</span>
+                <span className="text-xs font-bold text-v5-ink">Sửa kết luận {idx + 1}</span>
                 <textarea rows={2} value={ecContent} onChange={(e) => setEcContent(e.target.value)}
                   placeholder="Nhập nội dung kết luận..."
-                  className="p-2.5 rounded-lg border border-slate-300 text-sm" />
+                  className="p-2.5 rounded-lg border border-v5-line text-sm" />
                 <div className="grid grid-cols-2 gap-2">
                   <select value={ecOwner} onChange={(e) => setEcOwner(e.target.value)}
-                    className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                    className="h-10 px-2 rounded-lg border border-v5-line text-sm">
                     <option value="">Chủ trì...</option>
                     {c.ownerId && !people.some((p) => p.id === c.ownerId) && (
                       <option value={c.ownerId}>{c.ownerName || c.ownerId}</option>
@@ -437,12 +437,12 @@ export default function MeetingDetailPage() {
                     {people.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
                   </select>
                   <input type="date" value={ecDeadline} onChange={(e) => setEcDeadline(e.target.value)}
-                    className="h-10 px-3 rounded-lg border border-slate-300 text-sm" />
+                    className="h-10 px-3 rounded-lg border border-v5-line text-sm" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Mức ưu tiên</label>
+                  <label className="text-xs font-semibold text-v5-ink">Mức ưu tiên</label>
                   <select value={ecPriority} onChange={(e) => setEcPriority(e.target.value)}
-                    className="h-10 px-2 rounded-lg border border-slate-300 text-sm">
+                    className="h-10 px-2 rounded-lg border border-v5-line text-sm">
                     <option value="Khẩn">Khẩn cấp</option>
                     <option value="Cao">Cao</option>
                     <option value="Trung bình">Trung bình</option>
@@ -452,21 +452,21 @@ export default function MeetingDetailPage() {
                 <CollaboratorPicker people={people} value={ecCollabs} onChange={setECCollabs} excludeId={ecOwner} disabled={savingConclusion} />
                 <div className="flex gap-2">
                   <button type="submit" disabled={savingConclusion}
-                    className="px-4 py-2 rounded-lg bg-teal-800 text-white text-xs font-bold disabled:opacity-50">
+                    className="px-4 py-2 rounded-lg bg-v5-accent text-white text-xs font-bold disabled:opacity-50">
                     {savingConclusion ? "Đang lưu..." : "Lưu kết luận"}
                   </button>
                   <button type="button" onClick={cancelConclusionEdit}
-                    className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700">
+                    className="px-4 py-2 rounded-lg border border-v5-line text-xs font-semibold text-v5-ink">
                     Hủy
                   </button>
                 </div>
               </form>
             ) : (
               <>
-                <div className="text-sm text-slate-900">
-                  <strong className="text-teal-900">{idx + 1}. </strong>{c.content}
+                <div className="text-sm text-v5-ink">
+                  <strong className="text-v5-accent">{idx + 1}. </strong>{c.content}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-v5-muted">
                   {c.ownerName ? `Chủ trì: ${c.ownerName}` : "Chưa gán chủ trì"}
                   {c.assigneeNames.length > 0 ? ` · Phối hợp: ${c.assigneeNames.join(", ")}` : ""}
                   {c.deadline ? ` · Hạn: ${new Date(c.deadline).toLocaleDateString("vi-VN")}` : ""}
@@ -475,11 +475,11 @@ export default function MeetingDetailPage() {
                   <div className="flex flex-col items-start gap-1">
                     {c.task && (
                       <Link href={`/tasks/${c.task.id}`}
-                        className="text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5 self-start">
+                        className="text-xs font-bold text-v5-accent bg-v5-accent-soft border border-v5-line rounded-lg px-2.5 py-1.5 self-start">
                         Đã thành việc [{c.task.code}] — {c.task.status === "COMPLETED" ? "Đã xong" : "Đang làm"} ›
                       </Link>
                     )}
-                    <span className="text-xs text-slate-500">Kết luận đã chuyển thành nhiệm vụ — sửa trên nhiệm vụ.</span>
+                    <span className="text-xs text-v5-muted">Kết luận đã chuyển thành nhiệm vụ — sửa trên nhiệm vụ.</span>
                   </div>
                 ) : meeting.canEdit && canApprove ? (
                   <div className="flex flex-wrap gap-2">
@@ -488,10 +488,10 @@ export default function MeetingDetailPage() {
                       {convertingId === c.id ? "Đang chuyển..." : "Chuyển thành nhiệm vụ"}
                     </button>
                     <button onClick={() => startConclusionEdit(c)}
-                      className="text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-3 py-1.5">
+                      className="text-xs font-bold text-v5-accent bg-v5-accent-soft border border-v5-line rounded-lg px-3 py-1.5">
                       Sửa
                     </button>
-                    <button onClick={() => handleDelete(c.id)} className="text-xs text-rose-600 px-2 py-1.5">
+                    <button onClick={() => handleDelete(c.id)} className="text-xs text-v5-danger px-2 py-1.5">
                       Xóa
                     </button>
                   </div>

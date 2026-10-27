@@ -210,6 +210,19 @@ check(
   "Phân quyền dùng tab V5",
   permissionsPage.includes("bg-v5-accent") && !permissionsPage.includes("border-border-default")
 );
+const supportPages = [
+  read("src/app/calendar/page.tsx"),
+  read("src/app/leaves/page.tsx"),
+  read("src/app/meetings/page.tsx"),
+  read("src/app/meetings/[id]/page.tsx"),
+  read("src/app/products/page.tsx"),
+  read("src/app/docs/page.tsx"),
+].join("\n");
+check(
+  "Trang hỗ trợ dùng token V5",
+  supportPages.includes("text-2xl font-semibold tracking-tight text-v5-ink") &&
+    !/(text-slate-|bg-slate-|border-slate-|text-teal-|bg-teal-|border-teal-|bg-white)/.test(supportPages)
+);
 const rosterPage = read("src/app/roster/page.tsx");
 const adminOrgPage = read("src/app/admin/organization/page.tsx");
 check(

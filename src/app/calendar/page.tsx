@@ -102,35 +102,35 @@ export default function CalendarPage() {
   const isToday = (d: Date) => dayKey(d) === dayKey(new Date());
 
   return (
-    <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20">
+    <div className="flex w-full flex-col gap-3 pb-4">
       <div className="flex items-center justify-between">
         <div>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-teal-100 text-teal-900 border border-teal-200">
+          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent-soft text-v5-accent border border-v5-line">
             Lịch chung (chỉ xem)
           </span>
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">Lịch công tác đơn vị</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-v5-ink mt-1">Lịch công tác đơn vị</h1>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => { const d = new Date(year, month - 1, 1); setYear(d.getFullYear()); setMonth(d.getMonth()); }}
-            className="w-9 h-9 rounded-lg bg-white border border-slate-300 text-lg">‹</button>
+            className="w-9 h-9 rounded-lg bg-v5-surface border border-v5-line text-lg">‹</button>
           <span className="px-2 text-sm font-bold min-w-[110px] text-center">Tháng {month + 1}/{year}</span>
           <button
             onClick={() => { const d = new Date(year, month + 1, 1); setYear(d.getFullYear()); setMonth(d.getMonth()); }}
-            className="w-9 h-9 rounded-lg bg-white border border-slate-300 text-lg">›</button>
+            className="w-9 h-9 rounded-lg bg-v5-surface border border-v5-line text-lg">›</button>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-slate-600">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> Hạn nhiệm vụ</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Nghỉ đã duyệt</span>
+      <div className="flex items-center gap-4 text-xs text-v5-muted">
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-v5-accent inline-block" /> Hạn nhiệm vụ</span>
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-v5-gold inline-block" /> Nghỉ đã duyệt</span>
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-500 text-center py-8">Đang tải lịch...</p>
+        <p className="text-sm text-v5-muted text-center py-8">Đang tải lịch...</p>
       ) : (
-        <div data-tour="month-grid" className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
-          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-500 pb-1">
+        <div data-tour="month-grid" className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-2">
+          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-v5-muted pb-1">
             {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => <span key={d}>{d}</span>)}
           </div>
           <div className="grid grid-cols-7 gap-1">
@@ -144,15 +144,15 @@ export default function CalendarPage() {
                   key={i}
                   onClick={() => setSelectedDay(dayKey(d))}
                   className={`min-h-[52px] rounded-lg border text-left p-1 flex flex-col justify-between transition-all ${
-                    sel ? "border-teal-700 bg-teal-50 ring-1 ring-teal-600" : "border-slate-100 hover:border-slate-300"
+                    sel ? "border-v5-line bg-v5-accent-soft ring-1 ring-v5-accent/30" : "border-v5-line/60 hover:border-v5-line"
                   } ${isToday(d) ? "font-bold" : ""}`}
                 >
-                  <span className={`text-xs ${isToday(d) ? "w-5 h-5 rounded-full bg-teal-800 text-white flex items-center justify-center" : "text-slate-700"}`}>
+                  <span className={`text-xs ${isToday(d) ? "w-5 h-5 rounded-full bg-v5-accent text-white flex items-center justify-center" : "text-v5-ink"}`}>
                     {d.getDate()}
                   </span>
                   <span className="flex gap-0.5 flex-wrap">
-                    {t.length > 0 && <span className="text-[10px] px-1 rounded bg-blue-100 text-blue-800 font-bold">{t.length} việc</span>}
-                    {l.length > 0 && <span className="text-[10px] px-1 rounded bg-amber-100 text-amber-800 font-bold">{l.length} nghỉ</span>}
+                    {t.length > 0 && <span className="text-[10px] px-1 rounded bg-v5-accent-soft text-v5-accent font-bold">{t.length} việc</span>}
+                    {l.length > 0 && <span className="text-[10px] px-1 rounded bg-v5-gold-soft text-v5-gold-ink font-bold">{l.length} nghỉ</span>}
                   </span>
                 </button>
               );
@@ -162,25 +162,25 @@ export default function CalendarPage() {
       )}
 
       {selDate && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2">
-          <h2 className="font-bold text-slate-900" suppressHydrationWarning>
+        <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm p-4 flex flex-col gap-2">
+          <h2 className="font-bold text-v5-ink" suppressHydrationWarning>
             {selDate.toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric" })}
           </h2>
           {selLeaves.map((l) => (
-            <div key={l.id} className="text-sm p-2 rounded-lg bg-amber-50 border border-amber-200">
+            <div key={l.id} className="text-sm p-2 rounded-lg bg-v5-gold-soft border border-v5-gold/50">
               <strong>{l.person.fullName}</strong> — {LEAVE_LABELS[l.type] || l.type}
-              <span className="text-slate-500"> ({new Date(l.startDate).toLocaleDateString("vi-VN")} → {new Date(l.endDate).toLocaleDateString("vi-VN")})</span>
+              <span className="text-v5-muted"> ({new Date(l.startDate).toLocaleDateString("vi-VN")} → {new Date(l.endDate).toLocaleDateString("vi-VN")})</span>
             </div>
           ))}
           {selTasks.map((t) => (
-            <Link key={t.id} href={`/tasks/${t.id}`} className="text-sm p-2 rounded-lg bg-blue-50 border border-blue-200 block hover:bg-blue-100">
-              <span className="font-mono text-xs font-bold text-blue-900">{t.code}</span>
+            <Link key={t.id} href={`/tasks/${t.id}`} className="text-sm p-2 rounded-lg bg-v5-accent-soft border border-v5-line block hover:bg-v5-accent-soft">
+              <span className="font-mono text-xs font-bold text-v5-accent">{t.code}</span>
               <span className="font-semibold"> {t.title}</span>
-              <span className="block text-xs text-slate-500">{t.owner?.fullName || ""} · {t.status === "COMPLETED" ? "Đã xong" : "Chưa xong"}</span>
+              <span className="block text-xs text-v5-muted">{t.owner?.fullName || ""} · {t.status === "COMPLETED" ? "Đã xong" : "Chưa xong"}</span>
             </Link>
           ))}
           {selTasks.length === 0 && selLeaves.length === 0 && (
-            <p className="text-sm text-slate-400">Không có việc đến hạn hay lịch nghỉ trong ngày này.</p>
+            <p className="text-sm text-v5-muted">Không có việc đến hạn hay lịch nghỉ trong ngày này.</p>
           )}
         </div>
       )}
