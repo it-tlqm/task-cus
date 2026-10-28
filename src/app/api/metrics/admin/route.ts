@@ -5,6 +5,7 @@ import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { metricEntryPeriod, parseEntryPeriod } from "@/lib/metric-entry-period";
+import { metricInputMode } from "@/lib/metric-input-mode";
 import {
   isMetricsAdmin,
   parseDerivation,
@@ -27,7 +28,7 @@ const D = Prisma.Decimal;
 const VALUE_KINDS = ["FLOW", "BALANCE", "DERIVED"];
 const UNIT_TYPES = ["VND", "USD", "COUNT"];
 const PERIOD_TYPES = ["YEAR", "QUARTER", "MONTH"];
-const CUM_KINDS = ["MONTH", "QUARTER", "YEAR", "LEDGER"];
+const CUM_KINDS = ["MONTH", "QUARTER", "YEAR", "LEDGER", "OPENING"];
 // B-C-1: loại đối chiếu phải được cấu hình tường minh, không dò chuỗi nhãn.
 const COMPARISON_KINDS = ["NONE", "BTC_YEAR", "UBND_YEAR", "MONTH_PLAN"];
 const DATA_SOURCES = ["REAL", "DEMO"];
@@ -265,6 +266,7 @@ export async function GET(req: NextRequest) {
             decimals: m.decimals,
             valueKind: m.valueKind,
             derivation: m.valueKind === "DERIVED" && m.derivation ? parseDerivation(m.derivation) : null,
+            inputMode: metricInputMode(m),
             entryPeriod: metricEntryPeriod(m),
             requireConfirm: m.requireConfirm,
             showOnDashboard: m.showOnDashboard,
@@ -493,6 +495,7 @@ export async function POST(req: NextRequest) {
           return jsonError("Thu NSNN phải nhập theo ngày", 400);
         }
 
+        const inputMode = data.inputMode === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL";
         let derivation: any = null;
         if (valueKind === "DERIVED") {
           const terms = Array.isArray(data.derivation?.terms) ? data.derivation.terms : [];
@@ -506,10 +509,11 @@ export async function POST(req: NextRequest) {
             terms: cleanTerms,
             includeBaseline: boolOf(data.derivation?.includeBaseline, false),
             entryPeriod,
+            inputMode,
           };
         } else {
           // Giữ cấu hình kỳ nhập ngay cả khi là DAY, để không bị fallback sai.
-          derivation = { entryPeriod };
+          derivation = { entryPeriod, inputMode };
         }
 
         const base = {
@@ -538,14 +542,14 @@ export async function POST(req: NextRequest) {
           const dup = await prisma.metricDefinition.findUnique({ where: { code } });
           if (dup) return jsonError(`Mã chỉ tiêu "${code}" đã tồn tại`, 400);
           const m = await prisma.metricDefinition.create({ data: { ...base, groupId, code, name } });
-          await audit("METRIC_CREATED", m.id, { code, name, valueKind, entryPeriod });
+          await audit("METRIC_CREATED", m.id, { code, name, valueKind, entryPeriod, inputMode });
           return NextResponse.json({ success: true, id: m.id });
         }
 
         if (valueKind === "DERIVED" && derivation?.terms?.some((t: any) => t.metricId === id))
           return jsonError("Công thức không được tham chiếu chính chỉ tiêu này", 400);
         const m = await prisma.metricDefinition.update({ where: { id }, data: base });
-        await audit("METRIC_UPDATED", id, { name: m.name, valueKind, entryPeriod });
+        await audit("METRIC_UPDATED", id, { name: m.name, valueKind, entryPeriod, inputMode });
         return NextResponse.json({ success: true });
       }
       if (action === "delete") {

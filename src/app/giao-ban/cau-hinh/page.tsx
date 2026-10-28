@@ -40,6 +40,7 @@ const CUM_LABELS: Record<string, string> = {
   QUARTER: "Lũy kế Quý",
   YEAR: "Lũy kế Năm",
   LEDGER: "Số dư liên tục (từ ngày mốc trở đi)",
+  OPENING: "Số mở đầu kỳ (cho nhập lũy kế ngày)",
 };
 const BLOCK_KIND_LABELS: Record<string, string> = {
   HEADING: "Tiêu đề mục",
@@ -162,6 +163,7 @@ export default function CauHinhSoLieuPage() {
     showOnDashboard: false,
     expectDaily: false,
     entryPeriod: "WEEK",
+    inputMode: "INCREMENTAL",
     allowBackdateDays: 0,
     sortOrder: 0,
   });
@@ -201,6 +203,7 @@ export default function CauHinhSoLieuPage() {
       dashboardOrder: m.dashboardOrder,
       expectDaily: m.expectDaily,
       entryPeriod: m.entryPeriod || metricEntryPeriod(m),
+      inputMode: m.inputMode || "INCREMENTAL",
       allowBackdateDays: m.allowBackdateDays,
       note: m.note || "",
       sortOrder: m.sortOrder,
@@ -545,6 +548,15 @@ export default function CauHinhSoLieuPage() {
                           </option>
                         ))}
                       </select>
+                      <select
+                        value={newMetric.inputMode || "INCREMENTAL"}
+                        onChange={(e) => setNewMetric({ ...newMetric, inputMode: e.target.value })}
+                        className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
+                        title="Kiểu giá trị nhập: phát sinh hoặc lũy kế ngày"
+                      >
+                        <option value="INCREMENTAL">Kiểu: Số phát sinh</option>
+                        <option value="CUMULATIVE">Kiểu: Lũy kế ngày</option>
+                      </select>
                       <label className="flex items-center gap-1 text-body-xs px-1">
                         <input type="checkbox" checked={newMetric.expectDaily} onChange={(e) => setNewMetric({ ...newMetric, expectDaily: e.target.checked })} />
                         Nhập hằng ngày
@@ -590,6 +602,11 @@ export default function CauHinhSoLieuPage() {
                         <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-success/30 bg-v5-success-soft text-v5-success font-semibold">
                           Kỳ: {ENTRY_PERIOD_LABELS[(m.entryPeriod || metricEntryPeriod(m)) as keyof typeof ENTRY_PERIOD_LABELS]}
                         </span>
+                        {m.inputMode === "CUMULATIVE" && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-gold/50 bg-v5-gold-soft text-v5-gold-ink font-semibold">
+                            Lũy kế ngày
+                          </span>
+                        )}
                         {m.classifications.length > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-200 bg-sky-50 text-sky-700">{m.classifications.length} phân loại</span>
                         )}
@@ -646,6 +663,15 @@ export default function CauHinhSoLieuPage() {
                                   Kỳ nhập: {ENTRY_PERIOD_LABELS[p]}
                                 </option>
                               ))}
+                            </select>
+                            <select
+                              value={metricDraft.inputMode || "INCREMENTAL"}
+                              onChange={(e) => setMetricDraft({ ...metricDraft, inputMode: e.target.value })}
+                              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
+                              title="Kiểu giá trị nhập: phát sinh hoặc lũy kế ngày"
+                            >
+                              <option value="INCREMENTAL">Kiểu: Số phát sinh</option>
+                              <option value="CUMULATIVE">Kiểu: Lũy kế ngày</option>
                             </select>
                             <label className="flex items-center gap-1 text-body-xs">
                               <input type="checkbox" checked={!!metricDraft.requireConfirm} onChange={(e) => setMetricDraft({ ...metricDraft, requireConfirm: e.target.checked })} />
@@ -1465,6 +1491,7 @@ function keepMetricFields(m: any) {
     allowBackdateDays: m.allowBackdateDays,
     expectDaily: m.expectDaily,
     entryPeriod: m.entryPeriod || metricEntryPeriod(m),
+    inputMode: m.inputMode || "INCREMENTAL",
     note: m.note,
     sortOrder: m.sortOrder,
   };

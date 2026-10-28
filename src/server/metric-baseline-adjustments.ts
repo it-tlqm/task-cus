@@ -21,7 +21,7 @@ import {
   todayVnDateOnly,
 } from "./metrics";
 
-const CUM_KINDS = ["MONTH", "QUARTER", "YEAR", "LEDGER"] as const;
+const CUM_KINDS = ["MONTH", "QUARTER", "YEAR", "LEDGER", "OPENING"] as const;
 type CumKind = (typeof CUM_KINDS)[number];
 
 export class MetricAdjustmentError extends Error {

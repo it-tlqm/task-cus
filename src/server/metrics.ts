@@ -4,6 +4,7 @@ import type { SessionUser } from "./auth";
 import { checkPermission } from "./guard";
 import { getIsoWeekBounds, getVnDateParts } from "@/lib/period-helper";
 import { metricEntryPeriod, type EntryPeriod } from "@/lib/metric-entry-period";
+import { metricInputMode } from "@/lib/metric-input-mode";
 import {
   UNCONFIGURED_TARGET_RULE,
   targetRuleBlockReason,
@@ -563,6 +564,18 @@ export async function computeMetricSummary(
 
   const metricById = new Map(metrics.map((m) => [m.id, m]));
 
+  const openingFor = (metricId: string, classificationId: string, before: Date): BaselineRow | null => {
+    const list = baselinesByMetric.get(metricId) || [];
+    let found: BaselineRow | null = null;
+    for (const b of list) {
+      if (b.cumKind !== "OPENING") continue;
+      if (b.classificationId !== classificationId) continue;
+      if (b.asOfDate.getTime() >= before.getTime()) continue;
+      if (!found || b.asOfDate.getTime() > found.asOfDate.getTime()) found = b;
+    }
+    return found;
+  };
+
   /** Giá trị của 1 chỉ tiêu / 1 phân loại cho một khoảng (kỳ). depth để chặn vòng lặp công thức. */
   const valueOf = (
     metricId: string,
@@ -577,6 +590,13 @@ export async function computeMetricSummary(
     const list = (entriesByMetric.get(metricId) || []).filter((e) => e.classificationId === classificationId);
 
     if (metric.valueKind === "FLOW") {
+      // Chỉ tiêu nhập lũy kế ngày: kỳ = lũy kế cuối kỳ - lũy kế đầu kỳ.
+      if (metricInputMode(metric) === "CUMULATIVE") {
+        const endEntry = latestUpTo(list, range.end);
+        if (!endEntry) return null;
+        const opening = openingFor(metricId, classificationId, range.start);
+        return opening ? endEntry.valueNumeric.sub(opening.valueNumeric) : endEntry.valueNumeric;
+      }
       if (cumKind !== "WEEK") {
         const b = baselineFor(metricId, classificationId, cumKind, range.start, range.end, range.end);
         if (b) {
