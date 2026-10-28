@@ -552,10 +552,10 @@ export default function CauHinhSoLieuPage() {
                         value={newMetric.inputMode || "INCREMENTAL"}
                         onChange={(e) => setNewMetric({ ...newMetric, inputMode: e.target.value })}
                         className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
-                        title="Kiểu giá trị nhập: phát sinh hoặc lũy kế ngày"
+                        title="Cách lưu giá trị — màn hình nhập vẫn cho chọn Phát sinh hoặc Lũy kế"
                       >
-                        <option value="INCREMENTAL">Kiểu: Số phát sinh</option>
-                        <option value="CUMULATIVE">Kiểu: Lũy kế ngày</option>
+                        <option value="INCREMENTAL">Lưu dạng: Số phát sinh</option>
+                        <option value="CUMULATIVE">Lưu dạng: Lũy kế ngày</option>
                       </select>
                       <label className="flex items-center gap-1 text-body-xs px-1">
                         <input type="checkbox" checked={newMetric.expectDaily} onChange={(e) => setNewMetric({ ...newMetric, expectDaily: e.target.checked })} />
@@ -668,10 +668,10 @@ export default function CauHinhSoLieuPage() {
                               value={metricDraft.inputMode || "INCREMENTAL"}
                               onChange={(e) => setMetricDraft({ ...metricDraft, inputMode: e.target.value })}
                               className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
-                              title="Kiểu giá trị nhập: phát sinh hoặc lũy kế ngày"
+                              title="Cách lưu giá trị — màn hình nhập vẫn cho chọn Phát sinh hoặc Lũy kế"
                             >
-                              <option value="INCREMENTAL">Kiểu: Số phát sinh</option>
-                              <option value="CUMULATIVE">Kiểu: Lũy kế ngày</option>
+                              <option value="INCREMENTAL">Lưu dạng: Số phát sinh</option>
+                              <option value="CUMULATIVE">Lưu dạng: Lũy kế ngày</option>
                             </select>
                             <label className="flex items-center gap-1 text-body-xs">
                               <input type="checkbox" checked={!!metricDraft.requireConfirm} onChange={(e) => setMetricDraft({ ...metricDraft, requireConfirm: e.target.checked })} />

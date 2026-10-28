@@ -1,31 +1,36 @@
-# Nhập lũy kế ngày (open metrics)
+# Nhập phát sinh hoặc lũy kế
 
 ## Cách dùng
 
-1. Vào **Cấu hình giao ban → Nhóm & chỉ tiêu**, sửa chỉ tiêu.
-2. Chọn **Kiểu: Lũy kế ngày**.
-3. Vào **Mốc lũy kế**, tạo mốc **Số mở đầu kỳ** trước ngày bắt đầu nhập.
-4. Tại **Nhập số liệu**, mỗi dòng có 2 kiểu nhập:
-   - **Phát sinh**: số phát sinh trong kỳ. Hệ thống tự cộng vào lũy kế trước kỳ.
-   - **Lũy kế**: tổng lũy kế đến cuối kỳ.
+Tại **Nhập số liệu**, mỗi chỉ tiêu phát sinh (FLOW) có 2 kiểu nhập cho từng dòng:
 
-Mặc định là **Phát sinh** để không phải tự tính tổng lũy kế. Chuyển sang **Lũy kế** sẽ hiện tổng đã lưu để đối chiếu/sửa.
+- **Phát sinh** (mặc định): số phát sinh trong kỳ.
+- **Lũy kế**: tổng lũy kế đến cuối kỳ.
 
-## Cách tính
+Hệ thống tự quy đổi về đúng dạng lưu của chỉ tiêu:
 
-- Nhập phát sinh: lũy kế mới = lũy kế trước kỳ + số phát sinh.
-- Nhập lũy kế: giữ nguyên tổng người dùng nhập.
-- Ngày = lũy kế hôm nay − lũy kế hôm trước.
-- Tháng = lũy kế cuối tháng − lũy kế đầu tháng.
-- Năm = lũy kế cuối năm − lũy kế đầu năm.
-- Chỉ tiêu **Số phát sinh** giữ nguyên cách tính cộng dồn.
+| Dạng lưu của chỉ tiêu | Nhập phát sinh | Nhập lũy kế |
+| --- | --- | --- |
+| Số phát sinh | Giữ nguyên | Trừ lũy kế đầu kỳ để ra phát sinh |
+| Lũy kế ngày | Cộng vào lũy kế đầu kỳ | Giữ nguyên |
+
+## Lũy kế đầu kỳ
+
+- Chỉ tiêu lưu **lũy kế**: lấy bản ghi lũy kế gần nhất trước kỳ, hoặc mốc **Số mở đầu kỳ**.
+- Chỉ tiêu lưu **phát sinh**: lấy mốc **YEAR** gần nhất + tổng phát sinh sau mốc đến hết ngày trước kỳ.
+- Khi chọn **Lũy kế**, màn hình hiện dòng **Lũy kế trước kỳ** để đối chiếu trước khi lưu.
+
+## Cách tính báo cáo
+
+- Chỉ tiêu lưu phát sinh: cộng dồn các số phát sinh trong kỳ.
+- Chỉ tiêu lưu lũy kế: lũy kế cuối kỳ − lũy kế đầu kỳ.
+- Không thêm cột CSDL, không cần migration.
 
 ## Lưu ý
 
-- Số lưu trong CSDL luôn là số lũy kế chuẩn hoá; không cần thêm cột.
-- Khi mở lại, màn hình hiển thị số phát sinh của kỳ; bấm **Lũy kế** để xem tổng.
-- Chỉ tiêu đã có dữ liệu nên chuyển kiểu vào đầu kỳ, trước khi nhập tiếp.
-- Cấu hình lưu trong `MetricDefinition.derivation.inputMode`, không cần migration.
+- Chỉ tiêu **Số dư** (BALANCE) không có 2 kiểu nhập; nhập trực tiếp số dư.
+- Nếu lũy kế trước kỳ hiển thị 0 hoặc không đúng, kiểm tra mốc YEAR/OPENING trước khi lưu.
+- Chuyển kiểu nhập sẽ giữ lại số đã có để đối chiếu, không xóa dữ liệu.
 
 ## Kiểm thử
 
