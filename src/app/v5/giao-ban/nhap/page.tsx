@@ -36,6 +36,8 @@ interface EntryValue {
   label: string;
   entryId: string | null;
   valueBase: number | null;
+  enteredValueBase?: number | null;
+  inputMode?: "INCREMENTAL" | "CUMULATIVE";
   status: string;
   note: string | null;
   enteredByName: string | null;
@@ -138,6 +140,8 @@ export default function V5EntryPage() {
   const [data, setData] = useState<EntryData | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [initial, setInitial] = useState<Record<string, string>>({});
+  const [modes, setModes] = useState<Record<string, "INCREMENTAL" | "CUMULATIVE">>({});
+  const [initialModes, setInitialModes] = useState<Record<string, "INCREMENTAL" | "CUMULATIVE">>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlyTodo, setOnlyTodo] = useState(false);
@@ -159,15 +163,22 @@ export default function V5EntryPage() {
       if (!res.ok || !json.success) throw new Error(json.error || "Không tải được số liệu");
       setData(json);
       const next: Record<string, string> = {};
+      const nextModes: Record<string, "INCREMENTAL" | "CUMULATIVE"> = {};
       for (const group of json.groups as EntryGroup[]) {
         for (const metric of group.metrics) {
           for (const value of metric.values) {
-            next[`${metric.id}|${value.classificationId}`] = baseToInput(value.valueBase, metric);
+            const key = `${metric.id}|${value.classificationId}`;
+            next[key] = baseToInput(value.enteredValueBase ?? value.valueBase, metric);
+            nextModes[key] =
+              value.inputMode ||
+              (metric.inputMode === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL");
           }
         }
       }
       setValues(next);
       setInitial(next);
+      setModes(nextModes);
+      setInitialModes(nextModes);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không tải được số liệu");
     } finally {
@@ -194,11 +205,13 @@ export default function V5EntryPage() {
     let count = 0;
     for (const key of Object.keys(values)) {
       const current = (values[key] || "").trim();
+      if (current === "") continue;
       const before = (initial[key] || "").trim();
-      if (current !== before && current !== "") count += 1;
+      const modeChanged = modes[key] !== initialModes[key];
+      if (current !== before || modeChanged) count += 1;
     }
     return count;
-  }, [values, initial]);
+  }, [values, initial, modes, initialModes]);
 
   const guardUnsaved = useCallback(() => {
     if (changedCount === 0) return true;
@@ -232,19 +245,28 @@ export default function V5EntryPage() {
 
   const save = async () => {
     if (!data) return;
-    const entries: Array<{ metricId: string; classificationId: string; entryDate: string; value: string }> = [];
+    const entries: Array<{
+      metricId: string;
+      classificationId: string;
+      entryDate: string;
+      value: string;
+      inputMode: "INCREMENTAL" | "CUMULATIVE";
+    }> = [];
     for (const group of data.groups) {
       for (const metric of group.metrics) {
         for (const value of metric.values) {
           const key = `${metric.id}|${value.classificationId}`;
           const current = (values[key] || "").trim();
+          if (current === "") continue;
           const before = (initial[key] || "").trim();
-          if (current === before || current === "") continue;
+          const mode = modes[key] || "INCREMENTAL";
+          if (current === before && mode === initialModes[key]) continue;
           entries.push({
             metricId: metric.id,
             classificationId: value.classificationId,
             entryDate: data.date,
             value: current,
+            inputMode: mode,
           });
         }
       }
@@ -321,6 +343,7 @@ export default function V5EntryPage() {
       return;
     }
     setValues((prev) => ({ ...prev, [helper.key]: rawFromNumber(helperDelta) }));
+    setModes((prev) => ({ ...prev, [helper.key]: "INCREMENTAL" }));
     setHelper(null);
     toast.success("Đã điền số phát sinh. Kiểm tra lại rồi bấm Lưu số liệu.");
   };
@@ -544,14 +567,14 @@ export default function V5EntryPage() {
                             {metric.requireConfirm && <Badge variant="warning">Cần kiểm tra</Badge>}
                             {metric.valueKind === "BALANCE" && <Badge variant="accent">Số dư</Badge>}
                             {metric.inputMode === "CUMULATIVE" && (
-                              <Badge variant="outline">Lũy kế ngày</Badge>
+                              <Badge variant="outline">Phát sinh / Lũy kế</Badge>
                             )}
                           </div>
                           <div className="mt-0.5 text-[10px] text-v5-muted">
                             {metric.unitLabel}
                             {metric.note ? ` · ${metric.note}` : ""}
                             {metric.inputMode === "CUMULATIVE"
-                              ? " · Nhập số lũy kế đến ngày, hệ thống tự trừ số đầu kỳ để ra tháng/năm."
+                              ? " · Có thể nhập số phát sinh hoặc tổng lũy kế; hệ thống tự quy đổi."
                               : ""}
                           </div>
                         </div>
@@ -563,17 +586,62 @@ export default function V5EntryPage() {
                         {metric.values.map((value) => {
                           const key = `${metric.id}|${value.classificationId}`;
                           const status = value.status || "";
-                          const canUseHelper =
-                            value.canEdit &&
-                            metric.valueKind !== "BALANCE" &&
-                            metric.inputMode !== "CUMULATIVE";
+                          const rowMode = modes[key] || "INCREMENTAL";
+                          const isCumulativeMetric = metric.inputMode === "CUMULATIVE";
+                          const canUseHelper = value.canEdit && metric.valueKind !== "BALANCE";
                           return (
                             <div key={key} className="grid gap-2 sm:grid-cols-[minmax(110px,1fr)_180px_auto] sm:items-center">
                               <div className="min-w-0 text-[12px] text-v5-muted">
-                                <span className="truncate">{value.label || "—"}</span>
-                                <Badge variant={statusVariant(status)} className="ml-1.5">
-                                  {statusLabel(status)}
-                                </Badge>
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <span className="truncate">{value.label || "—"}</span>
+                                  <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
+                                </div>
+                                {isCumulativeMetric && value.canEdit && (
+                                  <div
+                                    role="group"
+                                    aria-label="Kiểu nhập số liệu"
+                                    className="mt-1 inline-flex rounded-md border border-v5-line bg-v5-bg p-0.5"
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-pressed={rowMode === "INCREMENTAL"}
+                                      onClick={() => {
+                                        if (rowMode === "INCREMENTAL") return;
+                                        setModes((prev) => ({ ...prev, [key]: "INCREMENTAL" }));
+                                        setValues((prev) => ({
+                                          ...prev,
+                                          [key]: baseToInput(value.enteredValueBase ?? value.valueBase, metric),
+                                        }));
+                                      }}
+                                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                                        rowMode === "INCREMENTAL"
+                                          ? "bg-v5-accent text-white shadow-sm"
+                                          : "text-v5-muted hover:text-v5-ink"
+                                      }`}
+                                    >
+                                      Phát sinh
+                                    </button>
+                                    <button
+                                      type="button"
+                                      aria-pressed={rowMode === "CUMULATIVE"}
+                                      onClick={() => {
+                                        if (rowMode === "CUMULATIVE") return;
+                                        setModes((prev) => ({ ...prev, [key]: "CUMULATIVE" }));
+                                        setValues((prev) => ({
+                                          ...prev,
+                                          [key]: baseToInput(value.valueBase, metric),
+                                        }));
+                                      }}
+                                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                                        rowMode === "CUMULATIVE"
+                                          ? "bg-v5-gold text-v5-ink shadow-sm"
+                                          : "text-v5-muted hover:text-v5-ink"
+                                      }`}
+                                    >
+                                      Lũy kế
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                               <FormattedNumberInput
                                 value={values[key] ?? ""}
@@ -581,9 +649,11 @@ export default function V5EntryPage() {
                                 disabled={!value.canEdit || saving}
                                 placeholder={
                                   value.canEdit
-                                    ? metric.inputMode === "CUMULATIVE"
-                                      ? "Nhập lũy kế đến ngày…"
-                                      : "Nhập số…"
+                                    ? rowMode === "CUMULATIVE"
+                                      ? "Nhập tổng lũy kế…"
+                                      : isCumulativeMetric
+                                        ? "Nhập số phát sinh…"
+                                        : "Nhập số…"
                                     : "—"
                                 }
                                 className="h-9 w-full border border-v5-line bg-v5-surface px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent focus:ring-2 focus:ring-v5-accent/10 disabled:bg-v5-bg disabled:text-v5-muted"
@@ -597,7 +667,7 @@ export default function V5EntryPage() {
                                     onClick={() => openHelper(metric, value)}
                                     title="Tính số phát sinh từ lũy kế"
                                   >
-                                    <Sparkles className="h-3.5 w-3.5" /> Lũy kế
+                                    <Sparkles className="h-3.5 w-3.5" /> Tính
                                   </Button>
                                 )}
                                 {value.enteredByName && (
