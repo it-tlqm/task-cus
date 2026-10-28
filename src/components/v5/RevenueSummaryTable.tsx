@@ -191,6 +191,12 @@ export function RevenueSummaryTable({
   const noTaxStyle = noTax
     ? { displayScale: noTax.displayScale || 1, decimals: noTax.decimals ?? 0, unitLabel: noTax.unitLabel }
     : fallbackStyle;
+  const digitsOnly = (value: string) => value.replace(/[^\d]/g, "");
+  const currentLooksLikeYear = classes.some((item) => {
+    const entered = digitsOnly(anchorCurrent[item.classificationId || ""] || "");
+    if (!entered || item.cols.year === null || item.cols.year === undefined) return false;
+    return entered === digitsOnly(baseToInput(item.cols.year, taxStyle));
+  });
 
   function openNoTaxEditor() {
     setNoTaxAmount(
@@ -327,6 +333,14 @@ export function RevenueSummaryTable({
     }
     if (requests.length === 0) {
       toast.error("Chưa có số liệu nào để lưu.");
+      return;
+    }
+    if (
+      currentLooksLikeYear &&
+      !window.confirm(
+        "Các số lũy kế tháng đang trùng với lũy kế năm. Nếu đang nhập số tháng, hãy sửa theo cột Lũy kế tháng trước khi lưu. Vẫn tiếp tục lưu?"
+      )
+    ) {
       return;
     }
     setSavingAnchors(true);
@@ -551,10 +565,16 @@ export function RevenueSummaryTable({
                         setAnchorCurrent((prev) => ({ ...prev, [item.classificationId || ""]: value }))
                       }
                       className="h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent"
-                      placeholder="Nhập lũy kế"
+                      placeholder="Nhập lũy kế tháng"
                     />
                   </label>
                 ))}
+                {currentLooksLikeYear && (
+                  <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
+                    Các số đang nhập trùng với <b>lũy kế năm</b>, không phải lũy kế tháng. Hãy sửa theo cột
+                    “Lũy kế tháng” trong bảng Excel trước khi lưu.
+                  </div>
+                )}
               </section>
 
               <section className="grid gap-3 border-t border-v5-line/70 pt-3 sm:grid-cols-2">
@@ -579,6 +599,9 @@ export function RevenueSummaryTable({
                     className="h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent"
                     placeholder="Tổng cả tháng cùng kỳ"
                   />
+                  <span className="text-[10px] text-v5-muted">
+                    Nhập tổng tháng cùng kỳ năm trước, không nhập tổng tháng hiện tại.
+                  </span>
                 </label>
               </section>
 
