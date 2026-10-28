@@ -1108,9 +1108,12 @@ export async function computeMetricComparison(
             metricId: { in: metricIds },
             classificationId: "",
             cumKind: "MONTH",
-            asOfDate: { in: [prevEnd, lyEnd] },
             dataSource: { not: "DEMO" },
             status: { in: ["CONFIRMED", "LOCKED"] },
+            OR: [
+              { asOfDate: { gte: prevStart, lte: prevEnd } },
+              { asOfDate: { gte: lyStart, lte: lyEnd } },
+            ],
           },
           select: { metricId: true, asOfDate: true, valueNumeric: true },
         })
@@ -1124,13 +1127,16 @@ export async function computeMetricComparison(
     if (!prev || e.entryDate.getTime() > prev.getTime()) latestByMetric.set(e.metricId, e.entryDate);
   }
 
-  const historicalByKey = new Map<string, number>();
-  for (const baseline of historicalBaselines) {
-    historicalByKey.set(
-      `${baseline.metricId}|${dateOnlyToStr(baseline.asOfDate)}`,
-      Number(baseline.valueNumeric)
-    );
-  }
+  const latestHistorical = (metricId: string, start: Date, end: Date) => {
+    let found: (typeof historicalBaselines)[number] | null = null;
+    for (const baseline of historicalBaselines) {
+      if (baseline.metricId !== metricId) continue;
+      const t = baseline.asOfDate.getTime();
+      if (t < start.getTime() || t > end.getTime()) continue;
+      if (!found || t > found.asOfDate.getTime()) found = baseline;
+    }
+    return found;
+  };
 
   const sumRange = (metricId: string, from: Date, to: Date): number | null => {
     let total = 0;
@@ -1196,12 +1202,16 @@ export async function computeMetricComparison(
       const latest = latestByMetric.get(m.id) ?? null;
       const cutoffDate = latest ? dateOnlyToStr(latest) : null;
       const currentValue = m.cols.month;
-      const prevHistorical = historicalByKey.get(`${m.id}|${dateOnlyToStr(prevEnd)}`);
-      const lyHistorical = historicalByKey.get(`${m.id}|${dateOnlyToStr(lyEnd)}`);
-      const prevValue =
-        prevHistorical !== undefined ? prevHistorical : sumRange(m.id, prevStart, prevEnd);
-      const lyValue =
-        lyHistorical !== undefined ? lyHistorical : sumRange(m.id, lyStart, lyEnd);
+      const prevBaseline = latestHistorical(m.id, prevStart, prevEnd);
+      const lyBaseline = latestHistorical(m.id, lyStart, lyEnd);
+      const prevValue = prevBaseline
+        ? Number(prevBaseline.valueNumeric) +
+          (sumRange(m.id, new Date(prevBaseline.asOfDate.getTime() + 86400000), prevEnd) ?? 0)
+        : sumRange(m.id, prevStart, prevEnd);
+      const lyValue = lyBaseline
+        ? Number(lyBaseline.valueNumeric) +
+          (sumRange(m.id, new Date(lyBaseline.asOfDate.getTime() + 86400000), lyEnd) ?? 0)
+        : sumRange(m.id, lyStart, lyEnd);
 
       rows.push({
         metricId: m.id,

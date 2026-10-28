@@ -526,6 +526,7 @@ export function RevenueSummaryTable({
                 <h3 className="text-sm font-semibold text-v5-ink">Nhập số liệu lũy kế</h3>
                 <p className="mt-0.5 text-[11px] text-v5-muted">
                   Dùng khi hệ thống mới triển khai, chưa có đủ dữ liệu ngày của tháng trước.
+                  Tháng trước/cùng kỳ chỉ cần nhập một lần; từ tháng sau, số liệu ngày sẽ tự đủ.
                 </p>
               </div>
               <button type="button" onClick={() => setAnchorsOpen(false)} aria-label="Đóng">
@@ -538,6 +539,7 @@ export function RevenueSummaryTable({
                   <h4 className="text-xs font-bold uppercase tracking-wide text-v5-muted">Lũy kế tháng hiện tại</h4>
                   <p className="text-[11px] text-v5-muted">
                     Nhập số lũy kế đến hôm nay. Hệ thống dùng số này thay cho chuỗi ngày cũ chưa đầy đủ.
+                    Chỉ áp dụng cho tháng đang xem; sang tháng sau nhập theo ngày, không cần nhập lại số tháng này.
                   </p>
                 </div>
                 {classes.map((item) => (
