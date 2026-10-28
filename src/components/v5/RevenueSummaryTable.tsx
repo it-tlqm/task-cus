@@ -130,6 +130,7 @@ export function RevenueSummaryTable({
   const vehicle = findMetric(groups, "OTO_XE") || findMetric(groups, "OTO_XE_PS");
   const usd = findMetric(groups, "TRI_GIA_USD") || findMetric(groups, "XNK_USD");
   const noTax = findMetric(groups, "NO_THUE");
+  const fertilizer = findMetric(groups, "PHAN_BON");
   const row = comparison?.rows?.[0];
   const [noTaxOpen, setNoTaxOpen] = React.useState(false);
   const [noTaxAmount, setNoTaxAmount] = React.useState("");
@@ -631,6 +632,21 @@ export function RevenueSummaryTable({
               <Button variant="ghost" size="sm" onClick={openNoTaxEditor}>
                 <Pencil className="h-3 w-3" /> Sửa
               </Button>
+            </div>
+          </div>
+        )}
+
+        {fertilizer && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-v5-line/70 bg-v5-bg/50 px-3 py-2.5 text-[11px]">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <span className="font-medium text-v5-ink">Mặt hàng phân bón</span>
+              <Badge variant="outline">Chỉ tiêu riêng</Badge>
+              <span className="text-[10px] text-v5-muted">Không cộng vào tổng thuế</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-[11px] tabular-nums text-v5-muted">
+              <span>Ngày: <b className="text-v5-ink">{formatValue(fertilizer.cols.day, fertilizer)}</b></span>
+              <span>Tháng: <b className="text-v5-ink">{formatValue(fertilizer.cols.month, fertilizer)}</b></span>
+              <span>Năm: <b className="text-v5-ink">{formatValue(fertilizer.cols.year, fertilizer)}</b></span>
             </div>
           </div>
         )}
