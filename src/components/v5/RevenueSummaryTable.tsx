@@ -152,13 +152,12 @@ export function RevenueSummaryTable({
     : [{ classificationId: "", label: "Tổng Thu NSNN", cols: tax?.cols || {} }];
 
   const rows = classes.map((item) => {
-    const normalized = item.label.toLowerCase();
+    const normalized = item.label.trim().toLowerCase();
     const isCar = normalized.includes("ô tô");
     const isOther = normalized.includes("khác");
-    const usdClass = usd?.classCols?.find((candidate) => {
-      const label = candidate.label.toLowerCase();
-      return isCar ? label.includes("ô tô") : isOther ? label.includes("khác") : false;
-    });
+    const usdClass = usd?.classCols?.find(
+      (candidate) => candidate.label.trim().toLowerCase() === normalized
+    );
     return {
       key: item.classificationId || item.label,
       label: item.label,
@@ -167,7 +166,8 @@ export function RevenueSummaryTable({
       monthTax: item.cols.month ?? null,
       monthVehicle: isCar ? vehicle?.cols.month ?? null : null,
       yearVehicle: isCar ? vehicle?.cols.year ?? null : null,
-      yearUsd: usdClass?.cols.year ?? usd?.cols.year ?? null,
+      // Không fallback về tổng USD: nếu thiếu phân loại thì để trống, tránh lặp số.
+      yearUsd: usdClass?.cols.year ?? null,
       yearTax: item.cols.year ?? null,
       isOther,
     };
@@ -177,6 +177,15 @@ export function RevenueSummaryTable({
     const present = values.filter((value): value is number => value !== null);
     return present.length ? present.reduce((sum, value) => sum + value, 0) : null;
   };
+  const missingUsdClasses = usd
+    ? classes.filter(
+        (item) =>
+          item.label &&
+          !usd.classCols?.some(
+            (candidate) => candidate.label.trim().toLowerCase() === item.label.trim().toLowerCase()
+          )
+      )
+    : [];
   const totalDay = tax?.cols.day ?? sumOrNull(rows.map((item) => item.day));
   const totalWeekTax = tax?.cols.week ?? sumOrNull(rows.map((item) => item.weekTax));
   const totalMonthTax = tax?.cols.month ?? sumOrNull(rows.map((item) => item.monthTax));
@@ -482,6 +491,21 @@ export function RevenueSummaryTable({
             </div>
           ))}
         </div>
+
+        {missingUsdClasses.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-v5-gold/40 bg-v5-gold-soft/40 px-3 py-2 text-[11px] text-v5-gold-ink">
+            <span>
+              Chưa có phân loại <b>Trị giá USD</b> cho: {missingUsdClasses.map((item) => item.label).join(", ")}.
+              Số USD của các loại này đang để trống, không tự lấy tổng.
+            </span>
+            <Link
+              href="/giao-ban/cau-hinh?tab=STRUCT"
+              className="font-semibold underline underline-offset-2"
+            >
+              Bổ sung phân loại
+            </Link>
+          </div>
+        )}
 
         {period === "year" ? (
           <div className="overflow-x-auto">

@@ -276,6 +276,13 @@ export async function POST(req: NextRequest) {
     const metricIds: string[] = Array.from(new Set(items.map((it: any) => String(it.metricId || "")))).filter(Boolean);
     const metrics = await prisma.metricDefinition.findMany({ where: { id: { in: metricIds } } });
     const metricById = new Map(metrics.map((m) => [m.id, m]));
+    const classificationRows = await prisma.metricClassification.findMany({
+      where: { metricId: { in: metricIds }, active: true },
+      select: { id: true, metricId: true },
+    });
+    const classificationKeys = new Set(
+      classificationRows.map((row) => `${row.metricId}|${row.id}`)
+    );
 
     // ---- Kiểm tra từng dòng ----
     const prepared: {
@@ -332,6 +339,13 @@ export async function POST(req: NextRequest) {
       }
       const valueBase = new D(parsed).mul(metric.displayScale || 1);
       const classificationId = typeof it.classificationId === "string" ? it.classificationId : "";
+      if (classificationId && !classificationKeys.has(`${metric.id}|${classificationId}`)) {
+        errors.push({
+          index: idx,
+          message: `"${metric.name}": phân loại không thuộc chỉ tiêu hoặc đã ngừng sử dụng`,
+        });
+        return;
+      }
       prepared.push({
         index: idx,
         metric,
