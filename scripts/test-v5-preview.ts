@@ -95,6 +95,11 @@ check(
     v5Entry.includes("Lưu")
 );
 check(
+  "Nhập liệu mặc định hiện tất cả chỉ tiêu đã nhập",
+  v5Entry.includes("const [onlyTodo, setOnlyTodo] = useState(false)") &&
+    v5Entry.includes("Hiện cả chỉ tiêu đã nhập đủ")
+);
+check(
   "Nhập số liệu có tìm kiếm, cảnh báo chưa lưu và lưu mobile",
   v5Entry.includes("Tìm chỉ tiêu") &&
     v5Entry.includes("thay đổi chưa lưu") &&

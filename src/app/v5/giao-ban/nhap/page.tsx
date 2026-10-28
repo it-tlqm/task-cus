@@ -139,7 +139,7 @@ export default function V5EntryPage() {
   const [initial, setInitial] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [onlyTodo, setOnlyTodo] = useState(true);
+  const [onlyTodo, setOnlyTodo] = useState(false);
   const [search, setSearch] = useState("");
   const [helper, setHelper] = useState<HelperState | null>(null);
   const [helperLoading, setHelperLoading] = useState(false);
@@ -462,18 +462,25 @@ export default function V5EntryPage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setOnlyTodo(true)}
-                className={`rounded px-2 py-1 text-[11px] font-semibold ${onlyTodo ? "bg-v5-accent-soft text-v5-accent" : "text-v5-muted"}`}
-              >
-                Cần nhập ({missingMetrics})
-              </button>
-              <button
-                type="button"
                 onClick={() => setOnlyTodo(false)}
+                aria-pressed={!onlyTodo}
+                title="Hiện cả chỉ tiêu đã nhập đủ"
                 className={`rounded px-2 py-1 text-[11px] font-semibold ${!onlyTodo ? "bg-v5-accent-soft text-v5-accent" : "text-v5-muted"}`}
               >
                 Tất cả
               </button>
+              <button
+                type="button"
+                onClick={() => setOnlyTodo(true)}
+                aria-pressed={onlyTodo}
+                title="Ẩn chỉ tiêu đã nhập đủ"
+                className={`rounded px-2 py-1 text-[11px] font-semibold ${onlyTodo ? "bg-v5-accent-soft text-v5-accent" : "text-v5-muted"}`}
+              >
+                Cần nhập ({missingMetrics})
+              </button>
+              {onlyTodo && (
+                <span className="text-[10px] text-v5-muted">Đang ẩn chỉ tiêu đã nhập đủ</span>
+              )}
               {changedCount > 0 && <Badge variant="warning">{changedCount} chưa lưu</Badge>}
             </div>
             <div className="flex w-full items-center gap-2 sm:w-auto">
