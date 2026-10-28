@@ -198,6 +198,10 @@ export function RevenueSummaryTable({
     return entered === digitsOnly(baseToInput(item.cols.year, taxStyle));
   };
   const currentLooksLikeYear = classes.some(isYearLikeInput);
+  const currentMissing = classes.some(
+    (item) => !digitsOnly(anchorCurrent[item.classificationId || ""] || "")
+  );
+  const blockAnchorsSave = currentLooksLikeYear || currentMissing;
 
   function openNoTaxEditor() {
     setNoTaxAmount(
@@ -331,6 +335,10 @@ export function RevenueSummaryTable({
           }),
         })
       );
+    }
+    if (currentMissing) {
+      toast.error("Nhập đủ số lũy kế tháng cho từng loại trước khi lưu.");
+      return;
     }
     if (requests.length === 0) {
       toast.error("Chưa có số liệu nào để lưu.");
@@ -565,6 +573,7 @@ export function RevenueSummaryTable({
                       onValueChange={(value) =>
                         setAnchorCurrent((prev) => ({ ...prev, [item.classificationId || ""]: value }))
                       }
+                      onFocus={(event) => event.currentTarget.select()}
                       className={cn(
                         "h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent",
                         isYearLikeInput(item) && "border-v5-danger bg-v5-danger-soft"
@@ -574,9 +583,25 @@ export function RevenueSummaryTable({
                   </label>
                 ))}
                 {currentLooksLikeYear && (
-                  <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
-                    Ô đỏ đang là <b>lũy kế năm</b>, không phải lũy kế tháng. Bấm vào ô đỏ, xóa số cũ và nhập
-                    theo cột “Lũy kế tháng” trong bảng Excel. Chưa sửa hết thì chưa lưu được.
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
+                    <span>
+                      Ô đỏ đang là <b>lũy kế năm</b>, không phải lũy kế tháng. Bấm vào ô đỏ để chọn hết số cũ,
+                      rồi nhập theo cột “Lũy kế tháng” trong Excel.
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const cleared = { ...anchorCurrent };
+                        for (const item of classes) {
+                          if (isYearLikeInput(item)) cleared[item.classificationId || ""] = "";
+                        }
+                        setAnchorCurrent(cleared);
+                      }}
+                    >
+                      Xóa 3 ô số năm
+                    </Button>
                   </div>
                 )}
               </section>
@@ -622,13 +647,15 @@ export function RevenueSummaryTable({
                 <Button variant="outline" size="sm" onClick={() => setAnchorsOpen(false)} disabled={savingAnchors}>
                   Hủy
                 </Button>
-                <Button size="sm" onClick={saveAnchors} disabled={savingAnchors || currentLooksLikeYear}>
+                <Button size="sm" onClick={saveAnchors} disabled={savingAnchors || blockAnchorsSave}>
                   <Save className="h-3.5 w-3.5" />{" "}
                   {savingAnchors
                     ? "Đang lưu..."
                     : currentLooksLikeYear
                       ? "Sửa số tháng trước khi lưu"
-                      : "Lưu số liệu"}
+                      : currentMissing
+                        ? "Nhập đủ số tháng"
+                        : "Lưu số liệu"}
                 </Button>
               </div>
             </div>
