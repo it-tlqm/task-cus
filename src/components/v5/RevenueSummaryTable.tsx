@@ -192,11 +192,12 @@ export function RevenueSummaryTable({
     ? { displayScale: noTax.displayScale || 1, decimals: noTax.decimals ?? 0, unitLabel: noTax.unitLabel }
     : fallbackStyle;
   const digitsOnly = (value: string) => value.replace(/[^\d]/g, "");
-  const currentLooksLikeYear = classes.some((item) => {
+  const isYearLikeInput = (item: (typeof classes)[number]) => {
     const entered = digitsOnly(anchorCurrent[item.classificationId || ""] || "");
     if (!entered || item.cols.year === null || item.cols.year === undefined) return false;
     return entered === digitsOnly(baseToInput(item.cols.year, taxStyle));
-  });
+  };
+  const currentLooksLikeYear = classes.some(isYearLikeInput);
 
   function openNoTaxEditor() {
     setNoTaxAmount(
@@ -564,15 +565,18 @@ export function RevenueSummaryTable({
                       onValueChange={(value) =>
                         setAnchorCurrent((prev) => ({ ...prev, [item.classificationId || ""]: value }))
                       }
-                      className="h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent"
+                      className={cn(
+                        "h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent",
+                        isYearLikeInput(item) && "border-v5-danger bg-v5-danger-soft"
+                      )}
                       placeholder="Nhập lũy kế tháng"
                     />
                   </label>
                 ))}
                 {currentLooksLikeYear && (
                   <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
-                    Các số đang nhập trùng với <b>lũy kế năm</b>, không phải lũy kế tháng. Hãy sửa theo cột
-                    “Lũy kế tháng” trong bảng Excel trước khi lưu.
+                    Ô đỏ đang là <b>lũy kế năm</b>, không phải lũy kế tháng. Bấm vào ô đỏ, xóa số cũ và nhập
+                    theo cột “Lũy kế tháng” trong bảng Excel. Chưa sửa hết thì chưa lưu được.
                   </div>
                 )}
               </section>
@@ -618,8 +622,13 @@ export function RevenueSummaryTable({
                 <Button variant="outline" size="sm" onClick={() => setAnchorsOpen(false)} disabled={savingAnchors}>
                   Hủy
                 </Button>
-                <Button size="sm" onClick={saveAnchors} disabled={savingAnchors}>
-                  <Save className="h-3.5 w-3.5" /> {savingAnchors ? "Đang lưu..." : "Lưu số liệu"}
+                <Button size="sm" onClick={saveAnchors} disabled={savingAnchors || currentLooksLikeYear}>
+                  <Save className="h-3.5 w-3.5" />{" "}
+                  {savingAnchors
+                    ? "Đang lưu..."
+                    : currentLooksLikeYear
+                      ? "Sửa số tháng trước khi lưu"
+                      : "Lưu số liệu"}
                 </Button>
               </div>
             </div>
