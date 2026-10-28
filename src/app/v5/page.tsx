@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
 import { Progress } from "@/components/v5/ui/progress";
+import { RevenueCharts } from "@/components/v5/RevenueCharts";
 import { RevenueSummaryTable } from "@/components/v5/RevenueSummaryTable";
 
 type PeriodKey = "week" | "month" | "year";
@@ -425,6 +426,9 @@ export default function V5DashboardPage() {
           periodLabel={PERIOD_LABEL[period]}
           onSaved={() => load(false)}
         />
+        <div className="mt-3">
+          <RevenueCharts metrics={metrics} comparison={summary?.comparison} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">

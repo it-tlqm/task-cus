@@ -7,6 +7,8 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -50,9 +52,10 @@ export function RevenueCharts({ metrics, comparison }: { metrics: Metric[]; comp
     month: toTy(item.cols.month),
     year: toTy(item.cols.year),
   }));
+  const pieData = classData.filter((item) => item.month !== null && item.month > 0);
 
   return (
-    <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
       <Card>
         <CardHeader>
           <CardTitle>So sánh số thu</CardTitle>
@@ -102,6 +105,42 @@ export function RevenueCharts({ metrics, comparison }: { metrics: Metric[]; comp
               </ResponsiveContainer>
             ) : (
               <div className="grid h-full place-items-center text-xs text-v5-muted">Chưa có phân loại</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cơ cấu thuế tháng</CardTitle>
+          <CardDescription>Tỷ trọng các loại hàng trong lũy kế tháng</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px]">
+            {pieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="month"
+                    nameKey="name"
+                    innerRadius={52}
+                    outerRadius={86}
+                    paddingAngle={2}
+                  >
+                    {pieData.map((_, index) => (
+                      <Cell
+                        key={index}
+                        fill={["#1B3461", "#C62222", "#F2C41D", "#93A9C9", "#0F766E"][index % 5]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => shortNumber(Number(value))} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="grid h-full place-items-center text-xs text-v5-muted">Chưa có dữ liệu tháng</div>
             )}
           </div>
         </CardContent>
