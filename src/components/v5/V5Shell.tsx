@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ProductTour } from "@/components/v5/ProductTour";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import CommandPalette from "@/components/layout/CommandPalette";
 import { cn } from "@/lib/utils";
@@ -379,6 +380,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                 size="icon"
                 aria-label={`Thông báo${unreadCount > 0 ? ` (${unreadCount} chưa đọc)` : ""}`}
                 className="relative"
+                data-tour="notifications"
                 onClick={() => setNotificationsOpen(true)}
               >
                 <Bell className="h-4 w-4" />
@@ -410,6 +412,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
 
       <NotificationQuickView open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
       <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
+      <ProductTour />
     </div>
   );
 }

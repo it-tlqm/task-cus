@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { PlayCircle } from "lucide-react";
 import { HELP } from "@/data/page-help";
 import { V5Icon } from "@/components/v5/ui/icon";
 
@@ -83,12 +84,20 @@ export default function GuidePage() {
 
   return (
     <div className="flex flex-col w-full p-4 lg:p-6 space-y-4 pb-20 max-w-3xl">
-      <div>
-        <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent-soft text-v5-accent border border-v5-line">
-          Sơ đồ sử dụng
-        </span>
-        <h1 className="text-2xl font-bold text-v5-ink mt-1">Bấm vào từng phần để xem hướng dẫn</h1>
-        <p className="text-sm text-v5-muted">Chạm vào ô nào, hướng dẫn chi tiết phần đó hiện ngay bên dưới.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <span className="px-2 py-0.5 text-xs font-semibold rounded bg-v5-accent-soft text-v5-accent border border-v5-line">
+            Sơ đồ sử dụng
+          </span>
+          <h1 className="text-2xl font-bold text-v5-ink mt-1">Bấm vào từng phần để xem hướng dẫn</h1>
+          <p className="text-sm text-v5-muted">Chạm vào ô nào, hướng dẫn chi tiết phần đó hiện ngay bên dưới.</p>
+        </div>
+        <Link
+          href="/v5?tour=1"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-v5-accent px-3 py-2 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+        >
+          <PlayCircle className="h-4 w-4" /> Bắt đầu tour
+        </Link>
       </div>
 
       <div className="flex flex-col gap-3">
