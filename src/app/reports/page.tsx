@@ -475,6 +475,14 @@ function ReportsContent() {
           <span className="text-[11px] text-v5-muted">Tuần 40: đã chốt số liệu</span>
           <Badge variant="success">Đã chốt</Badge>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setFilterExpanded((value) => !value)}
+          className="justify-center"
+        >
+          <Filter className="h-3.5 w-3.5" /> {filterExpanded ? "Ẩn bộ lọc" : "Mở bộ lọc"}
+        </Button>
       </div>
 
       {/* VIEW TABS BAR */}
@@ -634,7 +642,13 @@ function ReportsContent() {
             </div>
 
             {/* Multi-selectors Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+            <div
+              className={
+                filterExpanded
+                  ? "grid grid-cols-1 gap-space-md md:grid-cols-3"
+                  : "hidden"
+              }
+            >
               <div className="flex flex-col gap-1">
                 <label className="font-label-md text-label-md text-v5-muted font-medium">
                   Phạm vi Đơn vị / Bộ phận
@@ -964,7 +978,7 @@ function ReportsContent() {
             {/* The Real Data Table Matching Customs Layout */}
             <div className="overflow-x-auto w-full max-w-full">
               <table className="w-full text-left font-table-data text-table-data">
-                <thead>
+                <thead className="sticky top-14 z-10 bg-v5-surface">
                   <tr className="bg-v5-bg text-v5-ink text-[12px] font-table-header uppercase tracking-wider">
                     <th className="py-3 px-3 w-[100px] text-center" scope="col">
                       Thứ / Ngày (A)
@@ -1384,7 +1398,7 @@ function ReportsContent() {
             </div>
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left font-table-data text-table-data">
-                <thead>
+                <thead className="sticky top-14 z-10 bg-v5-surface">
                   <tr className="bg-v5-bg text-v5-ink text-[12px] font-table-header uppercase">
                     <th className="py-3 px-3 w-16 text-center">Vị trí</th>
                     <th className="py-3 px-3 w-48">Trường dữ liệu nguồn (DB Field)</th>

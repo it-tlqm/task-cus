@@ -1740,7 +1740,7 @@ export default function PlansPage() {
           </div>
 
           {/* View Mode Switcher + Interactive Filters */}
-          <div className="mt-space-lg pt-space-md border-t border-v5-line/50 flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+          <div className="sticky top-14 z-20 mt-space-lg flex flex-col gap-space-md rounded-lg border border-v5-line bg-v5-surface/95 p-2 backdrop-blur lg:flex-row lg:items-center lg:justify-between">
             {/* Tabs lọc theo kỳ thật + Góc nhìn Gantt */}
             <div className="flex flex-wrap items-center gap-1 rounded-lg bg-v5-bg p-1">
               {(
