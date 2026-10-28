@@ -443,7 +443,12 @@ function ReportsContent() {
         description="Tra cứu, chốt kỳ báo cáo và xuất biểu mẫu theo chỉ đạo cấp Cục."
         actions={
           <div data-tour="export-btns" className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setFilterExpanded(!filterExpanded)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilterExpanded(!filterExpanded)}
+              className="lg:hidden"
+            >
               <Filter className="h-3.5 w-3.5" /> {filterExpanded ? "Ẩn bộ lọc" : "Bộ lọc"}
             </Button>
             {canLock && (
@@ -641,14 +646,33 @@ function ReportsContent() {
               </div>
             </div>
 
-            {/* Multi-selectors Grid */}
+            {/* Multi-selectors Grid — desktop luôn mở; mobile mở dạng drawer */}
+            {filterExpanded && (
+              <div
+                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] lg:hidden"
+                onClick={() => setFilterExpanded(false)}
+                aria-hidden
+              />
+            )}
             <div
+              role={filterExpanded ? "dialog" : undefined}
+              aria-modal={filterExpanded ? true : undefined}
+              aria-label="Bộ lọc báo cáo"
               className={
                 filterExpanded
-                  ? "grid grid-cols-1 gap-space-md md:grid-cols-3"
-                  : "hidden"
+                  ? "fixed inset-x-0 bottom-0 z-50 max-h-[85vh] grid grid-cols-1 gap-space-md overflow-y-auto rounded-t-2xl border-t border-v5-line bg-v5-surface p-space-md shadow-2xl md:grid-cols-3 lg:static lg:z-auto lg:max-h-none lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
+                  : "hidden lg:grid grid-cols-1 gap-space-md md:grid-cols-3"
               }
             >
+              <div className="col-span-full flex items-center justify-between border-b border-v5-line pb-2 lg:hidden">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-secondary" />
+                  <span className="text-sm font-semibold text-v5-ink">Bộ lọc báo cáo</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setFilterExpanded(false)}>
+                  Đóng
+                </Button>
+              </div>
               <div className="flex flex-col gap-1">
                 <label className="font-label-md text-label-md text-v5-muted font-medium">
                   Phạm vi Đơn vị / Bộ phận
@@ -1870,6 +1894,61 @@ function ReportsContent() {
                   </div>
                 </div>
               )}
+
+              {/* So sánh bản chụp với số liệu hiện tại */}
+              {viewingSnapshot.metrics && dbSummary && (() => {
+                const rows = [
+                  { label: "Tổng nhiệm vụ", before: Number(viewingSnapshot.metrics.totalTasks) || 0, after: Number(dbSummary.totalTasks) || 0 },
+                  { label: "Đã hoàn thành", before: Number(viewingSnapshot.metrics.completedTasks) || 0, after: Number(dbSummary.completedTasks) || 0 },
+                  { label: "Đang thực hiện", before: Number(viewingSnapshot.metrics.inProgressTasks) || 0, after: Number(dbSummary.inProgressTasks) || 0 },
+                  { label: "Quá hạn / vướng mắc", before: Number(viewingSnapshot.metrics.overdueTasks) || 0, after: Number(dbSummary.issueTasks) || 0 },
+                ];
+                return (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-label-md font-semibold text-v5-ink">So sánh với số liệu hiện tại:</span>
+                    <div className="overflow-hidden rounded-lg border border-v5-line/40">
+                      <table className="w-full text-left text-[12px]">
+                        <thead className="bg-v5-bg text-v5-muted">
+                          <tr>
+                            <th className="px-3 py-1.5 font-semibold">Chỉ số</th>
+                            <th className="px-3 py-1.5 text-right font-semibold">Lúc chốt</th>
+                            <th className="px-3 py-1.5 text-right font-semibold">Hiện tại</th>
+                            <th className="px-3 py-1.5 text-right font-semibold">Chênh lệch</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-v5-line/40">
+                          {rows.map((row) => {
+                            const delta = row.after - row.before;
+                            return (
+                              <tr key={row.label}>
+                                <td className="px-3 py-1.5 text-v5-ink">{row.label}</td>
+                                <td className="px-3 py-1.5 text-right tabular-nums text-v5-muted">{row.before}</td>
+                                <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-v5-ink">{row.after}</td>
+                                <td
+                                  className={`px-3 py-1.5 text-right tabular-nums font-semibold ${
+                                    delta === 0
+                                      ? "text-v5-muted"
+                                      : delta > 0
+                                        ? row.label.includes("Quá hạn")
+                                          ? "text-status-danger"
+                                          : "text-status-success"
+                                        : "text-status-warning"
+                                  }`}
+                                >
+                                  {delta > 0 ? `+${delta}` : delta}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <span className="text-[10px] text-v5-muted">
+                      Chênh lệch = số liệu hiện tại − số liệu tại thời điểm chốt.
+                    </span>
+                  </div>
+                );
+              })()}
 
               {/* Actions Footer */}
               <div className="flex items-center justify-between pt-3 border-t border-v5-line/40 mt-2">

@@ -545,7 +545,8 @@ export default function PlansPage() {
       });
     });
     const tasks = Array.from(seen.values());
-    if (tasks.length === 0) return { tasks: [], start: null as Date | null, end: null as Date | null, days: 0 };
+    if (tasks.length === 0)
+      return { tasks: [], start: null as Date | null, end: null as Date | null, days: 0, todayPct: null as number | null };
     const periodStart = activePlan.period?.startAt ? new Date(activePlan.period.startAt) : null;
     const periodEnd = activePlan.period?.endAt ? new Date(activePlan.period.endAt) : null;
     const deadlines = tasks.map((t) => new Date(t.currentDeadline).getTime()).filter((n) => !isNaN(n));
@@ -556,7 +557,13 @@ export default function PlansPage() {
     const end = new Date(maxT);
     end.setHours(0, 0, 0, 0);
     const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
-    return { tasks, start, end, days, periodStart, periodEnd };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayPct =
+      days > 1
+        ? Math.min(100, Math.max(0, ((today.getTime() - start.getTime()) / 86400000 / (days - 1)) * 100))
+        : null;
+    return { tasks, start, end, days, periodStart, periodEnd, todayPct };
   }, [activePlan]);
 
   // Options for days of the week based on activePlan (Chuẩn hóa ISO 8601 GMT+7)
@@ -1935,6 +1942,13 @@ export default function PlansPage() {
                             style={{ left: `${barStartPct}%`, width: `${widthPct}%` }}
                             title={`${t.title} — Hạn ${new Date(t.currentDeadline).toLocaleDateString("vi-VN")}`}
                           />
+                          {ganttData.todayPct !== null && (
+                            <div
+                              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-v5-gold"
+                              style={{ left: `${ganttData.todayPct}%` }}
+                              title="Hôm nay"
+                            />
+                          )}
                         </div>
                       </div>
                     );

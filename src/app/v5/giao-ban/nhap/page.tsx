@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import FormattedNumberInput from "@/components/ui/FormattedNumberInput";
+import { MetricExcelImport } from "@/components/metrics/MetricExcelImport";
 import { baseToInput, fmtDate } from "@/lib/metric-format";
 import { getVnDateParts } from "@/lib/period-helper";
 import {
@@ -325,6 +326,24 @@ export default function V5EntryPage() {
     toast.success("Đã điền số phát sinh. Kiểm tra lại rồi bấm Lưu số liệu.");
   };
 
+  const importMetrics = useMemo(
+    () =>
+      (data?.groups || []).flatMap((group) =>
+        group.metrics.map((metric) => ({
+          id: metric.id,
+          code: metric.code,
+          name: metric.name,
+          unitLabel: metric.unitLabel,
+          canEnter: metric.canEnter,
+          values: metric.values.map((value) => ({
+            classificationId: value.classificationId,
+            label: value.label,
+          })),
+        }))
+      ),
+    [data]
+  );
+
   const groups = useMemo(() => {
     if (!data) return [];
     const query = search.trim().toLowerCase();
@@ -383,6 +402,13 @@ export default function V5EntryPage() {
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
+          <MetricExcelImport
+            metrics={importMetrics}
+            date={data?.date || date}
+            entryPeriod={entryPeriod}
+            periodLabel={data?.period?.label || fmtDate(date)}
+            onImported={() => load(entryPeriod, date)}
+          />
           <Button variant="outline" size="sm" asChild>
             <Link
               href="/huong-dan"

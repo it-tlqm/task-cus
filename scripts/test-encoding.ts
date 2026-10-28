@@ -60,7 +60,12 @@ const myWork = fs.readFileSync(
   path.join(root, "src/app/my-work/page.tsx"),
   "utf8"
 );
-check("My Work hiển thị đúng tên người dùng và bộ phận", myWork.includes("{currentUser.fullName} · {currentUser.unitName}") && !myWork.includes("{currentUser.fullName} ? {currentUser.unitName}"));
+check(
+  "My Work hiển thị đúng tên người dùng và bộ phận",
+  (myWork.includes("{currentUser.fullName} · {currentUser.unitName}") ||
+    myWork.includes("{currentUser.fullName} · {currentUser.personCode} · {currentUser.unitName}")) &&
+    !myWork.includes("{currentUser.fullName} ? {currentUser.unitName}")
+);
 check("My Work có nhãn 24 giờ", myWork.includes("24 giờ"));
 check("My Work có nhãn hồ sơ", myWork.includes("hồ sơ"));
 

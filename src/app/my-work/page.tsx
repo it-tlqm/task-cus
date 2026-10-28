@@ -15,6 +15,7 @@ import {
   Clock3,
   Plus,
   RefreshCw,
+  Search,
   Timer,
 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
@@ -854,7 +855,7 @@ function MyWorkPageContent() {
       {/* =========================================================================
           DESKTOP VIEW (Pixel-accurate Google Stitch ID a1afd1c794c6454a8e161b43f25f4024)
           ========================================================================= */}
-      <div className="hidden lg:flex flex-col gap-space-lg p-space-lg">
+      <div className="flex flex-col gap-3 p-3 pb-24 lg:gap-space-lg lg:p-space-lg lg:pb-space-lg">
         {/* BANNER CẢNH BÁO VIỆC QUÁ HẠN & GIẢI TRÌNH */}
         {overdueTask && (
           <section className="bg-status-danger-bg rounded-xl p-space-md shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-status-danger/20 transition-panel">
@@ -1036,7 +1037,8 @@ function MyWorkPageContent() {
         {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng */}
         <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
 
-        {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP */}
+        {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP (desktop) */}
+        <div className="hidden lg:flex flex-col gap-space-lg">
         <section data-tour="task-list" className="bg-v5-surface rounded-xl shadow-sm flex flex-col overflow-hidden border border-v5-line/50">
           {/* TAB ĐIỀU HƯỚNG TRẠNG THÁI & TÌM KIẾM NHANH */}
           <div className="p-space-md bg-v5-bg flex flex-col md:flex-row md:items-center justify-between gap-space-md border-b border-v5-line">
@@ -1454,107 +1456,28 @@ function MyWorkPageContent() {
             </div>
           </div>
         </section>
-      </div>
+        </div>
 
       {/* =========================================================================
-          MOBILE VIEW (Pixel-accurate Google Stitch ID 2443cdf63e214979b5a74c40779511ba)
+          MOBILE VIEW: chỉ giữ danh sách thẻ; header, bộ lọc, KPI dùng chung bên trên
           ========================================================================= */}
-      <div className="lg:hidden flex flex-col gap-3 pb-16">
-        <PageHeader
-          title="Công việc của tôi"
-          badges={<Badge variant="success">Sẵn sàng</Badge>}
-          description={
-            <>
-              {currentUser.fullName} · {currentUser.unitName}
-              <span className="mt-0.5 block text-[10px]">{ENV_BADGE_LABEL} · Ca chính 07:30 - 17:00</span>
-            </>
-          }
-          actions={
-            <Button variant="outline" size="icon" onClick={() => fetchTasks()} aria-label="Làm mới">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          }
-        />
-
-        <div data-tour="time-filter">
-          <FilterBar>
-            {[
-              { key: "DAY" as const, label: `Hôm nay (${todayShort || "..."})` },
-              { key: "WEEK" as const, label: periodLabels.weekShort },
-              { key: "MONTH" as const, label: periodLabels.monthShort },
-              { key: "ALL" as const, label: "Tất cả" },
-            ].map((item) => (
-              <FilterChip
-                key={item.key}
-                active={timeFilter === item.key}
-                onClick={() => setTimeFilter(item.key)}
-                className="flex-1"
-              >
-                {item.label}
-              </FilterChip>
-            ))}
-          </FilterBar>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <StatCard
-            label="Cần xử lý"
-            value={String(myStats.active).padStart(2, "0")}
-            unit="đầu việc"
-            icon={ClipboardList}
-            tone="accent"
-            hint={
-              <span className={myStats.high > 0 ? "font-semibold text-v5-danger" : undefined}>
-                {myStats.high > 0 ? `${myStats.high} ưu tiên cao` : "Không có việc gấp"}
-              </span>
-            }
+      <div className="flex flex-col gap-3 lg:hidden">
+        {/* TÌM KIẾM NHANH (mobile) */}
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-v5-muted" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Tìm theo mã việc, tên việc…"
+            aria-label="Tìm kiếm công việc"
+            className="h-10 w-full rounded-lg border border-v5-line bg-v5-surface pl-9 pr-3 text-sm text-v5-ink placeholder:text-v5-muted focus:outline-none focus:ring-1 focus:ring-secondary"
           />
-          <StatCard
-            label="Sắp đến hạn"
-            value={String(myStats.dueSoon).padStart(2, "0")}
-            unit="24 giờ"
-            icon={Timer}
-            tone="warning"
-            hint={myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}
-          />
-          <StatCard
-            label="Quá hạn"
-            value={String(myStats.overdue).padStart(2, "0")}
-            unit="hồ sơ"
-            icon={AlertTriangle}
-            tone="danger"
-            hint={
-              <span className="font-semibold text-v5-danger">
-                {myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}
-              </span>
-            }
-          />
-          <StatCard
-            label="Chờ phê duyệt"
-            value={String(myStats.waiting).padStart(2, "0")}
-            unit="đã nộp"
-            icon={CheckCircle2}
-            hint="Chờ Trưởng BP ký"
-          />
-        </div>
-
-        {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung (mobile) */}
-        <div className="px-margin py-2">
-          <JournalFilterBar
-            value={journalFilter}
-            onChange={setJournalFilter}
-            counts={{ total: tasks.length }}
-          />
-        </div>
-
-        {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng (bản mobile) */}
-        <div className="px-margin py-2">
-          <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
         </div>
 
         {/* TAB TRẠNG THÁI CÔNG VIỆC (HORIZONTAL SCROLL CHIPS) */}
-        <div className="py-2.5">
-          <div className="flex items-center gap-2 overflow-x-auto px-margin no-scrollbar">
+        <div className="py-1">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab("ALL")}
               className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 flex items-center gap-1.5 shadow-sm transition-fast ${
@@ -1610,7 +1533,7 @@ function MyWorkPageContent() {
 
         {/* DANH SÁCH THẺ NHIỆM VỤ MOBILE */}
         {/* DANH SÁCH THẺ NHIỆM VỤ MOBILE BÁM SÁT STITCH */}
-        <div data-tour="task-list" className="px-margin flex flex-col gap-3">
+        <div data-tour="task-list" className="flex flex-col gap-3">
           {filteredTasks.map((task) => {
             const isOverdue = task.isOverdue || task.hasIssue;
             const isWaiting = task.status === "WAITING_REVIEW";
@@ -1901,6 +1824,7 @@ function MyWorkPageContent() {
             <span>+ Thêm việc</span>
           </button>
         </div>
+      </div>
       </div>
 
       {/* =========================================================================

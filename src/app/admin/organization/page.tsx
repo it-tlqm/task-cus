@@ -1415,6 +1415,56 @@ export default function OrganizationAdminPage() {
                 </div>
               </div>
 
+              {(() => {
+                const primary = (editingPerson.assignments || []).find((a) => a.isPrimary);
+                return (
+                  <div
+                    className={`rounded-lg border p-2.5 text-xs ${
+                      primary
+                        ? "border-v5-line bg-v5-bg"
+                        : "border-status-danger/40 bg-status-danger-bg"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-v5-ink">Phân công chính</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          primary
+                            ? "bg-v5-success-soft text-v5-success"
+                            : "bg-status-danger/10 text-status-danger"
+                        }`}
+                      >
+                        {primary ? "Đã có" : "Chưa có"}
+                      </span>
+                    </div>
+                    {primary ? (
+                      <div className="mt-1 text-v5-muted">
+                        <span className="font-semibold text-v5-ink">{primary.unitName || "—"}</span>
+                        {primary.position ? ` · ${primary.position}` : ""}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="mt-1 text-status-danger">
+                          Cán bộ chưa có phân công chính. Cần bổ sung trước khi giao việc, phân quyền hoặc tính
+                          trực ca.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const person = editingPerson;
+                            setEditingPerson(null);
+                            handleOpenTransfer(person);
+                          }}
+                          className="mt-2 inline-flex items-center gap-1 rounded-md bg-v5-accent px-2.5 py-1 text-[11px] font-semibold text-white hover:opacity-90"
+                        >
+                          <ArrowRightLeft className="h-3 w-3" /> Bổ sung phân công chính
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div>
                 <label className="text-xs font-semibold text-v5-ink block mb-1">Họ và tên *</label>
                 <input
@@ -1639,6 +1689,13 @@ export default function OrganizationAdminPage() {
                 />
               </div>
 
+              {transferData.newUnitId === transferringPerson.unitId &&
+                (!transferData.newPositionId || transferData.newPositionId === transferringPerson.positionId) && (
+                  <p className="rounded-lg border border-status-warning/40 bg-status-warning-bg px-2.5 py-1.5 text-[11px] text-status-warning">
+                    Đơn vị và chức vụ chưa thay đổi. Chọn đơn vị hoặc chức vụ mới trước khi xác nhận.
+                  </p>
+                )}
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-v5-line/60">
                 <button
                   type="button"
@@ -1650,7 +1707,11 @@ export default function OrganizationAdminPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    (transferData.newUnitId === transferringPerson.unitId &&
+                      (!transferData.newPositionId || transferData.newPositionId === transferringPerson.positionId))
+                  }
                   className="px-4 py-1.5 text-xs font-semibold text-white bg-v5-accent rounded-lg hover:bg-v5-accent shadow-sm disabled:opacity-50"
                 >
                   {isSubmitting ? "Đang xử lý..." : "Xác nhận điều chuyển"}
