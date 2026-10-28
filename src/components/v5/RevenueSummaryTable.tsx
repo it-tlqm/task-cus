@@ -115,11 +115,15 @@ export function RevenueSummaryTable({
   groups,
   comparison,
   latestDate,
+  period,
+  periodLabel,
   onSaved,
 }: {
   groups: Group[];
   comparison?: { rows?: ComparisonRow[] } | null;
   latestDate?: string | null;
+  period: "week" | "month" | "year";
+  periodLabel?: string;
   onSaved?: () => void;
 }) {
   const tax = findMetric(groups, "THU_NSNN");
@@ -159,6 +163,7 @@ export function RevenueSummaryTable({
       key: item.classificationId || item.label,
       label: item.label,
       day: item.cols.day ?? null,
+      weekTax: item.cols.week ?? null,
       monthTax: item.cols.month ?? null,
       monthVehicle: isCar ? vehicle?.cols.month ?? null : null,
       yearVehicle: isCar ? vehicle?.cols.year ?? null : null,
@@ -173,16 +178,23 @@ export function RevenueSummaryTable({
     return present.length ? present.reduce((sum, value) => sum + value, 0) : null;
   };
   const totalDay = tax?.cols.day ?? sumOrNull(rows.map((item) => item.day));
+  const totalWeekTax = tax?.cols.week ?? sumOrNull(rows.map((item) => item.weekTax));
   const totalMonthTax = tax?.cols.month ?? sumOrNull(rows.map((item) => item.monthTax));
   const totalYearTax = tax?.cols.year ?? sumOrNull(rows.map((item) => item.yearTax));
 
-  const summaryItems = [
-    { label: "Chỉ tiêu BTC", block: row?.btc, value: row?.btc?.targetValue, kind: "target" as const },
-    { label: "Chỉ tiêu UBND tỉnh", block: row?.ubnd, value: row?.ubnd?.targetValue, kind: "target" as const },
-    { label: "Kế hoạch tháng HQTL", block: row?.monthPlan, value: row?.monthPlan?.targetValue, kind: "target" as const },
-    { label: "So với tháng trước", block: row?.prevMonth, value: null, kind: "diff" as const },
-    { label: "So với cùng kỳ 2025", block: row?.samePeriodLastYear, value: null, kind: "diff" as const },
-  ];
+  const summaryItems =
+    period === "year"
+      ? [
+          { label: "Chỉ tiêu BTC", block: row?.btc, value: row?.btc?.targetValue, kind: "target" as const },
+          { label: "Chỉ tiêu UBND tỉnh", block: row?.ubnd, value: row?.ubnd?.targetValue, kind: "target" as const },
+        ]
+      : [
+          { label: "Chỉ tiêu BTC", block: row?.btc, value: row?.btc?.targetValue, kind: "target" as const },
+          { label: "Chỉ tiêu UBND tỉnh", block: row?.ubnd, value: row?.ubnd?.targetValue, kind: "target" as const },
+          { label: "Kế hoạch tháng HQTL", block: row?.monthPlan, value: row?.monthPlan?.targetValue, kind: "target" as const },
+          { label: "So với tháng trước", block: row?.prevMonth, value: null, kind: "diff" as const },
+          { label: "So với cùng kỳ 2025", block: row?.samePeriodLastYear, value: null, kind: "diff" as const },
+        ];
 
   const noTaxValue = noTax ? noTax.cols.month ?? noTax.cols.year ?? null : null;
   const anchorDate = latestDate || new Date().toISOString().slice(0, 10);
@@ -426,9 +438,16 @@ export function RevenueSummaryTable({
             <span className="grid h-7 w-7 place-items-center rounded-md bg-v5-accent-soft text-v5-accent">
               <CircleDollarSign className="h-3.5 w-3.5" />
             </span>
-            <CardTitle className="text-[15px]">Tổng hợp số thu ngày</CardTitle>
+            <CardTitle className="text-[15px]">
+              {period === "year"
+                ? "Tổng hợp số thu năm"
+                : period === "week"
+                  ? "Tổng hợp số thu tuần"
+                  : "Tổng hợp số thu ngày"}
+            </CardTitle>
           </div>
           <p className="mt-1 text-[11px] text-v5-muted">
+            {periodLabel ? `${periodLabel} · ` : ""}
             {latestDate ? `Số liệu đến ${fmtDate(latestDate)}` : "Số liệu kỳ hiện tại"} · đơn vị: đồng / USD / xe
           </p>
         </div>
@@ -444,7 +463,11 @@ export function RevenueSummaryTable({
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="grid grid-cols-2 divide-x divide-y divide-v5-line/70 border-b border-v5-line/70 md:grid-cols-5 md:divide-y-0">
+        <div
+          className={`grid grid-cols-2 divide-x divide-y divide-v5-line/70 border-b border-v5-line/70 ${
+            period === "year" ? "md:grid-cols-2" : "md:grid-cols-5 md:divide-y-0"
+          }`}
+        >
           {summaryItems.map((item) => (
             <div key={item.label} className="px-3 py-2.5">
               <div className="text-[9px] font-semibold uppercase tracking-wide text-v5-muted">{item.label}</div>
@@ -460,58 +483,112 @@ export function RevenueSummaryTable({
           ))}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] border-collapse text-[11px]" data-testid="v5-revenue-summary-table">
-            <thead>
-              <tr className="border-b border-v5-line/70 bg-v5-bg/60 text-[10px] text-v5-muted">
-                <th rowSpan={2} className="border-r border-v5-line/60 px-3 py-2 text-left font-semibold">
-                  Chỉ tiêu
-                </th>
-                <th rowSpan={2} className="border-r border-v5-line/60 px-3 py-2 text-right font-semibold">
-                  Số thuế phát sinh trong ngày
-                </th>
-                <th colSpan={2} className="border-r border-v5-line/60 px-3 py-1.5 text-center font-semibold text-v5-accent">
-                  Lũy kế tháng
-                </th>
-                <th colSpan={3} className="px-3 py-1.5 text-center font-semibold text-v5-accent">
-                  Lũy kế từ đầu năm
-                </th>
-              </tr>
-              <tr className="border-b border-v5-line/70 bg-v5-bg/40 text-[10px] text-v5-muted">
-                <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">Số tiền thuế</th>
-                <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">Lượng xe</th>
-                <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">SL xe</th>
-                <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">Trị giá USD</th>
-                <th className="px-3 py-1.5 text-right font-medium">Tổng số thuế</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item) => (
-                <tr key={item.key} className="border-b border-v5-line/50 hover:bg-v5-bg/40">
-                  <td className="border-r border-v5-line/40 px-3 py-2 font-medium text-v5-ink">
-                    {item.label}
-                    {item.isOther && <span className="ml-1 text-[9px] text-v5-muted"> (than cốc; VPHC)</span>}
-                  </td>
-                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(item.day, tax)}</td>
-                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(item.monthTax, tax)}</td>
-                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(item.monthVehicle, vehicle)}</td>
-                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(item.yearVehicle, vehicle)}</td>
-                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(item.yearUsd, usd)}</td>
-                  <td className="px-3 py-2 text-right font-semibold tabular-nums text-v5-ink">{formatValue(item.yearTax, tax)}</td>
+        {period === "year" ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-[11px]" data-testid="v5-revenue-summary-table">
+              <thead>
+                <tr className="border-b border-v5-line/70 bg-v5-bg/60 text-[10px] text-v5-muted">
+                  <th className="border-r border-v5-line/60 px-3 py-2 text-left font-semibold">Chỉ tiêu</th>
+                  <th className="border-r border-v5-line/60 px-3 py-2 text-right font-semibold text-v5-accent">
+                    Lũy kế năm — Số tiền thuế
+                  </th>
+                  <th className="border-r border-v5-line/60 px-3 py-2 text-right font-semibold text-v5-accent">
+                    Lượng xe năm
+                  </th>
+                  <th className="px-3 py-2 text-right font-semibold text-v5-accent">Trị giá USD năm</th>
                 </tr>
-              ))}
-              <tr className="border-b border-v5-line/70 bg-v5-gold-soft/50 font-semibold">
-                <td className="border-r border-v5-line/40 px-3 py-2 text-v5-ink">TỔNG CỘNG</td>
-                <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(totalDay, tax)}</td>
-                <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(totalMonthTax, tax)}</td>
-                <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">—</td>
-                <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(vehicle?.cols.year, vehicle)}</td>
-                <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(usd?.cols.year, usd)}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(totalYearTax, tax)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((item) => (
+                  <tr key={item.key} className="border-b border-v5-line/50 hover:bg-v5-bg/40">
+                    <td className="border-r border-v5-line/40 px-3 py-2 font-medium text-v5-ink">
+                      {item.label}
+                      {item.isOther && <span className="ml-1 text-[9px] text-v5-muted"> (than cốc; VPHC)</span>}
+                    </td>
+                    <td className="border-r border-v5-line/40 px-3 py-2 text-right font-semibold tabular-nums text-v5-ink">
+                      {formatValue(item.yearTax, tax)}
+                    </td>
+                    <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">
+                      {formatValue(item.yearVehicle, vehicle)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-v5-muted">
+                      {formatValue(item.yearUsd, usd)}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="border-b border-v5-line/70 bg-v5-gold-soft/50 font-semibold">
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-v5-ink">TỔNG CỘNG</td>
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">
+                    {formatValue(totalYearTax, tax)}
+                  </td>
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">
+                    {formatValue(vehicle?.cols.year, vehicle)}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-v5-muted">
+                    {formatValue(usd?.cols.year, usd)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[880px] border-collapse text-[11px]" data-testid="v5-revenue-summary-table">
+              <thead>
+                <tr className="border-b border-v5-line/70 bg-v5-bg/60 text-[10px] text-v5-muted">
+                  <th rowSpan={2} className="border-r border-v5-line/60 px-3 py-2 text-left font-semibold">
+                    Chỉ tiêu
+                  </th>
+                  <th rowSpan={2} className="border-r border-v5-line/60 px-3 py-2 text-right font-semibold">
+                    {period === "week" ? "Số thuế phát sinh trong tuần" : "Số thuế phát sinh trong ngày"}
+                  </th>
+                  <th colSpan={2} className="border-r border-v5-line/60 px-3 py-1.5 text-center font-semibold text-v5-accent">
+                    Lũy kế tháng
+                  </th>
+                  <th colSpan={3} className="px-3 py-1.5 text-center font-semibold text-v5-accent">
+                    Lũy kế năm
+                  </th>
+                </tr>
+                <tr className="border-b border-v5-line/70 bg-v5-bg/40 text-[10px] text-v5-muted">
+                  <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">Số tiền thuế</th>
+                  <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">Lượng xe</th>
+                  <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">SL xe</th>
+                  <th className="border-r border-v5-line/60 px-3 py-1.5 text-right font-medium">Trị giá USD</th>
+                  <th className="px-3 py-1.5 text-right font-medium">Tổng số thuế</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((item) => (
+                  <tr key={item.key} className="border-b border-v5-line/50 hover:bg-v5-bg/40">
+                    <td className="border-r border-v5-line/40 px-3 py-2 font-medium text-v5-ink">
+                      {item.label}
+                      {item.isOther && <span className="ml-1 text-[9px] text-v5-muted"> (than cốc; VPHC)</span>}
+                    </td>
+                    <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">
+                      {formatValue(period === "week" ? item.weekTax : item.day, tax)}
+                    </td>
+                    <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(item.monthTax, tax)}</td>
+                    <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(item.monthVehicle, vehicle)}</td>
+                    <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(item.yearVehicle, vehicle)}</td>
+                    <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(item.yearUsd, usd)}</td>
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums text-v5-ink">{formatValue(item.yearTax, tax)}</td>
+                  </tr>
+                ))}
+                <tr className="border-b border-v5-line/70 bg-v5-gold-soft/50 font-semibold">
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-v5-ink">TỔNG CỘNG</td>
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">
+                    {formatValue(period === "week" ? totalWeekTax : totalDay, tax)}
+                  </td>
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(totalMonthTax, tax)}</td>
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">—</td>
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(vehicle?.cols.year, vehicle)}</td>
+                  <td className="border-r border-v5-line/40 px-3 py-2 text-right tabular-nums text-v5-muted">{formatValue(usd?.cols.year, usd)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-v5-ink">{formatValue(totalYearTax, tax)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {noTax && (
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-v5-line/70 bg-v5-gold-soft/30 px-3 py-2.5 text-[11px]">

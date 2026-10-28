@@ -238,6 +238,8 @@ export default function V5GiaoBanPage() {
             groups={summary?.groups || []}
             comparison={summary?.comparison}
             latestDate={taxMetric?.latestDate}
+            period="month"
+            periodLabel="Tháng này"
           />
           <Card className="p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -274,6 +276,8 @@ export default function V5GiaoBanPage() {
             groups={summary?.groups || []}
             comparison={summary?.comparison}
             latestDate={taxMetric?.latestDate}
+            period="month"
+            periodLabel="Tháng này"
           />
         </section>
       )}

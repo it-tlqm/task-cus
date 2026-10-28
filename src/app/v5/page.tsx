@@ -421,6 +421,8 @@ export default function V5DashboardPage() {
           groups={summary?.groups || []}
           comparison={summary?.comparison}
           latestDate={revenueMetric?.latestDate}
+          period={period}
+          periodLabel={PERIOD_LABEL[period]}
           onSaved={() => load(false)}
         />
       </div>
