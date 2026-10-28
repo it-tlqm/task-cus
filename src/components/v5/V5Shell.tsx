@@ -39,8 +39,9 @@ import {
   X,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { MiniappHeader } from "@/components/v5/MiniappHeader";
 import { MiniappIcon } from "@/components/v5/miniapp-icon";
-import { findMiniappByPath } from "@/config/miniapps";
+import { findMiniappByPath, miniappNavigation, MINIAPP_ACCENTS } from "@/config/miniapps";
 import { ProductTour } from "@/components/v5/ProductTour";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import CommandPalette from "@/components/layout/CommandPalette";
@@ -155,11 +156,13 @@ function SidebarNav({
   onNavigate,
   role,
   appId,
+  activeClassName,
 }: {
   pathname: string;
   onNavigate?: () => void;
   role?: string;
   appId?: string | null;
+  activeClassName?: string;
 }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -170,6 +173,42 @@ function SidebarNav({
           Chọn một ứng dụng để mở menu nghiệp vụ. Ghim ứng dụng thường dùng để mở nhanh lần sau.
         </p>
       </div>
+    );
+  }
+
+  const appNav = (appId ? miniappNavigation(appId) : []).filter(
+    (item) => !(item.href === "/routine" && role === "UNIT_LEADER")
+  );
+
+  if (appNav.length > 0) {
+    return (
+      <nav className="min-h-0 flex-1 overflow-y-auto px-2.5 py-3" aria-label="Menu ứng dụng">
+        <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-v5-muted">
+          Menu ứng dụng
+        </div>
+        <div className="space-y-0.5">
+          {appNav.map((item) => {
+            const active = isActivePath(pathname, item.href.split("?")[0]);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors",
+                  active
+                    ? `${activeClassName || "bg-v5-accent-soft text-v5-accent"} font-semibold`
+                    : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                )}
+              >
+                <MiniappIcon name={item.icon} className="h-4 w-4" />
+                <span className="flex-1">{item.label}</span>
+                {active && <ChevronRight className="h-3.5 w-3.5" />}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     );
   }
 
@@ -206,7 +245,7 @@ function SidebarNav({
                       className={cn(
                         "flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors",
                         active
-                          ? "bg-v5-accent-soft font-semibold text-v5-accent"
+                          ? `${activeClassName || "bg-v5-accent-soft text-v5-accent"} font-semibold`
                           : "text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
                       )}
                     >
@@ -309,7 +348,9 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const pageTitle = PAGE_TITLES.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] || "Không gian điều hành";
-  const currentApp = findMiniappByPath(pathname);
+  const rawApp = findMiniappByPath(pathname);
+  const currentApp =
+    rawApp && (!rawApp.roles || !user || rawApp.roles.includes(user.role)) ? rawApp : null;
   const today = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
     day: "2-digit",
@@ -351,7 +392,16 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-v5-line bg-v5-surface lg:flex">
         <BrandBlock />
         <StoreLink pathname={pathname} />
-        <SidebarNav pathname={pathname} role={user?.role} appId={currentApp?.id || null} />
+        <SidebarNav
+          pathname={pathname}
+          role={user?.role}
+          appId={currentApp?.id || null}
+          activeClassName={
+            currentApp
+              ? `${MINIAPP_ACCENTS[currentApp.accent].soft} ${MINIAPP_ACCENTS[currentApp.accent].text}`
+              : undefined
+          }
+        />
         <UserCard user={user} />
       </aside>
 
@@ -381,6 +431,11 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
               onNavigate={() => setMobileOpen(false)}
               role={user?.role}
               appId={currentApp?.id || null}
+              activeClassName={
+                currentApp
+                  ? `${MINIAPP_ACCENTS[currentApp.accent].soft} ${MINIAPP_ACCENTS[currentApp.accent].text}`
+                  : undefined
+              }
             />
             <UserCard user={user} />
           </aside>
@@ -403,31 +458,11 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="hidden min-w-0 items-center gap-2 lg:flex">
-              {currentApp ? (
-                <>
-                  <Link
-                    href="/store"
-                    title="Đổi ứng dụng"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-v5-line bg-v5-bg px-2 py-1 text-[11px] font-semibold text-v5-ink transition-colors hover:border-v5-accent/25 hover:bg-v5-surface"
-                  >
-                    <MiniappIcon name={currentApp.icon} className="h-3.5 w-3.5" />
-                    <span className="max-w-[170px] truncate">{currentApp.name}</span>
-                    <ChevronDown className="h-3 w-3 text-v5-muted" />
-                  </Link>
-                  <span className="text-v5-muted">/</span>
-                </>
-              ) : (
-                <PanelLeft className="h-4 w-4 text-v5-muted" />
-              )}
+              <PanelLeft className="h-4 w-4 text-v5-muted" />
               <span className="truncate text-[13px] font-semibold text-v5-ink">{pageTitle}</span>
             </div>
 
             <div className="ml-auto flex items-center gap-1.5">
-              <Button variant="ghost" size="icon" asChild aria-label="Kho ứng dụng" className="lg:hidden">
-                <Link href="/store">
-                  <LayoutGrid className="h-4 w-4" />
-                </Link>
-              </Button>
               <button
                 type="button"
                 onClick={() => setCommandOpen(true)}
@@ -480,7 +515,14 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-3 lg:px-5 lg:pt-4">{children}</main>
+        <main className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-3 lg:px-5 lg:pt-4">
+          {currentApp && pathname !== "/store" && (
+            <div className="mb-3">
+              <MiniappHeader app={currentApp} pathname={pathname} />
+            </div>
+          )}
+          {children}
+        </main>
       </div>
 
       <NotificationQuickView open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />

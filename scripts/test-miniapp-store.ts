@@ -4,6 +4,7 @@ import {
   findMiniappByPath,
   MINIAPP_ACCENTS,
   MINIAPP_CATEGORIES,
+  MINIAPP_NAVIGATION,
   MINIAPPS,
 } from "../src/config/miniapps";
 
@@ -28,6 +29,16 @@ check(
 check("Mọi ứng dụng có tiền tố URL", MINIAPPS.every((app) => app.paths.length > 0));
 check("Mọi ứng dụng có màu nhận diện", MINIAPPS.every((app) => !!MINIAPP_ACCENTS[app.accent]));
 check("Mọi ứng dụng có từ khóa tìm kiếm", MINIAPPS.every((app) => app.keywords.length > 0));
+check(
+  "Mọi ứng dụng có menu riêng",
+  MINIAPPS.every((app) => (MINIAPP_NAVIGATION[app.id] || []).length > 0)
+);
+check(
+  "Menu ứng dụng có đường dẫn hợp lệ",
+  Object.values(MINIAPP_NAVIGATION)
+    .flat()
+    .every((item) => item.href.startsWith("/") && item.label.length > 0)
+);
 
 console.log("\n=== Nhận diện app theo URL ===");
 check("/v5 → Tổng quan", findMiniappByPath("/v5")?.id === "tong-quan");
@@ -57,13 +68,20 @@ check("Có dùng gần đây", store.includes("RECENT_KEY") && store.includes("D
 check("Có thẻ ứng dụng", store.includes('data-testid="miniapp-card"'));
 check("Có trạng thái rỗng", store.includes("Không tìm thấy ứng dụng phù hợp"));
 check("Có ghi chú quyền", store.includes("Ứng dụng hiển thị theo quyền"));
+check("Thẻ app có lối tắt nghiệp vụ", store.includes("miniappNavigation(app.id)"));
+check("Lịch sử gần đây có thời gian", store.includes("relativeTime") && store.includes("RECENT_KEY"));
+check("Có xóa lịch sử gần đây", store.includes("Xóa lịch sử"));
+check("Có hero Kho ứng dụng", store.includes("Không gian nghiệp vụ"));
+
+const header = read("src/components/v5/MiniappHeader.tsx");
+check("Có app header riêng", header.includes("miniappNavigation(app.id)") && header.includes("Kho ứng dụng"));
+check("Mobile có menu nhanh trong header", header.includes("lg:hidden"));
 
 const shell = read("src/components/v5/V5Shell.tsx");
 check("Sidebar có Kho ứng dụng", shell.includes("<StoreLink"));
-check("Top bar có app switcher", shell.includes("Đổi ứng dụng"));
+check("Shell render app header", shell.includes("<MiniappHeader"));
+check("Menu sidebar lấy từ registry", shell.includes("miniappNavigation(appId)"));
 check("Shell nhận diện app hiện tại", shell.includes("findMiniappByPath(pathname)"));
-check("Mobile có nút Kho ứng dụng", shell.includes('aria-label="Kho ứng dụng"'));
-check("Menu lọc theo app đang mở", shell.includes("navItemAppId(item.href) === appId"));
 check("Store không hiện menu nghiệp vụ", shell.includes('pathname === "/store"'));
 
 const login = read("src/app/login/page.tsx");

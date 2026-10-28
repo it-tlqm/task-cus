@@ -6,8 +6,9 @@ Hệ thống không tách thành nhiều ứng dụng deploy riêng. Mỗi nghi�
 
 - Dùng chung đăng nhập, phân quyền, CSDL và giao diện V5.
 - Có danh mục, tìm kiếm, ghim và lịch sử dùng gần đây như một cửa hàng ứng dụng.
-- Khi mở app, menu bên trái chỉ còn nghiệp vụ của app đó.
-- Nút **Kho ứng dụng** ở đầu sidebar và trên thanh trên cùng để đổi app.
+- Khi mở app, có **header riêng** (icon, tên, mô tả, màu nhận diện) và **menu riêng** lấy từ registry.
+- Nút **Kho ứng dụng** ở header, đầu sidebar và top bar để đổi app.
+- Thẻ app ở Store có **lối tắt nghiệp vụ** (ví dụ Giao ban → Nhập số liệu, Cấu hình).
 
 ## Danh mục hiện tại
 
@@ -34,12 +35,20 @@ Mỗi app khai báo các tiền tố URL trong `paths`. Khi vào bất kỳ tran
 - `/admin/organization` → Nhân sự & tổ chức
 - `/admin/audit` → Quản trị hệ thống
 
+## App shell
+
+- `MiniappHeader` render header riêng cho app đang mở.
+- Menu app lấy từ `MINIAPP_NAVIGATION` trong `src/config/miniapps.ts`, không dùng menu toàn cục.
+- Sidebar tô màu theo `accent` của app.
+- Mobile có menu nhanh ngay trong header; desktop dùng menu sidebar.
+
 ## Ghim và dùng gần đây
 
 - Lưu bằng `localStorage`, chỉ trên máy đang dùng.
 - `talung.miniapps.pinned.v1`
-- `talung.miniapps.recent.v1`
+- `talung.miniapps.recent.v2` (có thời điểm mở; tự chuyển từ `v1`)
 - Tối đa 6 app gần đây.
+- Có nút **Xóa lịch sử** ngay trong mục Dùng gần đây.
 
 ## Thêm một app mới
 
@@ -47,7 +56,9 @@ Mỗi app khai báo các tiền tố URL trong `paths`. Khi vào bất kỳ tran
    - `id`, `name`, `description`, `href`, `icon`, `accent`, `category`
    - `paths`, `keywords`
    - `roles` / `permissions` nếu cần giới hạn
-2. Nếu app có menu riêng, thêm mục vào `NAV_SECTIONS` trong `src/components/v5/V5Shell.tsx`.
+2. Thêm menu vào `MINIAPP_NAVIGATION` cùng file:
+   - `label`, `href`, `icon`
+   - `shortLabel` nếu nhãn dài, dùng cho header mobile và lối tắt ở Store.
 3. Chạy `npx tsx scripts/test-miniapp-store.ts`.
 
 ## Kiểm thử

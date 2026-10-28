@@ -37,7 +37,19 @@ export type MiniappIconName =
   | "shield-check"
   | "folder-kanban"
   | "package"
-  | "circle-help";
+  | "circle-help"
+  | "user-check"
+  | "check-check"
+  | "list-checks"
+  | "plus-square"
+  | "settings"
+  | "calendar-check"
+  | "users"
+  | "folder"
+  | "shield"
+  | "file-check"
+  | "activity"
+  | "message-square";
 
 export interface Miniapp {
   id: string;
@@ -204,6 +216,59 @@ export const MINIAPPS: Miniapp[] = [
     keywords: ["hướng dẫn", "trợ giúp", "help"],
   },
 ];
+
+export interface MiniappNavItem {
+  label: string;
+  shortLabel?: string;
+  href: string;
+  icon: MiniappIconName;
+  exact?: boolean;
+}
+
+/** Menu riêng của từng app — dùng cho header, sidebar và shortcut ở Kho ứng dụng. */
+export const MINIAPP_NAVIGATION: Record<string, MiniappNavItem[]> = {
+  "tong-quan": [{ label: "Tổng quan", href: "/v5", icon: "layout-dashboard", exact: true }],
+  "cong-viec": [
+    { label: "Công việc", href: "/tasks", icon: "clipboard-list" },
+    { label: "Công chức nhận việc", shortLabel: "Nhận việc", href: "/my-work", icon: "user-check" },
+    { label: "Phê duyệt", href: "/approvals", icon: "check-check" },
+    { label: "Đánh giá", href: "/work-item-reviews", icon: "list-checks" },
+  ],
+  "giao-ban": [
+    { label: "Tổng hợp", href: "/v5/giao-ban", icon: "bar-chart-3" },
+    { label: "Nhập số liệu", href: "/v5/giao-ban/nhap", icon: "plus-square" },
+    { label: "Cấu hình giao ban", shortLabel: "Cấu hình", href: "/giao-ban/cau-hinh", icon: "settings" },
+    { label: "Báo cáo giao ban", shortLabel: "Báo cáo", href: "/giao-ban/bao-cao", icon: "file-text" },
+  ],
+  "ke-hoach": [{ label: "Kế hoạch", href: "/plans", icon: "calendar-days" }],
+  "nhat-ky": [{ label: "Nhật ký ca trực", shortLabel: "Nhật ký", href: "/routine", icon: "book-open-check" }],
+  "lich-cong-tac": [
+    { label: "Lịch công tác", shortLabel: "Lịch", href: "/calendar", icon: "calendar-range" },
+    { label: "Cuộc họp", href: "/meetings", icon: "users" },
+    { label: "Lịch trực", href: "/roster", icon: "user-check" },
+    { label: "Nghỉ phép", href: "/leaves", icon: "calendar-check" },
+  ],
+  "bao-cao": [{ label: "Báo cáo", href: "/reports", icon: "file-text" }],
+  "ket-qua-thang": [{ label: "Kết quả tháng", shortLabel: "Kết quả", href: "/monthly-results", icon: "pie-chart" }],
+  "tai-lieu": [{ label: "Tài liệu", href: "/docs", icon: "folder" }],
+  "san-pham": [{ label: "Sản phẩm", href: "/products", icon: "package" }],
+  "nhan-su": [{ label: "Tổ chức & nhân sự", shortLabel: "Tổ chức", href: "/admin/organization", icon: "building-2" }],
+  "quan-tri": [
+    { label: "Tổng quan quản trị", shortLabel: "Tổng quan", href: "/admin", icon: "shield-check", exact: true },
+    { label: "Phân quyền", href: "/admin/permissions", icon: "shield" },
+    { label: "Danh mục", href: "/admin/catalog", icon: "folder-kanban" },
+    { label: "Biểu mẫu", href: "/admin/forms", icon: "file-check" },
+    { label: "Giám sát", href: "/admin/supervisions", icon: "activity" },
+    { label: "Nhật ký hệ thống", shortLabel: "Nhật ký", href: "/admin/audit", icon: "list-checks" },
+    { label: "Cấu hình hệ thống", shortLabel: "Cấu hình", href: "/admin/system", icon: "settings" },
+    { label: "Phản hồi", href: "/admin/feedback", icon: "message-square" },
+  ],
+  "huong-dan": [{ label: "Hướng dẫn", href: "/huong-dan", icon: "circle-help" }],
+};
+
+export function miniappNavigation(appId: string | null | undefined): MiniappNavItem[] {
+  return appId ? MINIAPP_NAVIGATION[appId] || [] : [];
+}
 
 export const MINIAPP_ACCENTS: Record<
   MiniappAccent,
