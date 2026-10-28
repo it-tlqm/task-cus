@@ -50,6 +50,7 @@ const CUM_LABELS: Record<string, string> = {
   QUARTER: "Lũy kế quý",
   YEAR: "Lũy kế năm",
   LEDGER: "Số dư liên tục",
+  OPENING: "Số mở đầu kỳ",
 };
 
 function todayVnStr(): string {

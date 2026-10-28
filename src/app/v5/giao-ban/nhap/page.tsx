@@ -59,6 +59,7 @@ interface EntryMetric {
   canConfirm: boolean;
   backdateDays: number;
   entryPeriod: EntryPeriod;
+  inputMode?: "INCREMENTAL" | "CUMULATIVE";
   values: EntryValue[];
 }
 
@@ -542,10 +543,16 @@ export default function V5EntryPage() {
                             <span className="truncate text-sm font-semibold text-v5-ink">{metric.name}</span>
                             {metric.requireConfirm && <Badge variant="warning">Cần kiểm tra</Badge>}
                             {metric.valueKind === "BALANCE" && <Badge variant="accent">Số dư</Badge>}
+                            {metric.inputMode === "CUMULATIVE" && (
+                              <Badge variant="outline">Lũy kế ngày</Badge>
+                            )}
                           </div>
                           <div className="mt-0.5 text-[10px] text-v5-muted">
                             {metric.unitLabel}
                             {metric.note ? ` · ${metric.note}` : ""}
+                            {metric.inputMode === "CUMULATIVE"
+                              ? " · Nhập số lũy kế đến ngày, hệ thống tự trừ số đầu kỳ để ra tháng/năm."
+                              : ""}
                           </div>
                         </div>
                         {metric.entryPeriod !== "DAY" && (
@@ -556,7 +563,10 @@ export default function V5EntryPage() {
                         {metric.values.map((value) => {
                           const key = `${metric.id}|${value.classificationId}`;
                           const status = value.status || "";
-                          const canUseHelper = value.canEdit && metric.valueKind !== "BALANCE";
+                          const canUseHelper =
+                            value.canEdit &&
+                            metric.valueKind !== "BALANCE" &&
+                            metric.inputMode !== "CUMULATIVE";
                           return (
                             <div key={key} className="grid gap-2 sm:grid-cols-[minmax(110px,1fr)_180px_auto] sm:items-center">
                               <div className="min-w-0 text-[12px] text-v5-muted">
@@ -569,7 +579,13 @@ export default function V5EntryPage() {
                                 value={values[key] ?? ""}
                                 onValueChange={(raw) => setValues((prev) => ({ ...prev, [key]: raw }))}
                                 disabled={!value.canEdit || saving}
-                                placeholder={value.canEdit ? "Nhập số…" : "—"}
+                                placeholder={
+                                  value.canEdit
+                                    ? metric.inputMode === "CUMULATIVE"
+                                      ? "Nhập lũy kế đến ngày…"
+                                      : "Nhập số…"
+                                    : "—"
+                                }
                                 className="h-9 w-full border border-v5-line bg-v5-surface px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent focus:ring-2 focus:ring-v5-accent/10 disabled:bg-v5-bg disabled:text-v5-muted"
                               />
                               <div className="flex items-center justify-end gap-1">

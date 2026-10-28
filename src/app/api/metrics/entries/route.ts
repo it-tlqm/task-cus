@@ -5,6 +5,7 @@ import { authenticateRequest } from "@/server/auth";
 import { jsonError } from "@/server/guard";
 import { recordAuditEvent } from "@/server/audit";
 import { entryPeriodBounds, metricEntryPeriod, parseEntryPeriod } from "@/lib/metric-entry-period";
+import { metricInputMode } from "@/lib/metric-input-mode";
 import {
   resolveEntryPerms,
   permForMetric,
@@ -205,6 +206,7 @@ export async function GET(req: NextRequest) {
           canConfirm: p.canConfirm || perms.all,
           backdateDays: perms.all ? -1 : p.backdateDays,
           entryPeriod: metricEntryPeriod(m),
+          inputMode: metricInputMode(m),
           values,
         });
       }
