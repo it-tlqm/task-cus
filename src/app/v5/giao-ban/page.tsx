@@ -234,13 +234,15 @@ export default function V5GiaoBanPage() {
 
       {tab === "tonghop" && (
         <>
-          <RevenueSummaryTable
-            groups={summary?.groups || []}
-            comparison={summary?.comparison}
-            latestDate={taxMetric?.latestDate}
-            period="month"
-            periodLabel="Tháng này"
-          />
+          <div data-tour="giao-ban-summary">
+            <RevenueSummaryTable
+              groups={summary?.groups || []}
+              comparison={summary?.comparison}
+              latestDate={taxMetric?.latestDate}
+              period="month"
+              periodLabel="Tháng này"
+            />
+          </div>
           <Card className="p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-[11px] text-v5-muted">

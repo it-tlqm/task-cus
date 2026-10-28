@@ -636,6 +636,7 @@ export default function V5EntryPage() {
                                   <div
                                     role="group"
                                     aria-label="Kiểu nhập số liệu"
+                                    data-tour="entry-modes"
                                     className="mt-1 inline-flex rounded-md border border-v5-line bg-v5-bg p-0.5"
                                   >
                                     <button

@@ -418,14 +418,16 @@ export default function V5DashboardPage() {
       </div>
 
       <div id="v5-data" className="scroll-mt-16">
-        <RevenueSummaryTable
-          groups={summary?.groups || []}
-          comparison={summary?.comparison}
-          latestDate={revenueMetric?.latestDate}
-          period={period}
-          periodLabel={PERIOD_LABEL[period]}
-          onSaved={() => load(false)}
-        />
+        <div data-tour="dashboard-summary">
+          <RevenueSummaryTable
+            groups={summary?.groups || []}
+            comparison={summary?.comparison}
+            latestDate={revenueMetric?.latestDate}
+            period={period}
+            periodLabel={PERIOD_LABEL[period]}
+            onSaved={() => load(false)}
+          />
+        </div>
         <div className="mt-3">
           <RevenueCharts metrics={metrics} comparison={summary?.comparison} />
         </div>
