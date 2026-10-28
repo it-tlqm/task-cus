@@ -418,8 +418,8 @@ async function main() {
     row1?.btc?.dataSource === "REAL" && row1?.btc?.isOfficial === true && row1?.btc?.status === "CONFIRMED"
   );
   check(
-    "5.6 Tháng trước: so cùng số ngày đến cutoff, có % khi đủ dữ liệu (B1-A)",
-    row1?.prevMonth?.value === ACC.prevMonthEntry && row1?.prevMonth?.percent !== null && row1?.prevMonth?.ruleState === "SAME_DAYS" && row1?.prevMonth?.basis === "SAME_DAYS_TO_CUTOFF",
+    "5.6 Tháng trước: so lũy kế cả tháng, có % khi đủ dữ liệu",
+    row1?.prevMonth?.value === ACC.prevMonthEntry && row1?.prevMonth?.percent !== null && row1?.prevMonth?.ruleState === "FULL_MONTH" && row1?.prevMonth?.basis === "FULL_MONTH",
     JSON.stringify(row1?.prevMonth)
   );
   check(

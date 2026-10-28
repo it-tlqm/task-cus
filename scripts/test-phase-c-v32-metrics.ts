@@ -248,14 +248,14 @@ async function main() {
     }
     const comparison = await computeMetricComparison({ year: 2026, weekNumber: 42, month: 10, quarter: 4 });
     const compRow = comparison.rows.find((r) => r.code === "THU_NSNN");
-    check("D1. Comparison dùng rule SAME_DAYS_TO_CUTOFF", comparison.rule.prevMonth === "SAME_DAYS_TO_CUTOFF" && comparison.rule.samePeriodLastYear === "SAME_DAYS_TO_CUTOFF");
+    check("D1. Comparison dùng rule FULL_MONTH", comparison.rule.prevMonth === "FULL_MONTH" && comparison.rule.samePeriodLastYear === "FULL_MONTH");
     check("D2. Data cutoff = ngày 18 (fixture 02–18/10)", compRow?.prevMonth.cutoffDate === "2026-10-18" && compRow?.prevMonth.dayCount === 18, compRow?.prevMonth);
-    check("D3. Tháng 10 chưa đủ kỳ → INCOMPLETE_PERIOD", compRow?.prevMonth.ruleState === "INCOMPLETE_PERIOD" && compRow?.prevMonth.periodComplete === false, compRow?.prevMonth);
+    check("D3. So lũy kế tháng → FULL_MONTH", compRow?.prevMonth.ruleState === "FULL_MONTH" && compRow?.prevMonth.periodComplete === true, compRow?.prevMonth);
     check("D4. Tháng trước lấy đúng 18 ngày (có entry 10/9)", compRow?.prevMonth.value !== null && compRow?.prevMonth.value >= 1000000000, compRow?.prevMonth);
     check("D5. Có % thay đổi khi đủ tử/mẫu (không 0% giả)", compRow?.prevMonth.percent !== null && compRow?.prevMonth.percentText !== null, compRow?.prevMonth);
     check("D6. Cùng kỳ năm trước thiếu dữ liệu → NO_DATA, percent null", compRow?.samePeriodLastYear.ruleState === "NO_DATA" && compRow?.samePeriodLastYear.percent === null, compRow?.samePeriodLastYear);
     check("D7. Không hiển thị 0% khi thiếu dữ liệu", compRow?.samePeriodLastYear.value === null || compRow?.samePeriodLastYear.percent !== null);
-    check("D8. Nhãn nêu 'Chưa đủ kỳ' và số ngày", (compRow?.prevMonth.note || "").includes("Chưa đủ kỳ") && (compRow?.prevMonth.note || "").includes("18 ngày"), compRow?.prevMonth.note);
+    check("D8. Nhãn nêu so cả tháng", (compRow?.prevMonth.note || "").includes("cả tháng"), compRow?.prevMonth.note);
 
     // ============================================================
     // E. B2-A — điều chỉnh lũy kế bằng canEnter/canConfirm

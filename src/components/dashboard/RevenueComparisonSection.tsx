@@ -35,8 +35,8 @@ export interface ComparisonDiffBlock {
   percent: number | null;
   percentText: string | null;
   label: string;
-  basis: "SAME_DAYS_TO_CUTOFF";
-  ruleState: "SAME_DAYS" | "INCOMPLETE_PERIOD" | "NO_DATA";
+  basis: "FULL_MONTH" | "SAME_DAYS_TO_CUTOFF";
+  ruleState: "FULL_MONTH" | "SAME_DAYS" | "INCOMPLETE_PERIOD" | "NO_DATA";
   cutoffDate: string | null;
   dayCount: number;
   periodComplete: boolean;
@@ -225,12 +225,13 @@ export function RevenueComparisonSection({
                 <span
                   data-testid="comparison-incomplete"
                   className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-800"
-                  title="B1-A: tháng hiện tại chưa đủ kỳ; chỉ so cùng số ngày đến data cutoff, không hiển thị 0% khi thiếu."
+                  title="So lũy kế tháng hiện tại với cả tháng đối chiếu; không hiển thị 0% khi thiếu dữ liệu."
                 >
                   Chưa đủ kỳ
                 </span>
               ) : null}
               {block.ruleState === "SAME_DAYS" ? <span>{block.dayCount} ngày</span> : null}
+              {block.ruleState === "FULL_MONTH" ? <span>Cả tháng</span> : null}
             </div>
           </>
         ) : (

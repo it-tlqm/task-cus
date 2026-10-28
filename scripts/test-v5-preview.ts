@@ -67,6 +67,19 @@ check(
     v5Page.indexOf("<RevenueSummaryTable") < v5Page.indexOf("<KpiTile") &&
     fs.existsSync(path.join(root, "src/components/v5/RevenueSummaryTable.tsx"))
 );
+const revenueSummary = read("src/components/v5/RevenueSummaryTable.tsx");
+check(
+  "Có chỉnh sửa nội dung và số tiền Đã mở TK chưa nộp thuế",
+  revenueSummary.includes("saveNoTax") &&
+    revenueSummary.includes("Đã mở TK chưa nộp thuế") &&
+    revenueSummary.includes("Nội dung / ghi chú")
+);
+check(
+  "Có nhập lũy kế tháng và tháng trước",
+  revenueSummary.includes("/api/metrics/comparison-anchors") &&
+    revenueSummary.includes("Nhập lũy kế") &&
+    revenueSummary.includes("LAST_YEAR")
+);
 check("V5 dashboard dùng token mới", v5Page.includes("bg-v5-bg") && v5Page.includes("text-v5-ink"));
 check("V5 dashboard dùng shadcn primitives", v5Page.includes("Card") && v5Page.includes("Badge") && v5Page.includes("Button"));
 check("Button có variant", button.includes("buttonVariants") && button.includes("asChild"));

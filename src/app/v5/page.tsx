@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Gauge,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   TrendingUp,
@@ -420,6 +421,7 @@ export default function V5DashboardPage() {
           groups={summary?.groups || []}
           comparison={summary?.comparison}
           latestDate={revenueMetric?.latestDate}
+          onSaved={() => load(false)}
         />
       </div>
 
@@ -494,6 +496,13 @@ export default function V5DashboardPage() {
                   </span>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.dispatchEvent(new Event("v5:open-anchors"))}
+              >
+                <Pencil className="h-3.5 w-3.5" /> Nhập lũy kế
+              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/v5/giao-ban">
                   Chi tiết <ArrowUpRight className="h-3.5 w-3.5" />

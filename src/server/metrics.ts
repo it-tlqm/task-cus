@@ -268,6 +268,7 @@ interface EntryRow {
   status: string;
   dataSource: string;
   enteredById: string;
+  note: string | null;
   updatedAt: Date;
 }
 
@@ -468,6 +469,7 @@ export async function computeMetricSummary(
           status: true,
           dataSource: true,
           enteredById: true,
+          note: true,
           updatedAt: true,
         },
       })
@@ -782,6 +784,7 @@ export async function computeMetricSummary(
             date: dateOnlyToStr(latest.entryDate),
             value: Number(latest.valueNumeric),
             status: latest.status,
+            note: latest.note,
             byName: personName.get(latest.enteredById) || null,
           }
         : null;
@@ -904,7 +907,11 @@ export function parseNumberInput(input: string | number): string | null {
 export const COMPARISON_CONTRACT_VERSION = "B-C-2";
 
 export type ComparisonRuleState = "OFFICIAL" | "PROPOSED" | "AMBIGUOUS" | "NO_TARGET" | "NOT_APPROVED";
-export type ComparisonDiffRuleState = "SAME_DAYS" | "INCOMPLETE_PERIOD" | "NO_DATA";
+export type ComparisonDiffRuleState =
+  | "FULL_MONTH"
+  | "SAME_DAYS"
+  | "INCOMPLETE_PERIOD"
+  | "NO_DATA";
 
 export interface ComparisonTargetBlock {
   targetId: string | null;
@@ -934,7 +941,7 @@ export interface ComparisonDiffBlock {
   percent: number | null;
   percentText: string | null;
   label: string;
-  basis: "SAME_DAYS_TO_CUTOFF";
+  basis: "FULL_MONTH" | "SAME_DAYS_TO_CUTOFF";
   ruleState: ComparisonDiffRuleState;
   cutoffDate: string | null;
   dayCount: number;
@@ -964,8 +971,8 @@ export interface MetricComparisonResult {
   version: string;
   rule: {
     targetSource: "EXPLICIT_COMPARISON_KIND";
-    prevMonth: "SAME_DAYS_TO_CUTOFF";
-    samePeriodLastYear: "SAME_DAYS_TO_CUTOFF";
+    prevMonth: "FULL_MONTH";
+    samePeriodLastYear: "FULL_MONTH";
     notes: string;
   };
   anchors: { year: number; month: number; monthLabel: string; prevMonthLabel: string; lastYearLabel: string };
@@ -1076,7 +1083,7 @@ export async function computeMetricComparison(
   const lyEnd = dateOnly(year - 1, month, daysInMonth(year - 1, month));
 
   const metricIds = Array.from(new Set(baseSummary.groups.flatMap((g) => g.metrics.map((m) => m.id))));
-  const [currentEntries, comparisonEntries, rules] = await Promise.all([
+  const [currentEntries, comparisonEntries, historicalBaselines, rules] = await Promise.all([
     metricIds.length
       ? prisma.metricDailyEntry.findMany({
           where: { metricId: { in: metricIds }, entryDate: { gte: monthStart, lte: effectiveMonthEnd } },
@@ -1095,6 +1102,19 @@ export async function computeMetricComparison(
           select: { metricId: true, entryDate: true, valueNumeric: true },
         })
       : Promise.resolve([]),
+    metricIds.length
+      ? prisma.metricBaseline.findMany({
+          where: {
+            metricId: { in: metricIds },
+            classificationId: "",
+            cumKind: "MONTH",
+            asOfDate: { in: [prevEnd, lyEnd] },
+            dataSource: { not: "DEMO" },
+            status: { in: ["CONFIRMED", "LOCKED"] },
+          },
+          select: { metricId: true, asOfDate: true, valueNumeric: true },
+        })
+      : Promise.resolve([]),
     loadMetricTargetRules(metricIds),
   ]);
 
@@ -1102,6 +1122,14 @@ export async function computeMetricComparison(
   for (const e of currentEntries) {
     const prev = latestByMetric.get(e.metricId);
     if (!prev || e.entryDate.getTime() > prev.getTime()) latestByMetric.set(e.metricId, e.entryDate);
+  }
+
+  const historicalByKey = new Map<string, number>();
+  for (const baseline of historicalBaselines) {
+    historicalByKey.set(
+      `${baseline.metricId}|${dateOnlyToStr(baseline.asOfDate)}`,
+      Number(baseline.valueNumeric)
+    );
   }
 
   const sumRange = (metricId: string, from: Date, to: Date): number | null => {
@@ -1126,32 +1154,26 @@ export async function computeMetricComparison(
     periodComplete: boolean;
     compareLabel: string;
   }): ComparisonDiffBlock => {
-    const { current, previous, label, cutoffDate, dayCount, periodComplete, compareLabel } = params;
+    const { current, previous, label, cutoffDate, compareLabel } = params;
     const hasData = current !== null && previous !== null;
     const percent =
       hasData && previous !== null && previous > 0
         ? Math.round(((current - previous) / previous) * 10000) / 100
         : null;
-    const ruleState: ComparisonDiffRuleState = !hasData
-      ? "NO_DATA"
-      : periodComplete
-        ? "SAME_DAYS"
-        : "INCOMPLETE_PERIOD";
+    const ruleState: ComparisonDiffRuleState = hasData ? "FULL_MONTH" : "NO_DATA";
     const note = !hasData
       ? "Chưa có dữ liệu đối chiếu — không hiển thị 0%."
-      : periodComplete
-        ? `So cùng ${dayCount} ngày (${compareLabel}).`
-        : `Chưa đủ kỳ: dữ liệu đến ${cutoffDate ? fmtDateShort(cutoffDate) : `${dayCount} ngày`}; so cùng ${dayCount} ngày (${compareLabel}).`;
+      : `So lũy kế tháng hiện tại với cả ${compareLabel}.`;
     return {
       value: previous,
       percent,
       percentText: percent === null ? null : formatPercentText(percent),
       label,
-      basis: "SAME_DAYS_TO_CUTOFF",
+      basis: "FULL_MONTH",
       ruleState,
       cutoffDate,
-      dayCount,
-      periodComplete,
+      dayCount: 0,
+      periodComplete: true,
       note,
     };
   };
@@ -1172,23 +1194,14 @@ export async function computeMetricComparison(
       const monthT = officialTargets.filter((t) => t.comparisonKind === "MONTH_PLAN");
 
       const latest = latestByMetric.get(m.id) ?? null;
-      const cutoffDay = latest ? latest.getUTCDate() : null;
-      const dayCount = cutoffDay
-        ? Math.min(cutoffDay, daysInMonth(prevYear, prevMonth), daysInMonth(year - 1, month))
-        : 0;
-      const periodComplete = cutoffDay !== null && cutoffDay >= daysInMonth(year, month);
       const cutoffDate = latest ? dateOnlyToStr(latest) : null;
       const currentValue = m.cols.month;
+      const prevHistorical = historicalByKey.get(`${m.id}|${dateOnlyToStr(prevEnd)}`);
+      const lyHistorical = historicalByKey.get(`${m.id}|${dateOnlyToStr(lyEnd)}`);
       const prevValue =
-        cutoffDay !== null
-          ? sumRange(m.id, prevStart, dateOnly(prevYear, prevMonth, dayCount || 1))
-          : null;
+        prevHistorical !== undefined ? prevHistorical : sumRange(m.id, prevStart, prevEnd);
       const lyValue =
-        cutoffDay !== null
-          ? sumRange(m.id, lyStart, dateOnly(year - 1, month, dayCount || 1))
-          : null;
-      const dayLabel = cutoffDay !== null ? `${String(dayCount).padStart(2, "0")}/${String(prevMonth).padStart(2, "0")}` : "—";
-      const lyLabel = cutoffDay !== null ? `${String(dayCount).padStart(2, "0")}/${String(month).padStart(2, "0")}` : "—";
+        lyHistorical !== undefined ? lyHistorical : sumRange(m.id, lyStart, lyEnd);
 
       rows.push({
         metricId: m.id,
@@ -1209,18 +1222,18 @@ export async function computeMetricComparison(
           previous: prevValue,
           label: `Tháng ${prevMonth}/${prevYear}`,
           cutoffDate,
-          dayCount,
-          periodComplete,
-          compareLabel: `01–${dayLabel}/${prevYear}`,
+          dayCount: latest ? latest.getUTCDate() : 0,
+          periodComplete: true,
+          compareLabel: `tháng ${prevMonth}/${prevYear}`,
         }),
         samePeriodLastYear: diffBlock({
           current: currentValue,
           previous: lyValue,
           label: `Tháng ${month}/${year - 1}`,
           cutoffDate,
-          dayCount,
-          periodComplete,
-          compareLabel: `01–${lyLabel}/${year - 1}`,
+          dayCount: latest ? latest.getUTCDate() : 0,
+          periodComplete: true,
+          compareLabel: `tháng ${month}/${year - 1}`,
         }),
       });
     }
@@ -1230,10 +1243,10 @@ export async function computeMetricComparison(
     version: COMPARISON_CONTRACT_VERSION,
     rule: {
       targetSource: "EXPLICIT_COMPARISON_KIND",
-      prevMonth: "SAME_DAYS_TO_CUTOFF",
-      samePeriodLastYear: "SAME_DAYS_TO_CUTOFF",
+      prevMonth: "FULL_MONTH",
+      samePeriodLastYear: "FULL_MONTH",
       notes:
-        "Tháng trước/cùng kỳ so CÙNG SỐ NGÀY đến data cutoff của kỳ hiện tại; tháng chưa đủ kỳ ghi 'Chưa đủ kỳ'; thiếu dữ liệu/mẫu số 0 trả null, không 0%.",
+        "Tháng trước/cùng kỳ so lũy kế tháng hiện tại với cả tháng đối chiếu; có thể nhập tay số liệu lịch sử khi chưa đủ dữ liệu ngày; thiếu dữ liệu/mẫu số 0 trả null, không 0%.",
     },
     anchors: {
       year,
