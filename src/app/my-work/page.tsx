@@ -1124,16 +1124,16 @@ function MyWorkPageContent() {
           </div>
 
           {/* BẢNG TÁC NGHIỆP CHI TIẾT & QUICK ACTIONS */}
-          <DataTable className="text-left">
+          <DataTable className="min-w-[1220px] text-left">
             <thead>
                 <tr className="bg-v5-bg text-primary font-table-header text-table-header border-b border-v5-line">
-                  <th className="py-3 px-space-md w-[260px]">MÃ &amp; TÊN ĐẦU VIỆC</th>
-                  <th className="py-3 px-space-sm w-[170px]">NGUỒN &amp; DANH MỤC</th>
-                  <th className="py-3 px-space-sm w-[160px]">HẠN CHÓT</th>
-                  <th className="py-3 px-space-sm w-[110px]">ƯU TIÊN</th>
-                  <th className="py-3 px-space-sm w-[160px]">PHỐI HỢP</th>
-                  <th className="py-3 px-space-sm w-[150px]">TIẾN ĐỘ</th>
-                  <th className="py-3 px-space-md text-right w-[240px]">THAO TÁC TRỰC TIẾP</th>
+                  <th className="whitespace-nowrap py-3 px-space-md w-[280px]">MÃ &amp; TÊN ĐẦU VIỆC</th>
+                  <th className="whitespace-nowrap py-3 px-space-sm w-[180px]">NGUỒN &amp; DANH MỤC</th>
+                  <th className="whitespace-nowrap py-3 px-space-sm w-[150px]">HẠN CHÓT</th>
+                  <th className="whitespace-nowrap py-3 px-space-sm w-[100px]">ƯU TIÊN</th>
+                  <th className="whitespace-nowrap py-3 px-space-sm w-[160px]">PHỐI HỢP</th>
+                  <th className="whitespace-nowrap py-3 px-space-sm w-[150px]">TIẾN ĐỘ</th>
+                  <th className="whitespace-nowrap py-3 px-space-md text-right w-[230px]">THAO TÁC TRỰC TIẾP</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container font-table-data text-table-data text-v5-ink">
@@ -1166,7 +1166,7 @@ function MyWorkPageContent() {
                         <td className="py-3 px-space-md align-top">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-body-semibold text-body-semibold text-primary font-bold">
+                              <span className="whitespace-nowrap font-body-semibold text-body-semibold text-primary font-bold">
                                 {task.code}
                               </span>
                               <span className="font-label-sm text-[11px] px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-semibold">
@@ -1202,7 +1202,7 @@ function MyWorkPageContent() {
                           <div className="flex flex-col">
                             {isOverdue ? (
                               <>
-                                <span className="font-body-semibold text-body-semibold text-status-danger">
+                                <span className="whitespace-nowrap font-body-semibold text-body-semibold text-status-danger">
                                   {formatDateTime(task.currentDeadline)}
                                 </span>
                                 <span className="font-label-sm text-label-sm text-status-danger font-semibold flex items-center gap-0.5">
@@ -1221,7 +1221,7 @@ function MyWorkPageContent() {
                               </>
                             ) : (
                               <>
-                                <span className="font-body-semibold text-body-semibold text-primary">
+                                <span className="whitespace-nowrap font-body-semibold text-body-semibold text-primary">
                                   {formatDateTime(task.currentDeadline)}
                                 </span>
                                 <span className="font-label-sm text-label-sm text-status-warning font-semibold">
@@ -1247,7 +1247,7 @@ function MyWorkPageContent() {
 
                         <td className="py-3 px-space-sm align-top">
                           <div className="flex flex-col">
-                            <span className="font-label-sm text-label-sm text-primary font-semibold">
+                            <span className="truncate font-label-sm text-label-sm text-primary font-semibold">
                               {task.owner?.fullName || currentUser.fullName}
                             </span>
                             <span className="text-v5-muted font-label-sm text-[11px]">
