@@ -132,8 +132,10 @@ export function RevenueSummaryTable({
   const [noTaxNote, setNoTaxNote] = React.useState("");
   const [savingNoTax, setSavingNoTax] = React.useState(false);
   const [anchorsOpen, setAnchorsOpen] = React.useState(false);
+  const [anchorMode, setAnchorMode] = React.useState<"MONTH" | "YTD">("MONTH");
   const [anchorReason, setAnchorReason] = React.useState("Bổ sung số liệu lịch sử để so sánh");
   const [anchorCurrent, setAnchorCurrent] = React.useState<Record<string, string>>({});
+  const [anchorOpening, setAnchorOpening] = React.useState<Record<string, string>>({});
   const [anchorInitial, setAnchorInitial] = React.useState<Record<string, string>>({});
   const [anchorPrev, setAnchorPrev] = React.useState("");
   const [anchorPrevInitial, setAnchorPrevInitial] = React.useState("");
@@ -197,11 +199,22 @@ export function RevenueSummaryTable({
     if (!entered || item.cols.year === null || item.cols.year === undefined) return false;
     return entered === digitsOnly(baseToInput(item.cols.year, taxStyle));
   };
-  const currentLooksLikeYear = classes.some(isYearLikeInput);
+  const currentLooksLikeYear = anchorMode === "MONTH" && classes.some(isYearLikeInput);
   const currentMissing = classes.some(
     (item) => !digitsOnly(anchorCurrent[item.classificationId || ""] || "")
   );
-  const blockAnchorsSave = currentLooksLikeYear || currentMissing;
+  const openingMissing =
+    anchorMode === "YTD" &&
+    classes.some((item) => !digitsOnly(anchorOpening[item.classificationId || ""] || ""));
+  const ytdInvalid =
+    anchorMode === "YTD" &&
+    classes.some((item) => {
+      const key = item.classificationId || "";
+      const current = Number(digitsOnly(anchorCurrent[key] || "") || "0");
+      const opening = Number(digitsOnly(anchorOpening[key] || "") || "0");
+      return current < opening;
+    });
+  const blockAnchorsSave = currentLooksLikeYear || currentMissing || openingMissing || ytdInvalid;
 
   function openNoTaxEditor() {
     setNoTaxAmount(
@@ -256,15 +269,24 @@ export function RevenueSummaryTable({
   });
 
   function openAnchorEditor() {
+    const preferYtd = classes.some((item) => {
+      if (item.cols.month === null || item.cols.month === undefined) return false;
+      if (item.cols.year === null || item.cols.year === undefined) return false;
+      return (
+        digitsOnly(baseToInput(item.cols.month, taxStyle)) ===
+        digitsOnly(baseToInput(item.cols.year, taxStyle))
+      );
+    });
     const next: Record<string, string> = {};
     for (const item of classes) {
+      const value = preferYtd ? item.cols.year : item.cols.month;
       next[item.classificationId || ""] =
-        item.cols.month !== null && item.cols.month !== undefined
-          ? baseToInput(item.cols.month, taxStyle)
-          : "";
+        value !== null && value !== undefined ? baseToInput(value, taxStyle) : "";
     }
+    setAnchorMode(preferYtd ? "YTD" : "MONTH");
     setAnchorCurrent(next);
     setAnchorInitial(next);
+    setAnchorOpening({});
     const prevInitial =
       row?.prevMonth?.value !== null && row?.prevMonth?.value !== undefined
         ? baseToInput(row.prevMonth.value, taxStyle)
@@ -287,8 +309,19 @@ export function RevenueSummaryTable({
     const reason = anchorReason.trim() || "Bổ sung số liệu lịch sử để so sánh";
     for (const item of classes) {
       const key = item.classificationId || "";
-      const value = (anchorCurrent[key] || "").trim();
-      if (!value || value === (anchorInitial[key] || "").trim()) continue;
+      const currentRaw = (anchorCurrent[key] || "").trim();
+      if (!currentRaw) continue;
+      let value = currentRaw;
+      if (anchorMode === "YTD") {
+        const openingRaw = (anchorOpening[key] || "").trim();
+        if (!openingRaw) continue;
+        const current = Number(digitsOnly(currentRaw) || "0");
+        const opening = Number(digitsOnly(openingRaw) || "0");
+        if (current < opening) continue;
+        value = String(current - opening);
+      } else if (value === (anchorInitial[key] || "").trim()) {
+        continue;
+      }
       requests.push(
         fetch("/api/metrics/comparison-anchors", {
           method: "POST",
@@ -337,7 +370,15 @@ export function RevenueSummaryTable({
       );
     }
     if (currentMissing) {
-      toast.error("Nhập đủ số lũy kế tháng cho từng loại trước khi lưu.");
+      toast.error("Nhập đủ số lũy kế cho từng loại trước khi lưu.");
+      return;
+    }
+    if (openingMissing) {
+      toast.error("Nhập đủ lũy kế năm đầu tháng cho từng loại trước khi lưu.");
+      return;
+    }
+    if (ytdInvalid) {
+      toast.error("Lũy kế đầu tháng không được lớn hơn lũy kế đến hôm nay.");
       return;
     }
     if (requests.length === 0) {
@@ -557,52 +598,135 @@ export function RevenueSummaryTable({
               </button>
             </div>
             <div className="space-y-4 p-4">
-              <section className="space-y-2">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wide text-v5-muted">Lũy kế tháng hiện tại</h4>
-                  <p className="text-[11px] text-v5-muted">
-                    Nhập số lũy kế đến hôm nay. Hệ thống dùng số này thay cho chuỗi ngày cũ chưa đầy đủ.
-                    Chỉ áp dụng cho tháng đang xem; sang tháng sau nhập theo ngày, không cần nhập lại số tháng này.
-                  </p>
-                </div>
-                {classes.map((item) => (
-                  <label key={item.classificationId || "total"} className="grid gap-1 sm:grid-cols-[1fr_220px] sm:items-center">
-                    <span className="text-xs text-v5-ink">{item.label || "Tổng Thu NSNN"}</span>
-                    <FormattedNumberInput
-                      value={anchorCurrent[item.classificationId || ""] || ""}
-                      onValueChange={(value) =>
-                        setAnchorCurrent((prev) => ({ ...prev, [item.classificationId || ""]: value }))
-                      }
-                      onFocus={(event) => event.currentTarget.select()}
-                      className={cn(
-                        "h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent",
-                        isYearLikeInput(item) && "border-v5-danger bg-v5-danger-soft"
-                      )}
-                      placeholder="Nhập lũy kế tháng"
-                    />
-                  </label>
-                ))}
-                {currentLooksLikeYear && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
-                    <span>
-                      Ô đỏ đang là <b>lũy kế năm</b>, không phải lũy kế tháng. Bấm vào ô đỏ để chọn hết số cũ,
-                      rồi nhập theo cột “Lũy kế tháng” trong Excel.
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const cleared = { ...anchorCurrent };
-                        for (const item of classes) {
-                          if (isYearLikeInput(item)) cleared[item.classificationId || ""] = "";
-                        }
-                        setAnchorCurrent(cleared);
-                      }}
-                    >
-                      Xóa 3 ô số năm
-                    </Button>
+              <section className="space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wide text-v5-muted">
+                      Số liệu tháng hiện tại
+                    </h4>
+                    <p className="text-[11px] text-v5-muted">
+                      {anchorMode === "YTD"
+                        ? "Các số dưới đây là lũy kế năm. Nhập thêm lũy kế năm đầu tháng; hệ thống tự trừ ra số tháng, không cần xóa số năm."
+                        : "Nhập số lũy kế tháng. Chỉ áp dụng cho tháng đang xem; sang tháng sau nhập theo ngày."}
+                    </p>
                   </div>
+                  <div className="inline-flex rounded-lg border border-v5-line bg-v5-bg p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setAnchorMode("MONTH")}
+                      className={`rounded px-2.5 py-1 text-[11px] font-semibold ${
+                        anchorMode === "MONTH" ? "bg-v5-surface text-v5-accent shadow-sm" : "text-v5-muted"
+                      }`}
+                    >
+                      Nhập số tháng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAnchorMode("YTD")}
+                      className={`rounded px-2.5 py-1 text-[11px] font-semibold ${
+                        anchorMode === "YTD" ? "bg-v5-surface text-v5-accent shadow-sm" : "text-v5-muted"
+                      }`}
+                    >
+                      Nhập lũy kế năm
+                    </button>
+                  </div>
+                </div>
+
+                {anchorMode === "YTD" ? (
+                  <>
+                    <div className="rounded-lg border border-v5-accent/20 bg-v5-accent-soft px-3 py-2 text-[11px] text-v5-accent">
+                      Lũy kế đầu tháng là số lũy kế năm tại ngày cuối tháng trước (hoặc 0 nếu là tháng đầu năm).
+                      Hệ thống tính: <b>tháng = lũy kế đến hôm nay − lũy kế đầu tháng</b>.
+                    </div>
+                    {classes.map((item) => {
+                      const key = item.classificationId || "";
+                      const currentDigits = digitsOnly(anchorCurrent[key] || "");
+                      const openingDigits = digitsOnly(anchorOpening[key] || "");
+                      const currentValue = Number(currentDigits || "0");
+                      const openingValue = Number(openingDigits || "0");
+                      const monthValue =
+                        currentDigits && openingDigits && currentValue >= openingValue
+                          ? currentValue - openingValue
+                          : null;
+                      return (
+                        <div
+                          key={key || "total"}
+                          className="grid gap-2 rounded-lg border border-v5-line/70 p-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                        >
+                          <div className="text-xs font-semibold text-v5-ink sm:col-span-3">
+                            {item.label || "Tổng Thu NSNN"}
+                          </div>
+                          <label className="flex flex-col gap-1">
+                            <span className="text-[10px] text-v5-muted">Lũy kế năm đến hôm nay</span>
+                            <FormattedNumberInput
+                              value={anchorCurrent[key] || ""}
+                              onValueChange={(value) =>
+                                setAnchorCurrent((prev) => ({ ...prev, [key]: value }))
+                              }
+                              onFocus={(event) => event.currentTarget.select()}
+                              className="h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent"
+                              placeholder="Lũy kế năm hiện tại"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1">
+                            <span className="text-[10px] text-v5-muted">Lũy kế năm đầu tháng</span>
+                            <FormattedNumberInput
+                              value={anchorOpening[key] || ""}
+                              onValueChange={(value) =>
+                                setAnchorOpening((prev) => ({ ...prev, [key]: value }))
+                              }
+                              onFocus={(event) => event.currentTarget.select()}
+                              className={cn(
+                                "h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent",
+                                openingDigits && currentValue < openingValue && "border-v5-danger bg-v5-danger-soft"
+                              )}
+                              placeholder="Lũy kế đầu tháng"
+                            />
+                          </label>
+                          <div className="flex min-w-[150px] flex-col items-end rounded-lg bg-v5-bg px-3 py-1.5">
+                            <span className="text-[10px] text-v5-muted">Số tháng tự tính</span>
+                            <span className="text-sm font-semibold tabular-nums text-v5-ink">
+                              {monthValue !== null ? monthValue.toLocaleString("vi-VN") : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {ytdInvalid && (
+                      <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
+                        Lũy kế đầu tháng đang lớn hơn lũy kế đến hôm nay. Kiểm tra lại ngày chốt đầu tháng.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {classes.map((item) => (
+                      <label
+                        key={item.classificationId || "total"}
+                        className="grid gap-1 sm:grid-cols-[1fr_220px] sm:items-center"
+                      >
+                        <span className="text-xs text-v5-ink">{item.label || "Tổng Thu NSNN"}</span>
+                        <FormattedNumberInput
+                          value={anchorCurrent[item.classificationId || ""] || ""}
+                          onValueChange={(value) =>
+                            setAnchorCurrent((prev) => ({ ...prev, [item.classificationId || ""]: value }))
+                          }
+                          onFocus={(event) => event.currentTarget.select()}
+                          className={cn(
+                            "h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 text-right text-xs tabular-nums text-v5-ink outline-none focus:border-v5-accent",
+                            isYearLikeInput(item) && "border-v5-danger bg-v5-danger-soft"
+                          )}
+                          placeholder="Nhập lũy kế tháng"
+                        />
+                      </label>
+                    ))}
+                    {currentLooksLikeYear && (
+                      <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft px-3 py-2 text-[11px] text-v5-danger">
+                        Ô đỏ đang là lũy kế năm. Nếu có số năm, chuyển sang tab <b>Nhập lũy kế năm</b> để hệ
+                        thống tự trừ đầu tháng. Nếu nhập tháng, sửa theo cột “Lũy kế tháng”.
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
 
@@ -652,10 +776,14 @@ export function RevenueSummaryTable({
                   {savingAnchors
                     ? "Đang lưu..."
                     : currentLooksLikeYear
-                      ? "Sửa số tháng trước khi lưu"
-                      : currentMissing
-                        ? "Nhập đủ số tháng"
-                        : "Lưu số liệu"}
+                      ? "Chuyển sang nhập lũy kế năm"
+                      : openingMissing
+                        ? "Nhập lũy kế đầu tháng"
+                        : ytdInvalid
+                          ? "Kiểm tra lũy kế đầu tháng"
+                          : currentMissing
+                            ? "Nhập đủ số liệu"
+                            : "Lưu số liệu"}
                 </Button>
               </div>
             </div>
