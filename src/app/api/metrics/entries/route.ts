@@ -7,9 +7,9 @@ import { recordAuditEvent } from "@/server/audit";
 import { entryPeriodBounds, metricEntryPeriod, parseEntryPeriod } from "@/lib/metric-entry-period";
 import { metricInputMode } from "@/lib/metric-input-mode";
 import {
-  cumulativeBaseBefore,
   cumulativePeriodValue,
-  normalizeCumulativeValue,
+  normalizeEntryValue,
+  periodOpeningBalance,
   type MetricEntryInputMode,
 } from "@/server/metric-entry-normalize";
 import {
@@ -171,6 +171,23 @@ export async function GET(req: NextRequest) {
       classesByMetric.set(c.metricId, arr);
     }
 
+    // Lũy kế đầu kỳ cho từng chỉ tiêu/phân loại — dùng để quy đổi khi người dùng nhập lũy kế.
+    const periodStartDate = period
+      ? dateOnlyFromStr(period.start)
+      : entryDate;
+    const openingBalanceByKey = new Map<string, number>();
+    if (periodStartDate) {
+      for (const m of loadedMetrics) {
+        if (m.valueKind !== "FLOW") continue;
+        const classes = classesByMetric.get(m.id) || [];
+        const lines = classes.length > 0 ? classes : [{ id: "", label: "" }];
+        for (const ln of lines) {
+          const base = await periodOpeningBalance(m, ln.id, periodStartDate);
+          openingBalanceByKey.set(entryKey(m.id, ln.id), Number(base));
+        }
+      }
+    }
+
     const isoToday = dateOnlyToStr(today);
     const resultGroups = [];
     let anyEditable = false;
@@ -208,6 +225,7 @@ export async function GET(req: NextRequest) {
             entryId: e?.id || null,
             valueBase: e ? Number(e.valueNumeric) : null,
             enteredValueBase,
+            openingBalanceBase: openingBalanceByKey.get(entryKey(m.id, ln.classificationId)) ?? null,
             inputMode: "INCREMENTAL" as MetricEntryInputMode,
             status,
             dataSource: e?.dataSource || null,
@@ -379,13 +397,13 @@ export async function POST(req: NextRequest) {
         });
         return;
       }
-      const configuredMode: MetricEntryInputMode =
+      const storageMode: MetricEntryInputMode =
         metricInputMode(metric) === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL";
       const requestedMode: MetricEntryInputMode =
-        it.inputMode === "INCREMENTAL" || it.inputMode === "CUMULATIVE" ? it.inputMode : configuredMode;
-      // Chỉ tiêu thường luôn nhập phát sinh; chỉ tiêu lũy kế cho phép cả hai kiểu.
+        it.inputMode === "INCREMENTAL" || it.inputMode === "CUMULATIVE" ? it.inputMode : storageMode;
+      // Mọi chỉ tiêu phát sinh đều cho chọn Phát sinh hoặc Lũy kế.
       const inputMode: MetricEntryInputMode =
-        configuredMode === "CUMULATIVE" ? requestedMode : "INCREMENTAL";
+        metric.valueKind === "FLOW" ? requestedMode : "INCREMENTAL";
       prepared.push({
         index: idx,
         metric,
@@ -420,18 +438,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Có số liệu không hợp lệ — chưa lưu gì", errors }, { status: 400 });
     }
 
-    // ---- Chuẩn hoá chỉ tiêu lũy kế: mọi entry đều lưu số lũy kế đến ngày ----
+    // ---- Quy đổi về đúng dạng lưu của chỉ tiêu ----
     for (const row of prepared) {
-      if (metricInputMode(row.metric) !== "CUMULATIVE") continue;
-      if (row.inputMode === "INCREMENTAL") {
-        const base = await cumulativeBaseBefore(row.metric.id, row.classificationId, row.entryDate);
-        row.valueBase = normalizeCumulativeValue({
-          base,
-          inputMode: "INCREMENTAL",
-          value: row.valueBase,
-        });
-      }
-      // Nhập tổng lũy kế: giá trị lưu chính là số người dùng nhập.
+      if (row.metric.valueKind !== "FLOW") continue;
+      const storageMode: MetricEntryInputMode =
+        metricInputMode(row.metric) === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL";
+      if (row.inputMode === storageMode) continue;
+      const start = periodStart || row.entryDate;
+      const base = await periodOpeningBalance(row.metric, row.classificationId, start);
+      row.valueBase = normalizeEntryValue({
+        storageMode,
+        inputMode: row.inputMode,
+        base,
+        value: row.valueBase,
+      });
     }
 
     // ---- P0: cảnh báo mềm giá trị bất thường (khả năng nhập số lũy kế) — KHÔNG chặn lưu ----

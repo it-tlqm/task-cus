@@ -4,9 +4,11 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../src/server/db";
 import {
   cumulativeBaseBefore,
-  cumulativePeriodValue,
-  normalizeCumulativeValue,
+  incrementalYtdAt,
+  normalizeEntryValue,
+  periodOpeningBalance,
 } from "../src/server/metric-entry-normalize";
+import { computeMetricSummary } from "../src/server/metrics";
 
 let pass = 0;
 let fail = 0;
@@ -19,21 +21,45 @@ const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "
 const D = Prisma.Decimal;
 
 async function main() {
-  console.log("=== Quy đổi số liệu ===");
+  console.log("=== Quy đổi 4 tổ hợp nhập/lưu ===");
   check(
-    "Nhập phát sinh: lũy kế = trước kỳ + phát sinh",
-    normalizeCumulativeValue({ base: new D(1000), inputMode: "INCREMENTAL", value: new D(250) }).toString() === "1250"
+    "Lưu phát sinh + nhập phát sinh: giữ nguyên",
+    normalizeEntryValue({
+      storageMode: "INCREMENTAL",
+      inputMode: "INCREMENTAL",
+      base: new D(1000),
+      value: new D(250),
+    }).toString() === "250"
   );
   check(
-    "Nhập lũy kế: giữ nguyên tổng",
-    normalizeCumulativeValue({ base: new D(1000), inputMode: "CUMULATIVE", value: new D(1250) }).toString() === "1250"
+    "Lưu phát sinh + nhập lũy kế: trừ lũy kế đầu kỳ",
+    normalizeEntryValue({
+      storageMode: "INCREMENTAL",
+      inputMode: "CUMULATIVE",
+      base: new D(1000),
+      value: new D(1250),
+    }).toString() === "250"
   );
   check(
-    "Chưa có mốc đầu kỳ: cộng từ 0",
-    normalizeCumulativeValue({ base: new D(0), inputMode: "INCREMENTAL", value: new D(7.5) }).toString() === "7.5"
+    "Lưu lũy kế + nhập phát sinh: cộng lũy kế đầu kỳ",
+    normalizeEntryValue({
+      storageMode: "CUMULATIVE",
+      inputMode: "INCREMENTAL",
+      base: new D(1000),
+      value: new D(250),
+    }).toString() === "1250"
+  );
+  check(
+    "Lưu lũy kế + nhập lũy kế: giữ nguyên",
+    normalizeEntryValue({
+      storageMode: "CUMULATIVE",
+      inputMode: "CUMULATIVE",
+      base: new D(1000),
+      value: new D(1250),
+    }).toString() === "1250"
   );
 
-  console.log("\n=== Mốc lũy kế trước kỳ (CSDL local) ===");
+  console.log("\n=== Lũy kế đầu kỳ (CSDL local) ===");
   const suffix = Date.now().toString(36);
   const group = await prisma.metricGroup.findFirst({ orderBy: { sortOrder: "asc" } });
   const person = await prisma.person.findFirst({ select: { id: true } });
@@ -43,59 +69,95 @@ async function main() {
     const metric = await prisma.metricDefinition.create({
       data: {
         groupId: group.id,
-        code: `TEST_CUM_${suffix}`.toUpperCase(),
-        name: "Chỉ tiêu kiểm thử lũy kế",
+        code: `TEST_INPUT_${suffix}`.toUpperCase(),
+        name: "Chỉ tiêu kiểm thử 2 kiểu nhập",
         valueKind: "FLOW",
-        active: false,
-        derivation: { entryPeriod: "MONTH", inputMode: "CUMULATIVE" },
+        active: true,
+        derivation: { entryPeriod: "DAY", inputMode: "INCREMENTAL" },
       },
     });
     try {
-      const opening = await prisma.metricBaseline.create({
+      const yearBaseline = await prisma.metricBaseline.create({
         data: {
           metricId: metric.id,
           classificationId: "",
-          cumKind: "OPENING",
-          asOfDate: new Date("2020-01-01T00:00:00.000Z"),
+          cumKind: "YEAR",
+          asOfDate: new Date("2026-09-30T00:00:00.000Z"),
           valueNumeric: new D(1000),
           status: "CONFIRMED",
         },
       });
-      check(
-        "Lấy mốc mở đầu kỳ",
-        (await cumulativeBaseBefore(metric.id, "", new Date("2026-10-31T00:00:00.000Z"))).toString() === "1000"
-      );
-      check(
-        "Trước mốc mở đầu kỳ trả 0",
-        (await cumulativeBaseBefore(metric.id, "", new Date("2019-12-31T00:00:00.000Z"))).toString() === "0"
-      );
-
-      const entry = await prisma.metricDailyEntry.create({
+      const sepEntry = await prisma.metricDailyEntry.create({
         data: {
           metricId: metric.id,
           classificationId: "",
-          entryDate: new Date("2026-09-30T00:00:00.000Z"),
-          valueNumeric: new D(1500),
+          entryDate: new Date("2026-10-10T00:00:00.000Z"),
+          valueNumeric: new D(100),
           enteredById: person.id,
         },
       });
       check(
-        "Ưu tiên bản ghi gần nhất trước kỳ",
-        (await cumulativeBaseBefore(metric.id, "", new Date("2026-10-31T00:00:00.000Z"))).toString() === "1500"
+        "Lũy kế năm = mốc YEAR + phát sinh sau mốc",
+        (await incrementalYtdAt(metric.id, "", new Date("2026-10-20T00:00:00.000Z"))).toString() === "1100"
       );
       check(
-        "Số phát sinh của kỳ = lũy kế hiện tại − trước kỳ",
-        (
-          await cumulativePeriodValue(
-            metric.id,
-            "",
-            new Date("2026-10-31T00:00:00.000Z"),
-            new D(1750)
-          )
-        ).toString() === "250"
+        "Lũy kế đầu kỳ tháng 11 = hết ngày 31/10",
+        (await periodOpeningBalance(metric, "", new Date("2026-11-01T00:00:00.000Z"))).toString() === "1100"
       );
-      await prisma.metricDailyEntry.delete({ where: { id: entry.id } });
+
+      const dailyBase = await periodOpeningBalance(metric, "", new Date("2026-10-28T00:00:00.000Z"));
+      const converted = normalizeEntryValue({
+        storageMode: "INCREMENTAL",
+        inputMode: "CUMULATIVE",
+        base: dailyBase,
+        value: new D(1150),
+      });
+      check("Nhập lũy kế 1.150 với đầu kỳ 1.100 → phát sinh 50", converted.toString() === "50");
+
+      const octEntry = await prisma.metricDailyEntry.create({
+        data: {
+          metricId: metric.id,
+          classificationId: "",
+          entryDate: new Date("2026-10-28T00:00:00.000Z"),
+          valueNumeric: converted,
+          enteredById: person.id,
+        },
+      });
+      const summary = await computeMetricSummary(
+        { year: 2026, weekNumber: 44, month: 10, quarter: 4 },
+        "full"
+      );
+      const summaryRow = summary.groups.flatMap((g) => g.metrics).find((m) => m.id === metric.id);
+      check("Báo cáo tháng cộng đúng phát sinh đã quy đổi", summaryRow?.cols.month === 150, summaryRow?.cols.month);
+      await prisma.metricDailyEntry.delete({ where: { id: octEntry.id } });
+
+      const cumulativeMetric = {
+        ...metric,
+        derivation: { entryPeriod: "MONTH", inputMode: "CUMULATIVE" },
+      };
+      const opening = await prisma.metricBaseline.create({
+        data: {
+          metricId: metric.id,
+          classificationId: "cum-class",
+          cumKind: "OPENING",
+          asOfDate: new Date("2026-01-01T00:00:00.000Z"),
+          valueNumeric: new D(500),
+          status: "CONFIRMED",
+        },
+      });
+      check(
+        "Chỉ tiêu lưu lũy kế lấy mốc mở đầu kỳ",
+        (await cumulativeBaseBefore(metric.id, "cum-class", new Date("2026-10-01T00:00:00.000Z"))).toString() ===
+          "500"
+      );
+      check(
+        "Lũy kế đầu kỳ theo đúng dạng lưu",
+        (await periodOpeningBalance(cumulativeMetric, "cum-class", new Date("2026-10-01T00:00:00.000Z"))).toString() ===
+          "500"
+      );
       await prisma.metricBaseline.delete({ where: { id: opening.id } });
+      await prisma.metricDailyEntry.delete({ where: { id: sepEntry.id } });
+      await prisma.metricBaseline.delete({ where: { id: yearBaseline.id } });
     } finally {
       await prisma.metricDefinition.delete({ where: { id: metric.id } }).catch(() => null);
     }
@@ -104,15 +166,17 @@ async function main() {
   console.log("\n=== API & giao diện ===");
   const api = read("src/app/api/metrics/entries/route.ts");
   check("API nhận kiểu nhập từng dòng", api.includes('it.inputMode === "INCREMENTAL"'));
-  check("API chuẩn hoá trước khi lưu", api.includes("normalizeCumulativeValue({"));
-  check("API trả số phát sinh của kỳ", api.includes("periodValueByEntry"));
+  check("API quy đổi theo dạng lưu", api.includes("normalizeEntryValue({"));
+  check("API trả lũy kế đầu kỳ", api.includes("openingBalanceBase"));
+  check("API cho mọi chỉ tiêu FLOW", api.includes('row.metric.valueKind !== "FLOW"'));
   check("Không thêm cột CSDL", !read("prisma/schema.prisma").includes('@map("input_mode")'));
 
   const page = read("src/app/v5/giao-ban/nhap/page.tsx");
   check("Trang nhập có chọn Phát sinh", page.includes("Phát sinh"));
   check("Trang nhập có chọn Lũy kế", page.includes("Lũy kế"));
   check("Trang nhập gửi inputMode", page.includes("inputMode: mode"));
-  check("Chuyển kiểu nhập giữ lại số đã có", page.includes("baseToInput(value.valueBase, metric)"));
+  check("Chọn kiểu cho mọi chỉ tiêu FLOW", page.includes('const canChooseMode = metric.valueKind === "FLOW"'));
+  check("Hiện lũy kế trước kỳ khi nhập lũy kế", page.includes("Lũy kế trước kỳ"));
 
   console.log(`\nKẾT QUẢ: ${pass} pass / ${fail} fail`);
   await prisma.$disconnect();

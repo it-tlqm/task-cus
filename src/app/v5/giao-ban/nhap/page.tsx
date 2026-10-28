@@ -38,6 +38,7 @@ interface EntryValue {
   entryId: string | null;
   valueBase: number | null;
   enteredValueBase?: number | null;
+  openingBalanceBase?: number | null;
   inputMode?: "INCREMENTAL" | "CUMULATIVE";
   status: string;
   note: string | null;
@@ -592,14 +593,14 @@ export default function V5EntryPage() {
                             <span className="truncate text-sm font-semibold text-v5-ink">{metric.name}</span>
                             {metric.requireConfirm && <Badge variant="warning">Cần kiểm tra</Badge>}
                             {metric.valueKind === "BALANCE" && <Badge variant="accent">Số dư</Badge>}
-                            {metric.inputMode === "CUMULATIVE" && (
+                            {metric.valueKind === "FLOW" && (
                               <Badge variant="outline">Phát sinh / Lũy kế</Badge>
                             )}
                           </div>
                           <div className="mt-0.5 text-[10px] text-v5-muted">
                             {metric.unitLabel}
                             {metric.note ? ` · ${metric.note}` : ""}
-                            {metric.inputMode === "CUMULATIVE"
+                            {metric.valueKind === "FLOW"
                               ? " · Có thể nhập số phát sinh hoặc tổng lũy kế; hệ thống tự quy đổi."
                               : ""}
                           </div>
@@ -613,7 +614,16 @@ export default function V5EntryPage() {
                           const key = `${metric.id}|${value.classificationId}`;
                           const status = value.status || "";
                           const rowMode = modes[key] || "INCREMENTAL";
-                          const isCumulativeMetric = metric.inputMode === "CUMULATIVE";
+                          const canChooseMode = metric.valueKind === "FLOW";
+                          const storageMode =
+                            metric.inputMode === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL";
+                          const openingDisplay =
+                            value.openingBalanceBase != null
+                              ? Number(value.openingBalanceBase / (metric.displayScale || 1)).toLocaleString(
+                                  "vi-VN",
+                                  { maximumFractionDigits: metric.decimals ?? 2 }
+                                )
+                              : "0";
                           const canUseHelper = value.canEdit && metric.valueKind !== "BALANCE";
                           return (
                             <div key={key} className="grid gap-2 sm:grid-cols-[minmax(110px,1fr)_180px_auto] sm:items-center">
@@ -622,7 +632,7 @@ export default function V5EntryPage() {
                                   <span className="truncate">{value.label || "—"}</span>
                                   <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
                                 </div>
-                                {isCumulativeMetric && value.canEdit && (
+                                {canChooseMode && value.canEdit && (
                                   <div
                                     role="group"
                                     aria-label="Kiểu nhập số liệu"
@@ -636,7 +646,12 @@ export default function V5EntryPage() {
                                         setModes((prev) => ({ ...prev, [key]: "INCREMENTAL" }));
                                         setValues((prev) => ({
                                           ...prev,
-                                          [key]: baseToInput(value.enteredValueBase ?? value.valueBase, metric),
+                                          [key]: baseToInput(
+                                            storageMode === "CUMULATIVE"
+                                              ? value.enteredValueBase ?? value.valueBase
+                                              : value.valueBase,
+                                            metric
+                                          ),
                                         }));
                                       }}
                                       className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
@@ -655,7 +670,14 @@ export default function V5EntryPage() {
                                         setModes((prev) => ({ ...prev, [key]: "CUMULATIVE" }));
                                         setValues((prev) => ({
                                           ...prev,
-                                          [key]: baseToInput(value.valueBase, metric),
+                                          [key]: baseToInput(
+                                            storageMode === "CUMULATIVE"
+                                              ? value.valueBase
+                                              : value.valueBase != null
+                                                ? (value.openingBalanceBase ?? 0) + value.valueBase
+                                                : null,
+                                            metric
+                                          ),
                                         }));
                                       }}
                                       className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
@@ -669,21 +691,38 @@ export default function V5EntryPage() {
                                   </div>
                                 )}
                               </div>
-                              <FormattedNumberInput
-                                value={values[key] ?? ""}
-                                onValueChange={(raw) => setValues((prev) => ({ ...prev, [key]: raw }))}
-                                disabled={!value.canEdit || saving}
-                                placeholder={
-                                  value.canEdit
-                                    ? rowMode === "CUMULATIVE"
-                                      ? "Nhập tổng lũy kế…"
-                                      : isCumulativeMetric
-                                        ? "Nhập số phát sinh…"
-                                        : "Nhập số…"
-                                    : "—"
-                                }
-                                className="h-9 w-full border border-v5-line bg-v5-surface px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent focus:ring-2 focus:ring-v5-accent/10 disabled:bg-v5-bg disabled:text-v5-muted"
-                              />
+                              <div className="min-w-0">
+                                <FormattedNumberInput
+                                  value={values[key] ?? ""}
+                                  onValueChange={(raw) => setValues((prev) => ({ ...prev, [key]: raw }))}
+                                  disabled={!value.canEdit || saving}
+                                  placeholder={
+                                    value.canEdit
+                                      ? rowMode === "CUMULATIVE"
+                                        ? "Nhập tổng lũy kế…"
+                                        : canChooseMode
+                                          ? "Nhập số phát sinh…"
+                                          : "Nhập số…"
+                                      : "—"
+                                  }
+                                  className="h-9 w-full border border-v5-line bg-v5-surface px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent focus:ring-2 focus:ring-v5-accent/10 disabled:bg-v5-bg disabled:text-v5-muted"
+                                />
+                                {rowMode === "CUMULATIVE" && canChooseMode && (
+                                  <div className="mt-0.5 text-right text-[10px] text-v5-muted">
+                                    <div title={`Đơn vị: ${metric.unitLabel}`}>
+                                      Lũy kế trước kỳ:{" "}
+                                      <span className="font-semibold tabular-nums text-v5-ink">
+                                        {openingDisplay}
+                                      </span>
+                                    </div>
+                                    {(value.openingBalanceBase == null || value.openingBalanceBase === 0) && (
+                                      <div className="text-[9px] text-v5-gold-ink">
+                                        Chưa có lũy kế trước kỳ — kiểm tra mốc YEAR/OPENING.
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                               <div className="flex items-center justify-end gap-1">
                                 {canUseHelper && (
                                   <Button
