@@ -141,7 +141,15 @@ function isActivePath(pathname: string, href: string): boolean {
   return pathname.startsWith(`${href}/`);
 }
 
-function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function SidebarNav({
+  pathname,
+  onNavigate,
+  role,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+  role?: string;
+}) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   return (
     <nav className="min-h-0 flex-1 overflow-y-auto px-2.5 py-3">
@@ -160,7 +168,9 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
             </button>
             {!isCollapsed && (
               <div className="mt-0.5 space-y-0.5">
-                {section.items.map((item) => {
+                {section.items
+                  .filter((item) => !(item.href === "/routine" && role === "UNIT_LEADER"))
+                  .map((item) => {
                   const Icon = item.icon;
                   const active = isActivePath(pathname, item.href);
                   return (
@@ -288,7 +298,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
     <div className="v5-shell min-h-screen bg-v5-bg text-v5-ink">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-v5-line bg-v5-surface lg:flex">
         <BrandBlock />
-        <SidebarNav pathname={pathname} />
+        <SidebarNav pathname={pathname} role={user?.role} />
         <UserCard user={user} />
       </aside>
 
@@ -312,7 +322,11 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <SidebarNav pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <SidebarNav
+              pathname={pathname}
+              onNavigate={() => setMobileOpen(false)}
+              role={user?.role}
+            />
             <UserCard user={user} />
           </aside>
         </div>

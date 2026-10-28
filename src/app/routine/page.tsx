@@ -436,6 +436,27 @@ export default function RoutinePage() {
     }
   };
 
+  if (!permissionsLoading && permissionUser?.role === "UNIT_LEADER") {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-4">
+        <div className="max-w-md rounded-xl border border-v5-line bg-v5-surface p-6 text-center shadow-sm">
+          <V5Icon name="lock_person" className="mx-auto text-[36px] text-v5-muted" />
+          <h1 className="mt-3 text-lg font-semibold text-v5-ink">Nhật ký ca trực</h1>
+          <p className="mt-1 text-sm text-v5-muted">
+            Màn hình này dành cho công chức và trưởng/phó nhóm ghi nhận công việc trong ca.
+            Lãnh đạo đơn vị không cần sử dụng màn hình này.
+          </p>
+          <Link
+            href="/v5"
+            className="mt-4 inline-flex rounded-lg bg-v5-accent px-4 py-2 text-sm font-semibold text-white"
+          >
+            Về Tổng quan điều hành
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen bg-transparent pb-12">
       <div className="flex w-full flex-col gap-3 p-3 sm:p-4 lg:gap-space-lg lg:p-space-lg">

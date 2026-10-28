@@ -20,6 +20,8 @@ export interface NavigationAccess {
   requireExport?: boolean;
   /** Cần quyền chốt kỳ. */
   requireLock?: boolean;
+  /** Ẩn mục này với các vai trò cụ thể (ví dụ UNIT_LEADER). */
+  hiddenForRoles?: string[];
 }
 
 export interface NavigationItem {
@@ -160,6 +162,7 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         href: "/routine",
         icon: "history_edu",
         description: "Ghi nhận khối lượng công việc và biểu mẫu nghiệp vụ",
+        access: { hiddenForRoles: ["UNIT_LEADER"] },
       },
       {
         id: "roster",
@@ -335,6 +338,7 @@ function allowed(access: NavigationAccess | undefined, ctx: NavigationAccessCont
   if (access.permissionsAny?.length && !access.permissionsAny.some((p) => ctx.can(p))) return false;
   if (access.requireExport && !ctx.canExport) return false;
   if (access.requireLock && !ctx.canLock) return false;
+  if (access.hiddenForRoles?.includes(ctx.role)) return false;
   return true;
 }
 
