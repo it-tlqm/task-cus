@@ -7,6 +7,12 @@ import { recordAuditEvent } from "@/server/audit";
 import { entryPeriodBounds, metricEntryPeriod, parseEntryPeriod } from "@/lib/metric-entry-period";
 import { metricInputMode } from "@/lib/metric-input-mode";
 import {
+  cumulativeBaseBefore,
+  cumulativePeriodValue,
+  normalizeCumulativeValue,
+  type MetricEntryInputMode,
+} from "@/server/metric-entry-normalize";
+import {
   resolveEntryPerms,
   permForMetric,
   isEntryDateAllowed,
@@ -107,6 +113,7 @@ export async function GET(req: NextRequest) {
       metricId: string;
       classificationId: string;
       id: string;
+      entryDate: Date;
       valueNumeric: Prisma.Decimal;
       status: string;
       dataSource: string;
@@ -123,6 +130,7 @@ export async function GET(req: NextRequest) {
             id: true,
             metricId: true,
             classificationId: true,
+            entryDate: true,
             valueNumeric: true,
             status: true,
             dataSource: true,
@@ -134,6 +142,20 @@ export async function GET(req: NextRequest) {
     const entryKey = (m: string, c: string) => `${m}|${c}`;
     const entryMap = new Map<string, LineRow>();
     for (const e of entries) entryMap.set(entryKey(e.metricId, e.classificationId), e);
+
+    // Chỉ tiêu lũy kế: quy đổi số đã lưu về số phát sinh của kỳ để hiển thị mặc định.
+    const periodValueByEntry = new Map<string, number>();
+    for (const entry of entries) {
+      const metric = loadedMetrics.find((m) => m.id === entry.metricId);
+      if (!metric || metricInputMode(metric) !== "CUMULATIVE") continue;
+      const periodValue = await cumulativePeriodValue(
+        entry.metricId,
+        entry.classificationId,
+        entry.entryDate,
+        entry.valueNumeric
+      );
+      periodValueByEntry.set(entry.id, Number(periodValue));
+    }
 
     // Tên người nhập cho dòng đã có
     const enteredByIds = Array.from(new Set(entries.map((e) => e.enteredById)));
@@ -174,11 +196,19 @@ export async function GET(req: NextRequest) {
           const canConfirm = (perms.all || p.canConfirm) && status === "SUBMITTED";
           const canFix = (perms.all || p.canConfirm) && (status === "SUBMITTED" || status === "CONFIRMED");
           if (canEdit) anyEditable = true;
+          const isCumulative = metricInputMode(m) === "CUMULATIVE";
+          const enteredValueBase = e
+            ? isCumulative
+              ? periodValueByEntry.get(e.id) ?? Number(e.valueNumeric)
+              : Number(e.valueNumeric)
+            : null;
           return {
             classificationId: ln.classificationId,
             label: ln.label,
             entryId: e?.id || null,
             valueBase: e ? Number(e.valueNumeric) : null,
+            enteredValueBase,
+            inputMode: "INCREMENTAL" as MetricEntryInputMode,
             status,
             dataSource: e?.dataSource || null,
             isOfficial: e ? e.dataSource === "REAL" : false,
@@ -293,6 +323,7 @@ export async function POST(req: NextRequest) {
       classificationId: string;
       entryDate: Date;
       valueBase: Prisma.Decimal;
+      inputMode: MetricEntryInputMode;
       note: string | null;
     }[] = [];
     const errors: { index: number; message: string }[] = [];
@@ -348,12 +379,20 @@ export async function POST(req: NextRequest) {
         });
         return;
       }
+      const configuredMode: MetricEntryInputMode =
+        metricInputMode(metric) === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL";
+      const requestedMode: MetricEntryInputMode =
+        it.inputMode === "INCREMENTAL" || it.inputMode === "CUMULATIVE" ? it.inputMode : configuredMode;
+      // Chỉ tiêu thường luôn nhập phát sinh; chỉ tiêu lũy kế cho phép cả hai kiểu.
+      const inputMode: MetricEntryInputMode =
+        configuredMode === "CUMULATIVE" ? requestedMode : "INCREMENTAL";
       prepared.push({
         index: idx,
         metric,
         classificationId,
         entryDate,
         valueBase,
+        inputMode,
         note: it.note ? String(it.note).slice(0, 500) : null,
       });
     });
@@ -379,6 +418,20 @@ export async function POST(req: NextRequest) {
 
     if (errors.length > 0) {
       return NextResponse.json({ success: false, error: "Có số liệu không hợp lệ — chưa lưu gì", errors }, { status: 400 });
+    }
+
+    // ---- Chuẩn hoá chỉ tiêu lũy kế: mọi entry đều lưu số lũy kế đến ngày ----
+    for (const row of prepared) {
+      if (metricInputMode(row.metric) !== "CUMULATIVE") continue;
+      if (row.inputMode === "INCREMENTAL") {
+        const base = await cumulativeBaseBefore(row.metric.id, row.classificationId, row.entryDate);
+        row.valueBase = normalizeCumulativeValue({
+          base,
+          inputMode: "INCREMENTAL",
+          value: row.valueBase,
+        });
+      }
+      // Nhập tổng lũy kế: giá trị lưu chính là số người dùng nhập.
     }
 
     // ---- P0: cảnh báo mềm giá trị bất thường (khả năng nhập số lũy kế) — KHÔNG chặn lưu ----
@@ -495,6 +548,7 @@ export async function POST(req: NextRequest) {
         date: dateOnlyToStr(prepared[0].entryDate),
         count: savedIds.length,
         metrics: prepared.map((p) => p.metric.code),
+        inputModes: prepared.map((p) => ({ code: p.metric.code, mode: p.inputMode })),
         warnings: warnings.length,
       },
     });

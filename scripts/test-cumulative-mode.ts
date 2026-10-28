@@ -30,8 +30,8 @@ check("API nhập liệu trả kiểu nhập", entries.includes("inputMode: metr
 check("API nhập liệu chặn phân loại sai", entries.includes("classificationKeys.has"));
 
 const entryPage = read("src/app/v5/giao-ban/nhap/page.tsx");
-check("Trang nhập hiển thị lũy kế ngày", entryPage.includes("Lũy kế ngày"));
-check("Trang nhập đổi placeholder lũy kế", entryPage.includes("Nhập lũy kế đến ngày"));
+check("Trang nhập hiển thị 2 kiểu nhập", entryPage.includes("Phát sinh / Lũy kế"));
+check("Trang nhập đổi placeholder lũy kế", entryPage.includes("Nhập tổng lũy kế"));
 
 const adminApi = read("src/app/api/metrics/admin/route.ts");
 check("Cấu hình lưu kiểu nhập", adminApi.includes('data.inputMode === "CUMULATIVE"'));
