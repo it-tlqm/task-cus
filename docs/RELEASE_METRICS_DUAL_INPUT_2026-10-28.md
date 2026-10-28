@@ -2,45 +2,50 @@
 
 ## Phạm vi
 
-Chỉ nâng cấp phần nhập số liệu giao ban:
+Nâng cấp phần nhập số liệu giao ban cho **mọi chỉ tiêu phát sinh (FLOW)**:
 
-- Chỉ tiêu cấu hình **Lũy kế ngày** có 2 kiểu nhập:
+- Mỗi dòng có 2 kiểu nhập:
   - **Phát sinh** (mặc định): số phát sinh trong kỳ.
   - **Lũy kế**: tổng lũy kế đến cuối kỳ.
-- Nhập phát sinh được hệ thống cộng vào lũy kế trước kỳ rồi lưu.
-- Mở lại màn hình hiển thị số phát sinh của kỳ; bấm **Lũy kế** để xem tổng đã lưu.
+- Người dùng chọn linh hoạt từng dòng, không phải vào Cấu hình đổi chỉ tiêu.
+- Hệ thống tự quy đổi về đúng dạng lưu:
+
+| Dạng lưu | Nhập phát sinh | Nhập lũy kế |
+| --- | --- | --- |
+| Số phát sinh | Giữ nguyên | Trừ lũy kế đầu kỳ để ra phát sinh |
+| Lũy kế ngày | Cộng vào lũy kế đầu kỳ | Giữ nguyên |
+
+- Chọn **Lũy kế** sẽ hiện dòng **Lũy kế trước kỳ** để đối chiếu.
+- Chỉ tiêu **Số dư** (BALANCE) giữ nguyên một kiểu nhập.
 - Không thêm cột, không migration CSDL.
-- Không đổi cách tính của chỉ tiêu **Số phát sinh**.
+- Báo cáo vẫn tính theo dạng lưu của chỉ tiêu, không thay đổi số liệu cũ.
 
 ## Deploy
 
 - Branch: `release/metrics-dual-input`
-- Commit: `3570b2b` (cherry-pick `eab6c86` + bản 2 kiểu nhập)
-- Deployment: `dpl_48CtoYZxPRnSMdkrAXYnnXueAH4q`
+- Commit: `8b3fe41`
+- Deployment: `dpl_3q3CK93CrKLtqrQvndSct1Q11oWF`
 - Health: `db=up`
+
+Bản trước đó (chỉ cho chỉ tiêu cấu hình Lũy kế): `dpl_48CtoYZxPRnSMdkrAXYnnXueAH4q`.
 
 ## Kích hoạt
 
-Production hiện **chưa có chỉ tiêu nào** ở kiểu Lũy kế. Muốn thấy 2 lựa chọn:
+Không cần cấu hình thêm. Vào **Nhập số liệu**, mọi chỉ tiêu phát sinh đều có nút **Phát sinh / Lũy kế**.
 
-1. Vào **Cấu hình giao ban → Nhóm & chỉ tiêu**.
-2. Chọn chỉ tiêu, đặt **Kiểu: Lũy kế ngày**.
-3. Tạo mốc **Số mở đầu kỳ** trước ngày bắt đầu nhập.
-4. Vào **Nhập số liệu** — mỗi dòng hiện **Phát sinh / Lũy kế**.
-
-Không chuyển các chỉ tiêu đang có dữ liệu (Thu NSNN, xe, USD…) sang Lũy kế nếu chưa có kế hoạch chuyển đổi dữ liệu, vì cách cộng số sẽ thay đổi.
+- Mặc định **Phát sinh**.
+- Nếu chọn **Lũy kế** mà dòng **Lũy kế trước kỳ** hiện 0 hoặc sai, kiểm tra mốc **YEAR/OPENING** trước khi lưu.
 
 ## Rollback
 
-Quay lại deployment trước:
-
-- `dpl_5UwoUvCFVXqCyZVF59fBeRCxK1gj`
+- Quay lại bản ngay trước: `dpl_48CtoYZxPRnSMdkrAXYnnXueAH4q`
+- Quay lại bản trước toàn bộ đợt: `dpl_5UwoUvCFVXqCyZVF59fBeRCxK1gj`
 
 ## Kiểm thử
 
 | Bộ test | Kết quả |
 | --- | --- |
-| Nhập 2 kiểu | 15/15 |
+| Nhập 2 kiểu | 20/20 |
 | Lũy kế ngày | 11/11 |
 | Encoding | PASS |
 | `tsc --noEmit` | PASS |
