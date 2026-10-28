@@ -54,16 +54,13 @@ export default function LoginPage() {
         router.refresh();
         return;
       }
-      // Quay lại đúng trang đã yêu cầu trước khi bị chặn (middleware ?redirect=), chống open-redirect
-      let dest = "/dashboard";
+      // Mặc định vào Kho ứng dụng; nếu bị chặn từ trang cụ thể thì quay lại đúng trang đó.
+      let dest = "/store";
       try {
         const sp = new URLSearchParams(window.location.search);
         const r = sp.get("redirect") || "";
         if (r.startsWith("/") && !r.startsWith("//") && !r.startsWith("/login")) dest = r;
       } catch {}
-      if (data.user?.role === "SYSTEM_ADMIN" && dest === "/dashboard") {
-        dest = "/admin/system";
-      }
       router.push(dest);
       router.refresh();
     } catch (err: any) {

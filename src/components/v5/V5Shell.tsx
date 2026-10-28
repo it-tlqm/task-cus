@@ -20,6 +20,7 @@ import {
   FileText,
   FolderKanban,
   LayoutDashboard,
+  LayoutGrid,
   LifeBuoy,
   ListChecks,
   LogOut,
@@ -38,6 +39,8 @@ import {
   X,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { MiniappIcon } from "@/components/v5/miniapp-icon";
+import { findMiniappByPath } from "@/config/miniapps";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import CommandPalette from "@/components/layout/CommandPalette";
 import { cn } from "@/lib/utils";
@@ -108,6 +111,7 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
 ];
 
 const PAGE_TITLES: Array<[string, string]> = [
+  ["/store", "Kho ứng dụng"],
   ["/v5/giao-ban/nhap", "Nhập số liệu"],
   ["/v5/giao-ban", "Số liệu giao ban"],
   ["/v5", "Tổng quan điều hành"],
@@ -141,19 +145,41 @@ function isActivePath(pathname: string, href: string): boolean {
   return pathname.startsWith(`${href}/`);
 }
 
+function navItemAppId(href: string): string | null {
+  return findMiniappByPath(href.split("?")[0])?.id || null;
+}
+
 function SidebarNav({
   pathname,
   onNavigate,
   role,
+  appId,
 }: {
   pathname: string;
   onNavigate?: () => void;
   role?: string;
+  appId?: string | null;
 }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  if (pathname === "/store") {
+    return (
+      <div className="min-h-0 flex-1 px-3 py-3">
+        <p className="rounded-lg border border-dashed border-v5-line bg-v5-bg px-3 py-2 text-[11px] leading-5 text-v5-muted">
+          Chọn một ứng dụng để mở menu nghiệp vụ. Ghim ứng dụng thường dùng để mở nhanh lần sau.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <nav className="min-h-0 flex-1 overflow-y-auto px-2.5 py-3">
       {NAV_SECTIONS.map((section) => {
+        const items = section.items
+          .filter((item) => !(item.href === "/routine" && role === "UNIT_LEADER"))
+          .filter((item) => !appId || navItemAppId(item.href) === appId);
+        if (items.length === 0) return null;
+
         const isCollapsed = !!collapsed[section.label];
         return (
           <div key={section.label} className="mb-2.5">
@@ -168,9 +194,7 @@ function SidebarNav({
             </button>
             {!isCollapsed && (
               <div className="mt-0.5 space-y-0.5">
-                {section.items
-                  .filter((item) => !(item.href === "/routine" && role === "UNIT_LEADER"))
-                  .map((item) => {
+                {items.map((item) => {
                   const Icon = item.icon;
                   const active = isActivePath(pathname, item.href);
                   return (
@@ -210,6 +234,32 @@ function BrandBlock() {
       </div>
       <ChevronDown className="h-3.5 w-3.5 text-v5-muted" />
     </div>
+  );
+}
+
+function StoreLink({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const active = pathname === "/store";
+  return (
+    <Link
+      href="/store"
+      onClick={onNavigate}
+      className={cn(
+        "mx-2.5 mt-2 flex items-center gap-2 rounded-lg border px-2.5 py-2 text-[12px] font-semibold transition-colors",
+        active
+          ? "border-v5-accent/30 bg-v5-accent-soft text-v5-accent"
+          : "border-v5-line bg-v5-bg text-v5-ink hover:border-v5-accent/25 hover:bg-v5-surface"
+      )}
+    >
+      <LayoutGrid className="h-4 w-4" />
+      <span className="flex-1">Kho ứng dụng</span>
+      <ChevronRight className="h-3.5 w-3.5" />
+    </Link>
   );
 }
 
@@ -258,6 +308,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const pageTitle = PAGE_TITLES.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] || "Không gian điều hành";
+  const currentApp = findMiniappByPath(pathname);
   const today = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
     day: "2-digit",
@@ -298,7 +349,8 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
     <div className="v5-shell min-h-screen bg-v5-bg text-v5-ink">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-v5-line bg-v5-surface lg:flex">
         <BrandBlock />
-        <SidebarNav pathname={pathname} role={user?.role} />
+        <StoreLink pathname={pathname} />
+        <SidebarNav pathname={pathname} role={user?.role} appId={currentApp?.id || null} />
         <UserCard user={user} />
       </aside>
 
@@ -322,10 +374,12 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                 <X className="h-4 w-4" />
               </button>
             </div>
+            <StoreLink pathname={pathname} onNavigate={() => setMobileOpen(false)} />
             <SidebarNav
               pathname={pathname}
               onNavigate={() => setMobileOpen(false)}
               role={user?.role}
+              appId={currentApp?.id || null}
             />
             <UserCard user={user} />
           </aside>
@@ -343,17 +397,36 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
             >
               <Menu className="h-4 w-4" />
             </button>
-            <div className="flex min-w-0 items-center gap-2 lg:hidden">
+            <div className="flex items-center lg:hidden">
               <img src="/images/logo-haiquan.png" alt="" className="h-7 w-7 rounded-full object-contain" />
-              <span className="truncate text-sm font-semibold">{pageTitle}</span>
             </div>
 
             <div className="hidden min-w-0 items-center gap-2 lg:flex">
-              <PanelLeft className="h-4 w-4 text-v5-muted" />
-              <span className="text-[13px] font-semibold text-v5-ink">{pageTitle}</span>
+              {currentApp ? (
+                <>
+                  <Link
+                    href="/store"
+                    title="Đổi ứng dụng"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-v5-line bg-v5-bg px-2 py-1 text-[11px] font-semibold text-v5-ink transition-colors hover:border-v5-accent/25 hover:bg-v5-surface"
+                  >
+                    <MiniappIcon name={currentApp.icon} className="h-3.5 w-3.5" />
+                    <span className="max-w-[170px] truncate">{currentApp.name}</span>
+                    <ChevronDown className="h-3 w-3 text-v5-muted" />
+                  </Link>
+                  <span className="text-v5-muted">/</span>
+                </>
+              ) : (
+                <PanelLeft className="h-4 w-4 text-v5-muted" />
+              )}
+              <span className="truncate text-[13px] font-semibold text-v5-ink">{pageTitle}</span>
             </div>
 
             <div className="ml-auto flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" asChild aria-label="Kho ứng dụng" className="lg:hidden">
+                <Link href="/store">
+                  <LayoutGrid className="h-4 w-4" />
+                </Link>
+              </Button>
               <button
                 type="button"
                 onClick={() => setCommandOpen(true)}
@@ -388,12 +461,12 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                   </span>
                 )}
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Cấu hình" asChild>
+              <Button variant="ghost" size="icon" aria-label="Cấu hình" asChild className="hidden md:inline-flex">
                 <Link href="/admin">
                   <Settings2 className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Trợ giúp" asChild>
+              <Button variant="ghost" size="icon" aria-label="Trợ giúp" asChild className="hidden md:inline-flex">
                 <Link href="/huong-dan">
                   <CircleHelp className="h-4 w-4" />
                 </Link>
