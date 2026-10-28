@@ -1239,12 +1239,40 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
+        {/* Điều hướng nhanh trong hồ sơ */}
+        <nav
+          aria-label="Điều hướng nhanh trong hồ sơ"
+          className="sticky top-14 z-10 flex gap-1 overflow-x-auto rounded-lg border border-v5-line bg-v5-surface/95 p-1 backdrop-blur"
+        >
+          {[
+            { id: "task-progress", label: "Tiến độ" },
+            { id: "task-participants", label: "Phần việc" },
+            { id: "task-timeline", label: "Nhật ký" },
+            { id: "task-comments", label: "Trao đổi" },
+            { id: "task-attachments", label: "Tệp đính kèm" },
+          ]
+            .filter((item) => item.id !== "task-participants" || (task.participantResults?.length || 0) > 0)
+            .map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              className="shrink-0 rounded px-3 py-1.5 text-[11px] font-semibold text-v5-muted transition-colors hover:bg-v5-bg hover:text-v5-ink"
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
         {/* Grid: 2 Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-lg">
           {/* Left Column (2/3): Execution Details & Timeline */}
           <div className="lg:col-span-2 flex flex-col gap-space-lg">
             {/* Progress Card */}
-            <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3">
+            <div
+              id="task-progress"
+              className="scroll-mt-28 bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3"
+            >
               <div className="flex items-center justify-between">
                 <span className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
                   <V5Icon name="trending_up" className="text-secondary text-[20px]" />
@@ -1475,8 +1503,9 @@ export default function TaskDetailPage() {
             {/* YC-09 Phase 1 + YC-11 Phase 3: phần việc theo từng người + pre-check */}
             {!!task.participantResults?.length && (
               <div
+                id="task-participants"
                 data-testid="task-participants"
-                className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3"
+                className="scroll-mt-28 bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
@@ -1719,8 +1748,11 @@ export default function TaskDetailPage() {
               </div>
             )}
 
-            {/* Timeline / Updates Card — nhật ký tác nghiệp + lịch sử hợp nhất (E12-A) */}
-            <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-4">
+            {/* Timeline / Updates Card - nhật ký tác nghiệp + lịch sử hợp nhất (E12-A) */}
+            <div
+              id="task-timeline"
+              className="scroll-mt-28 bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-4"
+            >
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-v5-line pb-3">
                 <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2">
                   <V5Icon name="history" className="text-primary text-[20px]" />
@@ -1958,7 +1990,10 @@ export default function TaskDetailPage() {
             </div>
 
             {/* Trao đổi trong nhiệm vụ (bình luận phẳng + đính file) */}
-      <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3">
+      <div
+        id="task-comments"
+        className="scroll-mt-28 bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3"
+      >
         <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-2 border-b border-v5-line pb-3">
           <V5Icon name="forum" className="text-primary text-[20px]" />
           Trao Đổi ({comments.length})
@@ -2260,7 +2295,10 @@ export default function TaskDetailPage() {
             </div>
 
             {/* Attachments Card */}
-            <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3">
+            <div
+              id="task-attachments"
+              className="scroll-mt-28 bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-3"
+            >
               <div className="flex items-center justify-between border-b border-v5-line pb-2">
                 <h3 className="font-headline-sm text-sm font-bold text-primary flex items-center gap-1.5">
                   <V5Icon name="attach_file" className="text-[18px] text-secondary" />

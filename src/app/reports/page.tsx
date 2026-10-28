@@ -1695,6 +1695,7 @@ function ReportsContent() {
                   }
                 }}
                 className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
+                aria-label="Đóng"
               >
                 <V5Icon name="close" className="text-[20px]" />
               </button>
@@ -1811,6 +1812,7 @@ function ReportsContent() {
                   setVerificationFeedback(null);
                 }}
                 className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
+                aria-label="Đóng"
               >
                 <V5Icon name="close" className="text-[20px]" />
               </button>
@@ -2000,6 +2002,7 @@ function ReportsContent() {
               <button
                 onClick={() => setDrilldownTask(null)}
                 className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-surface/10 transition-colors"
+                aria-label="Đóng"
               >
                 <V5Icon name="close" className="text-[20px]" />
               </button>

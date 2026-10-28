@@ -933,6 +933,7 @@ function MyWorkPageContent() {
 
           <div data-tour="time-filter">
             <FilterBar
+              className="[&>div:first-child]:flex-nowrap [&>div:first-child]:overflow-x-auto [&>div:first-child]:no-scrollbar"
               actions={
                 <div className="flex items-center gap-2 px-1 text-[10px] text-v5-muted">
                   <Clock3 className="h-3.5 w-3.5" />

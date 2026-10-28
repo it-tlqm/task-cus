@@ -1247,6 +1247,7 @@ export default function OrganizationAdminPage() {
                 type="button"
                 onClick={() => setShowAddPersonModal(false)}
                 className="text-v5-muted hover:text-v5-muted"
+                aria-label="Đóng"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1391,6 +1392,7 @@ export default function OrganizationAdminPage() {
                 type="button"
                 onClick={() => setEditingPerson(null)}
                 className="text-v5-muted hover:text-v5-muted"
+                aria-label="Đóng"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1583,6 +1585,7 @@ export default function OrganizationAdminPage() {
                 type="button"
                 onClick={() => setTransferringPerson(null)}
                 className="text-v5-muted hover:text-v5-muted"
+                aria-label="Đóng"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1741,6 +1744,7 @@ export default function OrganizationAdminPage() {
                 type="button"
                 onClick={() => setAccountModalPerson(null)}
                 className="text-v5-muted hover:text-v5-muted"
+                aria-label="Đóng"
               >
                 <X className="w-4 h-4" />
               </button>
