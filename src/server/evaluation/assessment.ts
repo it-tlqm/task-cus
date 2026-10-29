@@ -40,12 +40,26 @@ export const EVALUATION_STATUS = {
 export type EvaluationStatus =
   (typeof EVALUATION_STATUS)[keyof typeof EVALUATION_STATUS];
 
+async function resolveIsLeaderSubject(personId: string): Promise<boolean> {
+  const account = await prisma.account.findUnique({
+    where: { personId },
+    select: {
+      roleGrants: {
+        where: { validTo: null },
+        select: { role: { select: { code: true } } },
+      },
+    },
+  });
+  return (account?.roleGrants || []).some(
+    (g) => g.role.code === "UNIT_LEADER" || g.role.code === "DEPARTMENT_LEADER"
+  );
+}
+
 function periodBounds(
   periodType: EvaluationPeriodType,
   year: number,
   number: number
-): { start: Date; end: Date } {
-  if (periodType === "QUARTER") {
+): { start: Date; end: Date } {  if (periodType === "QUARTER") {
     const startMonth = (number - 1) * 3;
     return {
       start: new Date(year, startMonth, 1),
@@ -210,6 +224,7 @@ export async function getOrCreateAssessment(
         periodStart: start,
         periodEnd: end,
         evaluationStatus: EVALUATION_STATUS.DRAFT,
+        isLeaderSubject: await resolveIsLeaderSubject(subjectPersonId),
         reviewerComment: null, // MẶC ĐỊNH ĐỂ TRỐNG
         createdById: actorAccountId,
       },
@@ -245,6 +260,7 @@ export async function getAssessment(
   if (!rec) {
     throw Object.assign(new Error("Chưa có phiếu đánh giá cho kỳ này"), { statusCode: 404 });
   }
+  rec.isLeaderSubject = rec.isLeaderSubject || (await resolveIsLeaderSubject(subjectPersonId));
   const person = await prisma.person.findUnique({
     where: { id: subjectPersonId },
     select: { fullName: true },
@@ -473,25 +489,12 @@ export async function saveAssessment(
     data.reviewerComment = input.reviewerComment || null;
     data.reviewerId = user.personId ?? null;
     data.reviewTimestamp = new Date();
-    if (existing?.evaluationStatus === EVALUATION_STATUS.SUBMITTED) {
-      data.evaluationStatus = EVALUATION_STATUS.REVIEWED;
-    }
   }
-  if (input.evaluationStatus !== undefined) {
-    if (input.evaluationStatus === EVALUATION_STATUS.CONFIRMED && !isReviewer) {
-      return {
-        success: false,
-        status: 403,
-        error: "Chỉ lãnh đạo mới chốt được phiếu đánh giá",
-      };
-    }
-    if (input.evaluationStatus === EVALUATION_STATUS.SUBMITTED && !isSelf && !isReviewer) {
-      return { success: false, status: 403, error: "Không có quyền trình duyệt" };
-    }
-    data.evaluationStatus = input.evaluationStatus;
-  }
+  // Tắt quy trình duyệt phiếu đánh giá: không ghi nhận trạng thái trình/chốt.
+  // Trạng thái cũ vẫn được giữ để tra cứu lịch sử.
   if (input.roleAtPeriod !== undefined) data.roleAtPeriod = input.roleAtPeriod || null;
   if (input.isLeaderSubject !== undefined) data.isLeaderSubject = !!input.isLeaderSubject;
+  else data.isLeaderSubject = await resolveIsLeaderSubject(input.subjectPersonId);
 
   if (Object.keys(data).length === 0) {
     return { success: false, status: 400, error: "Không có nội dung cần lưu" };

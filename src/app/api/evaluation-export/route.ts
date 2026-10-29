@@ -8,6 +8,7 @@ import { computeLeaderDimensions } from "@/server/scoring/leader-average";
 import { buildEvaluationWorkbook, type EvaluationTemplate, type ExportTaskRow } from "@/server/evaluation-export";
 import { getApprovalQualityExportRows, isApprovalQualityEnabled } from "@/server/approval-quality";
 import { pickPrimaryAssignment } from "@/server/person-assignment";
+import { syncMonthlyResultsFromTasks } from "@/server/monthly-results-sync";
 
 export const runtime = "nodejs";
 
@@ -151,6 +152,14 @@ export async function GET(req: NextRequest) {
 
 
     // Danh sách công việc để đưa vào Bảng 1
+    const monthsToSync =
+      periodType === "QUARTER"
+        ? [(periodNumber - 1) * 3 + 1, (periodNumber - 1) * 3 + 2, (periodNumber - 1) * 3 + 3]
+        : [periodNumber];
+    for (const m of monthsToSync) {
+      await syncMonthlyResultsFromTasks(personId, periodYear, m);
+    }
+
     const results = await prisma.monthlyWorkResult.findMany({
       where: {
         personId,

@@ -3,7 +3,8 @@ import { prisma } from "../src/server/db";
 const DEMO_PREFIX = "DEMO-UI-";
 const DAY = 86_400_000;
 
-if (!/localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL || "")) {
+const dbUrl = process.env.DATABASE_URL || "";
+if (dbUrl && !/localhost|127\.0\.0\.1/.test(dbUrl)) {
   throw new Error("Script này chỉ được chạy với DB local (localhost/127.0.0.1).");
 }
 

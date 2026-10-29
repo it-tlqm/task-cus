@@ -523,9 +523,10 @@ function buildFormSheet(wb: ExcelJS.Workbook, p: ExportParams): void {
 
   // Cảnh báo dự thảo
   const warnRow = signRow + 5;
-  if (draftNote) {
+  const warningReasons = [...(p.leader?.reasons || []), ...(p.score?.reasons || [])];
+  if (draftNote || warningReasons.length > 0) {
     ws.mergeCells(warnRow, 1, warnRow, 5);
-    ws.getCell(warnRow, 1).value = `${draftNote} — ${p.score?.reasons?.join("; ") || ""}`;
+    ws.getCell(warnRow, 1).value = `${draftNote ? `${draftNote} — ` : ""}${warningReasons.join("; ")}`;
     ws.getCell(warnRow, 1).font = { ...FONT, bold: true, color: { argb: "FFB45309" } };
     ws.getCell(warnRow, 1).alignment = { wrapText: true };
   }

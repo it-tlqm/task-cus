@@ -156,6 +156,9 @@ export default function SelfAssessmentPanel({
   const save = async (extra: Record<string, unknown> = {}) => {
     setSaving(true);
     try {
+      const hasCriteriaScores = COMMON_CRITERIA.some(
+        (c) => criteriaScores[c.code] !== "" && criteriaScores[c.code] !== undefined
+      );
       const res = await fetch("/api/evaluations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -164,13 +167,17 @@ export default function SelfAssessmentPanel({
           periodType,
           year,
           number,
-          commonCriteriaDetail: COMMON_CRITERIA.map((c) => ({
-            code: c.code,
-            selfScore:
-              criteriaScores[c.code] === "" || criteriaScores[c.code] === undefined
-                ? null
-                : Number(criteriaScores[c.code]),
-          })),
+          ...(hasCriteriaScores
+            ? {
+                commonCriteriaDetail: COMMON_CRITERIA.map((c) => ({
+                  code: c.code,
+                  selfScore:
+                    criteriaScores[c.code] === "" || criteriaScores[c.code] === undefined
+                      ? null
+                      : Number(criteriaScores[c.code]),
+                })),
+              }
+            : {}),
           ...(data?.isLeaderSubject
             ? {
                 leaderD: leaderD === "" ? null : Number(leaderD),
