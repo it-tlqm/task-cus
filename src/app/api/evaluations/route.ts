@@ -100,6 +100,11 @@ export async function POST(req: NextRequest) {
       isLeaderSubject: body.isLeaderSubject ?? undefined,
       commonCriteriaScore:
         body.commonCriteriaScore === undefined ? undefined : body.commonCriteriaScore,
+      commonCriteriaDetail:
+        body.commonCriteriaDetail === undefined ? undefined : body.commonCriteriaDetail,
+      leaderD: body.leaderD === undefined ? undefined : body.leaderD,
+      leaderDD: body.leaderDD === undefined ? undefined : body.leaderDD,
+      leaderE: body.leaderE === undefined ? undefined : body.leaderE,
       taskResultScore: body.taskResultScore === undefined ? undefined : body.taskResultScore,
       selfGradeChoice: body.selfGradeChoice === undefined ? undefined : body.selfGradeChoice,
       strengths: body.strengths === undefined ? undefined : body.strengths,

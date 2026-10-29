@@ -4,6 +4,7 @@ import { authenticateRequest } from "@/server/auth";
 import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { advisoryLock } from "@/server/idempotency";
 import { buildMonthlyScorePreview } from "@/server/scoring/monthly-preview";
+import { syncMonthlyResultsFromTasks } from "@/server/monthly-results-sync";
 import { recordAuditEvent } from "@/server/audit";
 
 // YC-12: kết quả sản phẩm thực tế theo tháng. Chưa chấm điểm (YC-14) — chỉ số liệu thô.
@@ -37,6 +38,9 @@ export async function GET(req: NextRequest) {
 
     const target = await resolveTargetPerson(user, searchParams.get("personId"));
     if (!target.ok) return jsonError("Bạn không có quyền xem kết quả của cán bộ này", 403);
+
+    // Đồng bộ nhiệm vụ có số lượng giao vào KQ tháng trước khi đọc.
+    await syncMonthlyResultsFromTasks(target.personId, year, month);
 
     const items = await prisma.monthlyWorkResult.findMany({
       where: { personId: target.personId, periodYear: year, periodMonth: month },

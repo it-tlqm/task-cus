@@ -91,6 +91,11 @@ interface TaskItem {
   originalDeadline?: string;
   expectedResultText?: string;
   actualResultText?: string;
+  assignedQty?: number | null;
+  completedQty?: number | null;
+  quantityUnit?: string | null;
+  factorSnapshot?: number | null;
+  completedDate?: string | null;
   hasIssue: boolean;
   issueNotes?: string;
   isOverdue?: boolean;
@@ -301,6 +306,10 @@ function MyWorkPageContent() {
   const [drawerStatus, setDrawerStatus] = useState<"IN_PROGRESS" | "COMPLETED" | "WAITING_REVIEW">("IN_PROGRESS");
   const [drawerProgress, setDrawerProgress] = useState<number>(85);
   const [drawerNotes, setDrawerNotes] = useState("");
+  const [drawerAssignedQty, setDrawerAssignedQty] = useState("");
+  const [drawerCompletedQty, setDrawerCompletedQty] = useState("");
+  const [drawerQuantityUnit, setDrawerQuantityUnit] = useState("");
+  const [drawerFactor, setDrawerFactor] = useState<number | null>(null);
 
   // Attachments & Review Reminder States
   const [attachments, setAttachments] = useState<TaskAttachmentItem[]>([]);
@@ -513,6 +522,10 @@ function MyWorkPageContent() {
     setDrawerProgress(task.progressPercent ?? 0);
     setDrawerStatus("IN_PROGRESS");
     setDrawerNotes(task.actualResultText || "");
+    setDrawerAssignedQty(task.assignedQty?.toString() ?? "");
+    setDrawerCompletedQty(task.completedQty?.toString() ?? "");
+    setDrawerQuantityUnit(task.quantityUnit ?? "");
+    setDrawerFactor(task.factorSnapshot ?? null);
     setActionSuccess(null);
     setActionError(null);
     setIsDrawerOpen(true);
@@ -671,6 +684,25 @@ function MyWorkPageContent() {
         await fetchTasks();
         setTimeout(() => setIsDrawerOpen(false), 900);
         return;
+      }
+
+      // 0. Lưu số lượng giao/hoàn thành trước khi cập nhật tiến độ
+      if (isOwner) {
+        const qtyRes = await fetch(`/api/tasks/${selectedTask.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assignedQty: drawerAssignedQty === "" ? null : Number(drawerAssignedQty),
+            completedQty: drawerCompletedQty === "" ? null : Number(drawerCompletedQty),
+            quantityUnit: drawerQuantityUnit.trim() || null,
+            factorSnapshot: drawerFactor,
+            ...(finalSubmit ? { completedDate: new Date().toISOString() } : {}),
+          }),
+        });
+        if (!qtyRes.ok) {
+          const qtyJson = await qtyRes.json().catch(() => ({}));
+          throw new Error(qtyJson.error || "Không thể lưu số lượng giao/hoàn thành");
+        }
       }
 
       // 1. Submit progress update (YC-09: làm tròn về bước 5% gần nhất)
@@ -2191,10 +2223,61 @@ function MyWorkPageContent() {
                 </div>
               </div>
 
+              {/* Số lượng giao / hoàn thành */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-body-semibold text-body-semibold text-primary">
+                  3. Số lượng giao / hoàn thành
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[11px] font-semibold text-v5-muted">Số lượng giao</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={drawerAssignedQty}
+                      onChange={(e) => setDrawerAssignedQty(e.target.value)}
+                      disabled={selectedTask?.owner?.id !== currentUser?.personId && !canApprove}
+                      placeholder="Ví dụ: 100"
+                      className="h-9 rounded-lg border border-v5-line bg-v5-bg px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent disabled:bg-v5-surface disabled:text-v5-muted"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[11px] font-semibold text-v5-muted">Đơn vị tính</span>
+                    <input
+                      value={drawerQuantityUnit}
+                      onChange={(e) => setDrawerQuantityUnit(e.target.value)}
+                      disabled={selectedTask?.owner?.id !== currentUser?.personId && !canApprove}
+                      placeholder="Tờ khai, lượt, hồ sơ..."
+                      className="h-9 rounded-lg border border-v5-line bg-v5-bg px-2.5 text-[12px] text-v5-ink outline-none focus:border-v5-accent disabled:bg-v5-surface disabled:text-v5-muted"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[11px] font-semibold text-v5-muted">Số lượng hoàn thành</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={drawerCompletedQty}
+                      onChange={(e) => setDrawerCompletedQty(e.target.value)}
+                      disabled={selectedTask?.owner?.id !== currentUser?.personId && !canApprove}
+                      placeholder="Để trống = bằng số giao"
+                      className="h-9 rounded-lg border border-v5-line bg-v5-bg px-2.5 text-right text-[12px] tabular-nums text-v5-ink outline-none focus:border-v5-accent disabled:bg-v5-surface disabled:text-v5-muted"
+                    />
+                  </div>
+                  <div className="flex items-end pb-2 text-[11px] text-v5-muted">
+                    Hệ số quy đổi: <strong className="ml-1 text-v5-ink">{drawerFactor ?? "chưa có"}</strong>
+                  </div>
+                </div>
+                <span className="text-[11px] text-v5-muted">
+                  Số lượng hoàn thành để trống sẽ mặc định bằng số giao khi báo hoàn thành.
+                </span>
+              </div>
+
               {/* Nội dung kết quả thực tế */}
               <div className="flex flex-col gap-1.5">
                 <label className="font-body-semibold text-body-semibold text-primary">
-                  3. Kết quả nghiệp vụ chi tiết
+                  4. Kết quả nghiệp vụ chi tiết
                 </label>
                 <textarea
                   rows={3}
@@ -2212,7 +2295,7 @@ function MyWorkPageContent() {
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <label className="font-body-semibold text-body-semibold text-primary">
-                    4. Đính kèm biên bản / tài liệu ({attachments.length})
+                    5. Đính kèm biên bản / tài liệu ({attachments.length})
                   </label>
                   {uploadingFile && (
                     <span className="text-secondary font-label-sm text-xs flex items-center gap-1">

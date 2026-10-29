@@ -83,6 +83,18 @@ export async function GET(req: NextRequest) {
       periodNumber,
     });
 
+    // Phiếu tự đánh giá (YC-36)
+    const evaluation = await prisma.evaluationAssessment.findUnique({
+      where: {
+        subjectPersonId_periodType_periodYear_periodNumber: {
+          subjectPersonId: personId,
+          periodType,
+          periodYear,
+          periodNumber,
+        },
+      },
+    });
+
     // Điểm bình quân lãnh đạo (YC-35) — chỉ dùng cho mẫu 01B/02B
     let leader: any = null;
     if (template === "01B" || template === "02B") {
@@ -101,29 +113,42 @@ export async function GET(req: NextRequest) {
           return { a: c.ratios.a, b: c.ratios.b, c: c.ratios.c };
         }
       );
+
+      let leaderD = evaluation?.leaderD ?? null;
+      let leaderDD = evaluation?.leaderDD ?? null;
+      let leaderE = evaluation?.leaderE ?? null;
+      if (periodType === "QUARTER" && (leaderD === null || leaderDD === null || leaderE === null)) {
+        const months = [(periodNumber - 1) * 3 + 1, (periodNumber - 1) * 3 + 2, (periodNumber - 1) * 3 + 3];
+        const monthly = await prisma.evaluationAssessment.findMany({
+          where: {
+            subjectPersonId: personId,
+            periodType: "MONTH",
+            periodYear,
+            periodNumber: { in: months },
+          },
+          select: { leaderD: true, leaderDD: true, leaderE: true },
+        });
+        const average = (key: "leaderD" | "leaderDD" | "leaderE") => {
+          const values = monthly.map((m) => m[key]).filter((v): v is number => typeof v === "number");
+          return values.length ? values.reduce((s, v) => s + v, 0) / values.length : null;
+        };
+        leaderD = leaderD ?? average("leaderD");
+        leaderDD = leaderDD ?? average("leaderDD");
+        leaderE = leaderE ?? average("leaderE");
+      }
+
       leader = {
         a: res.dimensions.a.value,
         b: res.dimensions.b.value,
         c: res.dimensions.c.value,
-        d: null,
-        dd: null,
-        e: null,
+        d: leaderD,
+        dd: leaderDD,
+        e: leaderE,
         reasons: res.reasons,
         status: res.status,
       };
     }
 
-    // Phiếu tự đánh giá (YC-36)
-    const evaluation = await prisma.evaluationAssessment.findUnique({
-      where: {
-        subjectPersonId_periodType_periodYear_periodNumber: {
-          subjectPersonId: personId,
-          periodType,
-          periodYear,
-          periodNumber,
-        },
-      },
-    });
 
     // Danh sách công việc để đưa vào Bảng 1
     const results = await prisma.monthlyWorkResult.findMany({
@@ -167,6 +192,7 @@ export async function GET(req: NextRequest) {
       positionTitle: primaryAssignment?.position?.title || null,
       unitName: primaryAssignment?.unit?.name || null,
       commonCriteriaScore: evaluation?.commonCriteriaScore ?? null,
+      commonCriteriaDetail: (evaluation?.commonCriteriaDetail as any) ?? null,
       commonCriteriaSuggested: evaluation?.commonCriteriaSuggested ?? null,
       selfGradeChoice: evaluation?.selfGradeChoice ?? null,
       selfGradeSuggestion: evaluation?.selfGradeSuggestion ?? null,

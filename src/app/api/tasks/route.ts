@@ -315,6 +315,11 @@ export async function POST(req: NextRequest) {
       priority,
       deadline,
       expectedResultText,
+      assignedQty,
+      completedQty,
+      quantityUnit,
+      factorSnapshot,
+      completedDate,
       assigneeIds, // Danh sách ID cán bộ phối hợp
       workItemId, // YC-32: giao nhiệm vụ từ đầu việc (liên kết 2 chiều)
       // YC-38B/YC-38C: nguồn công việc (TX / QĐ1277 / văn bản / giao ban)
@@ -394,6 +399,24 @@ export async function POST(req: NextRequest) {
 
     const parsedDeadline = new Date(effectiveDeadline);
 
+    const parseOptionalQty = (raw: unknown): number | null => {
+      if (raw === undefined || raw === null || raw === "") return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? n : NaN;
+    };
+    const parsedAssignedQty = parseOptionalQty(assignedQty);
+    const parsedCompletedQty = parseOptionalQty(completedQty);
+    const parsedFactor = parseOptionalQty(factorSnapshot);
+    if (Number.isNaN(parsedAssignedQty) || Number.isNaN(parsedCompletedQty) || Number.isNaN(parsedFactor)) {
+      return jsonError("Số lượng hoặc hệ số quy đổi không hợp lệ", 400);
+    }
+    let parsedCompletedDate: Date | null = null;
+    if (completedDate) {
+      const d = new Date(completedDate);
+      if (Number.isNaN(d.getTime())) return jsonError("Ngày hoàn thành không hợp lệ", 400);
+      parsedCompletedDate = d;
+    }
+
     // YC-38C: phân giải nguồn công việc (TX / QĐ1277 / văn bản / giao ban).
     // TX và QĐ1277 là hai trục ĐỘC LẬP — không gộp, không tự gắn sản phẩm.
     let resolvedSource: ResolvedSource | null = null;
@@ -406,6 +429,24 @@ export async function POST(req: NextRequest) {
       );
       if (!src.ok) return jsonError(src.error, src.status || 400);
       resolvedSource = src.source || null;
+    }
+
+    // Hệ số quy đổi: ưu tiên client gửi, nếu thiếu thì lấy từ danh mục đã chọn.
+    let effectiveFactor = parsedFactor;
+    if (effectiveFactor === null && resolvedSource) {
+      if (resolvedSource.productItemId) {
+        const p = await prisma.productItem.findUnique({
+          where: { id: resolvedSource.productItemId },
+          select: { convertFactor: true },
+        });
+        effectiveFactor = p?.convertFactor ?? null;
+      } else if (resolvedSource.catalogEntryId) {
+        const c = await prisma.workCatalogEntry.findUnique({
+          where: { id: resolvedSource.catalogEntryId },
+          select: { convertFactor: true },
+        });
+        effectiveFactor = c?.convertFactor == null ? null : Number(c.convertFactor);
+      }
     }
 
     // YC-38: nguon phat sinh — quyet dinh o SERVER (khong tin client khai "lãnh đạo giao")
@@ -450,6 +491,11 @@ export async function POST(req: NextRequest) {
           originalDeadline: parsedDeadline,
           currentDeadline: parsedDeadline,
           expectedResultText,
+          assignedQty: parsedAssignedQty,
+          completedQty: parsedCompletedQty,
+          quantityUnit: quantityUnit?.trim() || null,
+          factorSnapshot: effectiveFactor,
+          completedDate: parsedCompletedDate,
           // YC-38C: người tạo ≠ người giao ≠ người chủ trì (chủ trì = ownerId)
           // LƯU Ý: cột này tham chiếu `people(id)` → dùng personId (user.id là accountId)
           createdById: user.personId,
@@ -599,10 +645,33 @@ export async function PATCH(req: NextRequest) {
       actualResultText,
       hasIssue,
       issueNotes,
+      assignedQty,
+      completedQty,
+      quantityUnit,
+      factorSnapshot,
+      completedDate,
       assigneeIds,
       reason,
       qualityPercent,
     } = body;
+
+    const parseQty = (raw: unknown): number | null => {
+      if (raw === undefined || raw === null || raw === "") return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? n : NaN;
+    };
+    const parsedAssignedQty = parseQty(assignedQty);
+    const parsedCompletedQty = parseQty(completedQty);
+    const parsedFactor = parseQty(factorSnapshot);
+    if (Number.isNaN(parsedAssignedQty) || Number.isNaN(parsedCompletedQty) || Number.isNaN(parsedFactor)) {
+      return jsonError("Số lượng hoặc hệ số quy đổi không hợp lệ", 400);
+    }
+    let parsedCompletedDate: Date | null = null;
+    if (completedDate) {
+      const d = new Date(completedDate);
+      if (Number.isNaN(d.getTime())) return jsonError("Ngày hoàn thành không hợp lệ", 400);
+      parsedCompletedDate = d;
+    }
 
     if (!id) {
       return jsonError("Thiếu Task ID", 400);
@@ -651,6 +720,15 @@ export async function PATCH(req: NextRequest) {
           { success: false, error: result.error, data: result.data },
           { status: result.status || 400 }
         );
+      }
+      if (decision === "AGREE") {
+        const completionData: any = {};
+        if (completedQty !== undefined) completionData.completedQty = parsedCompletedQty;
+        else if (currentTask.assignedQty != null) completionData.completedQty = currentTask.assignedQty;
+        if (parsedCompletedDate) completionData.completedDate = parsedCompletedDate;
+        else completionData.completedDate = new Date();
+        if (quantityUnit !== undefined) completionData.quantityUnit = quantityUnit?.trim() || null;
+        await prisma.task.update({ where: { id }, data: completionData });
       }
       const fresh = await prisma.task.findUnique({
         where: { id },
@@ -845,6 +923,16 @@ export async function PATCH(req: NextRequest) {
       if (actualResultText !== undefined && currentTask.status === "WAITING_REVIEW" && actualResultText !== currentTask.actualResultText) {
         return jsonError("Nhiệm vụ đang chờ Lãnh đạo phê duyệt — không thể sửa kết quả đã trình.", 409);
       }
+      if (
+        (assignedQty !== undefined ||
+          completedQty !== undefined ||
+          quantityUnit !== undefined ||
+          factorSnapshot !== undefined) &&
+        !isOwner &&
+        !isLeader
+      ) {
+        return jsonError("Chỉ người chủ trì hoặc lãnh đạo thẩm quyền mới được sửa số lượng.", 403);
+      }
       // Đổi danh sách người phối hợp: chỉ lãnh đạo phụ trách.
       if (assigneeIds !== undefined && !isLeader) {
         return jsonError("Chỉ Lãnh đạo phụ trách mới được điều chỉnh danh sách người phối hợp.", 403);
@@ -867,6 +955,21 @@ export async function PATCH(req: NextRequest) {
         updateData.status = status === "DONE" ? "COMPLETED" : status;
       }
       if (actualResultText !== undefined) updateData.actualResultText = actualResultText;
+      if (assignedQty !== undefined) updateData.assignedQty = parsedAssignedQty;
+      if (completedQty !== undefined) updateData.completedQty = parsedCompletedQty;
+      if (quantityUnit !== undefined) updateData.quantityUnit = quantityUnit?.trim() || null;
+      if (factorSnapshot !== undefined) updateData.factorSnapshot = parsedFactor;
+      if (completedDate !== undefined) updateData.completedDate = parsedCompletedDate;
+      if (status === "WAITING_REVIEW") {
+        if (completedQty === undefined && currentTask.assignedQty != null) {
+          updateData.completedQty = currentTask.assignedQty;
+        }
+        if (!parsedCompletedDate) updateData.completedDate = new Date();
+      }
+      if (status === "IN_PROGRESS" || status === "NOT_STARTED") {
+        updateData.completedDate = null;
+        updateData.completedQty = null;
+      }
       if (hasIssue !== undefined) {
         updateData.hasIssue = Boolean(hasIssue);
         updateData.issueNotes = hasIssue ? issueNotes : null;

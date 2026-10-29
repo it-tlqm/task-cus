@@ -44,6 +44,11 @@ interface TaskDetail {
   issueNotes?: string;
   isOverdue?: boolean;
   progressPercent?: number;
+  assignedQty?: number | null;
+  completedQty?: number | null;
+  quantityUnit?: string | null;
+  factorSnapshot?: number | null;
+  completedDate?: string | null;
   unit?: { id: string; name: string };
   owner?: { id: string; fullName: string; position?: string };
   assignees?: Array<{ person: { id: string; fullName: string; position?: string } }>;
@@ -1260,6 +1265,27 @@ export default function TaskDetailPage() {
                   style={{ width: `${Math.min(100, task.progressPercent ?? (isCompleted ? 100 : 0))}%` }}
                 />
               </div>
+
+              {(task.assignedQty != null || task.completedQty != null) && (
+                <div className="grid grid-cols-3 gap-2 rounded-lg border border-v5-line bg-v5-bg p-2.5 text-xs">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-v5-muted">Số lượng giao</div>
+                    <div className="font-bold text-v5-ink">
+                      {task.assignedQty ?? "—"} {task.quantityUnit || ""}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-v5-muted">Số lượng hoàn thành</div>
+                    <div className="font-bold text-v5-ink">
+                      {task.completedQty ?? "—"} {task.quantityUnit || ""}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-v5-muted">Hệ số quy đổi</div>
+                    <div className="font-bold text-v5-ink">{task.factorSnapshot ?? "—"}</div>
+                  </div>
+                </div>
+              )}
 
               {task.expectedResultText && (
                 <div className="mt-2 p-3 rounded-lg bg-v5-bg border border-v5-line text-xs flex flex-col gap-1">

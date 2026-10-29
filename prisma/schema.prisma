@@ -662,6 +662,12 @@ model Task {
   issueNotes         String?  @map("issue_notes")
   expectedResultText String?  @map("expected_result_text")
   actualResultText   String?  @map("actual_result_text")
+  // Số lượng giao/hoàn thành gắn với nhiệm vụ (người chủ trì)
+  assignedQty        Float?   @map("assigned_qty")
+  completedQty       Float?   @map("completed_qty")
+  quantityUnit       String?  @map("quantity_unit")
+  factorSnapshot     Float?   @map("factor_snapshot")
+  completedDate      DateTime? @map("completed_date") @db.Date
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
@@ -1965,6 +1971,12 @@ model EvaluationAssessment {
   commonCriteriaSuggested Float?   @map("common_criteria_suggested")
   /// Diem tieu chi chung do ca nhan tu cham (sau khi sua)
   commonCriteriaScore     Float?   @map("common_criteria_score")
+  /// Chi tiet 10 tieu chi chung: [{ code, group, label, max, selfScore }]
+  commonCriteriaDetail    Json?    @map("common_criteria_detail")
+  /// d/d/e cua lanh dao (thang 0-100), chi dung cho mau 01B/02B
+  leaderD                 Float?   @map("leader_d")
+  leaderDD                Float?   @map("leader_dd")
+  leaderE                 Float?   @map("leader_e")
   /// Diem ket qua thuc hien nhiem vu (tu YC-33)
   taskResultScore         Float?   @map("task_result_score")
   /// Muc xep loai GOI Y cua he thong (chi khi co quy tac du dieu kien)

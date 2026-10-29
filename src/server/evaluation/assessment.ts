@@ -16,6 +16,7 @@ import { prisma } from "../db";
 import { SessionUser } from "../auth";
 import { getAuthorizedUnitIds } from "../guard";
 import { recordAuditEvent } from "../audit";
+import { normalizeCommonCriteriaDetail } from "@/config/evaluation-criteria";
 
 export type EvaluationPeriodType = "MONTH" | "QUARTER";
 
@@ -97,6 +98,10 @@ export interface AssessmentInput {
   roleAtPeriod?: string | null;
   isLeaderSubject?: boolean;
   commonCriteriaScore?: number | null;
+  commonCriteriaDetail?: unknown;
+  leaderD?: number | null;
+  leaderDD?: number | null;
+  leaderE?: number | null;
   taskResultScore?: number | null;
   selfGradeChoice?: string | null;
   strengths?: string | null;
@@ -119,6 +124,10 @@ export interface AssessmentView {
   isLeaderSubject: boolean;
   commonCriteriaSuggested: number | null;
   commonCriteriaScore: number | null;
+  commonCriteriaDetail: any[] | null;
+  leaderD: number | null;
+  leaderDD: number | null;
+  leaderE: number | null;
   taskResultScore: number | null;
   selfGradeSuggestion: string | null;
   selfGradeChoice: string | null;
@@ -261,6 +270,10 @@ function toView(rec: any, subjectName: string, actorAccountId: string): Assessme
     isLeaderSubject: rec.isLeaderSubject,
     commonCriteriaSuggested: rec.commonCriteriaSuggested,
     commonCriteriaScore: rec.commonCriteriaScore,
+    commonCriteriaDetail: rec.commonCriteriaDetail ?? null,
+    leaderD: rec.leaderD ?? null,
+    leaderDD: rec.leaderDD ?? null,
+    leaderE: rec.leaderE ?? null,
     taskResultScore: rec.taskResultScore,
     selfGradeSuggestion: rec.selfGradeSuggestion,
     selfGradeChoice: rec.selfGradeChoice,
@@ -354,6 +367,10 @@ export async function saveAssessment(
   if (
     !isSelf &&
     (input.commonCriteriaScore !== undefined ||
+      input.commonCriteriaDetail !== undefined ||
+      input.leaderD !== undefined ||
+      input.leaderDD !== undefined ||
+      input.leaderE !== undefined ||
       input.strengths !== undefined ||
       input.weaknesses !== undefined ||
       input.selfGradeChoice !== undefined)
@@ -366,7 +383,12 @@ export async function saveAssessment(
   }
 
   const data: any = {};
-  if (input.commonCriteriaScore !== undefined) {
+  if (input.commonCriteriaDetail !== undefined) {
+    const normalized = normalizeCommonCriteriaDetail(input.commonCriteriaDetail);
+    data.commonCriteriaDetail = normalized.detail;
+    data.commonCriteriaScore = normalized.total;
+  }
+  if (input.commonCriteriaScore !== undefined && input.commonCriteriaDetail === undefined) {
     if (input.commonCriteriaScore === null) data.commonCriteriaScore = null;
     else {
       const v = Number(input.commonCriteriaScore);
@@ -379,6 +401,26 @@ export async function saveAssessment(
       }
       data.commonCriteriaScore = v;
     }
+  }
+  for (const [key, raw] of [
+    ["leaderD", input.leaderD],
+    ["leaderDD", input.leaderDD],
+    ["leaderE", input.leaderE],
+  ] as const) {
+    if (raw === undefined) continue;
+    if (raw === null) {
+      data[key] = null;
+      continue;
+    }
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0 || n > 100) {
+      return {
+        success: false,
+        status: 400,
+        error: "Điểm d/đ/e của lãnh đạo phải trong khoảng 0…100%",
+      };
+    }
+    data[key] = n;
   }
   if (input.taskResultScore !== undefined) {
     data.taskResultScore =

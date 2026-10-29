@@ -136,7 +136,11 @@ export default function TasksPage() {
     code: string;
     taskName: string;
     convertFactor?: number | null;
+    outputProduct?: string | null;
+    quantityUnit?: string | null;
   } | null>(null);
+  const [newAssignedQty, setNewAssignedQty] = useState("");
+  const [newQuantityUnit, setNewQuantityUnit] = useState("");
   const [newIdempotencyKey, setNewIdempotencyKey] = useState(() =>
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
@@ -314,6 +318,9 @@ export default function TasksPage() {
           currentDeadline: vnLocalToUtcIso(newDeadline),
           description: newSource,
           expectedResultText: newExpectedResult || undefined,
+          assignedQty: newAssignedQty === "" ? undefined : Number(newAssignedQty),
+          quantityUnit: newQuantityUnit.trim() || undefined,
+          factorSnapshot: newProduct?.convertFactor ?? newCatalogEntry?.convertFactor ?? undefined,
           unitId: selectedUnitId || undefined,
           ownerId: selectedOwnerId || undefined,
           assigneeIds: collabIds,
@@ -337,6 +344,8 @@ export default function TasksPage() {
         setShowCreateModal(false);
         setNewTitle("");
         setNewExpectedResult("");
+        setNewAssignedQty("");
+        setNewQuantityUnit("");
         setCollabIds([]);
         setNewAttachFiles([]);
         setNewDeadline(defaultDeadline());
@@ -840,10 +849,52 @@ export default function TasksPage() {
                     catalogEntry={newCatalogEntry}
                     product={newProduct}
                     onCatalogChange={setNewCatalogEntry}
-                    onProductChange={setNewProduct}
+                    onProductChange={(p) => {
+                      setNewProduct(p);
+                      if (p?.quantityUnit && !newQuantityUnit.trim()) setNewQuantityUnit(p.quantityUnit);
+                    }}
                     storageKey="yc38b:tasks"
                   />
                 </div>
+
+                {(newProduct || newCatalogEntry) && (
+                  <div className="rounded-lg border border-v5-line bg-v5-bg p-2.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-md text-label-md text-primary font-semibold">
+                          Số lượng giao
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={newAssignedQty}
+                          onChange={(e) => setNewAssignedQty(e.target.value)}
+                          placeholder="Ví dụ: 100"
+                          className="h-9 px-2.5 rounded bg-v5-surface text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-md text-label-md text-primary font-semibold">
+                          Đơn vị tính
+                        </label>
+                        <input
+                          value={newQuantityUnit}
+                          onChange={(e) => setNewQuantityUnit(e.target.value)}
+                          placeholder="Tờ khai, lượt, hồ sơ..."
+                          className="h-9 px-2.5 rounded bg-v5-surface text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-1.5 text-[11px] text-v5-muted">
+                      Hệ số quy đổi:{" "}
+                      <strong className="text-v5-ink">
+                        {newProduct?.convertFactor ?? newCatalogEntry?.convertFactor ?? "chưa có"}
+                      </strong>
+                      {" · "}Chỉ nhập số lượng khi việc có nguồn danh mục.
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">

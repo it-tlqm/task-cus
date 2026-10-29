@@ -42,6 +42,8 @@ export interface ExportEvaluation {
   unitName?: string | null;
   /** Điểm tiêu chí chung (tối đa 30). */
   commonCriteriaScore: number | null;
+  /** Chi tiết 10 tiêu chí chung (nếu đã chấm). */
+  commonCriteriaDetail?: Array<{ code: string; selfScore: number | null }> | null;
   /** Gợi ý hệ thống (chưa có quy tắc → null). */
   commonCriteriaSuggested: number | null;
   /** Mức xếp loại cá nhân đề xuất. */
@@ -315,14 +317,18 @@ function buildFormSheet(wb: ExcelJS.Workbook, p: ExportParams): void {
 
   let r = 14;
   const groupRows: number[] = [];
+  let detailIndex = 0;
   criteria.forEach(([tt, name, max]) => {
     ws.getCell(r, 1).value = tt;
     ws.getCell(r, 2).value = name;
     ws.getCell(r, 3).value = max;
-    ws.getCell(r, 4).value = null; // cán bộ tự chấm — để trống nếu chưa nhập
+    const isGroup = ["I", "II", "III"].includes(tt);
+    ws.getCell(r, 4).value = isGroup
+      ? null
+      : (p.person.commonCriteriaDetail?.[detailIndex++]?.selfScore ?? null);
     ws.getCell(r, 5).value = null;
     for (let cc = 1; cc <= 5; cc++) ws.getCell(r, cc).font = FONT;
-    if (["I", "II", "III"].includes(tt)) {
+    if (isGroup) {
       ws.getCell(r, 2).font = { ...FONT, bold: true };
       groupRows.push(r);
     }
@@ -359,14 +365,38 @@ function buildFormSheet(wb: ExcelJS.Workbook, p: ExportParams): void {
   let d36: number | null = null;
   let d37: number | null = null;
   let d38: number | null = null;
+  let leaderDValue: number | null = null;
+  let leaderDDValue: number | null = null;
+  let leaderEValue: number | null = null;
   let draftNote: string | null = null;
 
   if (leader && p.leader) {
     d34 = p.leader.a;
     d35 = p.leader.b;
     d36 = p.leader.c;
-    if (d34 === null || d35 === null || d36 === null) {
+    leaderDValue = p.leader.d;
+    leaderDDValue = p.leader.dd;
+    leaderEValue = p.leader.e;
+    if (
+      d34 === null ||
+      d35 === null ||
+      d36 === null ||
+      leaderDValue === null ||
+      leaderDDValue === null ||
+      leaderEValue === null
+    ) {
       draftNote = DRAFT;
+    }
+    if (
+      d34 !== null &&
+      d35 !== null &&
+      d36 !== null &&
+      leaderDValue !== null &&
+      leaderDDValue !== null &&
+      leaderEValue !== null
+    ) {
+      d37 = (d34 + d35 + d36 + leaderDValue + leaderDDValue + leaderEValue) / 6;
+      d38 = (d37 * 70) / 100;
     }
   } else {
     const ratios = p.score?.ratios;
@@ -374,22 +404,45 @@ function buildFormSheet(wb: ExcelJS.Workbook, p: ExportParams): void {
     d35 = ratios?.b ?? null;
     d36 = ratios?.c ?? null;
     if (d34 === null || d35 === null || d36 === null) draftNote = DRAFT;
-  }
-  if (d34 !== null && d35 !== null && d36 !== null) {
-    d37 = (d34 + d35 + d36) / 3;
-    d38 = (d37 * 70) / 100;
+    if (d34 !== null && d35 !== null && d36 !== null) {
+      d37 = (d34 + d35 + d36) / 3;
+      d38 = (d37 * 70) / 100;
+    }
   }
 
-  const rowsDetail: Array<[string, number | null]> = [
-    ["a. Điểm tỷ lệ % đánh giá về số lượng (a):", d34],
-    ["b. Điểm tỷ lệ % đánh giá về tiến độ (b):", d35],
-    ["c. Điểm tỷ lệ % đánh giá về chất lượng (c):", d36],
-    [
-      "d. Điểm tỷ lệ % đánh giá kết quả thực hiện nhiệm vụ (d = (a+b+c)/3):",
-      d37,
-    ],
-    ["Điểm tiêu chí kết quả thực hiện nhiệm vụ (=(d*70)/100):", d38],
-  ];
+  const rowsDetail: Array<[string, number | null]> = leader
+    ? [
+        ["a. Điểm tỷ lệ % đánh giá về số lượng (a):", d34],
+        ["b. Điểm tỷ lệ % đánh giá về tiến độ (b):", d35],
+        ["c. Điểm tỷ lệ % đánh giá về chất lượng (c):", d36],
+        [
+          "d. Điểm tỷ lệ % đánh giá về kết quả hoạt động của bộ phận/đơn vị (d):",
+          leaderDValue,
+        ],
+        [
+          "đ. Điểm tỷ lệ % đánh giá về khả năng tổ chức triển khai thực hiện nhiệm vụ (đ):",
+          leaderDDValue,
+        ],
+        [
+          "e. Điểm tỷ lệ % đánh giá về năng lực tập hợp, đoàn kết công chức thuộc phạm vi quản lý (e):",
+          leaderEValue,
+        ],
+        [
+          "g. Điểm tỷ lệ % kết quả thực hiện nhiệm vụ (g=(a+b+c+d+đ+e)/6):",
+          d37,
+        ],
+        ["Điểm tiêu chí kết quả thực hiện nhiệm vụ (=(g*70)/100):", d38],
+      ]
+    : [
+        ["a. Điểm tỷ lệ % đánh giá về số lượng (a):", d34],
+        ["b. Điểm tỷ lệ % đánh giá về tiến độ (b):", d35],
+        ["c. Điểm tỷ lệ % đánh giá về chất lượng (c):", d36],
+        [
+          "d. Điểm tỷ lệ % đánh giá kết quả thực hiện nhiệm vụ (d = (a+b+c)/3):",
+          d37,
+        ],
+        ["Điểm tiêu chí kết quả thực hiện nhiệm vụ (=(d*70)/100):", d38],
+      ];
   let rr = rowTask + 1;
   for (const [label, val] of rowsDetail) {
     ws.getCell(rr, 2).value = label;

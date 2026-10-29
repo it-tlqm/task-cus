@@ -368,6 +368,11 @@ export async function PATCH(
       expectedResultText,
       hasIssue,
       issueNotes,
+      assignedQty,
+      completedQty,
+      quantityUnit,
+      factorSnapshot,
+      completedDate,
       progressPercent,
       ownerId,
       assigneeIds,
@@ -391,6 +396,34 @@ export async function PATCH(
     const isCollaborator = (currentTask.assignees || []).some(
       (a: any) => a.personId === user.personId
     );
+
+    const parseQty = (raw: unknown): number | null => {
+      if (raw === undefined || raw === null || raw === "") return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? n : NaN;
+    };
+    const parsedAssignedQty = parseQty(assignedQty);
+    const parsedCompletedQty = parseQty(completedQty);
+    const parsedFactor = parseQty(factorSnapshot);
+    if (Number.isNaN(parsedAssignedQty) || Number.isNaN(parsedCompletedQty) || Number.isNaN(parsedFactor)) {
+      return jsonError("Số lượng hoặc hệ số quy đổi không hợp lệ", 400);
+    }
+    let parsedCompletedDate: Date | null = null;
+    if (completedDate) {
+      const d = new Date(completedDate);
+      if (Number.isNaN(d.getTime())) return jsonError("Ngày hoàn thành không hợp lệ", 400);
+      parsedCompletedDate = d;
+    }
+    if (
+      (assignedQty !== undefined ||
+        completedQty !== undefined ||
+        quantityUnit !== undefined ||
+        factorSnapshot !== undefined) &&
+      !isOwner &&
+      !isLeader
+    ) {
+      return jsonError("Chỉ người chủ trì hoặc lãnh đạo thẩm quyền mới được sửa số lượng.", 403);
+    }
 
     // YC-09 Phase 1: collaborator không đổi trạng thái / cờ vướng mắc Task-level.
     if (isCollaborator && !isOwner && !isLeader) {
@@ -593,6 +626,21 @@ export async function PATCH(
     if (priority !== undefined) { updateData.priority = priority; changedFields.push("priority"); }
     if (currentDeadline !== undefined) { updateData.currentDeadline = new Date(currentDeadline); changedFields.push("currentDeadline"); }
     if (actualResultText !== undefined) updateData.actualResultText = actualResultText;
+    if (assignedQty !== undefined) updateData.assignedQty = parsedAssignedQty;
+    if (completedQty !== undefined) updateData.completedQty = parsedCompletedQty;
+    if (quantityUnit !== undefined) updateData.quantityUnit = quantityUnit?.trim() || null;
+    if (factorSnapshot !== undefined) updateData.factorSnapshot = parsedFactor;
+    if (completedDate !== undefined) updateData.completedDate = parsedCompletedDate;
+    if (status === "WAITING_REVIEW") {
+      if (completedQty === undefined && currentTask.assignedQty != null) {
+        updateData.completedQty = currentTask.assignedQty;
+      }
+      if (!parsedCompletedDate) updateData.completedDate = new Date();
+    }
+    if (status === "IN_PROGRESS" || status === "NOT_STARTED") {
+      updateData.completedDate = null;
+      updateData.completedQty = null;
+    }
     if (expectedResultText !== undefined) { updateData.expectedResultText = expectedResultText; changedFields.push("expectedResultText"); }
     if (hasIssue !== undefined) updateData.hasIssue = Boolean(hasIssue);
     if (issueNotes !== undefined) updateData.issueNotes = issueNotes;

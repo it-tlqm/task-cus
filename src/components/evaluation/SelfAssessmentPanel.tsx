@@ -4,6 +4,7 @@ import { V5Icon } from "@/components/v5/ui/icon";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "@/components/ui/Toast";
+import { COMMON_CRITERIA } from "@/config/evaluation-criteria";
 
 /**
  * YC-36 — Phiếu tự đánh giá / nhận xét lãnh đạo / mức xếp loại đề xuất.
@@ -23,8 +24,13 @@ interface EvalView {
   periodType: string;
   periodYear: number;
   periodNumber: number;
+  isLeaderSubject: boolean;
   commonCriteriaSuggested: number | null;
   commonCriteriaScore: number | null;
+  commonCriteriaDetail: Array<{ code: string; selfScore: number | null }> | null;
+  leaderD: number | null;
+  leaderDD: number | null;
+  leaderE: number | null;
   taskResultScore: number | null;
   selfGradeSuggestion: string | null;
   selfGradeChoice: string | null;
@@ -88,7 +94,11 @@ export default function SelfAssessmentPanel({
   const [data, setData] = useState<EvalView | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [commonCriteria, setCommonCriteria] = useState("");
+  const [criteriaScores, setCriteriaScores] = useState<Record<string, string>>({});
+  const [showCriteriaDetail, setShowCriteriaDetail] = useState(false);
+  const [leaderD, setLeaderD] = useState("");
+  const [leaderDD, setLeaderDD] = useState("");
+  const [leaderE, setLeaderE] = useState("");
   const [strengths, setStrengths] = useState("");
   const [weaknesses, setWeaknesses] = useState("");
   const [selfGrade, setSelfGrade] = useState("");
@@ -115,7 +125,17 @@ export default function SelfAssessmentPanel({
       }
       const d: EvalView = json.data;
       setData(d);
-      setCommonCriteria(d.commonCriteriaScore === null ? "" : String(d.commonCriteriaScore));
+      const detailMap: Record<string, string> = {};
+      if (Array.isArray(d.commonCriteriaDetail)) {
+        for (const c of COMMON_CRITERIA) {
+          const row = d.commonCriteriaDetail.find((x) => x.code === c.code);
+          detailMap[c.code] = row?.selfScore == null ? "" : String(row.selfScore);
+        }
+      }
+      setCriteriaScores(detailMap);
+      setLeaderD(d.leaderD == null ? "" : String(d.leaderD));
+      setLeaderDD(d.leaderDD == null ? "" : String(d.leaderDD));
+      setLeaderE(d.leaderE == null ? "" : String(d.leaderE));
       setStrengths(d.strengths || "");
       setWeaknesses(d.weaknesses || "");
       setSelfGrade(d.selfGradeChoice || "");
@@ -144,7 +164,20 @@ export default function SelfAssessmentPanel({
           periodType,
           year,
           number,
-          commonCriteriaScore: commonCriteria === "" ? null : Number(commonCriteria),
+          commonCriteriaDetail: COMMON_CRITERIA.map((c) => ({
+            code: c.code,
+            selfScore:
+              criteriaScores[c.code] === "" || criteriaScores[c.code] === undefined
+                ? null
+                : Number(criteriaScores[c.code]),
+          })),
+          ...(data?.isLeaderSubject
+            ? {
+                leaderD: leaderD === "" ? null : Number(leaderD),
+                leaderDD: leaderDD === "" ? null : Number(leaderDD),
+                leaderE: leaderE === "" ? null : Number(leaderE),
+              }
+            : {}),
           strengths,
           weaknesses,
           selfGradeChoice: selfGrade || null,
@@ -207,6 +240,10 @@ export default function SelfAssessmentPanel({
 
   const canEditSelf = data.permissions.canEditSelf;
   const canEditReviewer = data.permissions.canEditReviewerComment;
+  const totalCommon = COMMON_CRITERIA.reduce(
+    (sum, c) => sum + (Number(criteriaScores[c.code]) || 0),
+    0
+  );
   const options =
     data.selfGradeOptions && data.selfGradeOptions.length
       ? data.selfGradeOptions
@@ -256,21 +293,67 @@ export default function SelfAssessmentPanel({
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-slate-600">
-              Điểm cán bộ tự chấm (0…30)
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="30"
-              step="0.5"
-              disabled={!canEditSelf}
-              value={commonCriteria}
-              onChange={(e) => setCommonCriteria(e.target.value)}
-              placeholder="Chưa chấm"
-              className="w-28 px-2 py-1.5 rounded-lg border border-slate-300 text-sm disabled:bg-slate-100"
-            />
+          <div className="rounded-lg border border-slate-200 p-2.5 bg-slate-50">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
+                  Điểm cán bộ tự chấm
+                </p>
+                <p className="text-lg font-bold text-slate-800">
+                  {Number(totalCommon.toFixed(1))}
+                  <span className="text-xs font-normal text-slate-500">/30</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCriteriaDetail((v) => !v)}
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {showCriteriaDetail ? "Thu gọn" : "Chấm chi tiết"}
+              </button>
+            </div>
+            {showCriteriaDetail && (
+              <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
+                {(["I", "II", "III"] as const).map((group) => (
+                  <div key={group}>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      Nhóm {group}
+                    </p>
+                    {COMMON_CRITERIA.filter((c) => c.group === group).map((c) => (
+                      <div key={c.code} className="flex items-start gap-2 py-1">
+                        <span className="flex-1 text-[11px] leading-4 text-slate-700">{c.label}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max={c.max}
+                          step="0.5"
+                          disabled={!canEditSelf}
+                          value={criteriaScores[c.code] ?? ""}
+                          onChange={(e) =>
+                            setCriteriaScores((prev) => ({ ...prev, [c.code]: e.target.value }))
+                          }
+                          placeholder="—"
+                          className="h-7 w-16 rounded border border-slate-300 px-1.5 text-right text-[11px] disabled:bg-slate-100"
+                        />
+                        <span className="w-8 pt-1 text-[10px] text-slate-400">/{c.max}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  disabled={!canEditSelf}
+                  onClick={() =>
+                    setCriteriaScores(
+                      Object.fromEntries(COMMON_CRITERIA.map((c) => [c.code, String(c.max)]))
+                    )
+                  }
+                  className="text-[11px] font-semibold text-secondary hover:underline disabled:opacity-50"
+                >
+                  Điền điểm tối đa
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -286,10 +369,66 @@ export default function SelfAssessmentPanel({
                 : taskResultScore}
             </p>
             <p className="text-[10px] text-slate-500 mt-0.5">
-              Điểm lấy từ bộ máy tính Bảng 1 (đã đối chiếu mẫu gốc). Chưa đủ căn cứ thì để trống —
-              không tự đặt điểm.
+              {data.isLeaderSubject
+                ? "Điểm tham khảo từ nhiệm vụ của chính lãnh đạo; điểm chính thức tính theo 6 tiêu chí khi xuất biểu mẫu."
+                : "Điểm lấy từ bộ máy tính Bảng 1 (đã đối chiếu mẫu gốc). Chưa đủ căn cứ thì để trống — không tự đặt điểm."}
             </p>
           </div>
+          {data.isLeaderSubject && (
+            <div className="rounded-lg border border-slate-200 p-2.5 bg-slate-50">
+              <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
+                Lãnh đạo tự chấm 3 tiêu chí (0–100%)
+              </p>
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
+                <label className="flex flex-col gap-0.5 text-[10px] text-slate-600">
+                  <span>d. Kết quả hoạt động của bộ phận/đơn vị</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    disabled={!canEditSelf}
+                    value={leaderD}
+                    onChange={(e) => setLeaderD(e.target.value)}
+                    placeholder="0–100"
+                    className="h-7 rounded border border-slate-300 px-1.5 text-right text-[11px] disabled:bg-slate-100"
+                  />
+                </label>
+                <label className="flex flex-col gap-0.5 text-[10px] text-slate-600">
+                  <span>đ. Khả năng tổ chức triển khai</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    disabled={!canEditSelf}
+                    value={leaderDD}
+                    onChange={(e) => setLeaderDD(e.target.value)}
+                    placeholder="0–100"
+                    className="h-7 rounded border border-slate-300 px-1.5 text-right text-[11px] disabled:bg-slate-100"
+                  />
+                </label>
+                <label className="flex flex-col gap-0.5 text-[10px] text-slate-600">
+                  <span>e. Tập hợp, đoàn kết công chức</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    disabled={!canEditSelf}
+                    value={leaderE}
+                    onChange={(e) => setLeaderE(e.target.value)}
+                    placeholder="0–100"
+                    className="h-7 rounded border border-slate-300 px-1.5 text-right text-[11px] disabled:bg-slate-100"
+                  />
+                </label>
+              </div>
+              <p className="mt-1 text-[10px] text-slate-500">
+                a/b/c lấy tự động từ công chức thuộc quyền; d/đ/e do lãnh đạo tự chấm. Điểm chính thức
+                tính theo 6 tiêu chí.
+              </p>
+            </div>
+          )}
           <div className="rounded-lg border border-slate-200 p-2.5 bg-slate-50">
             <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
               Gợi ý mức xếp loại của hệ thống
@@ -445,20 +584,11 @@ export default function SelfAssessmentPanel({
         </div>
       </div>
 
-      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3 flex-wrap">
+      <div className="px-4 py-3 border-t border-slate-100 bg-slate-50">
         <p className="text-[10px] text-slate-500">
           Tự đánh giá là hồ sơ của cán bộ — KHÔNG phải kết quả đánh giá chính thức của cấp có
-          thẩm quyền.
+          thẩm quyền. Phiếu được lưu trực tiếp, không qua bước trình duyệt.
         </p>
-        {canEditSelf && (
-          <button
-            onClick={() => save({ evaluationStatus: "SUBMITTED" })}
-            disabled={saving}
-            className="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold disabled:opacity-50"
-          >
-            Trình lãnh đạo
-          </button>
-        )}
       </div>
     </div>
   );
