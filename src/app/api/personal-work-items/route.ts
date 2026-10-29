@@ -187,6 +187,9 @@ export async function POST(req: NextRequest) {
       coordinationUnit,
       priority,
       expectedResult,
+      assignedQty,
+      quantityUnit,
+      factorSnapshot,
       status,
       periodType,
       periodYear,
@@ -195,6 +198,17 @@ export async function POST(req: NextRequest) {
     } = body;
 
     const targetPersonId = personId || user.personId;
+
+    const parseQty = (raw: unknown): number | null => {
+      if (raw === undefined || raw === null || raw === "") return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? n : NaN;
+    };
+    const parsedAssignedQty = parseQty(assignedQty);
+    const parsedFactor = parseQty(factorSnapshot);
+    if (Number.isNaN(parsedAssignedQty) || Number.isNaN(parsedFactor)) {
+      return jsonError("Số lượng hoặc hệ số quy đổi không hợp lệ", 400);
+    }
 
     // Tự động phân giải title, groupId, priority nếu truyền templateId
     let resolvedTitle = title || customTitle;
@@ -498,6 +512,23 @@ export async function POST(req: NextRequest) {
       _max: { sortOrder: true },
     });
 
+    let resolvedFactor = parsedFactor;
+    if (resolvedFactor === null) {
+      if (resolvedProductItemId) {
+        const product = await prisma.productItem.findUnique({
+          where: { id: resolvedProductItemId },
+          select: { convertFactor: true },
+        });
+        resolvedFactor = product?.convertFactor ?? null;
+      } else if (resolvedCatalogEntryId) {
+        const entry = await prisma.workCatalogEntry.findUnique({
+          where: { id: resolvedCatalogEntryId },
+          select: { convertFactor: true },
+        });
+        resolvedFactor = entry?.convertFactor == null ? null : Number(entry.convertFactor);
+      }
+    }
+
     let newItem: any;
     try {
       newItem = await prisma.personalWorkItem.create({
@@ -519,6 +550,9 @@ export async function POST(req: NextRequest) {
           coordinationUnit: coordinationUnit?.trim() || null,
           priority: resolvedPriority,
           expectedResult: expectedResult?.trim() || null,
+          assignedQty: parsedAssignedQty,
+          quantityUnit: quantityUnit?.trim() || null,
+          factorSnapshot: resolvedFactor,
           sortOrder: (maxSort._max.sortOrder || 0) + 1,
           status: status || "ACTIVE",
           // --- YC-38C: provenance bất biến + đầu mối chủ trì ---
@@ -637,6 +671,9 @@ export async function PATCH(req: NextRequest) {
       coordinationUnit,
       priority,
       expectedResult,
+      assignedQty,
+      quantityUnit,
+      factorSnapshot,
       sortOrder,
       status,
       planItemId,
@@ -760,6 +797,9 @@ export async function PATCH(req: NextRequest) {
         ["coordinationUnit", coordinationUnit],
         ["priority", priority],
         ["expectedResult", expectedResult],
+        ["assignedQty", assignedQty],
+        ["quantityUnit", quantityUnit],
+        ["factorSnapshot", factorSnapshot],
         ["sortOrder", sortOrder],
         ["planItemId", planItemId],
         ["templateId", templateId],
@@ -889,6 +929,9 @@ export async function PATCH(req: NextRequest) {
     if (coordinationUnit !== undefined) updateData.coordinationUnit = coordinationUnit?.trim() || null;
     if (priority !== undefined) updateData.priority = priority;
     if (expectedResult !== undefined) updateData.expectedResult = expectedResult?.trim() || null;
+    if (assignedQty !== undefined) updateData.assignedQty = assignedQty === null || assignedQty === "" ? null : Number(assignedQty);
+    if (quantityUnit !== undefined) updateData.quantityUnit = quantityUnit?.trim() || null;
+    if (factorSnapshot !== undefined) updateData.factorSnapshot = factorSnapshot === null || factorSnapshot === "" ? null : Number(factorSnapshot);
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
     if (status) updateData.status = status; // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
 

@@ -6,6 +6,12 @@ ALTER TABLE "tasks"
   ADD COLUMN "factor_snapshot" DOUBLE PRECISION,
   ADD COLUMN "completed_date" DATE;
 
+-- Số lượng giao của đầu việc kế hoạch
+ALTER TABLE "personal_work_items"
+  ADD COLUMN "assigned_qty" DOUBLE PRECISION,
+  ADD COLUMN "quantity_unit" TEXT,
+  ADD COLUMN "factor_snapshot" DOUBLE PRECISION;
+
 -- Chi tiết 10 tiêu chí chung + d/đ/e của lãnh đạo
 ALTER TABLE "evaluation_assessments"
   ADD COLUMN "common_criteria_detail" JSONB,

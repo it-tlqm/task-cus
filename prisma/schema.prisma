@@ -597,6 +597,9 @@ model PersonalWorkItem {
   coordinationUnit String?           @map("coordination_unit") // Đơn vị phối hợp
   priority         String            @default("Trung bình") // Mức độ ưu tiên: Cao, Trung bình, Thấp
   expectedResult   String?           @map("expected_result") // Kết quả dự kiến
+  assignedQty      Float?            @map("assigned_qty") // Số lượng giao (TX hoặc QĐ1277)
+  quantityUnit     String?           @map("quantity_unit") // Đơn vị tính
+  factorSnapshot   Float?            @map("factor_snapshot") // Hệ số quy đổi tại thời điểm lập
   sortOrder        Int               @default(0) @map("sort_order")
   status           String            @default("ACTIVE") // ACTIVE, NOT_STARTED, IN_PROGRESS, COMPLETED, DISCONTINUED
   // --- V3.0.1: vong doi duyet cong viec tu ghi nhan (additive) ---

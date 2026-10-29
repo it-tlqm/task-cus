@@ -432,7 +432,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Hệ số quy đổi: ưu tiên client gửi, nếu thiếu thì lấy từ danh mục đã chọn.
-    let effectiveFactor = parsedFactor;
+    let effectiveFactor = parsedFactor ?? linkedWorkItem?.factorSnapshot ?? null;
     if (effectiveFactor === null && resolvedSource) {
       if (resolvedSource.productItemId) {
         const p = await prisma.productItem.findUnique({
@@ -491,9 +491,9 @@ export async function POST(req: NextRequest) {
           originalDeadline: parsedDeadline,
           currentDeadline: parsedDeadline,
           expectedResultText,
-          assignedQty: parsedAssignedQty,
+          assignedQty: parsedAssignedQty ?? linkedWorkItem?.assignedQty ?? null,
           completedQty: parsedCompletedQty,
-          quantityUnit: quantityUnit?.trim() || null,
+          quantityUnit: quantityUnit?.trim() || linkedWorkItem?.quantityUnit || null,
           factorSnapshot: effectiveFactor,
           completedDate: parsedCompletedDate,
           // YC-38C: người tạo ≠ người giao ≠ người chủ trì (chủ trì = ownerId)

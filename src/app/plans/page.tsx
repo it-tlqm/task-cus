@@ -46,6 +46,9 @@ interface PersonalWorkItemData {
   coordinationUnit?: string | null;
   priority?: string | null;
   expectedResult?: string | null;
+  assignedQty?: number | null;
+  quantityUnit?: string | null;
+  factorSnapshot?: number | null;
   templateId?: string | null;
   template?: { id: string; code: string; title: string; groupId?: string; group?: { id: string; name: string; code: string } } | null;
   // YC-25: đầu việc chọn từ danh mục riêng của bộ phận
@@ -289,6 +292,8 @@ export default function PlansPage() {
   const [modalDeptWorkItemId, setModalDeptWorkItemId] = useState("");
   // V3.0.2: danh sách sản phẩm QĐ1277 được chọn — một đầu việc có thể gắn nhiều mã.
   const [modalProducts, setModalProducts] = useState<PickedProduct[]>([]);
+  const [modalAssignedQty, setModalAssignedQty] = useState("");
+  const [modalQuantityUnit, setModalQuantityUnit] = useState("");
   // Q-B4/A-1: chỉ người thực hiện được đề xuất/bỏ sản phẩm QĐ1277.
   // Lãnh đạo lập hộ chỉ giao việc; không thay cán bộ đề xuất sản phẩm.
   const modalProductOwnerId = editingItem?.person?.id || modalPersonId;
@@ -677,6 +682,8 @@ export default function PlansPage() {
     setModalPeopleError(null);
     setModalDeptWorkItemId("");
     setModalProducts([]);
+    setModalAssignedQty("");
+    setModalQuantityUnit("");
     setModalCatalogEntryId("");
     setPickedCatalogLocal(null);
     // YC-38C: mặc định hạng mục CHƯA có đầu việc — không trỏ mặc định vào items[0]
@@ -711,6 +718,8 @@ export default function PlansPage() {
     setModalTemplateId(wi.templateId || "");
     setModalDeptWorkItemId(wi.deptWorkItemId || "");
     setModalProducts(workItemProducts(wi));
+    setModalAssignedQty(wi.assignedQty?.toString() ?? "");
+    setModalQuantityUnit(wi.quantityUnit ?? "");
     setModalCatalogEntryId(wi.catalogEntryId || "");
     setPickedCatalogLocal(
       wi.catalogEntry
@@ -850,6 +859,10 @@ export default function PlansPage() {
         coordinationUnit: modalCoordination.trim() || null,
         priority: modalPriority,
         expectedResult: modalExpectedResult.trim() || null,
+        assignedQty: modalAssignedQty === "" ? null : Number(modalAssignedQty),
+        quantityUnit: modalQuantityUnit.trim() || null,
+        factorSnapshot:
+          pickedCatalogEntry?.convertFactor ?? modalProducts[0]?.convertFactor ?? null,
         status: modalStatus,
         deptWorkItemId: modalDeptWorkItemId || null,
         // Không ghi con trỏ sản phẩm chính khi người đang lưu không phải
@@ -3294,6 +3307,42 @@ export default function PlansPage() {
                     storageKey="yc38b:plans"
                   />
                 </div>
+
+                {(modalCatalogEntryId || modalProducts.length > 0) && (
+                  <div className="rounded-lg border border-v5-line bg-v5-bg p-2.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-semibold text-primary">Số lượng giao</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={modalAssignedQty}
+                          onChange={(e) => setModalAssignedQty(e.target.value)}
+                          placeholder="Ví dụ: 100"
+                          className="h-9 rounded bg-v5-surface px-2.5 text-right text-[12px] tabular-nums text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-semibold text-primary">Đơn vị tính</label>
+                        <input
+                          value={modalQuantityUnit}
+                          onChange={(e) => setModalQuantityUnit(e.target.value)}
+                          placeholder="Tờ khai, lượt, hồ sơ..."
+                          className="h-9 rounded bg-v5-surface px-2.5 text-[12px] text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-1.5 text-[11px] text-v5-muted">
+                      Hệ số quy đổi:{" "}
+                      <strong className="text-v5-ink">
+                        {pickedCatalogEntry?.convertFactor ??
+                          modalProducts[0]?.convertFactor ??
+                          "chưa có"}
+                      </strong>
+                    </div>
+                  </div>
+                )}
 
                 {/* 3. Nhóm nhiệm vụ thường xuyên (Cột B) */}
                 <div className="flex flex-col gap-1">
