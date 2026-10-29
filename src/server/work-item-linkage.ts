@@ -220,6 +220,13 @@ export interface CreateWorkItemArgs {
   seriesId?: string | null;
   /** Idempotency: nếu đã có bản ghi cùng khoá → trả về bản ghi cũ. */
   idempotencyKey?: string | null;
+  /** Số lượng/đơn vị/hệ số của đầu việc (kế thừa từ nhiệm vụ). */
+  assignedQty?: number | null;
+  quantityUnit?: string | null;
+  factorSnapshot?: number | null;
+  /** Số lượng/đơn vị riêng của sản phẩm QĐ1277 gắn kèm. */
+  productQuantity?: number | null;
+  productQuantityUnit?: string | null;
 }
 
 export interface CreatedWorkItem {
@@ -256,6 +263,9 @@ export async function createLinkedWorkItem(
       dueDate: args.dueDate ?? null,
       completedDate: args.completedDate ?? null,
       expectedResult: args.expectedResult ?? null,
+      assignedQty: args.assignedQty ?? null,
+      quantityUnit: args.quantityUnit ?? null,
+      factorSnapshot: args.factorSnapshot ?? null,
       status: args.status || "ACTIVE",
       // YC-38C — provenance
       sourceKind: source?.sourceKind ?? null,
@@ -302,7 +312,17 @@ export async function createLinkedWorkItem(
   // Liên kết sản phẩm QĐ1277 (0..n) — không cộng điểm, không tính trùng
   if (source?.productItemId) {
     await client.workItemProduct.createMany({
-      data: [{ workItemId: workItem.id, productItemId: source.productItemId, isPrimary: true }],
+      data: [
+        {
+          workItemId: workItem.id,
+          productItemId: source.productItemId,
+          isPrimary: true,
+          quantity: args.productQuantity ?? null,
+          quantityUnit: args.productQuantityUnit ?? null,
+          factorSnapshot: args.factorSnapshot ?? null,
+          factorSource: "QD1277_PRODUCT",
+        },
+      ],
       skipDuplicates: true,
     });
   }

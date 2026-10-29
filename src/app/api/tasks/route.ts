@@ -325,6 +325,8 @@ export async function POST(req: NextRequest) {
       // YC-38B/YC-38C: nguồn công việc (TX / QĐ1277 / văn bản / giao ban)
       catalogEntryId,
       productItemId,
+      productQuantity,
+      productQuantityUnit,
       sourceKind,
       sourceRefId,
       sourceCodeSnapshot,
@@ -407,7 +409,13 @@ export async function POST(req: NextRequest) {
     const parsedAssignedQty = parseOptionalQty(assignedQty);
     const parsedCompletedQty = parseOptionalQty(completedQty);
     const parsedFactor = parseOptionalQty(factorSnapshot);
-    if (Number.isNaN(parsedAssignedQty) || Number.isNaN(parsedCompletedQty) || Number.isNaN(parsedFactor)) {
+    const parsedProductQty = parseOptionalQty(productQuantity);
+    if (
+      Number.isNaN(parsedAssignedQty) ||
+      Number.isNaN(parsedCompletedQty) ||
+      Number.isNaN(parsedFactor) ||
+      Number.isNaN(parsedProductQty)
+    ) {
       return jsonError("Số lượng hoặc hệ số quy đổi không hợp lệ", 400);
     }
     let parsedCompletedDate: Date | null = null;
@@ -535,6 +543,11 @@ export async function POST(req: NextRequest) {
               assignedById: user.personId,
               taskId: created.id,
               idempotencyKey: idempotencyKey ? `task:${idempotencyKey}` : null,
+              assignedQty: parsedAssignedQty ?? linkedWorkItem?.assignedQty ?? null,
+              quantityUnit: quantityUnit?.trim() || linkedWorkItem?.quantityUnit || null,
+              factorSnapshot: effectiveFactor,
+              productQuantity: parsedProductQty,
+              productQuantityUnit: productQuantityUnit?.trim() || null,
             },
             tx
           );
@@ -543,6 +556,8 @@ export async function POST(req: NextRequest) {
             where: { id: created.id },
             data: { workItemId: wi.id },
           });
+          // Trả về đúng liên kết vừa tạo (response không bị null).
+          (created as any).workItemId = wi.id;
         }
       }
       return { task: created, deduplicated: false, workItemId: linkedWorkItemId };

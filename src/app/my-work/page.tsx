@@ -348,6 +348,11 @@ function MyWorkPageContent() {
     taskName: string;
     convertFactor?: number | null;
   } | null>(null);
+  // Số lượng/đơn vị theo từng dòng nguồn (TX và QĐ1277 độc lập).
+  const [newTaskAssignedQty, setNewTaskAssignedQty] = useState("");
+  const [newTaskQuantityUnit, setNewTaskQuantityUnit] = useState("");
+  const [newTaskProductQty, setNewTaskProductQty] = useState("");
+  const [newTaskProductUnit, setNewTaskProductUnit] = useState("");
   // Khoá idempotency cấp form: sinh 1 lần khi mở modal, dùng lại khi bấm lưu
   const [newTaskIdempotencyKey, setNewTaskIdempotencyKey] = useState(() =>
     typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -753,6 +758,17 @@ function MyWorkPageContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDrawerOpen, isNewTaskModalOpen]);
 
+  const openNewTaskModal = () => {
+    setNewTaskTitle("");
+    setNewTaskCatalogEntry(null);
+    setNewTaskProduct(null);
+    setNewTaskAssignedQty("");
+    setNewTaskQuantityUnit("");
+    setNewTaskProductQty("");
+    setNewTaskProductUnit("");
+    setIsNewTaskModalOpen(true);
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     // YC-04: một thao tác chỉ gửi một request
@@ -773,6 +789,18 @@ function MyWorkPageContent() {
           // YC-38B/YC-38C: nguồn công việc + khoá idempotency (chống bấm trùng)
           catalogEntryId: newTaskCatalogEntry?.id || undefined,
           productItemId: newTaskProduct?.id || undefined,
+          // Số lượng theo từng dòng nguồn
+          assignedQty:
+            newTaskCatalogEntry
+              ? newTaskAssignedQty === "" ? null : Number(newTaskAssignedQty)
+              : newTaskProductQty === "" ? null : Number(newTaskProductQty),
+          quantityUnit:
+            (newTaskCatalogEntry ? newTaskQuantityUnit : newTaskProductUnit).trim() || undefined,
+          factorSnapshot:
+            newTaskCatalogEntry?.convertFactor ?? newTaskProduct?.convertFactor ?? undefined,
+          productQuantity:
+            newTaskProductQty === "" ? undefined : Number(newTaskProductQty),
+          productQuantityUnit: newTaskProductUnit.trim() || undefined,
           idempotencyKey: newTaskIdempotencyKey,
         }),
       });
@@ -782,6 +810,10 @@ function MyWorkPageContent() {
         setNewTaskTitle("");
         setNewTaskCatalogEntry(null);
         setNewTaskProduct(null);
+        setNewTaskAssignedQty("");
+        setNewTaskQuantityUnit("");
+        setNewTaskProductQty("");
+        setNewTaskProductUnit("");
         setNewTaskIdempotencyKey(
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
@@ -1072,7 +1104,7 @@ function MyWorkPageContent() {
             }
             actions={
               <>
-                <Button size="sm" onClick={() => setIsNewTaskModalOpen(true)}>
+                <Button size="sm" onClick={openNewTaskModal}>
                   <Plus className="h-3.5 w-3.5" /> Thêm việc
                 </Button>
                 <Button variant="outline" size="sm" asChild>
@@ -2049,7 +2081,7 @@ function MyWorkPageContent() {
         {/* FLOATING ACTION BUTTON (FAB) GÓC DƯỚI PHẢI */}
         <div data-tour="fab-add" className="fixed bottom-20 right-4 z-40">
           <button
-            onClick={() => setIsNewTaskModalOpen(true)}
+            onClick={openNewTaskModal}
             aria-label="Thêm đầu việc mới"
             className="h-13 px-4 py-3 rounded-full bg-secondary text-on-secondary shadow-lg flex items-center gap-2 active:scale-95 transition-transform hover:shadow-xl font-body-semibold text-body-md tracking-tight"
             type="button"
@@ -2712,18 +2744,26 @@ function MyWorkPageContent() {
           MODAL: THÊM ĐẦU VIỆC MỚI TÙY BIẾN CHO CÁN BỘ
           ========================================================================= */}
       {isNewTaskModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
-            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <V5Icon name="add_circle" className="text-secondary-fixed text-[22px]" />
-                <h3 className="font-headline-sm text-headline-sm text-white">
-                  Thêm Đầu Việc Cá Nhân Tùy Biến
-                </h3>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
+                  <V5Icon name="add_circle" className="text-[20px]" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold text-v5-ink">
+                    Thêm Đầu Việc Cá Nhân Tùy Biến
+                  </h3>
+                  <p className="mt-0.5 text-[11px] text-v5-muted">
+                    Việc tự tạo hoặc việc được giao ngoài kế hoạch
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setIsNewTaskModalOpen(false)}
-                className="text-on-primary-container hover:text-white transition-fast"
+                className="rounded-md p-1 text-v5-muted transition-colors hover:bg-v5-bg hover:text-v5-ink"
+                aria-label="Đóng"
               >
                 <V5Icon name="close" className="text-[20px]" />
               </button>
@@ -2732,7 +2772,7 @@ function MyWorkPageContent() {
             <form onSubmit={handleCreateTask}>
               <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
                 <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
+                  <label className="text-[11px] font-semibold text-v5-ink">
                     Tên đầu việc cá nhân *
                   </label>
                   <input
@@ -2741,13 +2781,13 @@ function MyWorkPageContent() {
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Nhập nội dung kết quả, số hồ sơ liên quan..."
-                    className="h-9 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-9 rounded-lg border border-v5-line bg-v5-surface px-3 text-[12px] text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/10"
                   />
                 </div>
 
                 {/* YC-38B: bộ chọn nguồn thông minh — gợi ý TX theo tên vừa nhập */}
                 <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
+                  <label className="text-[11px] font-semibold text-v5-ink">
                     Nguồn công việc (tuỳ chọn)
                   </label>
                   <WorkSourcePicker
@@ -2756,18 +2796,132 @@ function MyWorkPageContent() {
                     product={newTaskProduct}
                     onCatalogChange={setNewTaskCatalogEntry}
                     onProductChange={setNewTaskProduct}
+                    hideSelected
                     storageKey="yc38b:my-work"
                   />
                 </div>
 
+                {(newTaskCatalogEntry || newTaskProduct) && (
+                  <div className="shrink-0 overflow-hidden rounded-lg border border-v5-line">
+                    <table className="w-full table-fixed text-[11px]">
+                      <thead className="bg-v5-bg text-v5-muted">
+                        <tr>
+                          <th className="px-2 py-1.5 text-left font-semibold">Nguồn</th>
+                          <th className="w-[92px] px-2 py-1.5 text-right font-semibold">SL giao</th>
+                          <th className="w-[110px] px-2 py-1.5 text-left font-semibold">Đơn vị</th>
+                          <th className="w-[52px] px-2 py-1.5 text-right font-semibold">Hệ số</th>
+                          <th className="w-7" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {newTaskCatalogEntry && (
+                          <tr className="border-t border-v5-line/60 align-top">
+                            <td className="px-2 py-1.5">
+                              <div className="font-mono text-[10px] font-semibold text-teal-700">
+                                TX · {newTaskCatalogEntry.code}
+                              </div>
+                              <div className="line-clamp-2 text-v5-ink">{newTaskCatalogEntry.title}</div>
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={newTaskAssignedQty}
+                                onChange={(e) => setNewTaskAssignedQty(e.target.value)}
+                                placeholder="SL"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-right text-[11px] tabular-nums text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
+                              />
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                value={newTaskQuantityUnit}
+                                onChange={(e) => setNewTaskQuantityUnit(e.target.value)}
+                                placeholder="ĐVT"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-[11px] text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-v5-ink">
+                              {newTaskCatalogEntry.convertFactor ?? "—"}
+                            </td>
+                            <td className="pr-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewTaskCatalogEntry(null);
+                                  setNewTaskAssignedQty("");
+                                  setNewTaskQuantityUnit("");
+                                }}
+                                aria-label="Bỏ đầu việc TX"
+                                className="rounded px-1 text-[14px] leading-none text-v5-muted hover:text-v5-danger"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        )}
+                        {newTaskProduct && (
+                          <tr className="border-t border-v5-line/60 align-top">
+                            <td className="px-2 py-1.5">
+                              <div className="font-mono text-[10px] font-semibold text-indigo-700">
+                                QĐ1277 · {newTaskProduct.code}
+                              </div>
+                              <div className="line-clamp-2 text-v5-ink">{newTaskProduct.taskName}</div>
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={newTaskProductQty}
+                                onChange={(e) => setNewTaskProductQty(e.target.value)}
+                                placeholder="SL"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-right text-[11px] tabular-nums text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
+                              />
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                value={newTaskProductUnit}
+                                onChange={(e) => setNewTaskProductUnit(e.target.value)}
+                                placeholder="ĐVT"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-[11px] text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent/30"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-v5-ink">
+                              {newTaskProduct.convertFactor ?? "—"}
+                            </td>
+                            <td className="pr-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewTaskProduct(null);
+                                  setNewTaskProductQty("");
+                                  setNewTaskProductUnit("");
+                                }}
+                                aria-label="Bỏ sản phẩm QĐ1277"
+                                className="rounded px-1 text-[14px] leading-none text-v5-muted hover:text-v5-danger"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    <div className="border-t border-v5-line/60 bg-v5-bg px-2 py-1 text-[10px] text-v5-muted">
+                      Mỗi dòng một số lượng riêng. Dòng chưa có hệ số vẫn ghi nhận nhưng chưa tính điểm.
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">
+                    <label className="text-[11px] font-semibold text-v5-ink">
                       Phân loại nguồn
                     </label>                    <select
                       value={newTaskSource}
                       onChange={(e) => setNewTaskSource(e.target.value)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 rounded-lg border border-v5-line bg-v5-surface px-2 text-[12px] text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/10"
                     >
                       <option value="PLAN">Kế hoạch công tác tuần</option>
                       <option value="SELF_INITIATED">Tự khởi tạo phát sinh</option>
@@ -2777,13 +2931,13 @@ function MyWorkPageContent() {
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">
+                    <label className="text-[11px] font-semibold text-v5-ink">
                       Mức độ ưu tiên
                     </label>
                     <select
                       value={newTaskPriority}
                       onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 rounded-lg border border-v5-line bg-v5-surface px-2 text-[12px] text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/10"
                     >
                       <option value="Cao">Cao</option>
                       <option value="Trung bình">Trung bình</option>
@@ -2794,43 +2948,44 @@ function MyWorkPageContent() {
 
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">
+                    <label className="text-[11px] font-semibold text-v5-ink">
                       Hạn hoàn thành
                     </label>
                     <input
                       type="date"
                       value={newTaskDeadline}
                       onChange={(e) => setNewTaskDeadline(e.target.value)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 rounded-lg border border-v5-line bg-v5-surface px-2 text-[12px] text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/10"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">
+                    <label className="text-[11px] font-semibold text-v5-ink">
                       Giờ kết thúc
                     </label>
                     <input
                       type="time"
                       value={newTaskTime}
                       onChange={(e) => setNewTaskTime(e.target.value)}
-                      className="h-9 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                      className="h-9 rounded-lg border border-v5-line bg-v5-surface px-2 text-[12px] text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/10"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
+              <div className="flex items-center justify-end gap-2 border-t border-v5-line bg-v5-bg px-4 py-3">
                 <button
                   type="button"
                   onClick={() => setIsNewTaskModalOpen(false)}
-                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line transition-fast active-press"
+                  className="h-9 rounded-lg border border-v5-line bg-v5-surface px-4 text-[12px] font-semibold text-v5-ink hover:bg-v5-bg transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press"
+                  disabled={isCreatingPersonal}
+                  className="h-9 rounded-lg bg-v5-accent px-4 text-[12px] font-semibold text-white hover:bg-v5-accent/90 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                 >
-                  Lưu đầu việc
+                  {isCreatingPersonal ? "Đang lưu..." : "Lưu đầu việc"}
                 </button>
               </div>
             </form>
