@@ -333,7 +333,7 @@ export default function WorkSourcePicker({
                 <p className="text-[10px] uppercase tracking-wide text-teal-800 font-semibold">
                   Đầu việc danh mục TX
                 </p>
-                <p className="text-[12px] text-slate-800 truncate">
+                <p className="text-[12px] text-v5-ink truncate">
                   <span className="font-mono font-semibold">{catalogEntry.code}</span> ·{" "}
                   {catalogEntry.title}
                 </p>
@@ -376,7 +376,7 @@ export default function WorkSourcePicker({
                   {p.isPrimary ? " · Chính" : ""}
                   {lockProducts ? " · Chỉ đọc" : ""}
                 </p>
-                <p className="text-[12px] text-slate-800 truncate">
+                <p className="text-[12px] text-v5-ink truncate">
                   <span className="font-mono font-semibold">{p.code}</span> · {p.taskName}
                 </p>
                 <p className="text-[10px] text-slate-600">
@@ -425,7 +425,7 @@ export default function WorkSourcePicker({
           <V5Icon name="library_books" className="text-[15px]" />
           {isMulti ? `Chọn từ danh mục (${selectedProducts.length} SP QĐ1277)` : "Chọn từ danh mục"}
         </button>
-        <span className={`text-[10px] ${lockProducts ? "text-amber-700 font-medium" : "text-slate-500"}`}>
+        <span className={`text-[10px] ${lockProducts ? "text-amber-700 font-medium" : "text-v5-muted"}`}>
           {lockProducts
             ? "Chỉ người thực hiện công việc được gắn/bỏ sản phẩm QĐ1277. Lãnh đạo chỉ giao việc, không đề xuất sản phẩm thay cán bộ."
             : isMulti
@@ -437,7 +437,7 @@ export default function WorkSourcePicker({
       {/* Gợi ý TX */}
       {suggestions.length > 0 && !catalogEntry && (
         <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2" data-testid="work-source-suggestions">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-v5-muted">
             Gợi ý đầu việc danh mục TX
           </p>
           <ul className="flex flex-col gap-1">
@@ -448,10 +448,10 @@ export default function WorkSourcePicker({
                   onClick={() => pickCatalog(s)}
                   className="w-full rounded-md border border-transparent bg-white px-2 py-1.5 text-left hover:border-teal-300 hover:bg-teal-50/50"
                 >
-                  <p className="text-[12px] text-slate-800">
+                  <p className="text-[12px] text-v5-ink">
                     <span className="font-mono font-semibold">{s.code}</span> · {s.title}
                   </p>
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-[10px] text-v5-muted">
                     {s.department || "—"} · {factorLabel(s.convertFactor)}
                   </p>
                 </button>
@@ -475,7 +475,7 @@ export default function WorkSourcePicker({
                     <button
                       type="button"
                       onClick={() => pickCatalog(s)}
-                      className="rounded-md border border-amber-200 bg-amber-50/70 px-2 py-1 text-[11px] text-slate-800 hover:bg-amber-100"
+                      className="rounded-md border border-amber-200 bg-amber-50/70 px-2 py-1 text-[11px] text-v5-ink hover:bg-amber-100"
                     >
                       <span className="font-mono font-semibold">{s.code}</span> ·{" "}
                       <span className="line-clamp-1 max-w-[220px] inline-block align-bottom">
@@ -489,7 +489,7 @@ export default function WorkSourcePicker({
           )}
           {recentItems.length > 0 && (
             <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-v5-muted">
                 Gần đây / thường dùng
               </p>
               <ul className="flex flex-wrap gap-1">
@@ -518,14 +518,14 @@ export default function WorkSourcePicker({
       {/* Modal chọn danh mục */}
       {open && (
         <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/60 p-3">
-          <div className="my-4 w-full max-w-2xl rounded-2xl border border-border-default bg-surface-container-lowest shadow-2xl">
-            <div className="flex items-center justify-between border-b border-surface-container px-4 py-3">
-              <h3 className="text-sm font-bold text-primary">Chọn từ danh mục</h3>
+          <div className="my-4 w-full max-w-2xl rounded-xl border border-v5-line bg-v5-surface shadow-xl">
+            <div className="flex items-center justify-between border-b border-v5-line px-4 py-3">
+              <h3 className="text-sm font-semibold text-v5-ink">Chọn từ danh mục</h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Đóng"
-                className="text-on-surface-variant hover:text-on-surface"
+                className="text-v5-muted hover:text-v5-ink"
               >
                 ✕
               </button>
@@ -537,8 +537,8 @@ export default function WorkSourcePicker({
                 onClick={() => setTab("tx")}
                 className={`rounded-t-lg px-3 py-2 text-[12px] font-semibold ${
                   tab === "tx"
-                    ? "border-b-2 border-secondary text-secondary"
-                    : "text-on-surface-variant"
+                    ? "border-b-2 border-v5-accent text-v5-accent"
+                    : "text-v5-muted"
                 }`}
               >
                 ① Công việc thường xuyên (TX)
@@ -549,8 +549,8 @@ export default function WorkSourcePicker({
                   onClick={() => setTab("product")}
                   className={`rounded-t-lg px-3 py-2 text-[12px] font-semibold ${
                     tab === "product"
-                      ? "border-b-2 border-secondary text-secondary"
-                      : "text-on-surface-variant"
+                      ? "border-b-2 border-v5-accent text-v5-accent"
+                      : "text-v5-muted"
                   }`}
                 >
                   ② Sản phẩm đầu ra (QĐ1277)
@@ -568,18 +568,18 @@ export default function WorkSourcePicker({
                     ? "Tìm theo mã (NV-01) hoặc tên đầu việc — không dấu, không phân biệt hoa thường..."
                     : "Tìm theo mã hoặc tên sản phẩm QĐ1277 (tìm trên máy chủ)..."
                 }
-                className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-[12px] focus:border-secondary focus:outline-none"
+                className="mb-3 w-full h-9 rounded-lg border border-v5-line bg-v5-surface px-3 text-[12px] text-v5-ink focus:border-v5-accent focus:outline-none focus:ring-2 focus:ring-v5-accent/10"
               />
 
               {tab === "tx" ? (
                 <div className="max-h-[45vh] overflow-y-auto">
                   {!query && (
-                    <p className="py-6 text-center text-[11px] text-slate-500">
+                    <p className="py-6 text-center text-[11px] text-v5-muted">
                       Nhập từ khóa để tìm trong danh mục TX (348 đầu việc).
                     </p>
                   )}
                   {loadingList && (
-                    <p className="py-4 text-center text-[11px] text-slate-500">Đang tìm…</p>
+                    <p className="py-4 text-center text-[11px] text-v5-muted">Đang tìm…</p>
                   )}
                   <ul className="flex flex-col gap-1">
                     {txResults.map((r) => (
@@ -587,12 +587,12 @@ export default function WorkSourcePicker({
                         <button
                           type="button"
                           onClick={() => pickCatalog(r)}
-                          className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-2 text-left hover:border-teal-300 hover:bg-teal-50/50"
+                          className="w-full rounded-lg border border-v5-line bg-v5-surface px-2.5 py-2 text-left hover:border-v5-accent/40 hover:bg-v5-accent-soft/40"
                         >
-                          <p className="text-[12px] text-slate-800">
+                          <p className="text-[12px] text-v5-ink">
                             <span className="font-mono font-semibold">{r.code}</span> · {r.title}
                           </p>
-                          <p className="text-[10px] text-slate-500">
+                          <p className="text-[10px] text-v5-muted">
                             {r.department || "—"} · {factorLabel(r.convertFactor)}
                           </p>
                         </button>
@@ -600,7 +600,7 @@ export default function WorkSourcePicker({
                     ))}
                   </ul>
                   {query && !loadingList && txResults.length === 0 && (
-                    <p className="py-6 text-center text-[11px] text-slate-500">
+                    <p className="py-6 text-center text-[11px] text-v5-muted">
                       Không tìm thấy đầu việc phù hợp.
                     </p>
                   )}
@@ -608,12 +608,12 @@ export default function WorkSourcePicker({
               ) : (
                 <div className="max-h-[45vh] overflow-y-auto">
                   {!query && (
-                    <p className="py-6 text-center text-[11px] text-slate-500">
+                    <p className="py-6 text-center text-[11px] text-v5-muted">
                       Nhập từ khóa để tìm sản phẩm QĐ1277 (tìm trên máy chủ).
                     </p>
                   )}
                   {loadingList && (
-                    <p className="py-4 text-center text-[11px] text-slate-500">Đang tìm…</p>
+                    <p className="py-4 text-center text-[11px] text-v5-muted">Đang tìm…</p>
                   )}
                   <ul className="flex flex-col gap-1">
                     {productResults.map((p) => {
@@ -629,7 +629,7 @@ export default function WorkSourcePicker({
                                 : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50"
                             }`}
                           >
-                            <p className="flex items-center justify-between gap-2 text-[12px] text-slate-800">
+                            <p className="flex items-center justify-between gap-2 text-[12px] text-v5-ink">
                               <span>
                                 <span className="font-mono font-semibold">{p.code}</span> · {p.taskName}
                               </span>
@@ -639,10 +639,10 @@ export default function WorkSourcePicker({
                                 </span>
                               )}
                             </p>
-                            <p className="text-[10px] text-slate-500">
+                            <p className="text-[10px] text-v5-muted">
                               Nhóm: {p.groupName || "Chưa phân nhóm"} · {factorLabel(p.convertFactor)}
                             </p>
-                            <p className="text-[10px] text-slate-500">
+                            <p className="text-[10px] text-v5-muted">
                               Đơn vị tính: {p.quantityUnit || "Chưa xác nhận"} ·{" "}
                               {reviewLabel(p.reviewState)}
                             </p>
@@ -652,7 +652,7 @@ export default function WorkSourcePicker({
                     })}
                   </ul>
                   {query && !loadingList && productResults.length === 0 && (
-                    <p className="py-6 text-center text-[11px] text-slate-500">
+                    <p className="py-6 text-center text-[11px] text-v5-muted">
                       Không tìm thấy sản phẩm phù hợp.
                     </p>
                   )}
@@ -661,7 +661,7 @@ export default function WorkSourcePicker({
             </div>
 
             <div className="flex items-center justify-between gap-2 border-t border-surface-container px-4 py-3">
-              <p className="text-[10px] text-slate-500">
+              <p className="text-[10px] text-v5-muted">
                 TX và QĐ1277 là hai danh mục độc lập — chọn riêng khi phù hợp, không bắt buộc chọn cả hai.
                 {isMulti ? " Có thể chọn nhiều sản phẩm QĐ1277 cho cùng một đầu việc." : ""}
               </p>
