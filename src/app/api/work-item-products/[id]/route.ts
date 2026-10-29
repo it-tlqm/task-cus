@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "").toUpperCase();
     const note = String(body.note || "").trim();
-    if (action !== "CONFIRM" && action !== "REJECT") {
+    if (action !== "CONFIRM" && action !== "REJECT" && action !== "UPDATE_QUANTITY") {
       return jsonError("Thao tác không hợp lệ.", 400);
     }
 
@@ -35,6 +35,41 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (!link) return jsonError("Không tìm thấy sản phẩm gắn với công việc.", 404);
     if (!link.reviewState) {
       return jsonError("Sản phẩm này chưa được đưa vào quy trình xác nhận của V3.", 409);
+    }
+
+    // Người thực hiện được sửa số lượng/đơn vị tính khi liên kết chưa bị khóa.
+    if (action === "UPDATE_QUANTITY") {
+      if (link.workItem.personId !== user.personId) {
+        return jsonError("Chỉ người thực hiện công việc mới được sửa số lượng sản phẩm.", 403);
+      }
+      if (isWorkItemReviewLocked(link.workItem)) {
+        return jsonError("Công việc đã gửi hoặc đã được xác nhận — không thể sửa số lượng sản phẩm.", 409);
+      }
+      if (link.reviewState === "CONFIRMED") {
+        return jsonError("Sản phẩm đã được xác nhận — không thể sửa số lượng.", 409);
+      }
+      const rawQty = body.quantity;
+      const quantity =
+        rawQty === null || rawQty === undefined || rawQty === ""
+          ? null
+          : Number(rawQty);
+      if (quantity !== null && (!Number.isFinite(quantity) || quantity < 0)) {
+        return jsonError("Số lượng sản phẩm không hợp lệ.", 400);
+      }
+      const quantityUnit = body.quantityUnit ? String(body.quantityUnit).trim() : null;
+      const updated = await prisma.workItemProduct.update({
+        where: { id },
+        data: { quantity, quantityUnit },
+      });
+      await recordAuditEvent({
+        actorId: user.id,
+        action: "WORK_ITEM_PRODUCT_UPDATE_QUANTITY",
+        resourceType: "WorkItemProduct",
+        resourceId: id,
+        oldData: { quantity: link.quantity, quantityUnit: link.quantityUnit },
+        newData: { quantity, quantityUnit, productCode: link.productItem.code },
+      });
+      return NextResponse.json({ success: true, data: updated });
     }
 
     const canReview = await canReviewAsDirectLeader(user, link.workItem.personId);

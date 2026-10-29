@@ -34,6 +34,8 @@ export interface PickedProduct {
   groupName?: string | null;
   /** Đơn vị tính của liên kết (nếu đã có); không tự suy ra. */
   quantityUnit?: string | null;
+  /** Số lượng giao của riêng sản phẩm này (nếu đã có). */
+  quantity?: number | null;
   /** PROPOSED | CONFIRMED | REJECTED | null (chưa vào luồng xác nhận). */
   reviewState?: string | null;
   /** ID dòng WorkItemProduct khi sửa đầu việc đã có. */
@@ -66,6 +68,8 @@ interface Props {
    * thuộc quyền của người thực hiện, không phải người giao việc.
    */
   lockProducts?: boolean;
+  /** Ẩn danh sách nguồn đã chọn (dùng khi trang cha tự vẽ bảng nguồn + số lượng). */
+  hideSelected?: boolean;
 }
 
 const RECENT_MAX = 10;
@@ -102,6 +106,7 @@ export default function WorkSourcePicker({
   disabled,
   allowProduct = true,
   lockProducts = false,
+  hideSelected = false,
 }: Props) {
   const isMulti = typeof onProductsChange === "function";
   const selectedProducts: PickedProduct[] = isMulti
@@ -320,7 +325,7 @@ export default function WorkSourcePicker({
   return (
     <div className="flex flex-col gap-2" data-testid="work-source-picker">
       {/* Nguồn đã chọn */}
-      {(catalogEntry || selectedProducts.length > 0) && (
+      {!hideSelected && (catalogEntry || selectedProducts.length > 0) && (
         <div className="flex flex-col gap-1.5">
           {catalogEntry && (
             <div className="flex items-center justify-between gap-2 rounded-lg border border-teal-200 bg-teal-50/60 px-2.5 py-1.5">

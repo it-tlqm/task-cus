@@ -54,6 +54,7 @@ interface PersonalWorkItemData {
     isPrimary: boolean;
     reviewState?: string | null;
     quantityUnit?: string | null;
+    quantity?: number | null;
     factorSnapshot?: number | null;
     productItem: {
       id: string;
@@ -583,6 +584,7 @@ export default function PlansPage() {
         convertFactor: link.factorSnapshot ?? link.productItem.convertFactor ?? null,
         groupName: link.productItem.group?.title || link.productItem.groupName || null,
         quantityUnit: link.quantityUnit || null,
+        quantity: link.quantity ?? null,
         reviewState: link.reviewState || null,
         linkId: link.id,
         isPrimary: link.isPrimary,
@@ -740,21 +742,55 @@ export default function PlansPage() {
       return [json.error || "Không đọc được liên kết sản phẩm hiện có"];
     }
     const json = await res.json();
-    const existing: Array<{ productItemId: string; reviewState?: string | null }> =
-      json.data || [];
+    const existing: Array<{
+      id: string;
+      productItemId: string;
+      reviewState?: string | null;
+      quantity?: number | null;
+      quantityUnit?: string | null;
+    }> = json.data || [];
     const desiredIds = new Set(desired.map((p) => p.id));
-    const existingIds = new Set(existing.map((l) => l.productItemId));
+    const existingByProduct = new Map(existing.map((l) => [l.productItemId, l]));
 
     for (const product of desired) {
-      if (existingIds.has(product.id)) continue;
-      const addRes = await fetch("/api/work-item-products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workItemId, productItemId: product.id }),
-      });
-      if (!addRes.ok) {
-        const addJson = await addRes.json().catch(() => ({}));
-        errors.push(`Không gắn được SP ${product.code}: ${addJson.error || "lỗi không xác định"}`);
+      const link = existingByProduct.get(product.id);
+      if (!link) {
+        const addRes = await fetch("/api/work-item-products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workItemId,
+            productItemId: product.id,
+            quantity: product.quantity ?? null,
+            quantityUnit: product.quantityUnit ?? null,
+          }),
+        });
+        if (!addRes.ok) {
+          const addJson = await addRes.json().catch(() => ({}));
+          errors.push(`Không gắn được SP ${product.code}: ${addJson.error || "lỗi không xác định"}`);
+        }
+        continue;
+      }
+
+      // Cập nhật số lượng/đơn vị tính của liên kết đã có (nếu chưa bị khóa).
+      const nextQty = product.quantity ?? null;
+      const nextUnit = product.quantityUnit ?? null;
+      const qtyChanged =
+        (link.quantity ?? null) !== nextQty || (link.quantityUnit ?? null) !== nextUnit;
+      if (qtyChanged && link.reviewState !== "CONFIRMED") {
+        const patchRes = await fetch(`/api/work-item-products/${link.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "UPDATE_QUANTITY",
+            quantity: nextQty,
+            quantityUnit: nextUnit,
+          }),
+        });
+        if (!patchRes.ok) {
+          const patchJson = await patchRes.json().catch(() => ({}));
+          errors.push(`Không cập nhật được SL/ĐVT SP ${product.code}: ${patchJson.error || "lỗi không xác định"}`);
+        }
       }
     }
 
@@ -810,6 +846,19 @@ export default function PlansPage() {
     savingWorkItemRef.current = true;
     setSavingWorkItem(true);
     try {
+      // Số lượng/ĐVT của đầu việc: ưu tiên dòng TX; nếu chỉ có QĐ1277 thì lấy tổng SL các dòng SP.
+      const productQtyTotal = modalProducts.reduce(
+        (sum, p) => sum + (typeof p.quantity === "number" ? p.quantity : 0),
+        0
+      );
+      const fallbackQty = pickedCatalogEntry
+        ? modalAssignedQty
+        : productQtyTotal > 0
+          ? String(productQtyTotal)
+          : "";
+      const fallbackUnit = pickedCatalogEntry
+        ? modalQuantityUnit
+        : modalProducts[0]?.quantityUnit || "";
       const basePayload = {
         title: modalTitle.trim(),
         groupId: modalGroupId || null,
@@ -818,8 +867,8 @@ export default function PlansPage() {
         coordinationUnit: modalCoordination.trim() || null,
         priority: modalPriority,
         expectedResult: modalExpectedResult.trim() || null,
-        assignedQty: modalAssignedQty === "" ? null : Number(modalAssignedQty),
-        quantityUnit: modalQuantityUnit.trim() || null,
+        assignedQty: fallbackQty === "" ? null : Number(fallbackQty),
+        quantityUnit: fallbackUnit.trim() || null,
         factorSnapshot:
           pickedCatalogEntry?.convertFactor ?? modalProducts[0]?.convertFactor ?? null,
         status: modalStatus,
@@ -3150,42 +3199,136 @@ export default function PlansPage() {
                     }}
                     allowProduct={canEditModalProducts}
                     lockProducts={!canEditModalProducts}
+                    hideSelected
                     storageKey="yc38b:plans"
                   />
                 </div>
 
-                {(modalCatalogEntryId || modalProducts.length > 0) && (
-                  <div className="rounded-lg border border-v5-line bg-v5-bg p-2.5">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[11px] font-semibold text-primary">Số lượng giao</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={modalAssignedQty}
-                          onChange={(e) => setModalAssignedQty(e.target.value)}
-                          placeholder="Ví dụ: 100"
-                          className="h-9 rounded bg-v5-surface px-2.5 text-right text-[12px] tabular-nums text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[11px] font-semibold text-primary">Đơn vị tính</label>
-                        <input
-                          value={modalQuantityUnit}
-                          onChange={(e) => setModalQuantityUnit(e.target.value)}
-                          placeholder="Tờ khai, lượt, hồ sơ..."
-                          className="h-9 rounded bg-v5-surface px-2.5 text-[12px] text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-1.5 text-[11px] text-v5-muted">
-                      Hệ số quy đổi:{" "}
-                      <strong className="text-v5-ink">
-                        {pickedCatalogEntry?.convertFactor ??
-                          modalProducts[0]?.convertFactor ??
-                          "chưa có"}
-                      </strong>
+                {(pickedCatalogEntry || modalProducts.length > 0) && (
+                  <div className="shrink-0 overflow-hidden rounded-lg border border-v5-line">
+                    <table className="w-full table-fixed text-[11px]">
+                      <thead className="bg-v5-bg text-v5-muted">
+                        <tr>
+                          <th className="px-2 py-1.5 text-left font-semibold">Nguồn</th>
+                          <th className="w-[92px] px-2 py-1.5 text-right font-semibold">SL giao</th>
+                          <th className="w-[110px] px-2 py-1.5 text-left font-semibold">Đơn vị</th>
+                          <th className="w-[52px] px-2 py-1.5 text-right font-semibold">Hệ số</th>
+                          <th className="w-7" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pickedCatalogEntry && (
+                          <tr className="border-t border-v5-line/60 align-top">
+                            <td className="px-2 py-1.5">
+                              <div className="font-mono text-[10px] font-semibold text-teal-700">
+                                TX · {pickedCatalogEntry.code}
+                              </div>
+                              <div className="line-clamp-2 text-v5-ink">{pickedCatalogEntry.title}</div>
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={modalAssignedQty}
+                                onChange={(e) => setModalAssignedQty(e.target.value)}
+                                placeholder="SL"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-right text-[11px] tabular-nums text-v5-ink focus:outline-none focus:ring-1 focus:ring-secondary"
+                              />
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                value={modalQuantityUnit}
+                                onChange={(e) => setModalQuantityUnit(e.target.value)}
+                                placeholder="ĐVT"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-[11px] text-v5-ink focus:outline-none focus:ring-1 focus:ring-secondary"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-v5-ink">
+                              {pickedCatalogEntry.convertFactor ?? "—"}
+                            </td>
+                            <td className="pr-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setModalCatalogEntryId("");
+                                  setPickedCatalogLocal(null);
+                                }}
+                                aria-label="Bỏ đầu việc TX"
+                                className="rounded px-1 text-[14px] leading-none text-v5-muted hover:text-v5-danger"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        )}
+                        {modalProducts.map((p) => (
+                          <tr key={p.id} className="border-t border-v5-line/60 align-top">
+                            <td className="px-2 py-1.5">
+                              <div className="font-mono text-[10px] font-semibold text-indigo-700">
+                                QĐ1277 · {p.code}
+                              </div>
+                              <div className="line-clamp-2 text-v5-ink">{p.taskName}</div>
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={p.quantity ?? ""}
+                                disabled={!canEditModalProducts || p.reviewState === "CONFIRMED"}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  setModalProducts((prev) =>
+                                    prev.map((x) =>
+                                      x.id === p.id
+                                        ? { ...x, quantity: raw === "" ? null : Number(raw) }
+                                        : x
+                                    )
+                                  );
+                                }}
+                                placeholder="SL"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-right text-[11px] tabular-nums text-v5-ink focus:outline-none focus:ring-1 focus:ring-secondary"
+                              />
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <input
+                                value={p.quantityUnit ?? ""}
+                                disabled={!canEditModalProducts || p.reviewState === "CONFIRMED"}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  setModalProducts((prev) =>
+                                    prev.map((x) =>
+                                      x.id === p.id ? { ...x, quantityUnit: raw } : x
+                                    )
+                                  );
+                                }}
+                                placeholder="ĐVT"
+                                className="h-8 w-full rounded border border-v5-line bg-v5-surface px-1.5 text-[11px] text-v5-ink focus:outline-none focus:ring-1 focus:ring-secondary"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-v5-ink">
+                              {p.convertFactor ?? "—"}
+                            </td>
+                            <td className="pr-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setModalProducts((prev) => prev.filter((x) => x.id !== p.id))
+                                }
+                                disabled={p.reviewState === "CONFIRMED" || !canEditModalProducts}
+                                aria-label="Bỏ sản phẩm QĐ1277"
+                                className="rounded px-1 text-[14px] leading-none text-v5-muted hover:text-v5-danger disabled:cursor-not-allowed disabled:opacity-30"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="border-t border-v5-line/60 bg-v5-bg px-2 py-1 text-[10px] text-v5-muted">
+                      Mỗi dòng một số lượng riêng. Dòng chưa có hệ số vẫn ghi nhận nhưng chưa tính điểm.
                     </div>
                   </div>
                 )}
