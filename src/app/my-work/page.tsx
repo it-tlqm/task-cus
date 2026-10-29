@@ -292,6 +292,11 @@ function MyWorkPageContent() {
   const [extReason, setExtReason] = useState("");
   const [extBusy, setExtBusy] = useState(false);
 
+  // Giải trình chậm hạn
+  const [issueTask, setIssueTask] = useState<TaskItem | null>(null);
+  const [issueReason, setIssueReason] = useState("");
+  const [issueBusy, setIssueBusy] = useState(false);
+
   // Drawer Form State
   const [drawerStatus, setDrawerStatus] = useState<"IN_PROGRESS" | "COMPLETED" | "WAITING_REVIEW">("IN_PROGRESS");
   const [drawerProgress, setDrawerProgress] = useState<number>(85);
@@ -583,6 +588,48 @@ function MyWorkPageContent() {
       toast.error("Lỗi: " + (err?.message || "Không gửi được đề nghị gia hạn"));
     } finally {
       setExtBusy(false);
+    }
+  };
+
+  const openIssueForTask = (task: TaskItem) => {
+    if (isTaskTerminal(task.status)) {
+      toast.warning("Nhiệm vụ đã kết thúc — không thể gửi giải trình.");
+      return;
+    }
+    setIssueTask(task);
+    setIssueReason(task.issueNotes || "");
+  };
+
+  const handleIssueSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!issueTask || issueBusy) return;
+    if (!issueReason.trim()) {
+      toast.warning("Vui lòng nhập nội dung giải trình chậm hạn.");
+      return;
+    }
+    setIssueBusy(true);
+    try {
+      const res = await fetch(`/api/tasks/${issueTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hasIssue: true,
+          issueNotes: issueReason.trim(),
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("Đã gửi giải trình chậm hạn.");
+        setIssueTask(null);
+        setIssueReason("");
+        await fetchTasks();
+      } else {
+        toast.error(json.error || "Không gửi được giải trình chậm hạn");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + (err?.message || "Không gửi được giải trình chậm hạn"));
+    } finally {
+      setIssueBusy(false);
     }
   };
 
@@ -957,7 +1004,7 @@ function MyWorkPageContent() {
             </div>
             <div className="flex items-center gap-space-sm shrink-0 w-full md:w-auto justify-end">
               <button
-                onClick={() => openDrawerForTask(overdueTask)}
+                onClick={() => openIssueForTask(overdueTask)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-v5-surface text-status-danger font-label-md text-label-md hover:bg-status-danger hover:text-on-error transition-fast shadow-sm active-press"
               >
                 <V5Icon name="assignment_late" className="text-[18px]" />
@@ -1738,7 +1785,7 @@ function MyWorkPageContent() {
                       <div className="mt-2.5 p-2.5 rounded-lg bg-status-warning-bg/80 flex items-start gap-2">
                         <V5Icon name="info" className="text-status-warning text-[18px] shrink-0 mt-0.5" />
                         <div className="flex flex-col text-[12px]">
-                          <span className="font-body-semibold text-status-warning">Vướng mắc phát sinh:</span>
+                          <span className="font-body-semibold text-status-warning">Giải trình / vướng mắc:</span>
                           <span className="text-v5-ink">{task.issueNotes}</span>
                         </div>
                       </div>
@@ -1754,7 +1801,7 @@ function MyWorkPageContent() {
                       <span className="text-[13px] leading-tight truncate">Xin gia hạn</span>
                     </button>
                     <button
-                      onClick={() => openDrawerForTask(task)}
+                      onClick={() => openIssueForTask(task)}
                       className="h-11 px-2.5 rounded-lg bg-status-danger text-on-primary font-body-semibold text-body-md flex items-center justify-center gap-1 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
                       type="button"
                     >
@@ -2343,6 +2390,21 @@ function MyWorkPageContent() {
                       ? "Lưu nháp"
                       : "Lưu tiến độ phần việc"}
                 </button>
+                {selectedTask?.owner?.id === currentUser?.personId && (
+                  <button
+                    type="button"
+                    disabled={drawerLoading}
+                    onClick={() => {
+                      const task = selectedTask;
+                      setIsDrawerOpen(false);
+                      if (task) openIssueForTask(task);
+                    }}
+                    className="px-3 py-2 rounded-lg bg-v5-surface text-status-danger font-label-md text-label-md hover:bg-status-danger-bg transition-fast border border-status-danger/30 active-press"
+                  >
+                    <V5Icon name="assignment_late" className="text-[18px]" />
+                    Giải trình
+                  </button>
+                )}
                 {selectedTask?.owner?.id === currentUser?.personId &&
                   !selectedTask?.deadlineRequests?.some((r) => r.status === "PENDING") && (
                     <button
@@ -2372,6 +2434,65 @@ function MyWorkPageContent() {
               </div>
             </div>
           </aside>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: GIẢI TRÌNH CHẬM HẠN
+          ========================================================================= */}
+      {issueTask && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div className="min-w-0">
+                <h3 className="font-headline-sm font-semibold">Giải trình chậm hạn</h3>
+                <p className="truncate text-[11px] text-on-primary-container">{issueTask.code}</p>
+              </div>
+              <button type="button" onClick={() => setIssueTask(null)} aria-label="Đóng">
+                <V5Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+            <form onSubmit={handleIssueSubmit}>
+              <div className="p-space-md flex flex-col gap-space-md">
+                <p className="text-sm font-semibold text-v5-ink">{issueTask.title}</p>
+                <p className="text-[11px] text-v5-muted">
+                  Hạn hiện tại:{" "}
+                  <strong className="text-status-warning">{formatDateTime(issueTask.currentDeadline)}</strong>
+                </p>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Nội dung giải trình *</label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={issueReason}
+                    onChange={(e) => setIssueReason(e.target.value)}
+                    placeholder="Trình bày lý do chậm, tình hình xử lý và hướng khắc phục..."
+                    className="p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                  />
+                </div>
+                <p className="text-[11px] text-v5-muted">
+                  Giải trình chỉ ghi nhận lý do, <strong>không đổi hạn</strong>. Nếu cần thêm thời gian,
+                  dùng <strong>Xin gia hạn</strong>.
+                </p>
+              </div>
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
+                <button
+                  type="button"
+                  onClick={() => setIssueTask(null)}
+                  className="px-4 py-2 rounded-lg bg-v5-surface text-v5-ink text-xs font-semibold border border-v5-line hover:bg-v5-bg"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={issueBusy}
+                  className="px-4 py-2 rounded-lg bg-status-danger text-on-error text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                >
+                  {issueBusy ? "Đang gửi..." : "Gửi giải trình"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
