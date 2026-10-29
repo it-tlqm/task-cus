@@ -427,7 +427,7 @@ export default function MonthlyResultsPage() {
             <Badge variant="outline">Chưa chấm điểm</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
-            Tự động tổng hợp từ việc được giao và việc tự tạo trong tháng · thiếu mã sản phẩm thì chờ đối chiếu.
+            Tự động tổng hợp từ việc được giao và việc tự tạo trong tháng · việc không gắn QĐ1277 vẫn ghi nhận, không tính điểm.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -539,17 +539,18 @@ export default function MonthlyResultsPage() {
             <div className="mt-1 text-[10px] text-v5-muted">thô: {summary.completedRaw} · giao quy đổi: {summary.assignedConverted}</div>
           </Card>
           <Card className={`p-3 ${summary.unmappedCount > 0 ? "border-v5-gold/50 bg-v5-gold-soft" : ""}`}>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ đối chiếu mã SP</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chưa gắn SP QĐ1277</div>
             <div className={`mt-1 text-2xl font-bold tabular-nums ${summary.unmappedCount > 0 ? "text-v5-gold-ink" : "text-v5-ink"}`}>
               {summary.unmappedCount}
             </div>
+            <div className="mt-1 text-[10px] text-v5-muted">vẫn ghi nhận · không tính điểm</div>
           </Card>
           <Card className={`p-3 ${summary.missingFieldsCount > 0 ? "border-v5-danger/30 bg-v5-danger-soft" : ""}`}>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Thiếu số liệu</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chưa có kết quả</div>
             <div className={`mt-1 text-2xl font-bold tabular-nums ${summary.missingFieldsCount > 0 ? "text-v5-danger" : "text-v5-ink"}`}>
               {summary.missingFieldsCount}
             </div>
-            <div className="mt-1 text-[10px] text-v5-muted">chậm: {summary.lateTotal} · làm lại: {summary.reworkTotal}</div>
+            <div className="mt-1 text-[10px] text-v5-muted">chưa hoàn thành / thiếu số lượng · chậm: {summary.lateTotal} · làm lại: {summary.reworkTotal}</div>
           </Card>
         </div>
       )}
@@ -780,8 +781,8 @@ export default function MonthlyResultsPage() {
                     </div>
                   )}
                   <div className="flex gap-1 mt-1">
-                    {it.needsReview && <span className="px-1.5 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold">Chờ đối chiếu mã SP</span>}
-                    {missing(it) && <span className="px-1.5 py-0.5 rounded bg-v5-danger-soft text-v5-danger text-[11px] font-semibold">Thiếu số liệu</span>}
+                    {it.needsReview && <span className="px-1.5 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold">Chưa gắn SP</span>}
+                    {missing(it) && <span className="px-1.5 py-0.5 rounded bg-v5-danger-soft text-v5-danger text-[11px] font-semibold">Chưa có KQ</span>}
                   </div>
                 </td>
                 <td className="py-2.5 px-3 text-xs">
@@ -919,7 +920,7 @@ export default function MonthlyResultsPage() {
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-v5-ink">Mã sản phẩm QĐ1277 (để trống = chờ đối chiếu)</label>
+                  <label className="text-xs font-semibold text-v5-ink">Mã sản phẩm QĐ1277 (để trống nếu không gắn)</label>
                   {fProductId
                     ? <div className="flex items-center gap-2 h-10 px-2 rounded-lg bg-v5-accent-soft border border-v5-line text-sm">
                       <span className="flex-1 truncate font-mono">{fProductLabel}</span>

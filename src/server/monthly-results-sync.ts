@@ -40,7 +40,20 @@ export async function syncMonthlyResultsFromTasks(
       completedDate: true,
       workItemId: true,
       workItem: {
-        select: { assignedQty: true, quantityUnit: true, factorSnapshot: true },
+        select: {
+          assignedQty: true,
+          quantityUnit: true,
+          factorSnapshot: true,
+          productItemId: true,
+          linkedProducts: {
+            select: {
+              productItemId: true,
+              factorSnapshot: true,
+              reviewState: true,
+              productItem: { select: { convertFactor: true } },
+            },
+          },
+        },
       },
       sourceKind: true,
       sourceRefId: true,
@@ -50,10 +63,26 @@ export async function syncMonthlyResultsFromTasks(
   });
 
   for (const task of tasks) {
+    // Nguồn sản phẩm: ưu tiên QĐ1277 trực tiếp trên nhiệm vụ, sau đó đến
+    // đầu việc kế hoạch / liên kết sản phẩm (trường hợp nhiệm vụ có cả TX và QĐ1277).
+    const linkedProduct =
+      task.workItem?.linkedProducts.find((p) => p.reviewState === "CONFIRMED") ||
+      task.workItem?.linkedProducts[0] ||
+      null;
     const productItemId =
-      task.sourceKind === "QD1277_PRODUCT" && task.sourceRefId ? task.sourceRefId : null;
+      (task.sourceKind === "QD1277_PRODUCT" && task.sourceRefId
+        ? task.sourceRefId
+        : null) ||
+      task.workItem?.productItemId ||
+      linkedProduct?.productItemId ||
+      null;
 
-    let factor = task.factorSnapshot ?? task.workItem?.factorSnapshot ?? null;
+    let factor =
+      task.factorSnapshot ??
+      task.workItem?.factorSnapshot ??
+      linkedProduct?.factorSnapshot ??
+      linkedProduct?.productItem?.convertFactor ??
+      null;
     if (factor === null || factor === undefined) {
       if (productItemId) {
         const product = await prisma.productItem.findUnique({
