@@ -38,7 +38,6 @@ import {
   X,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ProductTour, startProductTour } from "@/components/v5/ProductTour";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import CommandPalette from "@/components/layout/CommandPalette";
 import { cn } from "@/lib/utils";
@@ -395,13 +394,10 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                   <Settings2 className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Hướng dẫn màn hình này"
-                onClick={() => startProductTour()}
-              >
-                <CircleHelp className="h-4 w-4" />
+              <Button variant="ghost" size="icon" aria-label="Trợ giúp" asChild>
+                <Link href="/huong-dan">
+                  <CircleHelp className="h-4 w-4" />
+                </Link>
               </Button>
               <div className="ml-1 grid h-7 w-7 place-items-center rounded-full bg-v5-accent text-[10px] font-bold text-white">
                 {(user?.fullName || "HQ").slice(0, 2).toUpperCase()}
@@ -420,7 +416,6 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
 
       <NotificationQuickView open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
       <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
-      <ProductTour />
     </div>
   );
 }
