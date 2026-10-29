@@ -3,8 +3,9 @@ import { prisma } from "./db";
 const DAY_MS = 86_400_000;
 
 /**
- * Đồng bộ nhiệm vụ có số lượng giao vào KQ tháng.
- * - Mỗi nhiệm vụ tạo đúng một dòng theo tháng hạn hoàn thành.
+ * Đồng bộ nhiệm vụ trong tháng vào KQ tháng.
+ * - Lấy cả việc được giao và việc tự tạo (mọi nhiệm vụ của người dùng trong tháng).
+ * - Việc không khai báo số lượng được tính mặc định 1 việc; hoàn thành thì ghi 1.
  * - Không ghi đè các dòng KQ tháng thủ công không gắn nhiệm vụ.
  * - Chạy lại nhiều lần vẫn idempotent.
  */
@@ -19,20 +20,28 @@ export async function syncMonthlyResultsFromTasks(
   const tasks = await prisma.task.findMany({
     where: {
       ownerId: personId,
-      assignedQty: { not: null },
-      currentDeadline: { gte: start, lte: end },
+      status: { not: "CANCELED" },
+      OR: [
+        { currentDeadline: { gte: start, lte: end } },
+        { completedDate: { gte: start, lte: end } },
+      ],
     },
     select: {
       id: true,
       title: true,
+      status: true,
       expectedResultText: true,
       actualResultText: true,
       assignedQty: true,
       completedQty: true,
+      quantityUnit: true,
       factorSnapshot: true,
       currentDeadline: true,
       completedDate: true,
       workItemId: true,
+      workItem: {
+        select: { assignedQty: true, quantityUnit: true, factorSnapshot: true },
+      },
       sourceKind: true,
       sourceRefId: true,
       assignedById: true,
@@ -44,7 +53,7 @@ export async function syncMonthlyResultsFromTasks(
     const productItemId =
       task.sourceKind === "QD1277_PRODUCT" && task.sourceRefId ? task.sourceRefId : null;
 
-    let factor = task.factorSnapshot;
+    let factor = task.factorSnapshot ?? task.workItem?.factorSnapshot ?? null;
     if (factor === null || factor === undefined) {
       if (productItemId) {
         const product = await prisma.productItem.findUnique({
@@ -91,12 +100,18 @@ export async function syncMonthlyResultsFromTasks(
       select: { id: true },
     });
 
+    // Việc không khai báo số lượng: lấy theo đầu việc kế hoạch, nếu vẫn thiếu thì 1 việc.
+    // Hoàn thành thì ghi 1, chưa hoàn thành thì để trống để không tính vào điểm.
+    const assignedQty = task.assignedQty ?? task.workItem?.assignedQty ?? 1;
+    const completedQty =
+      task.completedQty ?? (task.status === "DONE" ? assignedQty : null);
+
     const data = {
       taskId: task.id,
       title: task.title,
       outputText: task.expectedResultText || task.actualResultText || task.title,
-      assignedQty: task.assignedQty,
-      completedQty: task.completedQty,
+      assignedQty,
+      completedQty,
       dueDate: task.currentDeadline,
       completedDate: task.completedDate,
       factorSnapshot: factor ?? null,

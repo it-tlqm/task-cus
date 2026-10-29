@@ -427,12 +427,12 @@ export default function MonthlyResultsPage() {
             <Badge variant="outline">Chưa chấm điểm</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
-            Ghi nhận sản phẩm thực tế · đúng người, đúng tháng · thiếu mã sản phẩm thì chờ đối chiếu.
+            Tự động tổng hợp từ việc được giao và việc tự tạo trong tháng · thiếu mã sản phẩm thì chờ đối chiếu.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button data-tour="add-btn" size="sm" onClick={openAdd}>
-            <Plus className="h-3.5 w-3.5" /> Ghi nhận kết quả
+          <Button variant="outline" size="sm" onClick={openAdd}>
+            <Plus className="h-3.5 w-3.5" /> Bổ sung việc ngoài hệ thống
           </Button>
           <Button data-tour="export-btns" variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
             <FileDown className="h-3.5 w-3.5" />

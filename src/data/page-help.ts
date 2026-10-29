@@ -125,13 +125,14 @@ export const HELP: Record<string, PageHelp> = {
   "/monthly-results": {
     title: "Kết quả công tác tháng",
     bullets: [
-      "Cuối tháng: bấm Ghi nhận kết quả, chọn mã SP (không có thì để trống, ghi chờ đối chiếu).",
-      "Nhập số lượng, ngày xong, số văn bản minh chứng rồi Lưu.",
+      "KQ tháng tự động tổng hợp từ việc được giao và việc tự tạo trong tháng.",
+      "Việc chưa khai báo số lượng được tính mặc định 1 việc; hoàn thành thì ghi 1.",
+      "Chỉ dùng nút Bổ sung việc ngoài hệ thống khi việc không có trên hệ thống.",
       "Thẻ điểm là tính thử tham khảo — chưa phải điểm chính thức.",
       "2 nút xuất: Bảng 1 + 01A và Kế hoạch 02C (mở bằng Excel).",
     ],
     modals: [
-      { name: "Ghi nhận kết quả", tip: "Tìm mã SP bằng vài từ khóa. Hệ số được chốt theo danh mục lúc ghi, sau này đổi hệ số cũng không ảnh hưởng bản ghi cũ." },
+      { name: "Bổ sung việc ngoài hệ thống", tip: "Tìm mã SP bằng vài từ khóa. Hệ số được chốt theo danh mục lúc ghi, sau này đổi hệ số cũng không ảnh hưởng bản ghi cũ." },
     ],
   },
   "/leaves": {
