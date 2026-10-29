@@ -2951,7 +2951,7 @@ export default function PlansPage() {
                       <V5Icon name="library_books" className="text-[18px] text-secondary" />
                       Chọn từ danh mục — tối đa một nguồn đầu việc, không bắt buộc
                     </span>
-                    <span className="text-[11px] text-v5-muted">Nguồn: Danh mục TX · bộ phận · 48 mẫu cũ · sản phẩm QĐ1277 gắn kèm</span>
+                    <span className="text-[11px] text-v5-muted">Nguồn: Danh mục TX · bộ phận · sản phẩm QĐ1277 gắn kèm</span>
                   </div>
 
                   {/* YC-31 — TX và QĐ1277 được chọn tại một bộ chọn thống nhất bên dưới. */}
@@ -2962,24 +2962,14 @@ export default function PlansPage() {
                     <V5Icon name="info" className="text-[14px] shrink-0" />
                     <span>
                       {txEntries.filter((e) => e.status === "ACTIVE").length > 0
-                        ? `${txEntries.filter((e) => e.status === "ACTIVE").length} công việc TX đang áp dụng. Chọn TX và sản phẩm QĐ1277 tại bộ chọn nguồn công việc bên dưới; hai nguồn này độc lập với 48 mẫu cũ và nhóm Excel.`
+                        ? `${txEntries.filter((e) => e.status === "ACTIVE").length} công việc TX đang áp dụng. Chọn TX và sản phẩm QĐ1277 tại bộ chọn nguồn công việc bên dưới; hai nguồn này độc lập với nhóm Excel.`
                         : catalogActivationStatus === "NO_VERSION"
-                          ? "Chưa có Danh mục TX đang áp dụng — có thể dùng danh mục bộ phận, 48 mẫu cũ hoặc tự nhập."
-                          : "Bộ phận của bạn chưa được kích hoạt Danh mục TX — có thể dùng danh mục bộ phận, 48 mẫu cũ hoặc tự nhập."}
+                          ? "Chưa có Danh mục TX đang áp dụng — có thể dùng danh mục bộ phận hoặc tự nhập."
+                          : "Bộ phận của bạn chưa được kích hoạt Danh mục TX — có thể dùng danh mục bộ phận hoặc tự nhập."}
                     </span>
                   </div>
 
-                  {!legacyTemplatesSelectable && !modalTemplateId && (
-                    <div className="text-[11px] text-status-warning flex items-start gap-1">
-                      <V5Icon name="info" className="text-[14px]" />
-                      <span>
-                        Bộ phận của bạn đã chuyển sang Danh mục TX — 48 mẫu cũ không còn cho chọn khi tạo đầu việc mới.
-                        Đầu việc lịch sử vẫn giữ nguyên liên kết và hiển thị đầy đủ.
-                      </span>
-                    </div>
-                  )}
-
-                  {/* YC-25 — đầu việc riêng của bộ phận (tách biệt 48 mẫu và danh mục sản phẩm) */}
+                  {/* YC-25 — đầu việc riêng của bộ phận (tách biệt danh mục sản phẩm) */}
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-semibold text-primary flex items-center justify-between gap-2">
                       <span>
@@ -3021,7 +3011,7 @@ export default function PlansPage() {
                     </select>
                     {deptWorkItems.length === 0 && (
                       <span className="text-[11px] text-v5-muted">
-                        Bộ phận chưa có danh mục riêng — có thể chọn từ Cột A hoặc Cột B bên dưới, hoặc tự nhập tên đầu việc.
+                        Bộ phận chưa có danh mục riêng — có thể chọn từ Cột B bên dưới, hoặc tự nhập tên đầu việc.
                       </span>
                     )}
                   </div>
@@ -3031,7 +3021,7 @@ export default function PlansPage() {
                     {/* Cột A — công việc thường xuyên (48 mẫu) */}
                     <div
                       data-testid="picker-col-routine"
-                      className={`${!legacyTemplatesSelectable && !modalTemplateId ? "hidden" : "flex"} rounded-lg border border-v5-line bg-v5-surface flex-col min-w-0`}
+                      className="hidden rounded-lg border border-v5-line bg-v5-surface flex-col min-w-0"
                     >
                       <div className="px-3 py-2 border-b border-v5-line flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-primary uppercase tracking-wide">
