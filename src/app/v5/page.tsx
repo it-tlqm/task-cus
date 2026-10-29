@@ -570,7 +570,7 @@ export default function V5DashboardPage() {
             </div>
             <Button variant="secondary" className="w-full" asChild>
               <Link href="/tasks">
-                Mở danh sách công việc <ChevronRight className="h-4 w-4" />
+                Mở Giao việc &amp; theo dõi <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardContent>

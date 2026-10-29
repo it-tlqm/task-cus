@@ -900,7 +900,7 @@ function MyWorkPageContent() {
         <section className="flex flex-col gap-3">
           <PageHeader
             eyebrow="Công việc cá nhân"
-            title="Công việc của tôi"
+            title="Việc của tôi"
             badges={
               <>
                 <Badge variant="outline">{currentUser.positionTitle}</Badge>
@@ -1461,7 +1461,7 @@ function MyWorkPageContent() {
           ========================================================================= */}
       <div className="lg:hidden flex flex-col gap-3 pb-16">
         <PageHeader
-          title="Công việc của tôi"
+          title="Việc của tôi"
           badges={<Badge variant="success">Sẵn sàng</Badge>}
           description={
             <>

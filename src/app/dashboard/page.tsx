@@ -271,7 +271,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-body-semibold text-body-semibold transition-fast shadow-sm active-press"
                 >
                   <V5Icon name="add_task" className="text-[18px]" />
-                  <span>Giao nhiệm vụ đột xuất</span>
+                  <span>Giao việc đột xuất</span>
                 </Link>
               )}
               <button

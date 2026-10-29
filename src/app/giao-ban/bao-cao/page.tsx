@@ -215,7 +215,7 @@ export default function GiaoBanBaoCaoPage() {
           href="/v5/giao-ban"
           className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-v5-muted transition-colors hover:text-v5-ink"
         >
-          <ChevronLeft className="h-3.5 w-3.5" /> Số liệu giao ban
+          <ChevronLeft className="h-3.5 w-3.5" /> Giao ban
         </Link>
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>

@@ -10,18 +10,16 @@ import { MetricTargetManager } from "@/components/metrics/MetricTargetManager";
 import BackButton from "@/components/ui/BackButton";
 import { ENTRY_PERIODS, ENTRY_PERIOD_LABELS, metricEntryPeriod } from "@/lib/metric-entry-period";
 
-type TabKey = "STRUCT" | "TARGET" | "BASELINE" | "ASSIGN" | "SECTION" | "REPORT" | "COMPARISON";
+type TabKey = "METRICS" | "ASSIGN" | "REPORT" | "COMPARISON";
+type MetricsSubTab = "STRUCT" | "TARGET" | "BASELINE";
+type ReportSubTab = "SECTION" | "REPORT";
 
 const TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: "STRUCT", label: "Nhóm & chỉ tiêu", icon: "list_alt" },
-  { key: "TARGET", label: "Chỉ tiêu giao", icon: "flag" },
-  { key: "BASELINE", label: "Mốc lũy kế", icon: "bookmark" },
+  { key: "METRICS", label: "Chỉ tiêu & mức", icon: "list_alt" },
   { key: "ASSIGN", label: "Phân công nhập", icon: "person_add" },
-  { key: "SECTION", label: "Mục nhận xét", icon: "notes" },
-  { key: "REPORT", label: "Cấu trúc báo cáo", icon: "article" },
+  { key: "REPORT", label: "Mẫu báo cáo", icon: "article" },
+  { key: "COMPARISON", label: "So sánh thu NSNN", icon: "compare_arrows" },
 ];
-
-TABS.push({ key: "COMPARISON", label: "So sánh thu NSNN", icon: "compare_arrows" });
 
 const SCALE_OPTIONS = [
   { value: 1, label: "Đơn vị gốc (đồng / USD / số lượng)" },
@@ -51,7 +49,9 @@ const BLOCK_KIND_LABELS: Record<string, string> = {
 export default function CauHinhSoLieuPage() {
   const { loading: permLoading, can } = usePermissions();
   const canConfigMetrics = can("metrics.config");
-  const [tab, setTab] = useState<TabKey>("STRUCT");
+  const [tab, setTab] = useState<TabKey>("METRICS");
+  const [metricsSubTab, setMetricsSubTab] = useState<MetricsSubTab>("STRUCT");
+  const [reportSubTab, setReportSubTab] = useState<ReportSubTab>("SECTION");
   const [initialMetricCode, setInitialMetricCode] = useState("");
   const [cfg, setCfg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -61,7 +61,13 @@ export default function CauHinhSoLieuPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedTab = (params.get("tab") || "").toUpperCase();
-    if (TABS.some((item) => item.key === requestedTab)) {
+    if (requestedTab === "STRUCT" || requestedTab === "TARGET" || requestedTab === "BASELINE") {
+      setTab("METRICS");
+      setMetricsSubTab(requestedTab);
+    } else if (requestedTab === "SECTION" || requestedTab === "REPORT") {
+      setTab("REPORT");
+      setReportSubTab(requestedTab);
+    } else if (TABS.some((item) => item.key === requestedTab)) {
       setTab(requestedTab as TabKey);
     }
     setInitialMetricCode(params.get("metric") || "");
@@ -355,7 +361,7 @@ export default function CauHinhSoLieuPage() {
           href="/v5/giao-ban"
           className="inline-flex w-fit items-center gap-1 text-[11px] font-medium text-v5-muted transition-colors hover:text-v5-ink"
         >
-          <ChevronLeft className="h-3.5 w-3.5" /> Số liệu giao ban
+          <ChevronLeft className="h-3.5 w-3.5" /> Giao ban
         </Link>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Cấu hình giao ban</h1>
@@ -378,6 +384,49 @@ export default function CauHinhSoLieuPage() {
           </button>
         ))}
       </div>
+
+      {tab === "METRICS" && (
+        <div className="flex w-fit flex-wrap gap-1 rounded-lg border border-v5-line bg-v5-bg p-1">
+          {[
+            { key: "STRUCT" as const, label: "Nhóm & chỉ tiêu" },
+            { key: "TARGET" as const, label: "Chỉ tiêu giao" },
+            { key: "BASELINE" as const, label: "Mốc lũy kế" },
+          ].map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setMetricsSubTab(s.key)}
+              className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                metricsSubTab === s.key
+                  ? "bg-v5-surface text-v5-accent shadow-sm"
+                  : "text-v5-muted hover:text-v5-ink"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {tab === "REPORT" && (
+        <div className="flex w-fit flex-wrap gap-1 rounded-lg border border-v5-line bg-v5-bg p-1">
+          {[
+            { key: "SECTION" as const, label: "Mục nhận xét" },
+            { key: "REPORT" as const, label: "Cấu trúc báo cáo" },
+          ].map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setReportSubTab(s.key)}
+              className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                reportSubTab === s.key
+                  ? "bg-v5-surface text-v5-accent shadow-sm"
+                  : "text-v5-muted hover:text-v5-ink"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 pb-4">
         {/* ============ NHÓM & CHỈ TIÊU ============ */}
@@ -426,7 +475,7 @@ export default function CauHinhSoLieuPage() {
           </section>
         )}
 
-        {tab === "STRUCT" && (
+        {tab === "METRICS" && metricsSubTab === "STRUCT" && (
           <>
             <div className="flex gap-2 flex-wrap items-center">
               {groups.map((g) => (
@@ -824,11 +873,11 @@ export default function CauHinhSoLieuPage() {
         )}
 
         {/* ============ CHỈ TIÊU GIAO ============ */}
-        {tab === "TARGET" && <MetricTargetManager groups={groups} initialMetricCode={initialMetricCode} />}
+        {tab === "METRICS" && metricsSubTab === "TARGET" && <MetricTargetManager groups={groups} initialMetricCode={initialMetricCode} />}
 
 
         {/* ============ MỐC LŨY KẾ ============ */}
-        {tab === "BASELINE" && (
+        {tab === "METRICS" && metricsSubTab === "BASELINE" && (
           <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
             <span className="font-label-md text-label-md text-primary font-bold">Mốc lũy kế (chống cộng trùng)</span>
             <div className="bg-v5-bg rounded-lg p-3 text-body-xs text-v5-muted flex flex-col gap-1">
@@ -1148,7 +1197,7 @@ export default function CauHinhSoLieuPage() {
         )}
 
         {/* ============ MỤC NHẬN XÉT ============ */}
-        {tab === "SECTION" && (
+        {tab === "REPORT" && reportSubTab === "SECTION" && (
           <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
             <span className="font-label-md text-label-md text-primary font-bold">Mục nhận xét theo kỳ (II, III.1–4, IV…)</span>
             <p className="text-body-xs text-v5-muted">
@@ -1237,7 +1286,7 @@ export default function CauHinhSoLieuPage() {
           </div>
         )}
 
-        {tab === "REPORT" && (
+        {tab === "REPORT" && reportSubTab === "REPORT" && (
           <div className="bg-v5-surface rounded-xl border border-v5-line/50 p-4 flex flex-col gap-3">
             <span className="font-label-md text-label-md text-primary font-bold">Cấu trúc báo cáo giao ban (bản xem trước & file Word)</span>
             <p className="text-body-xs text-v5-muted">

@@ -462,18 +462,18 @@ export default function TasksPage() {
       <div className="flex w-full flex-col gap-3">
         <PageHeader
           eyebrow="Điều hành công việc"
-          title="Công việc chỉ đạo"
+          title="Giao việc & theo dõi"
           badges={
             <Badge variant="outline">
               {permUser?.role ? getRoleDisplayName(permUser.role) : "Đang tải..."}
             </Badge>
           }
-          description="Giao việc, theo dõi tiến độ, xử lý gia hạn và phê duyệt kết quả công tác."
+          description="Giao việc, theo dõi tiến độ, xử lý gia hạn và duyệt kết quả công tác."
           actions={
             <>
               {canAssign && permUser?.unitId && (
                 <Button size="sm" data-tour="create-btn" onClick={() => setShowCreateModal(true)}>
-                  <Plus className="h-3.5 w-3.5" /> Giao nhiệm vụ
+                  <Plus className="h-3.5 w-3.5" /> Giao việc
                 </Button>
               )}
               {canApprove && (

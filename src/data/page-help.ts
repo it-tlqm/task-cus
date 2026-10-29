@@ -10,7 +10,7 @@ export interface PageHelp {
 
 export const HELP: Record<string, PageHelp> = {
   "/giao-ban": {
-    title: "Số liệu giao ban",
+    title: "Giao ban",
     bullets: [
       "Số liệu tự cộng từ các bản ghi nhập theo ngày hoặc theo kỳ: Tuần – Tháng – Quý – Năm.",
       "Chọn kỳ ở thanh phía trên; cột đang xem được tô nổi bật.",
@@ -31,7 +31,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/giao-ban/cau-hinh": {
-    title: "Cấu hình số liệu giao ban",
+    title: "Cấu hình giao ban",
     bullets: [
       "Nhóm & chỉ tiêu: thêm/sửa/ẩn chỉ tiêu, đơn vị hiển thị, phân loại (Ô tô, Than cốc…), công thức tự tính.",
       "Quy trình kiểm tra bật/tắt bằng ô 'Cần kiểm tra' — không cần sửa code.",
@@ -255,7 +255,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/my-work": {
-    title: "Nhật ký công việc",
+    title: "Việc của tôi",
     bullets: [
       "Việc mới có nút Nhận việc — bấm để xác nhận đã nhận.",
       "Bấm Cập nhật tiến độ, kéo thanh theo mức 5%, ghi vài dòng kết quả.",
@@ -269,7 +269,7 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/tasks": {
-    title: "Công việc phát sinh",
+    title: "Giao việc & theo dõi",
     bullets: [
       "Danh sách việc toàn đơn vị trong phạm vi của bạn.",
       "Ô tìm kiếm tìm theo mã hoặc tên trên toàn hệ thống (không chỉ trang hiện tại).",

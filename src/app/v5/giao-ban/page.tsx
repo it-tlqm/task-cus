@@ -10,8 +10,6 @@ import {
   Plus,
   RefreshCw,
   Settings2,
-  Target,
-  UserPlus,
 } from "lucide-react";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -59,7 +57,7 @@ interface Summary {
 }
 
 export default function V5GiaoBanPage() {
-  const { user } = usePermissions();
+  const { user, can } = usePermissions();
   const now = useMemo(() => new Date(), []);
   const vn = getVnDateParts(now);
   const iso = getIsoWeekFromDate(now);
@@ -153,7 +151,7 @@ export default function V5GiaoBanPage() {
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Số liệu giao ban</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-v5-ink">Giao ban</h1>
             <Badge variant="outline">Dữ liệu thật</Badge>
           </div>
           <p className="mt-1 text-sm text-v5-muted">
@@ -161,21 +159,13 @@ export default function V5GiaoBanPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/giao-ban/cau-hinh?tab=TARGET">
-              <Target className="h-3.5 w-3.5" /> Chỉ tiêu giao
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/giao-ban/cau-hinh?tab=ASSIGN">
-              <UserPlus className="h-3.5 w-3.5" /> Phân công nhập
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/giao-ban/cau-hinh">
-              <Settings2 className="h-3.5 w-3.5" /> Cấu hình
-            </Link>
-          </Button>
+          {can("metrics.config") && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/giao-ban/cau-hinh">
+                <Settings2 className="h-3.5 w-3.5" /> Cấu hình
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" size="sm" asChild>
             <Link href="/giao-ban/bao-cao">
               <FileDown className="h-3.5 w-3.5" /> Báo cáo

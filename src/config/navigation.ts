@@ -62,14 +62,14 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
     items: [
       {
         id: "dashboard",
-        label: "Bảng điều hành",
+        label: "Tổng quan",
         href: "/v5",
         icon: "space_dashboard",
         description: "Chỉ số điều hành, thuế, kim ngạch và tình hình đơn vị",
       },
       {
         id: "giao-ban",
-        label: "Số liệu giao ban",
+        label: "Giao ban",
         href: "/v5/giao-ban",
         icon: "monitoring",
         description: "Số liệu nghiệp vụ theo ngày, tuần, tháng",
@@ -98,40 +98,33 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
     ],
   },
   {
-    // YC-30 (bổ sung 20/10) — "Nhật ký công việc" là đầu mối ghi nhận & theo dõi
-    // công việc thực tế. "Lập kế hoạch" ở đây là THÀNH PHẦN LẬP KẾ HOẠCH/TỔNG HỢP
-    // trong luồng nhật ký (route /plans giữ nguyên, không xoá kế hoạch đã lập).
+    // YC-30 (bổ sung 20/10) — "Công việc" là đầu mối ghi nhận & theo dõi
+    // công việc thực tế. "Kế hoạch" ở đây là THÀNH PHẦN LẬP KẾ HOẠCH/TỔNG HỢP
+    // trong luồng công việc (route /plans giữ nguyên, không xoá kế hoạch đã lập).
     id: "journal",
-    label: "Nhật ký công việc",
+    label: "Công việc",
     icon: "menu_book",
     items: [
       {
         id: "my-work",
-        label: "Nhật ký công việc",
+        label: "Việc của tôi",
         href: "/my-work",
         icon: "assignment_ind",
-        description: "Hôm nay, theo kỳ, từ kế hoạch hoặc phát sinh — kèm hạn, kết quả và minh chứng",
-      },
-      {
-        id: "my-work-receive",
-        label: "Công chức nhận việc",
-        href: "/my-work?tab=WAITING_ACCEPT",
-        icon: "how_to_reg",
-        description: "Công việc được giao đang chờ bạn xác nhận nhận việc",
-      },
-      {
-        id: "plans",
-        label: "Lập kế hoạch",
-        href: "/plans",
-        icon: "event_note",
-        description: "Lập và tổng hợp kế hoạch tuần của bộ phận",
+        description: "Việc được giao, việc tự tạo, hạn xử lý, kết quả và minh chứng",
       },
       {
         id: "tasks",
-        label: "Công việc phát sinh",
+        label: "Giao việc & theo dõi",
         href: "/tasks",
         icon: "bolt",
-        description: "Nhiệm vụ chỉ đạo, giao việc và theo dõi tiến độ",
+        description: "Giao việc, theo dõi tiến độ và duyệt kết quả",
+      },
+      {
+        id: "plans",
+        label: "Kế hoạch",
+        href: "/plans",
+        icon: "event_note",
+        description: "Lập và tổng hợp kế hoạch tuần của bộ phận",
       },
       {
         id: "work-item-reviews",
@@ -143,7 +136,7 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
       },
       {
         id: "approvals",
-        label: "Phê duyệt",
+        label: "Duyệt & xác nhận",
         href: "/approvals",
         icon: "fact_check",
         description: "Hồ sơ, kế hoạch và kết quả chờ lãnh đạo xử lý",

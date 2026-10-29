@@ -143,6 +143,7 @@ export default function V5EntryPage() {
   const [initial, setInitial] = useState<Record<string, string>>({});
   const [modes, setModes] = useState<Record<string, "INCREMENTAL" | "CUMULATIVE">>({});
   const [initialModes, setInitialModes] = useState<Record<string, "INCREMENTAL" | "CUMULATIVE">>({});
+  const [globalMode, setGlobalMode] = useState<"INCREMENTAL" | "CUMULATIVE">("INCREMENTAL");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlyTodo, setOnlyTodo] = useState(false);
@@ -165,6 +166,7 @@ export default function V5EntryPage() {
       setData(json);
       const next: Record<string, string> = {};
       const nextModes: Record<string, "INCREMENTAL" | "CUMULATIVE"> = {};
+      const eligibleKeys: string[] = [];
       for (const group of json.groups as EntryGroup[]) {
         for (const metric of group.metrics) {
           for (const value of metric.values) {
@@ -173,6 +175,7 @@ export default function V5EntryPage() {
             nextModes[key] =
               value.inputMode ||
               (metric.inputMode === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL");
+            if (metric.valueKind === "FLOW" && value.canEdit) eligibleKeys.push(key);
           }
         }
       }
@@ -180,6 +183,11 @@ export default function V5EntryPage() {
       setInitial(next);
       setModes(nextModes);
       setInitialModes(nextModes);
+      setGlobalMode(
+        eligibleKeys.length > 0 && eligibleKeys.every((key) => nextModes[key] === "CUMULATIVE")
+          ? "CUMULATIVE"
+          : "INCREMENTAL"
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không tải được số liệu");
     } finally {
@@ -195,6 +203,18 @@ export default function V5EntryPage() {
     () => (data?.groups || []).flatMap((group) => group.metrics.flatMap((metric) => metric.values.map((value) => ({ metric, value })))),
     [data]
   );
+  const modeEligibleKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const group of data?.groups || []) {
+      for (const metric of group.metrics) {
+        if (metric.valueKind !== "FLOW") continue;
+        for (const value of metric.values) {
+          if (value.canEdit) keys.add(`${metric.id}|${value.classificationId}`);
+        }
+      }
+    }
+    return keys;
+  }, [data]);
   const total = allValues.length;
   const filled = allValues.filter(({ metric, value }) => {
     const raw = values[`${metric.id}|${value.classificationId}`] || "";
@@ -213,6 +233,39 @@ export default function V5EntryPage() {
     }
     return count;
   }, [values, initial, modes, initialModes]);
+
+  const applyGlobalMode = (mode: "INCREMENTAL" | "CUMULATIVE") => {
+    setGlobalMode(mode);
+    setModes((prev) => {
+      const next = { ...prev };
+      for (const key of modeEligibleKeys) next[key] = mode;
+      return next;
+    });
+    setValues((prev) => {
+      const next = { ...prev };
+      for (const { metric, value } of allValues) {
+        const key = `${metric.id}|${value.classificationId}`;
+        if (!modeEligibleKeys.has(key)) continue;
+        const storageMode = metric.inputMode === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL";
+        if (mode === "INCREMENTAL") {
+          next[key] = baseToInput(
+            storageMode === "CUMULATIVE" ? value.enteredValueBase ?? value.valueBase : value.valueBase,
+            metric
+          );
+        } else {
+          next[key] = baseToInput(
+            storageMode === "CUMULATIVE"
+              ? value.valueBase
+              : value.valueBase != null
+                ? (value.openingBalanceBase ?? 0) + value.valueBase
+                : null,
+            metric
+          );
+        }
+      }
+      return next;
+    });
+  };
 
   const guardUnsaved = useCallback(() => {
     if (changedCount === 0) return true;
@@ -386,7 +439,7 @@ export default function V5EntryPage() {
               }}
               className="inline-flex items-center gap-1 text-[11px] text-v5-muted hover:text-v5-ink"
             >
-              <ArrowLeft className="h-3.5 w-3.5" /> Số liệu giao ban
+              <ArrowLeft className="h-3.5 w-3.5" /> Giao ban
             </Link>
           </div>
           <div className="mt-1">
@@ -438,6 +491,37 @@ export default function V5EntryPage() {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-md border border-v5-line bg-v5-surface px-1 py-0.5">
+            <span className="px-1 text-[10px] font-medium text-v5-muted">Kiểu nhập</span>
+            <button
+              type="button"
+              aria-pressed={globalMode === "INCREMENTAL"}
+              onClick={() => {
+                if (guardUnsaved()) applyGlobalMode("INCREMENTAL");
+              }}
+              className={`rounded px-2 py-1 text-[10px] font-semibold transition-colors ${
+                globalMode === "INCREMENTAL"
+                  ? "bg-v5-accent text-white shadow-sm"
+                  : "text-v5-muted hover:text-v5-ink"
+              }`}
+            >
+              Phát sinh
+            </button>
+            <button
+              type="button"
+              aria-pressed={globalMode === "CUMULATIVE"}
+              onClick={() => {
+                if (guardUnsaved()) applyGlobalMode("CUMULATIVE");
+              }}
+              className={`rounded px-2 py-1 text-[10px] font-semibold transition-colors ${
+                globalMode === "CUMULATIVE"
+                  ? "bg-v5-gold text-v5-ink shadow-sm"
+                  : "text-v5-muted hover:text-v5-ink"
+              }`}
+            >
+              Lũy kế
+            </button>
+          </div>
           <div className="flex items-center gap-1 rounded-md border border-v5-line bg-v5-surface px-1">
             <button
               type="button"
@@ -589,8 +673,6 @@ export default function V5EntryPage() {
                           const status = value.status || "";
                           const rowMode = modes[key] || "INCREMENTAL";
                           const canChooseMode = metric.valueKind === "FLOW";
-                          const storageMode =
-                            metric.inputMode === "CUMULATIVE" ? "CUMULATIVE" : "INCREMENTAL";
                           const openingDisplay =
                             value.openingBalanceBase != null
                               ? Number(value.openingBalanceBase / (metric.displayScale || 1)).toLocaleString(
@@ -607,62 +689,11 @@ export default function V5EntryPage() {
                                   <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
                                 </div>
                                 {canChooseMode && value.canEdit && (
-                                  <div
-                                    role="group"
-                                    aria-label="Kiểu nhập số liệu"
-                                    data-tour="entry-modes"
-                                    className="mt-1 inline-flex rounded-md border border-v5-line bg-v5-bg p-0.5"
-                                  >
-                                    <button
-                                      type="button"
-                                      aria-pressed={rowMode === "INCREMENTAL"}
-                                      onClick={() => {
-                                        if (rowMode === "INCREMENTAL") return;
-                                        setModes((prev) => ({ ...prev, [key]: "INCREMENTAL" }));
-                                        setValues((prev) => ({
-                                          ...prev,
-                                          [key]: baseToInput(
-                                            storageMode === "CUMULATIVE"
-                                              ? value.enteredValueBase ?? value.valueBase
-                                              : value.valueBase,
-                                            metric
-                                          ),
-                                        }));
-                                      }}
-                                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
-                                        rowMode === "INCREMENTAL"
-                                          ? "bg-v5-accent text-white shadow-sm"
-                                          : "text-v5-muted hover:text-v5-ink"
-                                      }`}
-                                    >
-                                      Phát sinh
-                                    </button>
-                                    <button
-                                      type="button"
-                                      aria-pressed={rowMode === "CUMULATIVE"}
-                                      onClick={() => {
-                                        if (rowMode === "CUMULATIVE") return;
-                                        setModes((prev) => ({ ...prev, [key]: "CUMULATIVE" }));
-                                        setValues((prev) => ({
-                                          ...prev,
-                                          [key]: baseToInput(
-                                            storageMode === "CUMULATIVE"
-                                              ? value.valueBase
-                                              : value.valueBase != null
-                                                ? (value.openingBalanceBase ?? 0) + value.valueBase
-                                                : null,
-                                            metric
-                                          ),
-                                        }));
-                                      }}
-                                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
-                                        rowMode === "CUMULATIVE"
-                                          ? "bg-v5-gold text-v5-ink shadow-sm"
-                                          : "text-v5-muted hover:text-v5-ink"
-                                      }`}
-                                    >
-                                      Lũy kế
-                                    </button>
+                                  <div className="mt-1 text-[10px] text-v5-muted">
+                                    Kiểu nhập:{" "}
+                                    <span className="font-semibold text-v5-ink">
+                                      {rowMode === "CUMULATIVE" ? "Lũy kế" : "Phát sinh"}
+                                    </span>
                                   </div>
                                 )}
                               </div>

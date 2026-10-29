@@ -387,9 +387,9 @@ export default function ApprovalsPage() {
       <div className="flex w-full flex-col gap-3">
         <PageHeader
           eyebrow="Trung tâm phê duyệt"
-          title="Phê duyệt"
+          title="Duyệt & xác nhận"
           badges={<Badge variant="outline">Lãnh đạo</Badge>}
-          description="Phê duyệt kế hoạch, kết quả nhiệm vụ và đề xuất gia hạn."
+          description="Duyệt kế hoạch, kết quả nhiệm vụ và đề xuất gia hạn."
           actions={
             <Button
               variant="outline"

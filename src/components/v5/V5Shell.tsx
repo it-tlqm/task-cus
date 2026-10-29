@@ -31,8 +31,6 @@ import {
   Search,
   Settings2,
   ShieldCheck,
-  Target,
-  UserPlus,
   Users,
   UserCheck,
   X,
@@ -47,6 +45,7 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ElementType;
+  exact?: boolean;
 };
 
 const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
@@ -54,31 +53,27 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
     label: "Điều hành",
     items: [
       { label: "Tổng quan", href: "/v5", icon: LayoutDashboard },
-      { label: "Số liệu giao ban", href: "/v5/giao-ban", icon: FileBarChart2 },
+      { label: "Giao ban", href: "/v5/giao-ban", icon: FileBarChart2, exact: true },
       { label: "Nhập số liệu", href: "/v5/giao-ban/nhap", icon: PlusSquare },
-      { label: "Cấu hình giao ban", href: "/giao-ban/cau-hinh", icon: Settings2 },
-      { label: "Chỉ tiêu giao", href: "/giao-ban/cau-hinh?tab=TARGET", icon: Target },
-      { label: "Phân công nhập", href: "/giao-ban/cau-hinh?tab=ASSIGN", icon: UserPlus },
-      { label: "Báo cáo giao ban", href: "/giao-ban/bao-cao", icon: FileText },
     ],
   },
   {
     label: "Công việc",
     items: [
-      { label: "Công việc", href: "/tasks", icon: ClipboardList },
+      { label: "Việc của tôi", href: "/my-work", icon: UserCheck },
+      { label: "Giao việc & theo dõi", href: "/tasks", icon: ClipboardList },
       { label: "Kế hoạch", href: "/plans", icon: CalendarDays },
-      { label: "Phê duyệt", href: "/approvals", icon: CheckCheck },
-      { label: "Công chức nhận việc", href: "/my-work", icon: UserCheck },
-      { label: "Nhật ký ca trực", href: "/routine", icon: BookOpenCheck },
-      { label: "Cuộc họp", href: "/meetings", icon: Users },
+      { label: "Duyệt & xác nhận", href: "/approvals", icon: CheckCheck },
     ],
   },
   {
-    label: "Lịch & báo cáo",
+    label: "Lịch, trực & báo cáo",
     items: [
       { label: "Lịch công tác", href: "/calendar", icon: CalendarRange },
       { label: "Lịch trực", href: "/roster", icon: Users },
+      { label: "Nhật ký ca trực", href: "/routine", icon: BookOpenCheck },
       { label: "Nghỉ phép", href: "/leaves", icon: CalendarOff },
+      { label: "Cuộc họp", href: "/meetings", icon: Users },
       { label: "Báo cáo", href: "/reports", icon: FileText },
       { label: "Kết quả tháng", href: "/monthly-results", icon: PieChart },
       { label: "Sản phẩm", href: "/products", icon: Package },
@@ -109,19 +104,18 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
 
 const PAGE_TITLES: Array<[string, string]> = [
   ["/v5/giao-ban/nhap", "Nhập số liệu"],
-  ["/v5/giao-ban", "Số liệu giao ban"],
+  ["/v5/giao-ban", "Giao ban"],
   ["/v5", "Tổng quan điều hành"],
   ["/dashboard/v4", "Bảng điều hành V4"],
   ["/dashboard", "Bảng điều hành"],
-  ["/v5/giao-ban/nhap", "Nhập số liệu"],
   ["/giao-ban/nhap", "Nhập số liệu"],
   ["/giao-ban/cau-hinh", "Cấu hình giao ban"],
   ["/giao-ban/bao-cao", "Báo cáo giao ban"],
-  ["/giao-ban", "Số liệu giao ban"],
-  ["/tasks", "Công việc"],
+  ["/giao-ban", "Giao ban"],
+  ["/tasks", "Giao việc & theo dõi"],
   ["/plans", "Kế hoạch"],
-  ["/approvals", "Phê duyệt"],
-  ["/my-work", "Công chức nhận việc"],
+  ["/approvals", "Duyệt & xác nhận"],
+  ["/my-work", "Việc của tôi"],
   ["/routine", "Nhật ký ca trực"],
   ["/meetings", "Cuộc họp"],
   ["/calendar", "Lịch công tác"],
@@ -135,8 +129,9 @@ const PAGE_TITLES: Array<[string, string]> = [
   ["/huong-dan", "Hướng dẫn"],
 ];
 
-function isActivePath(pathname: string, href: string): boolean {
+function isActivePath(pathname: string, href: string, exact?: boolean): boolean {
   if (pathname === href) return true;
+  if (exact) return false;
   if (href === "/v5" || href === "/dashboard" || href === "/admin") return false;
   return pathname.startsWith(`${href}/`);
 }
@@ -172,7 +167,7 @@ function SidebarNav({
                   .filter((item) => !(item.href === "/routine" && role === "UNIT_LEADER"))
                   .map((item) => {
                   const Icon = item.icon;
-                  const active = isActivePath(pathname, item.href);
+                  const active = isActivePath(pathname, item.href, item.exact);
                   return (
                     <Link
                       key={item.label}
