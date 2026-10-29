@@ -59,9 +59,9 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Công việc",
     items: [
-      { label: "Việc của tôi", href: "/my-work", icon: UserCheck },
-      { label: "Giao việc & theo dõi", href: "/tasks", icon: ClipboardList },
       { label: "Kế hoạch", href: "/plans", icon: CalendarDays },
+      { label: "Việc của tôi", href: "/my-work", icon: UserCheck },
+      { label: "Giao việc", href: "/tasks", icon: ClipboardList },
       { label: "Duyệt & xác nhận", href: "/approvals", icon: CheckCheck },
     ],
   },

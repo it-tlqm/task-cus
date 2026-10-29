@@ -106,6 +106,13 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
     icon: "menu_book",
     items: [
       {
+        id: "plans",
+        label: "Kế hoạch",
+        href: "/plans",
+        icon: "event_note",
+        description: "Lập và tổng hợp kế hoạch tuần của bộ phận",
+      },
+      {
         id: "my-work",
         label: "Việc của tôi",
         href: "/my-work",
@@ -114,17 +121,10 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
       },
       {
         id: "tasks",
-        label: "Giao việc & theo dõi",
+        label: "Giao việc",
         href: "/tasks",
         icon: "bolt",
         description: "Giao việc, theo dõi tiến độ và duyệt kết quả",
-      },
-      {
-        id: "plans",
-        label: "Kế hoạch",
-        href: "/plans",
-        icon: "event_note",
-        description: "Lập và tổng hợp kế hoạch tuần của bộ phận",
       },
       {
         id: "work-item-reviews",
