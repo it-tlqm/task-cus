@@ -223,20 +223,6 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
     ],
   },
   {
-    id: "catalogs",
-    label: "Danh mục & quy định",
-    icon: "inventory_2",
-    items: [
-      {
-        id: "products",
-        label: "Sản phẩm QĐ1277",
-        href: "/products",
-        icon: "inventory_2",
-        description: "Tra cứu danh mục sản phẩm và hệ số quy đổi",
-      },
-    ],
-  },
-  {
     id: "admin",
     label: "Quản trị hệ thống",
     icon: "admin_panel_settings",
@@ -245,10 +231,10 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
     items: [
       {
         id: "admin-catalog",
-        label: "Danh mục công việc",
+        label: "Danh mục & sản phẩm",
         href: "/admin/catalog",
         icon: "list_alt",
-        description: "Danh mục TX, mẫu cũ và đầu việc mẫu",
+        description: "Danh mục công việc thường xuyên và sản phẩm QĐ1277",
         access: { permission: "catalog.manage" },
       },
       {

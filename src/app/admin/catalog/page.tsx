@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import WorkCatalogTab from "./WorkCatalogTab";
+import ProductCatalogTab from "./ProductCatalogTab";
 import Link from "next/link";
 import {
   Layers,
@@ -75,8 +76,14 @@ export default function CatalogAdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"legacy" | "tx">("legacy");
+  const [activeTab, setActiveTab] = useState<"legacy" | "tx" | "products">("tx");
   const [approving, setApproving] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab === "products" || tab === "tx") setActiveTab(tab);
+  }, []);
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -419,19 +426,6 @@ export default function CatalogAdminPage() {
       {/* Chọn nhóm danh mục */}
       <div className="flex items-center gap-1 border-b border-v5-line overflow-x-auto">
         <button
-          onClick={() => setActiveTab("legacy")}
-          className={`px-4 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors ${
-            activeTab === "legacy"
-              ? "border-purple-600 text-purple-700"
-              : "border-transparent text-v5-muted hover:text-v5-ink"
-          }`}
-        >
-          Hoạt động mẫu (48 mẫu)
-          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-v5-bg text-v5-muted text-[10px]">
-            {templates.length}
-          </span>
-        </button>
-        <button
           onClick={() => setActiveTab("tx")}
           className={`px-4 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors ${
             activeTab === "tx"
@@ -441,10 +435,22 @@ export default function CatalogAdminPage() {
         >
           Danh mục công việc thường xuyên
         </button>
+        <button
+          onClick={() => setActiveTab("products")}
+          className={`px-4 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors ${
+            activeTab === "products"
+              ? "border-v5-line text-v5-accent"
+              : "border-transparent text-v5-muted hover:text-v5-ink"
+          }`}
+        >
+          Sản phẩm QĐ1277
+        </button>
       </div>
 
       {activeTab === "tx" ? (
         <WorkCatalogTab canManage={canManageCatalog} showToast={showToast} />
+      ) : activeTab === "products" ? (
+        <ProductCatalogTab />
       ) : (
       <div className="space-y-6">
       {!permLoading && !canManageCatalog && (

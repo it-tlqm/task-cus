@@ -390,12 +390,12 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
               ? `${activeVersion.entryCount} đầu việc • ${departments.length} bộ phận • nhập ngày ${formatDate(
                   activeVersion.importedAt
                 )}${activeVersion.importedBy ? ` bởi ${activeVersion.importedBy.fullName}` : ""}.`
-              : "Khi chưa có danh mục TX, hệ thống vẫn cho chọn 48 mẫu cũ để không gián đoạn nghiệp vụ."}
+              : "Chưa có danh mục TX đang áp dụng — hãy nhập danh mục TX trước."}
           </p>
           <p className="text-[11px] text-v5-muted">
             {mappingRows.some((r) => r.isActive && r.unitId && r.activeEntryCount > 0)
-              ? `${mappingRows.filter((r) => r.isActive && r.unitId && r.activeEntryCount > 0).length}/${mappingRows.length} nhóm đã kích hoạt. Bộ phận chưa kích hoạt vẫn dùng 48 mẫu cũ bình thường.`
-              : "Chưa kích hoạt nhóm TX nào — tất cả bộ phận vẫn chọn được 48 mẫu cũ; dữ liệu lịch sử luôn giữ nguyên."}
+              ? `${mappingRows.filter((r) => r.isActive && r.unitId && r.activeEntryCount > 0).length}/${mappingRows.length} nhóm đã kích hoạt. Bộ phận chưa kích hoạt sẽ chưa chọn được đầu việc TX.`
+              : "Chưa kích hoạt nhóm TX nào — cần kích hoạt nhóm TX cho từng bộ phận."}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -548,7 +548,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
                           <span className="text-[11px] text-v5-danger">Thiếu bộ phận thật</span>
                         ) : (
                           <span className="text-[11px] text-v5-gold-ink">
-                            Chưa kích hoạt — mẫu cũ vẫn dùng được
+                            Chưa kích hoạt
                           </span>
                         )}
                       </td>

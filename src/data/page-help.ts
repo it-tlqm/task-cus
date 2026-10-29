@@ -210,11 +210,11 @@ export const HELP: Record<string, PageHelp> = {
     ],
   },
   "/admin/catalog": {
-    title: "Danh mục công việc (quản trị)",
+    title: "Danh mục & sản phẩm",
     bullets: [
-      "48 mẫu dùng chung khi lập kế hoạch. Ngừng mẫu nào thì kế hoạch cũ không ảnh hưởng.",
-      "Duyệt chính thức toàn bộ khi danh mục đã chuẩn.",
-      "Tab Danh mục TX là danh mục đầu việc theo bộ phận, không phải danh mục sản phẩm QĐ1277.",
+      "Tab Danh mục công việc thường xuyên: ánh xạ nhóm TX với bộ phận, nhập Excel và xem đầu việc.",
+      "Tab Sản phẩm QĐ1277: tra mã SP, tên nhiệm vụ và hệ số quy đổi.",
+      "Không còn dùng 48 mẫu cũ; dữ liệu lịch sử vẫn được giữ nguyên.",
     ],
   },
   "/admin/forms": {
