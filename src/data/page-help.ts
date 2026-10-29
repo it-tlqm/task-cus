@@ -59,7 +59,7 @@ export const HELP: Record<string, PageHelp> = {
       "Kỳ đã chốt số thì khóa mọi thêm/sửa trong kỳ đó.",
     ],
     modals: [
-      { name: "Thêm đầu việc", tip: "Chọn từ 48 mẫu hoặc tự ghi. Kế hoạch đã duyệt thì nút này chặn — dùng Trình duyệt bổ sung." },
+      { name: "Thêm đầu việc", tip: "Chọn từ Danh mục TX, danh mục bộ phận hoặc sản phẩm QĐ1277; có thể tự ghi tên. Kế hoạch đã duyệt thì nút này chặn — dùng Trình duyệt bổ sung." },
       { name: "Trả lại", tip: "Lãnh đạo ghi rõ lý do để người lập sửa lại." },
       { name: "Trình duyệt bổ sung", tip: "Mở khóa kế hoạch đã duyệt để thêm/bớt việc, lịch sử phiên bản được niêm lại." },
     ],

@@ -29,6 +29,9 @@ importers:
       docx:
         specifier: ^9.11.0
         version: 9.11.0
+      docxtemplater:
+        specifier: ^3.71.1
+        version: 3.71.1
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
@@ -44,6 +47,9 @@ importers:
       next:
         specifier: ^15.1.7
         version: 15.5.27(@types/node@22.20.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      pizzip:
+        specifier: ^3.3.0
+        version: 3.3.0
       react:
         specifier: ^19.0.0
         version: 19.3.0
@@ -661,6 +667,10 @@ packages:
   '@types/web-push@3.6.4':
     resolution: {integrity: sha512-GnJmSr40H3RAnj0s34FNTcJi1hmWFV5KXugE0mYWnYhgTAHLJ/dJKAwDmvPJYMke0RplY2XE9LnM4hqSqKIjhQ==}
 
+  '@xmldom/xmldom@0.9.12':
+    resolution: {integrity: sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A==}
+    engines: {node: '>=14.6'}
+
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
@@ -1000,6 +1010,10 @@ packages:
   docx@9.11.0:
     resolution: {integrity: sha512-vQLEYi45vlN/auiMHgx4oC95wbP5qPaD7Vanfixcd3wtTl5gLUPWqUpwbw6yVN0/U6o3p3EX4P5puAeYPXvcSQ==}
     engines: {node: '>=10'}
+
+  docxtemplater@3.71.1:
+    resolution: {integrity: sha512-lXX1FNYwwe/md6WYmNE/1MRjbGN3h0SFdVxKQ3fiIRFvKp0TqgJinylu144iWwPJeALa36jmgGKxk54bGx7bSA==}
+    engines: {node: '>=0.10'}
 
   dotenv@16.6.1:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
@@ -1588,6 +1602,9 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  pako@2.2.0:
+    resolution: {integrity: sha512-zJq6RP/5q+TO2OpFV3FHzlPnFjmkb7Nc99a5SNjJE+uu/PkpChs+NIZSSzbBoD+6kjiISXjfYdwj1ZRQ81dz/w==}
+
   path-is-absolute@1.0.1:
     resolution: {integrity: sha512-AVbw3UJ2e9bq64vSaS9Am0fje1Pa8pbGqTTsmXfaIiMpnr5DlDhfJOuLj9Sf95ZPVDAUerDfEk88MPmPe7UCQg==}
     engines: {node: '>=0.10.0'}
@@ -1615,6 +1632,9 @@ packages:
   pirates@4.0.7:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
     engines: {node: '>= 6'}
+
+  pizzip@3.3.0:
+    resolution: {integrity: sha512-seR2ALUYS4Z0GCs0sVwXWImhBsoCImXpHr+ExNfIZ9G0czvHqpUxlJgwHCl1BBHFyU3nUFmZJPFEEWbpY8cKRg==}
 
   pkg-types@2.3.3:
     resolution: {integrity: sha512-j/lCFdcppV0JxWpCEITdbDltBxPP6cHT+yNJ6Go2OgoSA9518X847X9z0p6LtA4Nc16+eQzCZjRrWanTGvHJ5w==}
@@ -2511,6 +2531,8 @@ snapshots:
     dependencies:
       '@types/node': 22.20.5
 
+  '@xmldom/xmldom@0.9.12': {}
+
   agent-base@7.1.4: {}
 
   ansi-regex@6.4.0: {}
@@ -2873,6 +2895,10 @@ snapshots:
       nanoid: 6.0.2
       xml: 1.0.1
       xml-js: 1.6.11
+
+  docxtemplater@3.71.1:
+    dependencies:
+      '@xmldom/xmldom': 0.9.12
 
   dotenv@16.6.1: {}
 
@@ -3547,6 +3573,8 @@ snapshots:
 
   pako@1.0.11: {}
 
+  pako@2.2.0: {}
+
   path-is-absolute@1.0.1: {}
 
   path-parse@1.0.7: {}
@@ -3562,6 +3590,10 @@ snapshots:
   picomatch@4.0.7: {}
 
   pirates@4.0.7: {}
+
+  pizzip@3.3.0:
+    dependencies:
+      pako: 2.2.0
 
   pkg-types@2.3.3:
     dependencies:

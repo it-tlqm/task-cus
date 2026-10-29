@@ -17,16 +17,6 @@ interface ActivityGroup {
   description?: string;
 }
 
-interface ActivityTemplate {
-  id: string;
-  code: string;
-  title: string;
-  groupId: string;
-  group?: { id: string; name: string; code: string };
-  defaultPriority?: string;
-  reviewStatus?: string;
-}
-
 interface PlanOptions {
   canCreatePlan: boolean;
   currentUnitId: string | null;
@@ -146,7 +136,6 @@ interface PlanItem {
 
 export default function PlansPage() {
   const [plans, setPlans] = useState<PlanItem[]>([]);
-  const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [planOptions, setPlanOptions] = useState<PlanOptions | null>(null);
@@ -327,11 +316,9 @@ export default function PlansPage() {
       convertFactor: null,
     };
   }, [modalCatalogEntryId, txEntries, pickedCatalogLocal]);
-  const [legacyTemplatesSelectable, setLegacyTemplatesSelectable] = useState(true);
   const [catalogActivationStatus, setCatalogActivationStatus] = useState<
     "NO_VERSION" | "NOT_ACTIVATED" | "ACTIVATED"
   >("NO_VERSION");
-  const [templateSearch, setTemplateSearch] = useState("");
   const [deptWorkItems, setDeptWorkItems] = useState<DepartmentWorkItemData[]>([]);
   const [deptCatalogUnits, setDeptCatalogUnits] = useState<Array<{ id: string; code: string; name: string }>>([]);
   const [deptCatalogCanManage, setDeptCatalogCanManage] = useState(false);
@@ -381,16 +368,6 @@ export default function PlansPage() {
   const [planItemBusy, setPlanItemBusy] = useState(false);
   const [planItemError, setPlanItemError] = useState<string | null>(null);
 
-  // YC-23: tìm nhanh 48 mẫu thường xuyên phía máy khách (danh mục nhỏ; danh mục sản phẩm 3.000+ mới cần tìm phía máy chủ)
-  const filteredTemplates = React.useMemo(() => {
-    const q = templateSearch.trim().toLowerCase();
-    return templates.filter((tpl) => {
-      if (tpl.reviewStatus === "RETIRED") return false;
-      if (!q) return true;
-      return `${tpl.code} ${tpl.title}`.toLowerCase().includes(q);
-    });
-  }, [templates, templateSearch]);
-
   // Mobile View Filters — dùng chung viewMode/selectedScope để Desktop và Mobile nhất quán.
   const mobileLabels = React.useMemo(() => getCurrentPeriodLabels(), []);
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
@@ -401,10 +378,9 @@ export default function PlansPage() {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const [resPlans, resTemplates, resGroups, resUser, resDept, resCatalog, resPlanOptions] =
+      const [resPlans, resGroups, resUser, resDept, resCatalog, resPlanOptions] =
         await Promise.all([
           fetch("/api/plans"),
-          fetch("/api/catalog/templates"),
           fetch("/api/catalog/groups"),
           fetch("/api/auth/me"),
           fetch("/api/department-work-items?status=ACTIVE"),
@@ -416,11 +392,6 @@ export default function PlansPage() {
         const json = await resPlans.json();
         const planList = Array.isArray(json) ? json : json.data || [];
         setPlans(planList);
-      }
-
-      if (resTemplates.ok) {
-        const jsonTpl = await resTemplates.json();
-        setTemplates(Array.isArray(jsonTpl) ? jsonTpl : jsonTpl.data || []);
       }
 
       if (resGroups.ok) {
@@ -456,7 +427,6 @@ export default function PlansPage() {
         const jsonCatalog = await resCatalog.json();
         const catData = jsonCatalog.data || {};
         setTxEntries(catData.entries || []);
-        setLegacyTemplatesSelectable(catData.legacyTemplatesSelectable !== false);
         setCatalogActivationStatus(
           catData.activation?.status === "ACTIVATED"
             ? "ACTIVATED"
@@ -640,7 +610,7 @@ export default function PlansPage() {
     return `wi-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   };
 
-  const openAddModal = (initialTemplateId = "") => {
+  const openAddModal = () => {
     if (!activePlan) {
       toast.warning("Vui lòng chọn hoặc tạo kế hoạch công tác trước khi thêm đầu việc");
       return;
@@ -659,19 +629,10 @@ export default function PlansPage() {
       return;
     }
     setEditingItem(null);
-    setModalTemplateId(initialTemplateId);
-    if (initialTemplateId) {
-      const tpl = templates.find((t) => t.id === initialTemplateId);
-      if (tpl) {
-        setModalTitle(tpl.title);
-        setModalGroupId(tpl.groupId || groups[0]?.id || "");
-        setModalPriority(tpl.defaultPriority || "Cao");
-      }
-    } else {
-      setModalTitle("");
-      setModalGroupId(groups[0]?.id || "");
-      setModalPriority("Trung bình");
-    }
+    setModalTemplateId("");
+    setModalTitle("");
+    setModalGroupId(groups[0]?.id || "");
+    setModalPriority("Trung bình");
     setModalWorkDate("");
     setModalDateText("");
     setModalCoordination("");
@@ -694,7 +655,6 @@ export default function PlansPage() {
     setModalFieldErrors({});
     setModalIdempotencyKey(newIdempotencyKey());
     setDeptCatalogMsg(null);
-    setTemplateSearch("");
     setShowAddModal(true);
   };
 
@@ -738,7 +698,6 @@ export default function PlansPage() {
         ? "Đầu việc gốc của bộ phận đã ngừng sử dụng — hệ thống giữ nguyên liên kết cũ cho đến khi bạn đổi."
         : null
     );
-    setTemplateSearch("");
     setModalTitle(wi.title);
     setModalGroupId(wi.groupId || wi.template?.groupId || groups[0]?.id || "");
     setModalWorkDate(toDateInput(wi.workDate));
@@ -1403,23 +1362,6 @@ export default function PlansPage() {
     } finally {
       setDeptBusy(false);
     }
-  };
-
-  // YC-23/YC-25: chọn nguồn đầu việc (mẫu thường xuyên / danh mục bộ phận — hai nguồn loại trừ nhau)
-  // và sản phẩm đầu ra theo QĐ1277 (độc lập, có thể gắn kèm bất kỳ đầu việc nào)
-  const handleSelectRoutineTemplate = (tplId: string) => {
-    if (!tplId) {
-      setModalTemplateId("");
-      return;
-    }
-    const tpl = templates.find((t) => t.id === tplId);
-    if (!tpl) return;
-    setModalTemplateId(tpl.id);
-    setModalDeptWorkItemId("");
-    setModalCatalogEntryId("");
-    setModalTitle(tpl.title);
-    if (tpl.groupId) setModalGroupId(tpl.groupId);
-    if (tpl.defaultPriority) setModalPriority(tpl.defaultPriority);
   };
 
   const handleSelectDeptWorkItem = (deptItemId: string) => {

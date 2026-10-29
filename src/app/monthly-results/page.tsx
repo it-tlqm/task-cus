@@ -88,6 +88,7 @@ export default function MonthlyResultsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [scorePreview, setScorePreview] = useState<ScorePreview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [officialExporting, setOfficialExporting] = useState<string | null>(null);
   const { user, canApprove, isUnitLeader } = usePermissions();
   const canPickPerson = canApprove || isUnitLeader;
 
@@ -388,6 +389,35 @@ export default function MonthlyResultsPage() {
   const handleExport = () => doDownload("bang1", `Bang1-01A-T${month}-${year}.xlsx`);
   const handleExport02C = () => doDownload("02c", `KeHoachThang02C-T${month}-${year}.xlsx`);
 
+  const handleOfficialExport = async (code: "2c" | "2d" | "2e" | "cong-van") => {
+    if (officialExporting) return;
+    const quarter = Math.ceil(month / 3);
+    setOfficialExporting(code);
+    try {
+      const res = await fetch(`/api/reports/official/${code}?year=${year}&quarter=${quarter}`);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "Không thể xuất biểu mẫu");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const cd = res.headers.get("Content-Disposition") || "";
+      const m = cd.match(/filename="([^"]+)"/);
+      a.href = url;
+      a.download = m ? m[1] : `Bieu-mau-${code}-Q${quarter}-${year}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Đã xuất biểu mẫu theo file mẫu chính thức");
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xuất biểu mẫu");
+    } finally {
+      setOfficialExporting(null);
+    }
+  };
+
   return (
     <div className="flex w-full flex-col gap-3 pb-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
@@ -445,6 +475,57 @@ export default function MonthlyResultsPage() {
           <RefreshCw className="h-3.5 w-3.5" /> Tải lại
         </Button>
       </div>
+
+      <Card className="p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-xs font-semibold text-v5-ink">
+              Biểu mẫu quý — xuất từ file mẫu chính thức
+            </div>
+            <div className="mt-0.5 text-[11px] text-v5-muted">
+              Quý {Math.ceil(month / 3)}/{year} · 2C, 2D, 2E và Công văn đánh giá, xếp loại
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={officialExporting !== null}
+              onClick={() => handleOfficialExport("2d")}
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {officialExporting === "2d" ? "Đang xuất..." : "Mẫu 2D"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={officialExporting !== null}
+              onClick={() => handleOfficialExport("2e")}
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {officialExporting === "2e" ? "Đang xuất..." : "Mẫu 2E"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={officialExporting !== null}
+              onClick={() => handleOfficialExport("2c")}
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {officialExporting === "2c" ? "Đang xuất..." : "Mẫu 2C"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={officialExporting !== null}
+              onClick={() => handleOfficialExport("cong-van")}
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              {officialExporting === "cong-van" ? "Đang xuất..." : "Công văn"}
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       {summary && (
         <div data-tour="summary" className="grid grid-cols-2 gap-2 md:grid-cols-4">
