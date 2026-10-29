@@ -38,7 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ProductTour } from "@/components/v5/ProductTour";
+import { ProductTour, startProductTour } from "@/components/v5/ProductTour";
 import NotificationQuickView from "@/components/notifications/NotificationQuickView";
 import CommandPalette from "@/components/layout/CommandPalette";
 import { cn } from "@/lib/utils";
@@ -395,10 +395,13 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
                   <Settings2 className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Trợ giúp" asChild>
-                <Link href="/huong-dan">
-                  <CircleHelp className="h-4 w-4" />
-                </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Hướng dẫn màn hình này"
+                onClick={() => startProductTour()}
+              >
+                <CircleHelp className="h-4 w-4" />
               </Button>
               <div className="ml-1 grid h-7 w-7 place-items-center rounded-full bg-v5-accent text-[10px] font-bold text-white">
                 {(user?.fullName || "HQ").slice(0, 2).toUpperCase()}
@@ -407,7 +410,12 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-3 lg:px-5 lg:pt-4">{children}</main>
+        <main
+          data-tour="page-content"
+          className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-3 lg:px-5 lg:pt-4"
+        >
+          {children}
+        </main>
       </div>
 
       <NotificationQuickView open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />

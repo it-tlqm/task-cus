@@ -1,65 +1,13 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Compass, X } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { findScreenTour, type ScreenTourStep } from "@/config/screen-tours";
 import { cn } from "@/lib/utils";
 
-type TourStep = {
-  route: string;
-  selector: string;
-  eyebrow: string;
-  title: string;
-  body: string;
-};
-
-const STEPS: TourStep[] = [
-  {
-    route: "/v5",
-    selector: '[data-tour="dashboard-summary"]',
-    eyebrow: "Tổng quan điều hành",
-    title: "Nắm tình hình trong một màn hình",
-    body: "Theo dõi số thu, chỉ tiêu tháng, so sánh cùng kỳ và cơ cấu thuế. Chuyển Tuần / Tháng / Năm để xem đúng kỳ cần làm việc.",
-  },
-  {
-    route: "/v5/giao-ban",
-    selector: '[data-tour="giao-ban-summary"]',
-    eyebrow: "Số liệu giao ban",
-    title: "Bảng tổng hợp số thu",
-    body: "Số liệu được tổng hợp theo phân loại. Chuyển tab Theo chỉ tiêu, So sánh hoặc Nhận xét để xem chi tiết và biểu đồ.",
-  },
-  {
-    route: "/v5/giao-ban/nhap",
-    selector: '[data-tour="entry-modes"]',
-    eyebrow: "Nhập số liệu",
-    title: "Nhập phát sinh hoặc lũy kế",
-    body: "Mỗi chỉ tiêu có 2 kiểu nhập. Chọn Phát sinh nếu nhập số trong kỳ, chọn Lũy kế nếu nhập tổng đến cuối kỳ — hệ thống tự quy đổi.",
-  },
-  {
-    route: "/my-work",
-    selector: '[data-tour="task-list"]',
-    eyebrow: "Công việc của tôi",
-    title: "Việc cần xử lý trong ngày",
-    body: "Xem việc được giao, hạn chót, tiến độ và phối hợp. Bấm vào từng việc để cập nhật kết quả hoặc báo hoàn thành.",
-  },
-  {
-    route: "/reports",
-    selector: '[data-tour="export-btns"]',
-    eyebrow: "Báo cáo",
-    title: "Xem trước và kết xuất",
-    body: "Kiểm tra báo cáo trước khi chốt kỳ. Xuất Mẫu A hoặc Mẫu B ra Excel; mọi lượt xuất đều được ghi nhật ký.",
-  },
-  {
-    route: "/reports",
-    selector: '[data-tour="notifications"]',
-    eyebrow: "Thông báo",
-    title: "Không bỏ lỡ việc mới",
-    body: "Chuông thông báo hiển thị giao việc, phê duyệt và nhắc hạn. Bấm vào để xem nhanh, không cần rời trang đang làm.",
-  },
-];
-
-const STORAGE_PREFIX = "talung.productTour.v1.";
+const STORAGE_PREFIX = "talung.screenTour.v1.";
 const START_EVENT = "talung:start-tour";
 
 type Rect = { top: number; left: number; width: number; height: number };
@@ -80,17 +28,19 @@ function markCompleted(key: string) {
   }
 }
 
-function measure(selector: string): Rect | null {
-  const el = document.querySelector(selector) as HTMLElement | null;
-  if (!el) return null;
-  const rect = el.getBoundingClientRect();
-  if (rect.width < 4 || rect.height < 4) return null;
-  return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
+function measure(selectors: string[]): { rect: Rect | null; element: HTMLElement | null } {
+  for (const selector of selectors) {
+    const el = document.querySelector(selector) as HTMLElement | null;
+    if (!el) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 4 || rect.height < 4) continue;
+    return { rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height }, element: el };
+  }
+  return { rect: null, element: null };
 }
 
 export function ProductTour() {
   const pathname = usePathname();
-  const router = useRouter();
   const { user } = usePermissions();
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -98,12 +48,14 @@ export function ProductTour() {
   const [ready, setReady] = useState(false);
   const [viewport, setViewport] = useState({ width: 1440, height: 900 });
   const nextButtonRef = useRef<HTMLButtonElement | null>(null);
-  const autoStarted = useRef(false);
+  const autoStartedFor = useRef<string | null>(null);
+  const pathRef = useRef(pathname);
 
-  const step = STEPS[stepIndex];
+  const tour = useMemo(() => findScreenTour(pathname), [pathname]);
+  const step: ScreenTourStep | undefined = tour.steps[stepIndex];
   const storageKey = useMemo(
-    () => (user?.username ? `${STORAGE_PREFIX}${user.username}` : ""),
-    [user?.username]
+    () => (user?.username ? `${STORAGE_PREFIX}${user.username}.${tour.id}` : ""),
+    [user?.username, tour.id]
   );
 
   const finish = useCallback(() => {
@@ -114,12 +66,12 @@ export function ProductTour() {
   }, [storageKey]);
 
   const start = useCallback(() => {
-    autoStarted.current = true;
+    autoStartedFor.current = tour.id;
     setStepIndex(0);
     setActive(true);
     setReady(false);
     setRect(null);
-  }, []);
+  }, [tour.id]);
 
   const goTo = useCallback((index: number) => {
     setStepIndex(index);
@@ -128,18 +80,29 @@ export function ProductTour() {
   }, []);
 
   const next = useCallback(() => {
-    if (stepIndex >= STEPS.length - 1) finish();
+    if (stepIndex >= tour.steps.length - 1) finish();
     else goTo(stepIndex + 1);
-  }, [stepIndex, finish, goTo]);
+  }, [stepIndex, tour.steps.length, finish, goTo]);
 
   const back = useCallback(() => {
     if (stepIndex > 0) goTo(stepIndex - 1);
   }, [stepIndex, goTo]);
 
-  // Bắt đầu tự động lần đầu, hoặc khi có ?tour=1 / sự kiện từ trang Hướng dẫn.
+  // Đổi màn hình: đóng tour cũ, cho phép auto-start tour của màn hình mới.
   useEffect(() => {
-    if (!user || autoStarted.current) return;
+    if (pathRef.current === pathname) return;
+    pathRef.current = pathname;
+    setActive(false);
+    setRect(null);
+    setReady(false);
+    setStepIndex(0);
+  }, [pathname]);
+
+  // Tự chạy lần đầu cho từng màn hình; hoặc khi có ?tour=1.
+  useEffect(() => {
+    if (!user || active) return;
     if (pathname === "/login" || pathname === "/change-password") return;
+    if (autoStartedFor.current === tour.id) return;
 
     let forced = false;
     try {
@@ -149,7 +112,7 @@ export function ProductTour() {
     }
 
     if (!forced && readCompleted(storageKey)) return;
-    autoStarted.current = true;
+    autoStartedFor.current = tour.id;
 
     const timer = window.setTimeout(() => {
       if (forced) {
@@ -163,27 +126,21 @@ export function ProductTour() {
     }, forced ? 250 : 1400);
 
     return () => window.clearTimeout(timer);
-  }, [user, pathname, storageKey, start]);
+  }, [user, pathname, tour.id, storageKey, active, start]);
 
-  // Nút "Bắt đầu tour" ở trang Hướng dẫn.
+  // Nút "Hướng dẫn" trên thanh trên cùng / trang Hướng dẫn.
   useEffect(() => {
     const handler = () => start();
     window.addEventListener(START_EVENT, handler);
     return () => window.removeEventListener(START_EVENT, handler);
   }, [start]);
 
-  // Điều hướng tới đúng trang của bước và tìm điểm neo.
+  // Tìm điểm neo trong màn hình hiện tại, không điều hướng.
   useEffect(() => {
-    if (!active) return;
-    if (!step) return;
+    if (!active || !step) return;
 
     setReady(false);
     setRect(null);
-
-    if (pathname !== step.route) {
-      router.push(step.route);
-      return;
-    }
 
     let cancelled = false;
     let attempts = 0;
@@ -191,8 +148,8 @@ export function ProductTour() {
 
     const find = () => {
       if (cancelled) return;
-      const el = document.querySelector(step.selector) as HTMLElement | null;
-      if (!el) {
+      const found = measure(step.selectors);
+      if (!found.element) {
         attempts += 1;
         if (attempts >= 40) {
           setReady(true);
@@ -203,10 +160,10 @@ export function ProductTour() {
         return;
       }
 
-      el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      found.element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
       settleTimer = window.setTimeout(() => {
         if (cancelled) return;
-        setRect(measure(step.selector));
+        setRect(measure(step.selectors).rect);
         setReady(true);
       }, 380);
     };
@@ -217,14 +174,14 @@ export function ProductTour() {
       cancelled = true;
       if (settleTimer) window.clearTimeout(settleTimer);
     };
-  }, [active, step, pathname, router]);
+  }, [active, step]);
 
-  // Bám theo khi người dùng cuộn / đổi kích thước.
+  // Bám theo khi cuộn / đổi kích thước.
   useEffect(() => {
-    if (!active) return;
+    if (!active || !step) return;
     const update = () => {
       setViewport({ width: window.innerWidth, height: window.innerHeight });
-      if (step) setRect(measure(step.selector));
+      setRect(measure(step.selectors).rect);
     };
     update();
     window.addEventListener("resize", update);
@@ -235,7 +192,7 @@ export function ProductTour() {
     };
   }, [active, step]);
 
-  // Escape để đóng, focus nút Tiếp tục.
+  // Escape để đóng, phím mũi tên để chuyển bước.
   useEffect(() => {
     if (!active) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -293,7 +250,7 @@ export function ProductTour() {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Hướng dẫn sử dụng"
+        aria-label={`Hướng dẫn ${tour.name}`}
         className={cn(
           "fixed z-[100] overflow-hidden rounded-2xl border border-v5-line bg-v5-surface shadow-2xl",
           isMobile ? "max-h-[70vh] overflow-y-auto" : ""
@@ -307,9 +264,9 @@ export function ProductTour() {
             </span>
             <div>
               <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-v5-muted">
-                Hướng dẫn nhanh · {stepIndex + 1}/{STEPS.length}
+                Hướng dẫn · {stepIndex + 1}/{tour.steps.length}
               </div>
-              <div className="text-[10px] font-medium text-v5-accent">{step.eyebrow}</div>
+              <div className="text-[10px] font-medium text-v5-accent">{tour.name}</div>
             </div>
           </div>
           <button
@@ -323,11 +280,12 @@ export function ProductTour() {
         </div>
 
         <div className="px-4 py-3">
-          <h3 className="text-[15px] font-semibold tracking-tight text-v5-ink">{step.title}</h3>
+          <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-v5-muted">{step.eyebrow}</div>
+          <h3 className="mt-1 text-[15px] font-semibold tracking-tight text-v5-ink">{step.title}</h3>
           <p className="mt-1 text-[11.5px] leading-5 text-v5-muted">{step.body}</p>
 
           <div className="mt-3 flex items-center gap-1">
-            {STEPS.map((item, index) => (
+            {tour.steps.map((item, index) => (
               <span
                 key={item.title}
                 className={cn(
@@ -364,7 +322,7 @@ export function ProductTour() {
               disabled={!ready}
               className="inline-flex items-center gap-1 rounded-md bg-v5-accent px-3 py-1.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {stepIndex === STEPS.length - 1 ? (
+              {stepIndex === tour.steps.length - 1 ? (
                 <>
                   Hoàn tất <Check className="h-3.5 w-3.5" />
                 </>

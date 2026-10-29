@@ -25,6 +25,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header
+      data-tour="page-header"
       className={cn(
         "flex flex-col gap-3 md:flex-row md:items-start md:justify-between",
         className
@@ -48,7 +49,9 @@ export function PageHeader({
         {children}
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        <div data-tour="page-actions" className="flex shrink-0 flex-wrap items-center gap-2">
+          {actions}
+        </div>
       ) : null}
     </header>
   );

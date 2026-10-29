@@ -5,6 +5,11 @@ import Link from "next/link";
 import { PlayCircle } from "lucide-react";
 import { HELP } from "@/data/page-help";
 import { V5Icon } from "@/components/v5/ui/icon";
+import { SCREEN_TOURS } from "@/config/screen-tours";
+
+const VISIBLE_TOURS = SCREEN_TOURS.filter(
+  (tour) => !["store", "admin-config", "report-templates"].includes(tour.id)
+);
 
 /**
  * Sơ đồ hướng dẫn tương tác: bấm vào từng phần của hệ thống
@@ -93,12 +98,27 @@ export default function GuidePage() {
           <p className="text-sm text-v5-muted">Chạm vào ô nào, hướng dẫn chi tiết phần đó hiện ngay bên dưới.</p>
         </div>
         <Link
-          href="/v5?tour=1"
+          href="/huong-dan?tour=1"
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-v5-accent px-3 py-2 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
         >
-          <PlayCircle className="h-4 w-4" /> Bắt đầu tour
+          <PlayCircle className="h-4 w-4" /> Tour trang này
         </Link>
       </div>
+
+      <section data-tour="help-map" className="rounded-xl border border-v5-line bg-v5-surface p-3 shadow-sm">
+        <div className="text-xs font-bold uppercase tracking-wide text-v5-muted">Tour theo màn hình</div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {VISIBLE_TOURS.map((tour) => (
+            <Link
+              key={tour.id}
+              href={`${tour.pathPrefixes[0]}?tour=1`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-v5-line bg-v5-bg px-2.5 py-1.5 text-[11px] font-semibold text-v5-ink transition-colors hover:border-v5-accent/30 hover:text-v5-accent"
+            >
+              <PlayCircle className="h-3 w-3" /> {tour.name}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <div className="flex flex-col gap-3">
         {MAP.map((g) => (
