@@ -95,7 +95,6 @@ export default function SelfAssessmentPanel({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [criteriaScores, setCriteriaScores] = useState<Record<string, string>>({});
-  const [showCriteriaDetail, setShowCriteriaDetail] = useState(false);
   const [leaderD, setLeaderD] = useState("");
   const [leaderDD, setLeaderDD] = useState("");
   const [leaderE, setLeaderE] = useState("");
@@ -301,26 +300,16 @@ export default function SelfAssessmentPanel({
             )}
           </div>
           <div className="rounded-lg border border-slate-200 p-2.5 bg-slate-50">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
-                  Điểm cán bộ tự chấm
-                </p>
-                <p className="text-lg font-bold text-slate-800">
-                  {Number(totalCommon.toFixed(1))}
-                  <span className="text-xs font-normal text-slate-500">/30</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCriteriaDetail((v) => !v)}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                {showCriteriaDetail ? "Thu gọn" : "Chấm chi tiết"}
-              </button>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">
+                Điểm cán bộ tự chấm
+              </p>
+              <p className="text-lg font-bold text-slate-800">
+                {Number(totalCommon.toFixed(1))}
+                <span className="text-xs font-normal text-slate-500">/30</span>
+              </p>
             </div>
-            {showCriteriaDetail && (
-              <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
+            <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
                 {(["I", "II", "III"] as const).map((group) => (
                   <div key={group}>
                     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
@@ -360,7 +349,6 @@ export default function SelfAssessmentPanel({
                   Điền điểm tối đa
                 </button>
               </div>
-            )}
           </div>
         </div>
 
