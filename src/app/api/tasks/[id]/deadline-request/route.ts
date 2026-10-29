@@ -73,6 +73,13 @@ export async function POST(
     if (isNaN(parsedDate.getTime())) {
       return jsonError("Định dạng ngày không hợp lệ", 400);
     }
+    if (parsedDate.getUTCFullYear() < 2000 || parsedDate.getUTCFullYear() > 2100) {
+      return jsonError("Thời hạn đề xuất không hợp lệ (ngoài khoảng năm cho phép)", 400);
+    }
+    const currentDeadline = access.task?.currentDeadline ? new Date(access.task.currentDeadline) : null;
+    if (currentDeadline && !isNaN(currentDeadline.getTime()) && parsedDate <= currentDeadline) {
+      return jsonError("Thời hạn mới phải sau hạn hiện tại", 400);
+    }
 
     // Chống gửi trùng đề nghị (bấm liên tiếp): cùng người + cùng hạn trong 120s
     const newRequest = await prisma.$transaction(async (tx) => {

@@ -286,6 +286,12 @@ function MyWorkPageContent() {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Xin gia hạn ngay trên trang Việc của tôi
+  const [extTask, setExtTask] = useState<TaskItem | null>(null);
+  const [extDeadline, setExtDeadline] = useState("");
+  const [extReason, setExtReason] = useState("");
+  const [extBusy, setExtBusy] = useState(false);
+
   // Drawer Form State
   const [drawerStatus, setDrawerStatus] = useState<"IN_PROGRESS" | "COMPLETED" | "WAITING_REVIEW">("IN_PROGRESS");
   const [drawerProgress, setDrawerProgress] = useState<number>(85);
@@ -506,6 +512,78 @@ function MyWorkPageContent() {
     setActionError(null);
     setIsDrawerOpen(true);
     fetchAttachments(task.id);
+  };
+
+  const openExtensionForTask = (task: TaskItem) => {
+    if (isTaskTerminal(task.status)) {
+      toast.warning("Nhiệm vụ đã kết thúc — không thể xin gia hạn.");
+      return;
+    }
+    if (task.deadlineRequests?.some((r) => r.status === "PENDING")) {
+      toast.info("Đề nghị gia hạn của việc này đang chờ lãnh đạo duyệt.");
+      return;
+    }
+    setExtTask(task);
+    const base = new Date(task.currentDeadline);
+    if (!Number.isNaN(base.getTime())) {
+      base.setDate(base.getDate() + 1);
+      base.setHours(17, 0, 0, 0);
+      setExtDeadline(utcIsoToVnInputValue(base.toISOString()));
+    } else {
+      setExtDeadline("");
+    }
+    setExtReason("");
+  };
+
+  const handleExtensionSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!extTask || extBusy) return;
+    if (!extDeadline) {
+      toast.warning("Vui lòng chọn thời hạn mới.");
+      return;
+    }
+    if (!extReason.trim()) {
+      toast.warning("Vui lòng nhập lý do đề nghị gia hạn.");
+      return;
+    }
+    const parsedDeadline = new Date(extDeadline);
+    if (
+      Number.isNaN(parsedDeadline.getTime()) ||
+      parsedDeadline.getFullYear() < 2000 ||
+      parsedDeadline.getFullYear() > 2100
+    ) {
+      toast.warning("Thời hạn mới không hợp lệ. Vui lòng chọn lại ngày giờ.");
+      return;
+    }
+    const currentDeadline = extTask.currentDeadline ? new Date(extTask.currentDeadline) : null;
+    if (currentDeadline && !Number.isNaN(currentDeadline.getTime()) && parsedDeadline <= currentDeadline) {
+      toast.warning("Thời hạn mới phải sau hạn hiện tại.");
+      return;
+    }
+    setExtBusy(true);
+    try {
+      const res = await fetch(`/api/tasks/${extTask.id}/deadline-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestedDeadline: vnLocalToUtcIso(extDeadline),
+          reason: extReason.trim(),
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(json.message || "Đã gửi đề nghị gia hạn — chờ lãnh đạo duyệt.");
+        setExtTask(null);
+        setExtReason("");
+        await fetchTasks();
+      } else {
+        toast.error(json.error || "Không thể gửi đề nghị gia hạn");
+      }
+    } catch (err: any) {
+      toast.error("Lỗi: " + (err?.message || "Không gửi được đề nghị gia hạn"));
+    } finally {
+      setExtBusy(false);
+    }
   };
 
   const handleDrawerSubmit = async (finalSubmit: boolean) => {
@@ -886,7 +964,7 @@ function MyWorkPageContent() {
                 <span>Giải trình chậm hạn</span>
               </button>
               <button
-                onClick={() => openDrawerForTask(overdueTask)}
+                onClick={() => openExtensionForTask(overdueTask)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-status-danger text-on-error font-label-md text-label-md hover:opacity-90 transition-fast shadow-sm active-press"
               >
                 <V5Icon name="more_time" className="text-[18px]" />
@@ -1668,12 +1746,12 @@ function MyWorkPageContent() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 pt-1 pl-1">
                     <button
-                      onClick={() => openDrawerForTask(task)}
+                      onClick={() => openExtensionForTask(task)}
                       className="h-11 px-2.5 rounded-lg bg-v5-bg text-v5-ink font-body-semibold text-body-md flex items-center justify-center gap-1 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
                       type="button"
                     >
                       <V5Icon name="schedule_send" className="text-[18px] text-status-warning" />
-                      <span className="text-[13px] leading-tight truncate">Xin lùi hạn</span>
+                      <span className="text-[13px] leading-tight truncate">Xin gia hạn</span>
                     </button>
                     <button
                       onClick={() => openDrawerForTask(task)}
@@ -1961,6 +2039,11 @@ function MyWorkPageContent() {
                   <div className="text-v5-muted text-right">
                     Phối hợp: <strong className="text-primary">{selectedTask.assignees?.[0]?.person?.fullName || selectedTask.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</strong>
                   </div>
+                  {selectedTask.deadlineRequests?.some((r) => r.status === "PENDING") && (
+                    <div className="col-span-2 rounded-md bg-status-warning-bg px-2 py-1 text-[11px] font-semibold text-status-warning">
+                      Đề nghị gia hạn đang chờ lãnh đạo duyệt.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -2248,7 +2331,7 @@ function MyWorkPageContent() {
               >
                 Hủy bỏ
               </button>
-              <div className="flex items-center gap-space-sm">
+              <div className="flex flex-wrap items-center justify-end gap-space-sm">
                 <button
                   disabled={drawerLoading}
                   onClick={() => handleDrawerSubmit(false)}
@@ -2260,6 +2343,22 @@ function MyWorkPageContent() {
                       ? "Lưu nháp"
                       : "Lưu tiến độ phần việc"}
                 </button>
+                {selectedTask?.owner?.id === currentUser?.personId &&
+                  !selectedTask?.deadlineRequests?.some((r) => r.status === "PENDING") && (
+                    <button
+                      type="button"
+                      disabled={drawerLoading}
+                      onClick={() => {
+                        const task = selectedTask;
+                        setIsDrawerOpen(false);
+                        if (task) openExtensionForTask(task);
+                      }}
+                      className="px-3 py-2 rounded-lg bg-v5-surface text-status-warning font-label-md text-label-md hover:bg-status-warning-bg transition-fast border border-status-warning/30 active-press"
+                    >
+                      <V5Icon name="more_time" className="text-[18px]" />
+                      Xin gia hạn
+                    </button>
+                  )}
                 {selectedTask?.owner?.id === currentUser?.personId && (
                   <button
                     disabled={drawerLoading}
@@ -2273,6 +2372,75 @@ function MyWorkPageContent() {
               </div>
             </div>
           </aside>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: XIN GIA HẠN NHIỆM VỤ
+          ========================================================================= */}
+      {extTask && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
+            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+              <div className="min-w-0">
+                <h3 className="font-headline-sm font-semibold">Đề nghị gia hạn nhiệm vụ</h3>
+                <p className="truncate text-[11px] text-on-primary-container">{extTask.code}</p>
+              </div>
+              <button type="button" onClick={() => setExtTask(null)} aria-label="Đóng">
+                <V5Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+            <form onSubmit={handleExtensionSubmit}>
+              <div className="p-space-md flex flex-col gap-space-md">
+                <p className="text-sm font-semibold text-v5-ink">{extTask.title}</p>
+                <p className="text-[11px] text-v5-muted">
+                  Hạn hiện tại:{" "}
+                  <strong className="text-status-warning">{formatDateTime(extTask.currentDeadline)}</strong>
+                </p>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Thời hạn mới *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    min={extTask.currentDeadline ? utcIsoToVnInputValue(extTask.currentDeadline) : undefined}
+                    value={extDeadline}
+                    onChange={(e) => setExtDeadline(e.target.value)}
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-primary">Lý do đề nghị *</label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={extReason}
+                    onChange={(e) => setExtReason(e.target.value)}
+                    placeholder="Trình bày lý do cần gia hạn thời hạn hoàn thành..."
+                    className="p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                  />
+                </div>
+                <p className="text-[11px] text-v5-muted">
+                  Sau khi gửi, đề nghị sẽ vào mục <strong>Duyệt &amp; xác nhận</strong> của lãnh đạo.
+                </p>
+              </div>
+              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
+                <button
+                  type="button"
+                  onClick={() => setExtTask(null)}
+                  className="px-4 py-2 rounded-lg bg-v5-surface text-v5-ink text-xs font-semibold border border-v5-line hover:bg-v5-bg"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={extBusy}
+                  className="px-4 py-2 rounded-lg bg-status-warning text-v5-ink text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                >
+                  {extBusy ? "Đang gửi..." : "Gửi đề nghị"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
