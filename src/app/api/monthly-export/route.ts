@@ -5,7 +5,7 @@ import { getAuthorizedUnitIds, jsonError } from "@/server/guard";
 import { buildMonthlyWorkbook } from "@/server/monthly-export";
 import { buildMonthlyPlan02C } from "@/server/monthly-plan-02c";
 import { pickPrimaryAssignment } from "@/server/person-assignment";
-import { syncMonthlyResultsFromTasks } from "@/server/monthly-results-sync";
+import { syncMonthlyResultsFromTasks, syncMonthlyResultsFromWorkItems } from "@/server/monthly-results-sync";
 import { recordAuditEvent } from "@/server/audit";
 
 /**
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     if (!person) return jsonError("Cán bộ không tồn tại", 404);
 
     await syncMonthlyResultsFromTasks(targetPersonId, year, month);
+    await syncMonthlyResultsFromWorkItems(targetPersonId, year, month);
 
     const rows = await prisma.monthlyWorkResult.findMany({
       where: { personId: targetPersonId, periodYear: year, periodMonth: month },

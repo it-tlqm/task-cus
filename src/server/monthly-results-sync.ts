@@ -143,3 +143,110 @@ export async function syncMonthlyResultsFromTasks(
     }
   }
 }
+
+/**
+ * Đồng bộ đầu việc kế hoạch (Việc của tôi) đã hoàn thành vào KQ tháng.
+ * Chỉ lấy đầu việc KHÔNG có nhiệm vụ liên kết — đầu việc có nhiệm vụ đã được
+ * đồng bộ theo nhiệm vụ để tránh ghi trùng.
+ */
+export async function syncMonthlyResultsFromWorkItems(
+  personId: string,
+  year: number,
+  month: number
+): Promise<void> {
+  const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+  const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+  const items = await prisma.personalWorkItem.findMany({
+    where: {
+      personId,
+      taskId: null,
+      status: { not: "DISCONTINUED" },
+      OR: [
+        { dueDate: { gte: start, lte: end } },
+        { completedDate: { gte: start, lte: end } },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      assignedQty: true,
+      factorSnapshot: true,
+      dueDate: true,
+      completedDate: true,
+      reviewState: true,
+      resultText: true,
+      productItemId: true,
+      catalogEntryId: true,
+      product: { select: { convertFactor: true } },
+      catalogEntry: { select: { convertFactor: true } },
+    },
+  });
+
+  for (const item of items) {
+    const catalogFactor =
+      item.catalogEntry?.convertFactor == null
+        ? null
+        : Number(item.catalogEntry.convertFactor);
+    const factor =
+      item.factorSnapshot ?? item.product?.convertFactor ?? catalogFactor ?? null;
+
+    const assignedQty = item.assignedQty ?? 1;
+    const completedQty = item.completedDate ? assignedQty : null;
+    const lateDays =
+      item.completedDate && item.dueDate
+        ? Math.max(
+            0,
+            Math.floor(
+              (new Date(item.completedDate).getTime() - new Date(item.dueDate).getTime()) /
+                DAY_MS
+            )
+          )
+        : 0;
+
+    const idempotencyKey = `workitem:${item.id}:${year}-${month}`;
+    const existing = await prisma.monthlyWorkResult.findFirst({
+      where: {
+        personId,
+        OR: [{ workItemId: item.id }, { idempotencyKey }],
+      },
+      select: { id: true },
+    });
+
+    const data = {
+      workItemId: item.id,
+      title: item.title,
+      outputText: item.resultText || item.title,
+      assignedQty,
+      completedQty,
+      dueDate: item.dueDate,
+      completedDate: item.completedDate,
+      factorSnapshot: factor,
+      lateCount: lateDays,
+      reworkCount: 0,
+      productItemId: item.productItemId,
+      needsReview: item.reviewState !== "CONFIRMED",
+      subjectKind: "WORK_ITEM",
+      subjectId: item.id,
+      createdById: personId,
+    };
+
+    if (existing) {
+      await prisma.monthlyWorkResult.update({
+        where: { id: existing.id },
+        data,
+      });
+    } else {
+      await prisma.monthlyWorkResult.create({
+        data: {
+          ...data,
+          personId,
+          periodYear: year,
+          periodMonth: month,
+          idempotencyKey,
+        },
+      });
+    }
+  }
+}
