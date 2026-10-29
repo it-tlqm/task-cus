@@ -688,10 +688,6 @@ export default function V5EntryPage() {
                           </div>
                           <div className="mt-0.5 text-[10px] text-v5-muted">
                             {metric.unitLabel}
-                            {metric.note ? ` · ${metric.note}` : ""}
-                            {metric.valueKind === "FLOW"
-                              ? " · Có thể nhập số phát sinh hoặc tổng lũy kế; hệ thống tự quy đổi."
-                              : ""}
                           </div>
                         </div>
                         {metric.entryPeriod !== "DAY" && (
@@ -719,12 +715,9 @@ export default function V5EntryPage() {
                                   <span className="truncate">{value.label || "—"}</span>
                                   <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>
                                 </div>
-                                {canChooseMode && value.canEdit && (
-                                  <div className="mt-1 text-[10px] text-v5-muted">
-                                    Kiểu nhập:{" "}
-                                    <span className="font-semibold text-v5-ink">
-                                      {rowMode === "CUMULATIVE" ? "Lũy kế" : "Phát sinh"}
-                                    </span>
+                                {canChooseMode && rowMode === "CUMULATIVE" && (
+                                  <div className="mt-1 text-[10px] text-v5-gold-ink">
+                                    Đang nhập tổng lũy kế
                                   </div>
                                 )}
                               </div>
@@ -768,8 +761,9 @@ export default function V5EntryPage() {
                                     size="sm"
                                     onClick={() => openHelper(metric, value)}
                                     title="Tính số phát sinh từ lũy kế"
+                                    className="px-2"
                                   >
-                                    <Sparkles className="h-3.5 w-3.5" /> Tính
+                                    <Sparkles className="h-3.5 w-3.5" />
                                   </Button>
                                 )}
                                 {value.enteredByName && (

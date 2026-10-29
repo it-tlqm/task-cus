@@ -383,36 +383,64 @@ function roleRankOf(roleAtPeriod: string | null | undefined): number {
   return 2;
 }
 
+function roleRankFromTitle(title: string | null | undefined): number {
+  const text = (title || "").toLowerCase();
+  if (/hải quan cửa khẩu|đội trưởng|chi cục trưởng/.test(text)) return 0;
+  if (/trưởng bộ phận|trưởng nhóm|phó trưởng/.test(text)) return 1;
+  return 2;
+}
+
 async function loadAssessmentRows(
   year: number,
   periodType: "MONTH" | "QUARTER",
   number: number
 ): Promise<AssessmentRow[]> {
-  const assessments = await prisma.evaluationAssessment.findMany({
-    where: { periodType, periodYear: year, periodNumber: number },
-    orderBy: { createdAt: "asc" },
-  });
-  if (assessments.length === 0) return [];
-
-  const personIds = assessments.map((a) => a.subjectPersonId);
-  const people = await prisma.person.findMany({
-    where: { id: { in: personIds } },
-    select: {
-      id: true,
-      fullName: true,
-      assignments: {
-        where: { isPrimary: true },
-        select: {
-          isPrimary: true,
-          effectiveFrom: true,
-          effectiveTo: true,
-          position: { select: { title: true } },
-          unit: { select: { name: true } },
+  const [assessments, peopleRaw] = await Promise.all([
+    prisma.evaluationAssessment.findMany({
+      where: { periodType, periodYear: year, periodNumber: number },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.person.findMany({
+      where: {
+        status: "ACTIVE",
+        assignments: { some: { isPrimary: true } },
+      },
+      select: {
+        id: true,
+        code: true,
+        fullName: true,
+        account: {
+          select: {
+            username: true,
+            roleGrants: { select: { role: { select: { code: true } } } },
+          },
+        },
+        assignments: {
+          where: { isPrimary: true },
+          select: {
+            isPrimary: true,
+            effectiveFrom: true,
+            effectiveTo: true,
+            position: { select: { title: true } },
+            unit: { select: { name: true } },
+          },
         },
       },
-    },
+      orderBy: { fullName: "asc" },
+    }),
+  ]);
+  // Báo cáo chính thức không liệt kê tài khoản demo/kiểm thử hoặc quản trị kỹ thuật.
+  const people = peopleRaw.filter((person) => {
+    if (/demo|test/i.test(person.fullName)) return false;
+    const username = person.account?.username || "";
+    if (/^(demo|test)/i.test(username)) return false;
+    if (person.account?.roleGrants.some((g) => g.role.code === "SYSTEM_ADMIN")) return false;
+    return true;
   });
-  const personMap = new Map(people.map((p) => [p.id, p]));
+  if (people.length === 0) return [];
+
+  const assessmentMap = new Map(assessments.map((a) => [a.subjectPersonId, a]));
+  const personIds = people.map((p) => p.id);
 
   const lastMonth = periodType === "QUARTER" ? number * 3 : number;
   const monthly = await prisma.evaluationAssessment.findMany({
@@ -426,27 +454,27 @@ async function loadAssessmentRows(
   });
   const monthlyMap = new Map(monthly.map((m) => [m.subjectPersonId, m]));
 
-  const rows = assessments.map((a) => {
-    const person = personMap.get(a.subjectPersonId);
-    const assignment = pickPrimaryAssignment(person?.assignments || []);
+  const rows = people.map((person) => {
+    const a = assessmentMap.get(person.id);
+    const assignment = pickPrimaryAssignment(person.assignments || []);
     const total =
-      a.commonCriteriaScore !== null && a.taskResultScore !== null
+      a && a.commonCriteriaScore !== null && a.taskResultScore !== null
         ? a.commonCriteriaScore + a.taskResultScore
         : null;
-    const month = monthlyMap.get(a.subjectPersonId);
+    const month = monthlyMap.get(person.id);
     const monthTotal =
       month && month.commonCriteriaScore !== null && month.taskResultScore !== null
         ? month.commonCriteriaScore + month.taskResultScore
         : null;
-    const grade = a.finalGrade || a.selfGradeChoice || a.selfGradeSuggestion || "";
+    const grade = a ? a.finalGrade || a.selfGradeChoice || a.selfGradeSuggestion || "" : "";
     return {
-      personId: a.subjectPersonId,
-      fullName: person?.fullName || a.subjectPersonId,
+      personId: person.id,
+      fullName: person.fullName,
       positionTitle: assignment?.position?.title || "",
-      roleRank: roleRankOf(a.roleAtPeriod),
+      roleRank: a ? roleRankOf(a.roleAtPeriod) : roleRankFromTitle(assignment?.position?.title),
       totalScore: total,
       grade,
-      selfGrade: gradeShort(a.selfGradeChoice),
+      selfGrade: a ? gradeShort(a.selfGradeChoice) : "",
       monthlyScore: monthTotal,
     };
   });
