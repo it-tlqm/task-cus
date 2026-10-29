@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BookmarkPlus, ChevronLeft, Download, PencilLine } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
+import { GiaoBanNarrativePanel } from "@/components/v5/GiaoBanNarrativePanel";
 
 type Mode = "WEEK" | "MONTH" | "QUARTER" | "YEAR";
 
@@ -366,6 +367,18 @@ export default function GiaoBanBaoCaoPage() {
                   Trong bảng: dấu “…” là chưa nhập số liệu (không hiển thị 0 giả).
                 </span>
               </div>
+            </div>
+
+            <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 p-4 flex flex-col gap-2">
+              <div className="text-label-md font-semibold text-primary">Nhận xét cho báo cáo</div>
+              <p className="text-body-xs text-v5-muted">
+                Nội dung này được đưa vào báo cáo Word và lưu theo kỳ đang chọn.
+              </p>
+              <GiaoBanNarrativePanel
+                periodType={data.meta.periodType}
+                periodKey={data.meta.periodKey}
+                periodLabel={data.meta.periodLabel}
+              />
             </div>
 
             {/* Xem trước */}

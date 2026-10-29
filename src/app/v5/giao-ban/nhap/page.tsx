@@ -147,6 +147,7 @@ export default function V5EntryPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [onlyTodo, setOnlyTodo] = useState(false);
+  const [keyOnly, setKeyOnly] = useState(true);
   const [search, setSearch] = useState("");
   const [helper, setHelper] = useState<HelperState | null>(null);
   const [helperLoading, setHelperLoading] = useState(false);
@@ -405,10 +406,16 @@ export default function V5EntryPage() {
   const groups = useMemo(() => {
     if (!data) return [];
     const query = search.trim().toLowerCase();
+    const keyCodes = new Set(["THU_NSNN", "OTO_XE", "TRI_GIA_USD"]);
+    const hasKeyMetric = data.groups.some((group) =>
+      group.metrics.some((metric) => keyCodes.has(metric.code))
+    );
+    const applyKeyFilter = keyOnly && !query && hasKeyMetric;
     return data.groups
       .map((group) => ({
         ...group,
         metrics: group.metrics.filter((metric) => {
+          if (applyKeyFilter && !keyCodes.has(metric.code)) return false;
           if (onlyTodo) {
             const hasMissing = metric.values.some((value) => {
               const raw = values[`${metric.id}|${value.classificationId}`] || "";
@@ -425,7 +432,7 @@ export default function V5EntryPage() {
         }),
       }))
       .filter((group) => group.metrics.length > 0);
-  }, [data, onlyTodo, values, search]);
+  }, [data, onlyTodo, keyOnly, values, search]);
 
   return (
     <div className="space-y-3 pb-24 lg:pb-6">
@@ -587,6 +594,30 @@ export default function V5EntryPage() {
               >
                 Cần nhập ({missingMetrics})
               </button>
+              <div className="flex items-center gap-1 rounded-md border border-v5-line bg-v5-bg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setKeyOnly(true)}
+                  aria-pressed={keyOnly}
+                  title="Chỉ hiện Thu NSNN, Ô tô, Trị giá USD"
+                  className={`rounded px-2 py-1 text-[11px] font-semibold ${
+                    keyOnly ? "bg-v5-surface text-v5-accent shadow-sm" : "text-v5-muted"
+                  }`}
+                >
+                  Chỉ tiêu chính
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKeyOnly(false)}
+                  aria-pressed={!keyOnly}
+                  title="Hiện toàn bộ chỉ tiêu được giao"
+                  className={`rounded px-2 py-1 text-[11px] font-semibold ${
+                    !keyOnly ? "bg-v5-surface text-v5-accent shadow-sm" : "text-v5-muted"
+                  }`}
+                >
+                  Mọi chỉ tiêu
+                </button>
+              </div>
               {onlyTodo && (
                 <span className="text-[10px] text-v5-muted">Đang ẩn chỉ tiêu đã nhập đủ</span>
               )}

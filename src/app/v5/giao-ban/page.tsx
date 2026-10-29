@@ -19,7 +19,6 @@ import { Card } from "@/components/v5/ui/card";
 import { RevenueSummaryTable } from "@/components/v5/RevenueSummaryTable";
 import { MetricsSummaryTable } from "@/components/v5/MetricsSummaryTable";
 import { RevenueCharts } from "@/components/v5/RevenueCharts";
-import { GiaoBanNarrativePanel } from "@/components/v5/GiaoBanNarrativePanel";
 
 type PeriodKey = "week" | "month" | "quarter" | "year";
 
@@ -63,7 +62,7 @@ export default function V5GiaoBanPage() {
   const iso = getIsoWeekFromDate(now);
   const quarter = Math.floor(vn.month / 3) + 1;
   const [period, setPeriod] = useState<PeriodKey>("month");
-  const [tab, setTab] = useState<"tonghop" | "chitiet" | "sohieu" | "nhanxet">("tonghop");
+  const [tab, setTab] = useState<"tonghop" | "chitiet" | "sohieu">("tonghop");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -188,7 +187,6 @@ export default function V5GiaoBanPage() {
             { key: "tonghop" as const, label: "Tổng hợp" },
             { key: "chitiet" as const, label: "Theo chỉ tiêu" },
             { key: "sohieu" as const, label: "So sánh" },
-            { key: "nhanxet" as const, label: "Nhận xét" },
           ].map((item) => (
             <button
               key={item.key}
@@ -272,14 +270,6 @@ export default function V5GiaoBanPage() {
             periodLabel="Tháng này"
           />
         </section>
-      )}
-
-      {tab === "nhanxet" && (
-        <GiaoBanNarrativePanel
-          periodType={period.toUpperCase() as "WEEK" | "MONTH" | "QUARTER" | "YEAR"}
-          periodKey={periodKey}
-          periodLabel={periodLabel}
-        />
       )}
 
       <div className="flex justify-end">
