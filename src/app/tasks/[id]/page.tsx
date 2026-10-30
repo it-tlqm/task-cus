@@ -1131,7 +1131,17 @@ export default function TaskDetailPage() {
                 }`}
               >
                 <V5Icon
-                  name={isCompleted ? "check_circle" : isWaiting ? "schedule" : isOverdue ? "warning" : "sync"}
+                  name={
+                    isCompleted
+                      ? "check_circle"
+                      : isWaiting
+                        ? "schedule"
+                        : isOverdue
+                          ? "warning"
+                          : task?.status === "NOT_STARTED"
+                            ? "hourglass_top"
+                            : "sync"
+                  }
                   className="text-[14px]"
                 />
                 <span>
@@ -1141,7 +1151,9 @@ export default function TaskDetailPage() {
                     ? "Chờ lãnh đạo duyệt"
                     : isOverdue
                     ? "Chậm tiến độ"
-                    : "Đang thực hiện"}
+                    : task?.status === "NOT_STARTED"
+                      ? "Chờ nhận việc"
+                      : "Đang thực hiện"}
                 </span>
               </span>
               {isReturned && (
