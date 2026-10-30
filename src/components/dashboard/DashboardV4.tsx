@@ -168,7 +168,7 @@ function MetricMiniBars({
               decimals: metric.decimals ?? 0,
               unitLabel: metric.unitLabel,
             })}`}
-            className={`w-1.5 rounded-sm ${active ? "bg-primary" : "bg-primary/20"}`}
+            className={`w-1.5 rounded-sm ${active ? "bg-v5-accent" : "bg-v5-accent/20"}`}
             style={{ height: `${height}%` }}
           />
         );
@@ -203,19 +203,19 @@ function MetricWidgetBoard({
     <section className="space-y-3" data-testid="dashboard-v4-widgets">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="font-body-semibold text-headline-sm text-primary">Số liệu giao ban</h2>
-          <p className="text-body-xs text-v5-muted">
+          <h2 className="font-semibold text-sm text-v5-ink">Số liệu giao ban</h2>
+          <p className="text-[11px] text-v5-muted">
             {shownMetrics < totalMetrics ? `${shownMetrics}/${totalMetrics}` : totalMetrics} chỉ tiêu · widget theo nhóm ·{" "}
             {periodLabel.toLowerCase()}
           </p>
         </div>
-        <Link href="/giao-ban" className="text-body-xs font-semibold text-secondary hover:underline">
+        <Link href="/giao-ban" className="text-[11px] font-semibold text-v5-accent hover:underline">
           Mở toàn bộ →
         </Link>
       </div>
 
       {totalMetrics === 0 && (
-        <div className="rounded-xl border border-dashed border-v5-line/60 bg-v5-surface p-6 text-center text-body-sm text-v5-muted">
+        <div className="rounded-xl border border-dashed border-v5-line/60 bg-v5-surface p-6 text-center text-[12px] text-v5-muted">
           Chưa có chỉ tiêu hiển thị trên dashboard.
         </div>
       )}
@@ -223,10 +223,10 @@ function MetricWidgetBoard({
       {visibleGroups.map((group) => (
         <div key={group.id} className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-body-semibold text-[11px] font-bold uppercase tracking-wide text-v5-muted">
+            <h3 className="font-semibold text-[11px] font-bold uppercase tracking-wide text-v5-muted">
               {group.name}
             </h3>
-            <span className="text-[10px] text-outline">{group.metrics.length} chỉ tiêu</span>
+            <span className="text-[10px] text-v5-muted">{group.metrics.length} chỉ tiêu</span>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {group.metrics.map((metric) => {
@@ -239,11 +239,11 @@ function MetricWidgetBoard({
               return (
                 <article
                   key={metric.id}
-                  className="flex min-w-0 flex-col justify-between gap-2 rounded-xl border border-v5-line/60 bg-v5-surface p-3 shadow-sm transition-fast hover:border-primary/30 hover:shadow-md"
+                  className="flex min-w-0 flex-col justify-between gap-2 rounded-xl border border-v5-line/60 bg-v5-surface p-3 shadow-sm transition-fast hover:border-v5-accent/30 hover:shadow-md"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="truncate font-body-semibold text-body-sm text-primary" title={metric.name}>
+                      <div className="truncate font-semibold text-[12px] text-v5-ink" title={metric.name}>
                         {metric.name}
                       </div>
                       <div className="mt-0.5 text-[10px] text-v5-muted">
@@ -263,7 +263,7 @@ function MetricWidgetBoard({
                   <div className="flex items-end justify-between gap-2">
                     <div className="min-w-0">
                       <div
-                        className="truncate text-headline-sm font-bold tabular-nums text-primary"
+                        className="truncate text-sm font-bold tabular-nums text-v5-ink"
                         title={fmtMetric(value, style)}
                       >
                         {fmtMetricCompact(value, style, { withUnit: false })}
@@ -405,10 +405,10 @@ export default function DashboardV4() {
   if (error) {
     return (
       <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-        <div className="bg-status-danger-bg border border-status-danger/30 rounded-xl p-5">
-          <h1 className="font-headline-sm text-primary font-bold">Không tải được bảng điều hành</h1>
-          <p className="mt-2 text-body-md text-v5-muted">{error}</p>
-          <Link className="inline-flex mt-4 text-secondary font-semibold" href="/dashboard">
+        <div className="bg-v5-danger-soft border border-v5-danger/30 rounded-xl p-5">
+          <h1 className="text-sm text-v5-ink font-bold">Không tải được bảng điều hành</h1>
+          <p className="mt-2 text-[12px] text-v5-muted">{error}</p>
+          <Link className="inline-flex mt-4 text-v5-accent font-semibold" href="/dashboard">
             Về giao diện hiện tại
           </Link>
         </div>
@@ -422,8 +422,8 @@ export default function DashboardV4() {
         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-headline-md text-primary font-bold">Bảng điều hành</h1>
-              <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-secondary/10 text-secondary">
+              <h1 className="font-headline-md text-v5-ink font-bold">Bảng điều hành</h1>
+              <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-v5-accent/10 text-v5-accent">
                 V4
               </span>
             </div>
@@ -434,7 +434,7 @@ export default function DashboardV4() {
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard"
-              className="h-10 px-3 inline-flex items-center gap-1.5 rounded-lg bg-v5-surface border border-v5-line text-primary font-body-semibold text-body-sm hover:bg-v5-bg"
+              className="h-10 px-3 inline-flex items-center gap-1.5 rounded-lg bg-v5-surface border border-v5-line text-v5-ink font-semibold text-[12px] hover:bg-v5-bg"
             >
               <V5Icon name="arrow_back" className="text-[18px]" />
               Giao diện cũ
@@ -442,7 +442,7 @@ export default function DashboardV4() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="h-10 px-3 inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary font-body-semibold text-body-sm hover:bg-primary/90"
+              className="h-10 px-3 inline-flex items-center gap-1.5 rounded-lg bg-v5-accent text-white font-semibold text-[12px] hover:bg-v5-accent/90"
             >
               <V5Icon name="print" className="text-[18px]" />
               In / PDF
@@ -452,7 +452,7 @@ export default function DashboardV4() {
 
         <section className="bg-v5-surface border border-v5-line/60 rounded-xl p-2.5 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg bg-v5-bg text-primary font-body-semibold text-body-sm">
+            <span className="inline-flex h-9 items-center gap-1.5 px-3 rounded-lg bg-v5-bg text-v5-ink font-semibold text-[12px]">
               <V5Icon name="account_balance" className="text-[17px]" />
               HQCK Quốc tế Tà Lùng
             </span>
@@ -463,8 +463,8 @@ export default function DashboardV4() {
                   type="button"
                   onClick={() => setPeriod(key)}
                   aria-pressed={period === key}
-                  className={`h-8 px-2 rounded-md font-body-semibold text-[11px] transition-fast ${
-                    period === key ? "bg-primary text-on-primary shadow-sm" : "text-v5-muted hover:bg-v5-surface"
+                  className={`h-8 px-2 rounded-md font-semibold text-[11px] transition-fast ${
+                    period === key ? "bg-v5-accent text-white shadow-sm" : "text-v5-muted hover:bg-v5-surface"
                   }`}
                 >
                   {PERIOD_LABEL[key]}
@@ -486,9 +486,9 @@ export default function DashboardV4() {
                 type="button"
                 onClick={() => setView(key)}
                 aria-pressed={view === key}
-                className={`h-9 px-3 rounded-lg font-body-semibold text-body-sm transition-fast ${
+                className={`h-9 px-3 rounded-lg font-semibold text-[12px] transition-fast ${
                   view === key
-                    ? "bg-secondary/10 text-secondary border border-secondary/20"
+                    ? "bg-v5-accent/10 text-v5-accent border border-v5-accent/20"
                     : "text-v5-muted hover:bg-v5-bg"
                 }`}
               >
@@ -497,14 +497,14 @@ export default function DashboardV4() {
             ))}
             <Link
               href="/giao-ban"
-              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg bg-primary text-on-primary font-body-semibold text-body-sm hover:bg-primary/90"
+              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg bg-v5-accent text-white font-semibold text-[12px] hover:bg-v5-accent/90"
             >
               <V5Icon name="table_view" className="text-[17px]" />
               Số liệu giao ban
             </Link>
             <Link
               href="/v5"
-              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 text-primary font-body-semibold text-body-sm hover:bg-primary/10"
+              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-lg border border-v5-accent/20 bg-v5-accent/5 text-v5-ink font-semibold text-[12px] hover:bg-v5-accent/10"
             >
               <V5Icon name="auto_awesome" className="text-[17px]" />
               Bảng điều hành mới
@@ -538,12 +538,12 @@ export default function DashboardV4() {
                   {canConfigureMetrics && (
                     <Link
                       href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
-                      className="text-body-xs font-semibold text-primary bg-primary/5 border border-primary/20 rounded-md px-2 py-1 hover:bg-primary/10"
+                      className="text-[11px] font-semibold text-v5-ink bg-v5-accent/5 border border-v5-accent/20 rounded-md px-2 py-1 hover:bg-v5-accent/10"
                     >
                       Nhập chỉ tiêu →
                     </Link>
                   )}
-                  <Link href="/giao-ban/bao-cao" className="text-body-xs font-semibold text-secondary">Chi tiết →</Link>
+                  <Link href="/giao-ban/bao-cao" className="text-[11px] font-semibold text-v5-accent">Chi tiết →</Link>
                 </div>
               }
             >
@@ -589,10 +589,10 @@ export default function DashboardV4() {
                 >
                   <div className="absolute inset-[14px] rounded-full bg-v5-surface grid place-items-center text-center">
                     <div>
-                      <div className="font-headline-md text-primary font-bold tabular-nums">
+                      <div className="font-headline-md text-v5-ink font-bold tabular-nums">
                         {revenuePercent === null ? "—" : formatPercent(revenuePercent)}
                       </div>
-                      <div className="font-body-xs text-v5-muted">hoàn thành</div>
+                      <div className="text-[11px] text-v5-muted">hoàn thành</div>
                     </div>
                   </div>
                 </div>
@@ -689,11 +689,11 @@ export default function DashboardV4() {
               <Panel
                 title="Cảnh báo cần xử lý"
                 subtitle={`${alerts.length} cảnh báo ưu tiên`}
-                action={<Link href="/notifications" className="text-body-xs font-semibold text-secondary">Tất cả →</Link>}
+                action={<Link href="/notifications" className="text-[11px] font-semibold text-v5-accent">Tất cả →</Link>}
               >
                 <div className="h-[255px] overflow-y-auto space-y-2 px-4 pb-4">
                   {alerts.length === 0 ? (
-                    <div className="h-full grid place-items-center text-body-sm text-v5-muted">Không có cảnh báo</div>
+                    <div className="h-full grid place-items-center text-[12px] text-v5-muted">Không có cảnh báo</div>
                   ) : (
                     alerts.map((a) => (
                       <Link
@@ -703,12 +703,12 @@ export default function DashboardV4() {
                       >
                         <span
                           className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
-                            a.severity === "DANGER" ? "bg-status-danger" : a.severity === "WARNING" ? "bg-status-warning" : "bg-secondary"
+                            a.severity === "DANGER" ? "bg-v5-danger" : a.severity === "WARNING" ? "bg-v5-gold" : "bg-v5-accent"
                           }`}
                         />
                         <div className="min-w-0">
-                          <div className="font-body-semibold text-body-sm text-primary truncate">{a.type}: [{a.code}]</div>
-                          <div className="font-body-xs text-v5-muted line-clamp-2">{a.title}</div>
+                          <div className="font-semibold text-[12px] text-v5-ink truncate">{a.type}: [{a.code}]</div>
+                          <div className="text-[11px] text-v5-muted line-clamp-2">{a.title}</div>
                         </div>
                       </Link>
                     ))
@@ -746,7 +746,7 @@ export default function DashboardV4() {
                 canConfigureMetrics ? (
                   <Link
                     href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
-                    className="text-body-xs font-semibold text-primary bg-primary/5 border border-primary/20 rounded-md px-2 py-1 hover:bg-primary/10"
+                    className="text-[11px] font-semibold text-v5-ink bg-v5-accent/5 border border-v5-accent/20 rounded-md px-2 py-1 hover:bg-v5-accent/10"
                   >
                     Nhập chỉ tiêu →
                   </Link>
@@ -781,7 +781,7 @@ export default function DashboardV4() {
                     <CompareLine label={comparisonRow.prevMonth?.label || "Tháng trước"} value={comparisonRow.prevMonth?.value} />
                     <CompareLine label={comparisonRow.samePeriodLastYear?.label || "Cùng kỳ"} value={comparisonRow.samePeriodLastYear?.value} />
                     <CompareLine label={comparisonRow.monthPlan?.label || "Chỉ tiêu tháng"} value={comparisonRow.monthPlan?.targetValue} accent />
-                    <p className="text-body-xs text-v5-muted pt-2 border-t border-v5-line/50">
+                    <p className="text-[11px] text-v5-muted pt-2 border-t border-v5-line/50">
                       Tỷ lệ chính thức chỉ hiển thị khi chỉ tiêu có nguồn REAL và đã xác nhận/chốt. Thiếu dữ liệu hiển thị “Chưa xác định”, không tự hiện 0%.
                     </p>
                   </>
@@ -793,7 +793,7 @@ export default function DashboardV4() {
           </section>
         )}
 
-        <p className="text-[10px] text-outline px-1">
+        <p className="text-[10px] text-v5-muted px-1">
           Dashboard V4 · Dữ liệu đọc từ API hiện có · {latestDate ? `Số liệu đến ${formatVnDate(latestDate)}` : "Số liệu theo kỳ đang chọn"}
         </p>
       </div>
@@ -819,27 +819,27 @@ function KpiCard({
   href: string;
 }) {
   const toneClass = {
-    primary: "bg-primary text-on-primary",
-    blue: "bg-secondary/15 text-secondary",
-    warning: "bg-status-warning-bg text-status-warning",
-    success: "bg-status-success-bg text-status-success",
+    primary: "bg-v5-accent text-white",
+    blue: "bg-v5-accent/15 text-v5-accent",
+    warning: "bg-v5-gold-soft text-v5-gold-ink",
+    success: "bg-v5-success-soft text-v5-success",
   }[tone];
   const barClass = {
-    primary: "bg-primary",
-    blue: "bg-secondary",
-    warning: "bg-status-warning",
-    success: "bg-status-success",
+    primary: "bg-v5-accent",
+    blue: "bg-v5-accent",
+    warning: "bg-v5-gold",
+    success: "bg-v5-success",
   }[tone];
   return (
     <Link href={href} className="bg-v5-surface rounded-xl border border-v5-line/60 p-4 shadow-sm hover:shadow-md transition-fast block">
       <div className="flex items-start justify-between gap-2">
-        <div className="font-label-sm text-label-sm text-v5-muted font-semibold">{label}</div>
+        <div className="text-[11px] text-v5-muted font-semibold">{label}</div>
         <span className={`w-8 h-8 rounded-lg grid place-items-center ${toneClass}`}>
           <V5Icon name={icon} className="text-[18px]" />
         </span>
       </div>
-      <div className="mt-2.5 font-headline-md text-primary font-bold tabular-nums">{value}</div>
-      <div className="mt-1 font-body-xs text-v5-muted">{note}</div>
+      <div className="mt-2.5 font-headline-md text-v5-ink font-bold tabular-nums">{value}</div>
+      <div className="mt-1 text-[11px] text-v5-muted">{note}</div>
       <div className="mt-3 h-1.5 rounded-full bg-v5-bg overflow-hidden">
         <div
           className={`h-full rounded-full ${barClass}`}
@@ -867,8 +867,8 @@ function Panel({
     <section className={`bg-v5-surface rounded-xl border border-v5-line/60 shadow-sm overflow-hidden ${className}`}>
       <div className="flex items-start justify-between gap-2 px-4 pt-3.5 pb-1">
         <div>
-          <h2 className="font-headline-sm text-primary font-bold">{title}</h2>
-          {subtitle ? <p className="font-body-xs text-v5-muted mt-0.5">{subtitle}</p> : null}
+          <h2 className="text-sm text-v5-ink font-bold">{title}</h2>
+          {subtitle ? <p className="text-[11px] text-v5-muted mt-0.5">{subtitle}</p> : null}
         </div>
         {action}
       </div>
@@ -881,7 +881,7 @@ function CompareLine({ label, value, accent = false }: { label: string; value: n
   return (
     <div className="flex items-center justify-between gap-3 border-b border-v5-line/40 pb-2 last:border-0">
       <span className="text-v5-muted">{label}</span>
-      <span className={`font-body-semibold tabular-nums ${accent ? "text-status-warning" : "text-primary"}`}>
+      <span className={`font-semibold tabular-nums ${accent ? "text-v5-gold-ink" : "text-v5-ink"}`}>
         {formatMoney(value)}
       </span>
     </div>
@@ -890,6 +890,6 @@ function CompareLine({ label, value, accent = false }: { label: string; value: n
 
 function EmptyChart({ text }: { text: string }) {
   return (
-    <div className="h-full grid place-items-center text-body-sm text-v5-muted text-center px-4">{text}</div>
+    <div className="h-full grid place-items-center text-[12px] text-v5-muted text-center px-4">{text}</div>
   );
 }

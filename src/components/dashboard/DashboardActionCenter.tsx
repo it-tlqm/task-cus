@@ -25,11 +25,11 @@ export default function DashboardActionCenter({
     <section className="px-margin pt-space-md lg:px-space-lg" data-testid="dashboard-action-center">
       <div className="flex flex-col gap-2 rounded-xl border border-v5-line/60 bg-v5-surface p-3 shadow-sm sm:flex-row sm:items-center sm:gap-3">
         <div className="flex shrink-0 items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-v5-accent/10 text-v5-ink">
             <V5Icon name="bolt" className="text-[18px]" />
           </span>
           <div>
-            <div className="text-label-md font-bold text-v5-ink">Việc cần xử lý</div>
+            <div className="text-[12px] font-bold text-v5-ink">Việc cần xử lý</div>
             <div className="text-[11px] text-v5-muted">
               {total > 0 ? `${total} việc đang chờ` : "Không có việc gấp"}
             </div>
@@ -40,11 +40,11 @@ export default function DashboardActionCenter({
           {canApprove && (
             <Link
               href="/approvals"
-              className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-status-warning/30 bg-status-warning-bg/50 px-2.5 py-1.5 text-[11px] font-semibold text-status-warning hover:brightness-95"
+              className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-v5-gold/30 bg-v5-gold-soft/50 px-2.5 py-1.5 text-[11px] font-semibold text-v5-gold-ink hover:brightness-95"
             >
               <V5Icon name="approval" className="text-[15px]" />
               Chờ duyệt
-              <span className="rounded-full bg-status-warning px-1.5 text-[10px] text-white">
+              <span className="rounded-full bg-v5-gold px-1.5 text-[10px] text-v5-gold-ink">
                 {waitingReview}
               </span>
               {urgentReview > 0 && (
@@ -55,11 +55,11 @@ export default function DashboardActionCenter({
 
           <Link
             href="/tasks"
-            className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-status-danger/30 bg-status-danger-bg/50 px-2.5 py-1.5 text-[11px] font-semibold text-status-danger hover:brightness-95"
+            className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-v5-danger/30 bg-v5-danger-soft/50 px-2.5 py-1.5 text-[11px] font-semibold text-v5-danger hover:brightness-95"
           >
             <V5Icon name="warning" className="text-[15px]" />
             Quá hạn
-            <span className="rounded-full bg-status-danger px-1.5 text-[10px] text-white">{overdue}</span>
+            <span className="rounded-full bg-v5-danger px-1.5 text-[10px] text-white">{overdue}</span>
           </Link>
 
           <Link
@@ -76,7 +76,7 @@ export default function DashboardActionCenter({
 
         <Link
           href="/my-work"
-          className="shrink-0 text-[11px] font-semibold text-secondary hover:underline"
+          className="shrink-0 text-[11px] font-semibold text-v5-accent hover:underline"
         >
           Mở việc của tôi →
         </Link>

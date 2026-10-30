@@ -143,26 +143,26 @@ export function RevenueComparisonSection({
     return (
       <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-v5-line/50 bg-v5-bg/30 p-3">
         <div className="flex items-start justify-between gap-2">
-          <span className="text-body-xs font-semibold leading-snug text-v5-muted">{label}</span>
+          <span className="text-[11px] font-semibold leading-snug text-v5-muted">{label}</span>
           <span className="shrink-0">{targetChip(block)}</span>
         </div>
         {hasCurrent && hasTarget ? (
           <>
             <div className="flex flex-wrap items-baseline gap-1.5">
               <span
-                className="text-headline-sm font-bold tabular-nums text-primary"
+                className="text-sm font-bold tabular-nums text-v5-ink"
                 title={fmtMetric(current, rowStyle)}
               >
                 {fmtMetricCompact(current, rowStyle, { withUnit: false })}
               </span>
-              <span className="text-body-xs text-v5-muted">
+              <span className="text-[11px] text-v5-muted">
                 / {fmtMetricCompact(block.targetValue, rowStyle, { withUnit: false })}
               </span>
             </div>
             <div className="text-[10px] text-v5-muted">{currentLabel} · so với chỉ tiêu</div>
           </>
         ) : (
-          <div className="flex min-h-[52px] items-center text-body-xs italic text-v5-muted">
+          <div className="flex min-h-[52px] items-center text-[11px] italic text-v5-muted">
             {block.ruleState === "AMBIGUOUS"
               ? "Chưa xác định quy tắc đối chiếu"
               : "Chưa có dữ liệu đối chiếu"}
@@ -192,7 +192,7 @@ export function RevenueComparisonSection({
     return (
       <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-v5-line/50 bg-v5-bg/30 p-3">
         <div className="flex items-start justify-between gap-2">
-          <span className="text-body-xs font-semibold leading-snug text-v5-muted">{label}</span>
+          <span className="text-[11px] font-semibold leading-snug text-v5-muted">{label}</span>
           <span className="shrink-0">
             {block.percent !== null ? (
               <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${percentTone}`}>
@@ -210,12 +210,12 @@ export function RevenueComparisonSection({
           <>
             <div className="flex flex-wrap items-baseline gap-1.5">
               <span
-                className="text-headline-sm font-bold tabular-nums text-primary"
+                className="text-sm font-bold tabular-nums text-v5-ink"
                 title={fmtMetric(current, rowStyle)}
               >
                 {fmtMetricCompact(current, rowStyle, { withUnit: false })}
               </span>
-              <span className="text-body-xs text-v5-muted">
+              <span className="text-[11px] text-v5-muted">
                 so với {fmtMetricCompact(block.value, rowStyle, { withUnit: false })}
               </span>
             </div>
@@ -236,11 +236,11 @@ export function RevenueComparisonSection({
           </>
         ) : (
           <div className="flex flex-col items-start gap-1">
-            <span className="text-body-xs italic text-v5-muted">Chưa có dữ liệu đối chiếu</span>
+            <span className="text-[11px] italic text-v5-muted">Chưa có dữ liệu đối chiếu</span>
             {actualDate && (
               <Link
                 href={`/giao-ban/nhap?date=${actualDate}&metric=THU_NSNN`}
-                className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/10"
+                className="inline-flex items-center gap-1 rounded border border-v5-accent/20 bg-v5-accent/5 px-1.5 py-0.5 text-[10px] font-semibold text-v5-ink hover:bg-v5-accent/10"
                 title={`Mở nhập số thực tế ngày ${actualDate}`}
               >
                 <V5Icon name="edit_note" className="text-[13px]" />
@@ -256,9 +256,9 @@ export function RevenueComparisonSection({
   return (
     <div className={`bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden ${className}`} data-testid="comparison-section">
       <div className="px-4 py-3 bg-v5-bg border-b border-v5-line/40 flex items-center gap-2 flex-wrap">
-        <V5Icon name="compare_arrows" className="text-[18px] text-primary" />
-        <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide">So sánh kết quả thu NSNN</span>
-        <span className="text-body-xs text-v5-muted">
+        <V5Icon name="compare_arrows" className="text-[18px] text-v5-ink" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-v5-ink font-bold uppercase tracking-wide">So sánh kết quả thu NSNN</span>
+        <span className="text-[11px] text-v5-muted">
           ({comparison?.anchors?.monthLabel || ""} — tháng trước: {comparison?.anchors?.prevMonthLabel || ""}, cùng kỳ:{" "}
           {comparison?.anchors?.lastYearLabel || ""})
         </span>
@@ -274,7 +274,7 @@ export function RevenueComparisonSection({
             type="button"
             onClick={() => setQuickTargetOpen(true)}
             title="Nhập nhanh BTC, UBND và KH tháng"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-v5-accent/20 bg-v5-accent/5 px-2.5 py-1.5 text-[11px] font-semibold text-v5-ink hover:bg-v5-accent/10 whitespace-nowrap"
           >
             <V5Icon name="edit_note" className="text-[16px]" />
             Nhập chỉ tiêu BTC/UBND/KH
@@ -282,7 +282,7 @@ export function RevenueComparisonSection({
         ) : showConfigureLink ? (
           <Link
             href="/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-label-sm font-semibold text-primary hover:bg-primary/10 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-v5-accent/20 bg-v5-accent/5 px-2.5 py-1.5 text-[11px] font-semibold text-v5-ink hover:bg-v5-accent/10 whitespace-nowrap"
           >
             <V5Icon name="edit_note" className="text-[16px]" />
             Cấu hình chỉ tiêu →
@@ -299,8 +299,8 @@ export function RevenueComparisonSection({
             <div key={r.metricId} data-testid={`comparison-${r.code}`}>
               <div className="flex items-baseline gap-2 flex-wrap mb-1.5">
                 <span className="font-semibold text-v5-ink">{r.name}</span>
-                {r.unitLabel ? <span className="text-body-xs text-v5-muted">({r.unitLabel})</span> : null}
-                {r.latestDate ? <span className="text-body-xs text-v5-muted">Số liệu đến {fmtDate(r.latestDate)}</span> : null}
+                {r.unitLabel ? <span className="text-[11px] text-v5-muted">({r.unitLabel})</span> : null}
+                {r.latestDate ? <span className="text-[11px] text-v5-muted">Số liệu đến {fmtDate(r.latestDate)}</span> : null}
               </div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">
                 Chỉ tiêu giao

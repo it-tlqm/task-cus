@@ -218,7 +218,7 @@ export default function ComparisonTargetQuickModal({
         <div className="flex items-start justify-between gap-2 border-b border-v5-line/60 px-4 py-3">
           <div>
             <h2 className="text-title-md font-bold text-v5-ink">Nhập nhanh chỉ tiêu đối chiếu</h2>
-            <p className="mt-0.5 text-body-xs text-v5-muted">
+            <p className="mt-0.5 text-[11px] text-v5-muted">
               Thu NSNN · Tháng {month}/{year} · nhập 3 chỉ tiêu bắt buộc
             </p>
           </div>
@@ -245,10 +245,10 @@ export default function ComparisonTargetQuickModal({
               {ROWS.map((item) => {
                 const current = canonicalTarget(targets, item.kind, year, month);
                 return (
-                  <div key={item.kind} className="rounded-xl border border-v5-line/60 bg-surface p-3">
+                  <div key={item.kind} className="rounded-xl border border-v5-line/60 bg-v5-surface p-3">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <div className="text-body-sm font-semibold text-v5-ink">{item.label}</div>
+                        <div className="text-[12px] font-semibold text-v5-ink">{item.label}</div>
                         <div className="text-[11px] text-v5-muted">
                           {item.periodLabel} {item.periodType === "MONTH" ? `${month}/${year}` : year}
                         </div>
@@ -256,9 +256,9 @@ export default function ComparisonTargetQuickModal({
                       <span
                         className={`rounded px-2 py-0.5 text-[10px] font-bold ${
                           current?.status === "CONFIRMED" || current?.status === "LOCKED"
-                            ? "bg-status-success-bg text-status-success"
+                            ? "bg-v5-success-soft text-v5-success"
                             : current?.status === "PROPOSED"
-                              ? "bg-status-warning-bg text-status-warning"
+                              ? "bg-v5-gold-soft text-v5-gold-ink"
                               : "bg-v5-bg text-v5-muted"
                         }`}
                       >
@@ -275,30 +275,30 @@ export default function ComparisonTargetQuickModal({
                       value={values[item.kind]}
                       onValueChange={(raw) => setValues((prev) => ({ ...prev, [item.kind]: raw }))}
                       placeholder="Nhập số chỉ tiêu..."
-                      className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-body-sm tabular-nums text-v5-ink focus:border-primary focus:outline-none disabled:opacity-60"
+                      className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-[12px] tabular-nums text-v5-ink focus:border-v5-accent focus:outline-none disabled:opacity-60"
                       disabled={current?.status === "LOCKED"}
                     />
                   </div>
                 );
               })}
 
-              <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
                 Nguồn / căn cứ (bắt buộc)
                 <textarea
                   value={sourceNote}
                   onChange={(event) => setSourceNote(event.target.value)}
                   placeholder="VD: Quyết định giao chỉ tiêu số ... ngày ..."
-                  className="min-h-20 rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-body-sm font-normal text-v5-ink focus:border-primary focus:outline-none"
+                  className="min-h-20 rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-[12px] font-normal text-v5-ink focus:border-v5-accent focus:outline-none"
                 />
               </label>
 
               {error && (
-                <div className="rounded-lg border border-status-danger/30 bg-status-danger-bg/40 p-3 text-body-sm text-status-danger">
+                <div className="rounded-lg border border-v5-danger/30 bg-v5-danger-soft/40 p-3 text-[12px] text-v5-danger">
                   {error}
                 </div>
               )}
 
-              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-body-xs text-amber-900">
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-[11px] text-amber-900">
                 Hệ thống sẽ lưu và <b>xác nhận ngay</b> cả 3 chỉ tiêu. Chỉ tiêu đã chốt phải điều chỉnh ở Cấu hình đầy đủ.
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function ComparisonTargetQuickModal({
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-v5-line/60 p-3">
           <Link
             href={`/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN`}
-            className="text-body-xs font-semibold text-primary hover:underline"
+            className="text-[11px] font-semibold text-v5-ink hover:underline"
           >
             Mở cấu hình đầy đủ
           </Link>
@@ -316,7 +316,7 @@ export default function ComparisonTargetQuickModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-v5-line px-3 py-2 text-body-sm font-semibold text-v5-muted hover:bg-v5-bg"
+              className="rounded-lg border border-v5-line px-3 py-2 text-[12px] font-semibold text-v5-muted hover:bg-v5-bg"
             >
               Hủy
             </button>
@@ -324,7 +324,7 @@ export default function ComparisonTargetQuickModal({
               type="button"
               onClick={saveAndConfirm}
               disabled={saving || loading}
-              className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary disabled:opacity-50"
+              className="rounded-lg bg-v5-accent px-4 py-2 text-[12px] font-semibold text-white disabled:opacity-50"
             >
               {saving ? "Đang lưu..." : "Lưu & xác nhận"}
             </button>

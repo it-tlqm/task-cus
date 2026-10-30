@@ -87,12 +87,12 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
       <section className={className}>
         <div className="bg-v5-surface rounded-xl border border-dashed border-v5-line/60 p-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <V5Icon name="monitoring" className="text-[20px] text-primary" />
-            <span className="text-body-sm text-v5-muted">
+            <V5Icon name="monitoring" className="text-[20px] text-v5-ink" />
+            <span className="text-[12px] text-v5-muted">
               Khu vực số liệu giao ban chưa được bật chỉ tiêu. Vào <b>Cấu hình số liệu</b> để chọn chỉ tiêu hiển thị trên Trang chủ.
             </span>
           </div>
-          <Link href="/giao-ban/cau-hinh" className="text-label-sm font-semibold text-primary hover:underline">
+          <Link href="/giao-ban/cau-hinh" className="text-[11px] font-semibold text-v5-ink hover:underline">
             Cấu hình →
           </Link>
         </div>
@@ -106,10 +106,10 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
     <section className={className}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <V5Icon name="monitoring" className="text-[20px] text-primary" />
-          <h2 className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide text-[12px]">Số liệu giao ban</h2>
+          <V5Icon name="monitoring" className="text-[20px] text-v5-ink" />
+          <h2 className="text-[11px] font-semibold uppercase tracking-wide text-v5-ink font-bold uppercase tracking-wide text-[12px]">Số liệu giao ban</h2>
         </div>
-        <Link href="/giao-ban" className="text-label-sm font-semibold text-primary hover:underline flex items-center gap-0.5">
+        <Link href="/giao-ban" className="text-[11px] font-semibold text-v5-ink hover:underline flex items-center gap-0.5">
           Chi tiết
           <V5Icon name="chevron_right" className="text-[16px]" />
         </Link>
@@ -119,20 +119,20 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
 
       <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-body-sm min-w-[820px] border-collapse" data-testid="dashboard-tax-table">
+          <table className="w-full text-[12px] min-w-[820px] border-collapse" data-testid="dashboard-tax-table">
             <thead>
-              <tr className="text-body-xs text-v5-muted bg-v5-bg border-b border-v5-line/40">
+              <tr className="text-[11px] text-v5-muted bg-v5-bg border-b border-v5-line/40">
                 <th className="px-3 py-2 font-semibold text-left w-[32%] min-w-[220px]">Chỉ tiêu</th>
                 <th className="px-2 py-2 font-semibold text-right border-l border-v5-line/30 min-w-[120px]">Trong ngày</th>
                 <th className="px-2 py-2 font-semibold text-right border-l border-v5-line/30 min-w-[120px]">Tuần</th>
                 <th
-                  className="px-2 py-2 font-bold text-right border-l border-v5-line/30 min-w-[140px] bg-primary/10 text-primary"
+                  className="px-2 py-2 font-bold text-right border-l border-v5-line/30 min-w-[140px] bg-v5-accent/10 text-v5-ink"
                   data-testid="dash-cum-header-month"
                 >
                   {monthLabel}
                 </th>
                 <th
-                  className="px-2 py-2 font-bold text-right border-l border-v5-line/30 min-w-[140px] bg-primary/10 text-primary"
+                  className="px-2 py-2 font-bold text-right border-l border-v5-line/30 min-w-[140px] bg-v5-accent/10 text-v5-ink"
                   data-testid="dash-cum-header-year"
                 >
                   Lũy kế năm
@@ -144,7 +144,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
               {groups.map((g) => (
                 <React.Fragment key={g.id}>
                   <tr className="bg-v5-bg/70 border-y border-v5-line/30">
-                    <td colSpan={6} className="px-3 py-1.5 font-bold uppercase tracking-wide text-[11px] text-primary">
+                    <td colSpan={6} className="px-3 py-1.5 font-bold uppercase tracking-wide text-[11px] text-v5-ink">
                       {g.name}
                     </td>
                   </tr>
@@ -155,7 +155,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                         <tr className="border-b border-v5-line/20 align-top" data-testid={`dash-row-${m.code}`}>
                           <td className="px-3 py-2">
                             <span className="font-medium text-v5-ink">{m.name}</span>
-                            {m.unitLabel ? <span className="text-body-xs text-v5-muted"> · {m.unitLabel}</span> : null}
+                            {m.unitLabel ? <span className="text-[11px] text-v5-muted"> · {m.unitLabel}</span> : null}
                           </td>
                           {COLS.map((c) => (
                             <td
@@ -164,7 +164,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                               title={m.cols[c] !== null ? fmtMetric(m.cols[c], m) : undefined}
                               className={`px-2 py-2 text-right tabular-nums border-l border-v5-line/20 ${
                                 c === "month" || c === "year"
-                                  ? "bg-primary/5 font-bold text-primary"
+                                  ? "bg-v5-accent/5 font-bold text-v5-ink"
                                   : ""
                               }`}
                             >
@@ -196,7 +196,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                                 key={c}
                                 className={`px-2 py-1.5 text-right tabular-nums border-l border-v5-line/20 ${
                                   c === "month" || c === "year"
-                                    ? "bg-primary/5 font-semibold text-primary"
+                                    ? "bg-v5-accent/5 font-semibold text-v5-ink"
                                     : "text-v5-muted"
                                 }`}
                               >
@@ -224,7 +224,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
         </div>
       </div>
       <RevenueComparisonSection comparison={comparison} className="mt-3" />
-      <p className="text-body-xs text-v5-muted mt-1.5">
+      <p className="text-[11px] text-v5-muted mt-1.5">
         “—” là <b>chưa nhập</b> (khác với số 0 đã nhập). Trạng thái theo tháng: Đã nhập → Đã xác nhận → Đã chốt báo cáo.
         <span className="lg:hidden"> Bảng cuộn ngang trên điện thoại.</span>
       </p>

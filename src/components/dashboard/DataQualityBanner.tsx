@@ -35,11 +35,11 @@ export function DataQualityBanner({ q, className = "" }: { q?: MetricDataQuality
       className={`rounded-xl border border-amber-300 bg-amber-50 text-amber-900 px-4 py-3 flex items-start gap-2.5 ${className}`}
     >
       <V5Icon name="warning" className="text-[20px] text-amber-600 shrink-0 mt-0.5" />
-      <div className="flex flex-col gap-1 text-body-sm leading-snug">
+      <div className="flex flex-col gap-1 text-[12px] leading-snug">
         <span className="font-bold">
           Dữ liệu dùng thử/chưa đối soát — không sử dụng làm số liệu báo cáo chính thức.
         </span>
-        <span className="text-body-xs text-amber-800">
+        <span className="text-[11px] text-amber-800">
           Khu vực này đang gồm {parts.join(", ")}
           {q.mixedWithReal ? `, trộn cùng ${q.realEntries} bản ghi do cán bộ nhập thật` : ""}. Nhãn “CHÍNH THỨC” ở đầu trang là nhãn của
           hệ thống — không phải xác nhận cho số liệu hiển thị. Phân biệt trạng thái: Đã nhập ≠ Đã xác nhận ≠ Đã chốt báo cáo.
