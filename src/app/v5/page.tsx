@@ -466,7 +466,7 @@ export default function V5DashboardPage() {
 
       <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-12">
         <Card className="overflow-hidden xl:col-span-7">
-          <div className="border-b border-v5-line/70 bg-gradient-to-br from-v5-accent-soft/70 via-v5-surface to-v5-surface px-5 py-4">
+          <div className="border-b border-v5-line/70 bg-v5-accent-soft/60 px-5 py-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <div className="flex items-center gap-2">

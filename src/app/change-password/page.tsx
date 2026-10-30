@@ -197,7 +197,7 @@ export default function ChangePasswordPage() {
                 type="checkbox"
                 checked={showPassword}
                 onChange={(e) => setShowPassword(e.target.checked)}
-                className="w-4 h-4 rounded text-v5-accent focus:ring-0 cursor-pointer accent-[#006a62]"
+                className="w-4 h-4 rounded text-v5-accent focus:ring-0 cursor-pointer accent-v5-accent"
               />
               <span className="text-xs text-v5-muted">Hiển thị ký tự mật khẩu</span>
             </label>

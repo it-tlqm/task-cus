@@ -79,19 +79,18 @@ export default function LoginPage() {
       {/* =========================================================================
           LEFT HERO PANEL (DESKTOP ONLY — Split-screen Enterprise Layout)
           ========================================================================= */}
-      <section className="hidden lg:flex lg:w-1/2 xl:w-[54%] bg-gradient-to-br from-v5-accent-soft via-[#10243a] to-v5-accent text-white flex-col justify-between p-10 xl:p-14 relative overflow-hidden shadow-2xl">
+      <section className="hidden lg:flex lg:w-1/2 xl:w-[54%] bg-v5-accent text-white flex-col justify-between p-10 xl:p-14 relative overflow-hidden shadow-sm">
         {/* Subtle decorative background ambient elements */}
         <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-v5-accent/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-v5-accent-fixed/10 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-40" />
-
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+        
         {/* Top Header & Official Insignia */}
         <div className="relative z-10 flex flex-col gap-4">
           <div className="flex items-center gap-4">
             <img
               src="/images/logo-haiquan.png"
               alt="Logo Hải quan Việt Nam"
-              className="w-14 h-14 rounded-full object-cover shadow-lg ring-4 ring-white/10 shrink-0 bg-v5-surface"
+              className="w-14 h-14 rounded-full object-cover shadow-sm ring-4 ring-white/10 shrink-0 bg-v5-surface"
             />
             <div className="flex flex-col">
               <h2 className="text-lg xl:text-xl font-bold tracking-tight text-white leading-snug">
@@ -306,7 +305,7 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberSession}
                   onChange={(e) => setRememberSession(e.target.checked)}
-                  className="w-4 h-4 rounded text-v5-accent focus:ring-0 cursor-pointer accent-[#006a62]"
+                  className="w-4 h-4 rounded text-v5-accent focus:ring-0 cursor-pointer accent-v5-accent"
                 />
                 <span className="text-xs text-v5-muted">
                   Ghi nhớ phiên làm việc trên thiết bị công vụ này
