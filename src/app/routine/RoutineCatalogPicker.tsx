@@ -134,7 +134,7 @@ export default function RoutineCatalogPicker({
     <div className="flex flex-col gap-3" data-testid="routine-catalog-picker">
       {/* ---------- Công việc thường xuyên (danh mục TX) — chọn nhiều ---------- */}
       <div className="flex flex-col gap-1">
-        <label className="font-label-md text-label-md text-primary font-semibold">
+        <label className="text-[12px] text-v5-ink font-semibold">
           Công việc thường xuyên (danh mục TX — có thể chọn nhiều)
         </label>
 
@@ -144,16 +144,16 @@ export default function RoutineCatalogPicker({
               <span
                 key={tag.id}
                 data-testid={`routine-tx-chip-${tag.code}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-1 text-[11px]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-v5-accent/30 bg-v5-accent/10 px-2.5 py-1 text-[11px]"
               >
-                <span className="font-mono font-bold text-primary">{tag.code}</span>
+                <span className="font-mono font-bold text-v5-ink">{tag.code}</span>
                 <span className="max-w-[280px] truncate text-on-surface">{tag.title}</span>
                 <button
                   type="button"
                   data-testid={`routine-tx-remove-${tag.code}`}
                   aria-label={`Bỏ chọn ${tag.code}`}
                   onClick={() => onTagsChange(selectedTags.filter((x) => x.id !== tag.id))}
-                  className="text-status-danger font-bold leading-none hover:opacity-70"
+                  className="text-v5-danger font-bold leading-none hover:opacity-70"
                 >
                   ×
                 </button>
@@ -167,9 +167,9 @@ export default function RoutineCatalogPicker({
           value={txQuery}
           onChange={(e) => setTxQuery(e.target.value)}
           placeholder="Tìm công việc thường xuyên theo mã hoặc tên (có/không dấu)…"
-          className="h-10 px-3 rounded bg-surface-container-lowest text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
         />
-        {txBusy && <span className="text-[11px] text-outline">Đang tìm…</span>}
+        {txBusy && <span className="text-[11px] text-v5-muted">Đang tìm…</span>}
         {!txBusy && txResults.length > 0 && (
           <div className="max-h-44 overflow-y-auto rounded-lg border border-border-subtle divide-y divide-border-subtle">
             {txResults.map((t) => {
@@ -180,12 +180,12 @@ export default function RoutineCatalogPicker({
                   type="button"
                   data-testid={`routine-tx-option-${t.code}`}
                   onClick={() => addTag(t)}
-                  className={`block w-full text-left px-3 py-2 text-xs hover:bg-surface-container ${
+                  className={`block w-full text-left px-3 py-2 text-xs hover:bg-v5-bg ${
                     already ? "opacity-60" : ""
                   }`}
                 >
-                  <span className="font-mono font-bold text-primary">{t.code}</span> — {t.title}
-                  <span className="block text-[10px] text-outline">
+                  <span className="font-mono font-bold text-v5-ink">{t.code}</span> — {t.title}
+                  <span className="block text-[10px] text-v5-muted">
                     {t.department} · hệ số TX:{" "}
                     {t.convertFactor === null || t.convertFactor === undefined ? "chưa có" : t.convertFactor}
                     {already ? " · đã gắn" : ""}
@@ -196,9 +196,9 @@ export default function RoutineCatalogPicker({
           </div>
         )}
         {!txBusy && txQuery.trim().length >= 2 && txResults.length === 0 && (
-          <span className="text-[11px] text-outline">Không tìm thấy trong danh mục TX.</span>
+          <span className="text-[11px] text-v5-muted">Không tìm thấy trong danh mục TX.</span>
         )}
-        <span className="text-[11px] text-outline">
+        <span className="text-[11px] text-v5-muted">
           Có thể chọn nhiều đầu việc TX cho cùng một bản ghi. Bỏ trống nếu công việc phát sinh ngoài danh mục
           (ghi nội dung thực tế ở ô bên trên).
         </span>
@@ -206,7 +206,7 @@ export default function RoutineCatalogPicker({
 
       {/* ---------- Sản phẩm QĐ1277 (đề xuất nhiều SP) ---------- */}
       <div className="flex flex-col gap-1">
-        <label className="font-label-md text-label-md text-primary font-semibold">
+        <label className="text-[12px] text-v5-ink font-semibold">
           Sản phẩm QĐ1277 dự kiến (có thể chọn nhiều)
         </label>
         {products.length > 0 && (
@@ -215,23 +215,23 @@ export default function RoutineCatalogPicker({
               <div
                 key={p.productItemId}
                 data-testid={`routine-sp-item-${p.code}`}
-                className="rounded-lg border border-border-subtle bg-surface-container-lowest px-3 py-2"
+                className="rounded-lg border border-border-subtle bg-v5-surface px-3 py-2"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-on-surface truncate">
                       <span className="font-mono">{p.code}</span> — {p.taskName}
                     </p>
-                    <p className="text-[10px] text-outline">
+                    <p className="text-[10px] text-v5-muted">
                       {p.outputProduct ? p.outputProduct + " · " : ""}
                       hệ số: {p.factor === null ? "chưa có (cần đối chiếu)" : p.factor} ·{" "}
-                      <span className="text-status-warning">chờ lãnh đạo xác nhận</span>
+                      <span className="text-v5-gold-ink">chờ lãnh đạo xác nhận</span>
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => onProductsChange(products.filter((_, k) => k !== i))}
-                    className="text-[11px] font-semibold text-status-danger hover:underline shrink-0"
+                    className="text-[11px] font-semibold text-v5-danger hover:underline shrink-0"
                   >
                     Bỏ
                   </button>
@@ -244,13 +244,13 @@ export default function RoutineCatalogPicker({
                       updateProduct(i, { quantity: e.target.value === "" ? null : Number(e.target.value) })
                     }
                     placeholder="Số lượng (nếu có)"
-                    className="h-8 w-28 rounded bg-surface-container-lowest text-[11px] border border-border-subtle px-2"
+                    className="h-8 w-28 rounded bg-v5-surface text-[11px] border border-border-subtle px-2"
                   />
                   <input
                     value={p.unit ?? ""}
                     onChange={(e) => updateProduct(i, { unit: e.target.value || null })}
                     placeholder="Đơn vị tính (nếu có)"
-                    className="h-8 flex-1 rounded bg-surface-container-lowest text-[11px] border border-border-subtle px-2"
+                    className="h-8 flex-1 rounded bg-v5-surface text-[11px] border border-border-subtle px-2"
                   />
                 </div>
               </div>
@@ -262,9 +262,9 @@ export default function RoutineCatalogPicker({
           value={spQuery}
           onChange={(e) => setSpQuery(e.target.value)}
           placeholder="Tìm sản phẩm QĐ1277 theo mã hoặc tên (có/không dấu)…"
-          className="h-10 px-3 rounded bg-surface-container-lowest text-body-md text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary"
+          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
         />
-        {spBusy && <span className="text-[11px] text-outline">Đang tìm…</span>}
+        {spBusy && <span className="text-[11px] text-v5-muted">Đang tìm…</span>}
         {!spBusy && spResults.length > 0 && (
           <div className="max-h-44 overflow-y-auto rounded-lg border border-border-subtle divide-y divide-border-subtle">
             {spResults.map((p) => (
@@ -273,10 +273,10 @@ export default function RoutineCatalogPicker({
                 type="button"
                 data-testid={`routine-sp-option-${p.code}`}
                 onClick={() => addProduct(p)}
-                className="block w-full text-left px-3 py-2 text-xs hover:bg-surface-container"
+                className="block w-full text-left px-3 py-2 text-xs hover:bg-v5-bg"
               >
-                <span className="font-mono font-bold text-primary">{p.code}</span> — {p.taskName}
-                <span className="block text-[10px] text-outline">
+                <span className="font-mono font-bold text-v5-ink">{p.code}</span> — {p.taskName}
+                <span className="block text-[10px] text-v5-muted">
                   {p.outputProduct ? p.outputProduct + " · " : ""}
                   hệ số: {p.convertFactor === null ? "chưa có (cần đối chiếu)" : p.convertFactor}
                 </span>
@@ -284,7 +284,7 @@ export default function RoutineCatalogPicker({
             ))}
           </div>
         )}
-        <span className="text-[11px] text-outline">
+        <span className="text-[11px] text-v5-muted">
           Chọn sản phẩm KHÔNG đồng nghĩa đã được lãnh đạo xác nhận. Sản phẩm chỉ tham gia điểm chính thức
           sau khi được xác nhận độc lập và đủ dữ liệu.
         </span>
