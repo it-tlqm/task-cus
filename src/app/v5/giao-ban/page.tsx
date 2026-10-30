@@ -3,13 +3,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  Banknote,
   ChevronRight,
+  DollarSign,
   FileBarChart2,
   FileDown,
   Loader2,
   Plus,
   RefreshCw,
   Settings2,
+  Truck,
 } from "lucide-react";
 import { getIsoWeekFromDate, getVnDateParts } from "@/lib/period-helper";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -19,6 +22,7 @@ import { Card } from "@/components/v5/ui/card";
 import { RevenueSummaryTable } from "@/components/v5/RevenueSummaryTable";
 import { MetricsSummaryTable } from "@/components/v5/MetricsSummaryTable";
 import { RevenueCharts } from "@/components/v5/RevenueCharts";
+import { fmtMetricCompact } from "@/lib/metric-format";
 
 type PeriodKey = "week" | "month" | "quarter" | "year";
 
@@ -53,6 +57,18 @@ interface Summary {
     quarter?: { label?: string };
     year?: { label?: string };
   };
+}
+
+function fmtUsdCompact(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000)
+    return `${(value / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} tỷ USD`;
+  if (abs >= 1_000_000)
+    return `${(value / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} triệu USD`;
+  if (abs >= 1_000)
+    return `${(value / 1_000).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} nghìn USD`;
+  return `${value.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} USD`;
 }
 
 export default function V5GiaoBanPage() {
@@ -102,6 +118,29 @@ export default function V5GiaoBanPage() {
     [summary]
   );
   const taxMetric = metrics.find((metric) => metric.code === "THU_NSNN");
+  const keyCards = useMemo(() => {
+    const byCode = new Map(metrics.map((metric) => [metric.code, metric]));
+    return [
+      {
+        code: "THU_NSNN",
+        label: "Thu NSNN",
+        icon: Banknote,
+        metric: byCode.get("THU_NSNN") || null,
+      },
+      {
+        code: "OTO_XE",
+        label: "Ô tô / xe",
+        icon: Truck,
+        metric: byCode.get("OTO_XE") || byCode.get("OTO_XE_PS") || null,
+      },
+      {
+        code: "TRI_GIA_USD",
+        label: "Trị giá USD",
+        icon: DollarSign,
+        metric: byCode.get("TRI_GIA_USD") || byCode.get("XNK_USD") || null,
+      },
+    ];
+  }, [metrics]);
   const periodLabel =
     period === "week"
       ? summary?.range?.week?.label || `Tuần ${iso.weekNumber}/${vn.year}`
@@ -180,6 +219,46 @@ export default function V5GiaoBanPage() {
           </Button>
         </div>
       </header>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        {keyCards.map((card) => {
+          const metric = card.metric;
+          const current = metric ? metric.cols[period] : null;
+          const year = metric ? metric.cols.year : null;
+          const Icon = card.icon;
+          return (
+            <Card key={card.code} className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-v5-muted">
+                    {card.label}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-v5-ink">
+                    {card.code === "TRI_GIA_USD"
+                      ? fmtUsdCompact(current)
+                      : current === null || current === undefined
+                        ? "—"
+                        : fmtMetricCompact(current, { displayScale: metric?.displayScale || 1, decimals: metric?.decimals ?? 0, unitLabel: metric?.unitLabel }, { withUnit: true })}
+                  </p>
+                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-v5-muted">
+                Lũy kế năm:{" "}
+                <span className="font-semibold text-v5-ink">
+                  {card.code === "TRI_GIA_USD"
+                    ? fmtUsdCompact(year)
+                    : year === null || year === undefined
+                      ? "—"
+                      : fmtMetricCompact(year, { displayScale: metric?.displayScale || 1, decimals: metric?.decimals ?? 0, unitLabel: metric?.unitLabel }, { withUnit: true })}
+                </span>
+              </p>
+            </Card>
+          );
+        })}
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-v5-line">
         <nav className="flex gap-5">
