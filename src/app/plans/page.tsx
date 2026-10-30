@@ -1496,7 +1496,7 @@ export default function PlansPage() {
     <div className="w-full min-h-screen bg-transparent pb-12">
       {/* Toast message */}
       {workflowMessage && (
-        <div className="fixed top-24 right-6 z-50 p-4 rounded-xl bg-v5-success text-white font-semibold text-sm shadow-xl flex items-center gap-2 transition-panel">
+        <div className="fixed top-24 right-6 z-50 p-4 rounded-xl bg-v5-success text-white font-semibold text-sm shadow-sm flex items-center gap-2 transition-panel">
           <V5Icon name="verified" className="text-[20px]" />
           <span>{workflowMessage}</span>
         </div>
@@ -2884,7 +2884,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-4xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-4xl bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
@@ -3496,7 +3496,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanCreateModal && planOptions?.canCreatePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
+          <div className="w-full max-w-xl bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-v5-ink">Tạo kế hoạch công tác</h3>
@@ -3679,7 +3679,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanTitleModal && activePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-v5-ink">Sửa kế hoạch công tác</h3>
@@ -3764,7 +3764,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanCancelModal && activePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-danger/20 bg-v5-danger-soft px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-v5-ink">Hủy kế hoạch trùng</h3>
@@ -3853,7 +3853,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showPlanItemsModal && activePlan && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-2xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
+          <div className="w-full max-w-2xl bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-v5-ink">Quản lý hạng mục kế hoạch</h3>
@@ -4030,7 +4030,7 @@ export default function PlansPage() {
           ========================================================================= */}
       {showDeptCatalogModal && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-2xl bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-2xl bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-v5-ink">
@@ -4182,7 +4182,7 @@ export default function PlansPage() {
       {/* MODAL TRẢ LẠI CHỈNH SỬA */}
       {showReturnModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-danger/20 bg-v5-danger-soft px-4 py-3">
               <span className="text-sm font-semibold text-v5-danger">Yêu Cầu Chỉnh Sửa Kế Hoạch</span>
               <button onClick={() => setShowReturnModal(false)}>
@@ -4222,7 +4222,7 @@ export default function PlansPage() {
       {/* MODAL TRÌNH DUYỆT BỔ SUNG / ĐIỀU CHỈNH */}
       {showAmendmentModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <span className="flex items-center gap-2.5 text-sm font-semibold text-v5-ink">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
