@@ -147,7 +147,7 @@ export default function RoutineCatalogPicker({
                 className="inline-flex items-center gap-1.5 rounded-full border border-v5-accent/30 bg-v5-accent/10 px-2.5 py-1 text-[11px]"
               >
                 <span className="font-mono font-bold text-v5-ink">{tag.code}</span>
-                <span className="max-w-[280px] truncate text-on-surface">{tag.title}</span>
+                <span className="max-w-[280px] truncate text-v5-ink">{tag.title}</span>
                 <button
                   type="button"
                   data-testid={`routine-tx-remove-${tag.code}`}
@@ -167,7 +167,7 @@ export default function RoutineCatalogPicker({
           value={txQuery}
           onChange={(e) => setTxQuery(e.target.value)}
           placeholder="Tìm công việc thường xuyên theo mã hoặc tên (có/không dấu)…"
-          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
+          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
         />
         {txBusy && <span className="text-[11px] text-v5-muted">Đang tìm…</span>}
         {!txBusy && txResults.length > 0 && (
@@ -219,7 +219,7 @@ export default function RoutineCatalogPicker({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-on-surface truncate">
+                    <p className="text-xs font-semibold text-v5-ink truncate">
                       <span className="font-mono">{p.code}</span> — {p.taskName}
                     </p>
                     <p className="text-[10px] text-v5-muted">
@@ -262,7 +262,7 @@ export default function RoutineCatalogPicker({
           value={spQuery}
           onChange={(e) => setSpQuery(e.target.value)}
           placeholder="Tìm sản phẩm QĐ1277 theo mã hoặc tên (có/không dấu)…"
-          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-on-surface border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
+          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
         />
         {spBusy && <span className="text-[11px] text-v5-muted">Đang tìm…</span>}
         {!spBusy && spResults.length > 0 && (

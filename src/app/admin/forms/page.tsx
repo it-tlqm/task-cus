@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
@@ -218,7 +218,7 @@ export default function DynamicFormBuilderPage() {
                   value={newFieldLabel}
                   onChange={(e) => setNewFieldLabel(e.target.value)}
                   placeholder="Ví dụ: Tỷ lệ hao hụt nguyên liệu gia công (%)..."
-                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none focus:ring-1 focus:ring-secondary"
+                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent"
                 />
               </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 /**
  * /change-password — trang BẮT BUỘC đổi mật khẩu lần đầu cho tài khoản
@@ -56,7 +56,7 @@ function PasswordField({
           autoFocus={autoFocus}
           required
           minLength={minLength}
-          className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg font-body-md text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-fast"
+          className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
         />
       </div>
     </div>

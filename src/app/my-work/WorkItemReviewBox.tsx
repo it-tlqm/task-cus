@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 /**
  * WorkItemReviewBox — V3.0.1 (phía cán bộ)
@@ -18,7 +18,7 @@ const STATE_META: Record<
 > = {
   DRAFT: {
     label: "Chưa gửi lãnh đạo",
-    cls: "bg-surface-container text-on-surface-variant border-border-subtle",
+    cls: "bg-v5-bg text-v5-muted border-border-subtle",
     icon: "edit_note",
   },
   SUBMITTED: {
@@ -165,7 +165,7 @@ export default function WorkItemReviewBox({
           type="button"
           data-testid={`work-item-submit-review-${item.id}`}
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:opacity-90 active-press"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:opacity-90 active-press"
         >
           <V5Icon name="send" className="text-[16px]" />
           {state === "RETURNED" ? "Sửa kết quả & gửi lại" : "Báo hoàn thành & gửi lãnh đạo"}
@@ -174,7 +174,7 @@ export default function WorkItemReviewBox({
 
       {handledByTask && state === "DRAFT" && (
         <span
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container text-on-surface-variant"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-v5-bg text-v5-muted"
           title="Công việc này đã gắn với một nhiệm vụ nên được duyệt theo quy trình của nhiệm vụ."
         >
           <V5Icon name="info" className="text-[16px]" />
@@ -187,12 +187,12 @@ export default function WorkItemReviewBox({
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
           <div
             data-testid={`work-item-submit-modal-${item.id}`}
-            className="w-full max-w-xl bg-surface-container-lowest rounded-2xl shadow-xl border border-border-subtle p-5 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-xl bg-v5-surface rounded-2xl shadow-xl border border-border-subtle p-5 max-h-[90vh] overflow-y-auto"
           >
-            <h3 className="text-base font-bold text-on-surface mb-1">Báo hoàn thành công việc</h3>
-            <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
+            <h3 className="text-base font-bold text-v5-ink mb-1">Báo hoàn thành công việc</h3>
+            <p className="text-xs text-v5-muted mb-4">{item.title}</p>
 
-            <label className="block text-xs font-semibold text-on-surface mb-1">
+            <label className="block text-xs font-semibold text-v5-ink mb-1">
               Nội dung kết quả công việc <span className="text-status-danger">*</span>
             </label>
             <textarea
@@ -201,15 +201,15 @@ export default function WorkItemReviewBox({
               onChange={(e) => setResultText(e.target.value)}
               rows={5}
               placeholder="Mô tả kết quả đã đạt được của công việc"
-              className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-status-primary"
+              className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm text-v5-ink focus:outline-none focus:border-v5-accent"
             />
-            <p className="text-[11px] text-on-surface-variant mt-1">
+            <p className="text-[11px] text-v5-muted mt-1">
               Bắt buộc có nội dung kết quả để lãnh đạo xem xét.
             </p>
 
             {hasSource && (
               <div className="mt-4">
-                <label className="block text-xs font-semibold text-on-surface mb-1">
+                <label className="block text-xs font-semibold text-v5-ink mb-1">
                   Số lượng hoàn thành <span className="text-status-danger">*</span>
                 </label>
                 <div className="flex items-center gap-2">
@@ -220,20 +220,20 @@ export default function WorkItemReviewBox({
                     value={completedQty}
                     onChange={(e) => setCompletedQty(e.target.value)}
                     placeholder="Nhập số thực tế..."
-                    className="h-9 w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 text-right text-sm tabular-nums text-on-surface focus:outline-none focus:border-status-primary"
+                    className="h-9 w-full rounded-lg border border-v5-line bg-v5-surface px-3 text-right text-sm tabular-nums text-v5-ink focus:outline-none focus:border-v5-accent"
                   />
-                  <span className="shrink-0 text-xs text-on-surface-variant">
+                  <span className="shrink-0 text-xs text-v5-muted">
                     {item.quantityUnit || "—"}
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] text-on-surface-variant">
+                <p className="mt-1 text-[11px] text-v5-muted">
                   SL giao: {item.assignedQty ?? "—"} {item.quantityUnit || ""}. Số liệu này đi thẳng
                   vào KQ tháng.
                 </p>
               </div>
             )}
 
-            <label className="block text-xs font-semibold text-on-surface mt-4 mb-1">
+            <label className="block text-xs font-semibold text-v5-ink mt-4 mb-1">
               Ngày hoàn thành thực tế <span className="text-status-danger">*</span>
             </label>
             <input
@@ -241,10 +241,10 @@ export default function WorkItemReviewBox({
               type="date"
               value={completedOn}
               onChange={(e) => setCompletedOn(e.target.value)}
-              className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-status-primary"
+              className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm text-v5-ink focus:outline-none focus:border-v5-accent"
             />
 
-            <p className="text-[11px] text-on-surface-variant mt-3">
+            <p className="text-[11px] text-v5-muted mt-3">
               Minh chứng (tệp đính kèm) là linh hoạt — bạn có thể tải lên ở mục “Kết quả &amp; minh
               chứng” trước khi gửi. Sau khi gửi, bộ minh chứng được giữ nguyên trong lúc chờ xác
               nhận.
@@ -254,7 +254,7 @@ export default function WorkItemReviewBox({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-border-default bg-surface-container text-on-surface hover:bg-surface-container-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-line bg-v5-bg text-v5-ink hover:bg-v5-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Huỷ
               </button>
@@ -263,7 +263,7 @@ export default function WorkItemReviewBox({
                 data-testid={`work-item-submit-confirm-${item.id}`}
                 disabled={busy}
                 onClick={submit}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {busy ? "Đang gửi…" : "Gửi lãnh đạo xác nhận"}
               </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -213,12 +213,12 @@ export default function ComparisonTargetQuickModal({
         aria-modal="true"
         aria-label="Nhập nhanh chỉ tiêu đối chiếu"
         data-testid="comparison-target-quick-modal"
-        className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border-default bg-surface-container-lowest shadow-2xl sm:max-h-[86vh] sm:w-[620px] sm:rounded-2xl"
+        className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-v5-line bg-v5-surface shadow-2xl sm:max-h-[86vh] sm:w-[620px] sm:rounded-2xl"
       >
-        <div className="flex items-start justify-between gap-2 border-b border-border-default/60 px-4 py-3">
+        <div className="flex items-start justify-between gap-2 border-b border-v5-line/60 px-4 py-3">
           <div>
-            <h2 className="text-title-md font-bold text-on-surface">Nhập nhanh chỉ tiêu đối chiếu</h2>
-            <p className="mt-0.5 text-body-xs text-on-surface-variant">
+            <h2 className="text-title-md font-bold text-v5-ink">Nhập nhanh chỉ tiêu đối chiếu</h2>
+            <p className="mt-0.5 text-body-xs text-v5-muted">
               Thu NSNN · Tháng {month}/{year} · nhập 3 chỉ tiêu bắt buộc
             </p>
           </div>
@@ -227,7 +227,7 @@ export default function ComparisonTargetQuickModal({
             type="button"
             onClick={onClose}
             aria-label="Đóng nhập chỉ tiêu"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container active-press"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-v5-muted hover:bg-v5-bg active-press"
           >
             <V5Icon name="close" className="text-[20px]" />
           </button>
@@ -236,20 +236,20 @@ export default function ComparisonTargetQuickModal({
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="space-y-3">
-              <div className="h-20 animate-pulse rounded-xl bg-surface-container" />
-              <div className="h-20 animate-pulse rounded-xl bg-surface-container" />
-              <div className="h-20 animate-pulse rounded-xl bg-surface-container" />
+              <div className="h-20 animate-pulse rounded-xl bg-v5-bg" />
+              <div className="h-20 animate-pulse rounded-xl bg-v5-bg" />
+              <div className="h-20 animate-pulse rounded-xl bg-v5-bg" />
             </div>
           ) : (
             <div className="flex flex-col gap-3">
               {ROWS.map((item) => {
                 const current = canonicalTarget(targets, item.kind, year, month);
                 return (
-                  <div key={item.kind} className="rounded-xl border border-border-default/60 bg-surface p-3">
+                  <div key={item.kind} className="rounded-xl border border-v5-line/60 bg-surface p-3">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <div className="text-body-sm font-semibold text-on-surface">{item.label}</div>
-                        <div className="text-[11px] text-on-surface-variant">
+                        <div className="text-body-sm font-semibold text-v5-ink">{item.label}</div>
+                        <div className="text-[11px] text-v5-muted">
                           {item.periodLabel} {item.periodType === "MONTH" ? `${month}/${year}` : year}
                         </div>
                       </div>
@@ -259,7 +259,7 @@ export default function ComparisonTargetQuickModal({
                             ? "bg-status-success-bg text-status-success"
                             : current?.status === "PROPOSED"
                               ? "bg-status-warning-bg text-status-warning"
-                              : "bg-surface-container text-on-surface-variant"
+                              : "bg-v5-bg text-v5-muted"
                         }`}
                       >
                         {current?.status === "CONFIRMED"
@@ -275,20 +275,20 @@ export default function ComparisonTargetQuickModal({
                       value={values[item.kind]}
                       onValueChange={(raw) => setValues((prev) => ({ ...prev, [item.kind]: raw }))}
                       placeholder="Nhập số chỉ tiêu..."
-                      className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm tabular-nums text-on-surface focus:border-primary focus:outline-none disabled:opacity-60"
+                      className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-body-sm tabular-nums text-v5-ink focus:border-primary focus:outline-none disabled:opacity-60"
                       disabled={current?.status === "LOCKED"}
                     />
                   </div>
                 );
               })}
 
-              <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant">
+              <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
                 Nguồn / căn cứ (bắt buộc)
                 <textarea
                   value={sourceNote}
                   onChange={(event) => setSourceNote(event.target.value)}
                   placeholder="VD: Quyết định giao chỉ tiêu số ... ngày ..."
-                  className="min-h-20 rounded-lg border border-border-default bg-surface-container-lowest px-3 py-2 text-body-sm font-normal text-on-surface focus:border-primary focus:outline-none"
+                  className="min-h-20 rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-body-sm font-normal text-v5-ink focus:border-primary focus:outline-none"
                 />
               </label>
 
@@ -305,7 +305,7 @@ export default function ComparisonTargetQuickModal({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-default/60 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-v5-line/60 p-3">
           <Link
             href={`/giao-ban/cau-hinh?tab=TARGET&metric=THU_NSNN`}
             className="text-body-xs font-semibold text-primary hover:underline"
@@ -316,7 +316,7 @@ export default function ComparisonTargetQuickModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-border-default px-3 py-2 text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container"
+              className="rounded-lg border border-v5-line px-3 py-2 text-body-sm font-semibold text-v5-muted hover:bg-v5-bg"
             >
               Hủy
             </button>

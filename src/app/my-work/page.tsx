@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -1391,7 +1391,7 @@ function MyWorkPageContent() {
                               <span className="text-[10px] text-v5-muted">Giữ nguyên tiến độ</span>
                             </div>
                           ) : isWaiting ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-v5-bg-high text-v5-muted font-semibold">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-v5-bg text-v5-muted font-semibold">
                               <Clock className="h-3.5 w-3.5" /> Đã báo hoàn thành — chờ duyệt
                             </span>
                           ) : isCompleted ? (
@@ -1821,7 +1821,7 @@ function MyWorkPageContent() {
                   <div className="grid grid-cols-2 gap-2 pt-1 pl-1">
                     <button
                       onClick={() => openExtensionForTask(task)}
-                      className="h-11 px-2.5 rounded-lg bg-v5-bg text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
+                      className="h-11 px-2.5 rounded-lg bg-v5-bg text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1 hover:bg-v5-bg active:scale-[0.98] transition-all"
                       type="button"
                     >
                       <V5Icon name="schedule_send" className="text-[18px] text-v5-gold-ink" />
@@ -1881,7 +1881,7 @@ function MyWorkPageContent() {
                   <div className="pt-0.5 flex items-center justify-between gap-2">
                     <Link
                       href={`/tasks/${task.id}`}
-                      className="flex-1 h-11 px-3 rounded-lg bg-v5-bg text-v5-muted text-[12px] flex items-center justify-center gap-1 hover:bg-v5-bg-high transition-all"
+                      className="flex-1 h-11 px-3 rounded-lg bg-v5-bg text-v5-muted text-[12px] flex items-center justify-center gap-1 hover:bg-v5-bg transition-all"
                     >
                       <V5Icon name="visibility" className="text-[17px]" />
                       <span>Xem chi tiết hồ sơ nộp</span>
@@ -1976,7 +1976,7 @@ function MyWorkPageContent() {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={() => openDrawerForTask(task)}
-                    className="h-11 px-3 rounded-lg bg-v5-bg text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1.5 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
+                    className="h-11 px-3 rounded-lg bg-v5-bg text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1.5 hover:bg-v5-bg active:scale-[0.98] transition-all"
                     type="button"
                   >
                     <V5Icon name="edit_note" className="text-[18px]" />
@@ -2460,7 +2460,7 @@ function MyWorkPageContent() {
                 <button
                   disabled={drawerLoading}
                   onClick={() => handleDrawerSubmit(false)}
-                  className="px-3 py-2 rounded-lg bg-v5-bg text-v5-ink text-[12px] hover:bg-v5-bg-high transition-fast active-press"
+                  className="px-3 py-2 rounded-lg bg-v5-bg text-v5-ink text-[12px] hover:bg-v5-bg transition-fast active-press"
                 >
                   {drawerLoading
                     ? "Đang lưu..."

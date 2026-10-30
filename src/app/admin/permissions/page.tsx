@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 /**
  * /admin/permissions — Trung tâm cấu hình phân quyền (V3, Giai đoạn 1)
@@ -662,7 +662,7 @@ export default function AdminPermissionsPage() {
                   data-testid="grant-submit"
                   disabled={busy}
                   onClick={grant}
-                  className="w-full px-4 py-2 rounded-lg text-xs font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cấp vai trò
                 </button>

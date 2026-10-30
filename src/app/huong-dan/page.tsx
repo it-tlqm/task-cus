@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { HELP } from "@/data/page-help";
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 /**
  * Sơ đồ hướng dẫn tương tác: bấm vào từng phần của hệ thống

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React from "react";
 
@@ -146,13 +146,13 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
     `px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-fast whitespace-nowrap ${
       active
         ? "bg-secondary text-on-secondary shadow-sm"
-        : "text-on-surface-variant hover:text-primary hover:bg-surface-container"
+        : "text-v5-muted hover:text-primary hover:bg-v5-bg"
     }`;
 
   return (
     <section
       data-testid="journal-filter-bar"
-      className={`bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 p-space-md flex flex-col gap-3 ${className}`}
+      className={`bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 p-space-md flex flex-col gap-3 ${className}`}
     >
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
@@ -160,7 +160,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
             <V5Icon name="menu_book" className="text-secondary text-[20px]" />
             Nhật ký công việc
           </h2>
-          <p className="text-[11px] text-on-surface-variant">
+          <p className="text-[11px] text-v5-muted">
             {counts?.total !== undefined
               ? ` ${counts.total} công việc đang theo dõi · lọc theo thời gian, nguồn và trạng thái`
               : " Lọc theo thời gian, nguồn và trạng thái"}
@@ -174,7 +174,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
             onChange={(e) => set({ query: e.target.value })}
             placeholder="Tìm theo tên hoặc mã công việc..."
             aria-label="Tìm công việc trong nhật ký"
-            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border-subtle bg-surface text-body-md text-on-surface placeholder:text-outline focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
+            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border-subtle bg-surface text-body-md text-v5-ink placeholder:text-outline focus:border-secondary focus:outline-none focus:ring-1 focus:ring-v5-accent"
           />
         </div>
       </div>
@@ -184,7 +184,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
           <span className="font-label-sm text-label-sm uppercase tracking-wide text-outline shrink-0 w-[86px]">
             Thời gian
           </span>
-          <div className="flex items-center gap-1 bg-surface-container-low rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-v5-bg rounded-lg p-1">
             {(Object.keys(JOURNAL_PERIOD_LABELS) as JournalPeriod[]).map((p) => (
               <button
                 key={p}
@@ -203,7 +203,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
           <span className="font-label-sm text-label-sm uppercase tracking-wide text-outline shrink-0 w-[86px]">
             Nguồn
           </span>
-          <div className="flex items-center gap-1 bg-surface-container-low rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-v5-bg rounded-lg p-1">
             {(Object.keys(JOURNAL_SOURCE_LABELS) as JournalSource[]).map((s) => (
               <button
                 key={s}
@@ -222,7 +222,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
           <span className="font-label-sm text-label-sm uppercase tracking-wide text-outline shrink-0 w-[86px]">
             Trạng thái
           </span>
-          <div className="flex items-center gap-1 bg-surface-container-low rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-v5-bg rounded-lg p-1">
             {(Object.keys(JOURNAL_STATUS_LABELS) as JournalStatus[]).map((s) => (
               <button
                 key={s}

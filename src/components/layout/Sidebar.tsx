@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React from "react";
 import Link from "next/link";
@@ -17,7 +17,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
     <aside
       aria-label="Thanh điều hướng chính"
       data-testid="app-sidebar"
-      className={`fixed left-0 top-0 z-50 hidden h-full flex-col justify-between border-r border-border-default/20 bg-primary-container text-on-primary shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out lg:flex ${
+      className={`fixed left-0 top-0 z-50 hidden h-full flex-col justify-between border-r border-v5-line/20 bg-primary-container text-on-primary shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out lg:flex ${
         collapsed ? "w-[72px]" : "w-[260px]"
       }`}
     >

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -254,7 +254,7 @@ export default function CommandPalette({ open, onClose }: Props) {
         data-testid="command-palette"
         className="w-full max-w-2xl overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-2xl"
       >
-        <div className="flex items-center gap-3 border-b border-border-default/60 px-4 py-3">
+        <div className="flex items-center gap-3 border-b border-v5-line/60 px-4 py-3">
           <Search className="h-5 w-5 text-v5-accent" />
           <input
             ref={inputRef}
@@ -262,17 +262,17 @@ export default function CommandPalette({ open, onClose }: Props) {
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onInputKeyDown}
             placeholder="Tìm trang, nhiệm vụ hoặc hành động..."
-            className="min-w-0 flex-1 bg-transparent text-body-md text-on-surface outline-none placeholder:text-outline"
+            className="min-w-0 flex-1 bg-transparent text-body-md text-v5-ink outline-none placeholder:text-outline"
             aria-label="Tìm nhanh"
           />
-          <kbd className="hidden rounded border border-border-default bg-surface-container px-1.5 py-0.5 text-[10px] text-on-surface-variant sm:inline">
+          <kbd className="hidden rounded border border-v5-line bg-v5-bg px-1.5 py-0.5 text-[10px] text-v5-muted sm:inline">
             ESC
           </kbd>
         </div>
 
         <div className="max-h-[58vh] overflow-y-auto p-2">
           {commands.length === 0 ? (
-            <div className="px-4 py-8 text-center text-body-sm text-on-surface-variant">
+            <div className="px-4 py-8 text-center text-body-sm text-v5-muted">
               Không tìm thấy trang hoặc hành động phù hợp.
             </div>
           ) : (
@@ -294,21 +294,21 @@ export default function CommandPalette({ open, onClose }: Props) {
                         onMouseEnter={() => setActiveIndex(index)}
                         onClick={() => run(command)}
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-fast ${
-                          active ? "bg-primary/10" : "hover:bg-surface-container"
+                          active ? "bg-primary/10" : "hover:bg-v5-bg"
                         }`}
                       >
                         <span
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                            active ? "bg-primary text-on-primary" : "bg-surface-container text-primary"
+                            active ? "bg-primary text-on-primary" : "bg-v5-bg text-primary"
                           }`}
                         >
                           <V5Icon name={command.icon} className="text-[19px]" />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-body-sm font-semibold text-on-surface">
+                          <span className="block truncate text-body-sm font-semibold text-v5-ink">
                             {command.label}
                           </span>
-                          <span className="block truncate text-[11px] text-on-surface-variant">
+                          <span className="block truncate text-[11px] text-v5-muted">
                             {command.description}
                           </span>
                         </span>
@@ -324,7 +324,7 @@ export default function CommandPalette({ open, onClose }: Props) {
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border-default/60 px-4 py-2 text-[10px] text-on-surface-variant">
+        <div className="flex items-center justify-between border-t border-v5-line/60 px-4 py-2 text-[10px] text-v5-muted">
           <span>↑ ↓ chọn · Enter mở · Esc đóng</span>
           <span>Ctrl + K</span>
         </div>

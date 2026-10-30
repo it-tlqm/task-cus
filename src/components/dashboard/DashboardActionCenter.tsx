@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import Link from "next/link";
 
@@ -23,14 +23,14 @@ export default function DashboardActionCenter({
 
   return (
     <section className="px-margin pt-space-md lg:px-space-lg" data-testid="dashboard-action-center">
-      <div className="flex flex-col gap-2 rounded-xl border border-border-default/60 bg-surface-container-lowest p-3 shadow-sm sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex flex-col gap-2 rounded-xl border border-v5-line/60 bg-v5-surface p-3 shadow-sm sm:flex-row sm:items-center sm:gap-3">
         <div className="flex shrink-0 items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <V5Icon name="bolt" className="text-[18px]" />
           </span>
           <div>
-            <div className="text-label-md font-bold text-on-surface">Việc cần xử lý</div>
-            <div className="text-[11px] text-on-surface-variant">
+            <div className="text-label-md font-bold text-v5-ink">Việc cần xử lý</div>
+            <div className="text-[11px] text-v5-muted">
               {total > 0 ? `${total} việc đang chờ` : "Không có việc gấp"}
             </div>
           </div>
@@ -64,11 +64,11 @@ export default function DashboardActionCenter({
 
           <Link
             href="/tasks"
-            className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-border-default bg-surface-container px-2.5 py-1.5 text-[11px] font-semibold text-on-surface-variant hover:bg-surface-container-high"
+            className="inline-flex min-w-fit items-center gap-1.5 rounded-lg border border-v5-line bg-v5-bg px-2.5 py-1.5 text-[11px] font-semibold text-v5-muted hover:bg-v5-bg-high"
           >
             <V5Icon name="visibility" className="text-[15px]" />
             Cần chú ý
-            <span className="rounded-full bg-surface-container-highest px-1.5 text-[10px] text-on-surface">
+            <span className="rounded-full bg-v5-bg-highest px-1.5 text-[10px] text-v5-ink">
               {attention}
             </span>
           </Link>

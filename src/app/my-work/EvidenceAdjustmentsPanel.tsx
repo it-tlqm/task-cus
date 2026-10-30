@@ -115,9 +115,9 @@ export default function EvidenceAdjustmentsPanel({
   };
 
   return (
-    <div data-testid={`adj-panel-${mode}`} className="rounded-lg border border-border-subtle bg-surface-container-lowest p-3">
+    <div data-testid={`adj-panel-${mode}`} className="rounded-lg border border-border-subtle bg-v5-surface p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-bold text-on-surface">
+        <p className="text-xs font-bold text-v5-ink">
           {mode === "leader" ? "Đề nghị điều chỉnh minh chứng (chờ bạn xử lý)" : "Đề nghị điều chỉnh minh chứng"}
         </p>
         {mode === "staff" && canPropose && (
@@ -125,7 +125,7 @@ export default function EvidenceAdjustmentsPanel({
             type="button"
             data-testid={`adj-open-${workItemId}`}
             onClick={() => setOpen((v) => !v)}
-            className="text-[11px] font-semibold text-status-primary hover:underline"
+            className="text-[11px] font-semibold text-v5-accent hover:underline"
           >
             {open ? "Đóng" : "Lập đề nghị"}
           </button>
@@ -138,7 +138,7 @@ export default function EvidenceAdjustmentsPanel({
             data-testid={`adj-kind-${workItemId}`}
             value={kind}
             onChange={(e) => setKind(e.target.value)}
-            className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-2 py-1.5 text-xs"
+            className="w-full rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
           >
             <option value="ADD">Bổ sung minh chứng</option>
             <option value="REPLACE">Thay thế minh chứng</option>
@@ -149,14 +149,14 @@ export default function EvidenceAdjustmentsPanel({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Lý do đề nghị điều chỉnh (bắt buộc)"
-            className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-2 py-1.5 text-xs"
+            className="w-full rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
           />
           <input
             data-testid={`adj-desc-${workItemId}`}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Nội dung đề xuất (không bắt buộc)"
-            className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-2 py-1.5 text-xs"
+            className="w-full rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
           />
           {kind !== "REMOVE" && (
             <input
@@ -171,28 +171,28 @@ export default function EvidenceAdjustmentsPanel({
             data-testid={`adj-submit-${workItemId}`}
             disabled={busy}
             onClick={propose}
-            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Gửi đề nghị
           </button>
-          <p className="text-[10px] text-on-surface-variant">
+          <p className="text-[10px] text-v5-muted">
             Đề nghị không tự mở khóa hồ sơ. Cần lãnh đạo trực tiếp xem xét và Trưởng bộ phận phê duyệt.
           </p>
         </div>
       )}
 
       <div className="mt-2 space-y-1.5">
-        {loading && <p className="text-[11px] text-on-surface-variant">Đang tải…</p>}
+        {loading && <p className="text-[11px] text-v5-muted">Đang tải…</p>}
         {!loading && rows.length === 0 && (
-          <p className="text-[11px] text-on-surface-variant">Không có đề nghị nào.</p>
+          <p className="text-[11px] text-v5-muted">Không có đề nghị nào.</p>
         )}
         {rows.map((r) => (
           <div key={r.id} data-testid={`adj-row-${r.id}`} className="rounded-lg border border-border-subtle p-2">
-            <p className="text-[11px] font-semibold text-on-surface">
+            <p className="text-[11px] font-semibold text-v5-ink">
               {r.kind === "ADD" ? "Bổ sung" : r.kind === "REPLACE" ? "Thay thế" : "Rút"} minh chứng
               {r.workItem?.title ? ` — ${r.workItem.title}` : ""}
             </p>
-            <p className="text-[10px] text-on-surface-variant">
+            <p className="text-[10px] text-v5-muted">
               Lý do: {r.reason} · {STATE_LABEL[r.state] || r.state}
             </p>
             {mode === "leader" && r.myStep && (
@@ -202,7 +202,7 @@ export default function EvidenceAdjustmentsPanel({
                   data-testid={`adj-${r.myStep === "ENDORSE" ? "endorse" : "approve"}-${r.id}`}
                   disabled={busy}
                   onClick={() => act(r, r.myStep)}
-                  className="px-2 py-1 rounded text-[11px] font-semibold border border-status-primary text-status-primary hover:bg-status-warning-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 py-1 rounded text-[11px] font-semibold border border-v5-accent text-v5-accent hover:bg-status-warning-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {r.myStepLabel}
                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React from "react";
 import Link from "next/link";
@@ -55,7 +55,7 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
   return (
     <nav
       aria-label="Điều hướng nhanh trên điện thoại"
-      className="fixed bottom-0 z-50 w-full border-t border-border-default/70 bg-surface/95 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.04)] backdrop-blur-xl lg:hidden"
+      className="fixed bottom-0 z-50 w-full border-t border-v5-line/70 bg-surface/95 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.04)] backdrop-blur-xl lg:hidden"
     >
       <div className="flex h-16 items-center justify-around px-space-xs">
         {navItems.map((item) => {
@@ -68,7 +68,7 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
               aria-current={active ? "page" : undefined}
               data-testid={item.testId}
               className={`focus-ring relative flex h-12 min-w-[56px] flex-col items-center justify-center rounded-xl transition-fast active-press ${
-                active ? "font-body-semibold text-secondary" : "text-on-surface-variant hover:text-secondary"
+                active ? "font-body-semibold text-secondary" : "text-v5-muted hover:text-secondary"
               }`}
             >
               {active && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}
@@ -91,7 +91,7 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
           aria-expanded={mobileMenuOpen}
           data-testid="bottom-menu"
           className={`focus-ring relative flex h-12 min-w-[56px] flex-col items-center justify-center rounded-xl transition-fast active-press ${
-            mobileMenuOpen ? "font-body-semibold text-secondary" : "text-on-surface-variant hover:text-secondary"
+            mobileMenuOpen ? "font-body-semibold text-secondary" : "text-v5-muted hover:text-secondary"
           }`}
         >
           {mobileMenuOpen && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}

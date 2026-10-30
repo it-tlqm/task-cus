@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 import { FilterChip } from "@/components/v5/ui/filter-bar";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
@@ -1512,7 +1512,7 @@ export default function PlansPage() {
             {/* Title & Official Approval Status */}
             <div className="flex min-w-0 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-space-sm">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-v5-accent-fixed text-v5-ink text-[11px] font-semibold tracking-wide uppercase">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-v5-accent text-v5-ink text-[11px] font-semibold tracking-wide uppercase">
                   <V5Icon name="event_repeat" className="text-[15px]" />
                   {activePlan
                     ? `${activePlan.period?.name || "KỲ KẾ HOẠCH"}${
@@ -1565,7 +1565,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="create-plan-btn"
                   onClick={openPlanCreateModal}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-ink text-[12px] font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg text-v5-ink text-[12px] font-semibold transition-fast active-press"
                 >
                   <V5Icon name="note_add" className="text-[18px]" />
                   <span>Tạo kế hoạch</span>
@@ -1577,7 +1577,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="edit-plan-title-btn"
                   onClick={openPlanTitleModal}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-ink text-[12px] font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg text-v5-ink text-[12px] font-semibold transition-fast active-press"
                 >
                   <V5Icon name="edit" className="text-[18px] text-v5-accent" />
                   <span>Sửa kế hoạch</span>
@@ -1620,7 +1620,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="manage-plan-items-btn"
                   onClick={openPlanItemsManager}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-ink text-[12px] font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg text-v5-ink text-[12px] font-semibold transition-fast active-press"
                 >
                   <V5Icon name="account_tree" className="text-[18px] text-v5-accent" />
                   <span>Quản lý hạng mục</span>
@@ -1632,7 +1632,7 @@ export default function PlansPage() {
                   type="button"
                   data-testid="open-dept-catalog-manager-toolbar"
                   onClick={openDeptCatalogManager}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-ink text-[12px] font-semibold transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg text-v5-ink text-[12px] font-semibold transition-fast active-press"
                 >
                   <V5Icon name="settings_applications" className="text-[18px] text-v5-gold-ink" />
                   <span>Danh mục đầu việc bộ phận</span>
@@ -1720,7 +1720,7 @@ export default function PlansPage() {
               ) : canRequestAmendment ? (
                 <button
                   onClick={() => setShowAmendmentModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-muted text-[12px] transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg text-v5-muted text-[12px] transition-fast active-press"
                   title="Đề xuất điều chỉnh bổ sung nhiệm vụ cho kế hoạch đã ban hành"
                 >
                   <V5Icon name="approval_delegation" className="text-[18px]" />
@@ -1733,7 +1733,7 @@ export default function PlansPage() {
                   data-testid="export-xlsx-btn"
                   href={`/api/reports/export?template=legacy&planId=${activePlan.id}&periodId=${activePlan.period?.id || ""}${selectedScope === "personal" ? "&scope=personal" : ""}`}
                   download
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg-high text-v5-muted text-[12px] transition-fast active-press"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-v5-bg hover:bg-v5-bg text-v5-muted text-[12px] transition-fast active-press"
                   title="Xuất dữ liệu Excel chuẩn mẫu báo cáo Hải quan (8 cột A-H)"
                 >
                   <V5Icon name="download" className="text-[18px] text-v5-success" />
@@ -2002,7 +2002,7 @@ export default function PlansPage() {
                 <tr className="bg-v5-bg text-[11px] font-semibold uppercase tracking-wide text-v5-muted text-v5-ink">
                   <th className="py-3 px-space-md w-[110px] uppercase tracking-wider text-center">Thứ / Ngày</th>
                   <th className="py-3 px-space-md w-[200px] uppercase tracking-wider">Nhóm nhiệm vụ</th>
-                  <th className="py-3 px-space-lg min-w-[340px] uppercase tracking-wider bg-v5-bg-highest/40 text-v5-ink">
+                  <th className="py-3 px-space-lg min-w-[340px] uppercase tracking-wider bg-v5-bg/40 text-v5-ink">
                     <span title="Cột C: Danh mục đầu việc biến động theo từng cá nhân">
                       Đầu việc / Danh mục
                     </span>
@@ -2269,7 +2269,7 @@ export default function PlansPage() {
                               </span>
                             )}
                             {row.deptWorkItemTitle && (
-                              <span className="px-2 py-0.5 rounded text-[11px] bg-v5-bg-high text-v5-ink font-semibold border border-v5-line">
+                              <span className="px-2 py-0.5 rounded text-[11px] bg-v5-bg text-v5-ink font-semibold border border-v5-line">
                                 BỘ PHẬN: {row.deptWorkItemTitle}
                               </span>
                             )}
@@ -2287,7 +2287,7 @@ export default function PlansPage() {
                               </span>
                             ))}
                             {row.deadlineText && (
-                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-v5-bg-high text-v5-ink font-semibold border border-v5-line">
+                              <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-v5-bg text-v5-ink font-semibold border border-v5-line">
                                 Hạn hoàn thành: {row.deadlineText}
                               </span>
                             )}
@@ -2439,7 +2439,7 @@ export default function PlansPage() {
         {/* Operational Filter Section */}
         <section className="px-margin mt-space-md flex flex-col gap-space-sm">
           {/* Period Segmented Control — dùng chung viewMode với Desktop */}
-          <div className="bg-v5-bg-high p-1 rounded-xl flex items-center justify-between">
+          <div className="bg-v5-bg p-1 rounded-xl flex items-center justify-between">
             <button
               onClick={() => switchView("day")}
               className={`flex-1 py-1.5 rounded-lg text-[12px] text-center transition-fast ${
@@ -2541,7 +2541,7 @@ export default function PlansPage() {
               className={`flex-1 py-2 px-space-sm rounded-lg font-semibold text-center shadow-sm flex items-center justify-center gap-1.5 transition-fast ${
                 selectedScope === "personal"
                   ? "bg-v5-accent text-white"
-                  : "bg-v5-bg-high text-v5-muted"
+                  : "bg-v5-bg text-v5-muted"
               }`}
             >
               <V5Icon name="person" className="text-[16px]" />
@@ -2553,7 +2553,7 @@ export default function PlansPage() {
               className={`flex-1 py-2 px-space-sm rounded-lg font-semibold text-center flex items-center justify-center gap-1.5 transition-fast ${
                 selectedScope === "all"
                   ? "bg-v5-accent text-white"
-                  : "bg-v5-bg-high text-v5-muted"
+                  : "bg-v5-bg text-v5-muted"
               }`}
             >
               <V5Icon name="group" className="text-[16px]" />
@@ -2749,7 +2749,7 @@ export default function PlansPage() {
                                 {(wi.deptWorkItem || products.length > 0) && (
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {wi.deptWorkItem && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-v5-bg-high text-v5-ink border border-v5-line">
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-v5-bg text-v5-ink border border-v5-line">
                                         {wi.deptWorkItem.title}
                                       </span>
                                     )}

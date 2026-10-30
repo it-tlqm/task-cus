@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -109,20 +109,20 @@ export function RevenueComparisonSection({
     if (block.ruleState === "AMBIGUOUS")
       return <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold">Nhiều chỉ tiêu trùng kỳ</span>;
     if (block.ruleState === "NO_TARGET")
-      return <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">Chưa cấu hình</span>;
+      return <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted font-semibold">Chưa cấu hình</span>;
     if (block.ruleState === "NOT_APPROVED")
-      return <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">Chưa có quy tắc gán chỉ tiêu</span>;
+      return <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted font-semibold">Chưa có quy tắc gán chỉ tiêu</span>;
     if (block.ruleState === "PROPOSED")
       return <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 font-semibold">Chưa xác nhận</span>;
     if (block.percent === null)
-      return <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default text-on-surface-variant font-semibold">Chưa xác định</span>;
+      return <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line text-v5-muted font-semibold">Chưa xác định</span>;
     // D5-A: chỉ tô xanh/đỏ khi chiều đánh giá đã duyệt; NEUTRAL/khác giữ trung tính.
     const cls =
       block.direction === "HIGHER_IS_BETTER"
         ? block.percent >= 100
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-amber-200 bg-amber-50 text-amber-700"
-        : "border-border-default text-on-surface-variant";
+        : "border-v5-line text-v5-muted";
     // B-C-2/Q11: API trả percentText 2 chữ số thập phân, dấu phẩy vi-VN.
     return (
       <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${cls}`}>
@@ -141,9 +141,9 @@ export function RevenueComparisonSection({
     const hasCurrent = current !== null;
     const hasTarget = block.targetValue !== null;
     return (
-      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-border-default/50 bg-surface-container-low/30 p-3">
+      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-v5-line/50 bg-v5-bg/30 p-3">
         <div className="flex items-start justify-between gap-2">
-          <span className="text-body-xs font-semibold leading-snug text-on-surface-variant">{label}</span>
+          <span className="text-body-xs font-semibold leading-snug text-v5-muted">{label}</span>
           <span className="shrink-0">{targetChip(block)}</span>
         </div>
         {hasCurrent && hasTarget ? (
@@ -155,14 +155,14 @@ export function RevenueComparisonSection({
               >
                 {fmtMetricCompact(current, rowStyle, { withUnit: false })}
               </span>
-              <span className="text-body-xs text-on-surface-variant">
+              <span className="text-body-xs text-v5-muted">
                 / {fmtMetricCompact(block.targetValue, rowStyle, { withUnit: false })}
               </span>
             </div>
-            <div className="text-[10px] text-on-surface-variant">{currentLabel} · so với chỉ tiêu</div>
+            <div className="text-[10px] text-v5-muted">{currentLabel} · so với chỉ tiêu</div>
           </>
         ) : (
-          <div className="flex min-h-[52px] items-center text-body-xs italic text-on-surface-variant">
+          <div className="flex min-h-[52px] items-center text-body-xs italic text-v5-muted">
             {block.ruleState === "AMBIGUOUS"
               ? "Chưa xác định quy tắc đối chiếu"
               : "Chưa có dữ liệu đối chiếu"}
@@ -183,23 +183,23 @@ export function RevenueComparisonSection({
     const hasData = current !== null && block.value !== null;
     const percentTone =
       block.percent === null
-        ? "border-border-default text-on-surface-variant"
+        ? "border-v5-line text-v5-muted"
         : block.percent > 0
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : block.percent < 0
             ? "border-rose-200 bg-rose-50 text-rose-700"
-            : "border-border-default text-on-surface-variant";
+            : "border-v5-line text-v5-muted";
     return (
-      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-border-default/50 bg-surface-container-low/30 p-3">
+      <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-v5-line/50 bg-v5-bg/30 p-3">
         <div className="flex items-start justify-between gap-2">
-          <span className="text-body-xs font-semibold leading-snug text-on-surface-variant">{label}</span>
+          <span className="text-body-xs font-semibold leading-snug text-v5-muted">{label}</span>
           <span className="shrink-0">
             {block.percent !== null ? (
               <span className={`text-[11px] px-1.5 py-0.5 rounded border font-semibold ${percentTone}`}>
                 {block.percentText}%
               </span>
             ) : (
-              <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default font-semibold text-on-surface-variant">
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line font-semibold text-v5-muted">
                 {block.ruleState === "NO_DATA" ? "Chưa xác định" : "Không %"}
               </span>
             )}
@@ -215,11 +215,11 @@ export function RevenueComparisonSection({
               >
                 {fmtMetricCompact(current, rowStyle, { withUnit: false })}
               </span>
-              <span className="text-body-xs text-on-surface-variant">
+              <span className="text-body-xs text-v5-muted">
                 so với {fmtMetricCompact(block.value, rowStyle, { withUnit: false })}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-on-surface-variant">
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-v5-muted">
               <span>{currentLabel}</span>
               {block.ruleState === "INCOMPLETE_PERIOD" ? (
                 <span
@@ -236,7 +236,7 @@ export function RevenueComparisonSection({
           </>
         ) : (
           <div className="flex flex-col items-start gap-1">
-            <span className="text-body-xs italic text-on-surface-variant">Chưa có dữ liệu đối chiếu</span>
+            <span className="text-body-xs italic text-v5-muted">Chưa có dữ liệu đối chiếu</span>
             {actualDate && (
               <Link
                 href={`/giao-ban/nhap?date=${actualDate}&metric=THU_NSNN`}
@@ -254,11 +254,11 @@ export function RevenueComparisonSection({
   };
 
   return (
-    <div className={`bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden ${className}`} data-testid="comparison-section">
-      <div className="px-4 py-3 bg-surface-container-low border-b border-border-default/40 flex items-center gap-2 flex-wrap">
+    <div className={`bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden ${className}`} data-testid="comparison-section">
+      <div className="px-4 py-3 bg-v5-bg border-b border-v5-line/40 flex items-center gap-2 flex-wrap">
         <V5Icon name="compare_arrows" className="text-[18px] text-primary" />
         <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide">So sánh kết quả thu NSNN</span>
-        <span className="text-body-xs text-on-surface-variant">
+        <span className="text-body-xs text-v5-muted">
           ({comparison?.anchors?.monthLabel || ""} — tháng trước: {comparison?.anchors?.prevMonthLabel || ""}, cùng kỳ:{" "}
           {comparison?.anchors?.lastYearLabel || ""})
         </span>
@@ -298,11 +298,11 @@ export function RevenueComparisonSection({
           return (
             <div key={r.metricId} data-testid={`comparison-${r.code}`}>
               <div className="flex items-baseline gap-2 flex-wrap mb-1.5">
-                <span className="font-semibold text-on-surface">{r.name}</span>
-                {r.unitLabel ? <span className="text-body-xs text-on-surface-variant">({r.unitLabel})</span> : null}
-                {r.latestDate ? <span className="text-body-xs text-on-surface-variant">Số liệu đến {fmtDate(r.latestDate)}</span> : null}
+                <span className="font-semibold text-v5-ink">{r.name}</span>
+                {r.unitLabel ? <span className="text-body-xs text-v5-muted">({r.unitLabel})</span> : null}
+                {r.latestDate ? <span className="text-body-xs text-v5-muted">Số liệu đến {fmtDate(r.latestDate)}</span> : null}
               </div>
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">
                 Chỉ tiêu giao
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -311,7 +311,7 @@ export function RevenueComparisonSection({
                 {targetWidget("Kế hoạch tháng HQTL", r.monthPlan, r.monthCum, "LK tháng", rowStyle)}
               </div>
 
-              <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant">
+              <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-v5-muted">
                 So sánh kỳ
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -219,7 +219,7 @@ export default function DashboardPage() {
                     TRỰC BAN LÃNH ĐẠO
                   </span>
                 </div>
-                <p className="font-body-md text-body-md text-v5-muted flex items-center gap-2">
+                <p className="text-body-md text-v5-muted flex items-center gap-2">
                   <span>Hải quan cửa khẩu Quốc tế Tà Lùng</span>
                   <span className="text-v5-muted-variant">•</span>
                   <span className="font-mono text-label-sm text-v5-muted">
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                   Ẩn
                 </button>
               </div>
-              <p className="font-body-md text-body-md text-v5-ink leading-relaxed whitespace-pre-line">{aiSummary}</p>
+              <p className="text-body-md text-v5-ink leading-relaxed whitespace-pre-line">{aiSummary}</p>
             </div>
           )}
 
@@ -645,7 +645,7 @@ export default function DashboardPage() {
                             style={{ width: `${pct}%` }}
                           />
                         ) : (
-                          <div className="h-full bg-v5-bg-high w-full" />
+                          <div className="h-full bg-v5-bg w-full" />
                         )}
                       </div>
                     </div>
@@ -800,7 +800,7 @@ export default function DashboardPage() {
             <select
               value={unitFilter}
               onChange={(e) => setUnitFilter(e.target.value)}
-              className="bg-v5-bg-high px-2 py-1 rounded text-primary text-xs font-semibold focus:outline-none max-w-[46%] truncate shrink-0"
+              className="bg-v5-bg px-2 py-1 rounded text-primary text-xs font-semibold focus:outline-none max-w-[46%] truncate shrink-0"
             >
               <option value="ALL">Toàn đơn vị</option>
               {departments.map((d) => (
@@ -813,7 +813,7 @@ export default function DashboardPage() {
 
           {/* Quick Period Pill Switcher & Dynamic Dropdown */}
           <div className="flex flex-col gap-1.5">
-            <div className="grid w-full grid-cols-4 p-1 bg-v5-bg-highest rounded-lg gap-1">
+            <div className="grid w-full grid-cols-4 p-1 bg-v5-bg rounded-lg gap-1">
               <button
                 onClick={() => setPeriod("today")}
                 className={`min-w-0 px-1 py-1.5 text-center font-label-md text-label-md leading-tight rounded transition-fast text-[11px] ${
@@ -863,7 +863,7 @@ export default function DashboardPage() {
                 }}
                 aria-label="Chọn kỳ báo cáo từ CSDL"
                 data-testid="dashboard-period-select-mobile"
-                className="w-full bg-v5-bg-highest px-2 py-1.5 rounded text-primary text-xs font-semibold focus:outline-none"
+                className="w-full bg-v5-bg px-2 py-1.5 rounded text-primary text-xs font-semibold focus:outline-none"
               >
                 <option value="" disabled>
                   Kỳ khác…
@@ -1042,7 +1042,7 @@ export default function DashboardPage() {
             {canApprove && (
               <Link
                 href="/approvals"
-                className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-v5-bg-highest text-primary shadow-sm active:opacity-80 transition-fast active-press"
+                className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-v5-bg text-primary shadow-sm active:opacity-80 transition-fast active-press"
               >
                 <div className="relative">
                   <V5Icon name="rate_review" className="text-[20px] mb-1" />
@@ -1057,7 +1057,7 @@ export default function DashboardPage() {
             )}
             <Link
               href="/reports"
-              className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-v5-bg-highest text-primary shadow-sm active:opacity-80 transition-fast active-press"
+              className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-v5-bg text-primary shadow-sm active:opacity-80 transition-fast active-press"
             >
               <V5Icon name="query_stats" className="text-[20px] mb-1" />
               <span className="font-label-sm text-label-sm text-center leading-tight">Báo cáo tuần</span>
@@ -1132,7 +1132,7 @@ export default function DashboardPage() {
                       <p className="font-body-semibold text-body-semibold text-primary line-clamp-2">
                         {task.title}
                       </p>
-                      <p className="font-body-md text-xs text-v5-muted mt-0.5 flex items-center gap-1">
+                      <p className="text-xs text-v5-muted mt-0.5 flex items-center gap-1">
                         <V5Icon name="schedule" className="text-[14px]" />
                         Hạn: {deadlineLabel}
                         {task.hasIssue && task.issueNotes ? ` · ${task.issueNotes}` : ""}
@@ -1213,7 +1213,7 @@ export default function DashboardPage() {
                           style={{ width: `${pct}%` }}
                         />
                       ) : (
-                        <div className="h-full bg-v5-bg-high w-full" />
+                        <div className="h-full bg-v5-bg w-full" />
                       )}
                     </div>
                   </div>

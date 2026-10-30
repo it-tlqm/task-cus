@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className={`${inter.className} bg-app-bg text-on-surface antialiased min-h-screen`}>
+      <body className={`${inter.className} bg-app-bg text-v5-ink antialiased min-h-screen`}>
         <AppShell>
           {children}
         </AppShell>

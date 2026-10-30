@@ -8,7 +8,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ui/Toast";
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 import { fmtDate, fmtMetric } from "@/lib/metric-format";
 import { getVnDateParts } from "@/lib/period-helper";
 
@@ -180,21 +180,21 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
   if (enterable.length === 0) return null;
 
   return (
-    <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden" data-testid="cumulative-adjustment-panel">
+    <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden" data-testid="cumulative-adjustment-panel">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-4 py-3 bg-surface-container-low border-b border-border-default/40 flex items-center justify-between gap-2"
+        className="w-full px-4 py-3 bg-v5-bg border-b border-v5-line/40 flex items-center justify-between gap-2"
       >
         <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide text-left">
           Điều chỉnh lũy kế (B2-A)
         </span>
-        <span className="text-body-xs text-on-surface-variant">
+        <span className="text-body-xs text-v5-muted">
           Bắt buộc lý do · lưu old/new · dùng quyền nhập/xác nhận hiện có
         </span>
         <V5Icon
           name={open ? "expand_less" : "expand_more"}
-          className="text-[20px] text-on-surface-variant"
+          className="text-[20px] text-v5-muted"
         />
       </button>
 
@@ -205,7 +205,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.metricId}
               onChange={(e) => setDraft({ ...emptyDraft(e.target.value), metricId: e.target.value })}
               disabled={Boolean(editId)}
-              className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
             >
               {enterable.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -217,7 +217,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.classificationId}
               onChange={(e) => setDraft({ ...draft, classificationId: e.target.value })}
               disabled={Boolean(editId)}
-              className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
             >
               <option value="">Tổng (không phân loại)</option>
               {(selected?.values || [])
@@ -232,7 +232,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.cumKind}
               onChange={(e) => setDraft({ ...draft, cumKind: e.target.value })}
               disabled={Boolean(editId)}
-              className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
             >
               {Object.entries(CUM_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -245,26 +245,26 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.asOfDate}
               max={todayVnStr()}
               onChange={(e) => setDraft({ ...draft, asOfDate: e.target.value })}
-              className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
             />
             <input
               value={draft.value}
               onChange={(e) => setDraft({ ...draft, value: e.target.value })}
               inputMode="decimal"
               placeholder={`Giá trị đến ngày mốc (${selected?.unitLabel || "số"})`}
-              className="px-2 py-1.5 rounded border border-border-default text-body-sm text-right tabular-nums"
+              className="px-2 py-1.5 rounded border border-v5-line text-body-sm text-right tabular-nums"
             />
             <input
               value={draft.reason}
               onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
               placeholder="Lý do điều chỉnh (bắt buộc)"
-              className="px-2 py-1.5 rounded border border-border-default text-body-sm sm:col-span-2"
+              className="px-2 py-1.5 rounded border border-v5-line text-body-sm sm:col-span-2"
             />
             <input
               value={draft.sourceNote}
               onChange={(e) => setDraft({ ...draft, sourceNote: e.target.value })}
               placeholder="Nguồn/căn cứ (không bắt buộc)"
-              className="px-2 py-1.5 rounded border border-border-default text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -283,24 +283,24 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
                   setEditId(null);
                   setDraft(emptyDraft(draft.metricId));
                 }}
-                className="px-3 py-1.5 rounded-lg border border-border-default text-label-sm font-semibold"
+                className="px-3 py-1.5 rounded-lg border border-v5-line text-label-sm font-semibold"
               >
                 Hủy sửa
               </button>
             )}
-            <span className="text-body-xs text-on-surface-variant">
+            <span className="text-body-xs text-v5-muted">
               Sửa mốc đã xác nhận cần quyền xác nhận; mốc đã chốt không sửa trực tiếp.
             </span>
           </div>
 
-          {loading && <div className="text-body-sm text-on-surface-variant">Đang tải mốc điều chỉnh…</div>}
+          {loading && <div className="text-body-sm text-v5-muted">Đang tải mốc điều chỉnh…</div>}
           {!loading && rows.length === 0 && (
-            <div className="text-body-sm text-on-surface-variant italic">Chưa có mốc điều chỉnh nào bạn được xem.</div>
+            <div className="text-body-sm text-v5-muted italic">Chưa có mốc điều chỉnh nào bạn được xem.</div>
           )}
           {!loading && rows.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-body-xs border-collapse">
-                <thead className="bg-surface-container-low text-left text-on-surface-variant">
+                <thead className="bg-v5-bg text-left text-v5-muted">
                   <tr>
                     <th className="px-2 py-1.5">Chỉ tiêu</th>
                     <th className="px-2 py-1.5">Loại / ngày mốc</th>
@@ -319,22 +319,22 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
                       unitLabel: metric?.unitLabel || "",
                     };
                     return (
-                      <tr key={row.id} className="border-t border-border-default/40 align-top">
+                      <tr key={row.id} className="border-t border-v5-line/40 align-top">
                         <td className="px-2 py-1.5">
                           <div className="font-semibold">{row.metricCode}</div>
-                          <div className="text-on-surface-variant">{row.classificationLabel || "Tổng"}</div>
+                          <div className="text-v5-muted">{row.classificationLabel || "Tổng"}</div>
                         </td>
                         <td className="px-2 py-1.5">
                           {CUM_LABELS[row.cumKind] || row.cumKind} · {fmtDate(row.asOfDate)}
                         </td>
                         <td className="px-2 py-1.5 text-right tabular-nums">{fmtMetric(row.valueBase, style)}</td>
                         <td className="px-2 py-1.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-border-default font-semibold">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-v5-line font-semibold">
                             {row.status === "LOCKED" ? "Đã chốt" : row.status === "CONFIRMED" ? "Đã xác nhận" : "Đề xuất"}
                           </span>
                           {row.dataSource === "DEMO" ? <span className="ml-1 text-[10px] text-slate-500">DEMO</span> : null}
                           {row.confirmedByName ? (
-                            <div className="text-[10px] text-on-surface-variant">{row.confirmedByName}</div>
+                            <div className="text-[10px] text-v5-muted">{row.confirmedByName}</div>
                           ) : null}
                         </td>
                         <td className="px-2 py-1.5 max-w-[220px] truncate" title={row.reason || ""}>
@@ -346,7 +346,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
                               <button
                                 type="button"
                                 onClick={() => startEdit(row)}
-                                className="px-2 py-1 rounded border border-border-default font-semibold hover:bg-surface-container"
+                                className="px-2 py-1 rounded border border-v5-line font-semibold hover:bg-v5-bg"
                               >
                                 Sửa
                               </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -263,7 +263,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Nhập tên đăng nhập hoặc mã cán bộ..."
-                    className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg font-body-md text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-fast"
+                    className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
                   />
                 </div>
               </div>
@@ -284,7 +284,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Nhập mật khẩu..."
-                    className="w-full h-11 pl-10 pr-10 rounded-lg bg-v5-bg font-body-md text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-secondary transition-fast"
+                    className="w-full h-11 pl-10 pr-10 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
                   />
                   <button
                     type="button"

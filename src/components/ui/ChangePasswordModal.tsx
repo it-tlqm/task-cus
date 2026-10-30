@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState } from "react";
 import { toast } from "./Toast";
@@ -67,7 +67,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl border border-border-default/60 flex flex-col gap-4 animate-scaleUp">
+      <div className="bg-v5-surface rounded-2xl max-w-md w-full p-6 shadow-2xl border border-v5-line/60 flex flex-col gap-4 animate-scaleUp">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
           <div className="flex items-center gap-2">
@@ -78,14 +78,14 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               <h3 className="font-headline-sm text-primary font-bold text-base">
                 Thay Đổi Mật Khẩu Cá Nhân
               </h3>
-              <p className="font-label-sm text-[11px] text-on-surface-variant">
+              <p className="font-label-sm text-[11px] text-v5-muted">
                 Bảo vệ tài khoản tác nghiệp công vụ nội bộ
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-subtle transition-fast"
+            className="p-1 rounded-lg text-outline hover:text-v5-ink hover:bg-surface-subtle transition-fast"
             aria-label="Đóng modal"
           >
             <V5Icon name="close" className="text-[20px]" />
@@ -103,7 +103,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           {/* Mật khẩu hiện tại */}
           <div className="flex flex-col gap-1">
-            <label className="font-body-semibold text-xs text-on-surface">
+            <label className="font-body-semibold text-xs text-v5-ink">
               Mật khẩu hiện tại <span className="text-status-danger">*</span>
             </label>
             <input
@@ -112,13 +112,13 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Nhập mật khẩu đang sử dụng"
               required
-              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-fast"
+              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-v5-ink focus:outline-none focus:border-secondary focus:ring-1 focus:ring-v5-accent transition-fast"
             />
           </div>
 
           {/* Mật khẩu mới */}
           <div className="flex flex-col gap-1">
-            <label className="font-body-semibold text-xs text-on-surface">
+            <label className="font-body-semibold text-xs text-v5-ink">
               Mật khẩu mới (Tối thiểu 8 ký tự) <span className="text-status-danger">*</span>
             </label>
             <input
@@ -128,13 +128,13 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               placeholder="Nhập mật khẩu mới an toàn"
               required
               minLength={8}
-              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-fast"
+              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-v5-ink focus:outline-none focus:border-secondary focus:ring-1 focus:ring-v5-accent transition-fast"
             />
           </div>
 
           {/* Xác nhận mật khẩu mới */}
           <div className="flex flex-col gap-1">
-            <label className="font-body-semibold text-xs text-on-surface">
+            <label className="font-body-semibold text-xs text-v5-ink">
               Xác nhận mật khẩu mới <span className="text-status-danger">*</span>
             </label>
             <input
@@ -144,17 +144,17 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               placeholder="Nhập lại mật khẩu mới"
               required
               minLength={8}
-              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-fast"
+              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-v5-ink focus:outline-none focus:border-secondary focus:ring-1 focus:ring-v5-accent transition-fast"
             />
           </div>
 
           {/* Toggle hiển thị mật khẩu */}
-          <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-on-surface-variant">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-v5-muted">
             <input
               type="checkbox"
               checked={showPass}
               onChange={(e) => setShowPass(e.target.checked)}
-              className="rounded border-border-subtle text-secondary focus:ring-secondary"
+              className="rounded border-border-subtle text-secondary focus:ring-v5-accent"
             />
             <span>Hiển thị ký tự mật khẩu</span>
           </label>
@@ -165,7 +165,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-surface-subtle text-on-surface-variant hover:bg-surface-container transition-fast"
+              className="px-4 py-2 text-xs font-semibold rounded-lg bg-surface-subtle text-v5-muted hover:bg-v5-bg transition-fast"
             >
               Hủy bỏ
             </button>

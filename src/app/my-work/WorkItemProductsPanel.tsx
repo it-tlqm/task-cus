@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/components/ui/Toast";
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 interface SpRow {
   id: string;
@@ -176,14 +176,14 @@ export default function WorkItemProductsPanel({
   };
 
   return (
-    <div data-testid={`sp-panel-${workItemId}`} className="mt-2 rounded-lg border border-border-subtle bg-surface-container-lowest p-3">
+    <div data-testid={`sp-panel-${workItemId}`} className="mt-2 rounded-lg border border-border-subtle bg-v5-surface p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-bold text-on-surface">Sản phẩm QĐ1277 của công việc</p>
+        <p className="text-xs font-bold text-v5-ink">Sản phẩm QĐ1277 của công việc</p>
         <button
           type="button"
           data-testid={`sp-toggle-${workItemId}`}
           onClick={() => setOpen((v) => !v)}
-          className="text-[11px] font-semibold text-status-primary hover:underline"
+          className="text-[11px] font-semibold text-v5-accent hover:underline"
         >
           {open ? "Ẩn" : `${rows.length} sản phẩm`}
         </button>
@@ -191,9 +191,9 @@ export default function WorkItemProductsPanel({
 
       {open && (
         <div className="mt-2 space-y-2">
-          {loading && <p className="text-[11px] text-on-surface-variant">Đang tải…</p>}
+          {loading && <p className="text-[11px] text-v5-muted">Đang tải…</p>}
           {!loading && rows.length === 0 && (
-            <p className="text-[11px] text-on-surface-variant">
+            <p className="text-[11px] text-v5-muted">
               Công việc này chưa gắn mã sản phẩm. Công việc vẫn được ghi nhận bình thường, phần sản
               phẩm chờ đối chiếu.
             </p>
@@ -205,10 +205,10 @@ export default function WorkItemProductsPanel({
               <div key={r.id} data-testid={`sp-row-${r.id}`} className="rounded-lg border border-border-subtle p-2">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-on-surface">
+                    <p className="text-xs font-semibold text-v5-ink">
                       {r.code} — {r.taskName}
                     </p>
-                    <p className="text-[11px] text-on-surface-variant">
+                    <p className="text-[11px] text-v5-muted">
                       Hệ số: {fmtFactor(r.factorSnapshot ?? r.factor)}
                       {r.factorSnapshot != null ? " (đã chốt khi xác nhận)" : " (theo danh mục)"} · nguồn: QĐ1277
                       {r.quantity != null ? ` · số lượng: ${r.quantity}${r.quantityUnit ? ` ${r.quantityUnit}` : ""}` : ""}
@@ -218,11 +218,11 @@ export default function WorkItemProductsPanel({
                         Đơn vị tính do người nhập khai — cần đối chiếu với danh mục chính thức.
                       </p>
                     )}
-                    {r.note && <p className="text-[11px] text-on-surface-variant mt-0.5">Ghi chú: {r.note}</p>}
+                    {r.note && <p className="text-[11px] text-v5-muted mt-0.5">Ghi chú: {r.note}</p>}
                   </div>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                      meta?.cls || "bg-surface-container text-on-surface-variant border-border-subtle"
+                      meta?.cls || "bg-v5-bg text-v5-muted border-border-subtle"
                     }`}
                   >
                     <V5Icon name={meta?.icon || "help"} className="text-[13px]" />
@@ -246,7 +246,7 @@ export default function WorkItemProductsPanel({
                       data-testid={`sp-reject-${r.id}`}
                       disabled={busy}
                       onClick={() => decide(r, "REJECT")}
-                      className="px-2 py-1 rounded text-[11px] font-semibold border border-border-default text-on-surface-variant hover:bg-surface-container disabled:opacity-50"
+                      className="px-2 py-1 rounded text-[11px] font-semibold border border-v5-line text-v5-muted hover:bg-v5-bg disabled:opacity-50"
                     >
                       Không duyệt
                     </button>
@@ -257,8 +257,8 @@ export default function WorkItemProductsPanel({
           })}
 
           {canPropose && (
-            <div className="rounded-lg border border-dashed border-border-default p-2 space-y-2">
-              <p className="text-[11px] font-semibold text-on-surface">Đề xuất mã sản phẩm (QĐ1277)</p>
+            <div className="rounded-lg border border-dashed border-v5-line p-2 space-y-2">
+              <p className="text-[11px] font-semibold text-v5-ink">Đề xuất mã sản phẩm (QĐ1277)</p>
               {!picked ? (
                 <>
                   <input
@@ -266,7 +266,7 @@ export default function WorkItemProductsPanel({
                     value={q}
                     onChange={(e) => search(e.target.value)}
                     placeholder="Tìm mã sản phẩm hoặc tên nhiệm vụ…"
-                    className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-2 py-1.5 text-xs"
+                    className="w-full rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
                   />
                   {results.length > 0 && (
                     <div className="max-h-40 overflow-y-auto rounded-lg border border-border-subtle">
@@ -279,7 +279,7 @@ export default function WorkItemProductsPanel({
                             setPicked({ id: p.id, code: p.code, taskName: p.taskName });
                             setResults([]);
                           }}
-                          className="block w-full text-left px-2 py-1.5 text-[11px] hover:bg-surface-container"
+                          className="block w-full text-left px-2 py-1.5 text-[11px] hover:bg-v5-bg"
                         >
                           <b>{p.code}</b> — {p.taskName}
                           {p.convertFactor != null ? ` · hệ số ${p.convertFactor}` : ""}
@@ -290,7 +290,7 @@ export default function WorkItemProductsPanel({
                 </>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-[11px] text-on-surface">
+                  <p className="text-[11px] text-v5-ink">
                     Đã chọn: <b>{picked.code}</b> — {picked.taskName}
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -300,14 +300,14 @@ export default function WorkItemProductsPanel({
                       onChange={(e) => setQty(e.target.value)}
                       type="number"
                       placeholder="Số lượng (nếu có)"
-                      className="rounded-lg border border-border-default bg-surface-container-lowest px-2 py-1.5 text-xs"
+                      className="rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
                     />
                     <input
                       data-testid={`sp-unit-${workItemId}`}
                       value={unit}
                       onChange={(e) => setUnit(e.target.value)}
                       placeholder="Đơn vị tính (nếu có)"
-                      className="rounded-lg border border-border-default bg-surface-container-lowest px-2 py-1.5 text-xs"
+                      className="rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
                     />
                   </div>
                   <input
@@ -315,7 +315,7 @@ export default function WorkItemProductsPanel({
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Ghi chú (không bắt buộc)"
-                    className="w-full rounded-lg border border-border-default bg-surface-container-lowest px-2 py-1.5 text-xs"
+                    className="w-full rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
                   />
                   <div className="flex gap-2">
                     <button
@@ -323,14 +323,14 @@ export default function WorkItemProductsPanel({
                       data-testid={`sp-propose-${workItemId}`}
                       disabled={busy}
                       onClick={propose}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-status-primary bg-status-primary text-on-primary hover:bg-status-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Gửi đề xuất
                     </button>
                     <button
                       type="button"
                       onClick={() => setPicked(null)}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-border-default text-on-surface-variant"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-v5-line text-v5-muted"
                     >
                       Huỷ
                     </button>

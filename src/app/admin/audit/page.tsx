@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState } from "react";
 import BackButton from "@/components/ui/BackButton";
@@ -138,7 +138,7 @@ export default function AdminAuditPage() {
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-v5-line font-body-md text-body-md text-v5-ink placeholder:text-v5-muted focus:outline-none focus:border-secondary transition-all"
+            className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-v5-line text-body-md text-v5-ink placeholder:text-v5-muted focus:outline-none focus:border-secondary transition-all"
             placeholder="Tìm theo người dùng, hành động, mục tiêu... (không cần dấu)"
             type="text"
           />
@@ -151,7 +151,7 @@ export default function AdminAuditPage() {
               setFilterAction(e.target.value);
               setPage(1);
             }}
-            className="h-9 px-3 rounded bg-surface border border-v5-line font-body-md text-body-md text-v5-ink focus:outline-none cursor-pointer max-w-[320px]"
+            className="h-9 px-3 rounded bg-surface border border-v5-line text-body-md text-v5-ink focus:outline-none cursor-pointer max-w-[320px]"
           >
             <option value="ALL">Tất cả hành động</option>
             {actions.map((a) => (

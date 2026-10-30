@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
@@ -592,7 +592,7 @@ function ReportsContent() {
                 className={`px-3 py-1 rounded-full text-[12px] transition-colors ${
                   period === "today"
                     ? "bg-v5-accent text-white shadow-sm"
-                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg"
                 }`}
               >
                 Hôm nay
@@ -602,7 +602,7 @@ function ReportsContent() {
                 className={`px-3 py-1 rounded-full text-[12px] transition-colors ${
                   period === "week"
                     ? "bg-v5-accent text-white shadow-sm"
-                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg"
                 }`}
               >
                 Tuần này ({periodLabels.weekShort})
@@ -612,7 +612,7 @@ function ReportsContent() {
                 className={`px-3 py-1 rounded-full text-[12px] transition-colors ${
                   period === "month"
                     ? "bg-v5-accent text-white shadow-sm"
-                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg"
                 }`}
               >
                 {periodLabels.monthShort}
@@ -622,7 +622,7 @@ function ReportsContent() {
                 className={`px-3 py-1 rounded-full text-[12px] transition-colors ${
                   period === "quarter"
                     ? "bg-v5-accent text-white shadow-sm"
-                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg-high"
+                    : "bg-v5-bg text-v5-muted hover:bg-v5-bg"
                 }`}
               >
                 {periodLabels.quarterShort}
@@ -819,7 +819,7 @@ function ReportsContent() {
                       onClick={() => setDrilldownTask(mapDbTaskToDrilldown(task))}
                       className="bg-v5-bg p-space-sm rounded-lg flex items-start gap-space-sm cursor-pointer hover:bg-v5-bg transition-colors"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-v5-bg-highest flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-lg bg-v5-bg flex items-center justify-center shrink-0 mt-0.5">
                         <span className="text-[13px] font-semibold text-v5-ink">{dayBadge}</span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -911,7 +911,7 @@ function ReportsContent() {
                     <span className="text-[13px] font-semibold text-v5-ink">
                       BẢNG XEM TRƯỚC BÁO CÁO CÔNG TÁC TUẦN
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-v5-accent-fixed text-white-fixed">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-v5-accent text-white">
                       EXCEL-PREVIEW-MODE
                     </span>
                   </div>
@@ -935,14 +935,14 @@ function ReportsContent() {
                       el.requestFullscreen?.().catch(() => showToast("Trình duyệt không cho phép toàn màn hình", "error"));
                     }
                   }}
-                  className="p-1.5 rounded hover:bg-v5-bg-high text-v5-muted transition-colors"
+                  className="p-1.5 rounded hover:bg-v5-bg text-v5-muted transition-colors"
                   title="Toàn màn hình bảng tính (bấm lại để thoát)"
                 >
                   <V5Icon name="fullscreen" className="text-[18px]" />
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="p-1.5 rounded hover:bg-v5-bg-high text-v5-muted transition-colors"
+                  className="p-1.5 rounded hover:bg-v5-bg text-v5-muted transition-colors"
                   title="In trực tiếp trang"
                 >
                   <V5Icon name="print" className="text-[18px]" />
@@ -1148,14 +1148,14 @@ function ReportsContent() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-muted text-[11px] hover:bg-v5-bg-high transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-muted text-[11px] hover:bg-v5-bg transition-colors disabled:opacity-50"
                   disabled
                 >
                   Trang trước
                 </button>
                 <span className="text-[11px] text-v5-ink px-2">1 / 1 (Toàn bộ tuần)</span>
                 <button
-                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-muted text-[11px] hover:bg-v5-bg-high transition-colors disabled:opacity-50"
+                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-muted text-[11px] hover:bg-v5-bg transition-colors disabled:opacity-50"
                   disabled
                 >
                   Trang sau
@@ -1180,7 +1180,7 @@ function ReportsContent() {
                   <h2 className="font-headline-md text-headline-md text-v5-ink">
                     Cấu Hình Ánh Xạ &amp; Mẫu Xuất Excel (Builder)
                   </h2>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-v5-accent-fixed text-v5-ink">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-v5-accent text-v5-ink">
                     Phiên bản: v1.2-STABLE
                   </span>
                 </div>
@@ -1195,7 +1195,7 @@ function ReportsContent() {
               <button
                 onClick={handlePreviewBuilderFile}
                 disabled={isPreviewingBuilder}
-                className="px-3 py-2 rounded bg-v5-bg text-v5-ink text-[12px] hover:bg-v5-bg-high transition-colors active-press disabled:opacity-60"
+                className="px-3 py-2 rounded bg-v5-bg text-v5-ink text-[12px] hover:bg-v5-bg transition-colors active-press disabled:opacity-60"
               >
                 {isPreviewingBuilder ? "Đang kết xuất..." : "Xem trước file mẫu"}
               </button>
@@ -1203,7 +1203,7 @@ function ReportsContent() {
                 <button
                   onClick={() => handleExportXlsx(selectedTemplate === "detailed" ? "detailed" : "legacy")}
                   disabled={isExporting}
-                  className="px-3 py-2 rounded bg-v5-bg text-v5-ink text-[12px] hover:bg-v5-bg-high transition-colors active-press disabled:opacity-60"
+                  className="px-3 py-2 rounded bg-v5-bg text-v5-ink text-[12px] hover:bg-v5-bg transition-colors active-press disabled:opacity-60"
                 >
                   {isExporting ? "Đang tải..." : "Tải file mẫu thử nghiệm"}
                 </button>
@@ -1363,7 +1363,7 @@ function ReportsContent() {
                   </div>
                 </div>
               </div>
-              <div className="p-3 bg-v5-accent-fixed/30 rounded-lg flex items-center gap-2 mt-4">
+              <div className="p-3 bg-v5-accent/30 rounded-lg flex items-center gap-2 mt-4">
                 <V5Icon name="cloud_done" className="text-v5-accent text-[20px]" />
                 <span className="text-[12px] text-white-container">
                   Đã đồng bộ mẫu chuẩn với Cục HQ Cao Bằng
@@ -1422,7 +1422,7 @@ function ReportsContent() {
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-v5-bg transition-colors bg-v5-accent-fixed/20">
+                  <tr className="hover:bg-v5-bg transition-colors bg-v5-accent/20">
                     <td className="py-2.5 px-3 text-center font-mono font-bold text-v5-accent">Cột C</td>
                     <td className="py-2.5 px-3 font-mono text-[13px] text-v5-ink font-bold">task_catalog_title</td>
                     <td className="py-2.5 px-4 font-semibold text-v5-ink">
@@ -1983,7 +1983,7 @@ function ReportsContent() {
             <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2">
               <button
                 onClick={() => setDrilldownTask(null)}
-                className="px-3 py-1.5 rounded bg-v5-bg text-v5-muted text-[12px] hover:bg-v5-bg-high transition-colors active-press"
+                className="px-3 py-1.5 rounded bg-v5-bg text-v5-muted text-[12px] hover:bg-v5-bg transition-colors active-press"
               >
                 Đóng
               </button>

@@ -301,28 +301,28 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-xl border border-border-default/50 bg-surface-container-lowest p-4 flex flex-col gap-2">
+      <div className="rounded-xl border border-v5-line/50 bg-v5-surface p-4 flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="font-label-md text-label-md text-primary font-bold">Chỉ tiêu giao</div>
-            <div className="text-body-xs text-on-surface-variant">
+            <div className="text-body-xs text-v5-muted">
               Cấu hình chỉ tiêu theo năm, quý, tháng và xác nhận trước khi dùng tính tỷ lệ.
             </div>
           </div>
           <button
             type="button"
             onClick={refresh}
-            className="rounded-lg border border-border-default px-3 py-1.5 text-body-sm font-semibold hover:bg-surface-container-low"
+            className="rounded-lg border border-v5-line px-3 py-1.5 text-body-sm font-semibold hover:bg-v5-bg"
           >
             Tải lại
           </button>
         </div>
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-on-surface-variant max-w-xl">
+        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted max-w-xl">
           Chọn chỉ tiêu
           <select
             value={selectedMetricId}
             onChange={(e) => setSelectedMetricId(e.target.value)}
-            className="rounded border border-border-default bg-surface px-2 py-1.5 text-body-sm font-normal text-on-surface"
+            className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
           >
             {groups.map((g) => (
               <optgroup key={g.id} label={g.name}>
@@ -340,7 +340,7 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
           chỉ tiêu khác hiển thị “Chưa có quy tắc gán chỉ tiêu” và không tô đạt/vượt.
         </div>
         {error && <div className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-body-xs text-rose-800">{error}</div>}
-        {loading && <div className="text-body-xs text-on-surface-variant">Đang tải chỉ tiêu giao…</div>}
+        {loading && <div className="text-body-xs text-v5-muted">Đang tải chỉ tiêu giao…</div>}
       </div>
 
       {selectedMetric && (
@@ -362,25 +362,25 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
 
       {history && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[85vh] w-full max-w-4xl overflow-auto rounded-xl border border-border-default bg-surface p-4">
+          <div className="max-h-[85vh] w-full max-w-4xl overflow-auto rounded-xl border border-v5-line bg-surface p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <div>
                 <div className="font-label-md text-label-md text-primary font-bold">Lịch sử chỉ tiêu giao</div>
-                <div className="text-body-xs text-on-surface-variant">{history.target.label}</div>
+                <div className="text-body-xs text-v5-muted">{history.target.label}</div>
               </div>
               <button
                 type="button"
                 onClick={() => setHistory(null)}
-                className="rounded border border-border-default px-2 py-1 text-body-sm font-semibold"
+                className="rounded border border-v5-line px-2 py-1 text-body-sm font-semibold"
               >
                 Đóng
               </button>
             </div>
             {history.revisions.length === 0 ? (
-              <div className="text-body-sm text-on-surface-variant italic">Chưa có lịch sử.</div>
+              <div className="text-body-sm text-v5-muted italic">Chưa có lịch sử.</div>
             ) : (
               <table className="w-full min-w-[700px] border-collapse text-body-xs">
-                <thead className="bg-surface-container-low text-left text-on-surface-variant">
+                <thead className="bg-v5-bg text-left text-v5-muted">
                   <tr>
                     <th className="px-2 py-1.5">Hành động</th>
                     <th className="px-2 py-1.5 text-right">Giá trị cũ</th>
@@ -393,7 +393,7 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
                 </thead>
                 <tbody>
                   {history.revisions.map((r) => (
-                    <tr key={r.id} className="border-t border-border-default/40">
+                    <tr key={r.id} className="border-t border-v5-line/40">
                       <td className="px-2 py-1.5 font-semibold">{TARGET_ACTION_LABELS[r.action] || r.action}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{formatValue(r.oldValue)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{formatValue(r.newValue)}</td>
@@ -407,7 +407,7 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
                       <td className="max-w-[180px] truncate px-2 py-1.5" title={r.reason || ""}>{r.reason || "—"}</td>
                       <td className="px-2 py-1.5">
                         {r.editedByName || "—"}
-                        <div className="text-[10px] text-on-surface-variant">
+                        <div className="text-[10px] text-v5-muted">
                           {new Date(r.editedAt).toLocaleString("vi-VN")}
                         </div>
                       </td>

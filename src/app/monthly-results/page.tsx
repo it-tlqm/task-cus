@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ClipboardList, FileDown, Plus, RefreshCw, X } from "lucide-react";

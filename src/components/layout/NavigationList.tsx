@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 import {
   filterNavigation,
   findActiveNavigation,
@@ -160,7 +160,7 @@ export function NavigationList({ collapsed = false, variant = "desktop", onNavig
                         activeItem
                           ? "bg-secondary text-on-secondary shadow-sm"
                           : "text-on-primary-container hover:bg-white/10 hover:text-white"
-                      } ${collapsed && activeItem ? "ring-1 ring-secondary-fixed/40" : ""}`}
+                      } ${collapsed && activeItem ? "ring-1 ring-v5-accent-fixed/40" : ""}`}
                     >
                       <V5Icon
                         name={item.icon}

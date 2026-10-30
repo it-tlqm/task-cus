@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import { vnDateOnly } from "@/lib/datetime";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -413,9 +413,9 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
   return (
     <section
       data-testid="my-work-items"
-      className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden"
+      className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden"
     >
-      <div className="p-space-md bg-surface-subtle border-b border-border-default flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm">
+      <div className="p-space-md bg-surface-subtle border-b border-v5-line flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm">
         <div className="flex flex-col gap-0.5">
           <h2 className="font-headline-sm text-headline-sm text-primary font-bold flex items-center gap-2">
             <V5Icon name="checklist" className="text-secondary text-[22px]" />
@@ -427,11 +427,11 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 bg-surface-container-lowest rounded-lg border border-border-subtle p-1">
+          <div className="flex items-center gap-1 bg-v5-surface rounded-lg border border-border-subtle p-1">
             <button
               type="button"
               onClick={() => shiftMonth(-1)}
-              className="p-1 rounded hover:bg-surface-container"
+              className="p-1 rounded hover:bg-v5-bg"
               title="Tháng trước"
             >
               <V5Icon name="chevron_left" className="text-[18px]" />
@@ -442,13 +442,13 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
             <button
               type="button"
               onClick={() => shiftMonth(1)}
-              className="p-1 rounded hover:bg-surface-container"
+              className="p-1 rounded hover:bg-v5-bg"
               title="Tháng sau"
             >
               <V5Icon name="chevron_right" className="text-[18px]" />
             </button>
           </div>
-          <label className="flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-v5-muted cursor-pointer">
             <input
               type="checkbox"
               checked={showCompleted}
@@ -461,7 +461,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
             type="button"
             onClick={fetchItems}
             disabled={loading}
-            className="p-2 rounded-lg hover:bg-surface-container border border-border-subtle disabled:opacity-50"
+            className="p-2 rounded-lg hover:bg-v5-bg border border-border-subtle disabled:opacity-50"
             title="Làm mới đầu việc"
           >
             <V5Icon name="sync" className="text-[18px]" />
@@ -469,14 +469,14 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
         </div>
       </div>
 
-      <div className="px-space-md py-space-sm flex flex-wrap items-center gap-2 text-[11px] border-b border-border-subtle bg-surface-container-low/40">
-        <span className="px-2 py-0.5 rounded bg-surface-container font-semibold text-primary">
+      <div className="px-space-md py-space-sm flex flex-wrap items-center gap-2 text-[11px] border-b border-border-subtle bg-v5-bg/40">
+        <span className="px-2 py-0.5 rounded bg-v5-bg font-semibold text-primary">
           {stats.total} đầu việc
         </span>
         <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success font-semibold">
           {stats.done} đã hoàn thành
         </span>
-        <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">
+        <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-muted">
           {stats.remaining} đang thực hiện
         </span>
         {stats.overdue > 0 && (
@@ -515,7 +515,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
             const meta = evidenceMeta[item.id];
             const evidenceCount = item._count?.evidences ?? list.length;
             return (
-              <div key={item.id} data-testid={`work-item-${item.id}`} className={done ? "bg-surface-container-low/30" : ""}>
+              <div key={item.id} data-testid={`work-item-${item.id}`} className={done ? "bg-v5-bg/30" : ""}>
                 <div className="p-space-md flex flex-col gap-space-sm">
                   <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-2">
                     <div className="flex flex-col gap-1 min-w-0">
@@ -528,7 +528,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         </span>
                         {item.product && (
                           <span
-                            className="px-1.5 py-0.5 rounded border border-border-subtle bg-surface-container text-[10px] text-on-surface-variant"
+                            className="px-1.5 py-0.5 rounded border border-border-subtle bg-v5-bg text-[10px] text-v5-muted"
                             title={item.product.taskName}
                           >
                             QĐ1277 · {item.product.code}
@@ -546,7 +546,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       </div>
                       <p
                         className={`font-body-semibold text-body-semibold ${
-                          done ? "text-on-surface-variant line-through" : "text-primary"
+                          done ? "text-v5-muted line-through" : "text-primary"
                         }`}
                       >
                         {item.title}
@@ -566,8 +566,8 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                             : overdue
                               ? "bg-status-danger-bg text-status-danger border-status-danger/30"
                               : item.dueDate
-                                ? "bg-surface-container text-on-surface-variant border-border-subtle"
-                                : "bg-surface-container text-outline border-border-subtle"
+                                ? "bg-v5-bg text-v5-muted border-border-subtle"
+                                : "bg-v5-bg text-outline border-border-subtle"
                         }`}
                         title={overdue ? "Đã quá hạn xử lý" : "Hạn xử lý"}
                       >
@@ -579,7 +579,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border ${
                           done
                             ? "bg-status-success-bg text-status-success border-status-success/30"
-                            : "bg-surface-container text-outline border-border-subtle"
+                            : "bg-v5-bg text-outline border-border-subtle"
                         }`}
                         title="Ngày hoàn thành thực tế"
                       >
@@ -603,7 +603,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         title="Cán bộ đánh dấu đã hoàn thành. Việc này được lãnh đạo xác nhận trong luồng duyệt của nhiệm vụ."
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border active-press disabled:opacity-50 ${
                           done
-                            ? "bg-surface-container-lowest text-on-surface-variant border-border-default hover:bg-surface-container"
+                            ? "bg-v5-surface text-v5-muted border-v5-line hover:bg-v5-bg"
                             : "bg-status-success text-on-error border-status-success hover:opacity-90"
                         }`}
                       >
@@ -658,11 +658,11 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       type="button"
                       data-testid={`work-item-evidence-${item.id}`}
                       onClick={() => toggleEvidence(item)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-default bg-surface-container-lowest hover:bg-surface-container active-press"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-line bg-v5-surface hover:bg-v5-bg active-press"
                     >
                       <V5Icon name="attach_file" className="text-[16px]" />
                       Kết quả &amp; minh chứng
-                      <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px]">
                         {evidenceCount}
                       </span>
                     </button>
@@ -670,7 +670,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                     {planLocked ? (
                       <span
                         data-testid={`work-item-due-lock-${item.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container text-on-surface-variant"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-v5-bg text-v5-muted"
                         title={`Kế hoạch "${item.planItem?.plan?.title || ""}" đã duyệt — hạn xử lý gốc bị khóa. Chưa có quy trình gia hạn được duyệt; vẫn cập nhật được tiến độ/ngày hoàn thành thực tế.`}
                       >
                         <V5Icon name="lock" className="text-[16px]" />
@@ -683,7 +683,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                           setDueEditId(dueEditId === item.id ? null : item.id);
                           setDueDraft(item.dueDate ? toDateInput(new Date(item.dueDate)) : "");
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-surface-container-lowest hover:bg-surface-container active-press"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-v5-surface hover:bg-v5-bg active-press"
                       >
                         <V5Icon name="edit_calendar" className="text-[16px]" />
                         Sửa hạn
@@ -709,13 +709,13 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                   </div>
 
                   {dueEditId === item.id && (
-                    <div className="flex items-center gap-2 flex-wrap p-2 rounded-lg bg-surface-container-low border border-border-subtle">
+                    <div className="flex items-center gap-2 flex-wrap p-2 rounded-lg bg-v5-bg border border-border-subtle">
                       <label className="text-xs font-semibold text-primary">Hạn xử lý:</label>
                       <input
                         type="date"
                         value={dueDraft}
                         onChange={(e) => setDueDraft(e.target.value)}
-                        className="h-9 px-2 rounded border border-border-subtle bg-surface-container-lowest text-xs"
+                        className="h-9 px-2 rounded border border-border-subtle bg-v5-surface text-xs"
                       />
                       <button
                         type="button"
@@ -741,7 +741,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                   {expanded && (
                     <div
                       data-testid={`work-item-evidence-panel-${item.id}`}
-                      className="rounded-lg border border-border-default bg-surface-container-low/40 p-3 space-y-3"
+                      className="rounded-lg border border-v5-line bg-v5-bg/40 p-3 space-y-3"
                     >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h3 className="text-xs font-bold text-primary flex items-center gap-1.5">
@@ -763,7 +763,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                           {list.map((ev) => (
                             <li
                               key={ev.id}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded bg-surface-container-lowest border border-border-subtle"
+                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded bg-v5-surface border border-border-subtle"
                             >
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold text-primary truncate" title={ev.fileName}>
@@ -779,7 +779,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                                 <button
                                   type="button"
                                   onClick={() => downloadEvidence(item, ev)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border-subtle text-[11px] hover:bg-surface-container"
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border-subtle text-[11px] hover:bg-v5-bg"
                                 >
                                   <V5Icon name="download" className="text-[14px]" />
                                   Tải
@@ -823,7 +823,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                             }
                             placeholder="Ghi chú minh chứng (tuỳ chọn)"
                             maxLength={500}
-                            className="h-9 px-2.5 rounded border border-border-subtle bg-surface-container-lowest text-xs w-full md:w-64"
+                            className="h-9 px-2.5 rounded border border-border-subtle bg-v5-surface text-xs w-full md:w-64"
                           />
                           <button
                             type="button"

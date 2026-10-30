@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 /**
  * /work-item-reviews — V3.0.1 (phía lãnh đạo)
@@ -204,7 +204,7 @@ export default function WorkItemReviewsPage() {
               setMonthFilter("");
               setYearFilter("");
             }}
-            className="text-[11px] font-semibold text-status-primary hover:underline"
+            className="text-[11px] font-semibold text-v5-accent hover:underline"
           >
             Xoá lọc
           </button>
@@ -213,13 +213,13 @@ export default function WorkItemReviewsPage() {
       {lastDecided && (
         <div
           data-testid="review-last-decided"
-          className="rounded-lg border border-status-success/30 bg-status-success-bg px-3 py-2 text-xs text-v5-ink"
+          className="rounded-lg border border-v5-success/30 bg-v5-success-soft px-3 py-2 text-xs text-v5-ink"
         >
           <b>{lastDecided.action === "CONFIRM" ? "Đã xác nhận" : "Đã trả lại"}</b> hồ sơ “{lastDecided.title}”.{" "}
           <button
             type="button"
             onClick={() => setExpanded(lastDecided.id)}
-            className="font-semibold text-status-primary hover:underline"
+            className="font-semibold text-v5-accent hover:underline"
           >
             Xem hồ sơ vừa xử lý
           </button>
@@ -268,7 +268,7 @@ export default function WorkItemReviewsPage() {
                 {it.reviewState === "CONFIRMED" ? (
                   <span
                     data-testid={"review-badge-" + it.id}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-success/30 bg-status-success-bg text-status-success"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-v5-success/30 bg-v5-success-soft text-v5-success"
                   >
                     <V5Icon name="verified" className="text-[14px]" />
                     Đã xác nhận
@@ -276,7 +276,7 @@ export default function WorkItemReviewsPage() {
                 ) : it.reviewState === "RETURNED" ? (
                   <span
                     data-testid={"review-badge-" + it.id}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-danger/30 bg-status-danger-bg text-status-danger"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-v5-danger/30 bg-v5-danger-soft text-v5-danger"
                   >
                     <V5Icon name="undo" className="text-[14px]" />
                     Đã trả lại
@@ -284,7 +284,7 @@ export default function WorkItemReviewsPage() {
                 ) : (
                   <span
                     data-testid={"review-badge-" + it.id}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-status-warning/30 bg-status-warning-bg text-status-warning"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border border-v5-gold/30 bg-v5-gold-soft text-v5-gold-ink"
                   >
                     <V5Icon name="hourglass_top" className="text-[14px]" />
                     Chờ xác nhận
@@ -317,7 +317,7 @@ export default function WorkItemReviewsPage() {
                 type="button"
                 data-testid={"review-history-toggle-" + it.id}
                 onClick={() => setExpanded(expanded === it.id ? null : it.id)}
-                className="text-[11px] font-semibold text-status-primary hover:underline"
+                className="text-[11px] font-semibold text-v5-accent hover:underline"
               >
                 {expanded === it.id ? "Ẩn lịch sử xử lý" : "Xem lịch sử xử lý"}
               </button>
@@ -360,7 +360,7 @@ export default function WorkItemReviewsPage() {
                     data-testid={`review-confirm-${it.id}`}
                     disabled={busyId === it.id}
                     onClick={() => decide(it, "CONFIRM")}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-status-success bg-status-success text-on-error hover:opacity-90 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-success bg-v5-success text-white hover:opacity-90 disabled:opacity-50"
                   >
                     <V5Icon name="verified" className="text-[16px]" />
                     Xác nhận hoàn thành
@@ -406,7 +406,7 @@ export default function WorkItemReviewsPage() {
             <h3 className="text-base font-bold text-v5-ink mb-1">Trả lại công việc</h3>
             <p className="text-xs text-v5-muted mb-4">{returning.title}</p>
             <label className="block text-xs font-semibold text-v5-ink mb-1">
-              Lý do trả lại <span className="text-status-danger">*</span>
+              Lý do trả lại <span className="text-v5-danger">*</span>
             </label>
             <textarea
               data-testid="review-return-note"
@@ -414,7 +414,7 @@ export default function WorkItemReviewsPage() {
               onChange={(e) => setReturnNote(e.target.value)}
               rows={4}
               placeholder="Nêu rõ nội dung cần chỉnh sửa"
-              className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm text-v5-ink focus:outline-none focus:border-status-primary"
+              className="w-full rounded-lg border border-v5-line bg-v5-surface px-3 py-2 text-sm text-v5-ink focus:outline-none focus:border-v5-accent"
             />
             <div className="flex justify-end gap-2 mt-5">
               <button
@@ -429,7 +429,7 @@ export default function WorkItemReviewsPage() {
                 data-testid="review-return-confirm"
                 disabled={busyId === returning.id}
                 onClick={() => decide(returning, "RETURN", returnNote)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-status-danger bg-status-danger text-on-error hover:opacity-90 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-danger bg-v5-danger text-white hover:opacity-90 disabled:opacity-50"
               >
                 Trả lại
               </button>

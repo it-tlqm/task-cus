@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,7 +14,7 @@ export function Breadcrumb({ className = "" }: { className?: string }) {
     <nav
       aria-label="Breadcrumb"
       data-testid="page-breadcrumb"
-      className={`flex min-w-0 items-center text-[11px] leading-4 text-on-surface-variant ${className}`}
+      className={`flex min-w-0 items-center text-[11px] leading-4 text-v5-muted ${className}`}
     >
       <ol className="flex min-w-0 items-center gap-1.5">
         {trail.map((entry, index) => {
@@ -27,7 +27,7 @@ export function Breadcrumb({ className = "" }: { className?: string }) {
               {entry.href && !last ? (
                 <Link
                   href={entry.href}
-                  className="focus-ring flex shrink-0 items-center gap-1 rounded text-on-surface-variant transition-fast hover:text-secondary"
+                  className="focus-ring flex shrink-0 items-center gap-1 rounded text-v5-muted transition-fast hover:text-secondary"
                 >
                   {index === 0 && (
                     <V5Icon name="home" className="text-[14px]" />
@@ -38,7 +38,7 @@ export function Breadcrumb({ className = "" }: { className?: string }) {
                 <span
                   aria-current={last ? "page" : undefined}
                   title={entry.label}
-                  className={`truncate ${last ? "font-semibold text-primary" : "text-on-surface-variant/80"} ${
+                  className={`truncate ${last ? "font-semibold text-primary" : "text-v5-muted/80"} ${
                     !last && index < trail.length - 1 ? "hidden sm:inline" : ""
                   }`}
                 >

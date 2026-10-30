@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState, useEffect } from "react";
 import { originLabel } from "@/lib/task-origin";
@@ -802,7 +802,7 @@ export default function TasksPage() {
               <button
                 onClick={() => fetchTasks({ page: page + 1, append: true })}
                 disabled={loadingMore}
-                className="px-4 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg-high text-v5-ink text-xs font-bold active-press disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg text-v5-ink text-xs font-bold active-press disabled:opacity-50"
               >
                 {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
               </button>

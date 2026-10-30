@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -76,7 +76,7 @@ export function FeedbackButton() {
         >
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-2xl p-5 flex flex-col gap-3"
+            className="relative w-full max-w-md bg-v5-surface rounded-2xl shadow-2xl p-5 flex flex-col gap-3"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -87,7 +87,7 @@ export function FeedbackButton() {
               <button
                 onClick={() => setOpen(false)}
                 disabled={sending}
-                className="p-1 rounded hover:bg-surface-container text-outline disabled:opacity-40"
+                className="p-1 rounded hover:bg-v5-bg text-outline disabled:opacity-40"
                 aria-label="Đóng"
               >
                 <V5Icon name="close" className="text-[20px]" />
@@ -120,7 +120,7 @@ export function FeedbackButton() {
               className="p-2.5 rounded-lg border border-border-subtle text-sm bg-white resize-none"
             />
 
-            <p className="text-[11px] text-on-surface-variant leading-relaxed">
+            <p className="text-[11px] text-v5-muted leading-relaxed">
               Gửi kèm: màn hình bạn đang mở, thời gian và thiết bị — để lãnh đạo &amp; kỹ thuật soi đúng chỗ.
               Phản hồi đi thẳng vào hệ thống, không qua Zalo.
             </p>

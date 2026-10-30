@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useEffect, useState } from "react";
 import { formatVnDateTime } from "@/lib/datetime";
@@ -144,21 +144,21 @@ const ACTION_OPTIONS: Array<{
     label: "Đồng ý",
     hint: "Chấp thuận hồ sơ, áp dụng hiệu ứng nghiệp vụ tương ứng.",
     icon: "check_circle",
-    tone: "text-status-success",
+    tone: "text-v5-success",
   },
   {
     value: "REJECT",
     label: "Không đồng ý",
     hint: "Từ chối hồ sơ — bắt buộc nêu lý do.",
     icon: "cancel",
-    tone: "text-status-danger",
+    tone: "text-v5-danger",
   },
   {
     value: "CLARIFY",
     label: "Yêu cầu giải trình",
     hint: "Yêu cầu người trình bổ sung — bắt buộc nêu nội dung cần giải trình.",
     icon: "edit_note",
-    tone: "text-status-warning",
+    tone: "text-v5-gold-ink",
   },
 ];
 
@@ -439,16 +439,18 @@ export default function ApprovalPreviewModal({
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/60 flex items-start justify-center p-3 overflow-y-auto">
-      <div className="bg-surface-container-lowest rounded-2xl max-w-3xl w-full my-4 shadow-2xl border border-border-default">
+      <div className="bg-v5-surface rounded-2xl max-w-3xl w-full my-4 shadow-2xl border border-v5-line">
         {/* Header */}
-        <div className="px-5 py-4 bg-primary text-on-primary rounded-t-2xl flex items-start justify-between gap-3">
-          <div className="flex items-start gap-2 min-w-0">
-            <V5Icon name="fact_check" className="text-secondary-fixed text-[24px] shrink-0" />
+        <div className="flex items-start justify-between gap-3 rounded-t-2xl border-b border-v5-line bg-v5-surface px-5 py-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
+              <V5Icon name="fact_check" className="text-[20px]" />
+            </span>
             <div className="min-w-0">
-              <h3 className="font-headline-sm text-white font-bold">
+              <h3 className="text-sm font-semibold text-v5-ink">
                 Xem trước hồ sơ trước khi quyết định
               </h3>
-              <p className="text-[11px] text-on-primary/80 mt-0.5">
+              <p className="mt-0.5 text-[11px] text-v5-muted">
                 Bấm "Chấp thuận" KHÔNG tự phê duyệt — hãy kiểm tra nội dung bên dưới rồi chọn quyết định.
               </p>
             </div>
@@ -456,28 +458,28 @@ export default function ApprovalPreviewModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-on-primary/80 hover:text-white text-lg leading-none shrink-0"
+            className="shrink-0 rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
             aria-label="Đóng"
           >
-            ✕
+            <V5Icon name="close" className="text-[18px]" />
           </button>
         </div>
 
         {loading ? (
-          <div className="p-10 text-center text-sm text-on-surface-variant">
+          <div className="p-10 text-center text-sm text-v5-muted">
             Đang tải hồ sơ…
           </div>
         ) : error ? (
           <div className="p-6 space-y-3">
-            <div className="flex items-center gap-2 text-status-danger text-sm font-semibold">
+            <div className="flex items-center gap-2 text-v5-danger text-sm font-semibold">
               <V5Icon name="error" className="text-[18px]" />
               Không xem được hồ sơ
             </div>
-            <p className="text-xs text-on-surface-variant">{error}</p>
+            <p className="text-xs text-v5-muted">{error}</p>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-xs font-semibold border border-border-default"
+              className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-line"
             >
               Đóng
             </button>
@@ -487,10 +489,10 @@ export default function ApprovalPreviewModal({
             <div className="p-5 space-y-4 max-h-[62vh] overflow-y-auto">
               {/* Cảnh báo */}
               {preview.warnings.length > 0 && (
-                <div className="rounded-lg bg-status-warning-bg border border-status-warning/30 p-3 space-y-1">
+                <div className="rounded-lg bg-v5-gold-soft border border-v5-gold/30 p-3 space-y-1">
                   {preview.warnings.map((w, i) => (
-                    <div key={i} className="flex items-start gap-1.5 text-[11px] text-on-surface">
-                      <V5Icon name="warning" className="text-[15px] text-status-warning shrink-0" />
+                    <div key={i} className="flex items-start gap-1.5 text-[11px] text-v5-ink">
+                      <V5Icon name="warning" className="text-[15px] text-v5-gold-ink shrink-0" />
                       <span>{w}</span>
                     </div>
                   ))}
@@ -498,26 +500,26 @@ export default function ApprovalPreviewModal({
               )}
 
               {/* Thông tin chính */}
-              <div className="rounded-lg bg-surface-container-low p-3 space-y-1">
+              <div className="rounded-lg bg-v5-bg p-3 space-y-1">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-bold text-primary">
+                  <p className="text-sm font-bold text-v5-ink">
                     [{preview.code}] {preview.title}
                   </p>
-                  <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-surface-container-lowest border border-border-default font-semibold">
+                  <span className="shrink-0 text-[10px] px-2 py-0.5 rounded bg-v5-surface border border-v5-line font-semibold">
                     {STATUS_LABEL[preview.caseStatus] || preview.caseStatus}
                   </span>
                 </div>
-                <p className="text-[11px] text-on-surface-variant">
+                <p className="text-[11px] text-v5-muted">
                   Người trình:{" "}
-                  <strong className="text-on-surface">
+                  <strong className="text-v5-ink">
                     {preview.submitter?.fullName || "—"}
                   </strong>
                   {preview.submitter?.unitName ? ` · ${preview.submitter.unitName}` : ""}
                   {preview.submittedAt ? ` · ${formatDateTime(preview.submittedAt)}` : ""}
                 </p>
-                <p className="text-[11px] text-on-surface-variant">
+                <p className="text-[11px] text-v5-muted">
                   Loại quy trình:{" "}
-                  <strong className="text-on-surface">
+                  <strong className="text-v5-ink">
                     {preview.caseType === "TASK_RESULT"
                       ? "Nghiệm thu kết quả công việc"
                       : preview.caseType === "PLAN"
@@ -530,37 +532,37 @@ export default function ApprovalPreviewModal({
 
               {/* Hạn / tiến độ */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="rounded-lg border border-border-default p-2">
-                  <p className="text-[10px] uppercase tracking-wide text-outline font-semibold">
+                <div className="rounded-lg border border-v5-line p-2">
+                  <p className="text-[10px] uppercase tracking-wide text-v5-muted font-semibold">
                     Hạn gốc
                   </p>
-                  <p className="text-[11px] text-on-surface font-mono">
+                  <p className="text-[11px] text-v5-ink font-mono">
                     {preview.deadline.original || "—"}
                   </p>
                 </div>
-                <div className="rounded-lg border border-border-default p-2">
-                  <p className="text-[10px] uppercase tracking-wide text-outline font-semibold">
+                <div className="rounded-lg border border-v5-line p-2">
+                  <p className="text-[10px] uppercase tracking-wide text-v5-muted font-semibold">
                     Hạn hiện tại
                   </p>
-                  <p className="text-[11px] text-on-surface font-mono">
+                  <p className="text-[11px] text-v5-ink font-mono">
                     {preview.deadline.current || "—"}
                   </p>
                 </div>
-                <div className="rounded-lg border border-border-default p-2">
-                  <p className="text-[10px] uppercase tracking-wide text-outline font-semibold">
+                <div className="rounded-lg border border-v5-line p-2">
+                  <p className="text-[10px] uppercase tracking-wide text-v5-muted font-semibold">
                     Gia hạn
                   </p>
-                  <p className="text-[11px] text-on-surface font-mono">
+                  <p className="text-[11px] text-v5-ink font-mono">
                     {preview.deadline.extensionDays
                       ? `+${preview.deadline.extensionDays} ngày`
                       : "—"}
                   </p>
                 </div>
-                <div className="rounded-lg border border-border-default p-2">
-                  <p className="text-[10px] uppercase tracking-wide text-outline font-semibold">
+                <div className="rounded-lg border border-v5-line p-2">
+                  <p className="text-[10px] uppercase tracking-wide text-v5-muted font-semibold">
                     Tiến độ
                   </p>
-                  <p className="text-[11px] text-on-surface font-mono">
+                  <p className="text-[11px] text-v5-ink font-mono">
                     {preview.progress.percent !== null
                       ? `${preview.progress.percent}%`
                       : "—"}
@@ -571,26 +573,26 @@ export default function ApprovalPreviewModal({
               {/* Kết quả */}
               {(preview.result.expected || preview.result.actual) && (
                 <div className="space-y-2">
-                  <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                  <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                     Kết quả thực hiện
                   </p>
-                  <div className="rounded-lg border border-border-default p-3 space-y-2">
+                  <div className="rounded-lg border border-v5-line p-3 space-y-2">
                     {preview.result.expected && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Kết quả yêu cầu
                         </p>
-                        <p className="text-[11px] text-on-surface whitespace-pre-wrap">
+                        <p className="text-[11px] text-v5-ink whitespace-pre-wrap">
                           {preview.result.expected}
                         </p>
                       </div>
                     )}
                     {preview.result.actual && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Kết quả đã ghi
                         </p>
-                        <p className="text-[11px] text-on-surface whitespace-pre-wrap">
+                        <p className="text-[11px] text-v5-ink whitespace-pre-wrap">
                           {preview.result.actual}
                         </p>
                       </div>
@@ -602,29 +604,29 @@ export default function ApprovalPreviewModal({
               {/* Nội dung riêng theo quy trình */}
               {preview.caseType === "TASK_RESULT" && (
                 <div className="space-y-2">
-                  <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                  <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                     Chi tiết nhiệm vụ
                   </p>
-                  <div className="rounded-lg border border-border-default p-3 space-y-2 text-[11px]">
+                  <div className="rounded-lg border border-v5-line p-3 space-y-2 text-[11px]">
                     {c.description && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">Mô tả</p>
-                        <p className="text-on-surface whitespace-pre-wrap">{c.description}</p>
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">Mô tả</p>
+                        <p className="text-v5-ink whitespace-pre-wrap">{c.description}</p>
                       </div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">Đơn vị</p>
-                        <p className="text-on-surface">{c.unitName || "—"}</p>
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">Đơn vị</p>
+                        <p className="text-v5-ink">{c.unitName || "—"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">Độ ưu tiên</p>
-                        <p className="text-on-surface">{c.priority || "—"}</p>
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">Độ ưu tiên</p>
+                        <p className="text-v5-ink">{c.priority || "—"}</p>
                       </div>
                     </div>
                     {Array.isArray(c.participants) && c.participants.length > 0 && (
-                      <div className="rounded-lg border border-border-default p-2.5 space-y-1.5">
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                      <div className="rounded-lg border border-v5-line p-2.5 space-y-1.5">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Phần việc theo người
                         </p>
                         {c.participants.map((p: any) => {
@@ -635,26 +637,26 @@ export default function ApprovalPreviewModal({
                           return (
                             <div key={p.personId} className="flex items-start justify-between gap-2 text-[11px]">
                               <div className="min-w-0">
-                                <p className="font-semibold text-on-surface">
+                                <p className="font-semibold text-v5-ink">
                                   {p.personName}
-                                  <span className="ml-1 font-normal text-outline">
+                                  <span className="ml-1 font-normal text-v5-muted">
                                     ({p.role === "OWNER" ? "Chủ trì" : "Phối hợp"})
                                   </span>
                                 </p>
-                                <p className="text-on-surface-variant">
+                                <p className="text-v5-muted">
                                   {p.partStatusLabel || p.partStatus}
                                   {p.partProgressPercent !== null && p.partProgressPercent !== undefined
                                     ? ` · ${p.partProgressPercent}%`
                                     : ""}
                                 </p>
                                 {p.partResultText && (
-                                  <p className="text-on-surface-variant whitespace-pre-wrap">
+                                  <p className="text-v5-muted whitespace-pre-wrap">
                                     Kết quả: {p.partResultText}
                                   </p>
                                 )}
                               </div>
                               {canReturn && (
-                                <label className="flex items-center gap-1 shrink-0 text-[10px] text-status-danger">
+                                <label className="flex items-center gap-1 shrink-0 text-[10px] text-v5-danger">
                                   <input
                                     type="checkbox"
                                     checked={returnPersonIds.includes(p.personId)}
@@ -673,7 +675,7 @@ export default function ApprovalPreviewModal({
                           );
                         })}
                         {(action === "REJECT" || action === "CLARIFY") && (
-                          <p className="text-[10px] text-outline">
+                          <p className="text-[10px] text-v5-muted">
                             Không chọn phần nào = trả lại các phần chưa được chấp nhận; phần đã chấp nhận được giữ.
                           </p>
                         )}
@@ -682,17 +684,17 @@ export default function ApprovalPreviewModal({
                     {preview.precheck?.enabled && (
                       <div
                         data-testid="approval-precheck-summary"
-                        className="rounded-lg border border-border-default p-2.5 space-y-1.5"
+                        className="rounded-lg border border-v5-line p-2.5 space-y-1.5"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-[10px] uppercase text-outline font-semibold">
+                          <p className="text-[10px] uppercase text-v5-muted font-semibold">
                             Kiểm tra sơ bộ (YC-11)
                           </p>
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               preview.precheck.snapshot
-                                ? "bg-status-success-bg text-status-success"
-                                : "bg-status-warning-bg text-status-warning"
+                                ? "bg-v5-success-soft text-v5-success"
+                                : "bg-v5-gold-soft text-v5-gold-ink"
                             }`}
                           >
                             {preview.precheck.snapshot
@@ -703,7 +705,7 @@ export default function ApprovalPreviewModal({
                           </span>
                         </div>
                         {preview.precheck.finalCandidates.length > 0 && (
-                          <p className="text-[11px] text-on-surface">
+                          <p className="text-[11px] text-v5-ink">
                             Người quyết định cuối:{" "}
                             {preview.precheck.finalCandidates.map((c) => c.fullName).join(", ")}
                           </p>
@@ -711,8 +713,8 @@ export default function ApprovalPreviewModal({
                         {preview.precheck.participants.length > 0 && (
                           <ul className="space-y-1">
                             {preview.precheck.participants.map((p) => (
-                              <li key={p.personId} className="text-[11px] text-on-surface-variant">
-                                <span className="font-semibold text-on-surface">{p.fullName}</span>
+                              <li key={p.personId} className="text-[11px] text-v5-muted">
+                                <span className="font-semibold text-v5-ink">{p.fullName}</span>
                                 {" · "}
                                 {p.precheckStatus === "PASSED"
                                   ? `Pre-check đạt${
@@ -727,7 +729,7 @@ export default function ApprovalPreviewModal({
                           </ul>
                         )}
                         {preview.precheck.snapshot && (
-                          <p className="text-[10px] text-outline">
+                          <p className="text-[10px] text-v5-muted">
                             Tuyến được chốt tại thời điểm chủ trì nộp; thay đổi tuyến sau đó không viết lại lịch sử.
                           </p>
                         )}
@@ -735,36 +737,36 @@ export default function ApprovalPreviewModal({
                     )}
                     {Array.isArray(c.assignees) && c.assignees.length > 0 && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Người phối hợp
                         </p>
-                        <p className="text-on-surface">
+                        <p className="text-v5-ink">
                           {c.assignees.map((a: any) => a.name).join(", ")}
                         </p>
                       </div>
                     )}
                     {c.planLink && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">Kế hoạch</p>
-                        <p className="text-on-surface">{c.planLink.planTitle}</p>
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">Kế hoạch</p>
+                        <p className="text-v5-ink">{c.planLink.planTitle}</p>
                       </div>
                     )}
                     {c.issueNotes && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Ghi chú vấn đề
                         </p>
-                        <p className="text-status-danger whitespace-pre-wrap">{c.issueNotes}</p>
+                        <p className="text-v5-danger whitespace-pre-wrap">{c.issueNotes}</p>
                       </div>
                     )}
                     {Array.isArray(c.recentUpdates) && c.recentUpdates.length > 0 && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Cập nhật gần nhất
                         </p>
                         <ul className="space-y-0.5">
                           {c.recentUpdates.slice(0, 4).map((u: any, i: number) => (
-                            <li key={i} className="text-on-surface-variant">
+                            <li key={i} className="text-v5-muted">
                               • {u.at} — {u.author} — {u.percent}%{" "}
                               {u.notes ? `— ${u.notes}` : ""}
                             </li>
@@ -774,12 +776,12 @@ export default function ApprovalPreviewModal({
                     )}
                     {Array.isArray(c.linkedWorkItems) && c.linkedWorkItems.length > 0 && (
                       <div>
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Đầu việc liên thông
                         </p>
                         <ul className="space-y-0.5">
                           {c.linkedWorkItems.map((w: any, i: number) => (
-                            <li key={i} className="text-on-surface-variant">
+                            <li key={i} className="text-v5-muted">
                               • {w.title}
                               {w.completedDate ? ` — hoàn thành ${w.completedDate}` : ""}
                             </li>
@@ -793,25 +795,25 @@ export default function ApprovalPreviewModal({
 
               {preview.caseType === "PLAN" && (
                 <div className="space-y-2">
-                  <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                  <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                     Hạng mục kế hoạch ({Array.isArray(c.items) ? c.items.length : 0})
                   </p>
-                  <div className="rounded-lg border border-border-default p-3 space-y-1">
-                    <p className="text-[11px] text-on-surface-variant">
+                  <div className="rounded-lg border border-v5-line p-3 space-y-1">
+                    <p className="text-[11px] text-v5-muted">
                       Đơn vị: {c.unitName || "—"} · Người lập: {c.creatorName || "—"} · Kỳ:{" "}
                       {c.periodTitle || "—"}
                     </p>
                     {Array.isArray(c.items) && c.items.length > 0 ? (
                       <ul className="space-y-0.5 max-h-40 overflow-y-auto">
                         {c.items.map((it: any, i: number) => (
-                          <li key={it.id || i} className="text-[11px] text-on-surface">
+                          <li key={it.id || i} className="text-[11px] text-v5-ink">
                             • {it.title}
                             {it.priority ? ` (${it.priority})` : ""}
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-[11px] text-on-surface-variant">Kế hoạch chưa có hạng mục.</p>
+                      <p className="text-[11px] text-v5-muted">Kế hoạch chưa có hạng mục.</p>
                     )}
                   </div>
                 </div>
@@ -819,22 +821,22 @@ export default function ApprovalPreviewModal({
 
               {preview.caseType === "DEADLINE_REQUEST" && (
                 <div className="space-y-2">
-                  <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                  <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                     Đề nghị gia hạn
                   </p>
-                  <div className="rounded-lg border border-border-default p-3 space-y-1 text-[11px]">
-                    <p className="text-on-surface-variant">
-                      Người đề nghị: <strong className="text-on-surface">{c.requestedByName}</strong>
+                  <div className="rounded-lg border border-v5-line p-3 space-y-1 text-[11px]">
+                    <p className="text-v5-muted">
+                      Người đề nghị: <strong className="text-v5-ink">{c.requestedByName}</strong>
                     </p>
-                    <p className="text-on-surface-variant">
+                    <p className="text-v5-muted">
                       Hạn đề nghị:{" "}
-                      <strong className="text-on-surface font-mono">
+                      <strong className="text-v5-ink font-mono">
                         {preview.deadline.requestedDeadline || "—"}
                       </strong>
                     </p>
                     <div>
-                      <p className="text-[10px] uppercase text-outline font-semibold">Lý do</p>
-                      <p className="text-on-surface whitespace-pre-wrap">{c.reason || "—"}</p>
+                      <p className="text-[10px] uppercase text-v5-muted font-semibold">Lý do</p>
+                      <p className="text-v5-ink whitespace-pre-wrap">{c.reason || "—"}</p>
                     </div>
                   </div>
                 </div>
@@ -843,20 +845,20 @@ export default function ApprovalPreviewModal({
               {/* Minh chứng */}
               {preview.attachments.length > 0 && (
                 <div className="space-y-2">
-                  <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                  <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                     Tệp đính kèm ({preview.attachments.length})
                   </p>
                   <ul className="space-y-1">
                     {preview.attachments.map((a) => (
                       <li
                         key={a.id}
-                        className="rounded-lg border border-border-default p-2 flex items-center justify-between gap-2"
+                        className="rounded-lg border border-v5-line p-2 flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0">
-                          <p className="text-[11px] text-on-surface truncate font-medium">
+                          <p className="text-[11px] text-v5-ink truncate font-medium">
                             {a.fileName}
                           </p>
-                          <p className="text-[10px] text-on-surface-variant">
+                          <p className="text-[10px] text-v5-muted">
                             {formatBytes(a.fileSize)} · {a.uploadedBy} ·{" "}
                             {formatDateTime(a.createdAt)}
                           </p>
@@ -865,7 +867,7 @@ export default function ApprovalPreviewModal({
                           href={a.downloadUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="shrink-0 text-[11px] font-semibold text-secondary underline"
+                          className="shrink-0 text-[11px] font-semibold text-v5-accent underline"
                         >
                           Mở (có kiểm tra quyền)
                         </a>
@@ -878,50 +880,50 @@ export default function ApprovalPreviewModal({
               {/* E12-A: lịch sử hợp nhất — TaskUpdate + ApprovalDecision + participant events */}
               {caseType === "TASK_RESULT" ? (
                 <div className="space-y-2" data-testid="approval-unified-history">
-                  <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                  <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                     Lịch sử hợp nhất ({unifiedHistory.length})
                   </p>
-                  <p className="text-[10px] text-outline">
+                  <p className="text-[10px] text-v5-muted">
                     Gồm cập nhật nhiệm vụ, quyết định duyệt và phần việc phối hợp. Không gộp bình
                     luận/tệp đính kèm.
                   </p>
                   {unifiedLoading ? (
-                    <p className="text-[11px] text-on-surface-variant">Đang tải lịch sử...</p>
+                    <p className="text-[11px] text-v5-muted">Đang tải lịch sử...</p>
                   ) : unifiedHistory.length === 0 ? (
-                    <p className="text-[11px] text-on-surface-variant">Chưa có lịch sử hợp nhất.</p>
+                    <p className="text-[11px] text-v5-muted">Chưa có lịch sử hợp nhất.</p>
                   ) : (
                     <ul className="space-y-1">
                       {unifiedHistory.map((h) => (
                         <li
                           key={h.id}
-                          className="rounded-lg border border-border-default p-2 space-y-1"
+                          className="rounded-lg border border-v5-line p-2 space-y-1"
                           data-testid={`approval-history-${h.source}`}
                         >
                           <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                            <span className="px-2 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                            <span className="px-2 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-v5-ink">
                               Nguồn: {h.sourceLabel}
                             </span>
-                            <strong className="text-on-surface">{h.title}</strong>
+                            <strong className="text-v5-ink">{h.title}</strong>
                             {h.round !== null && (
-                              <span className="text-on-surface-variant">· Vòng {h.round}</span>
+                              <span className="text-v5-muted">· Vòng {h.round}</span>
                             )}
-                            <span className="text-on-surface-variant">
+                            <span className="text-v5-muted">
                               · {h.actorName} · {formatDateTime(h.at)}
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
                             {h.subjectPersonName && (
-                              <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-semibold">
+                              <span className="px-1.5 py-0.5 rounded bg-v5-bg text-v5-muted font-semibold">
                                 {h.subjectPersonName}
                               </span>
                             )}
                             {typeof h.progressPercent === "number" && (
-                              <span className="px-1.5 py-0.5 rounded bg-secondary/15 text-secondary font-bold">
+                              <span className="px-1.5 py-0.5 rounded bg-v5-accent/15 text-v5-accent font-bold">
                                 Tiến độ: {h.progressPercent}%
                               </span>
                             )}
                             {h.statusTo && (
-                              <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-semibold">
+                              <span className="px-1.5 py-0.5 rounded bg-v5-bg text-v5-muted font-semibold">
                                 {h.statusFrom && h.statusFrom !== h.statusTo
                                   ? `${h.statusFrom} → ${h.statusTo}`
                                   : h.statusTo}
@@ -929,7 +931,7 @@ export default function ApprovalPreviewModal({
                             )}
                           </div>
                           {h.detail && (
-                            <p className="text-[11px] text-on-surface-variant whitespace-pre-wrap">
+                            <p className="text-[11px] text-v5-muted whitespace-pre-wrap">
                               {h.detail}
                             </p>
                           )}
@@ -941,24 +943,24 @@ export default function ApprovalPreviewModal({
               ) : (
                 preview.history.length > 0 && (
                   <div className="space-y-2">
-                    <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                    <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                       Lịch sử xử lý ({preview.history.length})
                     </p>
                     <ul className="space-y-1">
                       {preview.history.map((h, i) => (
-                        <li key={i} className="rounded-lg border border-border-default p-2">
-                          <p className="text-[11px] text-on-surface">
+                        <li key={i} className="rounded-lg border border-v5-line p-2">
+                          <p className="text-[11px] text-v5-ink">
                             <strong>Vòng {h.round}</strong> ·{" "}
-                            <span className="px-1.5 py-0.5 rounded bg-surface-container text-[10px] font-bold text-primary">
+                            <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-v5-ink">
                               Nguồn: {h.sourceLabel || "Quyết định duyệt"}
                             </span>{" "}
                             · {h.actionLabel} · {formatDateTime(h.createdAt)}
                           </p>
                           {h.reason && (
-                            <p className="text-[11px] text-on-surface-variant">Lý do: {h.reason}</p>
+                            <p className="text-[11px] text-v5-muted">Lý do: {h.reason}</p>
                           )}
                           {h.content && (
-                            <p className="text-[11px] text-on-surface-variant">
+                            <p className="text-[11px] text-v5-muted">
                               Nội dung: {h.content}
                             </p>
                           )}
@@ -974,46 +976,46 @@ export default function ApprovalPreviewModal({
                 (preview.quality.history.length > 0 || preview.quality.adjustments.length > 0) && (
                   <div
                     data-testid="quality-history"
-                    className="space-y-2 rounded-lg border border-border-default p-3"
+                    className="space-y-2 rounded-lg border border-v5-line p-3"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold">
+                      <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold">
                         Đánh giá chất lượng kết quả
                       </p>
-                      <span className="text-[11px] font-semibold text-primary">
+                      <span className="text-[11px] font-semibold text-v5-ink">
                         Hiệu lực: {qualityLabel(preview.quality.effective)}
                       </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-                      <div className="rounded border border-border-default p-2">
-                        <p className="text-[10px] uppercase text-outline font-semibold">Gốc (bất biến)</p>
-                        <p className="text-on-surface font-mono">
+                      <div className="rounded border border-v5-line p-2">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">Gốc (bất biến)</p>
+                        <p className="text-v5-ink font-mono">
                           {qualityLabel(preview.quality.original)}
                         </p>
                       </div>
-                      <div className="rounded border border-border-default p-2">
-                        <p className="text-[10px] uppercase text-outline font-semibold">Hiệu lực</p>
-                        <p className="text-on-surface font-mono">
+                      <div className="rounded border border-v5-line p-2">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">Hiệu lực</p>
+                        <p className="text-v5-ink font-mono">
                           {qualityLabel(preview.quality.effective)}
                           {preview.quality.adjusted ? " (đã điều chỉnh)" : ""}
                         </p>
                       </div>
-                      <div className="rounded border border-border-default p-2">
-                        <p className="text-[10px] uppercase text-outline font-semibold">Chờ điều chỉnh</p>
-                        <p className="text-on-surface font-mono">
+                      <div className="rounded border border-v5-line p-2">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">Chờ điều chỉnh</p>
+                        <p className="text-v5-ink font-mono">
                           {preview.quality.pendingAdjustmentCount}
                         </p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase text-outline font-semibold">
+                      <p className="text-[10px] uppercase text-v5-muted font-semibold">
                         Lịch sử theo vòng
                       </p>
                       <ul className="space-y-0.5">
                         {preview.quality.history.map((h) => (
-                          <li key={h.decisionId} className="text-[11px] text-on-surface-variant">
+                          <li key={h.decisionId} className="text-[11px] text-v5-muted">
                             • Vòng {h.round} · {h.actionLabel} ·{" "}
-                            <strong className="text-on-surface">
+                            <strong className="text-v5-ink">
                               {qualityLabel(h.qualityPercent)}
                             </strong>
                             {h.actorName ? ` · ${h.actorName}` : ""} · {formatDateTime(h.createdAt)}
@@ -1023,27 +1025,27 @@ export default function ApprovalPreviewModal({
                     </div>
                     {preview.quality.adjustments.length > 0 && (
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Yêu cầu điều chỉnh
                         </p>
                         {preview.quality.adjustments.map((a) => (
                           <div
                             key={a.id}
                             data-testid={`quality-adjustment-${a.id}`}
-                            className="rounded border border-border-default p-2 space-y-1"
+                            className="rounded border border-v5-line p-2 space-y-1"
                           >
-                            <p className="text-[11px] text-on-surface">
+                            <p className="text-[11px] text-v5-ink">
                               <strong>
                                 {qualityLabel(a.oldQualityPercent)} → {qualityLabel(a.newQualityPercent)}
                               </strong>{" "}
                               · {a.statusLabel}
                             </p>
-                            <p className="text-[11px] text-on-surface-variant">
+                            <p className="text-[11px] text-v5-muted">
                               Lý do: {a.reason} · Người yêu cầu: {a.requestedByName || "—"} ·{" "}
                               {formatDateTime(a.requestedAt)}
                             </p>
                             {a.decidedAt && (
-                              <p className="text-[11px] text-on-surface-variant">
+                              <p className="text-[11px] text-v5-muted">
                                 Người quyết định: {a.decidedByName || "—"} ·{" "}
                                 {formatDateTime(a.decidedAt)}
                                 {a.decisionNote ? ` · Ghi chú: ${a.decisionNote}` : ""}
@@ -1060,14 +1062,14 @@ export default function ApprovalPreviewModal({
                                     }))
                                   }
                                   placeholder="Ghi chú quyết định (không bắt buộc)"
-                                  className="flex-1 min-w-0 px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                                  className="flex-1 min-w-0 px-2 py-1.5 rounded border border-v5-line bg-v5-surface text-[11px]"
                                 />
                                 <div className="flex gap-1.5 shrink-0">
                                   <button
                                     type="button"
                                     disabled={adjustmentBusy}
                                     onClick={() => decideAdjustment(a.id, "APPROVE")}
-                                    className="px-2.5 py-1.5 rounded bg-primary text-on-primary text-[11px] font-semibold disabled:opacity-50"
+                                    className="px-2.5 py-1.5 rounded bg-v5-accent text-white text-[11px] font-semibold disabled:opacity-50"
                                   >
                                     Chấp thuận
                                   </button>
@@ -1075,7 +1077,7 @@ export default function ApprovalPreviewModal({
                                     type="button"
                                     disabled={adjustmentBusy}
                                     onClick={() => decideAdjustment(a.id, "REJECT")}
-                                    className="px-2.5 py-1.5 rounded border border-status-danger text-status-danger text-[11px] font-semibold disabled:opacity-50"
+                                    className="px-2.5 py-1.5 rounded border border-v5-danger text-v5-danger text-[11px] font-semibold disabled:opacity-50"
                                   >
                                     Từ chối
                                   </button>
@@ -1087,8 +1089,8 @@ export default function ApprovalPreviewModal({
                       </div>
                     )}
                     {preview.quality.canRequestAdjustment && (
-                      <div className="space-y-1.5 rounded border border-secondary/40 bg-surface-container p-2">
-                        <p className="text-[10px] uppercase text-outline font-semibold">
+                      <div className="space-y-1.5 rounded border border-v5-accent/40 bg-v5-bg p-2">
+                        <p className="text-[10px] uppercase text-v5-muted font-semibold">
                           Yêu cầu điều chỉnh chất lượng
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
@@ -1096,7 +1098,7 @@ export default function ApprovalPreviewModal({
                             data-testid="quality-adjustment-select"
                             value={adjustmentQuality}
                             onChange={(e) => setAdjustmentQuality(e.target.value)}
-                            className="w-full px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                            className="w-full px-2 py-1.5 rounded border border-v5-line bg-v5-surface text-[11px]"
                           >
                             <option value="">— Chọn mức mới —</option>
                             {QUALITY_VALUES.map((v) => (
@@ -1110,7 +1112,7 @@ export default function ApprovalPreviewModal({
                             value={adjustmentReason}
                             onChange={(e) => setAdjustmentReason(e.target.value)}
                             placeholder="Lý do điều chỉnh (bắt buộc)"
-                            className="sm:col-span-2 w-full px-2 py-1.5 rounded border border-border-default bg-surface-container-lowest text-[11px]"
+                            className="sm:col-span-2 w-full px-2 py-1.5 rounded border border-v5-line bg-v5-surface text-[11px]"
                           />
                         </div>
                         <button
@@ -1118,7 +1120,7 @@ export default function ApprovalPreviewModal({
                           data-testid="quality-adjustment-submit"
                           disabled={adjustmentBusy}
                           onClick={submitAdjustmentRequest}
-                          className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-[11px] font-semibold disabled:opacity-50"
+                          className="px-3 py-1.5 rounded bg-v5-accent text-white text-[11px] font-semibold disabled:opacity-50"
                         >
                           Gửi yêu cầu điều chỉnh
                         </button>
@@ -1129,13 +1131,13 @@ export default function ApprovalPreviewModal({
             </div>
 
             {/* Quyết định */}
-            <div className="px-5 py-4 border-t border-border-default bg-surface-container-lowest">
+            <div className="px-5 py-4 border-t border-v5-line bg-v5-surface">
               {preview.permissions.reason && (
-                <p className="text-[11px] text-status-warning font-semibold mb-2">
+                <p className="text-[11px] text-v5-gold-ink font-semibold mb-2">
                   {preview.permissions.reason}
                 </p>
               )}
-              <p className="font-label-sm text-label-sm uppercase tracking-wide text-outline font-semibold mb-2">
+              <p className="text-[11px] uppercase tracking-wide text-v5-muted font-semibold mb-2">
                 Quyết định của bạn
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1147,16 +1149,16 @@ export default function ApprovalPreviewModal({
                     onClick={() => setAction(opt.value)}
                     className={`text-left rounded-lg border p-2 transition-fast disabled:opacity-50 ${
                       action === opt.value
-                        ? "border-secondary bg-surface-container ring-1 ring-secondary"
-                        : "border-border-default hover:bg-surface-container"
+                        ? "border-v5-accent bg-v5-bg ring-1 ring-v5-accent"
+                        : "border-v5-line hover:bg-v5-bg"
                     }`}
                   >
                     <V5Icon
                       name={opt.icon}
                       className={`block text-[18px] ${opt.tone}`}
                     />
-                    <span className="text-[12px] font-bold text-primary block">{opt.label}</span>
-                    <span className="text-[10px] text-on-surface-variant leading-tight block">
+                    <span className="text-[12px] font-bold text-v5-ink block">{opt.label}</span>
+                    <span className="text-[10px] text-v5-muted leading-tight block">
                       {opt.hint}
                     </span>
                   </button>
@@ -1166,17 +1168,17 @@ export default function ApprovalPreviewModal({
               {preview.caseType === "TASK_RESULT" && preview.quality?.enabled && (
                 <div
                   data-testid="quality-select-block"
-                  className="mt-3 rounded-lg border border-border-default p-2.5 space-y-1"
+                  className="mt-3 rounded-lg border border-v5-line p-2.5 space-y-1"
                 >
                   <label
                     htmlFor="quality-percent"
-                    className="text-xs font-semibold text-on-surface block"
+                    className="text-xs font-semibold text-v5-ink block"
                   >
                     Mức chất lượng kết quả (65–100, bước 5){" "}
                     {action === "AGREE" ? (
-                      <span className="text-status-danger">*</span>
+                      <span className="text-v5-danger">*</span>
                     ) : (
-                      <span className="text-outline font-normal">(không bắt buộc)</span>
+                      <span className="text-v5-muted font-normal">(không bắt buộc)</span>
                     )}
                   </label>
                   <select
@@ -1185,7 +1187,7 @@ export default function ApprovalPreviewModal({
                     value={qualityPercent}
                     onChange={(e) => setQualityPercent(e.target.value)}
                     disabled={!preview.permissions.canDecide || submitting}
-                    className="w-full px-2.5 py-2 rounded-lg border border-border-default bg-surface-container-lowest text-xs disabled:opacity-50"
+                    className="w-full px-2.5 py-2 rounded-lg border border-v5-line bg-v5-surface text-xs disabled:opacity-50"
                   >
                     <option value="">— Chưa đánh giá / chọn mức —</option>
                     {QUALITY_VALUES.map((v) => (
@@ -1194,14 +1196,14 @@ export default function ApprovalPreviewModal({
                       </option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-on-surface-variant">
+                  <p className="text-[10px] text-v5-muted">
                     Không tự mặc định 100. Mức 65–95 vẫn có thể là Đồng ý; chất lượng không tự đổi
                     điểm/xếp loại.
                   </p>
                   {action === "AGREE" && !qualityPercent && (
                     <p
                       data-testid="quality-required-error"
-                      className="text-[11px] font-semibold text-status-danger"
+                      className="text-[11px] font-semibold text-v5-danger"
                     >
                       Bắt buộc chọn mức chất lượng khi Đồng ý nghiệm thu.
                     </p>
@@ -1211,17 +1213,17 @@ export default function ApprovalPreviewModal({
 
               {action === "REJECT" && (
                 <div className="mt-3 flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-on-surface">
-                    Lý do không đồng ý: <span className="text-status-danger">*</span>
+                  <label className="text-xs font-semibold text-v5-ink">
+                    Lý do không đồng ý: <span className="text-v5-danger">*</span>
                   </label>
                   <textarea
                     rows={3}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Nêu rõ lý do để người trình biết cần điều chỉnh gì..."
-                    className="w-full p-2.5 rounded-lg border border-border-default bg-surface-container-lowest text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full p-2.5 rounded-lg border border-v5-line bg-v5-surface text-xs focus:outline-none focus:ring-2 focus:ring-v5-accent/30"
                   />
-                  <p className="text-[10px] text-outline">
+                  <p className="text-[10px] text-v5-muted">
                     E8-A: tiến độ/kết quả đã báo được giữ nguyên (kể cả 100%); chỉ trạng thái nhiệm
                     vụ trở về Đang thực hiện.
                   </p>
@@ -1230,25 +1232,25 @@ export default function ApprovalPreviewModal({
 
               {action === "CLARIFY" && (
                 <div className="mt-3 flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-on-surface">
-                    Nội dung cần giải trình: <span className="text-status-danger">*</span>
+                  <label className="text-xs font-semibold text-v5-ink">
+                    Nội dung cần giải trình: <span className="text-v5-danger">*</span>
                   </label>
                   <textarea
                     rows={3}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Nội dung người trình cần bổ sung / làm rõ để hồ sơ được xem trước..."
-                    className="w-full p-2.5 rounded-lg border border-border-default bg-surface-container-lowest text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full p-2.5 rounded-lg border border-v5-line bg-v5-surface text-xs focus:outline-none focus:ring-2 focus:ring-v5-accent/30"
                   />
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 mt-4">
+              <div className="mt-4 flex items-center justify-end gap-2 rounded-lg border-t border-v5-line bg-v5-bg px-3 py-2.5">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-v5-muted hover:bg-v5-bg"
                 >
                   Hủy bỏ
                 </button>
@@ -1257,7 +1259,7 @@ export default function ApprovalPreviewModal({
                   data-testid="approval-submit-decision"
                   onClick={submit}
                   disabled={submitting || !preview.permissions.canDecide}
-                  className="px-4 py-2 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-v5-accent text-white hover:bg-v5-accent/90 shadow-sm flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {submitting ? (
                     <>

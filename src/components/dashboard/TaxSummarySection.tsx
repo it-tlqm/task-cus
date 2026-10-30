@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -45,7 +45,7 @@ const MONTH_STATE_LABELS: Record<string, string> = {
 };
 
 const MONTH_STATE_STYLES: Record<string, string> = {
-  NONE: "border-border-default text-on-surface-variant bg-surface-container-low",
+  NONE: "border-v5-line text-v5-muted bg-v5-bg",
   RECORDED: STATUS_STYLES.RECORDED,
   CONFIRMED: STATUS_STYLES.CONFIRMED,
   LOCKED: "bg-violet-50 text-violet-700 border-violet-200",
@@ -85,10 +85,10 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
   if (totalMetrics === 0) {
     return (
       <section className={className}>
-        <div className="bg-surface-container-lowest rounded-xl border border-dashed border-border-default/60 p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="bg-v5-surface rounded-xl border border-dashed border-v5-line/60 p-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <V5Icon name="monitoring" className="text-[20px] text-primary" />
-            <span className="text-body-sm text-on-surface-variant">
+            <span className="text-body-sm text-v5-muted">
               Khu vực số liệu giao ban chưa được bật chỉ tiêu. Vào <b>Cấu hình số liệu</b> để chọn chỉ tiêu hiển thị trên Trang chủ.
             </span>
           </div>
@@ -117,33 +117,33 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
 
       <DataQualityBanner q={quality} className="mb-2" />
 
-      <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-border-default/50 overflow-hidden">
+      <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-body-sm min-w-[820px] border-collapse" data-testid="dashboard-tax-table">
             <thead>
-              <tr className="text-body-xs text-on-surface-variant bg-surface-container-low border-b border-border-default/40">
+              <tr className="text-body-xs text-v5-muted bg-v5-bg border-b border-v5-line/40">
                 <th className="px-3 py-2 font-semibold text-left w-[32%] min-w-[220px]">Chỉ tiêu</th>
-                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[120px]">Trong ngày</th>
-                <th className="px-2 py-2 font-semibold text-right border-l border-border-default/30 min-w-[120px]">Tuần</th>
+                <th className="px-2 py-2 font-semibold text-right border-l border-v5-line/30 min-w-[120px]">Trong ngày</th>
+                <th className="px-2 py-2 font-semibold text-right border-l border-v5-line/30 min-w-[120px]">Tuần</th>
                 <th
-                  className="px-2 py-2 font-bold text-right border-l border-border-default/30 min-w-[140px] bg-primary/10 text-primary"
+                  className="px-2 py-2 font-bold text-right border-l border-v5-line/30 min-w-[140px] bg-primary/10 text-primary"
                   data-testid="dash-cum-header-month"
                 >
                   {monthLabel}
                 </th>
                 <th
-                  className="px-2 py-2 font-bold text-right border-l border-border-default/30 min-w-[140px] bg-primary/10 text-primary"
+                  className="px-2 py-2 font-bold text-right border-l border-v5-line/30 min-w-[140px] bg-primary/10 text-primary"
                   data-testid="dash-cum-header-year"
                 >
                   Lũy kế năm
                 </th>
-                <th className="px-2 py-2 font-semibold text-center border-l border-border-default/30 min-w-[130px]">Trạng thái</th>
+                <th className="px-2 py-2 font-semibold text-center border-l border-v5-line/30 min-w-[130px]">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {groups.map((g) => (
                 <React.Fragment key={g.id}>
-                  <tr className="bg-surface-container-low/70 border-y border-border-default/30">
+                  <tr className="bg-v5-bg/70 border-y border-v5-line/30">
                     <td colSpan={6} className="px-3 py-1.5 font-bold uppercase tracking-wide text-[11px] text-primary">
                       {g.name}
                     </td>
@@ -152,24 +152,24 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                     const state = m.status?.monthState || "NONE";
                     return (
                       <React.Fragment key={m.id}>
-                        <tr className="border-b border-border-default/20 align-top" data-testid={`dash-row-${m.code}`}>
+                        <tr className="border-b border-v5-line/20 align-top" data-testid={`dash-row-${m.code}`}>
                           <td className="px-3 py-2">
-                            <span className="font-medium text-on-surface">{m.name}</span>
-                            {m.unitLabel ? <span className="text-body-xs text-on-surface-variant"> · {m.unitLabel}</span> : null}
+                            <span className="font-medium text-v5-ink">{m.name}</span>
+                            {m.unitLabel ? <span className="text-body-xs text-v5-muted"> · {m.unitLabel}</span> : null}
                           </td>
                           {COLS.map((c) => (
                             <td
                               key={c}
                               data-testid={c === "month" || c === "year" ? `dash-cum-${c}-${m.code}` : undefined}
                               title={m.cols[c] !== null ? fmtMetric(m.cols[c], m) : undefined}
-                              className={`px-2 py-2 text-right tabular-nums border-l border-border-default/20 ${
+                              className={`px-2 py-2 text-right tabular-nums border-l border-v5-line/20 ${
                                 c === "month" || c === "year"
                                   ? "bg-primary/5 font-bold text-primary"
                                   : ""
                               }`}
                             >
                               {m.cols[c] === null ? (
-                                <span className="text-on-surface-variant" title="Chưa nhập">
+                                <span className="text-v5-muted" title="Chưa nhập">
                                   —
                                 </span>
                               ) : (
@@ -177,7 +177,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                               )}
                             </td>
                           ))}
-                          <td className="px-2 py-2 text-center border-l border-border-default/20">
+                          <td className="px-2 py-2 text-center border-l border-v5-line/20">
                             <span
                               className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold whitespace-nowrap ${
                                 MONTH_STATE_STYLES[state] || MONTH_STATE_STYLES.NONE
@@ -189,19 +189,19 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                           </td>
                         </tr>
                         {m.classCols.map((cc) => (
-                          <tr key={m.id + cc.classificationId} className="border-b border-border-default/20 bg-surface-container-lowest/60">
-                            <td className="px-3 py-1.5 pl-8 text-on-surface-variant">↳ {cc.label}</td>
+                          <tr key={m.id + cc.classificationId} className="border-b border-v5-line/20 bg-v5-surface/60">
+                            <td className="px-3 py-1.5 pl-8 text-v5-muted">↳ {cc.label}</td>
                             {COLS.map((c) => (
                               <td
                                 key={c}
-                                className={`px-2 py-1.5 text-right tabular-nums border-l border-border-default/20 ${
+                                className={`px-2 py-1.5 text-right tabular-nums border-l border-v5-line/20 ${
                                   c === "month" || c === "year"
                                     ? "bg-primary/5 font-semibold text-primary"
-                                    : "text-on-surface-variant"
+                                    : "text-v5-muted"
                                 }`}
                               >
                                 {cc.cols[c] === null ? (
-                                  <span className="text-on-surface-variant" title="Chưa nhập">
+                                  <span className="text-v5-muted" title="Chưa nhập">
                                     —
                                   </span>
                                 ) : (
@@ -211,7 +211,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
                                 )}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-center text-on-surface-variant border-l border-border-default/20">—</td>
+                            <td className="px-2 py-1.5 text-center text-v5-muted border-l border-v5-line/20">—</td>
                           </tr>
                         ))}
                       </React.Fragment>
@@ -224,7 +224,7 @@ export function TaxSummarySection({ className = "px-margin pt-space-md" }: { cla
         </div>
       </div>
       <RevenueComparisonSection comparison={comparison} className="mt-3" />
-      <p className="text-body-xs text-on-surface-variant mt-1.5">
+      <p className="text-body-xs text-v5-muted mt-1.5">
         “—” là <b>chưa nhập</b> (khác với số 0 đã nhập). Trạng thái theo tháng: Đã nhập → Đã xác nhận → Đã chốt báo cáo.
         <span className="lg:hidden"> Bảng cuộn ngang trên điện thoại.</span>
       </p>

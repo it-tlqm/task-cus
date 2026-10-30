@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -406,7 +406,23 @@ export default function ApprovalsPage() {
         />
 
         <div className="grid grid-cols-2 gap-2">
-          <Card className="p-3">
+          <Card
+            role="button"
+            tabIndex={0}
+            title="Xem toàn bộ hồ sơ đang chờ xử lý"
+            onClick={() => {
+              setActiveTab("all");
+              document.getElementById("approval-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setActiveTab("all");
+                document.getElementById("approval-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }}
+            className="cursor-pointer p-3 transition-fast hover:border-v5-accent/40 hover:bg-v5-bg"
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ xử lý</span>
               <FileCheck2 className="h-4 w-4 text-v5-accent" />
@@ -419,7 +435,21 @@ export default function ApprovalsPage() {
               <Clock3 className="h-3 w-3" /> {approvals.filter((a) => a.urgent).length} yêu cầu khẩn
             </div>
           </Card>
-          <Card className="p-3">
+          <Card
+            role="button"
+            tabIndex={0}
+            title="Xem hồ sơ của tôi"
+            onClick={() => {
+              document.getElementById("approval-my-cases")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                document.getElementById("approval-my-cases")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }}
+            className="cursor-pointer p-3 transition-fast hover:border-v5-accent/40 hover:bg-v5-bg"
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Hồ sơ của tôi</span>
               <FileCheck2 className="h-4 w-4 text-v5-muted" />
@@ -454,18 +484,18 @@ export default function ApprovalsPage() {
         </div>
 
         {/* Cards List */}
-        <div data-tour="approval-list" className="flex flex-col gap-space-md">
+        <div id="approval-list" data-tour="approval-list" className="flex flex-col gap-space-md scroll-mt-24">
           {loading ? (
             <div className="p-12 text-center text-v5-muted bg-v5-surface rounded-xl animate-pulse">
               Đang nạp danh sách hồ sơ trình ký và nghiệm thu từ cơ sở dữ liệu...
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="bg-v5-surface p-8 rounded-xl border border-v5-line/50 text-center flex flex-col items-center justify-center gap-3 shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-status-success-bg text-status-success flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-v5-success-soft text-v5-success flex items-center justify-center">
                 <V5Icon name="task_alt" className="text-[28px]" />
               </div>
-              <p className="font-headline-sm text-primary font-bold">Không có hồ sơ chờ phê duyệt</p>
-              <p className="font-body-md text-v5-muted max-w-sm text-sm">
+              <p className="text-sm text-v5-ink font-bold">Không có hồ sơ chờ phê duyệt</p>
+              <p className="text-v5-muted max-w-sm text-sm">
                 Tất cả các kế hoạch tuần, đề xuất gia hạn và báo cáo kết quả nhiệm vụ đã được xử lý hoàn tất.
               </p>
             </div>
@@ -480,46 +510,46 @@ export default function ApprovalsPage() {
                 >
                   {/* Priority ribbon bar */}
                   {item.urgent && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-status-danger" />
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-v5-danger" />
                   )}
 
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-space-sm mb-space-xs pt-1">
                     <div className="flex items-center gap-space-xs flex-wrap">
                       {item.urgent && (
-                        <span className="px-space-xs py-0.5 bg-status-danger-bg text-status-danger rounded font-label-sm text-[11px] font-bold flex items-center gap-1">
+                        <span className="px-space-xs py-0.5 bg-v5-danger-soft text-v5-danger rounded text-[11px] font-bold flex items-center gap-1">
                           <V5Icon name="alarm" className="text-[13px]" />
                           Khẩn cấp
                         </span>
                       )}
-                      <span className="font-label-sm text-label-sm text-v5-muted font-mono font-bold">
+                      <span className="text-[11px] text-v5-muted font-mono font-bold">
                         {item.code}
                       </span>
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
                         item.type === "plan"
-                          ? "bg-primary-fixed text-primary"
+                          ? "bg-v5-accent text-white"
                           : item.type === "delay"
-                          ? "bg-status-warning-bg text-status-warning"
-                          : "bg-secondary-fixed text-secondary"
+                          ? "bg-v5-gold-soft text-v5-gold-ink"
+                          : "bg-v5-accent/10 text-v5-accent"
                       }`}>
                         {item.type === "plan" ? "Kế hoạch tuần" : item.type === "delay" ? "Đề xuất lùi hạn" : "Nghiệm thu kết quả"}
                       </span>
                     </div>
-                    <span className="font-label-sm text-label-sm text-v5-muted">
+                    <span className="text-[11px] text-v5-muted">
                       {item.timeAgo}
                     </span>
                   </div>
 
                   {/* Title & Assignee */}
-                  <h2 className="font-headline-sm text-headline-sm text-primary mb-space-xs font-bold leading-snug">
+                  <h2 className="text-sm text-v5-ink mb-space-xs font-bold leading-snug">
                     {item.title}
                   </h2>
                   <div className="flex items-center gap-space-xs mb-space-sm bg-v5-bg p-space-xs rounded-lg">
-                    <div className="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-sm text-label-sm font-semibold">
+                    <div className="w-7 h-7 rounded-full bg-v5-accent text-white flex items-center justify-center text-[11px] font-semibold">
                       {item.submitter.charAt(0) || "C"}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-body-semibold text-body-semibold text-primary truncate leading-tight text-xs">
+                      <p className="text-[13px] font-semibold text-v5-ink truncate leading-tight">
                         {item.submitter}
                       </p>
                       <p
@@ -534,8 +564,8 @@ export default function ApprovalsPage() {
                   {/* Detail Box */}
                   <div className="bg-v5-bg rounded-lg p-space-sm mb-space-sm space-y-space-xs text-xs">
                     {item.reason && (
-                      <div className="text-v5-ink font-body-md text-body-md">
-                        <span className="text-v5-muted font-label-sm text-label-sm block font-semibold">
+                      <div className="text-v5-ink text-[12px]">
+                        <span className="text-v5-muted text-[11px] block font-semibold">
                           Lý do / Báo cáo nội dung:
                         </span>
                         {item.reason}
@@ -543,21 +573,21 @@ export default function ApprovalsPage() {
                     )}
 
                     {item.documentTitle && (
-                      <div className="p-2 rounded bg-v5-surface flex items-center gap-2 text-primary font-semibold">
-                        <V5Icon name="description" className="text-secondary text-[18px]" />
+                      <div className="p-2 rounded bg-v5-surface flex items-center gap-2 text-v5-ink font-semibold">
+                        <V5Icon name="description" className="text-v5-accent text-[18px]" />
                         <span className="truncate">{item.documentTitle}</span>
                       </div>
                     )}
 
                     {item.oldDeadline && item.newDeadline && (
-                      <div className="pt-space-xs flex items-center justify-between font-label-md text-label-md bg-v5-surface p-space-xs rounded">
+                      <div className="pt-space-xs flex items-center justify-between text-[12px] bg-v5-surface p-space-xs rounded">
                         <div className="text-v5-muted line-through font-mono">
                           {item.oldDeadline}
                         </div>
-                        <V5Icon name="arrow_forward" className="text-status-warning text-[18px]" />
-                        <div className="text-status-danger font-semibold font-mono flex items-center gap-1">
+                        <V5Icon name="arrow_forward" className="text-v5-gold-ink text-[18px]" />
+                        <div className="text-v5-danger font-semibold font-mono flex items-center gap-1">
                           {item.newDeadline}
-                          <span className="text-[11px] px-1 py-0.2 bg-status-danger-bg rounded font-bold">
+                          <span className="text-[11px] px-1 py-0.2 bg-v5-danger-soft rounded font-bold">
                             {item.extensionDays}
                           </span>
                         </div>
@@ -569,8 +599,8 @@ export default function ApprovalsPage() {
                   {item.attachments && item.attachments.length > 0 && (
                     <div className="bg-v5-bg border border-v5-line/60 rounded-lg p-space-sm mb-space-sm">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-label-sm text-[11px] font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
-                          <V5Icon name="attach_file" className="text-[15px] text-secondary" />
+                        <span className="text-[11px] font-bold text-v5-ink flex items-center gap-1 uppercase tracking-wider">
+                          <V5Icon name="attach_file" className="text-[15px] text-v5-accent" />
                           Hồ sơ & Tài liệu nghiệm thu ({item.attachments.length})
                         </span>
                         <span className="text-[10px] text-v5-muted font-medium">Bấm xem trực tiếp hoặc tải về</span>
@@ -585,14 +615,14 @@ export default function ApprovalsPage() {
                           return (
                             <div
                               key={att.id}
-                              className="flex items-center justify-between gap-2 p-2 bg-v5-surface rounded-md border border-v5-line/50 hover:border-secondary/50 transition-fast"
+                              className="flex items-center justify-between gap-2 p-2 bg-v5-surface rounded-md border border-v5-line/50 hover:border-v5-accent/50 transition-fast"
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <span className={`p-1.5 rounded border text-[16px] shrink-0 ${fileStyle.color} flex items-center justify-center`}>
                                   <V5Icon name={fileStyle.icon} className="text-[18px]" />
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-body-semibold text-xs text-primary truncate" title={att.fileName}>
+                                  <p className="font-semibold text-xs text-v5-ink truncate" title={att.fileName}>
                                     {att.fileName}
                                   </p>
                                   <p className="text-[10px] text-v5-muted">
@@ -612,7 +642,7 @@ export default function ApprovalsPage() {
                                         mimeType: att.mimeType,
                                       })
                                     }
-                                    className="px-2 py-1 rounded bg-secondary/10 text-secondary hover:bg-secondary/20 text-[11px] font-semibold transition-fast flex items-center gap-1"
+                                    className="px-2 py-1 rounded bg-v5-accent/10 text-v5-accent hover:bg-v5-accent/20 text-[11px] font-semibold transition-fast flex items-center gap-1"
                                     title="Xem nhanh tệp"
                                   >
                                     <V5Icon name="visibility" className="text-[14px]" />
@@ -624,7 +654,7 @@ export default function ApprovalsPage() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download={att.fileName}
-                                  className="px-2 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg-high text-[11px] font-semibold transition-fast flex items-center gap-1 border border-v5-line"
+                                  className="px-2 py-1 rounded bg-v5-bg text-v5-ink hover:bg-v5-bg text-[11px] font-semibold transition-fast flex items-center gap-1 border border-v5-line"
                                   title="Tải về máy tính"
                                 >
                                   <V5Icon name="download" className="text-[14px]" />
@@ -651,7 +681,7 @@ export default function ApprovalsPage() {
                       type="button"
                       disabled={isItemBusy}
                       onClick={() => openPreview(item, "CLARIFY")}
-                      className={`h-11 px-space-xs rounded-lg bg-v5-bg text-primary font-body-semibold text-body-semibold transition-fast flex items-center justify-center gap-1 text-xs border border-v5-line/50 ${
+                      className={`h-11 px-space-xs rounded-lg bg-v5-bg text-v5-ink text-[13px] font-semibold transition-fast flex items-center justify-center gap-1 text-xs border border-v5-line/50 ${
                         isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-v5-bg active-press"
                       }`}
                     >
@@ -662,8 +692,8 @@ export default function ApprovalsPage() {
                       type="button"
                       disabled={isItemBusy}
                       onClick={() => openPreview(item, "AGREE")}
-                      className={`h-11 px-space-xs rounded-lg bg-primary text-on-primary font-body-semibold text-body-semibold shadow-sm transition-fast flex items-center justify-center gap-1 text-xs font-bold ${
-                        isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/90 active-press"
+                      className={`h-11 px-space-xs rounded-lg bg-v5-accent text-white text-[13px] font-semibold shadow-sm transition-fast flex items-center justify-center gap-1 text-xs font-bold ${
+                        isItemBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-v5-accent/90 active-press"
                       }`}
                     >
                       {isItemBusy ? (
@@ -704,9 +734,9 @@ export default function ApprovalsPage() {
                       ? "picture_as_pdf"
                       : "image"
                   }
-                  className="text-[22px] text-secondary"
+                  className="text-[22px] text-v5-accent"
                 />
-                <span className="font-headline-sm text-sm font-bold text-primary truncate" title={previewFile.name}>
+                <span className="text-sm font-bold text-v5-ink truncate" title={previewFile.name}>
                   {previewFile.name}
                 </span>
               </div>
@@ -716,7 +746,7 @@ export default function ApprovalsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   download={previewFile.name}
-                  className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-fast"
+                  className="px-3 py-1.5 rounded-lg bg-v5-accent text-white text-xs font-semibold hover:bg-v5-accent/90 flex items-center gap-1 shadow-sm transition-fast"
                 >
                   <V5Icon name="download" className="text-[15px]" />
                   <span>Tải về</span>
@@ -724,7 +754,7 @@ export default function ApprovalsPage() {
                 <button
                   type="button"
                   onClick={() => setPreviewFile(null)}
-                  className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-primary transition-fast"
+                  className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-v5-ink transition-fast"
                   aria-label="Đóng xem trước"
                 >
                   <V5Icon name="close" className="text-[20px]" />
@@ -753,7 +783,7 @@ export default function ApprovalsPage() {
       {/* =====================================================================
           YC-37 — "HỒ SƠ CỦA TÔI": theo dõi hồ sơ đã trình + gửi giải trình lại
           ===================================================================== */}
-      <section className="pt-1">
+      <section id="approval-my-cases" className="scroll-mt-24 pt-1">
         <div className="overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-v5-line px-4 py-3">
             <div className="flex items-center gap-2">
@@ -837,7 +867,7 @@ export default function ApprovalsPage() {
       {/* =====================================================================
           YC-12 — "ĐÃ XỬ LÝ": lịch sử quyết định theo thẩm quyền
           ===================================================================== */}
-      <section className="pt-1">
+      <section id="approval-my-cases" className="scroll-mt-24 pt-1">
         <div className="overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-v5-line px-4 py-3">
             <div className="flex items-center gap-2">
@@ -884,7 +914,7 @@ export default function ApprovalsPage() {
                   setDecidedMonth("");
                   setDecidedYear("");
                 }}
-                className="text-[11px] font-semibold text-status-primary hover:underline"
+                className="text-[11px] font-semibold text-v5-accent hover:underline"
               >
                 Xoá lọc
               </button>
@@ -909,10 +939,10 @@ export default function ApprovalsPage() {
                     <span
                       className={`shrink-0 text-[10px] px-2 py-0.5 rounded border font-semibold whitespace-nowrap ${
                         dc.status === "AGREED"
-                          ? "border-status-success/30 bg-status-success-bg text-status-success"
+                          ? "border-v5-success/30 bg-v5-success-soft text-v5-success"
                           : dc.status === "REJECTED"
-                            ? "border-status-danger/30 bg-status-danger-bg text-status-danger"
-                            : "border-status-warning/30 bg-status-warning-bg text-status-warning"
+                            ? "border-v5-danger/30 bg-v5-danger-soft text-v5-danger"
+                            : "border-v5-gold/30 bg-v5-gold-soft text-v5-gold-ink"
                       }`}
                     >
                       {dc.status === "AGREED"
@@ -930,7 +960,7 @@ export default function ApprovalsPage() {
                     {dc.decidedAt ? ` · ${formatVnDateTime(dc.decidedAt)}` : ""}
                   </p>
                   <p className="text-[11px] text-v5-muted">
-                    <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-primary">
+                    <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-v5-ink">
                       Nguồn: {dc.latestDecision?.sourceLabel || "Quyết định duyệt"}
                     </span>
                   </p>
@@ -942,7 +972,7 @@ export default function ApprovalsPage() {
                   )}
                   {Array.isArray(dc.history) && dc.history.length > 1 && (
                     <details className="text-[11px] text-v5-muted">
-                      <summary className="cursor-pointer font-semibold text-secondary">
+                      <summary className="cursor-pointer font-semibold text-v5-accent">
                         Các vòng đã quyết định ({dc.history.length})
                       </summary>
                       <ul className="mt-1 space-y-1">
@@ -952,7 +982,7 @@ export default function ApprovalsPage() {
                             className="rounded border border-v5-line px-2 py-1"
                             data-testid={`decided-history-${h.source}`}
                           >
-                            <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-primary">
+                            <span className="px-1.5 py-0.5 rounded bg-v5-bg text-[10px] font-bold text-v5-ink">
                               Nguồn: {h.sourceLabel}
                             </span>{" "}
                             · Vòng {h.round} · {h.actionLabel}
@@ -992,17 +1022,20 @@ export default function ApprovalsPage() {
       {respondCase && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
           <div className="bg-v5-surface rounded-xl max-w-lg w-full p-6 shadow-2xl border border-v5-line flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-surface-container pb-3">
-              <h3 className="font-headline-sm text-primary font-bold flex items-center gap-2">
-                <V5Icon name="reply" className="text-status-warning text-[24px]" />
-                Gửi nội dung giải trình
-              </h3>
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">
+                  <V5Icon name="reply" className="text-[18px]" />
+                </span>
+                <h3 className="text-sm font-semibold text-v5-ink">Gửi nội dung giải trình</h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setRespondCase(null)}
-                className="text-v5-muted hover:text-v5-ink text-sm"
+                className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                aria-label="Đóng"
               >
-                ✕
+                <V5Icon name="close" className="text-[18px]" />
               </button>
             </div>
             <p className="text-xs text-v5-muted">
@@ -1013,9 +1046,9 @@ export default function ApprovalsPage() {
               value={respondContent}
               onChange={(e) => setRespondContent(e.target.value)}
               placeholder="Bổ sung nội dung giải trình để hồ sơ được xem trước lại..."
-              className="w-full p-3 rounded-lg border border-v5-line bg-v5-surface text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full p-3 rounded-lg border border-v5-line bg-v5-surface text-xs focus:outline-none focus:ring-2 focus:ring-v5-accent/30"
             />
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-container">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-v5-line">
               <button
                 type="button"
                 onClick={() => setRespondCase(null)}
@@ -1028,7 +1061,7 @@ export default function ApprovalsPage() {
                 type="button"
                 onClick={submitRespond}
                 disabled={responding}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-v5-accent text-white hover:bg-v5-accent/90 shadow-sm flex items-center gap-1.5 disabled:opacity-50"
               >
                 {responding ? (
                   <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "@/components/ui/Toast";
@@ -443,7 +443,7 @@ export default function SelfAssessmentPanel({
                 </p>
                 <ul className="mt-1 space-y-0.5">
                   {data.gradeReference.levels.map((l) => (
-                    <li key={l.grade} className="text-[11px] text-on-surface">
+                    <li key={l.grade} className="text-[11px] text-v5-ink">
                       <strong>{l.grade}</strong>:{" "}
                       {l.minScore !== null ? `từ ${l.minScore} điểm` : ""}
                       {l.maxScore !== null

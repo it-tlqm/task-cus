@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -117,12 +117,12 @@ export default function NotificationQuickView({ open, onClose }: Props) {
         aria-modal="true"
         aria-label="Thông báo nhanh"
         data-testid="notification-quick-view"
-        className="flex max-h-[88vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border-default bg-surface-container-lowest shadow-2xl sm:max-h-[72vh] sm:w-[430px] sm:rounded-2xl"
+        className="flex max-h-[88vh] w-full flex-col overflow-hidden rounded-t-2xl border border-v5-line bg-v5-surface shadow-2xl sm:max-h-[72vh] sm:w-[430px] sm:rounded-2xl"
       >
-        <div className="flex items-center justify-between gap-2 border-b border-border-default/60 px-4 py-3">
+        <div className="flex items-center justify-between gap-2 border-b border-v5-line/60 px-4 py-3">
           <div className="flex items-center gap-2">
             <V5Icon name="notifications" className="text-[20px] text-primary" />
-            <h2 className="font-title-md text-title-md font-bold text-on-surface">Thông báo nhanh</h2>
+            <h2 className="font-title-md text-title-md font-bold text-v5-ink">Thông báo nhanh</h2>
             {unreadCount > 0 && (
               <span className="rounded-full bg-status-danger px-2 py-0.5 text-[10px] font-bold text-white">
                 {unreadCount > 99 ? "99+" : unreadCount} chưa đọc
@@ -134,14 +134,14 @@ export default function NotificationQuickView({ open, onClose }: Props) {
             type="button"
             onClick={onClose}
             aria-label="Đóng thông báo nhanh"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant transition-fast hover:bg-surface-container active-press"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-v5-muted transition-fast hover:bg-v5-bg active-press"
           >
             <V5Icon name="close" className="text-[20px]" />
           </button>
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-b border-border-default/40 px-4 py-2">
-          <span className="text-body-xs font-semibold text-on-surface-variant">
+        <div className="flex items-center justify-between gap-2 border-b border-v5-line/40 px-4 py-2">
+          <span className="text-body-xs font-semibold text-v5-muted">
             {items.length > 0 ? `Mới nhất ${items.length} thông báo` : "Hộp thư điều hành"}
           </span>
           <button
@@ -158,7 +158,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
           {loading && (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-20 animate-pulse rounded-xl bg-surface-container" />
+                <div key={i} className="h-20 animate-pulse rounded-xl bg-v5-bg" />
               ))}
             </div>
           )}
@@ -169,7 +169,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
               <button
                 type="button"
                 onClick={load}
-                className="mt-2 rounded-lg border border-border-default bg-surface px-3 py-1.5 text-body-xs font-semibold"
+                className="mt-2 rounded-lg border border-v5-line bg-surface px-3 py-1.5 text-body-xs font-semibold"
               >
                 Thử lại
               </button>
@@ -179,8 +179,8 @@ export default function NotificationQuickView({ open, onClose }: Props) {
           {!loading && !error && items.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <V5Icon name="check_circle" className="text-[32px] text-status-success" />
-              <p className="text-body-sm font-semibold text-on-surface">Không có thông báo mới</p>
-              <p className="text-body-xs text-on-surface-variant">Các nhiệm vụ và thời hạn đang bình thường.</p>
+              <p className="text-body-sm font-semibold text-v5-ink">Không có thông báo mới</p>
+              <p className="text-body-xs text-v5-muted">Các nhiệm vụ và thời hạn đang bình thường.</p>
             </div>
           )}
 
@@ -199,7 +199,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
                       ? item.tagType === "danger"
                         ? "border-status-danger/40 border-l-4 border-l-status-danger bg-status-danger-bg/40"
                         : "border-status-warning/40 border-l-4 border-l-status-warning bg-status-warning-bg/40"
-                      : "border-border-default/50 bg-surface"
+                      : "border-v5-line/50 bg-surface"
                   }`}
                 >
                   <div className="mb-1 flex items-center justify-between gap-2">
@@ -216,12 +216,12 @@ export default function NotificationQuickView({ open, onClose }: Props) {
                     >
                       {item.tag}
                     </span>
-                    <span className="shrink-0 text-[10px] text-on-surface-variant">{item.time}</span>
+                    <span className="shrink-0 text-[10px] text-v5-muted">{item.time}</span>
                   </div>
-                  <p className="line-clamp-2 text-body-sm font-semibold leading-snug text-on-surface">
+                  <p className="line-clamp-2 text-body-sm font-semibold leading-snug text-v5-ink">
                     {item.title}
                   </p>
-                  <p className="mt-0.5 line-clamp-2 text-body-xs leading-relaxed text-on-surface-variant">
+                  <p className="mt-0.5 line-clamp-2 text-body-xs leading-relaxed text-v5-muted">
                     {item.description}
                   </p>
                   <div className="mt-1.5 flex items-center justify-between gap-2">
@@ -247,7 +247,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
           )}
         </div>
 
-        <div className="border-t border-border-default/60 p-3">
+        <div className="border-t border-v5-line/60 p-3">
           <Link
             href="/notifications"
             onClick={onClose}

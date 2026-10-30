@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React from "react";
 
@@ -39,13 +39,13 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
   return (
     <div className="flex flex-col gap-2">
       <label className="font-label-md text-label-md text-primary font-semibold">
-        Cán bộ phối hợp {value.length > 0 && <span className="text-on-surface-variant font-normal">({value.length} người)</span>}
+        Cán bộ phối hợp {value.length > 0 && <span className="text-v5-muted font-normal">({value.length} người)</span>}
       </label>
 
       {value.map((id) => (
         <div
           key={id}
-          className="flex items-center gap-2 h-10 px-2 rounded bg-surface-container-low border border-border-subtle"
+          className="flex items-center gap-2 h-10 px-2 rounded bg-v5-bg border border-border-subtle"
         >
           <V5Icon name="group_add" className="text-[18px] text-secondary shrink-0" />
           <select
@@ -56,7 +56,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
               if (!next || value.includes(next)) return;
               onChange(value.map((v) => (v === id ? next : v)));
             }}
-            className="flex-1 min-w-0 bg-transparent text-body-md font-body-md text-on-surface focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-body-md text-v5-ink focus:outline-none"
           >
             <option value={id}>{nameOf(id)}</option>
             {available.map((p) => (
@@ -85,7 +85,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
             addPerson(e.target.value);
             e.target.value = "";
           }}
-          className="flex-1 h-10 px-2 rounded bg-surface-container-low text-body-md font-body-md text-on-surface border border-dashed border-border-subtle focus:outline-none focus:ring-1 focus:ring-secondary disabled:opacity-50"
+          className="flex-1 h-10 px-2 rounded bg-v5-bg text-body-md text-v5-ink border border-dashed border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent disabled:opacity-50"
         >
           <option value="">
             {available.length === 0 ? "Đã chọn hết cán bộ trong danh sách" : "+ Thêm người phối hợp"}
@@ -97,7 +97,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
           ))}
         </select>
       </div>
-      <p className="text-[11px] text-on-surface-variant">
+      <p className="text-[11px] text-v5-muted">
         Mỗi nhiệm vụ là một bản ghi duy nhất — người phối hợp cùng theo dõi và cập nhật, không tách việc riêng.
       </p>
     </div>

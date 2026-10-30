@@ -23,11 +23,11 @@ export interface TxSourceInfo {
 /** Hiển thị hệ số đúng theo dữ liệu danh mục (NULL ≠ 0). */
 export function FactorText({ value }: { value?: number | null }) {
   if (value === null || value === undefined) {
-    return <span className="text-on-surface-variant">Chưa có hệ số</span>;
+    return <span className="text-v5-muted">Chưa có hệ số</span>;
   }
   return (
-    <span className="text-on-surface-variant">
-      Hệ số: <span className="font-body-semibold text-on-surface">{value}</span>
+    <span className="text-v5-muted">
+      Hệ số: <span className="font-body-semibold text-v5-ink">{value}</span>
     </span>
   );
 }
@@ -43,7 +43,7 @@ export function TxSourceBadge({
 }) {
   if (!source || !source.code) {
     return (
-      <span className={`font-label-sm text-label-sm text-on-surface-variant ${className}`}>
+      <span className={`font-label-sm text-label-sm text-v5-muted ${className}`}>
         Chưa xác định nguồn
       </span>
     );
@@ -54,12 +54,12 @@ export function TxSourceBadge({
         TX · {source.code}
       </span>
       {!compact && source.title && (
-        <span className="text-[12px] text-on-surface truncate" title={source.title}>
+        <span className="text-[12px] text-v5-ink truncate" title={source.title}>
           {source.title}
         </span>
       )}
       {!compact && (
-        <span className="font-label-sm text-[11px] text-on-surface-variant">
+        <span className="font-label-sm text-[11px] text-v5-muted">
           <FactorText value={source.convertFactor} />
         </span>
       )}

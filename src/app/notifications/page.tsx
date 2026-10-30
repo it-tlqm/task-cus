@@ -1,6 +1,6 @@
 "use client";
 
-import { V5Icon } from "@/components/v5/ui/icon";
+import { V5Icon } from "@/components/v5/ui/lucide-icon";
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -345,7 +345,7 @@ export default function NotificationsPage() {
                       <p className="font-body-semibold text-body-semibold text-v5-ink leading-snug mb-1 font-bold">
                         {notif.title}
                       </p>
-                      <p className="font-body-md text-body-md text-v5-muted text-[13px] leading-relaxed mb-2">
+                      <p className="text-body-md text-v5-muted text-[13px] leading-relaxed mb-2">
                         {notif.description}
                       </p>
 
