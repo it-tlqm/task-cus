@@ -420,15 +420,15 @@ export default function SystemAdminPage() {
 
           <div className="bg-v5-surface rounded-xl border border-v5-line shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full table-fixed text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-v5-line bg-v5-bg text-v5-ink font-semibold">
-                    <th className="py-3 px-4 w-48">Khóa cấu hình (Key)</th>
+                    <th className="w-44 py-3 px-4">Khóa cấu hình (Key)</th>
                     <th className="py-3 px-4">Tên nghiệp vụ & Mô tả</th>
-                    <th className="py-3 px-3 w-28 text-center">Kiểu dữ liệu</th>
-                    <th className="py-3 px-4 w-48 font-mono">Giá trị hiện hành</th>
-                    <th className="py-3 px-3 w-36">Cập nhật bởi</th>
-                    <th className="py-3 px-3 w-24 text-right">Thao tác</th>
+                    <th className="w-24 py-3 px-3 text-center">Kiểu dữ liệu</th>
+                    <th className="w-44 py-3 px-4 font-mono">Giá trị hiện hành</th>
+                    <th className="w-32 py-3 px-3">Cập nhật bởi</th>
+                    <th className="w-20 whitespace-nowrap py-3 px-3 text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-v5-line/60">
@@ -458,13 +458,13 @@ export default function SystemAdminPage() {
                             {cfg.value === "true" ? "BẬT (true)" : "TẮT (false)"}
                           </span>
                         ) : (
-                          <span className="font-mono font-semibold text-v5-ink bg-v5-bg px-2 py-1 rounded">
+                          <span className="break-words rounded bg-v5-bg px-2 py-1 font-mono font-semibold text-v5-ink">
                             {cfg.value}
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-3 text-v5-muted text-[11px]">
-                        <div>{cfg.updatedBy || "Mặc định hệ thống"}</div>
+                        <div className="truncate" title={cfg.updatedBy || "Mặc định hệ thống"}>{cfg.updatedBy || "Mặc định hệ thống"}</div>
                         <div className="text-[10px] text-v5-muted">
                           {new Date(cfg.updatedAt).toLocaleDateString("vi-VN")}
                         </div>
