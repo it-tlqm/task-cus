@@ -2,6 +2,7 @@
 
 import { V5Icon } from "@/components/v5/ui/lucide-icon";
 import { FilterChip } from "@/components/v5/ui/filter-bar";
+import { ListTree, PencilLine, Trash2, Undo2 } from "lucide-react";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -3681,12 +3682,15 @@ export default function PlansPage() {
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
-              <div>
-                <h3 className="text-sm font-semibold text-v5-ink">Sửa kế hoạch công tác</h3>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent"><PencilLine className="h-[18px] w-[18px]" /></span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-v5-ink">Sửa kế hoạch công tác</h3>
                 <p className="mt-0.5 text-[11px] text-v5-muted">
                   {activePlan.unit?.name || "Chưa xác định đơn vị"}
-                  {activePlan.period?.name ? ` • ${activePlan.period.name}` : ""}
-                </p>
+                    {activePlan.period?.name ? ` • ${activePlan.period.name}` : ""}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -3766,12 +3770,15 @@ export default function PlansPage() {
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-danger/20 bg-v5-danger-soft px-4 py-3">
-              <div>
-                <h3 className="text-sm font-semibold text-v5-ink">Hủy kế hoạch trùng</h3>
-                <p className="mt-0.5 text-[11px] text-v5-danger/80">
-                  {activePlan.unit?.name || "Chưa xác định đơn vị"}
-                  {activePlan.period?.name ? ` • ${activePlan.period.name}` : ""}
-                </p>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent"><Trash2 className="h-[18px] w-[18px]" /></span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-v5-ink">Hủy kế hoạch trùng</h3>
+                  <p className="mt-0.5 text-[11px] text-v5-danger/80">
+                    {activePlan.unit?.name || "Chưa xác định đơn vị"}
+                    {activePlan.period?.name ? ` • ${activePlan.period.name}` : ""}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -3855,9 +3862,12 @@ export default function PlansPage() {
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-2xl bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
-              <div>
-                <h3 className="text-sm font-semibold text-v5-ink">Quản lý hạng mục kế hoạch</h3>
-                <p className="mt-0.5 text-[11px] text-v5-muted">{activePlan.title}</p>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent"><ListTree className="h-[18px] w-[18px]" /></span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-v5-ink">Quản lý hạng mục kế hoạch</h3>
+                  <p className="mt-0.5 truncate text-[11px] text-v5-muted">{activePlan.title}</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -4184,8 +4194,16 @@ export default function PlansPage() {
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-danger/20 bg-v5-danger-soft px-4 py-3">
-              <span className="text-sm font-semibold text-v5-danger">Yêu Cầu Chỉnh Sửa Kế Hoạch</span>
-              <button onClick={() => setShowReturnModal(false)}>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent"><Undo2 className="h-[18px] w-[18px]" /></span>
+                <span className="text-sm font-semibold text-v5-danger">Yêu Cầu Chỉnh Sửa Kế Hoạch</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReturnModal(false)}
+                className="rounded-md p-1 text-v5-danger/70 transition-colors hover:bg-v5-danger/10 hover:text-v5-danger"
+                aria-label="Đóng"
+              >
                 <V5Icon name="close" className="text-[20px]" />
               </button>
             </div>
