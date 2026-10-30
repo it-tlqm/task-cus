@@ -1512,7 +1512,7 @@ export default function PlansPage() {
             {/* Title & Official Approval Status */}
             <div className="flex min-w-0 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-space-sm">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-v5-accent text-v5-ink text-[11px] font-semibold tracking-wide uppercase">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-v5-accent text-white text-[11px] font-semibold tracking-wide uppercase">
                   <V5Icon name="event_repeat" className="text-[15px]" />
                   {activePlan
                     ? `${activePlan.period?.name || "KỲ KẾ HOẠCH"}${
@@ -1846,7 +1846,7 @@ export default function PlansPage() {
                 <button
                   type="button"
                   onClick={clearWorkItemFilters}
-                  className="inline-flex items-center gap-1 rounded border border-v5-line bg-surface px-2.5 py-1.5 text-[11px] font-semibold text-v5-muted hover:bg-v5-bg"
+                  className="inline-flex items-center gap-1 rounded border border-v5-line bg-v5-surface px-2.5 py-1.5 text-[11px] font-semibold text-v5-muted hover:bg-v5-bg"
                 >
                   <V5Icon name="filter_alt_off" className="text-[15px]" />
                   Xóa lọc
@@ -1859,7 +1859,7 @@ export default function PlansPage() {
         {!activePlan && (
           <div className="bg-v5-surface rounded-xl border border-dashed border-v5-line p-8 text-center">
             <V5Icon name="event_note" className="text-v5-muted text-[40px]" />
-            <h2 className="font-headline-sm text-headline-sm text-v5-ink mt-2">
+            <h2 className="text-sm text-v5-ink mt-2">
               Chưa có kế hoạch cho kỳ này
             </h2>
             <p className="text-sm text-v5-muted mt-1">
@@ -1884,10 +1884,10 @@ export default function PlansPage() {
         {/* Góc nhìn Gantt — timeline nhiệm vụ liên kết của kế hoạch đang chọn (dữ liệu thật) */}
         {viewMode === "gantt" && (
           <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line/50">
-            <div className="px-space-lg py-2.5 bg-v5-accent-soft text-white text-[11px] flex items-center gap-2">
+            <div className="px-space-lg py-2.5 bg-v5-accent-soft text-v5-ink text-[11px] flex items-center gap-2">
               <V5Icon name="view_timeline" className="text-v5-accent text-[18px]" />
               <span>
-                <strong className="text-white uppercase tracking-wider font-semibold">Gantt:</strong>{" "}
+                <strong className="text-v5-ink uppercase tracking-wider font-semibold">Gantt:</strong>{" "}
                 {activePlan ? `${activePlan.title} — ${ganttData?.tasks.length || 0} nhiệm vụ liên kết` : "Chưa có kế hoạch"}
               </span>
             </div>
@@ -2015,7 +2015,7 @@ export default function PlansPage() {
                   <th className="py-3 px-space-md w-[90px] uppercase tracking-wider text-center">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="text-[12px] divide-y divide-border-default/40">
+              <tbody className="text-[12px] divide-y divide-v5-line/40">
                 {(() => {
                   if (!activePlan || !activePlan.items || activePlan.items.length === 0) {
                     return (
@@ -2486,7 +2486,7 @@ export default function PlansPage() {
             <div className="flex flex-col items-center text-center px-2">
               <div className="flex items-center gap-1 text-v5-ink">
                 <V5Icon name="calendar_month" className="text-[18px]" />
-                <span className="font-headline-sm text-headline-sm">
+                <span className="text-sm">
                   {activePlan?.period
                     ? `${activePlan.period.title || activePlan.period.name || "Kỳ kế hoạch"}${
                         activePlan.period.startAt && activePlan.period.endAt
@@ -2567,7 +2567,7 @@ export default function PlansPage() {
           <div className="bg-v5-surface p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm border border-v5-line/40">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-space-sm">
-                <div className="w-10 h-10 rounded-full bg-v5-accent-container text-white-container flex items-center justify-center font-headline-sm text-headline-sm font-bold">
+                <div className="w-10 h-10 rounded-full bg-v5-accent-container text-white-container flex items-center justify-center text-sm font-bold">
                   {activePlan?.unit?.name?.slice(0, 2).toUpperCase() || "—"}
                 </div>
                 <div className="flex flex-col">
@@ -2716,7 +2716,7 @@ export default function PlansPage() {
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-v5-accent" />
-                      <span className="font-headline-sm text-[13px] uppercase font-bold text-v5-ink">
+                      <span className="text-sm text-[13px] uppercase font-bold text-v5-ink">
                         {item.title} ({totalItems})
                       </span>
                     </div>
@@ -3578,7 +3578,7 @@ export default function PlansPage() {
                         onClick={() => setPlanFormType(type)}
                         className={`h-10 rounded-lg text-sm font-semibold border transition-fast ${
                           planFormType === type
-                            ? "bg-v5-accent text-white border-primary"
+                            ? "bg-v5-accent text-white border-v5-accent"
                             : "bg-v5-bg text-v5-muted border-v5-line"
                         }`}
                       >
@@ -3950,7 +3950,7 @@ export default function PlansPage() {
                   Kế hoạch chưa có hạng mục. Thêm hạng mục đầu tiên ở biểu mẫu phía trên.
                 </div>
               ) : (
-                <div className="flex flex-col divide-y divide-border-subtle border border-v5-line rounded-lg overflow-hidden">
+                <div className="flex flex-col divide-y divide-v5-line border border-v5-line rounded-lg overflow-hidden">
                   {activePlan.items.map((it, idx) => {
                     const linked =
                       (it.workItems?.length || 0) + (it.taskLinks?.length || 0);
@@ -4127,7 +4127,7 @@ export default function PlansPage() {
                   Bộ phận này chưa có đầu việc nào trong danh mục riêng.
                 </span>
               ) : (
-                <div className="flex flex-col divide-y divide-border-subtle border border-v5-line rounded-lg overflow-hidden">
+                <div className="flex flex-col divide-y divide-v5-line border border-v5-line rounded-lg overflow-hidden">
                   {deptManageItems.map((it) => (
                     <div key={it.id} className="p-3 flex items-center justify-between gap-2" data-testid={`dept-manage-row-${it.id}`}>
                       <div className="flex flex-col min-w-0">
