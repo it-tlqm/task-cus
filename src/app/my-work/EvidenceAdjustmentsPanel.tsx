@@ -115,7 +115,7 @@ export default function EvidenceAdjustmentsPanel({
   };
 
   return (
-    <div data-testid={`adj-panel-${mode}`} className="rounded-lg border border-border-subtle bg-v5-surface p-3">
+    <div data-testid={`adj-panel-${mode}`} className="rounded-lg border border-v5-line bg-v5-surface p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-bold text-v5-ink">
           {mode === "leader" ? "Đề nghị điều chỉnh minh chứng (chờ bạn xử lý)" : "Đề nghị điều chỉnh minh chứng"}
@@ -171,7 +171,7 @@ export default function EvidenceAdjustmentsPanel({
             data-testid={`adj-submit-${workItemId}`}
             disabled={busy}
             onClick={propose}
-            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-v5-accent bg-v5-accent text-white hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-muted/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Gửi đề nghị
           </button>
@@ -187,7 +187,7 @@ export default function EvidenceAdjustmentsPanel({
           <p className="text-[11px] text-v5-muted">Không có đề nghị nào.</p>
         )}
         {rows.map((r) => (
-          <div key={r.id} data-testid={`adj-row-${r.id}`} className="rounded-lg border border-border-subtle p-2">
+          <div key={r.id} data-testid={`adj-row-${r.id}`} className="rounded-lg border border-v5-line p-2">
             <p className="text-[11px] font-semibold text-v5-ink">
               {r.kind === "ADD" ? "Bổ sung" : r.kind === "REPLACE" ? "Thay thế" : "Rút"} minh chứng
               {r.workItem?.title ? ` — ${r.workItem.title}` : ""}
@@ -202,7 +202,7 @@ export default function EvidenceAdjustmentsPanel({
                   data-testid={`adj-${r.myStep === "ENDORSE" ? "endorse" : "approve"}-${r.id}`}
                   disabled={busy}
                   onClick={() => act(r, r.myStep)}
-                  className="px-2 py-1 rounded text-[11px] font-semibold border border-v5-accent text-v5-accent hover:bg-status-warning-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 py-1 rounded text-[11px] font-semibold border border-v5-accent text-v5-accent hover:bg-v5-gold-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-muted/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {r.myStepLabel}
                 </button>

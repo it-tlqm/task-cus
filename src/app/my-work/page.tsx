@@ -23,6 +23,10 @@ import {
   UserCheck,
   ClipboardCheck,
   Eye,
+  X,
+  PencilLine,
+  CalendarClock,
+  FileWarning,
 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/v5/ui/badge";
@@ -2069,26 +2073,28 @@ function MyWorkPageContent() {
 
           <aside className="relative w-full max-w-full sm:max-w-[520px] sm:w-[520px] bg-v5-surface shadow-2xl z-50 flex flex-col h-full transform transition-transform duration-300 ease-in-out">
             {/* DRAWER HEADER */}
-            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-space-sm min-w-0 flex-1">
-                <div className="w-8 h-8 rounded-lg bg-v5-accent flex items-center justify-center text-white shadow-sm shrink-0">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
+              <div className="flex min-w-0 flex-1 items-center gap-space-sm">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
                   <V5Icon name="fact_check" className="text-[20px]" />
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[11px] text-v5-accent font-semibold uppercase">
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-v5-muted">
                     Tác nghiệp một chạm
                   </span>
-                  <h2 className="font-headline-sm text-headline-sm text-white truncate">
+                  <h2 className="truncate text-sm font-semibold text-v5-ink">
                     Cập Nhật Tiến Độ &amp; Kết Quả Tác Nghiệp
                   </h2>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsDrawerOpen(false)}
-                className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-accent-soft transition-fast shrink-0 ml-2"
+                className="ml-2 shrink-0 rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
                 title="Đóng bảng"
+                aria-label="Đóng bảng"
               >
-                <V5Icon name="close" className="text-[22px]" />
+                <X className="h-[20px] w-[20px]" />
               </button>
             </div>
 
@@ -2521,13 +2527,18 @@ function MyWorkPageContent() {
       {issueTask && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
-            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between">
-              <div className="min-w-0">
-                <h3 className="font-headline-sm font-semibold">Giải trình chậm hạn</h3>
-                <p className="truncate text-[11px] text-white/80">{issueTask.code}</p>
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">
+                  <FileWarning className="h-[18px] w-[18px]" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-v5-ink">Giải trình chậm hạn</h3>
+                  <p className="truncate text-[11px] text-v5-muted">{issueTask.code}</p>
+                </div>
               </div>
-              <button type="button" onClick={() => setIssueTask(null)} aria-label="Đóng">
-                <V5Icon name="close" className="text-[20px]" />
+              <button type="button" onClick={() => setIssueTask(null)} aria-label="Đóng" className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink">
+                <X className="h-[18px] w-[18px]" />
               </button>
             </div>
             <form onSubmit={handleIssueSubmit}>
@@ -2580,13 +2591,18 @@ function MyWorkPageContent() {
       {extTask && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
-            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between">
-              <div className="min-w-0">
-                <h3 className="font-headline-sm font-semibold">Đề nghị gia hạn nhiệm vụ</h3>
-                <p className="truncate text-[11px] text-white/80">{extTask.code}</p>
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">
+                  <CalendarClock className="h-[18px] w-[18px]" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-v5-ink">Đề nghị gia hạn nhiệm vụ</h3>
+                  <p className="truncate text-[11px] text-v5-muted">{extTask.code}</p>
+                </div>
               </div>
-              <button type="button" onClick={() => setExtTask(null)} aria-label="Đóng">
-                <V5Icon name="close" className="text-[20px]" />
+              <button type="button" onClick={() => setExtTask(null)} aria-label="Đóng" className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink">
+                <X className="h-[18px] w-[18px]" />
               </button>
             </div>
             <form onSubmit={handleExtensionSubmit}>
@@ -2649,10 +2665,15 @@ function MyWorkPageContent() {
       {editTask && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
-            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between">
-              <h3 className="font-headline-sm font-semibold">Sửa giao việc [{editTask.code}]</h3>
-              <button onClick={() => setEditTask(null)}>
-                <V5Icon name="close" className="text-[20px]" />
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
+                  <PencilLine className="h-[18px] w-[18px]" />
+                </span>
+                <h3 className="truncate text-sm font-semibold text-v5-ink">Sửa giao việc [{editTask.code}]</h3>
+              </div>
+              <button type="button" onClick={() => setEditTask(null)} aria-label="Đóng" className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink">
+                <X className="h-[18px] w-[18px]" />
               </button>
             </div>
             <form onSubmit={handleEditAssignSave}>
@@ -2727,17 +2748,23 @@ function MyWorkPageContent() {
           aria-modal="true"
         >
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
-            <div className="p-4 bg-v5-success text-white flex items-center justify-between gap-2">
-              <h3 className="font-headline-sm text-sm font-bold">
-                Duyệt hoàn thành &amp; chọn chất lượng
-              </h3>
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-success-soft text-v5-success">
+                  <BadgeCheck className="h-[18px] w-[18px]" />
+                </span>
+                <h3 className="text-sm font-semibold text-v5-ink">
+                  Duyệt hoàn thành &amp; chọn chất lượng
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setQuickApproveTask(null)}
                 aria-label="Đóng"
                 disabled={quickApproveBusy}
+                className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink disabled:opacity-50"
               >
-                <V5Icon name="close" className="text-[20px]" />
+                <X className="h-[18px] w-[18px]" />
               </button>
             </div>
             <div className="p-4 flex flex-col gap-3">

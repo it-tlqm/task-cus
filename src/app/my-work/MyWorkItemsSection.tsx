@@ -415,19 +415,19 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
       data-testid="my-work-items"
       className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 overflow-hidden"
     >
-      <div className="p-space-md bg-surface-subtle border-b border-v5-line flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm">
+      <div className="p-space-md bg-v5-bg border-b border-v5-line flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm">
         <div className="flex flex-col gap-0.5">
-          <h2 className="font-headline-sm text-headline-sm text-primary font-bold flex items-center gap-2">
-            <V5Icon name="checklist" className="text-secondary text-[22px]" />
-            Đầu việc kế hoạch — hạn xử lý, kết quả &amp; minh chứng
+          <h2 className="text-sm text-v5-ink font-bold flex items-center gap-2">
+            <V5Icon name="checklist" className="text-v5-accent text-[22px]" />
+            Danh sách đầu việc kế hoạch
           </h2>
-          <p className="text-xs text-outline">
+          <p className="text-xs text-v5-muted">
             Luồng thống nhất YC-32: chọn đầu việc → hạn xử lý → thực hiện → ngày hoàn thành → minh chứng → kết quả
             tháng. Không tự tạo nhiệm vụ hay kết quả trùng.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 bg-v5-surface rounded-lg border border-border-subtle p-1">
+          <div className="flex items-center gap-1 bg-v5-surface rounded-lg border border-v5-line p-1">
             <button
               type="button"
               onClick={() => shiftMonth(-1)}
@@ -436,7 +436,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
             >
               <V5Icon name="chevron_left" className="text-[18px]" />
             </button>
-            <span className="px-2 text-xs font-semibold text-primary whitespace-nowrap">
+            <span className="px-2 text-xs font-semibold text-v5-ink whitespace-nowrap">
               Tháng {pad(month)}/{year}
             </span>
             <button
@@ -453,7 +453,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
               type="checkbox"
               checked={showCompleted}
               onChange={(e) => setShowCompleted(e.target.checked)}
-              className="rounded border-border-subtle"
+              className="rounded border-v5-line"
             />
             Hiện việc đã xong
           </label>
@@ -461,7 +461,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
             type="button"
             onClick={fetchItems}
             disabled={loading}
-            className="p-2 rounded-lg hover:bg-v5-bg border border-border-subtle disabled:opacity-50"
+            className="p-2 rounded-lg hover:bg-v5-bg border border-v5-line disabled:opacity-50"
             title="Làm mới đầu việc"
           >
             <V5Icon name="sync" className="text-[18px]" />
@@ -469,40 +469,40 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
         </div>
       </div>
 
-      <div className="px-space-md py-space-sm flex flex-wrap items-center gap-2 text-[11px] border-b border-border-subtle bg-v5-bg/40">
-        <span className="px-2 py-0.5 rounded bg-v5-bg font-semibold text-primary">
+      <div className="px-space-md py-space-sm flex flex-wrap items-center gap-2 text-[11px] border-b border-v5-line bg-v5-bg/40">
+        <span className="px-2 py-0.5 rounded bg-v5-bg font-semibold text-v5-ink">
           {stats.total} đầu việc
         </span>
-        <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success font-semibold">
+        <span className="px-2 py-0.5 rounded bg-v5-success-soft text-v5-success font-semibold">
           {stats.done} đã hoàn thành
         </span>
         <span className="px-2 py-0.5 rounded bg-v5-bg text-v5-muted">
           {stats.remaining} đang thực hiện
         </span>
         {stats.overdue > 0 && (
-          <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-semibold flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded bg-v5-danger-soft text-v5-danger font-semibold flex items-center gap-1">
             <V5Icon name="warning" className="text-[13px]" />
             {stats.overdue} quá hạn
           </span>
         )}
-        <span className="ml-auto text-outline">
+        <span className="ml-auto text-v5-muted">
           Hạn xử lý chỉ chỉnh được trước khi kế hoạch duyệt; sau duyệt bị khóa đến khi có quy trình
           gia hạn. Ngày hoàn thành thực tế vẫn cập nhật và ghi nhật ký.
         </span>
       </div>
 
       {loading ? (
-        <div className="p-8 text-center text-sm text-outline">Đang tải đầu việc kế hoạch...</div>
+        <div className="p-8 text-center text-sm text-v5-muted">Đang tải đầu việc kế hoạch...</div>
       ) : visibleItems.length === 0 ? (
         <div className="p-8 text-center space-y-1">
-          <V5Icon name="task" className="text-[32px] text-outline" />
-          <p className="text-sm font-semibold text-primary">Tháng này chưa có đầu việc phù hợp</p>
-          <p className="text-xs text-outline">
+          <V5Icon name="task" className="text-[32px] text-v5-muted" />
+          <p className="text-sm font-semibold text-v5-ink">Tháng này chưa có đầu việc phù hợp</p>
+          <p className="text-xs text-v5-muted">
             Đầu việc được thêm từ kế hoạch tuần (/plans). Không bắt buộc có nhiệm vụ, sản phẩm hay minh chứng.
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-border-subtle">
+        <div className="divide-y divide-v5-line">
           {visibleItems.map((item) => {
             const badge = sourceBadge(item);
             const overdue = isOverdue(item);
@@ -528,7 +528,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         </span>
                         {item.product && (
                           <span
-                            className="px-1.5 py-0.5 rounded border border-border-subtle bg-v5-bg text-[10px] text-v5-muted"
+                            className="px-1.5 py-0.5 rounded border border-v5-line bg-v5-bg text-[10px] text-v5-muted"
                             title={item.product.taskName}
                           >
                             QĐ1277 · {item.product.code}
@@ -541,18 +541,18 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                           </span>
                         )}
                         {item.priority && (
-                          <span className="text-[10px] text-outline">Ưu tiên: {item.priority}</span>
+                          <span className="text-[10px] text-v5-muted">Ưu tiên: {item.priority}</span>
                         )}
                       </div>
                       <p
-                        className={`font-body-semibold text-body-semibold ${
-                          done ? "text-v5-muted line-through" : "text-primary"
+                        className={`text-[13px] font-semibold ${
+                          done ? "text-v5-muted line-through" : "text-v5-ink"
                         }`}
                       >
                         {item.title}
                       </p>
                       {item.expectedResult && (
-                        <p className="text-[11px] text-outline line-clamp-2">
+                        <p className="text-[11px] text-v5-muted line-clamp-2">
                           Kết quả dự kiến: {item.expectedResult}
                         </p>
                       )}
@@ -562,12 +562,12 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border ${
                           done
-                            ? "bg-status-success-bg text-status-success border-status-success/30"
+                            ? "bg-v5-success-soft text-v5-success border-v5-success/30"
                             : overdue
-                              ? "bg-status-danger-bg text-status-danger border-status-danger/30"
+                              ? "bg-v5-danger-soft text-v5-danger border-v5-danger/30"
                               : item.dueDate
-                                ? "bg-v5-bg text-v5-muted border-border-subtle"
-                                : "bg-v5-bg text-outline border-border-subtle"
+                                ? "bg-v5-bg text-v5-muted border-v5-line"
+                                : "bg-v5-bg text-v5-muted border-v5-line"
                         }`}
                         title={overdue ? "Đã quá hạn xử lý" : "Hạn xử lý"}
                       >
@@ -578,8 +578,8 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border ${
                           done
-                            ? "bg-status-success-bg text-status-success border-status-success/30"
-                            : "bg-v5-bg text-outline border-border-subtle"
+                            ? "bg-v5-success-soft text-v5-success border-v5-success/30"
+                            : "bg-v5-bg text-v5-muted border-v5-line"
                         }`}
                         title="Ngày hoàn thành thực tế"
                       >
@@ -604,7 +604,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border active-press disabled:opacity-50 ${
                           done
                             ? "bg-v5-surface text-v5-muted border-v5-line hover:bg-v5-bg"
-                            : "bg-status-success text-on-error border-status-success hover:opacity-90"
+                            : "bg-v5-success text-white border-v5-success hover:opacity-90"
                         }`}
                       >
                         <V5Icon
@@ -670,7 +670,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                     {planLocked ? (
                       <span
                         data-testid={`work-item-due-lock-${item.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-v5-bg text-v5-muted"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-v5-line bg-v5-bg text-v5-muted"
                         title={`Kế hoạch "${item.planItem?.plan?.title || ""}" đã duyệt — hạn xử lý gốc bị khóa. Chưa có quy trình gia hạn được duyệt; vẫn cập nhật được tiến độ/ngày hoàn thành thực tế.`}
                       >
                         <V5Icon name="lock" className="text-[16px]" />
@@ -683,7 +683,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                           setDueEditId(dueEditId === item.id ? null : item.id);
                           setDueDraft(item.dueDate ? toDateInput(new Date(item.dueDate)) : "");
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-v5-surface hover:bg-v5-bg active-press"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-v5-line bg-v5-surface hover:bg-v5-bg active-press"
                       >
                         <V5Icon name="edit_calendar" className="text-[16px]" />
                         Sửa hạn
@@ -709,30 +709,30 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                   </div>
 
                   {dueEditId === item.id && (
-                    <div className="flex items-center gap-2 flex-wrap p-2 rounded-lg bg-v5-bg border border-border-subtle">
-                      <label className="text-xs font-semibold text-primary">Hạn xử lý:</label>
+                    <div className="flex items-center gap-2 flex-wrap p-2 rounded-lg bg-v5-bg border border-v5-line">
+                      <label className="text-xs font-semibold text-v5-ink">Hạn xử lý:</label>
                       <input
                         type="date"
                         value={dueDraft}
                         onChange={(e) => setDueDraft(e.target.value)}
-                        className="h-9 px-2 rounded border border-border-subtle bg-v5-surface text-xs"
+                        className="h-9 px-2 rounded border border-v5-line bg-v5-surface text-xs"
                       />
                       <button
                         type="button"
                         disabled={busyId === item.id}
                         onClick={() => saveDueDate(item)}
-                        className="px-3 py-1.5 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50"
+                        className="px-3 py-1.5 rounded bg-v5-accent text-white text-xs font-semibold disabled:opacity-50"
                       >
                         Lưu hạn
                       </button>
                       <button
                         type="button"
                         onClick={() => setDueEditId(null)}
-                        className="px-3 py-1.5 rounded border border-border-subtle text-xs"
+                        className="px-3 py-1.5 rounded border border-v5-line text-xs"
                       >
                         Hủy
                       </button>
-                      <span className="text-[10px] text-outline">
+                      <span className="text-[10px] text-v5-muted">
                         Thay đổi hạn được ghi nhật ký (giá trị cũ → mới).
                       </span>
                     </div>
@@ -744,32 +744,32 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       className="rounded-lg border border-v5-line bg-v5-bg/40 p-3 space-y-3"
                     >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <h3 className="text-xs font-bold text-primary flex items-center gap-1.5">
-                          <V5Icon name="folder_open" className="text-[16px] text-secondary" />
+                        <h3 className="text-xs font-bold text-v5-ink flex items-center gap-1.5">
+                          <V5Icon name="folder_open" className="text-[16px] text-v5-accent" />
                           Kết quả &amp; minh chứng
                         </h3>
-                        <span className="text-[10px] text-outline">
+                        <span className="text-[10px] text-v5-muted">
                           Tệp được tải qua máy chủ có kiểm tra quyền, không phát URL công khai. Tối đa{" "}
                           {meta?.maxFileMb || 4} MB/tệp.
                         </span>
                       </div>
 
                       {evidenceLoadingId === item.id && list.length === 0 ? (
-                        <p className="text-xs text-outline">Đang tải minh chứng...</p>
+                        <p className="text-xs text-v5-muted">Đang tải minh chứng...</p>
                       ) : list.length === 0 ? (
-                        <p className="text-xs text-outline">Chưa có tệp minh chứng nào.</p>
+                        <p className="text-xs text-v5-muted">Chưa có tệp minh chứng nào.</p>
                       ) : (
                         <ul className="space-y-1.5">
                           {list.map((ev) => (
                             <li
                               key={ev.id}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded bg-v5-surface border border-border-subtle"
+                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded bg-v5-surface border border-v5-line"
                             >
                               <div className="min-w-0">
-                                <p className="text-xs font-semibold text-primary truncate" title={ev.fileName}>
+                                <p className="text-xs font-semibold text-v5-ink truncate" title={ev.fileName}>
                                   {ev.fileName}
                                 </p>
-                                <p className="text-[10px] text-outline">
+                                <p className="text-[10px] text-v5-muted">
                                   {formatBytes(ev.fileSize)} · {formatDateTime(ev.createdAt)}
                                   {ev.uploadedBy?.fullName ? ` · ${ev.uploadedBy.fullName}` : ""}
                                   {ev.note ? ` · ${ev.note}` : ""}
@@ -779,7 +779,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                                 <button
                                   type="button"
                                   onClick={() => downloadEvidence(item, ev)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border-subtle text-[11px] hover:bg-v5-bg"
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded border border-v5-line text-[11px] hover:bg-v5-bg"
                                 >
                                   <V5Icon name="download" className="text-[14px]" />
                                   Tải
@@ -788,7 +788,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                                   <button
                                     type="button"
                                     onClick={() => deleteEvidence(item, ev)}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded border border-status-danger/30 text-[11px] text-status-danger hover:bg-status-danger-bg"
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded border border-v5-danger/30 text-[11px] text-v5-danger hover:bg-v5-danger-soft"
                                   >
                                     <V5Icon name="delete" className="text-[14px]" />
                                     Xóa
@@ -801,7 +801,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                       )}
 
                       {meta?.periodLocked ? (
-                        <p className="text-[11px] text-status-warning flex items-center gap-1">
+                        <p className="text-[11px] text-v5-gold-ink flex items-center gap-1">
                           <V5Icon name="lock" className="text-[14px]" />
                           Kỳ đã chốt số liệu — minh chứng được khóa, chỉ xem/tải.
                         </p>
@@ -823,14 +823,14 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                             }
                             placeholder="Ghi chú minh chứng (tuỳ chọn)"
                             maxLength={500}
-                            className="h-9 px-2.5 rounded border border-border-subtle bg-v5-surface text-xs w-full md:w-64"
+                            className="h-9 px-2.5 rounded border border-v5-line bg-v5-surface text-xs w-full md:w-64"
                           />
                           <button
                             type="button"
                             data-testid={`work-item-evidence-upload-${item.id}`}
                             disabled={uploadingId === item.id}
                             onClick={() => uploadEvidence(item)}
-                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50 active-press"
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-v5-accent text-white text-xs font-semibold disabled:opacity-50 active-press"
                           >
                             <V5Icon name="upload_file" className="text-[16px]" />
                             {uploadingId === item.id ? "Đang tải..." : "Tải lên"}
@@ -838,7 +838,7 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         </div>
                       )}
 
-                      <p className="text-[10px] text-outline">
+                      <p className="text-[10px] text-v5-muted">
                         Chỉ người thực hiện và lãnh đạo trong phạm vi được xem/tải; người tải lên hoặc lãnh đạo trong
                         phạm vi được xóa khi kỳ chưa chốt. Mọi thao tác đều ghi nhật ký.
                       </p>

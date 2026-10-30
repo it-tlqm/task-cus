@@ -18,22 +18,22 @@ const STATE_META: Record<
 > = {
   DRAFT: {
     label: "Chưa gửi lãnh đạo",
-    cls: "bg-v5-bg text-v5-muted border-border-subtle",
+    cls: "bg-v5-bg text-v5-muted border-v5-line",
     icon: "edit_note",
   },
   SUBMITTED: {
     label: "Đã gửi — chờ lãnh đạo xác nhận",
-    cls: "bg-status-warning-bg text-status-warning border-status-warning/30",
+    cls: "bg-v5-gold-soft text-v5-gold-ink border-v5-gold/30",
     icon: "hourglass_top",
   },
   RETURNED: {
     label: "Lãnh đạo trả lại — cần chỉnh sửa và gửi lại",
-    cls: "bg-status-danger-bg text-status-danger border-status-danger/30",
+    cls: "bg-v5-danger-soft text-v5-danger border-v5-danger/30",
     icon: "assignment_return",
   },
   CONFIRMED: {
     label: "Đã được lãnh đạo xác nhận",
-    cls: "bg-status-success-bg text-status-success border-status-success/30",
+    cls: "bg-v5-success-soft text-v5-success border-v5-success/30",
     icon: "verified",
   },
 };
@@ -151,7 +151,7 @@ export default function WorkItemReviewBox({
       {state === "RETURNED" && item.reviewNote && (
         <span
           data-testid={`work-item-review-note-${item.id}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-status-danger/30 bg-status-danger-bg text-status-danger max-w-full"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-v5-danger/30 bg-v5-danger-soft text-v5-danger max-w-full"
           title={item.reviewNote}
         >
           <V5Icon name="feedback" className="text-[16px]" />
@@ -165,7 +165,7 @@ export default function WorkItemReviewBox({
           type="button"
           data-testid={`work-item-submit-review-${item.id}`}
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:opacity-90 active-press"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-white hover:opacity-90 active-press"
         >
           <V5Icon name="send" className="text-[16px]" />
           {state === "RETURNED" ? "Sửa kết quả & gửi lại" : "Báo hoàn thành & gửi lãnh đạo"}
@@ -174,7 +174,7 @@ export default function WorkItemReviewBox({
 
       {handledByTask && state === "DRAFT" && (
         <span
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border-subtle bg-v5-bg text-v5-muted"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-v5-line bg-v5-bg text-v5-muted"
           title="Công việc này đã gắn với một nhiệm vụ nên được duyệt theo quy trình của nhiệm vụ."
         >
           <V5Icon name="info" className="text-[16px]" />
@@ -187,13 +187,13 @@ export default function WorkItemReviewBox({
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
           <div
             data-testid={`work-item-submit-modal-${item.id}`}
-            className="w-full max-w-xl bg-v5-surface rounded-2xl shadow-xl border border-border-subtle p-5 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-xl bg-v5-surface rounded-2xl shadow-xl border border-v5-line p-5 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-base font-bold text-v5-ink mb-1">Báo hoàn thành công việc</h3>
             <p className="text-xs text-v5-muted mb-4">{item.title}</p>
 
             <label className="block text-xs font-semibold text-v5-ink mb-1">
-              Nội dung kết quả công việc <span className="text-status-danger">*</span>
+              Nội dung kết quả công việc <span className="text-v5-danger">*</span>
             </label>
             <textarea
               data-testid={`work-item-result-text-${item.id}`}
@@ -210,7 +210,7 @@ export default function WorkItemReviewBox({
             {hasSource && (
               <div className="mt-4">
                 <label className="block text-xs font-semibold text-v5-ink mb-1">
-                  Số lượng hoàn thành <span className="text-status-danger">*</span>
+                  Số lượng hoàn thành <span className="text-v5-danger">*</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -234,7 +234,7 @@ export default function WorkItemReviewBox({
             )}
 
             <label className="block text-xs font-semibold text-v5-ink mt-4 mb-1">
-              Ngày hoàn thành thực tế <span className="text-status-danger">*</span>
+              Ngày hoàn thành thực tế <span className="text-v5-danger">*</span>
             </label>
             <input
               data-testid={`work-item-completed-on-${item.id}`}
@@ -254,7 +254,7 @@ export default function WorkItemReviewBox({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-line bg-v5-bg text-v5-ink hover:bg-v5-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-line bg-v5-bg text-v5-ink hover:bg-v5-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-muted/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-muted/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Huỷ
               </button>
@@ -263,7 +263,7 @@ export default function WorkItemReviewBox({
                 data-testid={`work-item-submit-confirm-${item.id}`}
                 disabled={busy}
                 onClick={submit}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-white hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-muted/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {busy ? "Đang gửi…" : "Gửi lãnh đạo xác nhận"}
               </button>

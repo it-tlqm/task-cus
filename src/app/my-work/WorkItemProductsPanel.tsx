@@ -31,17 +31,17 @@ interface SpRow {
 const STATE_META: Record<string, { label: string; cls: string; icon: string }> = {
   PROPOSED: {
     label: "Chờ lãnh đạo xác nhận",
-    cls: "bg-status-warning-bg text-status-warning border-status-warning/30",
+    cls: "bg-v5-gold-soft text-v5-gold-ink border-v5-gold/30",
     icon: "hourglass_top",
   },
   CONFIRMED: {
     label: "Đã xác nhận",
-    cls: "bg-status-success-bg text-status-success border-status-success/30",
+    cls: "bg-v5-success-soft text-v5-success border-v5-success/30",
     icon: "verified",
   },
   REJECTED: {
     label: "Lãnh đạo không duyệt",
-    cls: "bg-status-danger-bg text-status-danger border-status-danger/30",
+    cls: "bg-v5-danger-soft text-v5-danger border-v5-danger/30",
     icon: "assignment_return",
   },
 };
@@ -176,7 +176,7 @@ export default function WorkItemProductsPanel({
   };
 
   return (
-    <div data-testid={`sp-panel-${workItemId}`} className="mt-2 rounded-lg border border-border-subtle bg-v5-surface p-3">
+    <div data-testid={`sp-panel-${workItemId}`} className="mt-2 rounded-lg border border-v5-line bg-v5-surface p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-bold text-v5-ink">Sản phẩm QĐ1277 của công việc</p>
         <button
@@ -202,7 +202,7 @@ export default function WorkItemProductsPanel({
           {rows.map((r) => {
             const meta = STATE_META[r.reviewState || ""];
             return (
-              <div key={r.id} data-testid={`sp-row-${r.id}`} className="rounded-lg border border-border-subtle p-2">
+              <div key={r.id} data-testid={`sp-row-${r.id}`} className="rounded-lg border border-v5-line p-2">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-v5-ink">
@@ -214,7 +214,7 @@ export default function WorkItemProductsPanel({
                       {r.quantity != null ? ` · số lượng: ${r.quantity}${r.quantityUnit ? ` ${r.quantityUnit}` : ""}` : ""}
                     </p>
                     {r.quantityUnit && (
-                      <p className="text-[10px] text-status-warning">
+                      <p className="text-[10px] text-v5-gold-ink">
                         Đơn vị tính do người nhập khai — cần đối chiếu với danh mục chính thức.
                       </p>
                     )}
@@ -222,7 +222,7 @@ export default function WorkItemProductsPanel({
                   </div>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                      meta?.cls || "bg-v5-bg text-v5-muted border-border-subtle"
+                      meta?.cls || "bg-v5-bg text-v5-muted border-v5-line"
                     }`}
                   >
                     <V5Icon name={meta?.icon || "help"} className="text-[13px]" />
@@ -237,7 +237,7 @@ export default function WorkItemProductsPanel({
                       data-testid={`sp-confirm-${r.id}`}
                       disabled={busy}
                       onClick={() => decide(r, "CONFIRM")}
-                      className="px-2 py-1 rounded text-[11px] font-semibold border border-status-success text-status-success hover:bg-status-success-bg disabled:opacity-50"
+                      className="px-2 py-1 rounded text-[11px] font-semibold border border-v5-success text-v5-success hover:bg-v5-success-soft disabled:opacity-50"
                     >
                       Xác nhận mã SP
                     </button>
@@ -269,7 +269,7 @@ export default function WorkItemProductsPanel({
                     className="w-full rounded-lg border border-v5-line bg-v5-surface px-2 py-1.5 text-xs"
                   />
                   {results.length > 0 && (
-                    <div className="max-h-40 overflow-y-auto rounded-lg border border-border-subtle">
+                    <div className="max-h-40 overflow-y-auto rounded-lg border border-v5-line">
                       {results.map((p) => (
                         <button
                           key={p.id}
@@ -323,7 +323,7 @@ export default function WorkItemProductsPanel({
                       data-testid={`sp-propose-${workItemId}`}
                       disabled={busy}
                       onClick={propose}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-v5-accent bg-v5-accent text-white hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-muted/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Gửi đề xuất
                     </button>
