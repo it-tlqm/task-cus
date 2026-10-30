@@ -61,7 +61,7 @@ export function FeedbackButton() {
         onClick={() => setOpen(true)}
         title="Gửi góp ý / báo lỗi cho lãnh đạo & kỹ thuật"
         aria-label="Gửi góp ý hoặc báo lỗi"
-        className={`focus-ring fixed bottom-36 left-4 z-40 h-11 items-center gap-1.5 rounded-full bg-secondary pl-3 pr-4 text-on-secondary shadow-lg transition-transform hover:opacity-90 active:scale-95 lg:bottom-24 lg:left-[calc(var(--sidebar-width,260px)+16px)] ${
+        className={`focus-ring fixed bottom-36 left-4 z-40 h-11 items-center gap-1.5 rounded-full bg-v5-accent pl-3 pr-4 text-white shadow-lg transition-transform hover:opacity-90 active:scale-95 lg:bottom-24 lg:left-[calc(var(--sidebar-width,260px)+16px)] ${
           pathname.startsWith("/roster") ? "hidden lg:flex" : "flex"
         }`}
       >
@@ -80,14 +80,14 @@ export function FeedbackButton() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-primary flex items-center gap-2">
+              <h3 className="font-bold text-v5-ink flex items-center gap-2">
                 <V5Icon name="campaign" className="text-[20px]" />
                 Góp ý &amp; Báo lỗi
               </h3>
               <button
                 onClick={() => setOpen(false)}
                 disabled={sending}
-                className="p-1 rounded hover:bg-v5-bg text-outline disabled:opacity-40"
+                className="p-1 rounded hover:bg-v5-bg text-v5-muted disabled:opacity-40"
                 aria-label="Đóng"
               >
                 <V5Icon name="close" className="text-[20px]" />
@@ -117,7 +117,7 @@ export function FeedbackButton() {
               onChange={(e) => setContent(e.target.value)}
               maxLength={2000}
               placeholder="Bạn gặp vướng gì, muốn góp ý điều gì? Ghi ngắn gọn — hệ thống tự kèm màn hình bạn đang mở."
-              className="p-2.5 rounded-lg border border-border-subtle text-sm bg-white resize-none"
+              className="p-2.5 rounded-lg border border-v5-line text-sm bg-white resize-none"
             />
 
             <p className="text-[11px] text-v5-muted leading-relaxed">
@@ -128,7 +128,7 @@ export function FeedbackButton() {
             <button
               onClick={submit}
               disabled={sending || content.trim().length < 5}
-              className="h-10 rounded-lg bg-secondary text-on-secondary text-sm font-bold disabled:opacity-50"
+              className="h-10 rounded-lg bg-v5-accent text-white text-sm font-bold disabled:opacity-50"
             >
               {sending ? "Đang gửi..." : "Gửi phản hồi"}
             </button>

@@ -121,10 +121,10 @@ export default function NotificationQuickView({ open, onClose }: Props) {
       >
         <div className="flex items-center justify-between gap-2 border-b border-v5-line/60 px-4 py-3">
           <div className="flex items-center gap-2">
-            <V5Icon name="notifications" className="text-[20px] text-primary" />
+            <V5Icon name="notifications" className="text-[20px] text-v5-ink" />
             <h2 className="font-title-md text-title-md font-bold text-v5-ink">Thông báo nhanh</h2>
             {unreadCount > 0 && (
-              <span className="rounded-full bg-status-danger px-2 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-full bg-v5-danger px-2 py-0.5 text-[10px] font-bold text-white">
                 {unreadCount > 99 ? "99+" : unreadCount} chưa đọc
               </span>
             )}
@@ -141,14 +141,14 @@ export default function NotificationQuickView({ open, onClose }: Props) {
         </div>
 
         <div className="flex items-center justify-between gap-2 border-b border-v5-line/40 px-4 py-2">
-          <span className="text-body-xs font-semibold text-v5-muted">
+          <span className="text-[11px] font-semibold text-v5-muted">
             {items.length > 0 ? `Mới nhất ${items.length} thông báo` : "Hộp thư điều hành"}
           </span>
           <button
             type="button"
             onClick={markAllRead}
             disabled={busyAll || unreadCount === 0}
-            className="text-body-xs font-semibold text-primary disabled:opacity-40"
+            className="text-[11px] font-semibold text-v5-ink disabled:opacity-40"
           >
             {busyAll ? "Đang xử lý..." : "Đọc tất cả"}
           </button>
@@ -164,12 +164,12 @@ export default function NotificationQuickView({ open, onClose }: Props) {
           )}
 
           {!loading && error && (
-            <div className="rounded-xl border border-status-danger/30 bg-status-danger-bg/40 p-4 text-center">
-              <p className="text-body-sm font-semibold text-status-danger">{error}</p>
+            <div className="rounded-xl border border-v5-danger/30 bg-v5-danger-soft/40 p-4 text-center">
+              <p className="text-[12px] font-semibold text-v5-danger">{error}</p>
               <button
                 type="button"
                 onClick={load}
-                className="mt-2 rounded-lg border border-v5-line bg-surface px-3 py-1.5 text-body-xs font-semibold"
+                className="mt-2 rounded-lg border border-v5-line bg-v5-surface px-3 py-1.5 text-[11px] font-semibold"
               >
                 Thử lại
               </button>
@@ -178,9 +178,9 @@ export default function NotificationQuickView({ open, onClose }: Props) {
 
           {!loading && !error && items.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <V5Icon name="check_circle" className="text-[32px] text-status-success" />
-              <p className="text-body-sm font-semibold text-v5-ink">Không có thông báo mới</p>
-              <p className="text-body-xs text-v5-muted">Các nhiệm vụ và thời hạn đang bình thường.</p>
+              <V5Icon name="check_circle" className="text-[32px] text-v5-success" />
+              <p className="text-[12px] font-semibold text-v5-ink">Không có thông báo mới</p>
+              <p className="text-[11px] text-v5-muted">Các nhiệm vụ và thời hạn đang bình thường.</p>
             </div>
           )}
 
@@ -197,47 +197,47 @@ export default function NotificationQuickView({ open, onClose }: Props) {
                   className={`group block rounded-xl border p-3 transition-fast hover:-translate-y-0.5 hover:shadow-md ${
                     item.isUnread
                       ? item.tagType === "danger"
-                        ? "border-status-danger/40 border-l-4 border-l-status-danger bg-status-danger-bg/40"
-                        : "border-status-warning/40 border-l-4 border-l-status-warning bg-status-warning-bg/40"
-                      : "border-v5-line/50 bg-surface"
+                        ? "border-v5-danger/40 border-l-4 border-l-v5-danger bg-v5-danger-soft/40"
+                        : "border-v5-gold/40 border-l-4 border-l-v5-gold bg-v5-gold-soft/40"
+                      : "border-v5-line/50 bg-v5-surface"
                   }`}
                 >
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <span
                       className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-bold ${
                         item.tagType === "danger"
-                          ? "bg-status-danger text-white"
+                          ? "bg-v5-danger text-white"
                           : item.tagType === "success"
-                            ? "bg-status-success text-white"
+                            ? "bg-v5-success text-white"
                             : item.tagType === "warning"
-                              ? "bg-status-warning text-white"
-                              : "bg-primary text-on-primary"
+                              ? "bg-v5-gold text-v5-gold-ink"
+                              : "bg-v5-accent text-white"
                       }`}
                     >
                       {item.tag}
                     </span>
                     <span className="shrink-0 text-[10px] text-v5-muted">{item.time}</span>
                   </div>
-                  <p className="line-clamp-2 text-body-sm font-semibold leading-snug text-v5-ink">
+                  <p className="line-clamp-2 text-[12px] font-semibold leading-snug text-v5-ink">
                     {item.title}
                   </p>
-                  <p className="mt-0.5 line-clamp-2 text-body-xs leading-relaxed text-v5-muted">
+                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-v5-muted">
                     {item.description}
                   </p>
                   <div className="mt-1.5 flex items-center justify-between gap-2">
                     {item.taskCode ? (
-                      <span className="font-mono text-[10px] font-semibold text-primary">{item.taskCode}</span>
+                      <span className="font-mono text-[10px] font-semibold text-v5-ink">{item.taskCode}</span>
                     ) : (
                       <span />
                     )}
-                    <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-secondary">
+                    <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-v5-accent">
                       {item.actionLabel}
                       <V5Icon name="chevron_right" className="text-[14px]" />
                     </span>
                   </div>
                   {item.isUnread && (
-                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-status-warning">
-                      <span className="h-1.5 w-1.5 rounded-full bg-status-warning" />
+                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-v5-gold-ink">
+                      <span className="h-1.5 w-1.5 rounded-full bg-v5-gold" />
                       Chưa đọc
                     </span>
                   )}
@@ -251,7 +251,7 @@ export default function NotificationQuickView({ open, onClose }: Props) {
           <Link
             href="/notifications"
             onClick={onClose}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-label-md font-semibold text-on-primary transition-fast hover:opacity-90 active-press"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-v5-accent px-3 py-2 text-[12px] font-semibold text-white transition-fast hover:opacity-90 active-press"
           >
             Xem tất cả thông báo
             <V5Icon name="arrow_forward" className="text-[17px]" />

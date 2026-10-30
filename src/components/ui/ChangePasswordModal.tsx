@@ -69,23 +69,23 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
       <div className="bg-v5-surface rounded-2xl max-w-md w-full p-6 shadow-2xl border border-v5-line/60 flex flex-col gap-4 animate-scaleUp">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+        <div className="flex items-center justify-between pb-3 border-b border-v5-line">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-v5-accent/10 text-v5-accent flex items-center justify-center">
               <V5Icon name="password" className="text-[20px]" />
             </div>
             <div>
-              <h3 className="font-headline-sm text-primary font-bold text-base">
+              <h3 className="text-sm text-v5-ink font-bold text-base">
                 Thay Đổi Mật Khẩu Cá Nhân
               </h3>
-              <p className="font-label-sm text-[11px] text-v5-muted">
+              <p className="text-[11px] text-v5-muted">
                 Bảo vệ tài khoản tác nghiệp công vụ nội bộ
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-outline hover:text-v5-ink hover:bg-surface-subtle transition-fast"
+            className="p-1 rounded-lg text-v5-muted hover:text-v5-ink hover:bg-v5-bg transition-fast"
             aria-label="Đóng modal"
           >
             <V5Icon name="close" className="text-[20px]" />
@@ -94,7 +94,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
         {/* Error message */}
         {error && (
-          <div className="p-3 rounded-lg bg-status-danger-bg text-status-danger text-xs flex items-center gap-2 border border-status-danger/20">
+          <div className="p-3 rounded-lg bg-v5-danger-soft text-v5-danger text-xs flex items-center gap-2 border border-v5-danger/20">
             <V5Icon name="error" className="text-[16px] shrink-0" />
             <span>{error}</span>
           </div>
@@ -103,8 +103,8 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           {/* Mật khẩu hiện tại */}
           <div className="flex flex-col gap-1">
-            <label className="font-body-semibold text-xs text-v5-ink">
-              Mật khẩu hiện tại <span className="text-status-danger">*</span>
+            <label className="font-semibold text-xs text-v5-ink">
+              Mật khẩu hiện tại <span className="text-v5-danger">*</span>
             </label>
             <input
               type={showPass ? "text" : "password"}
@@ -112,14 +112,14 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Nhập mật khẩu đang sử dụng"
               required
-              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-v5-ink focus:outline-none focus:border-secondary focus:ring-1 focus:ring-v5-accent transition-fast"
+              className="h-10 px-3 rounded-lg bg-v5-surface border border-v5-line text-sm text-v5-ink focus:outline-none focus:border-v5-accent focus:ring-1 focus:ring-v5-accent transition-fast"
             />
           </div>
 
           {/* Mật khẩu mới */}
           <div className="flex flex-col gap-1">
-            <label className="font-body-semibold text-xs text-v5-ink">
-              Mật khẩu mới (Tối thiểu 8 ký tự) <span className="text-status-danger">*</span>
+            <label className="font-semibold text-xs text-v5-ink">
+              Mật khẩu mới (Tối thiểu 8 ký tự) <span className="text-v5-danger">*</span>
             </label>
             <input
               type={showPass ? "text" : "password"}
@@ -128,14 +128,14 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               placeholder="Nhập mật khẩu mới an toàn"
               required
               minLength={8}
-              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-v5-ink focus:outline-none focus:border-secondary focus:ring-1 focus:ring-v5-accent transition-fast"
+              className="h-10 px-3 rounded-lg bg-v5-surface border border-v5-line text-sm text-v5-ink focus:outline-none focus:border-v5-accent focus:ring-1 focus:ring-v5-accent transition-fast"
             />
           </div>
 
           {/* Xác nhận mật khẩu mới */}
           <div className="flex flex-col gap-1">
-            <label className="font-body-semibold text-xs text-v5-ink">
-              Xác nhận mật khẩu mới <span className="text-status-danger">*</span>
+            <label className="font-semibold text-xs text-v5-ink">
+              Xác nhận mật khẩu mới <span className="text-v5-danger">*</span>
             </label>
             <input
               type={showPass ? "text" : "password"}
@@ -144,7 +144,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               placeholder="Nhập lại mật khẩu mới"
               required
               minLength={8}
-              className="h-10 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-v5-ink focus:outline-none focus:border-secondary focus:ring-1 focus:ring-v5-accent transition-fast"
+              className="h-10 px-3 rounded-lg bg-v5-surface border border-v5-line text-sm text-v5-ink focus:outline-none focus:border-v5-accent focus:ring-1 focus:ring-v5-accent transition-fast"
             />
           </div>
 
@@ -154,25 +154,25 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
               type="checkbox"
               checked={showPass}
               onChange={(e) => setShowPass(e.target.checked)}
-              className="rounded border-border-subtle text-secondary focus:ring-v5-accent"
+              className="rounded border-v5-line text-v5-accent focus:ring-v5-accent"
             />
             <span>Hiển thị ký tự mật khẩu</span>
           </label>
 
           {/* Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-v5-line">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-surface-subtle text-v5-muted hover:bg-v5-bg transition-fast"
+              className="px-4 py-2 text-xs font-semibold rounded-lg bg-v5-bg text-v5-muted hover:bg-v5-bg transition-fast"
             >
               Hủy bỏ
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-secondary text-on-secondary hover:bg-secondary/90 transition-fast shadow-sm flex items-center gap-1.5 active-press"
+              className="px-4 py-2 text-xs font-semibold rounded-lg bg-v5-accent text-white hover:bg-v5-accent/90 transition-fast shadow-sm flex items-center gap-1.5 active-press"
             >
               {loading ? (
                 <>

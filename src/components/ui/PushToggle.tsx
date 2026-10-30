@@ -110,7 +110,7 @@ export function PushToggle() {
         </button>
       ) : (
         <button onClick={enable} disabled={busy}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-semibold shadow-sm disabled:opacity-50">
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-v5-accent text-white text-xs font-semibold shadow-sm disabled:opacity-50">
           <V5Icon name="add_alert" className="text-[16px]" />
           <span>{busy ? "Đang bật..." : "Bật thông báo về điện thoại"}</span>
         </button>

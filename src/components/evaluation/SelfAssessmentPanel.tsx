@@ -262,7 +262,7 @@ export default function SelfAssessmentPanel({
     >
       <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <V5Icon name="rate_review" className="text-secondary text-[20px]" />
+          <V5Icon name="rate_review" className="text-v5-accent text-[20px]" />
           <div>
             <h3 className="text-sm font-bold text-slate-800">
               Tự đánh giá, nhận xét lãnh đạo và mức xếp loại đề xuất
@@ -344,7 +344,7 @@ export default function SelfAssessmentPanel({
                       Object.fromEntries(COMMON_CRITERIA.map((c) => [c.code, String(c.max)]))
                     )
                   }
-                  className="text-[11px] font-semibold text-secondary hover:underline disabled:opacity-50"
+                  className="text-[11px] font-semibold text-v5-accent hover:underline disabled:opacity-50"
                 >
                   Điền điểm tối đa
                 </button>
@@ -538,7 +538,7 @@ export default function SelfAssessmentPanel({
             <button
               onClick={() => save()}
               disabled={saving}
-              className="px-3 py-1.5 rounded-lg bg-secondary text-white text-[11px] font-semibold disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg bg-v5-accent text-white text-[11px] font-semibold disabled:opacity-50"
             >
               {saving ? "Đang lưu..." : "Lưu phần tự đánh giá"}
             </button>
@@ -566,7 +566,7 @@ export default function SelfAssessmentPanel({
             <button
               onClick={saveReviewerComment}
               disabled={saving}
-              className="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg bg-v5-accent text-white text-[11px] font-semibold disabled:opacity-50"
             >
               {saving ? "Đang lưu..." : "Lưu nhận xét lãnh đạo"}
             </button>

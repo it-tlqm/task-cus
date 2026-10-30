@@ -106,7 +106,7 @@ export default function EvaluationExportPanel({
       className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2 flex-wrap">
-        <V5Icon name="description" className="text-secondary text-[20px]" />
+        <V5Icon name="description" className="text-v5-accent text-[20px]" />
         <div className="flex-1 min-w-[220px]">
           <h3 className="text-sm font-bold text-slate-800">
             Biểu mẫu theo dõi, đánh giá (01A / 01B / 02A / 02B)
@@ -156,14 +156,14 @@ export default function EvaluationExportPanel({
         <button
           onClick={doPreview}
           disabled={loading}
-          className="px-3 py-1.5 rounded-lg bg-secondary text-white text-[11px] font-semibold disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg bg-v5-accent text-white text-[11px] font-semibold disabled:opacity-50"
         >
           {loading ? "Đang xem trước..." : "Xem trước"}
         </button>
         <button
           onClick={doDownload}
           disabled={downloading || !preview}
-          className="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-semibold disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg bg-v5-accent text-white text-[11px] font-semibold disabled:opacity-50"
           title={preview ? "" : "Hãy xem trước trước khi tải"}
         >
           {downloading ? "Đang xuất..." : "Tải Excel"}

@@ -19,7 +19,7 @@ export default function BackButton({ href, label = "Quay lại", className = "" 
     <Link
       href={href}
       data-testid="back-button"
-      className={`inline-flex w-fit max-w-full min-h-11 touch-manipulation items-center gap-2 rounded-lg border border-v5-line bg-v5-surface px-3.5 py-2 text-label-md font-semibold text-primary shadow-sm transition-fast hover:border-border-subtle hover:bg-v5-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-accent focus-visible:ring-offset-2 active-press ${className}`}
+      className={`inline-flex w-fit max-w-full min-h-11 touch-manipulation items-center gap-2 rounded-lg border border-v5-line bg-v5-surface px-3.5 py-2 text-[12px] font-semibold text-v5-ink shadow-sm transition-fast hover:border-v5-line hover:bg-v5-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-accent focus-visible:ring-offset-2 active-press ${className}`}
     >
       <V5Icon name="arrow_back" className="shrink-0 text-[20px]" />
       <span className="truncate">{label}</span>
