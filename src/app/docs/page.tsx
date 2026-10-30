@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { FileText, X } from "lucide-react";
 import { vnDateToDeadlineIso } from "@/lib/datetime";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
@@ -22,8 +23,8 @@ interface DocRow {
 }
 
 const STATUS_LABELS: Record<string, { text: string; cls: string }> = {
-  DANG_XU_LY: { text: "Đang xử lý", cls: "bg-status-warning-bg text-status-warning" },
-  HOAN_THANH: { text: "Xong", cls: "bg-status-success-bg text-status-success" },
+  DANG_XU_LY: { text: "Đang xử lý", cls: "bg-v5-gold-soft text-v5-gold-ink" },
+  HOAN_THANH: { text: "Xong", cls: "bg-v5-success-soft text-v5-success" },
   LUU_TRU: { text: "Lưu", cls: "bg-v5-bg text-v5-muted" },
 };
 
@@ -230,7 +231,7 @@ export default function DocsPage() {
                     </Link>
                   ) : canApprove ? (
                     <button onClick={() => handleConvert(r.id)} disabled={convertingId === r.id}
-                      className="h-9 px-3 rounded-lg bg-secondary text-on-secondary text-xs font-bold disabled:opacity-50">
+                      className="h-9 px-3 rounded-lg bg-v5-accent text-white text-xs font-bold disabled:opacity-50">
                       {convertingId === r.id ? "Đang chuyển..." : "Chuyển thành việc"}
                     </button>
                   ) : null}
@@ -244,9 +245,21 @@ export default function DocsPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-4 bg-v5-accent text-white flex items-center justify-between">
-              <h3 className="font-semibold">Vào sổ văn bản</h3>
-              <button onClick={() => setShowModal(false)}>✕</button>
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
+                  <FileText className="h-[18px] w-[18px]" />
+                </span>
+                <h3 className="text-sm font-semibold text-v5-ink">Vào sổ văn bản</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                aria-label="Đóng"
+              >
+                <X className="h-[18px] w-[18px]" />
+              </button>
             </div>
             <form onSubmit={handleSave}>
               <div className="p-4 flex flex-col gap-3 max-h-[70vh] overflow-y-auto">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { CalendarOff, X } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -12,9 +13,9 @@ const LEAVE_LABELS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, { text: string; cls: string }> = {
-  PENDING: { text: "Chờ duyệt", cls: "bg-status-warning-bg text-status-warning" },
-  APPROVED: { text: "Đã duyệt", cls: "bg-status-success-bg text-status-success" },
-  REJECTED: { text: "Từ chối", cls: "bg-status-danger-bg text-status-danger" },
+  PENDING: { text: "Chờ duyệt", cls: "bg-v5-gold-soft text-v5-gold-ink" },
+  APPROVED: { text: "Đã duyệt", cls: "bg-v5-success-soft text-v5-success" },
+  REJECTED: { text: "Từ chối", cls: "bg-v5-danger-soft text-v5-danger" },
   CANCELED: { text: "Đã hủy", cls: "bg-v5-bg text-v5-muted" },
 };
 
@@ -215,7 +216,7 @@ export default function LeavesPage() {
                 {r.status === "PENDING" && canApprove && (
                   <>
                     <button onClick={() => handleReview(r.id, "APPROVE")} disabled={reviewing}
-                      className="h-10 px-4 rounded-lg bg-status-success text-white text-sm font-semibold disabled:opacity-50">
+                      className="h-10 px-4 rounded-lg bg-v5-success text-white text-sm font-semibold disabled:opacity-50">
                       Duyệt
                     </button>
                     <button onClick={() => setReviewId(reviewId === r.id ? null : r.id)}
@@ -237,7 +238,7 @@ export default function LeavesPage() {
                     placeholder="Nhập lý do từ chối..."
                     className="p-2.5 rounded-lg border border-v5-line text-sm" />
                   <button onClick={() => handleReview(r.id, "REJECT")} disabled={reviewing}
-                    className="h-10 px-4 rounded-lg bg-status-danger text-white text-sm font-semibold disabled:opacity-50 self-start">
+                    className="h-10 px-4 rounded-lg bg-v5-danger text-white text-sm font-semibold disabled:opacity-50 self-start">
                     {reviewing ? "Đang xử lý..." : "Xác nhận từ chối"}
                   </button>
                 </div>
@@ -250,9 +251,21 @@ export default function LeavesPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-4 bg-v5-accent text-white flex items-center justify-between">
-              <h3 className="font-semibold">Báo nghỉ / công tác</h3>
-              <button onClick={() => setShowModal(false)}>✕</button>
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
+                  <CalendarOff className="h-[18px] w-[18px]" />
+                </span>
+                <h3 className="text-sm font-semibold text-v5-ink">Báo nghỉ / công tác</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                aria-label="Đóng"
+              >
+                <X className="h-[18px] w-[18px]" />
+              </button>
             </div>
             <form onSubmit={handleSave}>
               <div className="p-4 flex flex-col gap-3 max-h-[70vh] overflow-y-auto">

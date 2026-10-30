@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { ClipboardList, X } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -113,9 +114,21 @@ export default function MeetingsPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-4 bg-v5-accent text-white flex items-center justify-between">
-              <h3 className="font-semibold">Lập biên bản giao ban</h3>
-              <button onClick={() => setShowModal(false)}>✕</button>
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
+                  <ClipboardList className="h-[18px] w-[18px]" />
+                </span>
+                <h3 className="text-sm font-semibold text-v5-ink">Lập biên bản giao ban</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                aria-label="Đóng"
+              >
+                <X className="h-[18px] w-[18px]" />
+              </button>
             </div>
             <form onSubmit={handleSave}>
               <div className="p-4 flex flex-col gap-3">

@@ -381,13 +381,13 @@ export default function MeetingDetailPage() {
       )}
 
       {canApprove && meeting.canEdit && aiEnabled && (
-        <div className="bg-secondary/10 border border-secondary/30 rounded-xl p-3 flex flex-col gap-2">
-          <span className="text-xs font-bold text-secondary">✨ Dán biên bản thô, AI tách kết luận giúp</span>
+        <div className="bg-v5-accent/10 border border-v5-accent/30 rounded-xl p-3 flex flex-col gap-2">
+          <span className="text-xs font-bold text-v5-accent">✨ Dán biên bản thô, AI tách kết luận giúp</span>
           <textarea rows={3} value={minutes} onChange={(e) => setMinutes(e.target.value)}
             placeholder="Dán nội dung biên bản họp vào đây..."
             className="p-2.5 rounded-lg border border-v5-line text-sm bg-v5-surface" />
           <button onClick={handleExtract} disabled={extracting}
-            className="self-start px-4 py-2 rounded-lg bg-secondary text-on-secondary text-xs font-bold disabled:opacity-50">
+            className="self-start px-4 py-2 rounded-lg bg-v5-accent text-white text-xs font-bold disabled:opacity-50">
             {extracting ? "Đang tách..." : "Tách kết luận bằng AI"}
           </button>
         </div>
@@ -484,7 +484,7 @@ export default function MeetingDetailPage() {
                 ) : meeting.canEdit && canApprove ? (
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => handleConvert(c.id)} disabled={convertingId === c.id}
-                      className="text-xs font-bold text-white bg-secondary rounded-lg px-3 py-1.5 disabled:opacity-50">
+                      className="text-xs font-bold text-white bg-v5-accent rounded-lg px-3 py-1.5 disabled:opacity-50">
                       {convertingId === c.id ? "Đang chuyển..." : "Chuyển thành nhiệm vụ"}
                     </button>
                     <button onClick={() => startConclusionEdit(c)}
