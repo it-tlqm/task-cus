@@ -8,6 +8,7 @@ import BackButton from "@/components/ui/BackButton";
 import { toast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
+import { TaskActionDrawer } from "@/components/tasks/TaskActionDrawer";
 import TxSourceBadge from "@/components/work/TxSourceBadge";
 import {
   AlertTriangle,
@@ -314,6 +315,7 @@ export default function TaskDetailPage() {
 
   // Update progress modal state
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showActionDrawer, setShowActionDrawer] = useState(false);
   const [newProgress, setNewProgress] = useState(50);
   const [updateNotes, setUpdateNotes] = useState("");
   // YC-38 B4: KHONG dung state rieng cho "trinh duyet" — suy ra tu newProgress === 100
@@ -1304,16 +1306,11 @@ export default function TaskDetailPage() {
             )}
             {!isCompleted && !isWaiting && (
               <button
-                onClick={() => {
-                  // YC-38 B4: reset trạng thái modal mỗi lần mở (không giữ checkbox/tiến độ cũ)
-                  setNewProgress(task?.progressPercent ?? 0);
-                  setUpdateNotes("");
-                  setShowUpdateModal(true);
-                }}
+                onClick={() => setShowActionDrawer(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-v5-accent hover:bg-v5-accent/90 text-white font-semibold text-sm shadow-sm active-press"
               >
                 <TaskIcon name="edit_calendar" className="text-[18px]" />
-                <span>{isTaskOwner || canApprove ? "Báo cáo tiến độ / Nộp kết quả" : "Báo phần việc của tôi"}</span>
+                <span>Tác nghiệp 1 chạm</span>
               </button>
             )}
 
@@ -1780,15 +1777,10 @@ export default function TaskDetailPage() {
                               <button
                                 type="button"
                                 data-testid={`own-part-report-${p.personId}`}
-                                onClick={() => {
-                                  setOwnPartText(p.partResultText || "");
-                                  setOwnPartOpen(true);
-                                }}
+                                onClick={() => setShowActionDrawer(true)}
                                 className="px-2.5 py-1 rounded bg-v5-accent text-white text-[11px] font-semibold"
                               >
-                                {p.partStatus === "RETURNED"
-                                  ? "Báo lại phần việc của tôi"
-                                  : "Báo phần việc của tôi"}
+                                {p.partStatus === "RETURNED" ? "Báo lại phần việc" : "Tác nghiệp 1 chạm"}
                               </button>
                             )}
                             {canPrecheck && (
@@ -2546,15 +2538,11 @@ export default function TaskDetailPage() {
           ) : !isCompleted && !isWaiting ? (
             <>
               <button
-                onClick={() => {
-                  setNewProgress(task.progressPercent ?? 0);
-                  setUpdateNotes("");
-                  setShowUpdateModal(true);
-                }}
+                onClick={() => setShowActionDrawer(true)}
                 className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-v5-accent text-sm font-semibold text-white"
               >
                 <TaskIcon name="edit_calendar" className="text-[18px]" />
-                Báo cáo tiến độ
+                Tác nghiệp 1 chạm
               </button>
               <button
                 onClick={() => setShowExtRequestModal(true)}
@@ -3064,6 +3052,16 @@ export default function TaskDetailPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {showActionDrawer && (
+        <TaskActionDrawer
+          task={task}
+          personId={permUser?.personId}
+          canApprove={canApprove}
+          onClose={() => setShowActionDrawer(false)}
+          onSaved={fetchTaskDetail}
+        />
       )}
 
       {/* Modal xem trước tệp tài liệu / hình ảnh (Lightbox & PDF viewer) */}
