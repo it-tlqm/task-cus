@@ -1237,7 +1237,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {showAddPersonModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
               <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
                 <Users className="w-4 h-4 text-v5-accent" />
@@ -1381,7 +1381,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {editingPerson && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
               <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
                 <Edit2 className="w-4 h-4 text-v5-accent" />
@@ -1523,7 +1523,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {transferringPerson && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
               <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
                 <ArrowRightLeft className="w-4 h-4 text-v5-accent" />
@@ -1666,7 +1666,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {accountModalPerson && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-md w-full p-5 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-v5-line/60">
               <h3 className="text-base font-bold text-v5-ink flex items-center gap-2">
                 <Shield className="w-4 h-4 text-v5-accent" />
@@ -1820,7 +1820,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {showAddUnitModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-md w-full p-5 space-y-4">
             <h3 className="text-base font-bold text-v5-ink">Thêm Đơn vị / Bộ phận mới</h3>
             <p className="text-xs text-v5-muted">
               {selectedUnit
@@ -1891,7 +1891,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {editingUnit && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-md w-full p-5 space-y-4">
             <h3 className="text-base font-bold text-v5-ink">Đổi tên đơn vị</h3>
             <p className="text-xs text-v5-muted">
               Mã <span className="font-mono font-semibold">{editingUnit.code}</span> giữ nguyên để bảo toàn liên kết dữ liệu.
@@ -1942,7 +1942,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {deletingUnit && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-md w-full p-5 space-y-4">
             <h3 className="text-base font-bold text-v5-danger">Xóa đơn vị "{deletingUnit.name}"?</h3>
             <p className="text-xs text-v5-muted leading-relaxed">
               Chỉ xóa được đơn vị <strong>không còn</strong> đơn vị con, cán bộ, nhiệm vụ, kế hoạch và bản chốt kỳ.
@@ -1982,7 +1982,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {showPositionModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-lg w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-v5-ink">Quản lý chức vụ</h3>
               <button
@@ -2117,7 +2117,7 @@ export default function OrganizationAdminPage() {
       {/* ---------------------------------------------------- */}
       {confirmDialog && confirmDialog.isOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl shadow-xl max-w-sm w-full p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-sm w-full p-5 space-y-4">
             <h3
               className={`text-base font-bold ${
                 confirmDialog.isDangerous ? "text-v5-danger" : "text-v5-ink"

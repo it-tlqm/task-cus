@@ -215,7 +215,7 @@ export default function SystemAdminPage() {
       {/* Toast notification */}
       {toastMessage && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-sm border text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
             toastMessage.type === "success"
               ? "bg-v5-success-soft text-v5-success border-v5-success/30"
               : "bg-v5-danger-soft text-v5-danger border-v5-danger/30"
@@ -701,7 +701,7 @@ export default function SystemAdminPage() {
       {/* MODAL: Chỉnh sửa tham số cấu hình */}
       {editingConfig && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-v5-line/60 pb-3">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-v5-accent" />

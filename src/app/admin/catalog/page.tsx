@@ -408,7 +408,7 @@ export default function CatalogAdminPage() {
       {/* Toast Notification */}
       {toastMessage && (
         <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-sm border text-sm font-medium animate-in fade-in slide-in-from-top-2 ${
             toastMessage.type === "success"
               ? "bg-v5-success-soft text-v5-success border-v5-success/30"
               : "bg-v5-danger-soft text-v5-danger border-v5-danger/30"
@@ -852,7 +852,7 @@ export default function CatalogAdminPage() {
       {/* MODAL: Thêm mới hoạt động mẫu */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-4 border-b border-v5-line/60 bg-v5-bg">
               <div className="flex items-center gap-2">
                 <Plus className="w-4 h-4 text-v5-accent" />
@@ -996,7 +996,7 @@ export default function CatalogAdminPage() {
       {/* MODAL: Sửa thông tin hoạt động mẫu */}
       {editingTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-4 border-b border-v5-line/60 bg-v5-bg">
               <div className="flex items-center gap-2">
                 <Edit2 className="w-4 h-4 text-v5-accent" />
@@ -1147,7 +1147,7 @@ export default function CatalogAdminPage() {
       {/* CONFIRM DIALOG: Chuyển đổi trạng thái Áp dụng / Ngừng áp dụng */}
       {statusConfirmTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
             <div className="flex items-start gap-3">
               <div
                 className={`p-2 rounded-lg shrink-0 ${
@@ -1217,7 +1217,7 @@ export default function CatalogAdminPage() {
       {/* MODAL: Thêm / Đổi tên nhóm nghiệp vụ */}
       {isGroupModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden">
+          <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line w-full max-w-md overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-v5-line/60">
               <h3 className="font-bold text-sm text-v5-ink">
                 {editingGroup ? `Đổi tên nhóm: ${editingGroup.code}` : "Thêm nhóm nghiệp vụ mới"}
@@ -1294,7 +1294,7 @@ export default function CatalogAdminPage() {
       {/* CONFIRM: Xóa nhóm nghiệp vụ trống */}
       {deletingGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
+          <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line w-full max-w-md overflow-hidden p-5 space-y-4">
             <h3 className="font-bold text-sm text-v5-danger">Xóa nhóm "{deletingGroup.name}"?</h3>
             <p className="text-xs text-v5-muted leading-relaxed">
               Chỉ xóa được nhóm <strong>không còn hoạt động mẫu nào</strong>. Hệ thống sẽ từ chối nếu còn mẫu liên quan.

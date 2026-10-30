@@ -795,7 +795,7 @@ export default function WorkCatalogTab({ canManage, showToast }: Props) {
       {/* Modal nhập danh mục */}
       {isImportOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-v5-surface rounded-xl shadow-xl border border-v5-line w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
             <div className="flex items-center justify-between p-4 border-b border-v5-line/60 bg-v5-bg">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-4 h-4 text-v5-accent" />
