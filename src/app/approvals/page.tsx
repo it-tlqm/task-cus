@@ -723,7 +723,7 @@ export default function ApprovalsPage() {
           onClick={() => setPreviewFile(null)}
         >
           <div
-            className="bg-v5-surface rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-v5-line"
+            className="bg-v5-surface rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-sm overflow-hidden border border-v5-line"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">
@@ -1021,7 +1021,7 @@ export default function ApprovalsPage() {
       {/* Modal gửi giải trình lại */}
       {respondCase && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-v5-surface rounded-xl max-w-lg w-full p-6 shadow-2xl border border-v5-line flex flex-col gap-4">
+          <div className="bg-v5-surface rounded-xl max-w-lg w-full p-6 shadow-sm border border-v5-line flex flex-col gap-4">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line pb-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">

@@ -439,7 +439,7 @@ export default function ApprovalPreviewModal({
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/60 flex items-start justify-center p-3 overflow-y-auto">
-      <div className="bg-v5-surface rounded-2xl max-w-3xl w-full my-4 shadow-2xl border border-v5-line">
+      <div className="bg-v5-surface rounded-2xl max-w-3xl w-full my-4 shadow-sm border border-v5-line">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 rounded-t-2xl border-b border-v5-line bg-v5-surface px-5 py-4">
           <div className="flex min-w-0 items-start gap-3">
