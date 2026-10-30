@@ -1433,7 +1433,7 @@ export default function RoutinePage() {
       {/* DETAIL INSPECTION MODAL */}
       {inspectEntry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-v5-surface rounded-xl max-w-2xl w-full p-6 shadow-xl border border-v5-line flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-v5-surface rounded-xl max-w-2xl w-full p-6 shadow-sm border border-v5-line flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line pb-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">

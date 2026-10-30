@@ -1466,7 +1466,7 @@ export default function CauHinhSoLieuPage() {
       {historyView && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setHistoryView(null)}>
           <div
-            className="bg-v5-surface rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-auto"
+            className="bg-v5-surface rounded-xl shadow-sm w-full max-w-3xl max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
             data-testid="metric-history-modal"
           >
@@ -1599,7 +1599,7 @@ function PersonPicker({ people, value, onChange }: { people: any[]; value: strin
         <ChevronDown className="h-4 w-4 text-v5-muted" />
       </button>
       {open && (
-        <div className="absolute z-30 mt-1 w-full bg-v5-surface border border-v5-line rounded-lg shadow-lg p-2">
+        <div className="absolute z-30 mt-1 w-full bg-v5-surface border border-v5-line rounded-lg shadow-sm p-2">
           <input
             autoFocus
             value={q}
