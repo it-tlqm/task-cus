@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  ClipboardList,
   Download,
   Eye,
   FileText,
@@ -231,7 +232,7 @@ export function TaskActionDrawer({ task, personId, canApprove, onClose, onSaved 
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
-              <ClipboardListIcon />
+              <ClipboardList className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-v5-muted">
@@ -514,12 +515,3 @@ export function TaskActionDrawer({ task, personId, canApprove, onClose, onSaved 
   );
 }
 
-function ClipboardListIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-[18px] w-[18px]">
-      <rect x="8" y="3" width="8" height="4" rx="1" />
-      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-      <path d="M9 12h6M9 16h4" />
-    </svg>
-  );
-}
