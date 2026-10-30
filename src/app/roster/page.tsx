@@ -1670,7 +1670,7 @@ function DayEditorModal({
   return (
     <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-black/40 p-0 lg:p-4">
       <div
-        className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-v5-surface rounded-none lg:rounded-2xl shadow-xl"
+        className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-v5-surface rounded-none lg:rounded-2xl shadow-sm"
         data-testid="editor-modal"
       >
         <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 bg-v5-surface border-b border-v5-line">
@@ -2276,7 +2276,7 @@ function CatalogModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center bg-black/40 p-0 lg:p-4">
-      <div className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-v5-surface rounded-none lg:rounded-2xl shadow-xl" data-testid="catalog-modal">
+      <div className="w-full lg:max-w-3xl max-h-full lg:max-h-[90vh] overflow-y-auto bg-v5-surface rounded-none lg:rounded-2xl shadow-sm" data-testid="catalog-modal">
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-v5-surface border-b border-v5-line">
           <div>
             <div className="text-sm font-bold text-v5-ink">Danh mục vị trí/nhiệm vụ phân công</div>
@@ -2474,7 +2474,7 @@ function ExportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md bg-v5-surface rounded-2xl shadow-xl" data-testid="export-dialog">
+      <div className="w-full max-w-md bg-v5-surface rounded-2xl shadow-sm" data-testid="export-dialog">
         <div className="flex items-center justify-between px-4 py-3 border-b border-v5-line">
           <div>
             <div className="text-sm font-bold text-v5-ink">Xuất Excel phân công nhiệm vụ</div>
