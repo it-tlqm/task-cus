@@ -1,9 +1,5 @@
-import DashboardV4 from "@/components/dashboard/DashboardV4";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Bảng điều hành V4",
-};
-
-export default function DashboardV4Page() {
-  return <DashboardV4 />;
+export default function LegacyDashboardV4Page() {
+  redirect("/");
 }

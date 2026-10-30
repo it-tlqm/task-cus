@@ -55,13 +55,13 @@ export default function LoginPage() {
         return;
       }
       // Quay lại đúng trang đã yêu cầu trước khi bị chặn (middleware ?redirect=), chống open-redirect
-      let dest = "/dashboard";
+      let dest = "/";
       try {
         const sp = new URLSearchParams(window.location.search);
         const r = sp.get("redirect") || "";
         if (r.startsWith("/") && !r.startsWith("//") && !r.startsWith("/login")) dest = r;
       } catch {}
-      if (data.user?.role === "SYSTEM_ADMIN" && dest === "/dashboard") {
+      if (data.user?.role === "SYSTEM_ADMIN" && dest === "/") {
         dest = "/admin/system";
       }
       router.push(dest);

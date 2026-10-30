@@ -25,10 +25,11 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig = {
-  // Đưa các màn hình legacy về luồng V5; /dashboard/v4 vẫn giữ để rollback.
+  // Đưa các màn hình legacy về luồng V5; dashboard cũ chuyển hẳn về trang chủ.
   async redirects() {
     return [
-      { source: "/dashboard", destination: "/v5", permanent: false },
+      { source: "/dashboard", destination: "/", permanent: false },
+      { source: "/dashboard/v4", destination: "/", permanent: false },
       { source: "/giao-ban", destination: "/v5/giao-ban", permanent: false },
       { source: "/giao-ban/nhap", destination: "/v5/giao-ban/nhap", permanent: false },
     ];
