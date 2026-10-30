@@ -1471,7 +1471,7 @@ export default function CauHinhSoLieuPage() {
             data-testid="metric-history-modal"
           >
             <div className="px-4 py-3 border-b border-v5-line/40 flex items-center gap-2 sticky top-0 bg-v5-surface">
-              <History className="h-[18px] w-[18px] text-v5-ink" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent"><History className="h-[18px] w-[18px]" /></span>
               <span className="font-semibold text-v5-ink">Lịch sử: {historyView.title}</span>
               <button onClick={() => setHistoryView(null)} className="ml-auto p-1 rounded hover:bg-v5-bg" aria-label="Đóng">
                 <X className="h-[18px] w-[18px]" />
