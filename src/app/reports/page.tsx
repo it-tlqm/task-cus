@@ -1641,7 +1641,7 @@ function ReportsContent() {
       {/* MODAL XÁC NHẬN CHỐT KỲ SỐ LIỆU */}
       {isLockModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-v5-accent-soft/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-v5-surface rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 border border-v5-line/40">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 border border-v5-line/40">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">
@@ -1757,7 +1757,7 @@ function ReportsContent() {
       {/* MODAL CHI TIẾT BẢN CHỤP SNAPSHOT */}
       {viewingSnapshot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-v5-accent-soft/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-v5-surface rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 border border-v5-line/40">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 border border-v5-line/40">
             {/* Modal Header */}
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -1898,7 +1898,7 @@ function ReportsContent() {
       {/* DRILLDOWN MODAL DIALOG (DRAWER-STYLE) */}
       {drilldownTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-v5-accent-soft/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-v5-surface rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-v5-surface rounded-xl shadow-sm max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -2012,7 +2012,7 @@ function ReportsContent() {
 
       {/* INTERACTIVE FEEDBACK TOAST NOTIFICATION */}
       {toastMsg && (
-        <div className="fixed bottom-6 left-4 right-4 lg:left-auto lg:right-6 lg:w-96 bg-v5-accent text-white p-space-sm rounded-xl shadow-xl flex items-center justify-between z-50 animate-in fade-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-6 left-4 right-4 lg:left-auto lg:right-6 lg:w-96 bg-v5-accent text-white p-space-sm rounded-xl shadow-sm flex items-center justify-between z-50 animate-in fade-in slide-in-from-bottom duration-200">
           <div className="flex items-center gap-space-xs">
             <V5Icon name="task_alt" className="text-v5-success text-[20px]" />
             <span className="font-semibold text-[13px]">{toastMsg}</span>
