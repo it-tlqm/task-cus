@@ -85,6 +85,9 @@ export default function MonthlyResultsPage() {
   const [mePersonId, setMePersonId] = useState("");
   const [people, setPeople] = useState<Array<{ id: string; fullName: string }>>([]);
   const [items, setItems] = useState<MonthlyItem[]>([]);
+  const [resultFilter, setResultFilter] = useState<
+    "all" | "completed" | "unmapped" | "missing"
+  >("all");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [scorePreview, setScorePreview] = useState<ScorePreview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -350,6 +353,21 @@ export default function MonthlyResultsPage() {
 
   const missing = (it: MonthlyItem) => it.completedQty === null || it.completedQty === undefined || !it.completedDate;
 
+  const visibleItems = items.filter((it) => {
+    if (resultFilter === "all") return true;
+    if (resultFilter === "completed") {
+      return it.completedQty !== null && it.completedQty !== undefined;
+    }
+    if (resultFilter === "unmapped") return !it.productItem;
+    if (resultFilter === "missing") return missing(it);
+    return true;
+  });
+
+  const filterCardClass = (key: typeof resultFilter, extra = "") =>
+    `p-3 cursor-pointer transition-all hover:bg-v5-bg ${
+      resultFilter === key ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""
+    } ${extra}`;
+
   const [exporting, setExporting] = useState(false);
   const doDownload = async (template: "bang1" | "02c", defaultName: string) => {
     if (exporting) return;
@@ -529,29 +547,79 @@ export default function MonthlyResultsPage() {
 
       {summary && (
         <div data-tour="summary" className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          <Card className="p-3">
+          <Card
+            className={filterCardClass("all")}
+            role="button"
+            tabIndex={0}
+            aria-pressed={resultFilter === "all"}
+            onClick={() => setResultFilter("all")}
+          >
             <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Đầu việc ghi nhận</div>
             <div className="mt-1 text-2xl font-bold tabular-nums text-v5-ink">{summary.totalItems}</div>
           </Card>
-          <Card className="p-3">
+          <Card
+            className={filterCardClass("completed")}
+            role="button"
+            tabIndex={0}
+            aria-pressed={resultFilter === "completed"}
+            onClick={() => setResultFilter("completed")}
+          >
             <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Hoàn thành (quy đổi)</div>
             <div className="mt-1 text-2xl font-bold tabular-nums text-v5-success">{summary.completedConverted}</div>
             <div className="mt-1 text-[10px] text-v5-muted">thô: {summary.completedRaw} · giao quy đổi: {summary.assignedConverted}</div>
           </Card>
-          <Card className={`p-3 ${summary.unmappedCount > 0 ? "border-v5-gold/50 bg-v5-gold-soft" : ""}`}>
+          <Card
+            className={filterCardClass(
+              "unmapped",
+              summary.unmappedCount > 0 ? "border-v5-gold/50 bg-v5-gold-soft" : ""
+            )}
+            role="button"
+            tabIndex={0}
+            aria-pressed={resultFilter === "unmapped"}
+            onClick={() => setResultFilter("unmapped")}
+          >
             <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chưa gắn SP QĐ1277</div>
             <div className={`mt-1 text-2xl font-bold tabular-nums ${summary.unmappedCount > 0 ? "text-v5-gold-ink" : "text-v5-ink"}`}>
               {summary.unmappedCount}
             </div>
             <div className="mt-1 text-[10px] text-v5-muted">vẫn ghi nhận · không tính điểm</div>
           </Card>
-          <Card className={`p-3 ${summary.missingFieldsCount > 0 ? "border-v5-danger/30 bg-v5-danger-soft" : ""}`}>
+          <Card
+            className={filterCardClass(
+              "missing",
+              summary.missingFieldsCount > 0 ? "border-v5-danger/30 bg-v5-danger-soft" : ""
+            )}
+            role="button"
+            tabIndex={0}
+            aria-pressed={resultFilter === "missing"}
+            onClick={() => setResultFilter("missing")}
+          >
             <div className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chưa có kết quả</div>
             <div className={`mt-1 text-2xl font-bold tabular-nums ${summary.missingFieldsCount > 0 ? "text-v5-danger" : "text-v5-ink"}`}>
               {summary.missingFieldsCount}
             </div>
             <div className="mt-1 text-[10px] text-v5-muted">chưa hoàn thành / thiếu số lượng · chậm: {summary.lateTotal} · làm lại: {summary.reworkTotal}</div>
           </Card>
+        </div>
+      )}
+
+      {resultFilter !== "all" && (
+        <div className="flex items-center gap-2 text-[11px]">
+          <Badge variant="accent">
+            Đang lọc:{" "}
+            {resultFilter === "completed"
+              ? "Hoàn thành"
+              : resultFilter === "unmapped"
+                ? "Chưa gắn SP QĐ1277"
+                : "Chưa có kết quả"}
+          </Badge>
+          <button
+            type="button"
+            onClick={() => setResultFilter("all")}
+            className="font-semibold text-v5-accent hover:underline"
+          >
+            Bỏ lọc
+          </button>
         </div>
       )}
 
@@ -747,7 +815,7 @@ export default function MonthlyResultsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-v5-line">
-            {items.map((it) => (
+            {visibleItems.map((it) => (
               <tr key={it.id} className="hover:bg-v5-bg">
                 <td className="py-2.5 px-3">
                   <div className="font-semibold text-v5-ink">{it.title}</div>
@@ -805,7 +873,7 @@ export default function MonthlyResultsPage() {
                 </td>
               </tr>
             ))}
-            {!loading && items.length === 0 && (
+            {!loading && visibleItems.length === 0 && (
               <tr><td colSpan={6} className="py-10 text-center text-v5-muted">Chưa có kết quả nào trong tháng {month}/{year}</td></tr>
             )}
           </tbody>

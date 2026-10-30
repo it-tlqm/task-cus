@@ -467,6 +467,24 @@ export default function TasksPage() {
     return true;
   });
 
+  const statCardProps = (tab: typeof activeTab) => ({
+    role: "button" as const,
+    tabIndex: 0,
+    "aria-pressed": activeTab === tab,
+    title: "Bấm để lọc danh sách",
+    onClick: () => setActiveTab(tab),
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setActiveTab(tab);
+      }
+    },
+  });
+  const statCardClass = (tab: typeof activeTab, extra = "") =>
+    `p-3 cursor-pointer transition-all hover:bg-v5-bg ${
+      activeTab === tab ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""
+    } ${extra}`;
+
   return (
     <div className="w-full pb-4">
       <div className="flex w-full flex-col gap-3">
@@ -511,7 +529,7 @@ export default function TasksPage() {
         )}
 
         <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
-          <Card className="p-3">
+          <Card className={statCardClass("ALL")} {...statCardProps("ALL")}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Tổng chỉ đạo</span>
               <ClipboardList className="h-4 w-4 text-v5-accent" />
@@ -519,7 +537,7 @@ export default function TasksPage() {
             <div className="mt-2 text-2xl font-bold tabular-nums text-v5-ink">{String(totalCount).padStart(2, "0")}</div>
             <div className="mt-1 text-[10px] text-v5-muted">nhiệm vụ đã giao</div>
           </Card>
-          <Card className="p-3">
+          <Card className={statCardClass("IN_PROGRESS")} {...statCardProps("IN_PROGRESS")}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Đang thực hiện</span>
               <Timer className="h-4 w-4 text-v5-accent" />
@@ -527,7 +545,7 @@ export default function TasksPage() {
             <div className="mt-2 text-2xl font-bold tabular-nums text-v5-ink">{String(inProgressCount).padStart(2, "0")}</div>
             <div className="mt-1 text-[10px] text-v5-muted">đang triển khai</div>
           </Card>
-          <Card className="p-3">
+          <Card className={statCardClass("WAITING_REVIEW")} {...statCardProps("WAITING_REVIEW")}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Chờ phê duyệt</span>
               <Clock3 className="h-4 w-4 text-v5-warning" />
@@ -535,7 +553,7 @@ export default function TasksPage() {
             <div className="mt-2 text-2xl font-bold tabular-nums text-v5-warning">{String(waitingReviewCount).padStart(2, "0")}</div>
             <div className="mt-1 text-[10px] text-v5-muted">hồ sơ đã nộp</div>
           </Card>
-          <Card className="p-3">
+          <Card className={statCardClass("EXTENSIONS")} {...statCardProps("EXTENSIONS")}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-muted">Xin gia hạn</span>
               <CalendarClock className="h-4 w-4 text-v5-gold-ink" />
@@ -543,7 +561,7 @@ export default function TasksPage() {
             <div className="mt-2 text-2xl font-bold tabular-nums text-v5-gold-ink">{String(extCount).padStart(2, "0")}</div>
             <div className="mt-1 text-[10px] text-v5-muted">đề xuất chờ ý kiến</div>
           </Card>
-          <Card className="border-v5-danger/30 p-3">
+          <Card className={statCardClass("OVERDUE", "border-v5-danger/30")} {...statCardProps("OVERDUE")}>
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-v5-danger">Quá hạn</span>
               <AlertTriangle className="h-4 w-4 text-v5-danger" />

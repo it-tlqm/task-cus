@@ -156,6 +156,20 @@ function MyWorkPageContent() {
   const [journalFilter, setJournalFilter] = useState<JournalFilterState>(
     DEFAULT_JOURNAL_FILTER
   );
+  // Lọc nhanh từ các thẻ thống kê (Cần xử lý / Sắp đến hạn / Quá hạn / Chờ duyệt)
+  const [quickFilter, setQuickFilter] = useState<
+    "active" | "dueSoon" | "overdue" | "waiting" | null
+  >(null);
+  const quickFilterLabel =
+    quickFilter === "active"
+      ? "Cần xử lý"
+      : quickFilter === "dueSoon"
+        ? "Sắp đến hạn"
+        : quickFilter === "overdue"
+          ? "Quá hạn"
+          : quickFilter === "waiting"
+            ? "Chờ phê duyệt"
+            : "";
   // Mở tab "Chờ nhận việc": luôn mở bộ lọc toàn thời gian để số đếm trên tab và
   // danh sách dùng cùng một phạm vi (mặc định "Hôm nay" ẩn việc có hạn ngày khác).
   const openWaitingAcceptTab = React.useCallback(() => {
@@ -900,6 +914,25 @@ function MyWorkPageContent() {
       );
     }
 
+    if (quickFilter) {
+      if (quickFilter === "active") {
+        return task.status !== "COMPLETED" && task.status !== "CANCELED";
+      }
+      if (quickFilter === "dueSoon") {
+        const dl = new Date(task.currentDeadline).getTime();
+        const now = Date.now();
+        return (
+          !isNaN(dl) &&
+          dl >= now &&
+          dl <= now + 24 * 3600 * 1000 &&
+          task.status !== "COMPLETED" &&
+          task.status !== "CANCELED"
+        );
+      }
+      if (quickFilter === "overdue") return !!task.isOverdue || !!task.hasIssue;
+      if (quickFilter === "waiting") return task.status === "WAITING_REVIEW";
+    }
+
     if (!inTimeRange(task)) return false;
 
     // Bộ lọc Nhật ký công việc
@@ -1057,6 +1090,12 @@ function MyWorkPageContent() {
             unit="đầu việc"
             icon={ClipboardList}
             tone="accent"
+            onClick={() => {
+              setQuickFilter("active");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "active" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             footer={
               <>
                 <span className="flex items-center gap-1 font-semibold text-v5-danger">
@@ -1072,6 +1111,12 @@ function MyWorkPageContent() {
             unit="nhiệm vụ"
             icon={Timer}
             tone="warning"
+            onClick={() => {
+              setQuickFilter("dueSoon");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "dueSoon" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             footer={
               <>
                 <span className="font-semibold text-v5-gold-ink">Hạn trong 24 giờ</span>
@@ -1085,6 +1130,12 @@ function MyWorkPageContent() {
             unit="hồ sơ trễ"
             icon={AlertTriangle}
             tone="danger"
+            onClick={() => {
+              setQuickFilter("overdue");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "overdue" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             footer={
               <>
                 <button
@@ -1102,6 +1153,12 @@ function MyWorkPageContent() {
             value={String(myStats.waiting).padStart(2, "0")}
             unit="đã nộp"
             icon={CheckCircle2}
+            onClick={() => {
+              setQuickFilter("waiting");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "waiting" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             footer={
               <>
                 <span className="font-semibold text-v5-muted">Chờ Trưởng BP ký</span>
@@ -1110,6 +1167,19 @@ function MyWorkPageContent() {
             }
           />
         </section>
+
+        {quickFilter && (
+          <div className="flex items-center gap-2 text-[11px]">
+            <Badge variant="accent">Đang lọc: {quickFilterLabel}</Badge>
+            <button
+              type="button"
+              onClick={() => setQuickFilter(null)}
+              className="font-semibold text-v5-accent hover:underline"
+            >
+              Bỏ lọc
+            </button>
+          </div>
+        )}
 
         {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung cho cả 2 nguồn dữ liệu */}
         <JournalFilterBar
@@ -1588,6 +1658,12 @@ function MyWorkPageContent() {
             unit="đầu việc"
             icon={ClipboardList}
             tone="accent"
+            onClick={() => {
+              setQuickFilter("active");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "active" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             hint={
               <span className={myStats.high > 0 ? "font-semibold text-v5-danger" : undefined}>
                 {myStats.high > 0 ? `${myStats.high} ưu tiên cao` : "Không có việc gấp"}
@@ -1600,6 +1676,12 @@ function MyWorkPageContent() {
             unit="24 giờ"
             icon={Timer}
             tone="warning"
+            onClick={() => {
+              setQuickFilter("dueSoon");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "dueSoon" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             hint={myStats.dueSoon > 0 ? "Cần xử lý" : "Không có việc gấp"}
           />
           <StatCard
@@ -1608,6 +1690,12 @@ function MyWorkPageContent() {
             unit="hồ sơ"
             icon={AlertTriangle}
             tone="danger"
+            onClick={() => {
+              setQuickFilter("overdue");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "overdue" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             hint={
               <span className="font-semibold text-v5-danger">
                 {myStats.overdue > 0 ? `Chậm ${myStats.maxOverdueDays} ngày` : "Đúng hạn"}
@@ -1619,9 +1707,28 @@ function MyWorkPageContent() {
             value={String(myStats.waiting).padStart(2, "0")}
             unit="đã nộp"
             icon={CheckCircle2}
+            onClick={() => {
+              setQuickFilter("waiting");
+              setActiveTab("ALL");
+              setJournalFilter(ALL_TIME_JOURNAL_FILTER);
+            }}
+            className={quickFilter === "waiting" ? "ring-1 ring-v5-accent/40 border-v5-accent/40" : ""}
             hint="Chờ Trưởng BP ký"
           />
         </div>
+
+        {quickFilter && (
+          <div className="flex items-center gap-2 px-margin text-[11px]">
+            <Badge variant="accent">Đang lọc: {quickFilterLabel}</Badge>
+            <button
+              type="button"
+              onClick={() => setQuickFilter(null)}
+              className="font-semibold text-v5-accent hover:underline"
+            >
+              Bỏ lọc
+            </button>
+          </div>
+        )}
 
         {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung (mobile) */}
         <div className="px-margin py-2">
