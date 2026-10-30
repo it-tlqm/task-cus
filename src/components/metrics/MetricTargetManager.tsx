@@ -304,25 +304,25 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
       <div className="rounded-xl border border-v5-line/50 bg-v5-surface p-4 flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div className="font-label-md text-label-md text-primary font-bold">Chỉ tiêu giao</div>
-            <div className="text-body-xs text-v5-muted">
+            <div className="text-[12px] text-v5-ink font-bold">Chỉ tiêu giao</div>
+            <div className="text-[11px] text-v5-muted">
               Cấu hình chỉ tiêu theo năm, quý, tháng và xác nhận trước khi dùng tính tỷ lệ.
             </div>
           </div>
           <button
             type="button"
             onClick={refresh}
-            className="rounded-lg border border-v5-line px-3 py-1.5 text-body-sm font-semibold hover:bg-v5-bg"
+            className="rounded-lg border border-v5-line px-3 py-1.5 text-[12px] font-semibold hover:bg-v5-bg"
           >
             Tải lại
           </button>
         </div>
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted max-w-xl">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted max-w-xl">
           Chọn chỉ tiêu
           <select
             value={selectedMetricId}
             onChange={(e) => setSelectedMetricId(e.target.value)}
-            className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+            className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
           >
             {groups.map((g) => (
               <optgroup key={g.id} label={g.name}>
@@ -335,12 +335,12 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
             ))}
           </select>
         </label>
-        <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
+        <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
           Chỉ tính % chính thức khi chỉ tiêu/kỳ có quy tắc đánh giá đã duyệt (hiện chỉ <b>THU_NSNN</b>);
           chỉ tiêu khác hiển thị “Chưa có quy tắc gán chỉ tiêu” và không tô đạt/vượt.
         </div>
-        {error && <div className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-body-xs text-rose-800">{error}</div>}
-        {loading && <div className="text-body-xs text-v5-muted">Đang tải chỉ tiêu giao…</div>}
+        {error && <div className="rounded border border-rose-300 bg-rose-50 px-3 py-2 text-[11px] text-rose-800">{error}</div>}
+        {loading && <div className="text-[11px] text-v5-muted">Đang tải chỉ tiêu giao…</div>}
       </div>
 
       {selectedMetric && (
@@ -362,24 +362,24 @@ export function MetricTargetManager({ groups, initialMetricCode = "" }: MetricTa
 
       {history && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[85vh] w-full max-w-4xl overflow-auto rounded-xl border border-v5-line bg-surface p-4">
+          <div className="max-h-[85vh] w-full max-w-4xl overflow-auto rounded-xl border border-v5-line bg-v5-surface p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <div>
-                <div className="font-label-md text-label-md text-primary font-bold">Lịch sử chỉ tiêu giao</div>
-                <div className="text-body-xs text-v5-muted">{history.target.label}</div>
+                <div className="text-[12px] text-v5-ink font-bold">Lịch sử chỉ tiêu giao</div>
+                <div className="text-[11px] text-v5-muted">{history.target.label}</div>
               </div>
               <button
                 type="button"
                 onClick={() => setHistory(null)}
-                className="rounded border border-v5-line px-2 py-1 text-body-sm font-semibold"
+                className="rounded border border-v5-line px-2 py-1 text-[12px] font-semibold"
               >
                 Đóng
               </button>
             </div>
             {history.revisions.length === 0 ? (
-              <div className="text-body-sm text-v5-muted italic">Chưa có lịch sử.</div>
+              <div className="text-[12px] text-v5-muted italic">Chưa có lịch sử.</div>
             ) : (
-              <table className="w-full min-w-[700px] border-collapse text-body-xs">
+              <table className="w-full min-w-[700px] border-collapse text-[11px]">
                 <thead className="bg-v5-bg text-left text-v5-muted">
                   <tr>
                     <th className="px-2 py-1.5">Hành động</th>

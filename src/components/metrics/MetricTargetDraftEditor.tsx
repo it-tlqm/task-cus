@@ -346,16 +346,16 @@ export function MetricTargetDraftEditor({
   const showDraftState = Boolean(draft.id) || touched;
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-v5-line bg-surface p-4">
+    <section className="flex flex-col gap-4 rounded-xl border border-v5-line bg-v5-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="font-headline-sm text-headline-sm text-primary">Chỉ tiêu giao</h2>
+            <h2 className="text-sm text-v5-ink">Chỉ tiêu giao</h2>
             <span className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${apiMode ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-sky-300 bg-sky-50 text-sky-800"}`}>
               {apiMode ? "Đã kết nối" : "Bản nháp"}
             </span>
           </div>
-          <p className="mt-1 text-body-sm text-v5-muted">
+          <p className="mt-1 text-[12px] text-v5-muted">
             {apiMode
               ? "Chỉ tiêu cấp Cục. Chỉ tiêu đã xác nhận hoặc đã chốt được dùng để tính tỷ lệ chính thức; mọi thay đổi đều được lưu lịch sử."
               : "Chỉ tiêu cấp Cục. Bản nháp chỉ tạm tính; chiều đánh giá, cách đo và mốc so sánh lấy từ quy tắc đã duyệt."}
@@ -366,7 +366,7 @@ export function MetricTargetDraftEditor({
         </span>
       </div>
 
-      <div className={`rounded-lg border px-3 py-2 text-body-xs ${selectedRule.officialPercentAllowed ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-300 bg-amber-50 text-amber-900"}`}>
+      <div className={`rounded-lg border px-3 py-2 text-[11px] ${selectedRule.officialPercentAllowed ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-300 bg-amber-50 text-amber-900"}`}>
         {apiMode ? "Đã kết nối hệ thống. " : "Bản nháp: dữ liệu dưới đây chỉ để tham khảo. "}
         {selectedRule.officialPercentAllowed ? (
           <>
@@ -381,10 +381,10 @@ export function MetricTargetDraftEditor({
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
         {showMetricSelect && (
-          <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+          <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
             Chỉ tiêu
             <select
-              className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+              className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
               value={draft.metricId}
               onChange={(e) => handleMetricChange(e.target.value)}
             >
@@ -397,10 +397,10 @@ export function MetricTargetDraftEditor({
           </label>
         )}
 
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Loại chỉ tiêu giao
           <select
-            className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+            className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
             value={draft.labelCode}
             onChange={(e) => patch({ labelCode: e.target.value as TargetLabelCode | "" })}
           >
@@ -413,20 +413,20 @@ export function MetricTargetDraftEditor({
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Tên hiển thị
           <input
-            className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+            className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
             value={draft.label}
             onChange={(e) => patch({ label: e.target.value })}
             placeholder="VD: Chỉ tiêu BTC năm 2026"
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Kỳ
           <select
-            className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+            className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
             value={draft.periodType}
             onChange={(e) =>
               patch({
@@ -441,51 +441,51 @@ export function MetricTargetDraftEditor({
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Năm
           <input
             type="number"
-            className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+            className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
             value={draft.year ?? ""}
             onChange={(e) => patch({ year: e.target.value ? Number(e.target.value) : null })}
           />
         </label>
 
         {draft.periodType !== "YEAR" && (
-          <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+          <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
             {draft.periodType === "MONTH" ? "Tháng (1–12)" : "Quý (1–4)"}
             <input
               type="number"
-              className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+              className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
               value={draft.periodNo ?? ""}
               onChange={(e) => patch({ periodNo: e.target.value ? Number(e.target.value) : null })}
             />
           </label>
         )}
 
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Giá trị chỉ tiêu ({selectedMetric?.unitLabel || selectedMetric?.unitType || "đơn vị"})
           <FormattedNumberInput
-            className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal tabular-nums text-v5-ink"
+            className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal tabular-nums text-v5-ink"
             value={draft.value}
             onValueChange={(raw) => patch({ value: raw })}
             placeholder="Nhập số tiền bằng đồng"
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Chiều đánh giá
-          <div className="rounded border border-v5-line bg-v5-bg px-2 py-1.5 text-body-sm font-normal text-v5-ink">
+          <div className="rounded border border-v5-line bg-v5-bg px-2 py-1.5 text-[12px] font-normal text-v5-ink">
             {DIRECTION_LABELS[selectedRule.direction]}
             <span className="ml-1 text-[10px] text-v5-muted">(theo quy tắc đã duyệt — không sửa tại đây)</span>
           </div>
         </label>
 
         {selectedMetric && selectedMetric.classifications.length > 0 && (
-          <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+          <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
             Phân loại
             <select
-              className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+              className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
               value={draft.classificationId}
               onChange={(e) => patch({ classificationId: e.target.value })}
             >
@@ -501,19 +501,19 @@ export function MetricTargetDraftEditor({
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Nguồn / căn cứ (bắt buộc khi xác nhận)
           <textarea
-            className="min-h-20 rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+            className="min-h-20 rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
             value={draft.sourceNote}
             onChange={(e) => patch({ sourceNote: e.target.value })}
             placeholder="VD: Quyết định giao chỉ tiêu số..."
           />
         </label>
-        <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
           Ghi chú
           <textarea
-            className="min-h-20 rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+            className="min-h-20 rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
             value={draft.note}
             onChange={(e) => patch({ note: e.target.value })}
             placeholder="Ghi chú điều chỉnh / lý do"
@@ -526,11 +526,11 @@ export function MetricTargetDraftEditor({
           <span className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[draft.status]}`}>
             {TARGET_STATE_LABELS[draft.status === "DRAFT" ? "DRAFT" : draft.status === "CONFIRMED" ? "CONFIRMED" : draft.status === "LOCKED" ? "LOCKED" : draft.status === "VOID" ? "VOID" : "SUPERSEDED"]}
           </span>
-          <span className="text-body-xs text-v5-muted">
+          <span className="text-[11px] text-v5-muted">
             {periodLabel(draft)} · {draft.classificationId ? "theo phân loại" : "tổng"} · {draft.labelCode || "chưa chọn loại"}
           </span>
           {nextConfirm && (
-            <span className="text-body-xs text-v5-muted">
+            <span className="text-[11px] text-v5-muted">
               Có thể xác nhận từ trạng thái nháp.
             </span>
           )}
@@ -538,22 +538,22 @@ export function MetricTargetDraftEditor({
       )}
 
       {rulesPending || !selectedRule.officialPercentAllowed ? (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-sm text-amber-900">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
           <b>Chưa có quy tắc đánh giá:</b> chưa đủ thông tin đánh giá cho chỉ tiêu/kỳ này. Không tính % chính thức.
         </div>
       ) : (
         !apiMode &&
         preview && (
-          <div className="rounded-lg border border-v5-line bg-v5-bg px-3 py-2 text-body-sm">
+          <div className="rounded-lg border border-v5-line bg-v5-bg px-3 py-2 text-[12px]">
             <b>Xem trước:</b>{" "}
             {preview.state === "COMPUTED" ? (
-              <span className="font-semibold tabular-nums text-primary">{preview.displayValue}</span>
+              <span className="font-semibold tabular-nums text-v5-ink">{preview.displayValue}</span>
             ) : (
               <span className="text-v5-muted">
                 {preview.reason ? PERCENT_REASON_LABELS[preview.reason] : "Không tính"}
               </span>
             )}
-            <span className="ml-2 text-body-xs text-v5-muted">
+            <span className="ml-2 text-[11px] text-v5-muted">
               (chỉ để tham khảo, không dùng báo cáo)
             </span>
           </div>
@@ -563,15 +563,15 @@ export function MetricTargetDraftEditor({
       {showDraftState && (errors.length > 0 || warnings.length > 0) && (
         <div className="flex flex-col gap-1 rounded-lg border border-v5-line bg-v5-surface p-3">
           {errors.length > 0 && (
-            <div className="text-body-xs font-semibold text-rose-700">Lỗi cần sửa trước khi xác nhận</div>
+            <div className="text-[11px] font-semibold text-rose-700">Lỗi cần sửa trước khi xác nhận</div>
           )}
           {errors.map((e) => (
-            <div key={`${e.field}-${e.code}`} className="text-body-xs text-rose-700">
+            <div key={`${e.field}-${e.code}`} className="text-[11px] text-rose-700">
               • {e.message}
             </div>
           ))}
           {warnings.map((w) => (
-            <div key={`${w.field}-${w.code}`} className="text-body-xs text-amber-800">
+            <div key={`${w.field}-${w.code}`} className="text-[11px] text-amber-800">
               • {w.message}
             </div>
           ))}
@@ -582,14 +582,14 @@ export function MetricTargetDraftEditor({
         <button
           type="button"
           disabled={busy}
-          className="rounded-lg border border-v5-line bg-surface px-3 py-1.5 text-body-sm font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-50"
+          className="rounded-lg border border-v5-line bg-v5-surface px-3 py-1.5 text-[12px] font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-50"
           onClick={() => save("DRAFT")}
         >
           {apiMode ? "Lưu đề xuất" : "Lưu nháp"}
         </button>
         <button
           type="button"
-          className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-v5-accent px-3 py-1.5 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           disabled={busy || errors.length > 0 || draft.status !== "DRAFT"}
           onClick={() => save("CONFIRMED")}
         >
@@ -598,7 +598,7 @@ export function MetricTargetDraftEditor({
         <button
           type="button"
           disabled={busy}
-          className="rounded-lg border border-v5-line bg-surface px-3 py-1.5 text-body-sm font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-50"
+          className="rounded-lg border border-v5-line bg-v5-surface px-3 py-1.5 text-[12px] font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-50"
           onClick={() => {
             setDraft(emptyDraft(selectedMetric));
             setTouched(false);
@@ -609,15 +609,15 @@ export function MetricTargetDraftEditor({
         </button>
       </div>
 
-      {message && <div className="text-body-xs text-v5-muted">{message}</div>}
+      {message && <div className="text-[11px] text-v5-muted">{message}</div>}
 
-      <p className="text-body-xs text-v5-muted">
+      <p className="text-[11px] text-v5-muted">
         Chỉ tiêu đã chốt được khóa; nếu cần điều chỉnh, dùng nút <b>Điều chỉnh</b> và nhập lý do — hệ thống lưu lịch sử.
         Chỉ tiêu đã xác nhận có thể điều chỉnh trước khi chốt.
       </p>
 
       <div className="overflow-x-auto rounded-lg border border-v5-line">
-        <table className="w-full min-w-[900px] border-collapse text-body-xs">
+        <table className="w-full min-w-[900px] border-collapse text-[11px]">
           <thead className="bg-v5-bg text-left text-v5-muted">
             <tr>
               <th className="px-2 py-1.5">Chỉ tiêu</th>
@@ -741,15 +741,15 @@ export function MetricTargetDraftEditor({
           }}
         >
           <div
-            className="my-auto w-full max-w-lg rounded-xl border border-v5-line bg-surface p-4 shadow-xl"
+            className="my-auto w-full max-w-lg rounded-xl border border-v5-line bg-v5-surface p-4 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 id="target-correction-title" className="font-title-md text-title-md font-bold text-primary">
+                <h3 id="target-correction-title" className="font-title-md text-title-md font-bold text-v5-ink">
                   Điều chỉnh chỉ tiêu đã chốt
                 </h3>
-                <p className="mt-1 text-body-xs text-v5-muted">
+                <p className="mt-1 text-[11px] text-v5-muted">
                   {correcting.label} · {periodLabel(correcting)} · hiện tại{" "}
                   <b className="tabular-nums">
                     {formatNumberVi(parseMetricInput(correcting.value) ?? 0, 2)}{" "}
@@ -769,30 +769,30 @@ export function MetricTargetDraftEditor({
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
-              <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
                 Giá trị mới ({metrics.find((m) => m.id === correcting.metricId)?.unitLabel || "đơn vị"})
                 <FormattedNumberInput
-                  className="rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal tabular-nums text-v5-ink"
+                  className="rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal tabular-nums text-v5-ink"
                   value={correctionValue}
                   onValueChange={setCorrectionValue}
                   placeholder="Nhập số tiền bằng đồng"
                 />
               </label>
 
-              <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
                 Nguồn / căn cứ điều chỉnh
                 <textarea
-                  className="min-h-16 rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+                  className="min-h-16 rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
                   value={correctionSourceNote}
                   onChange={(event) => setCorrectionSourceNote(event.target.value)}
                   placeholder="VD: Quyết định điều chỉnh số..."
                 />
               </label>
 
-              <label className="flex flex-col gap-1 text-body-xs font-semibold text-v5-muted">
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-v5-muted">
                 Lý do điều chỉnh (bắt buộc)
                 <textarea
-                  className="min-h-20 rounded border border-v5-line bg-surface px-2 py-1.5 text-body-sm font-normal text-v5-ink"
+                  className="min-h-20 rounded border border-v5-line bg-v5-surface px-2 py-1.5 text-[12px] font-normal text-v5-ink"
                   value={correctionReason}
                   onChange={(event) => setCorrectionReason(event.target.value)}
                   placeholder="Nêu rõ lý do và người xác nhận..."
@@ -800,12 +800,12 @@ export function MetricTargetDraftEditor({
                 />
               </label>
 
-              <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-body-xs text-amber-900">
+              <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
                 Chỉ tiêu vẫn giữ trạng thái <b>Đã chốt</b>. Thay đổi được ghi vào lịch sử và nhật ký hệ thống.
               </div>
 
               {correctionError && (
-                <div className="text-body-xs font-semibold text-rose-700">{correctionError}</div>
+                <div className="text-[11px] font-semibold text-rose-700">{correctionError}</div>
               )}
 
               <div className="flex flex-wrap justify-end gap-2">
@@ -813,7 +813,7 @@ export function MetricTargetDraftEditor({
                   type="button"
                   onClick={() => setCorrecting(null)}
                   disabled={correctionBusy}
-                  className="rounded-lg border border-v5-line bg-surface px-3 py-1.5 text-body-sm font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-50"
+                  className="rounded-lg border border-v5-line bg-v5-surface px-3 py-1.5 text-[12px] font-semibold text-v5-ink hover:bg-v5-bg disabled:opacity-50"
                 >
                   Hủy
                 </button>
@@ -821,7 +821,7 @@ export function MetricTargetDraftEditor({
                   type="button"
                   onClick={submitCorrection}
                   disabled={correctionBusy}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-v5-accent px-3 py-1.5 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {correctionBusy ? "Đang lưu..." : "Lưu điều chỉnh"}
                 </button>

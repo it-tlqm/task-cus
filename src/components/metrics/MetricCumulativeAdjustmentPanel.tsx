@@ -186,10 +186,10 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
         onClick={() => setOpen((v) => !v)}
         className="w-full px-4 py-3 bg-v5-bg border-b border-v5-line/40 flex items-center justify-between gap-2"
       >
-        <span className="font-label-lg text-label-lg text-primary font-bold uppercase tracking-wide text-left">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-v5-ink font-bold uppercase tracking-wide text-left">
           Điều chỉnh lũy kế (B2-A)
         </span>
-        <span className="text-body-xs text-v5-muted">
+        <span className="text-[11px] text-v5-muted">
           Bắt buộc lý do · lưu old/new · dùng quyền nhập/xác nhận hiện có
         </span>
         <V5Icon
@@ -205,7 +205,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.metricId}
               onChange={(e) => setDraft({ ...emptyDraft(e.target.value), metricId: e.target.value })}
               disabled={Boolean(editId)}
-              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-[12px]"
             >
               {enterable.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -217,7 +217,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.classificationId}
               onChange={(e) => setDraft({ ...draft, classificationId: e.target.value })}
               disabled={Boolean(editId)}
-              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-[12px]"
             >
               <option value="">Tổng (không phân loại)</option>
               {(selected?.values || [])
@@ -232,7 +232,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.cumKind}
               onChange={(e) => setDraft({ ...draft, cumKind: e.target.value })}
               disabled={Boolean(editId)}
-              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-[12px]"
             >
               {Object.entries(CUM_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -245,26 +245,26 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               value={draft.asOfDate}
               max={todayVnStr()}
               onChange={(e) => setDraft({ ...draft, asOfDate: e.target.value })}
-              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-[12px]"
             />
             <input
               value={draft.value}
               onChange={(e) => setDraft({ ...draft, value: e.target.value })}
               inputMode="decimal"
               placeholder={`Giá trị đến ngày mốc (${selected?.unitLabel || "số"})`}
-              className="px-2 py-1.5 rounded border border-v5-line text-body-sm text-right tabular-nums"
+              className="px-2 py-1.5 rounded border border-v5-line text-[12px] text-right tabular-nums"
             />
             <input
               value={draft.reason}
               onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
               placeholder="Lý do điều chỉnh (bắt buộc)"
-              className="px-2 py-1.5 rounded border border-v5-line text-body-sm sm:col-span-2"
+              className="px-2 py-1.5 rounded border border-v5-line text-[12px] sm:col-span-2"
             />
             <input
               value={draft.sourceNote}
               onChange={(e) => setDraft({ ...draft, sourceNote: e.target.value })}
               placeholder="Nguồn/căn cứ (không bắt buộc)"
-              className="px-2 py-1.5 rounded border border-v5-line text-body-sm"
+              className="px-2 py-1.5 rounded border border-v5-line text-[12px]"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -272,7 +272,7 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
               type="button"
               onClick={submit}
               disabled={busy}
-              className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-label-sm font-semibold disabled:opacity-40"
+              className="px-3 py-1.5 rounded-lg bg-v5-accent text-white text-[11px] font-semibold disabled:opacity-40"
             >
               {busy ? "Đang lưu…" : editId ? "Lưu điều chỉnh" : "Tạo mốc điều chỉnh"}
             </button>
@@ -283,23 +283,23 @@ export function MetricCumulativeAdjustmentPanel({ metrics }: { metrics: Adjustme
                   setEditId(null);
                   setDraft(emptyDraft(draft.metricId));
                 }}
-                className="px-3 py-1.5 rounded-lg border border-v5-line text-label-sm font-semibold"
+                className="px-3 py-1.5 rounded-lg border border-v5-line text-[11px] font-semibold"
               >
                 Hủy sửa
               </button>
             )}
-            <span className="text-body-xs text-v5-muted">
+            <span className="text-[11px] text-v5-muted">
               Sửa mốc đã xác nhận cần quyền xác nhận; mốc đã chốt không sửa trực tiếp.
             </span>
           </div>
 
-          {loading && <div className="text-body-sm text-v5-muted">Đang tải mốc điều chỉnh…</div>}
+          {loading && <div className="text-[12px] text-v5-muted">Đang tải mốc điều chỉnh…</div>}
           {!loading && rows.length === 0 && (
-            <div className="text-body-sm text-v5-muted italic">Chưa có mốc điều chỉnh nào bạn được xem.</div>
+            <div className="text-[12px] text-v5-muted italic">Chưa có mốc điều chỉnh nào bạn được xem.</div>
           )}
           {!loading && rows.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-body-xs border-collapse">
+              <table className="w-full min-w-[760px] text-[11px] border-collapse">
                 <thead className="bg-v5-bg text-left text-v5-muted">
                   <tr>
                     <th className="px-2 py-1.5">Chỉ tiêu</th>
