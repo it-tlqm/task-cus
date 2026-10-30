@@ -21,7 +21,6 @@ import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/v5/ui/badge";
 import { Button } from "@/components/v5/ui/button";
 import { DataTable } from "@/components/v5/ui/data-table";
-import { FilterBar, FilterChip } from "@/components/v5/ui/filter-bar";
 import { PageHeader } from "@/components/v5/ui/page-header";
 import { StatCard } from "@/components/v5/ui/stat-card";
 import { getCurrentPeriodLabels } from "@/lib/period-helper";
@@ -36,12 +35,14 @@ import {
   ALL_TIME_JOURNAL_FILTER,
   DEFAULT_JOURNAL_FILTER,
   JournalFilterBar,
+  JOURNAL_PERIOD_LABELS,
+  JOURNAL_SOURCE_LABELS,
+  JOURNAL_STATUS_LABELS,
   journalDateInRange,
   journalPeriodRange,
   journalTextMatches,
   type JournalFilterState,
 } from "@/components/work/JournalFilterBar";
-import { ENV_BADGE_LABEL } from "@/config/app-env";
 
 interface TaskUpdateItem {
   id: string;
@@ -876,27 +877,6 @@ function MyWorkPageContent() {
   // Filter tasks based on tabs and query
   // Bộ lọc thời gian theo ca/kỳ (nút Hôm nay / Tuần này / Tháng / Tất cả có onClick thật)
   // Mặc định Tất cả để không giấu việc (đúng như trước khi sửa)
-  const [timeFilter, setTimeFilter] = useState<"DAY" | "WEEK" | "MONTH" | "ALL">("ALL");
-  const inTimeRange = (task: TaskItem): boolean => {
-    if (timeFilter === "ALL") return true;
-    const dl = new Date(task.currentDeadline);
-    if (isNaN(dl.getTime())) return false;
-    const now = new Date();
-    if (timeFilter === "DAY") {
-      return dl.getFullYear() === now.getFullYear() && dl.getMonth() === now.getMonth() && dl.getDate() === now.getDate();
-    }
-    if (timeFilter === "MONTH") {
-      return dl.getFullYear() === now.getFullYear() && dl.getMonth() === now.getMonth();
-    }
-    // WEEK: Thứ 2 → Chủ nhật chứa hôm nay
-    const start = new Date(now);
-    const day = (now.getDay() + 6) % 7;
-    start.setDate(now.getDate() - day);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 7);
-    return dl >= start && dl < end;
-  };
   const filteredTasks = tasks.filter((task) => {
     // Ô tìm kiếm cũ (giữ nguyên) + bộ lọc Nhật ký công việc (thời gian / nguồn / trạng thái)
     const matchesSearch =
@@ -932,8 +912,6 @@ function MyWorkPageContent() {
       if (quickFilter === "overdue") return !!task.isOverdue || !!task.hasIssue;
       if (quickFilter === "waiting") return task.status === "WAITING_REVIEW";
     }
-
-    if (!inTimeRange(task)) return false;
 
     // Bộ lọc Nhật ký công việc
     const range = journalPeriodRange(journalFilter.period);
@@ -1017,18 +995,11 @@ function MyWorkPageContent() {
         {/* HEADER KHU VỰC LÀM VIỆC & THAO TÁC NHANH */}
         <section className="flex flex-col gap-3">
           <PageHeader
-            eyebrow="Công việc cá nhân"
             title="Việc của tôi"
-            badges={
-              <>
-                <Badge variant="outline">{currentUser.positionTitle}</Badge>
-                <Badge variant="success">Sẵn sàng</Badge>
-              </>
-            }
+            badges={<Badge variant="outline">{currentUser.positionTitle}</Badge>}
             description={
               <>
                 {currentUser.fullName} · {currentUser.personCode} · {currentUser.unitName}
-                <span className="mt-0.5 block text-[11px]">Ca trực chính 07:30 - 17:00</span>
               </>
             }
             actions={
@@ -1048,38 +1019,6 @@ function MyWorkPageContent() {
             }
           />
 
-          <div data-tour="time-filter">
-            <FilterBar
-              actions={
-                <div className="flex items-center gap-2 px-1 text-[10px] text-v5-muted">
-                  <Clock3 className="h-3.5 w-3.5" />
-                  <span>Đồng bộ lúc: {lastSyncAt ? lastSyncAt.toLocaleTimeString("vi-VN") : "chưa đồng bộ"}</span>
-                  <button
-                    onClick={() => fetchTasks({ page: 1 })}
-                    className="rounded p-1 text-v5-muted transition-colors hover:bg-v5-bg hover:text-v5-ink"
-                    title="Tải lại dữ liệu"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              }
-            >
-              {[
-                { key: "DAY" as const, label: `Hôm nay (${todayLabel})` },
-                { key: "WEEK" as const, label: `Tuần này (${periodLabels.weekShort})` },
-                { key: "MONTH" as const, label: periodLabels.monthShort },
-                { key: "ALL" as const, label: "Tất cả nhiệm vụ" },
-              ].map((item) => (
-                <FilterChip
-                  key={item.key}
-                  active={timeFilter === item.key}
-                  onClick={() => setTimeFilter(item.key)}
-                >
-                  {item.label}
-                </FilterChip>
-              ))}
-            </FilterBar>
-          </div>
         </section>
 
         {/* THANH SỐ LIỆU TỔNG QUAN HÔM NAY (4 KPI CARDS) */}
@@ -1181,15 +1120,31 @@ function MyWorkPageContent() {
           </div>
         )}
 
-        {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung cho cả 2 nguồn dữ liệu */}
-        <JournalFilterBar
-          value={journalFilter}
-          onChange={setJournalFilter}
-          counts={{ total: tasks.length }}
-        />
+        {/* YC-30: bộ lọc nhật ký — thu gọn để trang gọn hơn */}
+        <details className="rounded-xl border border-v5-line bg-v5-surface shadow-sm">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-v5-ink">
+            Bộ lọc nhật ký — {JOURNAL_PERIOD_LABELS[journalFilter.period]} ·{" "}
+            {JOURNAL_SOURCE_LABELS[journalFilter.source]} ·{" "}
+            {JOURNAL_STATUS_LABELS[journalFilter.status]}
+          </summary>
+          <div className="border-t border-v5-line p-3">
+            <JournalFilterBar
+              value={journalFilter}
+              onChange={setJournalFilter}
+              counts={{ total: tasks.length }}
+            />
+          </div>
+        </details>
 
-        {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng */}
-        <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
+        {/* YC-31/YC-32: đầu việc kế hoạch — thu gọn mặc định để trang gọn hơn */}
+        <details className="rounded-xl border border-v5-line bg-v5-surface shadow-sm">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-v5-ink">
+            Đầu việc kế hoạch — hạn xử lý, kết quả & minh chứng
+          </summary>
+          <div className="border-t border-v5-line p-3">
+            <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
+          </div>
+        </details>
 
         {/* KHU VỰC DANH SÁCH CÔNG VIỆC CÁ NHÂN VÀ TÁC NGHIỆP TRỰC TIẾP */}
         <section data-tour="task-list" className="bg-v5-surface rounded-xl shadow-sm flex flex-col overflow-hidden border border-v5-line/50">
@@ -1279,7 +1234,7 @@ function MyWorkPageContent() {
           </div>
 
           {/* BẢNG TÁC NGHIỆP CHI TIẾT & QUICK ACTIONS */}
-          <DataTable className="min-w-[1220px] text-left">
+          <DataTable className="min-w-[1100px] text-left">
             <thead>
                 <tr className="bg-v5-bg text-primary font-table-header text-table-header border-b border-v5-line">
                   <th className="whitespace-nowrap py-3 px-space-md w-[280px]">MÃ &amp; TÊN ĐẦU VIỆC</th>
@@ -1538,6 +1493,11 @@ function MyWorkPageContent() {
         </section>
 
         {/* BẢNG NGUYÊN TẮC TÁC NGHIỆP & AUDIT TIMELINE TÓM TẮT */}
+        <details className="rounded-xl border border-v5-line bg-v5-surface shadow-sm">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-v5-ink">
+            Lịch sử cập nhật & hướng dẫn thao tác
+          </summary>
+          <div className="border-t border-v5-line p-3">
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
           {/* KHỐI 1 & 2: NHẬT KÝ THAO TÁC AUDIT TRAIL GẦN NHẤT */}
           <div className="lg:col-span-2 bg-v5-surface rounded-xl p-space-md shadow-sm flex flex-col justify-between border border-v5-line/40">
@@ -1609,6 +1569,8 @@ function MyWorkPageContent() {
             </div>
           </div>
         </section>
+          </div>
+        </details>
       </div>
 
       {/* =========================================================================
@@ -1617,11 +1579,9 @@ function MyWorkPageContent() {
       <div className="lg:hidden flex flex-col gap-3 pb-16">
         <PageHeader
           title="Việc của tôi"
-          badges={<Badge variant="success">Sẵn sàng</Badge>}
           description={
             <>
               {currentUser.fullName} · {currentUser.unitName}
-              <span className="mt-0.5 block text-[10px]">{ENV_BADGE_LABEL} · Ca chính 07:30 - 17:00</span>
             </>
           }
           actions={
@@ -1631,25 +1591,6 @@ function MyWorkPageContent() {
           }
         />
 
-        <div data-tour="time-filter">
-          <FilterBar>
-            {[
-              { key: "DAY" as const, label: `Hôm nay (${todayShort || "..."})` },
-              { key: "WEEK" as const, label: periodLabels.weekShort },
-              { key: "MONTH" as const, label: periodLabels.monthShort },
-              { key: "ALL" as const, label: "Tất cả" },
-            ].map((item) => (
-              <FilterChip
-                key={item.key}
-                active={timeFilter === item.key}
-                onClick={() => setTimeFilter(item.key)}
-                className="flex-1"
-              >
-                {item.label}
-              </FilterChip>
-            ))}
-          </FilterBar>
-        </div>
 
         <div className="grid grid-cols-2 gap-2">
           <StatCard
@@ -1730,19 +1671,31 @@ function MyWorkPageContent() {
           </div>
         )}
 
-        {/* YC-30 (bổ sung): NHẬT KÝ CÔNG VIỆC — bộ lọc dùng chung (mobile) */}
-        <div className="px-margin py-2">
-          <JournalFilterBar
-            value={journalFilter}
-            onChange={setJournalFilter}
-            counts={{ total: tasks.length }}
-          />
-        </div>
+        {/* YC-30: bộ lọc nhật ký — thu gọn (mobile) */}
+        <details className="mx-3 rounded-xl border border-v5-line bg-v5-surface shadow-sm">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-v5-ink">
+            Bộ lọc nhật ký — {JOURNAL_PERIOD_LABELS[journalFilter.period]} ·{" "}
+            {JOURNAL_SOURCE_LABELS[journalFilter.source]} ·{" "}
+            {JOURNAL_STATUS_LABELS[journalFilter.status]}
+          </summary>
+          <div className="border-t border-v5-line p-3">
+            <JournalFilterBar
+              value={journalFilter}
+              onChange={setJournalFilter}
+              counts={{ total: tasks.length }}
+            />
+          </div>
+        </details>
 
-        {/* YC-31/YC-32: đầu việc kế hoạch — hạn, ngày hoàn thành, minh chứng (bản mobile) */}
-        <div className="px-margin py-2">
-          <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
-        </div>
+        {/* YC-31/YC-32: đầu việc kế hoạch — thu gọn mặc định (mobile) */}
+        <details className="mx-3 rounded-xl border border-v5-line bg-v5-surface shadow-sm">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-v5-ink">
+            Đầu việc kế hoạch — hạn xử lý, kết quả & minh chứng
+          </summary>
+          <div className="border-t border-v5-line p-2">
+            <MyWorkItemsSection personId={currentUser.personId} journalFilter={journalFilter} />
+          </div>
+        </details>
 
         {/* TAB TRẠNG THÁI CÔNG VIỆC (HORIZONTAL SCROLL CHIPS) */}
         <div className="py-2.5">
