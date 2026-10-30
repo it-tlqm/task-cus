@@ -67,7 +67,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-v5-surface rounded-2xl max-w-md w-full p-6 shadow-2xl border border-v5-line/60 flex flex-col gap-4 animate-scaleUp">
+      <div className="bg-v5-surface rounded-2xl max-w-md w-full p-6 shadow-sm border border-v5-line/60 flex flex-col gap-4 animate-scaleUp">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-v5-line">
           <div className="flex items-center gap-2">

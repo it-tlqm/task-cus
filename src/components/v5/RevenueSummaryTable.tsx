@@ -654,7 +654,7 @@ export function RevenueSummaryTable({
 
       {noTaxOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-2xl">
+          <div className="w-full max-w-md overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-sm">
             <div className="flex items-center justify-between border-b border-v5-line bg-v5-gold-soft/40 px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-v5-ink">Đã mở TK chưa nộp thuế</h3>
@@ -701,7 +701,7 @@ export function RevenueSummaryTable({
 
       {anchorsOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-v5-line bg-v5-surface shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-v5-line bg-v5-surface shadow-sm">
             <div className="flex items-center justify-between border-b border-v5-line bg-v5-bg px-4 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-v5-ink">Nhập số liệu lũy kế</h3>

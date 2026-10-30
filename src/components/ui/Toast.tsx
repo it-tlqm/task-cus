@@ -97,7 +97,7 @@ export function ToastContainer() {
           <div
             key={t.id}
             role="status"
-            className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-200 transform translate-y-0 opacity-100 animate-in fade-in slide-in-from-top-2 ${bgClass}`}
+            className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-sm backdrop-blur-md transition-all duration-200 transform translate-y-0 opacity-100 animate-in fade-in slide-in-from-top-2 ${bgClass}`}
           >
             <V5Icon name={iconName} className={`mt-0.5 shrink-0 text-[20px] ${iconColor}`} />
             <div className="flex-1 text-xs font-medium leading-relaxed break-words">

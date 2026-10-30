@@ -741,7 +741,7 @@ export function MetricTargetDraftEditor({
           }}
         >
           <div
-            className="my-auto w-full max-w-lg rounded-xl border border-v5-line bg-v5-surface p-4 shadow-xl"
+            className="my-auto w-full max-w-lg rounded-xl border border-v5-line bg-v5-surface p-4 shadow-sm"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">

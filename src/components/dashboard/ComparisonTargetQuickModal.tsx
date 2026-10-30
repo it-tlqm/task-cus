@@ -213,7 +213,7 @@ export default function ComparisonTargetQuickModal({
         aria-modal="true"
         aria-label="Nhập nhanh chỉ tiêu đối chiếu"
         data-testid="comparison-target-quick-modal"
-        className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-v5-line bg-v5-surface shadow-2xl sm:max-h-[86vh] sm:w-[620px] sm:rounded-2xl"
+        className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-v5-line bg-v5-surface shadow-sm sm:max-h-[86vh] sm:w-[620px] sm:rounded-2xl"
       >
         <div className="flex items-start justify-between gap-2 border-b border-v5-line/60 px-4 py-3">
           <div>

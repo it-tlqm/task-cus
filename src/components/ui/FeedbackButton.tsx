@@ -61,7 +61,7 @@ export function FeedbackButton() {
         onClick={() => setOpen(true)}
         title="Gửi góp ý / báo lỗi cho lãnh đạo & kỹ thuật"
         aria-label="Gửi góp ý hoặc báo lỗi"
-        className={`focus-ring fixed bottom-36 left-4 z-40 h-11 items-center gap-1.5 rounded-full bg-v5-accent pl-3 pr-4 text-white shadow-lg transition-transform hover:opacity-90 active:scale-95 lg:bottom-24 lg:left-[calc(var(--sidebar-width,260px)+16px)] ${
+        className={`focus-ring fixed bottom-36 left-4 z-40 h-11 items-center gap-1.5 rounded-full bg-v5-accent pl-3 pr-4 text-white shadow-sm transition-transform hover:opacity-90 active:scale-95 lg:bottom-24 lg:left-[calc(var(--sidebar-width,260px)+16px)] ${
           pathname.startsWith("/roster") ? "hidden lg:flex" : "flex"
         }`}
       >
@@ -76,7 +76,7 @@ export function FeedbackButton() {
         >
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative w-full max-w-md bg-v5-surface rounded-2xl shadow-2xl p-5 flex flex-col gap-3"
+            className="relative w-full max-w-md bg-v5-surface rounded-2xl shadow-sm p-5 flex flex-col gap-3"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">

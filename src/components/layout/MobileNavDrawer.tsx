@@ -109,7 +109,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="mobile-nav-title"
-          className="relative flex h-full w-[min(88vw,340px)] max-w-full flex-col bg-v5-surface text-v5-ink shadow-2xl"
+          className="relative flex h-full w-[min(88vw,340px)] max-w-full flex-col bg-v5-surface text-v5-ink shadow-sm"
         >
           <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
             <Link href="/dashboard" onClick={onClose} className="flex min-w-0 items-center gap-2.5">

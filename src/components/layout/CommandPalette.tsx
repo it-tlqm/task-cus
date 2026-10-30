@@ -252,7 +252,7 @@ export default function CommandPalette({ open, onClose }: Props) {
         aria-modal="true"
         aria-label="Tìm nhanh và hành động"
         data-testid="command-palette"
-        className="w-full max-w-2xl overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-2xl"
+        className="w-full max-w-2xl overflow-hidden rounded-xl border border-v5-line bg-v5-surface shadow-sm"
       >
         <div className="flex items-center gap-3 border-b border-v5-line/60 px-4 py-3">
           <Search className="h-5 w-5 text-v5-accent" />

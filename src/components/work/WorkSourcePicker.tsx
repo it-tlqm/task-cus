@@ -518,7 +518,7 @@ export default function WorkSourcePicker({
       {/* Modal chọn danh mục */}
       {open && (
         <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/60 p-3">
-          <div className="my-4 w-full max-w-2xl rounded-xl border border-v5-line bg-v5-surface shadow-xl">
+          <div className="my-4 w-full max-w-2xl rounded-xl border border-v5-line bg-v5-surface shadow-sm">
             <div className="flex items-center justify-between border-b border-v5-line px-4 py-3">
               <h3 className="text-sm font-semibold text-v5-ink">Chọn từ danh mục</h3>
               <button

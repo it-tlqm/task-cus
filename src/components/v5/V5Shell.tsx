@@ -304,7 +304,7 @@ export function V5Shell({ children }: { children: React.ReactNode }) {
             className="absolute inset-0 bg-slate-950/35 backdrop-blur-[1px]"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative flex h-full w-[88%] max-w-[310px] flex-col border-r border-v5-line bg-v5-surface shadow-2xl">
+          <aside className="relative flex h-full w-[88%] max-w-[310px] flex-col border-r border-v5-line bg-v5-surface shadow-sm">
             <div className="flex items-center justify-between border-b border-v5-line pr-2">
               <BrandBlock />
               <button
