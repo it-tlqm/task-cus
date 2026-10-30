@@ -357,7 +357,7 @@ export default function GiaoBanBaoCaoPage() {
                   <button
                     onClick={saveVersion}
                     disabled={saving}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-v5-ink text-[12px] font-semibold hover:bg-v5-accent/5 disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-v5-accent text-v5-ink text-[12px] font-semibold hover:bg-v5-accent/5 disabled:opacity-50"
                   >
                     <BookmarkPlus className="h-4 w-4" />
                     {saving ? "Đang lưu…" : "Lưu phiên bản"}
@@ -384,7 +384,7 @@ export default function GiaoBanBaoCaoPage() {
             {/* Xem trước */}
             <div className="bg-v5-surface rounded-xl shadow-sm border border-v5-line/50 p-5 flex flex-col gap-2">
               <div className="text-center">
-                <div className="font-bold text-v5-ink uppercase text-headline-sm">{metaDraft.title || data.meta.title}</div>
+                <div className="font-bold text-v5-ink uppercase text-sm">{metaDraft.title || data.meta.title}</div>
                 <div className="text-[12px] text-v5-muted">{(metaDraft.subtitle || data.meta.subtitle) + ` (${data.meta.periodLabel})`}</div>
               </div>
               <div className="mt-2 text-[12px]">

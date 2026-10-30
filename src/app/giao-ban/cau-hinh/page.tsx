@@ -440,7 +440,7 @@ export default function CauHinhSoLieuPage() {
             </div>
             <div className="grid gap-3">
               {groups.map((g: any) => (
-                <div key={g.id} className="rounded-lg border border-v5-line bg-surface p-3">
+                <div key={g.id} className="rounded-lg border border-v5-line bg-v5-surface p-3">
                   <div className="text-[12px] font-semibold text-v5-ink">{g.name}</div>
                   <div className="grid gap-1.5 mt-2">
                     {(g.metrics || [])
@@ -483,7 +483,7 @@ export default function CauHinhSoLieuPage() {
                   key={g.id}
                   onClick={() => setSelGroupId(g.id)}
                   className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border ${
-                    selGroup?.id === g.id ? "bg-v5-accent text-white border-secondary" : "bg-v5-surface text-v5-muted border-v5-line"
+                    selGroup?.id === g.id ? "bg-v5-accent text-white border-v5-accent" : "bg-v5-surface text-v5-muted border-v5-line"
                   } ${!g.active ? "opacity-50" : ""}`}
                 >
                   {g.name} <span className="opacity-70">({g.metrics.length})</span>
@@ -491,7 +491,7 @@ export default function CauHinhSoLieuPage() {
               ))}
               <button
                 onClick={() => setNewGroupOpen((v) => !v)}
-                className="px-3 py-1.5 rounded-full text-[11px] font-semibold border border-dashed border-primary text-v5-ink hover:bg-v5-accent/5"
+                className="px-3 py-1.5 rounded-full text-[11px] font-semibold border border-dashed border-v5-accent text-v5-ink hover:bg-v5-accent/5"
               >
                 + Thêm nhóm
               </button>
@@ -559,7 +559,7 @@ export default function CauHinhSoLieuPage() {
                   >
                     Xóa nhóm
                   </button>
-                  <button onClick={() => setNewMetricOpen((v) => !v)} className="px-4 py-2 rounded-lg border border-dashed border-primary text-v5-ink text-[11px] font-semibold hover:bg-v5-accent/5 ml-auto">
+                  <button onClick={() => setNewMetricOpen((v) => !v)} className="px-4 py-2 rounded-lg border border-dashed border-v5-accent text-v5-ink text-[11px] font-semibold hover:bg-v5-accent/5 ml-auto">
                     + Thêm chỉ tiêu
                   </button>
                 </div>
@@ -668,7 +668,7 @@ export default function CauHinhSoLieuPage() {
                           >
                             {m.active ? "Ẩn" : "Bật"}
                           </button>
-                          <button onClick={() => (editMetricId === m.id ? setEditMetricId("") : openMetric(m))} className="px-2 py-1 rounded border border-primary text-v5-ink text-[11px] font-semibold hover:bg-v5-accent/5">
+                          <button onClick={() => (editMetricId === m.id ? setEditMetricId("") : openMetric(m))} className="px-2 py-1 rounded border border-v5-accent text-v5-ink text-[11px] font-semibold hover:bg-v5-accent/5">
                             {editMetricId === m.id ? "Đóng" : "Sửa"}
                           </button>
                         </div>
@@ -1244,7 +1244,7 @@ export default function CauHinhSoLieuPage() {
                               setEditSectionId(s.id);
                               setSectionDraft({ title: s.title, groupId: s.groupId || "", sortOrder: s.sortOrder });
                             }}
-                            className="px-2 py-1 rounded border border-primary text-v5-ink text-[11px] font-semibold"
+                            className="px-2 py-1 rounded border border-v5-accent text-v5-ink text-[11px] font-semibold"
                           >
                             Sửa
                           </button>
@@ -1381,7 +1381,7 @@ export default function CauHinhSoLieuPage() {
                                 sortOrder: b.sortOrder,
                               });
                             }}
-                            className="px-2 py-1 rounded border border-primary text-v5-ink text-[11px] font-semibold"
+                            className="px-2 py-1 rounded border border-v5-accent text-v5-ink text-[11px] font-semibold"
                           >
                             Sửa
                           </button>
@@ -1703,7 +1703,7 @@ function MetricMultiPicker({
         <button
           type="button"
           onClick={() => onSelectAll(visibleIds)}
-          className="px-2 py-1.5 rounded border border-primary text-v5-ink text-[11px] font-semibold hover:bg-v5-accent/5"
+          className="px-2 py-1.5 rounded border border-v5-accent text-v5-ink text-[11px] font-semibold hover:bg-v5-accent/5"
           data-testid="assign-select-all"
         >
           Chọn tất cả đang lọc ({visibleIds.length})
