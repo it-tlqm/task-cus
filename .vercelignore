@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+node_modules
+.next
+supabase/.temp
+docs
+demo-ops
+scripts
+.superpowers
+graphify-out
