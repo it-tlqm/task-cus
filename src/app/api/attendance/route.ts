@@ -178,6 +178,11 @@ export async function POST(req: NextRequest) {
       if (!personId || !["A", "B", "C", ""].includes(grade)) {
         return jsonError("Xếp loại không hợp lệ", 400);
       }
+      const person = await prisma.person.findFirst({
+        where: { id: personId, assignments: { some: { unitId } } },
+        select: { id: true },
+      });
+      if (!person) return jsonError("Cán bộ không thuộc đơn vị chấm công", 403);
       if (!grade) {
         await prisma.attendanceGrade.deleteMany({ where: { sheetId: sheet.id, personId } });
         return NextResponse.json({ success: true, deleted: true });
