@@ -250,7 +250,7 @@ export default function LeavesPage() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-sm overflow-hidden">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
