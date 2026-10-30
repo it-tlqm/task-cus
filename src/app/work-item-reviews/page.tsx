@@ -401,7 +401,7 @@ export default function WorkItemReviewsPage() {
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
           <div
             data-testid="review-return-modal"
-            className="w-full max-w-lg bg-v5-surface rounded-2xl shadow-xl border border-v5-line p-5"
+            className="w-full max-w-lg bg-v5-surface rounded-2xl shadow-sm border border-v5-line p-5"
           >
             <h3 className="text-base font-bold text-v5-ink mb-1">Trả lại công việc</h3>
             <p className="text-xs text-v5-muted mb-4">{returning.title}</p>
