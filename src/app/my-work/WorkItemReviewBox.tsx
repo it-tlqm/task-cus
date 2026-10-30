@@ -64,6 +64,11 @@ export default function WorkItemReviewBox({
     submitCount?: number | null;
     submittedAt?: string | null;
     completedDate?: string | null;
+    catalogEntryId?: string | null;
+    productItemId?: string | null;
+    assignedQty?: number | null;
+    completedQty?: number | null;
+    quantityUnit?: string | null;
   };
   onChanged?: () => void | Promise<void>;
 }) {
@@ -72,6 +77,14 @@ export default function WorkItemReviewBox({
   const [completedOn, setCompletedOn] = useState(
     item.completedDate ? String(item.completedDate).slice(0, 10) : todayInput()
   );
+  const [completedQty, setCompletedQty] = useState(
+    item.completedQty != null
+      ? String(item.completedQty)
+      : item.assignedQty != null
+        ? String(item.assignedQty)
+        : ""
+  );
+  const hasSource = !!(item.catalogEntryId || item.productItemId);
   const [busy, setBusy] = useState(false);
 
   const state = (item.reviewState || "DRAFT") as ReviewStateUi;
@@ -94,7 +107,17 @@ export default function WorkItemReviewBox({
       const res = await fetch(`/api/personal-work-items/${item.id}/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "SUBMIT", resultText, completedOn }),
+        body: JSON.stringify({
+          action: "SUBMIT",
+          resultText,
+          completedOn,
+          ...(hasSource
+            ? {
+                completedQty:
+                  completedQty === "" ? null : Number(completedQty),
+              }
+            : {}),
+        }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -183,6 +206,32 @@ export default function WorkItemReviewBox({
             <p className="text-[11px] text-on-surface-variant mt-1">
               Bắt buộc có nội dung kết quả để lãnh đạo xem xét.
             </p>
+
+            {hasSource && (
+              <div className="mt-4">
+                <label className="block text-xs font-semibold text-on-surface mb-1">
+                  Số lượng hoàn thành <span className="text-status-danger">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={completedQty}
+                    onChange={(e) => setCompletedQty(e.target.value)}
+                    placeholder="Nhập số thực tế..."
+                    className="h-9 w-full rounded-lg border border-border-default bg-surface-container-lowest px-3 text-right text-sm tabular-nums text-on-surface focus:outline-none focus:border-status-primary"
+                  />
+                  <span className="shrink-0 text-xs text-on-surface-variant">
+                    {item.quantityUnit || "—"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-on-surface-variant">
+                  SL giao: {item.assignedQty ?? "—"} {item.quantityUnit || ""}. Số liệu này đi thẳng
+                  vào KQ tháng.
+                </p>
+              </div>
+            )}
 
             <label className="block text-xs font-semibold text-on-surface mt-4 mb-1">
               Ngày hoàn thành thực tế <span className="text-status-danger">*</span>

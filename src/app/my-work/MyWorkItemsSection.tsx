@@ -27,6 +27,9 @@ interface WorkItem {
   createdAt: string;
   catalogEntryId?: string | null;
   catalogEntry?: { id: string; code: string; title: string; department: string; status: string } | null;
+  assignedQty?: number | null;
+  completedQty?: number | null;
+  quantityUnit?: string | null;
   deptWorkItemId?: string | null;
   deptWorkItem?: { id: string; title: string; unit?: { id: string; name: string } | null } | null;
   templateId?: string | null;
@@ -640,6 +643,11 @@ export default function MyWorkItemsSection({ personId, journalFilter }: Props) {
                         submitCount: item.submitCount,
                         submittedAt: item.submittedAt,
                         completedDate: item.completedDate,
+                        catalogEntryId: item.catalogEntryId,
+                        productItemId: item.productItemId,
+                        assignedQty: item.assignedQty,
+                        completedQty: item.completedQty,
+                        quantityUnit: item.quantityUnit,
                       }}
                       onChanged={async () => {
                         await fetchItems();

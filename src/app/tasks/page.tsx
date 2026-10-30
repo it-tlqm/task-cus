@@ -22,6 +22,7 @@ import { Button } from "@/components/v5/ui/button";
 import { Card } from "@/components/v5/ui/card";
 import { PageHeader } from "@/components/v5/ui/page-header";
 import { CollaboratorPicker } from "@/components/tasks/CollaboratorPicker";
+import { TaskFormModal } from "@/components/tasks/TaskFormModal";
 import WorkSourcePicker from "@/components/work/WorkSourcePicker";
 import TxSourceBadge from "@/components/work/TxSourceBadge";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -789,253 +790,21 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* MODAL GIAO NHIỆM VỤ ĐỘT XUẤT */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
-            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <V5Icon name="add_task" className="text-secondary-fixed text-[22px]" />
-                <h3 className="font-headline-sm text-headline-sm text-white">Giao Nhiệm Vụ Chỉ Đạo Mới</h3>
-              </div>
-              <button onClick={() => setShowCreateModal(false)} className="text-on-primary-container hover:text-white">
-                <V5Icon name="close" className="text-[20px]" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateTask}>
-              <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
-                {aiEnabled && (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={aiIdea}
-                      onChange={(e) => setAiIdea(e.target.value)}
-                      placeholder="Gõ vài từ khóa, AI soạn nháp giúp..."
-                      className="flex-1 h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-dashed border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAiDraft}
-                      disabled={aiLoading}
-                      title="AI soạn nháp nội dung chỉ đạo"
-                      className="h-10 px-3 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold active-press disabled:opacity-50 shrink-0"
-                    >
-                      {aiLoading ? "..." : "✨ Soạn"}
-                    </button>
-                  </div>
-                )}
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Tên đầu việc / Nội dung chỉ đạo *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="Nhập nội dung công việc chỉ đạo..."
-                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                  />
-                </div>
-
-                {/* YC-38B: bộ chọn nguồn thông minh — gợi ý TX theo tên vừa nhập */}
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Nguồn công việc (tuỳ chọn)
-                  </label>
-                  <WorkSourcePicker
-                    title={newTitle}
-                    catalogEntry={newCatalogEntry}
-                    product={newProduct}
-                    onCatalogChange={setNewCatalogEntry}
-                    onProductChange={(p) => {
-                      setNewProduct(p);
-                      if (p?.quantityUnit && !newQuantityUnit.trim()) setNewQuantityUnit(p.quantityUnit);
-                    }}
-                    storageKey="yc38b:tasks"
-                  />
-                </div>
-
-                {(newProduct || newCatalogEntry) && (
-                  <div className="rounded-lg border border-v5-line bg-v5-bg p-2.5">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col gap-1">
-                        <label className="font-label-md text-label-md text-primary font-semibold">
-                          Số lượng giao
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={newAssignedQty}
-                          onChange={(e) => setNewAssignedQty(e.target.value)}
-                          placeholder="Ví dụ: 100"
-                          className="h-9 px-2.5 rounded bg-v5-surface text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="font-label-md text-label-md text-primary font-semibold">
-                          Đơn vị tính
-                        </label>
-                        <input
-                          value={newQuantityUnit}
-                          onChange={(e) => setNewQuantityUnit(e.target.value)}
-                          placeholder="Tờ khai, lượt, hồ sơ..."
-                          className="h-9 px-2.5 rounded bg-v5-surface text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-1.5 text-[11px] text-v5-muted">
-                      Hệ số quy đổi:{" "}
-                      <strong className="text-v5-ink">
-                        {newProduct?.convertFactor ?? newCatalogEntry?.convertFactor ?? "chưa có"}
-                      </strong>
-                      {" · "}Chỉ nhập số lượng khi việc có nguồn danh mục.
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-space-sm">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">Đơn vị chủ trì</label>
-                    <select
-                      value={selectedUnitId}
-                      onChange={(e) => setSelectedUnitId(e.target.value)}
-                      className="h-10 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                    >
-                      {units.length > 0 ? (
-                        units.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">Hải quan cửa khẩu Quốc tế Tà Lùng</option>
-                      )}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">Cán bộ chủ trì</label>
-                    <select
-                      value={selectedOwnerId}
-                      onChange={(e) => setSelectedOwnerId(e.target.value)}
-                      className="h-10 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                    >
-                      {people.length > 0 ? (
-                        people.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.fullName}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">Tự động theo phân công</option>
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                <CollaboratorPicker
-                  people={people}
-                  value={collabIds}
-                  onChange={setCollabIds}
-                  excludeId={selectedOwnerId}
-                  disabled={isCreating}
-                />
-
-                <div className="grid grid-cols-2 gap-space-sm">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">Mức độ ưu tiên</label>
-                    <select
-                      value={newPriority}
-                      onChange={(e) => setNewPriority(e.target.value as any)}
-                      className="h-10 px-2 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                    >
-                      <option value="Khẩn">Khẩn cấp</option>
-                      <option value="Cao">Cao</option>
-                      <option value="Trung bình">Trung bình</option>
-                      <option value="Thấp">Thấp</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-md text-label-md text-primary font-semibold">Hạn định hoàn thành</label>
-                    <input
-                      type="datetime-local"
-                      value={newDeadline}
-                      onChange={(e) => setNewDeadline(e.target.value)}
-                      className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">Nguồn gốc / Chỉ đạo từ đâu</label>
-                  <input
-                    type="text"
-                    value={newSource}
-                    onChange={(e) => setNewSource(e.target.value)}
-                    placeholder="Chỉ đạo đột xuất Lãnh đạo Chi cục..."
-                    className="h-10 px-3 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">Sản phẩm / Kết quả yêu cầu</label>
-                  <textarea
-                    rows={2}
-                    value={newExpectedResult}
-                    onChange={(e) => setNewExpectedResult(e.target.value)}
-                    placeholder="Biên bản kiểm tra điện tử, xác nhận thông quan đúng hạn..."
-                    className="p-2.5 rounded bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-md text-label-md text-primary font-semibold">
-                    Ảnh / Văn bản kèm theo {newAttachFiles.length > 0 && `(${newAttachFiles.length} tệp)`}
-                  </label>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx"
-                    disabled={isCreating}
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      const valid = files.filter((f) => {
-                        if (f.size > 10 * 1024 * 1024) {
-                          toast.warning(`Tệp ${f.name} quá 10MB — bỏ qua (bổ sung ở chi tiết sau)`);
-                          return false;
-                        }
-                        return true;
-                      }).slice(0, 5);
-                      setNewAttachFiles(valid);
-                    }}
-                    className="text-body-md font-body-md text-v5-ink file:mr-2 file:px-3 file:py-1.5 file:rounded file:bg-v5-bg file:text-primary file:text-xs file:font-semibold file:border file:border-v5-line"
-                  />
-                  <p className="text-[11px] text-v5-muted">Tối đa 5 tệp, mỗi tệp ≤ 10MB. Tải lên sau khi nhiệm vụ được tạo.</p>
-                </div>
-              </div>
-
-              <div className="p-space-md bg-v5-bg flex items-center justify-end gap-space-sm border-t border-v5-line">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg border border-v5-line active-press"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreating}
-                  className="px-4 py-2 rounded bg-secondary text-on-secondary font-label-md text-label-md font-semibold hover:opacity-90 shadow-sm active-press disabled:opacity-50"
-                >
-                  {isCreating ? "Đang chuyển..." : "Chuyển ý kiến chỉ đạo"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modal giao nhiệm vụ dùng chung */}
+      <TaskFormModal
+        open={showCreateModal}
+        mode="assign"
+        onClose={() => setShowCreateModal(false)}
+        onCreated={async () => {
+          await fetchTasks();
+        }}
+        currentPersonId={permUser?.personId}
+        currentUnitId={permUser?.unitId}
+        people={people}
+        units={units}
+        canAssign={canAssign}
+        aiEnabled={aiEnabled}
+      />
 
       {/* MODAL DUYỆT KẾT QUẢ */}
       {showApproveModal && selectedTask && (

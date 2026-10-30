@@ -38,6 +38,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       const updated = await submitWorkItemForReview(user, id, {
         resultText,
         completedOn: parsed.value,
+        completedQty:
+          body.completedQty === undefined || body.completedQty === null || body.completedQty === ""
+            ? undefined
+            : Number(body.completedQty),
       });
       return NextResponse.json({ success: true, data: updated });
     }

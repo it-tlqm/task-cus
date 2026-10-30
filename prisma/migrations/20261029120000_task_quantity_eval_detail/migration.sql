@@ -6,9 +6,10 @@ ALTER TABLE "tasks"
   ADD COLUMN "factor_snapshot" DOUBLE PRECISION,
   ADD COLUMN "completed_date" DATE;
 
--- Số lượng giao của đầu việc kế hoạch
+-- Số lượng giao/hoàn thành của đầu việc kế hoạch
 ALTER TABLE "personal_work_items"
   ADD COLUMN "assigned_qty" DOUBLE PRECISION,
+  ADD COLUMN "completed_qty" DOUBLE PRECISION,
   ADD COLUMN "quantity_unit" TEXT,
   ADD COLUMN "factor_snapshot" DOUBLE PRECISION;
 

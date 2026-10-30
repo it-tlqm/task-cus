@@ -598,6 +598,7 @@ model PersonalWorkItem {
   priority         String            @default("Trung bình") // Mức độ ưu tiên: Cao, Trung bình, Thấp
   expectedResult   String?           @map("expected_result") // Kết quả dự kiến
   assignedQty      Float?            @map("assigned_qty") // Số lượng giao (TX hoặc QĐ1277)
+  completedQty     Float?            @map("completed_qty") // Số lượng hoàn thành thực tế
   quantityUnit     String?           @map("quantity_unit") // Đơn vị tính
   factorSnapshot   Float?            @map("factor_snapshot") // Hệ số quy đổi tại thời điểm lập
   sortOrder        Int               @default(0) @map("sort_order")

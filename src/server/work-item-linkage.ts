@@ -227,6 +227,13 @@ export interface CreateWorkItemArgs {
   /** Số lượng/đơn vị riêng của sản phẩm QĐ1277 gắn kèm. */
   productQuantity?: number | null;
   productQuantityUnit?: string | null;
+  /** Nhiều sản phẩm QĐ1277, mỗi sản phẩm có SL/ĐVT riêng. */
+  productItems?: Array<{
+    productItemId: string;
+    quantity?: number | null;
+    quantityUnit?: string | null;
+    factorSnapshot?: number | null;
+  }>;
 }
 
 export interface CreatedWorkItem {

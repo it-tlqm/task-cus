@@ -672,6 +672,7 @@ export async function PATCH(req: NextRequest) {
       priority,
       expectedResult,
       assignedQty,
+      completedQty,
       quantityUnit,
       factorSnapshot,
       sortOrder,
@@ -930,6 +931,7 @@ export async function PATCH(req: NextRequest) {
     if (priority !== undefined) updateData.priority = priority;
     if (expectedResult !== undefined) updateData.expectedResult = expectedResult?.trim() || null;
     if (assignedQty !== undefined) updateData.assignedQty = assignedQty === null || assignedQty === "" ? null : Number(assignedQty);
+    if (completedQty !== undefined) updateData.completedQty = completedQty === null || completedQty === "" ? null : Number(completedQty);
     if (quantityUnit !== undefined) updateData.quantityUnit = quantityUnit?.trim() || null;
     if (factorSnapshot !== undefined) updateData.factorSnapshot = factorSnapshot === null || factorSnapshot === "" ? null : Number(factorSnapshot);
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;

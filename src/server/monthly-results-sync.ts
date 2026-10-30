@@ -201,6 +201,7 @@ export async function syncMonthlyResultsFromWorkItems(
       title: true,
       status: true,
       assignedQty: true,
+      completedQty: true,
       factorSnapshot: true,
       dueDate: true,
       completedDate: true,
@@ -222,7 +223,7 @@ export async function syncMonthlyResultsFromWorkItems(
       item.factorSnapshot ?? item.product?.convertFactor ?? catalogFactor ?? null;
 
     const assignedQty = item.assignedQty ?? 1;
-    const completedQty = item.completedDate ? assignedQty : null;
+    const completedQty = item.completedQty ?? (item.completedDate ? assignedQty : null);
     const lateDays =
       item.completedDate && item.dueDate
         ? Math.max(

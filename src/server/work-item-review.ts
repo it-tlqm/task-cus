@@ -159,7 +159,7 @@ export function assertTransitionAllowed(state: ReviewState, action: ReviewAction
 export async function submitWorkItemForReview(
   user: SessionUser,
   workItemId: string,
-  input: { resultText: string; completedOn: Date }
+  input: { resultText: string; completedOn: Date; completedQty?: number | null }
 ) {
   const item = await prisma.personalWorkItem.findUnique({
     where: { id: workItemId },
@@ -184,6 +184,14 @@ export async function submitWorkItemForReview(
   const state = reviewStateOf(item);
   assertTransitionAllowed(state, "SUBMIT");
 
+  const completedQty =
+    input.completedQty === undefined || input.completedQty === null
+      ? item.assignedQty ?? null
+      : input.completedQty;
+  if (completedQty !== null && (!Number.isFinite(completedQty) || completedQty < 0)) {
+    throw new ReviewError("Số lượng hoàn thành không hợp lệ.", 400);
+  }
+
   const updated = await prisma.$transaction(async (tx) => {
     await assertWorkItemNotLinkedToClosedTask(workItemId, tx);
     const next = await tx.personalWorkItem.update({
@@ -192,6 +200,7 @@ export async function submitWorkItemForReview(
         reviewState: "SUBMITTED",
         resultText: input.resultText.trim(),
         completedDate: input.completedOn,
+        completedQty,
         completedAt: new Date(),
         submittedAt: new Date(),
         submittedById: user.personId,
