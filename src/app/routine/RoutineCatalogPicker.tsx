@@ -167,11 +167,11 @@ export default function RoutineCatalogPicker({
           value={txQuery}
           onChange={(e) => setTxQuery(e.target.value)}
           placeholder="Tìm công việc thường xuyên theo mã hoặc tên (có/không dấu)…"
-          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
+          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent"
         />
         {txBusy && <span className="text-[11px] text-v5-muted">Đang tìm…</span>}
         {!txBusy && txResults.length > 0 && (
-          <div className="max-h-44 overflow-y-auto rounded-lg border border-border-subtle divide-y divide-border-subtle">
+          <div className="max-h-44 overflow-y-auto rounded-lg border border-v5-line divide-y divide-v5-line">
             {txResults.map((t) => {
               const already = selectedTags.some((x) => x.id === t.id);
               return (
@@ -215,7 +215,7 @@ export default function RoutineCatalogPicker({
               <div
                 key={p.productItemId}
                 data-testid={`routine-sp-item-${p.code}`}
-                className="rounded-lg border border-border-subtle bg-v5-surface px-3 py-2"
+                className="rounded-lg border border-v5-line bg-v5-surface px-3 py-2"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -244,13 +244,13 @@ export default function RoutineCatalogPicker({
                       updateProduct(i, { quantity: e.target.value === "" ? null : Number(e.target.value) })
                     }
                     placeholder="Số lượng (nếu có)"
-                    className="h-8 w-28 rounded bg-v5-surface text-[11px] border border-border-subtle px-2"
+                    className="h-8 w-28 rounded bg-v5-surface text-[11px] border border-v5-line px-2"
                   />
                   <input
                     value={p.unit ?? ""}
                     onChange={(e) => updateProduct(i, { unit: e.target.value || null })}
                     placeholder="Đơn vị tính (nếu có)"
-                    className="h-8 flex-1 rounded bg-v5-surface text-[11px] border border-border-subtle px-2"
+                    className="h-8 flex-1 rounded bg-v5-surface text-[11px] border border-v5-line px-2"
                   />
                 </div>
               </div>
@@ -262,11 +262,11 @@ export default function RoutineCatalogPicker({
           value={spQuery}
           onChange={(e) => setSpQuery(e.target.value)}
           placeholder="Tìm sản phẩm QĐ1277 theo mã hoặc tên (có/không dấu)…"
-          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-v5-ink border border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent"
+          className="h-10 px-3 rounded bg-v5-surface text-[12px] text-v5-ink border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent"
         />
         {spBusy && <span className="text-[11px] text-v5-muted">Đang tìm…</span>}
         {!spBusy && spResults.length > 0 && (
-          <div className="max-h-44 overflow-y-auto rounded-lg border border-border-subtle divide-y divide-border-subtle">
+          <div className="max-h-44 overflow-y-auto rounded-lg border border-v5-line divide-y divide-v5-line">
             {spResults.map((p) => (
               <button
                 key={p.id}

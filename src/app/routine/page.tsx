@@ -1299,7 +1299,7 @@ export default function RoutinePage() {
                   <h3 className="text-sm text-v5-ink">
                     Thiết kế biểu mẫu tác nghiệp
                   </h3>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-v5-accent/10 text-v5-ink border border-primary/20">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-v5-accent/10 text-v5-ink border border-v5-accent/20">
                     PHIÊN BẢN v{activeFormVersion?.version || 1}
                   </span>
                 </div>
