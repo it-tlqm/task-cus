@@ -2205,7 +2205,7 @@ export default function TaskDetailPage() {
               className="w-full p-2.5 rounded bg-v5-bg text-xs border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent resize-none"
             />
             {mentionMatches.length > 0 && (
-              <div className="absolute left-0 right-0 bottom-full mb-1 bg-v5-surface border border-v5-line rounded-lg shadow-xl overflow-hidden z-10 max-h-44 overflow-y-auto">
+              <div className="absolute left-0 right-0 bottom-full mb-1 bg-v5-surface border border-v5-line rounded-lg shadow-sm overflow-hidden z-10 max-h-44 overflow-y-auto">
                 {mentionMatches.map((p) => {
                   const inTask =
                     task?.owner?.id === p.id ||
@@ -2579,7 +2579,7 @@ export default function TaskDetailPage() {
       {/* MODAL CẬP NHẬT TIẾN ĐỘ */}
       {showUpdateModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
@@ -2691,7 +2691,7 @@ export default function TaskDetailPage() {
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div
             data-testid="own-part-modal"
-            className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line"
+            className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line"
           >
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
@@ -2752,7 +2752,7 @@ export default function TaskDetailPage() {
       {/* MODAL XIN GIA HẠN */}
       {showExtRequestModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">
@@ -2816,7 +2816,7 @@ export default function TaskDetailPage() {
       {/* MODAL DUYỆT NGHIỆM THU */}
       {showApproveModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-success-soft text-v5-success">
@@ -2892,7 +2892,7 @@ export default function TaskDetailPage() {
       {/* YC-03: MODAL CHỈNH SỬA NỘI DUNG CHỈ ĐẠO — lưu trên đúng bản ghi */}
       {showEditModal && task && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
@@ -3011,7 +3011,7 @@ export default function TaskDetailPage() {
       {/* YC-08: MODAL XÁC NHẬN LOẠI NHIỆM VỤ TRÙNG — xóa mềm, giữ vết */}
       {showCancelDupModal && task && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-danger-soft text-v5-danger">
@@ -3073,7 +3073,7 @@ export default function TaskDetailPage() {
           onClick={() => setPreviewFile(null)}
         >
           <div
-            className="bg-v5-surface rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-v5-line"
+            className="bg-v5-surface rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-sm overflow-hidden border border-v5-line"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">

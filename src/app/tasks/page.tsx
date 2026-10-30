@@ -830,7 +830,7 @@ export default function TasksPage() {
       {/* MODAL DUYỆT KẾT QUẢ */}
       {showApproveModal && selectedTask && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-success-soft text-v5-success">
@@ -875,7 +875,7 @@ export default function TasksPage() {
       {/* MODAL GIA HẠN / ĐÔN ĐỐC */}
       {showExtModal && selectedTask && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line transition-panel">
             <div className="flex items-center justify-between gap-3 border-b border-v5-danger/20 bg-v5-danger-soft px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-danger/10 text-v5-danger">
