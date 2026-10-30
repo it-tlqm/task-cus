@@ -2050,7 +2050,7 @@ function MyWorkPageContent() {
           <button
             onClick={openNewTaskModal}
             aria-label="Thêm đầu việc mới"
-            className="h-13 px-4 py-3 rounded-full bg-v5-accent text-white shadow-lg flex items-center gap-2 active:scale-95 transition-transform hover:shadow-xl font-semibold text-[12px] tracking-tight"
+            className="h-13 px-4 py-3 rounded-full bg-v5-accent text-white shadow-sm flex items-center gap-2 active:scale-95 transition-transform hover:shadow-sm font-semibold text-[12px] tracking-tight"
             type="button"
           >
             <V5Icon name="add_task" className="text-[24px]" />
@@ -2071,7 +2071,7 @@ function MyWorkPageContent() {
             onClick={() => setIsDrawerOpen(false)}
           />
 
-          <aside className="relative w-full max-w-full sm:max-w-[520px] sm:w-[520px] bg-v5-surface shadow-2xl z-50 flex flex-col h-full transform transition-transform duration-300 ease-in-out">
+          <aside className="relative w-full max-w-full sm:max-w-[520px] sm:w-[520px] bg-v5-surface shadow-sm z-50 flex flex-col h-full transform transition-transform duration-300 ease-in-out">
             {/* DRAWER HEADER */}
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
               <div className="flex min-w-0 flex-1 items-center gap-space-sm">
@@ -2526,7 +2526,7 @@ function MyWorkPageContent() {
           ========================================================================= */}
       {issueTask && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">
@@ -2590,7 +2590,7 @@ function MyWorkPageContent() {
           ========================================================================= */}
       {extTask && (
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-gold-soft text-v5-gold-ink">
@@ -2664,7 +2664,7 @@ function MyWorkPageContent() {
           ========================================================================= */}
       {editTask && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
-          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
+          <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-space-md py-3">
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-accent-soft text-v5-accent">
@@ -2747,7 +2747,7 @@ function MyWorkPageContent() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
+          <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line">
             <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-success-soft text-v5-success">
@@ -2823,7 +2823,7 @@ function MyWorkPageContent() {
           onClick={() => setPreviewFile(null)}
         >
           <div
-            className="bg-v5-surface rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-v5-line"
+            className="bg-v5-surface rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-sm overflow-hidden border border-v5-line"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-3.5 border-b border-v5-line flex items-center justify-between bg-v5-bg">

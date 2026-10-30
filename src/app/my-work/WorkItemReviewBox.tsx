@@ -187,7 +187,7 @@ export default function WorkItemReviewBox({
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4">
           <div
             data-testid={`work-item-submit-modal-${item.id}`}
-            className="w-full max-w-xl bg-v5-surface rounded-2xl shadow-xl border border-v5-line p-5 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-xl bg-v5-surface rounded-2xl shadow-sm border border-v5-line p-5 max-h-[90vh] overflow-y-auto"
           >
             <h3 className="text-base font-bold text-v5-ink mb-1">Báo hoàn thành công việc</h3>
             <p className="text-xs text-v5-muted mb-4">{item.title}</p>
