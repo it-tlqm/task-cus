@@ -28,6 +28,7 @@ interface DrawerTask {
   completedQty?: number | null;
   quantityUnit?: string | null;
   factorSnapshot?: number | null;
+  txSource?: { code: string; title?: string | null } | null;
   owner?: { id: string; fullName?: string };
   assignees?: Array<{ person?: { id: string; fullName?: string } }>;
 }
@@ -266,6 +267,13 @@ export function TaskActionDrawer({ task, personId, canApprove, onClose, onSaved 
               )}
             </div>
             <p className="mt-1.5 text-[13px] font-semibold text-v5-ink">{task.title}</p>
+            {task.txSource && (
+              <p className="mt-1 text-[11px] text-v5-muted">
+                Danh mục:{" "}
+                <span className="font-mono font-semibold text-v5-accent">TX - {task.txSource.code}</span>
+                {task.txSource.title ? ` · ${task.txSource.title}` : ""}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-4 p-4">

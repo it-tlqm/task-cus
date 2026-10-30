@@ -1359,22 +1359,33 @@ export default function TaskDetailPage() {
               </div>
 
               {(task.assignedQty != null || task.completedQty != null) && (
-                <div className="grid grid-cols-3 gap-2 rounded-lg border border-v5-line bg-v5-bg p-2.5 text-xs">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wide text-v5-muted">Số lượng giao</div>
-                    <div className="font-bold text-v5-ink">
-                      {task.assignedQty ?? "—"} {task.quantityUnit || ""}
+                <div className="rounded-lg border border-v5-line bg-v5-bg p-2.5 text-xs">
+                  {task.txSource && (
+                    <div className="mb-2 flex flex-wrap items-center gap-2 border-b border-v5-line/70 pb-2 text-[11px]">
+                      <span className="font-semibold text-v5-muted">Chỉ tiêu / Danh mục:</span>
+                      <span className="rounded border border-v5-accent/30 bg-v5-accent-soft px-2 py-0.5 font-mono font-semibold text-v5-accent">
+                        TX - {task.txSource.code}
+                      </span>
+                      <span className="text-v5-ink">{task.txSource.title || "Chưa có tên danh mục"}</span>
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wide text-v5-muted">Số lượng hoàn thành</div>
-                    <div className="font-bold text-v5-ink">
-                      {task.completedQty ?? "—"} {task.quantityUnit || ""}
+                  )}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-v5-muted">Số lượng giao</div>
+                      <div className="font-bold text-v5-ink">
+                        {task.assignedQty ?? "—"} {task.quantityUnit || ""}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wide text-v5-muted">Hệ số quy đổi</div>
-                    <div className="font-bold text-v5-ink">{task.factorSnapshot ?? "—"}</div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-v5-muted">Số lượng hoàn thành</div>
+                      <div className="font-bold text-v5-ink">
+                        {task.completedQty ?? "—"} {task.quantityUnit || ""}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-v5-muted">Hệ số quy đổi</div>
+                      <div className="font-bold text-v5-ink">{task.factorSnapshot ?? "—"}</div>
+                    </div>
                   </div>
                 </div>
               )}
