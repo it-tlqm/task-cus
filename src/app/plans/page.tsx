@@ -1997,22 +1997,22 @@ export default function PlansPage() {
           )}
 
           <div className="overflow-x-auto w-full custom-scrollbar">
-            <table className="w-full text-left border-collapse min-w-[1240px]">
+            <table className="w-full table-fixed text-left border-collapse min-w-[1080px]">
               <thead className="sticky top-0 z-10 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
                 <tr className="bg-v5-bg text-[11px] font-semibold uppercase tracking-wide text-v5-muted text-v5-ink">
-                  <th className="py-3 px-space-md w-[110px] uppercase tracking-wider text-center">Thứ / Ngày</th>
-                  <th className="py-3 px-space-md w-[200px] uppercase tracking-wider">Nhóm nhiệm vụ</th>
-                  <th className="py-3 px-space-lg min-w-[340px] uppercase tracking-wider bg-v5-bg/40 text-v5-ink">
+                  <th className="py-3 px-space-md w-[80px] uppercase tracking-wider text-center">Thứ / Ngày</th>
+                  <th className="py-3 px-space-md w-[140px] uppercase tracking-wider">Nhóm nhiệm vụ</th>
+                  <th className="py-3 px-space-lg min-w-[240px] uppercase tracking-wider bg-v5-bg/40 text-v5-ink">
                     <span title="Cột C: Danh mục đầu việc biến động theo từng cá nhân">
                       Đầu việc / Danh mục
                     </span>
                   </th>
-                  <th className="py-3 px-space-md w-[210px] uppercase tracking-wider">Cán bộ phụ trách</th>
-                  <th className="py-3 px-space-md w-[160px] uppercase tracking-wider">Đơn vị phối hợp</th>
-                  <th className="py-3 px-space-sm w-[110px] uppercase tracking-wider text-center">Mức ưu tiên</th>
-                  <th className="py-3 px-space-md w-[220px] uppercase tracking-wider">Kết quả dự kiến</th>
-                  <th className="py-3 px-space-md w-[150px] uppercase tracking-wider text-center">Kết quả &amp; Trạng thái</th>
-                  <th className="py-3 px-space-md w-[90px] uppercase tracking-wider text-center">Thao tác</th>
+                  <th className="py-3 px-space-md w-[160px] uppercase tracking-wider">Cán bộ phụ trách</th>
+                  <th className="py-3 px-space-md w-[110px] uppercase tracking-wider">Đơn vị phối hợp</th>
+                  <th className="py-3 px-space-sm w-[80px] uppercase tracking-wider text-center">Mức ưu tiên</th>
+                  <th className="py-3 px-space-md w-[110px] uppercase tracking-wider">Kết quả dự kiến</th>
+                  <th className="py-3 px-space-md w-[150px] uppercase tracking-wider text-center">Trạng thái</th>
+                  <th className="w-[70px] border-l border-v5-line px-space-md py-3 text-center uppercase tracking-wider">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="text-[12px] divide-y divide-v5-line/40">
@@ -2249,7 +2249,7 @@ export default function PlansPage() {
                       </td>
                       <td className="py-4 px-space-md align-top">
                         {row.isUnassignedGroup ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-v5-gold-soft text-v5-gold-ink border border-v5-gold/40">
+                          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold bg-v5-gold-soft text-v5-gold-ink border border-v5-gold/40">
                             <V5Icon name="help_outline" className="text-[13px]" />
                             Chưa phân nhóm nghiệp vụ
                           </span>
@@ -2295,13 +2295,13 @@ export default function PlansPage() {
                         </div>
                       </td>
                       <td className="py-4 px-space-md align-top">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-v5-accent-container text-white-container flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-v5-accent text-white flex items-center justify-center font-bold text-[10px] shrink-0">
                             {row.ownerName.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-semibold text-v5-ink block text-sm">{row.ownerName}</span>
-                            <span className="text-xs text-v5-muted">{activePlan?.unit?.name || "Bộ phận"}</span>
+                            <span className="block truncate text-sm font-semibold text-v5-ink" title={row.ownerName}>{row.ownerName}</span>
+                            <span className="block truncate text-xs text-v5-muted">{activePlan?.unit?.name || "Bộ phận"}</span>
                           </div>
                         </div>
                       </td>
@@ -2327,7 +2327,7 @@ export default function PlansPage() {
                       <td className="py-4 px-space-md align-top text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold ${
+                            className={`inline-flex items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${
                               row.status === "COMPLETED"
                                 ? "bg-v5-success-soft text-v5-success"
                                 : row.status === "NOT_STARTED"
@@ -2376,7 +2376,7 @@ export default function PlansPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-space-md align-top text-center">
+                      <td className="border-l border-v5-line px-space-md py-4 align-top text-center">
                         <div className="flex items-center justify-center gap-1">
                           {row.rawWorkItem && (() => {
                             const canModify = canModifyWorkItem(row.rawWorkItem);
@@ -2567,7 +2567,7 @@ export default function PlansPage() {
           <div className="bg-v5-surface p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm border border-v5-line/40">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-space-sm">
-                <div className="w-10 h-10 rounded-full bg-v5-accent-container text-white-container flex items-center justify-center text-sm font-bold">
+                <div className="w-10 h-10 rounded-full bg-v5-accent text-white flex items-center justify-center text-sm font-bold">
                   {activePlan?.unit?.name?.slice(0, 2).toUpperCase() || "—"}
                 </div>
                 <div className="flex flex-col">
