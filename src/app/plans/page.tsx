@@ -1958,18 +1958,18 @@ export default function PlansPage() {
         {/* Main Administrative Data-Dense Table (Excel Grid Representation - Stitch d8279bd2bf0c4198b665f567223d0bf4) */}
         <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col border border-v5-line/50">
           {/* Business rules: giữ chi tiết nhưng thu gọn để không chiếm chỗ bảng */}
-          <details className="group border-b border-primary/20 bg-v5-accent-soft text-white">
+          <details className="group border-b border-v5-line bg-v5-accent-soft text-v5-ink">
             <summary className="flex cursor-pointer list-none items-center gap-2 px-space-lg py-2 text-[11px] [&::-webkit-details-marker]:hidden">
               <V5Icon name="rule_settings" className="text-v5-accent text-[18px]" />
               <span className="font-semibold uppercase tracking-wider">Quy tắc nghiệp vụ Cột C</span>
-              <span className="hidden truncate text-white/80/90 md:inline">
+              <span className="hidden truncate text-v5-muted md:inline">
                 — Danh mục đầu việc biến động theo cán bộ và kỳ công tác
               </span>
-              <span className="ml-auto shrink-0 rounded border border-white/20 px-1.5 py-0.5 text-[10px]">
+              <span className="ml-auto shrink-0 rounded border border-v5-line px-1.5 py-0.5 text-[10px] text-v5-muted">
                 V1.1
               </span>
             </summary>
-            <div className="border-t border-white/15 px-space-lg py-2 text-[12px] leading-relaxed text-white/80">
+            <div className="border-t border-v5-line px-space-lg py-2 text-[12px] leading-relaxed text-v5-muted">
               “Danh mục đầu việc” biến động linh hoạt theo từng Cán bộ phụ trách và kỳ công tác; có thể chọn từ
               Danh mục TX, danh mục bộ phận hoặc đăng ký đầu việc đặc thù.
             </div>
