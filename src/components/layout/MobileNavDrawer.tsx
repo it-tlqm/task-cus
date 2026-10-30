@@ -100,7 +100,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
         <button
           type="button"
           aria-label="Đóng menu điều hướng"
-          className="absolute inset-0 h-full w-full cursor-default bg-primary/55 backdrop-blur-[2px]"
+          className="absolute inset-0 h-full w-full cursor-default bg-v5-accent/55 backdrop-blur-[2px]"
           onClick={onClose}
         />
 
@@ -109,7 +109,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="mobile-nav-title"
-          className="relative flex h-full w-[min(88vw,340px)] max-w-full flex-col bg-primary-container text-on-primary shadow-2xl"
+          className="relative flex h-full w-[min(88vw,340px)] max-w-full flex-col bg-v5-surface text-v5-ink shadow-2xl"
         >
           <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
             <Link href="/dashboard" onClick={onClose} className="flex min-w-0 items-center gap-2.5">
@@ -122,7 +122,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
                 <span id="mobile-nav-title" className="truncate text-[14px] font-bold uppercase tracking-wide text-white">
                   Hải quan Tà Lùng
                 </span>
-                <span className="truncate text-[11px] font-medium text-on-primary-container">
+                <span className="truncate text-[11px] font-medium text-v5-muted">
                   Quản lý Kế hoạch &amp; Công việc
                 </span>
               </span>
@@ -133,7 +133,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
               onClick={onClose}
               aria-label="Đóng menu điều hướng"
               data-testid="mobile-nav-close"
-              className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+              className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-v5-muted transition-fast hover:bg-white/10 hover:text-white"
             >
               <V5Icon name="close" className="text-[21px]" />
             </button>
@@ -142,14 +142,14 @@ export function MobileNavDrawer({ open, onClose }: Props) {
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div className="px-3 pt-3">
               <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-on-secondary">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-v5-accent text-white">
                   <V5Icon name="person" className="text-[19px]" />
                 </span>
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-[13px] font-semibold text-white">
                     {user?.fullName || "Đang tải thông tin"}
                   </span>
-                  <span className="truncate text-[11px] text-on-primary-container">
+                  <span className="truncate text-[11px] text-v5-muted">
                     {user?.positionTitle || (user?.role ? getRoleDisplayName(user.role) : "Cán bộ công chức")}
                     {user?.unitName ? ` • ${user.unitName}` : ""}
                   </span>
@@ -160,11 +160,11 @@ export function MobileNavDrawer({ open, onClose }: Props) {
             <NavigationList variant="drawer" onNavigate={onClose} />
           </div>
 
-          <div className="border-t border-white/10 bg-primary/40 px-4 py-3">
+          <div className="border-t border-white/10 bg-slate-900/40 px-4 py-3">
             <Link
               href="/huong-dan"
               onClick={onClose}
-              className="focus-ring flex items-center gap-2 rounded-lg px-2 py-2 text-[12px] font-medium text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+              className="focus-ring flex items-center gap-2 rounded-lg px-2 py-2 text-[12px] font-medium text-v5-muted transition-fast hover:bg-white/10 hover:text-white"
             >
               <V5Icon name="help" className="text-[18px]" />
               Hướng dẫn sử dụng
@@ -173,7 +173,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
               <button
                 type="button"
                 onClick={() => setChangePasswordOpen(true)}
-                className="focus-ring flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-white/15 px-2 py-1.5 text-[11.5px] font-semibold text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+                className="focus-ring flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-white/15 px-2 py-1.5 text-[11.5px] font-semibold text-v5-muted transition-fast hover:bg-white/10 hover:text-white"
               >
                 <V5Icon name="key" className="text-[17px]" />
                 Đổi mật khẩu
@@ -188,7 +188,7 @@ export function MobileNavDrawer({ open, onClose }: Props) {
                 {loggingOut ? "Đang thoát..." : "Đăng xuất"}
               </button>
             </div>
-            <p className="mt-2 text-center text-[10px] text-on-primary-container/80">
+            <p className="mt-2 text-center text-[10px] text-v5-muted/80">
               Hỗ trợ kỹ thuật nội bộ • v1.2.4
             </p>
           </div>

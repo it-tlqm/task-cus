@@ -55,7 +55,7 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
   return (
     <nav
       aria-label="Điều hướng nhanh trên điện thoại"
-      className="fixed bottom-0 z-50 w-full border-t border-v5-line/70 bg-surface/95 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.04)] backdrop-blur-xl lg:hidden"
+      className="fixed bottom-0 z-50 w-full border-t border-v5-line/70 bg-v5-surface/95 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.04)] backdrop-blur-xl lg:hidden"
     >
       <div className="flex h-16 items-center justify-around px-space-xs">
         {navItems.map((item) => {
@@ -68,14 +68,14 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
               aria-current={active ? "page" : undefined}
               data-testid={item.testId}
               className={`focus-ring relative flex h-12 min-w-[56px] flex-col items-center justify-center rounded-xl transition-fast active-press ${
-                active ? "font-body-semibold text-secondary" : "text-v5-muted hover:text-secondary"
+                active ? "font-semibold text-v5-accent" : "text-v5-muted hover:text-v5-accent"
               }`}
             >
-              {active && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}
+              {active && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-v5-accent" />}
               <span className="relative flex items-center justify-center">
                 <V5Icon name={item.icon} className="text-[22px]" />
                 {item.hasBadge && (
-                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-status-danger ring-2 ring-surface" />
+                  <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-v5-danger ring-2 ring-v5-surface" />
                 )}
               </span>
               <span className="mt-0.5 text-[11px] tracking-tight">{item.name}</span>
@@ -91,10 +91,10 @@ export function BottomNav({ onOpenMenu, mobileMenuOpen = false }: Props) {
           aria-expanded={mobileMenuOpen}
           data-testid="bottom-menu"
           className={`focus-ring relative flex h-12 min-w-[56px] flex-col items-center justify-center rounded-xl transition-fast active-press ${
-            mobileMenuOpen ? "font-body-semibold text-secondary" : "text-v5-muted hover:text-secondary"
+            mobileMenuOpen ? "font-semibold text-v5-accent" : "text-v5-muted hover:text-v5-accent"
           }`}
         >
-          {mobileMenuOpen && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-secondary" />}
+          {mobileMenuOpen && <span className="absolute top-1 h-0.5 w-6 rounded-full bg-v5-accent" />}
           <V5Icon name="apps" className="text-[22px]" />
           <span className="mt-0.5 text-[11px] tracking-tight">Menu</span>
         </button>

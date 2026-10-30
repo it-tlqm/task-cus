@@ -22,12 +22,12 @@ export function Breadcrumb({ className = "" }: { className?: string }) {
           return (
             <li key={`${entry.label}-${index}`} className="flex min-w-0 items-center gap-1.5">
               {index > 0 && (
-                <V5Icon name="chevron_right" className="shrink-0 text-[13px] text-outline" />
+                <V5Icon name="chevron_right" className="shrink-0 text-[13px] text-v5-muted" />
               )}
               {entry.href && !last ? (
                 <Link
                   href={entry.href}
-                  className="focus-ring flex shrink-0 items-center gap-1 rounded text-v5-muted transition-fast hover:text-secondary"
+                  className="focus-ring flex shrink-0 items-center gap-1 rounded text-v5-muted transition-fast hover:text-v5-accent"
                 >
                   {index === 0 && (
                     <V5Icon name="home" className="text-[14px]" />
@@ -38,7 +38,7 @@ export function Breadcrumb({ className = "" }: { className?: string }) {
                 <span
                   aria-current={last ? "page" : undefined}
                   title={entry.label}
-                  className={`truncate ${last ? "font-semibold text-primary" : "text-v5-muted/80"} ${
+                  className={`truncate ${last ? "font-semibold text-v5-ink" : "text-v5-muted/80"} ${
                     !last && index < trail.length - 1 ? "hidden sm:inline" : ""
                   }`}
                 >

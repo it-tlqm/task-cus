@@ -113,7 +113,7 @@ export function NavigationList({ collapsed = false, variant = "desktop", onNavig
                 aria-expanded={open}
                 aria-controls={panelId}
                 className={`focus-ring flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left transition-fast ${
-                  sectionHasActive ? "text-white" : "text-on-primary-container hover:text-white"
+                  sectionHasActive ? "text-white" : "text-v5-muted hover:text-white"
                 }`}
                 title={open ? `Thu gọn ${section.label}` : `Mở ${section.label}`}
               >
@@ -121,10 +121,10 @@ export function NavigationList({ collapsed = false, variant = "desktop", onNavig
                   <V5Icon
                     name={section.icon}
                     className={`shrink-0 text-[17px] ${
-                      sectionHasActive ? "text-secondary-fixed" : "text-on-primary-container"
+                      sectionHasActive ? "text-v5-accent" : "text-v5-muted"
                     }`}
                   />
-                  <span className="truncate font-label-sm text-[11px] font-semibold uppercase tracking-[0.08em]">
+                  <span className="truncate text-[11px] font-semibold uppercase tracking-[0.08em]">
                     {section.label}
                   </span>
                 </span>
@@ -158,14 +158,14 @@ export function NavigationList({ collapsed = false, variant = "desktop", onNavig
                           : "min-h-9 gap-2.5 px-2.5 py-2"
                       } ${
                         activeItem
-                          ? "bg-secondary text-on-secondary shadow-sm"
-                          : "text-on-primary-container hover:bg-white/10 hover:text-white"
+                          ? "bg-v5-accent text-white shadow-sm"
+                          : "text-v5-muted hover:bg-white/10 hover:text-white"
                       } ${collapsed && activeItem ? "ring-1 ring-v5-accent-fixed/40" : ""}`}
                     >
                       <V5Icon
                         name={item.icon}
                         className={`shrink-0 text-[20px] ${
-                          activeItem ? "text-on-secondary" : "text-on-primary-container group-hover:text-white"
+                          activeItem ? "text-white" : "text-v5-muted group-hover:text-white"
                         }`}
                       />
                       {!collapsed && (
@@ -181,7 +181,7 @@ export function NavigationList({ collapsed = false, variant = "desktop", onNavig
                           {variant === "drawer" && item.description && (
                             <span
                               className={`mt-0.5 line-clamp-2 text-[10.5px] leading-4 ${
-                                activeItem ? "text-on-secondary/80" : "text-on-primary-container/80"
+                                activeItem ? "text-white/80" : "text-v5-muted/80"
                               }`}
                             >
                               {item.description}

@@ -17,7 +17,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
     <aside
       aria-label="Thanh điều hướng chính"
       data-testid="app-sidebar"
-      className={`fixed left-0 top-0 z-50 hidden h-full flex-col justify-between border-r border-v5-line/20 bg-primary-container text-on-primary shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out lg:flex ${
+      className={`fixed left-0 top-0 z-50 hidden h-full flex-col justify-between border-r border-v5-line/20 bg-v5-surface text-v5-ink shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out lg:flex ${
         collapsed ? "w-[72px]" : "w-[260px]"
       }`}
     >
@@ -46,7 +46,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                 onClick={onToggle}
                 aria-label="Mở rộng thanh điều hướng"
                 title="Mở rộng menu"
-                className="focus-ring flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+                className="focus-ring flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-v5-muted transition-fast hover:bg-white/10 hover:text-white"
               >
                 <V5Icon name="chevron_right" className="text-[16px]" />
               </button>
@@ -67,7 +67,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                   <span className="truncate text-[13px] font-bold uppercase leading-tight tracking-wide text-white">
                     Hải quan cửa khẩu Tà Lùng
                   </span>
-                  <span className="truncate text-[10.5px] font-medium leading-tight text-on-primary-container">
+                  <span className="truncate text-[10.5px] font-medium leading-tight text-v5-muted">
                     Quản lý Kế hoạch &amp; Công việc
                   </span>
                 </span>
@@ -77,7 +77,7 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
                 onClick={onToggle}
                 aria-label="Thu gọn thanh điều hướng"
                 title="Thu gọn menu"
-                className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+                className="focus-ring flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-v5-muted transition-fast hover:bg-white/10 hover:text-white"
               >
                 <V5Icon name="chevron_left" className="text-[18px]" />
               </button>
@@ -90,12 +90,12 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-primary/40 px-3 py-3">
+      <div className="border-t border-white/10 bg-slate-900/40 px-3 py-3">
         {!collapsed ? (
           <>
             <Link
               href="/huong-dan"
-              className="focus-ring mb-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] font-medium text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+              className="focus-ring mb-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] font-medium text-v5-muted transition-fast hover:bg-white/10 hover:text-white"
             >
               <V5Icon name="help" className="text-[18px]" />
               Hướng dẫn sử dụng
@@ -107,9 +107,9 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
               >
                 {ENV_SIDEBAR_LABEL}
               </span>
-              <span className="text-[10px] text-on-primary-container">v1.2.4</span>
+              <span className="text-[10px] text-v5-muted">v1.2.4</span>
             </div>
-            <p className="text-[10.5px] leading-relaxed text-on-primary-container">
+            <p className="text-[10.5px] leading-relaxed text-v5-muted">
               Hỗ trợ kỹ thuật: Bộ phận CNTT — Nội bộ Tà Lùng
             </p>
           </>
@@ -119,13 +119,13 @@ export function Sidebar({ collapsed = false, onToggle }: Props) {
               href="/huong-dan"
               aria-label="Hướng dẫn sử dụng"
               title="Hướng dẫn sử dụng"
-              className="focus-ring flex h-8 w-8 items-center justify-center rounded-lg text-on-primary-container transition-fast hover:bg-white/10 hover:text-white"
+              className="focus-ring flex h-8 w-8 items-center justify-center rounded-lg text-v5-muted transition-fast hover:bg-white/10 hover:text-white"
             >
               <V5Icon name="help" className="text-[18px]" />
             </Link>
             <span
               title="Vận hành chính thức v1.2.4"
-              className="h-2.5 w-2.5 rounded-full bg-status-warning"
+              className="h-2.5 w-2.5 rounded-full bg-v5-gold"
             />
           </div>
         )}

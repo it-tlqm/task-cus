@@ -262,7 +262,7 @@ export default function CommandPalette({ open, onClose }: Props) {
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onInputKeyDown}
             placeholder="Tìm trang, nhiệm vụ hoặc hành động..."
-            className="min-w-0 flex-1 bg-transparent text-body-md text-v5-ink outline-none placeholder:text-outline"
+            className="min-w-0 flex-1 bg-transparent text-[12px] text-v5-ink outline-none placeholder:text-v5-muted"
             aria-label="Tìm nhanh"
           />
           <kbd className="hidden rounded border border-v5-line bg-v5-bg px-1.5 py-0.5 text-[10px] text-v5-muted sm:inline">
@@ -272,7 +272,7 @@ export default function CommandPalette({ open, onClose }: Props) {
 
         <div className="max-h-[58vh] overflow-y-auto p-2">
           {commands.length === 0 ? (
-            <div className="px-4 py-8 text-center text-body-sm text-v5-muted">
+            <div className="px-4 py-8 text-center text-[12px] text-v5-muted">
               Không tìm thấy trang hoặc hành động phù hợp.
             </div>
           ) : (
@@ -281,7 +281,7 @@ export default function CommandPalette({ open, onClose }: Props) {
               if (groupCommands.length === 0) return null;
               return (
                 <div key={group} className="mb-1">
-                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-outline">
+                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-v5-muted">
                     {group}
                   </div>
                   {groupCommands.map((command) => {
@@ -294,18 +294,18 @@ export default function CommandPalette({ open, onClose }: Props) {
                         onMouseEnter={() => setActiveIndex(index)}
                         onClick={() => run(command)}
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-fast ${
-                          active ? "bg-primary/10" : "hover:bg-v5-bg"
+                          active ? "bg-v5-accent/10" : "hover:bg-v5-bg"
                         }`}
                       >
                         <span
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                            active ? "bg-primary text-on-primary" : "bg-v5-bg text-primary"
+                            active ? "bg-v5-accent text-white" : "bg-v5-bg text-v5-ink"
                           }`}
                         >
                           <V5Icon name={command.icon} className="text-[19px]" />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-body-sm font-semibold text-v5-ink">
+                          <span className="block truncate text-[12px] font-semibold text-v5-ink">
                             {command.label}
                           </span>
                           <span className="block truncate text-[11px] text-v5-muted">
@@ -313,7 +313,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                           </span>
                         </span>
                         {active && (
-                          <V5Icon name="keyboard_return" className="text-[18px] text-primary" />
+                          <V5Icon name="keyboard_return" className="text-[18px] text-v5-ink" />
                         )}
                       </button>
                     );
