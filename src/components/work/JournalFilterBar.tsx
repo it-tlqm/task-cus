@@ -145,8 +145,8 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
   const chip = (active: boolean) =>
     `px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-fast whitespace-nowrap ${
       active
-        ? "bg-secondary text-on-secondary shadow-sm"
-        : "text-v5-muted hover:text-primary hover:bg-v5-bg"
+        ? "bg-v5-accent text-white shadow-sm"
+        : "text-v5-muted hover:text-v5-ink hover:bg-v5-bg"
     }`;
 
   return (
@@ -156,8 +156,8 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
     >
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-headline-sm text-headline-sm text-primary font-bold flex items-center gap-2">
-            <V5Icon name="menu_book" className="text-secondary text-[20px]" />
+          <h2 className="text-sm text-v5-ink font-bold flex items-center gap-2">
+            <V5Icon name="menu_book" className="text-v5-accent text-[20px]" />
             Nhật ký công việc
           </h2>
           <p className="text-[11px] text-v5-muted">
@@ -167,21 +167,21 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
           </p>
         </div>
         <div className="relative w-full lg:w-72">
-          <V5Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]" />
+          <V5Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-v5-muted text-[18px]" />
           <input
             type="search"
             value={value.query}
             onChange={(e) => set({ query: e.target.value })}
             placeholder="Tìm theo tên hoặc mã công việc..."
             aria-label="Tìm công việc trong nhật ký"
-            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border-subtle bg-surface text-body-md text-v5-ink placeholder:text-outline focus:border-secondary focus:outline-none focus:ring-1 focus:ring-v5-accent"
+            className="w-full h-9 pl-9 pr-3 rounded-lg border border-v5-line bg-v5-surface text-[12px] text-v5-ink placeholder:text-v5-muted focus:border-v5-accent focus:outline-none focus:ring-1 focus:ring-v5-accent"
           />
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <span className="font-label-sm text-label-sm uppercase tracking-wide text-outline shrink-0 w-[86px]">
+          <span className="text-[11px] uppercase tracking-wide text-v5-muted shrink-0 w-[86px]">
             Thời gian
           </span>
           <div className="flex items-center gap-1 bg-v5-bg rounded-lg p-1">
@@ -200,7 +200,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <span className="font-label-sm text-label-sm uppercase tracking-wide text-outline shrink-0 w-[86px]">
+          <span className="text-[11px] uppercase tracking-wide text-v5-muted shrink-0 w-[86px]">
             Nguồn
           </span>
           <div className="flex items-center gap-1 bg-v5-bg rounded-lg p-1">
@@ -219,7 +219,7 @@ export function JournalFilterBar({ value, onChange, counts, className = "" }: Pr
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <span className="font-label-sm text-label-sm uppercase tracking-wide text-outline shrink-0 w-[86px]">
+          <span className="text-[11px] uppercase tracking-wide text-v5-muted shrink-0 w-[86px]">
             Trạng thái
           </span>
           <div className="flex items-center gap-1 bg-v5-bg rounded-lg p-1">

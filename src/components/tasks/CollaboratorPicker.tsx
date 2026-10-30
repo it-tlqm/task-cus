@@ -38,16 +38,16 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="font-label-md text-label-md text-primary font-semibold">
+      <label className="text-[12px] text-v5-ink font-semibold">
         Cán bộ phối hợp {value.length > 0 && <span className="text-v5-muted font-normal">({value.length} người)</span>}
       </label>
 
       {value.map((id) => (
         <div
           key={id}
-          className="flex items-center gap-2 h-10 px-2 rounded bg-v5-bg border border-border-subtle"
+          className="flex items-center gap-2 h-10 px-2 rounded bg-v5-bg border border-v5-line"
         >
-          <V5Icon name="group_add" className="text-[18px] text-secondary shrink-0" />
+          <V5Icon name="group_add" className="text-[18px] text-v5-accent shrink-0" />
           <select
             value={id}
             disabled={disabled}
@@ -56,7 +56,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
               if (!next || value.includes(next)) return;
               onChange(value.map((v) => (v === id ? next : v)));
             }}
-            className="flex-1 min-w-0 bg-transparent text-body-md text-v5-ink focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-[12px] text-v5-ink focus:outline-none"
           >
             <option value={id}>{nameOf(id)}</option>
             {available.map((p) => (
@@ -70,7 +70,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
             disabled={disabled}
             onClick={() => removePerson(id)}
             title="Bỏ người phối hợp này"
-            className="p-1 rounded text-status-danger hover:bg-status-danger/10 shrink-0 disabled:opacity-40"
+            className="p-1 rounded text-v5-danger hover:bg-v5-danger/10 shrink-0 disabled:opacity-40"
           >
             <V5Icon name="person_remove" className="text-[18px]" />
           </button>
@@ -85,7 +85,7 @@ export function CollaboratorPicker({ people, value, onChange, excludeId, disable
             addPerson(e.target.value);
             e.target.value = "";
           }}
-          className="flex-1 h-10 px-2 rounded bg-v5-bg text-body-md text-v5-ink border border-dashed border-border-subtle focus:outline-none focus:ring-1 focus:ring-v5-accent disabled:opacity-50"
+          className="flex-1 h-10 px-2 rounded bg-v5-bg text-[12px] text-v5-ink border border-dashed border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent disabled:opacity-50"
         >
           <option value="">
             {available.length === 0 ? "Đã chọn hết cán bộ trong danh sách" : "+ Thêm người phối hợp"}

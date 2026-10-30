@@ -531,7 +531,7 @@ export default function WorkSourcePicker({
               </button>
             </div>
 
-            <div className="flex gap-1 border-b border-surface-container px-4 pt-3">
+            <div className="flex gap-1 border-b border-v5-line px-4 pt-3">
               <button
                 type="button"
                 onClick={() => setTab("tx")}
@@ -660,7 +660,7 @@ export default function WorkSourcePicker({
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-2 border-t border-surface-container px-4 py-3">
+            <div className="flex items-center justify-between gap-2 border-t border-v5-line px-4 py-3">
               <p className="text-[10px] text-v5-muted">
                 TX và QĐ1277 là hai danh mục độc lập — chọn riêng khi phù hợp, không bắt buộc chọn cả hai.
                 {isMulti ? " Có thể chọn nhiều sản phẩm QĐ1277 cho cùng một đầu việc." : ""}

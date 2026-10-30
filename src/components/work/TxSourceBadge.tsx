@@ -27,7 +27,7 @@ export function FactorText({ value }: { value?: number | null }) {
   }
   return (
     <span className="text-v5-muted">
-      Hệ số: <span className="font-body-semibold text-v5-ink">{value}</span>
+      Hệ số: <span className="font-semibold text-v5-ink">{value}</span>
     </span>
   );
 }
@@ -43,14 +43,14 @@ export function TxSourceBadge({
 }) {
   if (!source || !source.code) {
     return (
-      <span className={`font-label-sm text-label-sm text-v5-muted ${className}`}>
+      <span className={`text-[11px] text-v5-muted ${className}`}>
         Chưa xác định nguồn
       </span>
     );
   }
   return (
     <span className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <span className="font-label-sm text-label-sm text-secondary font-semibold truncate">
+      <span className="text-[11px] text-v5-accent font-semibold truncate">
         TX · {source.code}
       </span>
       {!compact && source.title && (
@@ -59,7 +59,7 @@ export function TxSourceBadge({
         </span>
       )}
       {!compact && (
-        <span className="font-label-sm text-[11px] text-v5-muted">
+        <span className="text-[11px] text-v5-muted">
           <FactorText value={source.convertFactor} />
         </span>
       )}
