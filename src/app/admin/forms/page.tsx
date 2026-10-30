@@ -201,33 +201,33 @@ export default function DynamicFormBuilderPage() {
         <div className="lg:col-span-7 flex flex-col gap-space-md">
           {/* Add New Field Box */}
           <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-sm">
-            <div className="flex items-center justify-between border-b border-surface-container pb-space-xs">
-              <span className="font-headline-sm text-primary font-bold flex items-center gap-2">
-                <V5Icon name="add_box" className="text-secondary text-[20px]" />
+            <div className="flex items-center justify-between border-b border-v5-line pb-space-xs">
+              <span className="text-sm text-v5-ink font-bold flex items-center gap-2">
+                <V5Icon name="add_box" className="text-v5-accent text-[20px]" />
                 Thêm trường dữ liệu mới
               </span>
-              <span className="font-label-sm text-xs text-v5-muted">{fields.length} trường hiện có</span>
+              <span className="text-[11px] text-xs text-v5-muted">{fields.length} trường hiện có</span>
             </div>
 
             <form onSubmit={handleAddField} className="grid grid-cols-1 md:grid-cols-2 gap-space-sm pt-2">
               <div className="flex flex-col gap-1 md:col-span-2">
-                <label className="font-label-sm text-xs text-primary font-semibold">Tên nhãn trường (Label) *</label>
+                <label className="text-[11px] text-xs text-v5-ink font-semibold">Tên nhãn trường (Label) *</label>
                 <input
                   type="text"
                   required
                   value={newFieldLabel}
                   onChange={(e) => setNewFieldLabel(e.target.value)}
                   placeholder="Ví dụ: Tỷ lệ hao hụt nguyên liệu gia công (%)..."
-                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent"
+                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-[12px] text-v5-ink focus:outline-none focus:ring-1 focus:ring-v5-accent"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-xs text-primary font-semibold">Kiểu dữ liệu (Data Type)</label>
+                <label className="text-[11px] text-xs text-v5-ink font-semibold">Kiểu dữ liệu (Data Type)</label>
                 <select
                   value={newFieldType}
                   onChange={(e) => setNewFieldType(e.target.value as any)}
-                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none"
+                  className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-[12px] text-v5-ink focus:outline-none"
                 >
                   <option value="text">Văn bản ngắn (Text)</option>
                   <option value="number">Số liệu / Định lượng (Number)</option>
@@ -244,15 +244,15 @@ export default function DynamicFormBuilderPage() {
                     type="checkbox"
                     checked={newFieldRequired}
                     onChange={(e) => setNewFieldRequired(e.target.checked)}
-                    className="w-4 h-4 rounded text-secondary"
+                    className="w-4 h-4 rounded text-v5-accent"
                   />
-                  <span className="font-label-md text-sm text-v5-ink font-semibold">Bắt buộc nhập</span>
+                  <span className="text-[12px] text-sm text-v5-ink font-semibold">Bắt buộc nhập</span>
                 </label>
               </div>
 
               {newFieldType === "select" && (
                 <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="font-label-sm text-xs text-primary font-semibold">
+                  <label className="text-[11px] text-xs text-v5-ink font-semibold">
                     Các lựa chọn (Phân cách bằng dấu phẩy)
                   </label>
                   <input
@@ -260,7 +260,7 @@ export default function DynamicFormBuilderPage() {
                     value={newFieldOptions}
                     onChange={(e) => setNewFieldOptions(e.target.value)}
                     placeholder="Lựa chọn 1, Lựa chọn 2, Lựa chọn 3"
-                    className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-body-md text-v5-ink focus:outline-none"
+                    className="h-10 px-3 rounded bg-v5-bg border border-v5-line text-[12px] text-v5-ink focus:outline-none"
                   />
                 </div>
               )}
@@ -268,7 +268,7 @@ export default function DynamicFormBuilderPage() {
               <div className="md:col-span-2 flex justify-end pt-1">
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg bg-v5-accent text-white text-[12px] font-semibold hover:opacity-90 shadow-sm transition-fast active-press flex items-center gap-1.5"
                 >
                   <V5Icon name="add" className="text-[18px]" />
                   <span>Chèn vào biểu mẫu</span>
@@ -279,20 +279,20 @@ export default function DynamicFormBuilderPage() {
 
           {/* Active Fields List */}
           <div className="bg-v5-surface p-space-md rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-sm">
-            <span className="font-headline-sm text-primary font-bold">Danh sách trường trong biểu mẫu (Schema v{activeVersionNum}.0)</span>
+            <span className="text-sm text-v5-ink font-bold">Danh sách trường trong biểu mẫu (Schema v{activeVersionNum}.0)</span>
 
-            <div className="flex flex-col divide-y divide-surface-container">
+            <div className="flex flex-col divide-y divide-v5-line">
               {fields.map((f, idx) => (
                 <div key={f.key} className="py-3 flex items-center justify-between gap-space-sm hover:bg-v5-bg/50 px-2 rounded transition-fast">
                   <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-v5-bg text-primary flex items-center justify-center font-mono text-xs font-bold">
+                    <span className="w-6 h-6 rounded-full bg-v5-bg text-v5-ink flex items-center justify-center font-mono text-xs font-bold">
                       {idx + 1}
                     </span>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-body-semibold text-primary font-semibold">{f.label}</span>
+                        <span className="font-semibold text-v5-ink font-semibold">{f.label}</span>
                         {f.required && (
-                          <span className="px-1.5 py-0.2 rounded bg-status-danger-bg text-status-danger text-[10px] font-bold">
+                          <span className="px-1.5 py-0.2 rounded bg-v5-danger-soft text-v5-danger text-[10px] font-bold">
                             BẮT BUỘC
                           </span>
                         )}
@@ -306,7 +306,7 @@ export default function DynamicFormBuilderPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleRemoveField(idx)}
-                      className="w-8 h-8 rounded hover:bg-status-danger-bg text-v5-muted hover:text-status-danger flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded hover:bg-v5-danger-soft text-v5-muted hover:text-v5-danger flex items-center justify-center transition-colors"
                       title="Xóa trường"
                     >
                       <V5Icon name="delete" className="text-[18px]" />
@@ -321,26 +321,26 @@ export default function DynamicFormBuilderPage() {
         {/* Right Column: Live Form Interactive Preview (5 Cols) */}
         <div className="lg:col-span-5 flex flex-col gap-space-md">
           <div className="bg-v5-surface p-space-lg rounded-xl shadow-sm border border-v5-line/50 flex flex-col gap-space-md sticky top-20">
-            <div className="flex items-center justify-between border-b border-surface-container pb-space-xs">
+            <div className="flex items-center justify-between border-b border-v5-line pb-space-xs">
               <div className="flex items-center gap-2">
-                <V5Icon name="visibility" className="text-status-success text-[22px]" />
-                <span className="font-headline-sm text-primary font-bold">Xem trước biểu mẫu thực tế</span>
+                <V5Icon name="visibility" className="text-v5-success text-[22px]" />
+                <span className="text-sm text-v5-ink font-bold">Xem trước biểu mẫu thực tế</span>
               </div>
-              <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success text-xs font-bold">
+              <span className="px-2 py-0.5 rounded bg-v5-success-soft text-v5-success text-xs font-bold">
                 LIVE INTERACTION
               </span>
             </div>
 
-            <p className="font-label-sm text-xs text-v5-muted">
+            <p className="text-[11px] text-xs text-v5-muted">
               Đây là giao diện tương tác động chính xác mà công chức Hải quan sẽ thao tác khi ghi nhận nhật ký nghiệp vụ.
             </p>
 
             <div className="flex flex-col gap-space-md">
               {fields.map((field) => (
                 <div key={field.key} className="flex flex-col gap-1">
-                  <label className="font-label-md text-xs text-primary font-semibold flex items-center justify-between">
+                  <label className="text-[12px] text-xs text-v5-ink font-semibold flex items-center justify-between">
                     <span>
-                      {field.label} {field.required && <span className="text-status-danger">*</span>}
+                      {field.label} {field.required && <span className="text-v5-danger">*</span>}
                     </span>
                     <span className="text-[10px] font-mono text-v5-muted">{field.type}</span>
                   </label>
@@ -351,7 +351,7 @@ export default function DynamicFormBuilderPage() {
                       placeholder={field.placeholder || "Nhập giá trị..."}
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-[12px] text-v5-ink border border-v5-line focus:outline-none"
                     />
                   )}
 
@@ -361,7 +361,7 @@ export default function DynamicFormBuilderPage() {
                       placeholder={field.placeholder || "0"}
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-[12px] text-v5-ink border border-v5-line focus:outline-none"
                     />
                   )}
 
@@ -369,7 +369,7 @@ export default function DynamicFormBuilderPage() {
                     <select
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-[12px] text-v5-ink border border-v5-line focus:outline-none"
                     >
                       <option value="">-- Chọn phương án --</option>
                       {field.options?.map((opt) => (
@@ -386,7 +386,7 @@ export default function DynamicFormBuilderPage() {
                       placeholder={field.placeholder || "Nội dung chi tiết..."}
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="p-2 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none resize-none"
+                      className="p-2 rounded bg-v5-bg text-[12px] text-v5-ink border border-v5-line focus:outline-none resize-none"
                     />
                   )}
 
@@ -396,7 +396,7 @@ export default function DynamicFormBuilderPage() {
                         type="checkbox"
                         checked={!!previewValues[field.key]}
                         onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.checked })}
-                        className="w-4 h-4 rounded text-secondary"
+                        className="w-4 h-4 rounded text-v5-accent"
                       />
                       <span className="text-xs text-v5-ink font-medium">Xác nhận đúng / hợp lệ</span>
                     </label>
@@ -407,13 +407,13 @@ export default function DynamicFormBuilderPage() {
                       type="date"
                       value={previewValues[field.key] || ""}
                       onChange={(e) => setPreviewValues({ ...previewValues, [field.key]: e.target.value })}
-                      className="h-9 px-3 rounded bg-v5-bg text-body-md text-v5-ink border border-v5-line focus:outline-none"
+                      className="h-9 px-3 rounded bg-v5-bg text-[12px] text-v5-ink border border-v5-line focus:outline-none"
                     />
                   )}
                 </div>
               ))}
 
-              <div className="pt-2 border-t border-surface-container flex flex-col gap-2">
+              <div className="pt-2 border-t border-v5-line flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -432,7 +432,7 @@ export default function DynamicFormBuilderPage() {
                     }
                     toast.success("Xác thực Schema thành công: Cấu trúc biểu mẫu chuẩn xác 100% và sẵn sàng ban hành!");
                   }}
-                  className="w-full py-2.5 rounded-lg bg-secondary text-on-secondary font-label-md text-sm font-semibold shadow-sm hover:bg-secondary/90 transition-all active-press flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-lg bg-v5-accent text-white text-[12px] text-sm font-semibold shadow-sm hover:bg-v5-accent/90 transition-all active-press flex items-center justify-center gap-2"
                 >
                   <V5Icon name="verified" className="text-[18px]" />
                   <span>Kiểm tra hợp lệ biểu mẫu (Validate Schema)</span>

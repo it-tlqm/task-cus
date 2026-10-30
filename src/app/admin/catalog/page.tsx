@@ -665,7 +665,7 @@ export default function CatalogAdminPage() {
             onClick={() => setStatusFilter("NEEDS_REVIEW")}
             className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors whitespace-nowrap ${
               statusFilter === "NEEDS_REVIEW"
-                ? "bg-v5-gold text-white"
+                ? "bg-v5-gold text-v5-gold-ink"
                 : "bg-v5-gold-soft text-v5-gold-ink hover:bg-v5-gold-soft"
             }`}
           >

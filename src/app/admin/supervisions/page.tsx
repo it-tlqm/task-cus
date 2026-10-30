@@ -200,7 +200,7 @@ export default function SupervisionsAdminPage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 rounded-lg bg-v5-gold text-white text-xs font-semibold disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-v5-gold text-v5-gold-ink text-xs font-semibold disabled:opacity-50"
             >
               {saving ? "Đang lưu..." : "Xác nhận quan hệ phụ trách"}
             </button>

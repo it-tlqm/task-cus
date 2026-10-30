@@ -976,7 +976,7 @@ export default function OrganizationAdminPage() {
                     }
                     className={`flex items-center justify-between py-2 pr-3 rounded-lg cursor-pointer transition-colors text-xs font-medium ${
                       selectedUnit?.id === UNASSIGNED_UNIT_ID
-                        ? "bg-v5-gold text-white font-semibold shadow-sm"
+                        ? "bg-v5-gold text-v5-gold-ink font-semibold shadow-sm"
                         : "text-v5-ink hover:bg-v5-bg"
                     }`}
                   >
@@ -989,7 +989,7 @@ export default function OrganizationAdminPage() {
                       <span
                         className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${
                           selectedUnit?.id === UNASSIGNED_UNIT_ID
-                            ? "bg-v5-gold text-white"
+                            ? "bg-v5-gold text-v5-gold-ink"
                             : "bg-v5-bg text-v5-muted"
                         }`}
                       >

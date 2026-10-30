@@ -138,7 +138,7 @@ export default function AdminAuditPage() {
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-9 pl-9 pr-3 rounded bg-surface border border-v5-line text-body-md text-v5-ink placeholder:text-v5-muted focus:outline-none focus:border-secondary transition-all"
+            className="w-full h-9 pl-9 pr-3 rounded bg-v5-surface border border-v5-line text-[12px] text-v5-ink placeholder:text-v5-muted focus:outline-none focus:border-v5-accent transition-all"
             placeholder="Tìm theo người dùng, hành động, mục tiêu... (không cần dấu)"
             type="text"
           />
@@ -151,7 +151,7 @@ export default function AdminAuditPage() {
               setFilterAction(e.target.value);
               setPage(1);
             }}
-            className="h-9 px-3 rounded bg-surface border border-v5-line text-body-md text-v5-ink focus:outline-none cursor-pointer max-w-[320px]"
+            className="h-9 px-3 rounded bg-v5-surface border border-v5-line text-[12px] text-v5-ink focus:outline-none cursor-pointer max-w-[320px]"
           >
             <option value="ALL">Tất cả hành động</option>
             {actions.map((a) => (
@@ -166,9 +166,9 @@ export default function AdminAuditPage() {
       {/* Audit Log Table */}
       <div className="bg-v5-surface rounded-xl shadow-sm overflow-hidden flex flex-col">
         <div className="overflow-x-auto w-full">
-          <table className="w-full text-left font-table-data text-table-data">
+          <table className="w-full text-left text-[12px] text-v5-ink">
             <thead>
-              <tr className="bg-v5-bg text-v5-ink text-[12px] font-table-header uppercase tracking-wider">
+              <tr className="bg-v5-bg text-v5-ink text-[12px] text-[11px] font-semibold uppercase tracking-wide text-v5-muted uppercase tracking-wider">
                 <th className="py-3 px-3 w-36">Mã bản ghi</th>
                 <th className="py-3 px-3 w-40">Thời gian</th>
                 <th className="py-3 px-3 w-48">Người thực hiện</th>
@@ -178,7 +178,7 @@ export default function AdminAuditPage() {
                 <th className="py-3 px-3 w-28 text-center">Trạng thái</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-default/40 text-v5-ink">
+            <tbody className="divide-y divide-v5-line/40 text-v5-ink">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-v5-muted">
@@ -196,7 +196,7 @@ export default function AdminAuditPage() {
               ) : (
                 logs.map((log) => (
                   <tr key={log.id} className="hover:bg-v5-bg transition-colors">
-                    <td className="py-3 px-3 font-mono text-[12px] text-secondary font-semibold">
+                    <td className="py-3 px-3 font-mono text-[12px] text-v5-accent font-semibold">
                       {log.id}
                     </td>
                     <td className="py-3 px-3 font-mono text-[12px] text-v5-muted">
@@ -204,17 +204,17 @@ export default function AdminAuditPage() {
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex flex-col">
-                        <span className="font-body-semibold text-[13px] text-v5-ink">
+                        <span className="font-semibold text-[13px] text-v5-ink">
                           {log.user}
                         </span>
-                        <span className="font-label-sm text-[11px] text-v5-muted">
+                        <span className="text-[11px] text-v5-muted">
                           {log.role}
                         </span>
                       </div>
                     </td>
                     <td className="py-3 px-3">
                       <span
-                        className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-primary-fixed text-on-primary-fixed"
+                        className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-v5-accent text-white"
                         title={ACTION_LABELS[log.action] || log.action}
                       >
                         {log.action}
@@ -230,10 +230,10 @@ export default function AdminAuditPage() {
                       <span
                         className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
                           log.status === "SUCCESS"
-                            ? "bg-status-success-bg text-status-success"
+                            ? "bg-v5-success-soft text-v5-success"
                             : log.status === "WARNING"
-                            ? "bg-status-warning-bg text-status-warning"
-                            : "bg-status-danger-bg text-status-danger"
+                            ? "bg-v5-gold-soft text-v5-gold-ink"
+                            : "bg-v5-danger-soft text-v5-danger"
                         }`}
                       >
                         {log.status}
@@ -248,7 +248,7 @@ export default function AdminAuditPage() {
 
         {/* Phân trang phía máy chủ */}
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-v5-line/40 flex-wrap">
-          <span className="font-label-sm text-[12px] text-v5-muted">
+          <span className="text-[11px] text-[12px] text-v5-muted">
             Tổng <b>{total.toLocaleString("vi-VN")}</b> bản ghi • Trang <b>{page}</b>/{totalPages} •{" "}
             {PAGE_SIZE} bản ghi/trang
           </span>

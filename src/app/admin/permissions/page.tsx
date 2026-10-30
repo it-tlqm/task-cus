@@ -288,7 +288,7 @@ export default function AdminPermissionsPage() {
           Đang tải cấu hình phân quyền…
         </div>
       ) : !data ? (
-        <div className="rounded-xl border border-status-danger/30 bg-status-danger-bg p-6 text-sm text-status-danger">
+        <div className="rounded-xl border border-v5-danger/30 bg-v5-danger-soft p-6 text-sm text-v5-danger">
           Không tải được dữ liệu phân quyền. Bạn có thể không có quyền xem mục này.
         </div>
       ) : (
@@ -329,7 +329,7 @@ export default function AdminPermissionsPage() {
                               <span
                                 className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold ${
                                   g.active
-                                    ? "bg-status-success-bg text-status-success border-status-success/30"
+                                    ? "bg-v5-success-soft text-v5-success border-v5-success/30"
                                     : "bg-v5-bg text-v5-muted border-v5-line"
                                 }`}
                               >
@@ -353,8 +353,8 @@ export default function AdminPermissionsPage() {
                           <span
                             className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
                               a.status === "ACTIVE"
-                                ? "bg-status-success-bg text-status-success border-status-success/30"
-                                : "bg-status-danger-bg text-status-danger border-status-danger/30"
+                                ? "bg-v5-success-soft text-v5-success border-v5-success/30"
+                                : "bg-v5-danger-soft text-v5-danger border-v5-danger/30"
                             }`}
                           >
                             {a.status === "ACTIVE" ? "Đang hoạt động" : "Đã khoá"}
@@ -407,9 +407,9 @@ export default function AdminPermissionsPage() {
                         {data.roles.map((r) => (
                           <td key={r.id} className="px-3 py-2 text-center">
                             {r.permissions.includes(p.code) ? (
-                              <V5Icon name="check_circle" className="text-[16px] text-status-success" />
+                              <V5Icon name="check_circle" className="text-[16px] text-v5-success" />
                             ) : (
-                              <V5Icon name="remove" className="text-[16px] text-border-default" />
+                              <V5Icon name="remove" className="text-[16px] text-v5-muted" />
                             )}
                           </td>
                         ))}
@@ -441,7 +441,7 @@ export default function AdminPermissionsPage() {
                           return (
                             <td key={r.id} className="px-3 py-2 text-center">
                               {ok ? (
-                                <V5Icon name="check" className="text-[16px] text-status-success" />
+                                <V5Icon name="check" className="text-[16px] text-v5-success" />
                               ) : (
                                 <span className="text-v5-muted">—</span>
                               )}
@@ -586,7 +586,7 @@ export default function AdminPermissionsPage() {
                   ))}
                 </select>
                 {gRole === "SYSTEM_ADMIN" && (
-                  <div className="rounded-lg border border-status-warning/40 bg-status-warning-bg/50 p-3 text-[11px] text-status-warning">
+                  <div className="rounded-lg border border-v5-gold/40 bg-v5-gold-soft/50 p-3 text-[11px] text-v5-gold-ink">
                     Chỉ Quản trị hệ thống hiện hữu được cấp; phạm vi bắt buộc toàn tổ chức; không thể tự cấp hoặc thu hồi admin cuối cùng.
                   </div>
                 )}
@@ -662,7 +662,7 @@ export default function AdminPermissionsPage() {
                   data-testid="grant-submit"
                   disabled={busy}
                   onClick={grant}
-                  className="w-full px-4 py-2 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-on-primary hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 rounded-lg text-xs font-semibold border border-v5-accent bg-v5-accent text-white hover:bg-v5-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v5-muted/40 focus-visible:ring-offset-1 active-press disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cấp vai trò
                 </button>
@@ -697,7 +697,7 @@ export default function AdminPermissionsPage() {
                           <span
                             className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
                               g.active
-                                ? "bg-status-success-bg text-status-success border-status-success/30"
+                                ? "bg-v5-success-soft text-v5-success border-v5-success/30"
                                 : "bg-v5-bg text-v5-muted border-v5-line"
                             }`}
                           >
@@ -709,7 +709,7 @@ export default function AdminPermissionsPage() {
                               data-testid={`grant-revoke-${g.id}`}
                               disabled={busy}
                               onClick={() => revoke(g)}
-                              className="px-2 py-1 rounded text-[11px] font-semibold border border-status-danger/40 text-status-danger hover:bg-status-danger-bg disabled:opacity-50"
+                              className="px-2 py-1 rounded text-[11px] font-semibold border border-v5-danger/40 text-v5-danger hover:bg-v5-danger-soft disabled:opacity-50"
                             >
                               Thu hồi
                             </button>

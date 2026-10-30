@@ -203,7 +203,7 @@ export default function AdminFeedbackPage() {
     <div className="flex flex-col w-full p-space-md lg:p-space-lg gap-space-lg pb-16">
       {/* Đầu trang */}
       <div className="flex flex-col gap-1">
-        <h1 className="font-headline-md text-headline-md text-primary flex items-center gap-2">
+        <h1 className="text-lg text-v5-ink flex items-center gap-2">
           <V5Icon name="campaign" />
           Góp ý &amp; Báo lỗi
         </h1>
@@ -230,7 +230,7 @@ export default function AdminFeedbackPage() {
               }}
               className={`h-9 px-3 rounded-lg text-xs font-bold border transition-fast ${
                 tab === t.id
-                  ? "bg-primary text-white border-primary"
+                  ? "bg-v5-accent text-white border-v5-accent"
                   : "bg-v5-surface text-v5-ink border-v5-line hover:bg-v5-bg"
               }`}
             >
@@ -264,8 +264,8 @@ export default function AdminFeedbackPage() {
       </div>
 
       {selectedIds.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-xl border border-secondary/30 bg-secondary/5 p-3 shadow-sm sm:flex-row sm:items-center">
-          <span className="text-xs font-bold text-secondary">
+        <div className="flex flex-col gap-2 rounded-xl border border-v5-accent/30 bg-v5-accent/5 p-3 shadow-sm sm:flex-row sm:items-center">
+          <span className="text-xs font-bold text-v5-accent">
             Đã chọn {selectedIds.length} góp ý mới
           </span>
           <input
@@ -278,7 +278,7 @@ export default function AdminFeedbackPage() {
             type="button"
             onClick={bulkResolve}
             disabled={bulkBusy}
-            className="h-8 rounded-lg bg-secondary px-3 text-xs font-bold text-on-secondary disabled:opacity-50"
+            className="h-8 rounded-lg bg-v5-accent px-3 text-xs font-bold text-white disabled:opacity-50"
           >
             {bulkBusy ? "Đang xử lý..." : "Đánh dấu đã xử lý"}
           </button>
@@ -381,7 +381,7 @@ export default function AdminFeedbackPage() {
                 <button
                   onClick={() => act(f.id, "resolve")}
                   disabled={busyId === f.id}
-                  className="h-8 px-3 rounded-lg bg-secondary text-on-secondary text-xs font-bold disabled:opacity-50"
+                  className="h-8 px-3 rounded-lg bg-v5-accent text-white text-xs font-bold disabled:opacity-50"
                 >
                   {busyId === f.id ? "Đang lưu..." : "✓ Đánh dấu đã xử lý"}
                 </button>
