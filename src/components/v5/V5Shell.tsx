@@ -51,7 +51,7 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Điều hành",
     items: [
-      { label: "Tổng quan", href: "/v5", icon: LayoutDashboard },
+      { label: "Tổng quan", href: "/", icon: LayoutDashboard, exact: true },
       { label: "Giao ban", href: "/v5/giao-ban", icon: FileBarChart2, exact: true },
       { label: "Nhập số liệu", href: "/v5/giao-ban/nhap", icon: PlusSquare },
     ],
