@@ -98,7 +98,7 @@ const PERIOD_COL: Record<PeriodKey, string> = {
   year: "year",
 };
 
-const COLORS = ["#1E40AF", "#3B82F6", "#D97706", "#059669", "#94A3B8"];
+const COLORS = ["var(--v5-accent)", "var(--v5-muted)", "var(--v5-gold)", "var(--v5-success)", "var(--v5-muted)"];
 
 function formatMoney(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
@@ -360,11 +360,11 @@ export default function DashboardV4() {
 
   const taskChartData = kpi
     ? [
-        { name: "Đang làm", value: kpi.kpis.inProgress, color: "#1E40AF" },
-        { name: "Chờ duyệt", value: kpi.kpis.waitingReview, color: "#3B82F6" },
-        { name: "Quá hạn", value: kpi.kpis.overdue, color: "#D97706" },
-        { name: "Hoàn thành", value: kpi.kpis.completed, color: "#059669" },
-        { name: "Chưa bắt đầu", value: kpi.kpis.notStarted, color: "#CBD5E1" },
+        { name: "Đang làm", value: kpi.kpis.inProgress, color: "var(--v5-accent)" },
+        { name: "Chờ duyệt", value: kpi.kpis.waitingReview, color: "var(--v5-muted)" },
+        { name: "Quá hạn", value: kpi.kpis.overdue, color: "var(--v5-gold)" },
+        { name: "Hoàn thành", value: kpi.kpis.completed, color: "var(--v5-success)" },
+        { name: "Chưa bắt đầu", value: kpi.kpis.notStarted, color: "var(--v5-line)" },
       ].filter((x) => x.value > 0)
     : [];
 
@@ -551,10 +551,10 @@ export default function DashboardV4() {
                 {hasComparisonData ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={comparisonData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--v5-line)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} />
                       <YAxis
-                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        tick={{ fontSize: 10, fill: "var(--v5-muted)" }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000_000)}`}
@@ -563,7 +563,7 @@ export default function DashboardV4() {
                       <Tooltip formatter={(v: any) => formatMoney(Number(v))} />
                       <Bar dataKey="value" name="Giá trị" radius={[5, 5, 0, 0]}>
                         {comparisonData.map((_, i) => (
-                          <Cell key={i} fill={i === 0 ? "#1E40AF" : i === 3 ? "#D97706" : "#93C5FD"} />
+                          <Cell key={i} fill={i === 0 ? "var(--v5-accent)" : i === 3 ? "var(--v5-gold)" : "var(--v5-muted)"} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -582,7 +582,7 @@ export default function DashboardV4() {
                 <div
                   className="relative w-[180px] h-[180px] rounded-full grid place-items-center"
                   style={{
-                    background: `conic-gradient(#1E40AF 0 ${Math.max(0, Math.min(100, revenuePercent ?? 0))}%, #e2e8f0 ${Math.max(0, Math.min(100, revenuePercent ?? 0))}% 100%)`,
+                    background: "var(--v5-accent)",
                   }}
                   role="img"
                   aria-label={`Tiến độ chỉ tiêu ${formatPercent(revenuePercent ?? 0)}`}
@@ -721,11 +721,11 @@ export default function DashboardV4() {
                   {departments.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={departments} layout="vertical" margin={{ top: 8, right: 20, left: 4, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--v5-line)" />
                         <XAxis type="number" hide />
-                        <YAxis type="category" dataKey="name" width={82} tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                        <YAxis type="category" dataKey="name" width={82} tick={{ fontSize: 10, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} />
                         <Tooltip formatter={(v: any) => `${v} nhiệm vụ`} />
-                        <Bar dataKey="totalTasks" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={12} />
+                        <Bar dataKey="totalTasks" fill="var(--v5-muted)" radius={[0, 4, 4, 0]} barSize={12} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
@@ -757,13 +757,13 @@ export default function DashboardV4() {
                 {hasComparisonData ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={comparisonData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000_000)}`} tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} width={38} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--v5-line)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000_000)}`} tick={{ fontSize: 10, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} width={38} />
                       <Tooltip formatter={(v: any) => formatMoney(Number(v))} />
                       <Bar dataKey="value" radius={[5, 5, 0, 0]}>
                         {comparisonData.map((_, i) => (
-                          <Cell key={i} fill={i === 0 ? "#1E40AF" : i === 3 ? "#D97706" : "#93C5FD"} />
+                          <Cell key={i} fill={i === 0 ? "var(--v5-accent)" : i === 3 ? "var(--v5-gold)" : "var(--v5-muted)"} />
                         ))}
                       </Bar>
                     </BarChart>

@@ -66,13 +66,13 @@ export function RevenueCharts({ metrics, comparison }: { metrics: Metric[]; comp
             {comparisonData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={comparisonData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={(value) => `${value}`} tick={{ fontSize: 10, fill: "#64748B" }} axisLine={false} tickLine={false} width={34} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--v5-line)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={(value) => `${value}`} tick={{ fontSize: 10, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} width={34} />
                   <Tooltip formatter={(value: any) => shortNumber(Number(value))} />
                   <Bar dataKey="value" radius={[5, 5, 0, 0]}>
                     {comparisonData.map((_, index) => (
-                      <Cell key={index} fill={index === 3 ? "#F2C41D" : index === 0 ? "#1B3461" : "#93A9C9"} />
+                      <Cell key={index} fill={index === 3 ? "var(--v5-gold)" : index === 0 ? "var(--v5-accent)" : "var(--v5-muted)"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -94,13 +94,13 @@ export function RevenueCharts({ metrics, comparison }: { metrics: Metric[]; comp
             {classData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={classData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "#64748B" }} axisLine={false} tickLine={false} width={34} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--v5-line)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--v5-muted)" }} axisLine={false} tickLine={false} width={34} />
                   <Tooltip formatter={(value: any) => shortNumber(Number(value))} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="month" name="Lũy kế tháng" fill="#1B3461" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="year" name="Lũy kế năm" fill="#F2C41D" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="month" name="Lũy kế tháng" fill="var(--v5-accent)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="year" name="Lũy kế năm" fill="var(--v5-gold)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -131,7 +131,7 @@ export function RevenueCharts({ metrics, comparison }: { metrics: Metric[]; comp
                     {pieData.map((_, index) => (
                       <Cell
                         key={index}
-                        fill={["#1B3461", "#C62222", "#F2C41D", "#93A9C9", "#0F766E"][index % 5]}
+                        fill={["var(--v5-accent)", "var(--v5-danger)", "var(--v5-gold)", "var(--v5-muted)", "var(--v5-success)"][index % 5]}
                       />
                     ))}
                   </Pie>

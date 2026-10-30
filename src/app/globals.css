@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --v5-bg: #F7F8FA;
+  --v5-surface: #FFFFFF;
+  --v5-ink: #111827;
+  --v5-muted: #64748B;
+  --v5-line: #E5E7EB;
+  --v5-accent: #1B3461;
+  --v5-accent-soft: #EEF2F8;
+  --v5-gold: #F2C41D;
+  --v5-gold-soft: #FFF8DC;
+  --v5-gold-ink: #6B4E00;
+  --v5-danger: #C62222;
+  --v5-danger-soft: #FDECEC;
+  --v5-success: #0E7A4D;
+  --v5-success-soft: #ECFDF3;
+}
+
 @layer base {
   html, body {
     margin: 0;
