@@ -16,6 +16,13 @@ import {
   Plus,
   RefreshCw,
   Timer,
+  Flag,
+  Undo2,
+  Clock,
+  BadgeCheck,
+  UserCheck,
+  ClipboardCheck,
+  Eye,
 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/v5/ui/badge";
@@ -953,22 +960,22 @@ function MyWorkPageContent() {
       <div className="hidden lg:flex flex-col gap-space-lg p-space-lg">
         {/* BANNER CẢNH BÁO VIỆC QUÁ HẠN & GIẢI TRÌNH */}
         {overdueTask && (
-          <section className="bg-status-danger-bg rounded-xl p-space-md shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-status-danger/20 transition-panel">
+          <section className="bg-v5-danger-soft rounded-xl p-space-md shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md border border-v5-danger/20 transition-panel">
             <div className="flex items-start gap-space-md">
-              <div className="w-10 h-10 rounded-lg bg-status-danger/10 text-status-danger flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-v5-danger/10 text-v5-danger flex items-center justify-center shrink-0">
                 <V5Icon name="warning" className="text-[24px]" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-space-xs flex-wrap">
-                  <span className="font-label-sm text-label-sm bg-status-danger text-on-error px-2 py-0.5 rounded font-bold">
+                  <span className="text-[11px] bg-v5-danger text-white px-2 py-0.5 rounded font-bold">
                     CẢNH BÁO QUÁ HẠN
                   </span>
-                  <span className="font-body-semibold text-body-semibold text-status-danger">
+                  <span className="text-[13px] font-semibold text-v5-danger">
                     Đầu việc {overdueTask.code}: {overdueTask.title}
                   </span>
-                  <span className="font-label-sm text-label-sm text-v5-muted">· Đã trễ hạn nghiệp vụ</span>
+                  <span className="text-[11px] text-v5-muted">· Đã trễ hạn nghiệp vụ</span>
                 </div>
-                <p className="font-body-md text-body-md text-v5-muted mt-0.5">
+                <p className="text-[12px] text-v5-muted mt-0.5">
                   Quy chế nghiệp vụ yêu cầu hoàn thành giải trình chậm hạn hoặc gửi phiếu đề xuất gia hạn trình Trưởng bộ phận trước 15:00 hôm nay.
                 </p>
               </div>
@@ -976,14 +983,14 @@ function MyWorkPageContent() {
             <div className="flex items-center gap-space-sm shrink-0 w-full md:w-auto justify-end">
               <button
                 onClick={() => openIssueForTask(overdueTask)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-v5-surface text-status-danger font-label-md text-label-md hover:bg-status-danger hover:text-on-error transition-fast shadow-sm active-press"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-v5-surface text-v5-danger text-[12px] hover:bg-v5-danger hover:text-white transition-fast shadow-sm active-press"
               >
                 <V5Icon name="assignment_late" className="text-[18px]" />
                 <span>Giải trình chậm hạn</span>
               </button>
               <button
                 onClick={() => openExtensionForTask(overdueTask)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-status-danger text-on-error font-label-md text-label-md hover:opacity-90 transition-fast shadow-sm active-press"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-v5-danger text-white text-[12px] hover:opacity-90 transition-fast shadow-sm active-press"
               >
                 <V5Icon name="more_time" className="text-[18px]" />
                 <span>Xin gia hạn khẩn</span>
@@ -1153,60 +1160,60 @@ function MyWorkPageContent() {
             <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
               <button
                 onClick={() => setActiveTab("ALL")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md font-semibold shrink-0 transition-fast ${
+                className={`px-3 py-1.5 rounded text-[12px] font-semibold shrink-0 transition-fast ${
                   activeTab === "ALL"
-                    ? "bg-secondary text-on-secondary shadow-sm"
-                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
+                    ? "bg-v5-accent text-white shadow-sm"
+                    : "text-v5-muted hover:text-v5-ink hover:bg-v5-bg"
                 }`}
               >
                 Tất cả ({tasks.length})
               </button>
               <button
                 onClick={openWaitingAcceptTab}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                className={`px-3 py-1.5 rounded text-[12px] shrink-0 transition-fast ${
                   activeTab === "WAITING_ACCEPT"
-                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
+                    ? "bg-v5-accent text-white shadow-sm font-semibold"
+                    : "text-v5-muted hover:text-v5-ink hover:bg-v5-bg"
                 }`}
               >
                 Chờ nhận việc ({waitingAcceptCount})
               </button>
               <button
                 onClick={() => setActiveTab("IN_PROGRESS")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                className={`px-3 py-1.5 rounded text-[12px] shrink-0 transition-fast ${
                   activeTab === "IN_PROGRESS"
-                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
+                    ? "bg-v5-accent text-white shadow-sm font-semibold"
+                    : "text-v5-muted hover:text-v5-ink hover:bg-v5-bg"
                 }`}
               >
                 Đang thực hiện ({tasks.filter((t) => t.status === "IN_PROGRESS" || t.status === "NOT_STARTED").length})
               </button>
               <button
                 onClick={() => setActiveTab("OVERDUE")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                className={`px-3 py-1.5 rounded text-[12px] shrink-0 transition-fast ${
                   activeTab === "OVERDUE"
-                    ? "bg-status-danger text-on-error shadow-sm font-semibold"
-                    : "text-status-danger bg-status-danger-bg/80 font-semibold"
+                    ? "bg-v5-danger text-white shadow-sm font-semibold"
+                    : "text-v5-danger bg-v5-danger-soft/80 font-semibold"
                 }`}
               >
                 Sắp hạn / Quá hạn ({tasks.filter((t) => t.isOverdue || t.hasIssue).length})
               </button>
               <button
                 onClick={() => setActiveTab("WAITING_REVIEW")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                className={`px-3 py-1.5 rounded text-[12px] shrink-0 transition-fast ${
                   activeTab === "WAITING_REVIEW"
-                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
+                    ? "bg-v5-accent text-white shadow-sm font-semibold"
+                    : "text-v5-muted hover:text-v5-ink hover:bg-v5-bg"
                 }`}
               >
                 Chờ xác nhận ({tasks.filter((t) => t.status === "WAITING_REVIEW").length})
               </button>
               <button
                 onClick={() => setActiveTab("COMPLETED")}
-                className={`px-3 py-1.5 rounded font-label-md text-label-md shrink-0 transition-fast ${
+                className={`px-3 py-1.5 rounded text-[12px] shrink-0 transition-fast ${
                   activeTab === "COMPLETED"
-                    ? "bg-secondary text-on-secondary shadow-sm font-semibold"
-                    : "text-v5-muted hover:text-primary hover:bg-v5-bg"
+                    ? "bg-v5-accent text-white shadow-sm font-semibold"
+                    : "text-v5-muted hover:text-v5-ink hover:bg-v5-bg"
                 }`}
               >
                 Đã hoàn thành ({tasks.filter((t) => t.status === "COMPLETED").length})
@@ -1220,12 +1227,12 @@ function MyWorkPageContent() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm theo mã việc, tên việc..."
-                  className="w-full h-8 pl-8 pr-3 rounded bg-v5-surface text-body-md font-body-md text-v5-ink placeholder:text-v5-muted border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary transition-fast"
+                  className="w-full h-8 pl-8 pr-3 rounded bg-v5-surface text-[12px] text-v5-ink placeholder:text-v5-muted border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent transition-fast"
                 />
               </div>
               <button
                 onClick={() => fetchTasks()}
-                className="h-8 px-2.5 rounded bg-v5-surface text-v5-muted font-label-md text-label-md hover:bg-v5-bg flex items-center gap-1 shadow-sm border border-v5-line transition-fast active-press"
+                className="h-8 px-2.5 rounded bg-v5-surface text-v5-muted text-[12px] hover:bg-v5-bg flex items-center gap-1 shadow-sm border border-v5-line transition-fast active-press"
               >
                 <V5Icon name="tune" className="text-[16px]" />
                 <span className="hidden sm:inline">Phân loại</span>
@@ -1236,7 +1243,7 @@ function MyWorkPageContent() {
           {/* BẢNG TÁC NGHIỆP CHI TIẾT & QUICK ACTIONS */}
           <DataTable className="min-w-[1100px] text-left">
             <thead>
-                <tr className="bg-v5-bg text-primary font-table-header text-table-header border-b border-v5-line">
+                <tr className="bg-v5-bg text-v5-ink text-[11px] font-semibold uppercase tracking-wide text-v5-muted border-b border-v5-line">
                   <th className="whitespace-nowrap py-3 px-space-md w-[280px]">MÃ &amp; TÊN ĐẦU VIỆC</th>
                   <th className="whitespace-nowrap py-3 px-space-sm w-[180px]">NGUỒN &amp; DANH MỤC</th>
                   <th className="whitespace-nowrap py-3 px-space-sm w-[150px]">HẠN CHÓT</th>
@@ -1246,7 +1253,7 @@ function MyWorkPageContent() {
                   <th className="whitespace-nowrap py-3 px-space-md text-right w-[230px]">THAO TÁC TRỰC TIẾP</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-container font-table-data text-table-data text-v5-ink">
+              <tbody className="divide-y divide-v5-line text-[12px] text-v5-ink text-v5-ink">
                 {filteredTasks.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-v5-muted">
@@ -1270,26 +1277,26 @@ function MyWorkPageContent() {
                       <tr
                         key={task.id}
                         className={`hover:bg-v5-bg transition-fast ${
-                          idx === 0 ? "bg-secondary-fixed/10" : ""
+                          idx === 0 ? "bg-v5-accent-soft" : ""
                         }`}
                       >
                         <td className="py-3 px-space-md align-top">
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="whitespace-nowrap font-body-semibold text-body-semibold text-primary font-bold">
+                              <span className="whitespace-nowrap text-[13px] font-semibold text-v5-ink font-bold">
                                 {task.code}
                               </span>
-                              <span className="font-label-sm text-[11px] px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-semibold">
+                              <span className="text-[11px] px-1.5 py-0.5 rounded bg-v5-accent/10 text-v5-accent font-semibold">
                                 {task.planLinks?.[0]?.planItem?.plan?.title || "Kế hoạch tuần"}
                               </span>
                             </div>
                             <span
                               onClick={() => openDrawerForTask(task)}
-                              className="font-body-semibold text-body-semibold text-v5-ink leading-tight hover:text-secondary cursor-pointer"
+                              className="text-[13px] font-semibold text-v5-ink leading-tight hover:text-v5-accent cursor-pointer"
                             >
                               {task.title}
                             </span>
-                            <span className="font-label-sm text-label-sm text-v5-muted">
+                            <span className="text-[11px] text-v5-muted">
                               {task.description || "Nhiệm vụ trực tiếp"}
                             </span>
                           </div>
@@ -1299,10 +1306,10 @@ function MyWorkPageContent() {
                           <div className="flex flex-col">
                             {/* YC-38 UAT fix: hien thi ma TX thuoc (bo nhan "TTHQ-ĐT" hard-code) */}
                             <TxSourceBadge source={task.txSource} />
-                            <span className="font-label-sm text-[11px] text-v5-muted">
+                            <span className="text-[11px] text-v5-muted">
                               {originLabel(task.originKind)}
                             </span>
-                            <span className="text-v5-muted font-label-sm text-[12px] truncate max-w-[150px]">
+                            <span className="text-v5-muted text-[11px] text-[12px] truncate max-w-[150px]">
                               {task.expectedResultText || "Theo quy trình hải quan"}
                             </span>
                           </div>
@@ -1312,29 +1319,29 @@ function MyWorkPageContent() {
                           <div className="flex flex-col">
                             {isOverdue ? (
                               <>
-                                <span className="whitespace-nowrap font-body-semibold text-body-semibold text-status-danger">
+                                <span className="whitespace-nowrap text-[13px] font-semibold text-v5-danger">
                                   {formatDateTime(task.currentDeadline)}
                                 </span>
-                                <span className="font-label-sm text-label-sm text-status-danger font-semibold flex items-center gap-0.5">
-                                  <V5Icon name="warning" className="text-[13px]" />
+                                <span className="text-[11px] text-v5-danger font-semibold flex items-center gap-0.5">
+                                  <AlertTriangle className="h-3.5 w-3.5" />
                                   Chậm tiến độ
                                 </span>
                               </>
                             ) : isCompleted ? (
                               <>
-                                <span className="font-body-semibold text-body-semibold text-status-success">
+                                <span className="text-[13px] font-semibold text-v5-success">
                                   Đã hoàn tất
                                 </span>
-                                <span className="font-label-sm text-label-sm text-v5-muted">
+                                <span className="text-[11px] text-v5-muted">
                                   Hoàn thành 100%
                                 </span>
                               </>
                             ) : (
                               <>
-                                <span className="whitespace-nowrap font-body-semibold text-body-semibold text-primary">
+                                <span className="whitespace-nowrap text-[13px] font-semibold text-v5-ink">
                                   {formatDateTime(task.currentDeadline)}
                                 </span>
-                                <span className="font-label-sm text-label-sm text-status-warning font-semibold">
+                                <span className="text-[11px] text-v5-gold-ink font-semibold">
                                   Đang xử lý
                                 </span>
                               </>
@@ -1344,23 +1351,23 @@ function MyWorkPageContent() {
 
                         <td className="py-3 px-space-sm align-top">
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold ${
                               task.priority === "Cao" || task.priority === "Khẩn"
-                                ? "bg-status-danger-bg text-status-danger"
+                                ? "bg-v5-danger-soft text-v5-danger"
                                 : "bg-v5-bg text-v5-muted"
                             }`}
                           >
-                            <V5Icon name="flag" className="text-[14px]" />
+                            <Flag className="h-3.5 w-3.5" />
                             {task.priority}
                           </span>
                         </td>
 
                         <td className="py-3 px-space-sm align-top">
                           <div className="flex flex-col">
-                            <span className="truncate font-label-sm text-label-sm text-primary font-semibold">
+                            <span className="truncate text-[11px] text-v5-ink font-semibold">
                               {task.owner?.fullName || currentUser.fullName}
                             </span>
-                            <span className="text-v5-muted font-label-sm text-[11px]">
+                            <span className="text-v5-muted text-[11px]">
                               {task.unit?.name || currentUser.unitName || "Hải quan cửa khẩu Quốc tế Tà Lùng"}
                             </span>
                           </div>
@@ -1371,10 +1378,10 @@ function MyWorkPageContent() {
                             <div className="flex flex-col gap-1">
                               <span
                                 data-testid={`task-returned-${task.id}`}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-danger-bg text-status-danger font-semibold"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-v5-danger-soft text-v5-danger font-semibold"
                                 title={task.approval?.reason || task.approval?.content || ""}
                               >
-                                <V5Icon name="undo" className="text-[14px]" /> Bị trả lại
+                                <Undo2 className="h-3.5 w-3.5" /> Bị trả lại
                               </span>
                               {task.approval?.reason && (
                                 <span className="text-[11px] text-v5-muted line-clamp-2">
@@ -1384,24 +1391,24 @@ function MyWorkPageContent() {
                               <span className="text-[10px] text-v5-muted">Giữ nguyên tiến độ</span>
                             </div>
                           ) : isWaiting ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-unassigned-bg text-status-unassigned font-semibold">
-                              <V5Icon name="hourglass_top" className="text-[14px]" /> Đã báo hoàn thành — chờ duyệt
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-v5-bg-high text-v5-muted font-semibold">
+                              <Clock className="h-3.5 w-3.5" /> Đã báo hoàn thành — chờ duyệt
                             </span>
                           ) : isCompleted ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-status-success-bg text-status-success font-semibold">
-                              <V5Icon name="check_circle" className="text-[14px]" /> 100% Đạt
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-v5-success-soft text-v5-success font-semibold">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> 100% Đạt
                             </span>
                           ) : (
                             <div className="flex flex-col gap-1 w-28">
-                              <div className="flex items-center justify-between text-label-sm">
-                                <span className="text-secondary font-semibold">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-v5-accent font-semibold">
                                   {task.progressPercent ?? (isCompleted ? 100 : 0)}%
                                 </span>
                                 <span className="text-v5-muted">Đang chạy</span>
                               </div>
                               <div className="w-full bg-v5-bg h-1.5 rounded-full overflow-hidden">
                                 <div
-                                  className="bg-secondary h-full rounded-full transition-all duration-300"
+                                  className="bg-v5-accent h-full rounded-full transition-all duration-300"
                                   style={{ width: `${task.progressPercent ?? (isCompleted ? 100 : 0)}%` }}
                                 />
                               </div>
@@ -1416,7 +1423,7 @@ function MyWorkPageContent() {
                                 <button
                                   onClick={(e) => handleSendReminder(task.id, e)}
                                   disabled={remindingTaskId === task.id}
-                                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-ink font-label-sm text-label-sm hover:bg-v5-bg flex items-center gap-1 active-press disabled:opacity-50"
+                                  className="px-2.5 py-1 rounded bg-v5-bg text-v5-ink text-[11px] hover:bg-v5-bg flex items-center gap-1 active-press disabled:opacity-50"
                                   title="Gửi thông báo nhắc Trưởng bộ phận phê duyệt"
                                 >
                                   <V5Icon
@@ -1429,10 +1436,10 @@ function MyWorkPageContent() {
                                   <button
                                     onClick={() => handleApproveTask(task)}
                                     disabled={approvingId === task.id}
-                                    className="px-2.5 py-1 rounded bg-status-success text-white font-label-sm text-label-sm hover:bg-status-success/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
+                                    className="px-2.5 py-1 rounded bg-v5-success text-white text-[11px] hover:bg-v5-success/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
                                     title="Duyệt hoàn thành và chọn mức chất lượng"
                                   >
-                                    <V5Icon name="verified" className="text-[14px]" />
+                                    <BadgeCheck className="h-3.5 w-3.5" />
                                     <span>{approvingId === task.id ? "Đang duyệt..." : "Duyệt hoàn thành"}</span>
                                   </button>
                                 )}
@@ -1441,28 +1448,28 @@ function MyWorkPageContent() {
                               <button
                                 onClick={() => handleAcceptTask(task)}
                                 disabled={acceptingId === task.id}
-                                className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-label-sm text-label-sm hover:bg-secondary/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
+                                className="px-2.5 py-1 rounded bg-v5-accent text-white text-[11px] hover:bg-v5-accent/90 shadow-sm flex items-center gap-1 active-press font-semibold disabled:opacity-50"
                                 title="Xác nhận đã nhận việc được giao"
                               >
-                                <V5Icon name="how_to_reg" className="text-[14px]" />
+                                <UserCheck className="h-3.5 w-3.5" />
                                 <span>{acceptingId === task.id ? "Đang nhận..." : "Nhận việc"}</span>
                               </button>
                             ) : !isTaskTerminal(task.status) ? (
                               <button
                                 onClick={() => openDrawerForTask(task)}
-                                className="px-2.5 py-1 rounded bg-secondary text-on-secondary font-label-sm text-label-sm hover:bg-secondary/90 shadow-sm flex items-center gap-1 active-press font-semibold"
+                                className="px-2.5 py-1 rounded bg-v5-accent text-white text-[11px] hover:bg-v5-accent/90 shadow-sm flex items-center gap-1 active-press font-semibold"
                               >
-                                <V5Icon name="fact_check" className="text-[14px]" />
+                                <ClipboardCheck className="h-3.5 w-3.5" />
                                 <span>Tác nghiệp 1 chạm</span>
                               </button>
                             ) : null}
 
                             <Link
                               href={`/tasks/${task.id}`}
-                              className="p-1 rounded text-v5-muted hover:text-primary hover:bg-v5-bg transition-fast"
+                              className="p-1 rounded text-v5-muted hover:text-v5-ink hover:bg-v5-bg transition-fast"
                               title="Xem chi tiết"
                             >
-                              <V5Icon name="visibility" className="text-[16px]" />
+                              <Eye className="h-4 w-4" />
                             </Link>
                           </div>
                         </td>
@@ -1474,7 +1481,7 @@ function MyWorkPageContent() {
           </DataTable>
 
           {/* PHÂN TRANG BẢNG NGHIỆP VỤ (server, 50/trang) */}
-          <div className="p-space-sm bg-v5-bg flex flex-col sm:flex-row items-center justify-between text-label-sm text-v5-muted gap-space-sm border-t border-v5-line">
+          <div className="p-space-sm bg-v5-bg flex flex-col sm:flex-row items-center justify-between text-[11px] text-v5-muted gap-space-sm border-t border-v5-line">
             <div className="flex items-center gap-2">
               <span>Đã tải <strong>{tasks.length}</strong> trên tổng số <strong>{totalCount}</strong> nhiệm vụ</span>
             </div>
@@ -1482,7 +1489,7 @@ function MyWorkPageContent() {
               <button
                 onClick={() => fetchTasks({ page: page + 1, append: true })}
                 disabled={loadingMore}
-                className="px-4 py-1.5 rounded bg-secondary text-on-secondary font-semibold disabled:opacity-50 active-press"
+                className="px-4 py-1.5 rounded bg-v5-accent text-white font-semibold disabled:opacity-50 active-press"
               >
                 {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
               </button>
@@ -1501,12 +1508,12 @@ function MyWorkPageContent() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
           {/* KHỐI 1 & 2: NHẬT KÝ THAO TÁC AUDIT TRAIL GẦN NHẤT */}
           <div className="lg:col-span-2 bg-v5-surface rounded-xl p-space-md shadow-sm flex flex-col justify-between border border-v5-line/40">
-            <div className="flex items-center justify-between pb-space-sm border-b border-surface-container">
+            <div className="flex items-center justify-between pb-space-sm border-b border-v5-line">
               <div className="flex items-center gap-2">
-                <V5Icon name="manage_history" className="text-secondary text-[20px]" />
+                <V5Icon name="manage_history" className="text-v5-accent text-[20px]" />
                 <h2 className="text-sm font-semibold text-v5-ink">Lịch sử cập nhật cá nhân</h2>
               </div>
-              <span className="font-label-sm text-label-sm text-v5-muted">Ghi nhận UTC+7 (Hải quan cửa khẩu Quốc tế Tà Lùng)</span>
+              <span className="text-[11px] text-v5-muted">Ghi nhận UTC+7 (Hải quan cửa khẩu Quốc tế Tà Lùng)</span>
             </div>
             <div className="flex flex-col gap-space-sm my-space-sm">
               {recentActivity.length === 0 ? (
@@ -1516,17 +1523,17 @@ function MyWorkPageContent() {
               ) : (
                 recentActivity.map((a, idx) => (
                   <div key={idx} className="flex items-start gap-3 p-2 rounded-lg bg-v5-bg">
-                    <V5Icon name="update" className="text-secondary text-[18px] shrink-0 mt-0.5" />
+                    <V5Icon name="update" className="text-v5-accent text-[18px] shrink-0 mt-0.5" />
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-body-semibold text-body-semibold text-primary truncate">
+                        <span className="text-[13px] font-semibold text-v5-ink truncate">
                           [{a.taskCode}] {a.taskTitle}
                         </span>
-                        <span className="font-label-sm text-[11px] text-v5-muted shrink-0">
+                        <span className="text-[11px] text-v5-muted shrink-0">
                           {new Date(a.at).toLocaleString("vi-VN")}
                         </span>
                       </div>
-                      <p className="font-table-data text-[13px] text-v5-muted mt-0.5">
+                      <p className="text-[12px] text-[13px] text-v5-muted mt-0.5">
                         {a.author ? `${a.author}: ` : ""}{a.notes}
                       </p>
                     </div>
@@ -1534,38 +1541,38 @@ function MyWorkPageContent() {
                 ))
               )}
             </div>
-            <div className="flex items-center justify-between pt-2 text-label-sm text-v5-muted">
+            <div className="flex items-center justify-between pt-2 text-[11px] text-v5-muted">
               <span>Toàn bộ hành vi tác nghiệp được lưu trữ vĩnh viễn trên máy chủ nội bộ.</span>
-              <Link href="/admin/audit" className="text-secondary font-semibold hover:underline">
+              <Link href="/admin/audit" className="text-v5-accent font-semibold hover:underline">
                 Xem toàn bộ lịch sử (Audit Log)
               </Link>
             </div>
           </div>
 
           {/* KHỐI 3: HƯỚNG DẪN THAO TÁC NHANH */}
-          <div className="bg-primary text-on-primary rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+          <div className="bg-v5-accent text-white rounded-xl p-space-md shadow-sm flex flex-col justify-between">
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-secondary-fixed">
+              <div className="flex items-center gap-2 text-v5-accent">
                 <V5Icon name="policy" className="text-[22px]" />
                 <h3 className="font-headline-sm text-headline-sm">Hướng dẫn thao tác</h3>
               </div>
-              <p className="font-body-md text-body-md text-on-primary-container leading-relaxed">
+              <p className="text-[12px] text-white/80 leading-relaxed">
                 Cập nhật tiến độ thường xuyên để lãnh đạo nắm tình hình và hỗ trợ kịp thời.
               </p>
               <div className="flex flex-col gap-2 mt-2">
                 <div className="flex items-start gap-2">
-                  <V5Icon name="check_circle" className="text-secondary-fixed text-[18px] shrink-0 mt-0.5" />
-                  <span className="font-label-md text-label-md text-surface-container-high">Xong việc: bấm Báo hoàn thành để trình nghiệm thu.</span>
+                  <V5Icon name="check_circle" className="text-v5-accent text-[18px] shrink-0 mt-0.5" />
+                  <span className="text-[12px] text-v5-muted">Xong việc: bấm Báo hoàn thành để trình nghiệm thu.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <V5Icon name="check_circle" className="text-secondary-fixed text-[18px] shrink-0 mt-0.5" />
-                  <span className="font-label-md text-label-md text-surface-container-high">Cần thêm thời gian: xin lùi hạn kèm lý do, chờ phê duyệt.</span>
+                  <V5Icon name="check_circle" className="text-v5-accent text-[18px] shrink-0 mt-0.5" />
+                  <span className="text-[12px] text-v5-muted">Cần thêm thời gian: xin lùi hạn kèm lý do, chờ phê duyệt.</span>
                 </div>
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-primary-container flex items-center justify-between">
-              <span className="font-label-sm text-label-sm text-on-primary-container">Cần hỗ trợ? Liên hệ quản trị hệ thống.</span>
-              <V5Icon name="support_agent" className="text-secondary-fixed text-[18px]" />
+            <div className="mt-4 pt-3 border-t border-v5-line flex items-center justify-between">
+              <span className="text-[11px] text-white/80">Cần hỗ trợ? Liên hệ quản trị hệ thống.</span>
+              <V5Icon name="support_agent" className="text-v5-accent text-[18px]" />
             </div>
           </div>
         </section>
@@ -1702,9 +1709,9 @@ function MyWorkPageContent() {
           <div className="flex items-center gap-2 overflow-x-auto px-margin no-scrollbar">
             <button
               onClick={() => setActiveTab("ALL")}
-              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 flex items-center gap-1.5 shadow-sm transition-fast ${
+              className={`px-3 py-1.5 rounded-full font-semibold text-[12px] shrink-0 flex items-center gap-1.5 shadow-sm transition-fast ${
                 activeTab === "ALL"
-                  ? "bg-primary text-on-primary"
+                  ? "bg-v5-accent text-white"
                   : "bg-v5-bg text-v5-muted"
               }`}
             >
@@ -1712,9 +1719,9 @@ function MyWorkPageContent() {
             </button>
             <button
               onClick={openWaitingAcceptTab}
-              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+              className={`px-3 py-1.5 rounded-full font-semibold text-[12px] shrink-0 transition-fast ${
                 activeTab === "WAITING_ACCEPT"
-                  ? "bg-primary text-on-primary"
+                  ? "bg-v5-accent text-white"
                   : "bg-v5-bg text-v5-muted"
               }`}
             >
@@ -1722,9 +1729,9 @@ function MyWorkPageContent() {
             </button>
             <button
               onClick={() => setActiveTab("IN_PROGRESS")}
-              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+              className={`px-3 py-1.5 rounded-full font-semibold text-[12px] shrink-0 transition-fast ${
                 activeTab === "IN_PROGRESS"
-                  ? "bg-primary text-on-primary"
+                  ? "bg-v5-accent text-white"
                   : "bg-v5-bg text-v5-muted"
               }`}
             >
@@ -1732,19 +1739,19 @@ function MyWorkPageContent() {
             </button>
             <button
               onClick={() => setActiveTab("OVERDUE")}
-              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+              className={`px-3 py-1.5 rounded-full font-semibold text-[12px] shrink-0 transition-fast ${
                 activeTab === "OVERDUE"
-                  ? "bg-status-danger text-on-error"
-                  : "bg-status-danger-bg text-status-danger"
+                  ? "bg-v5-danger text-white"
+                  : "bg-v5-danger-soft text-v5-danger"
               }`}
             >
               <span>Quá hạn ({myStats.overdue})</span>
             </button>
             <button
               onClick={() => setActiveTab("WAITING_REVIEW")}
-              className={`px-3 py-1.5 rounded-full font-body-semibold text-label-md shrink-0 transition-fast ${
+              className={`px-3 py-1.5 rounded-full font-semibold text-[12px] shrink-0 transition-fast ${
                 activeTab === "WAITING_REVIEW"
-                  ? "bg-primary text-on-primary"
+                  ? "bg-v5-accent text-white"
                   : "bg-v5-bg text-v5-muted"
               }`}
             >
@@ -1771,24 +1778,24 @@ function MyWorkPageContent() {
                   key={task.id}
                   className="bg-v5-surface rounded-xl p-3.5 shadow-sm flex flex-col gap-3 relative overflow-hidden"
                 >
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-status-danger" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-v5-danger" />
                   <div className="flex items-start justify-between gap-2 pl-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-label-sm text-label-sm font-bold text-status-danger bg-status-danger-bg px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-bold text-v5-danger bg-v5-danger-soft px-2 py-0.5 rounded">
                         {task.code}
                       </span>
                       {task.hasIssue && (
-                        <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold flex items-center gap-0.5">
                           <V5Icon name="report_problem" className="text-[13px]" /> Có vướng mắc
                         </span>
                       )}
                       {isReturned && (
-                        <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 rounded bg-v5-danger-soft text-v5-danger text-[11px] font-bold flex items-center gap-0.5">
                           <V5Icon name="undo" className="text-[13px]" /> Bị trả lại
                         </span>
                       )}
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-status-danger text-on-primary font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0 shadow-xs">
+                    <span className="px-2 py-0.5 rounded bg-v5-danger text-white text-[11px] font-bold flex items-center gap-1 shrink-0 shadow-xs">
                       <V5Icon name="alarm_off" className="text-[13px]" />{" "}
                       {task.isOverdue ? `Quá hạn ${overdueDays} ngày` : "Cần xử lý"}
                     </span>
@@ -1797,15 +1804,15 @@ function MyWorkPageContent() {
                     <h3 className="font-headline-sm text-headline-sm text-v5-ink font-bold leading-tight">
                       {task.title}
                     </h3>
-                    <p className="font-label-sm text-[12px] text-v5-muted mt-1">
+                    <p className="text-[11px] text-[12px] text-v5-muted mt-1">
                       Hạn: {formatDateTime(task.currentDeadline)}
                       {task.owner ? ` • ${task.owner.fullName}` : ""}
                     </p>
                     {task.issueNotes && (
-                      <div className="mt-2.5 p-2.5 rounded-lg bg-status-warning-bg/80 flex items-start gap-2">
-                        <V5Icon name="info" className="text-status-warning text-[18px] shrink-0 mt-0.5" />
+                      <div className="mt-2.5 p-2.5 rounded-lg bg-v5-gold-soft/80 flex items-start gap-2">
+                        <V5Icon name="info" className="text-v5-gold-ink text-[18px] shrink-0 mt-0.5" />
                         <div className="flex flex-col text-[12px]">
-                          <span className="font-body-semibold text-status-warning">Giải trình / vướng mắc:</span>
+                          <span className="font-semibold text-v5-gold-ink">Giải trình / vướng mắc:</span>
                           <span className="text-v5-ink">{task.issueNotes}</span>
                         </div>
                       </div>
@@ -1814,15 +1821,15 @@ function MyWorkPageContent() {
                   <div className="grid grid-cols-2 gap-2 pt-1 pl-1">
                     <button
                       onClick={() => openExtensionForTask(task)}
-                      className="h-11 px-2.5 rounded-lg bg-v5-bg text-v5-ink font-body-semibold text-body-md flex items-center justify-center gap-1 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
+                      className="h-11 px-2.5 rounded-lg bg-v5-bg text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
                       type="button"
                     >
-                      <V5Icon name="schedule_send" className="text-[18px] text-status-warning" />
+                      <V5Icon name="schedule_send" className="text-[18px] text-v5-gold-ink" />
                       <span className="text-[13px] leading-tight truncate">Xin gia hạn</span>
                     </button>
                     <button
                       onClick={() => openIssueForTask(task)}
-                      className="h-11 px-2.5 rounded-lg bg-status-danger text-on-primary font-body-semibold text-body-md flex items-center justify-center gap-1 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
+                      className="h-11 px-2.5 rounded-lg bg-v5-danger text-white font-semibold text-[12px] flex items-center justify-center gap-1 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
                       type="button"
                     >
                       <V5Icon name="gavel" className="text-[18px]" />
@@ -1841,14 +1848,14 @@ function MyWorkPageContent() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-label-sm text-label-sm font-bold text-primary-container bg-v5-bg px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-bold text-v5-ink bg-v5-bg px-2 py-0.5 rounded">
                         {task.code}
                       </span>
-                      <span className="font-label-sm text-v5-muted text-[11px]">
+                      <span className="text-[11px] text-v5-muted text-[11px]">
                         {task.planLinks?.[0]?.planItem?.plan?.title || "Đầu việc phát sinh"}
                       </span>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-bold flex items-center gap-1 shrink-0">
+                    <span className="px-2 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-bold flex items-center gap-1 shrink-0">
                       <V5Icon name="pending" className="text-[13px]" /> Chờ Trưởng BP duyệt
                     </span>
                   </div>
@@ -1858,15 +1865,15 @@ function MyWorkPageContent() {
                     </h3>
                     <div className="mt-2.5 p-2 rounded-lg bg-v5-bg flex items-center justify-between text-[12px]">
                       <div className="flex items-center gap-2 min-w-0">
-                        <V5Icon name="assignment_turned_in" className="text-secondary text-[20px] shrink-0" />
+                        <V5Icon name="assignment_turned_in" className="text-v5-accent text-[20px] shrink-0" />
                         <div className="flex flex-col min-w-0">
-                          <span className="font-body-semibold text-v5-ink truncate">Đã nộp kết quả</span>
+                          <span className="font-semibold text-v5-ink truncate">Đã nộp kết quả</span>
                           <span className="text-v5-muted text-[11px]">
                             Hạn: {formatDateTime(task.currentDeadline)}
                           </span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success font-label-sm text-[10px] font-bold shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-v5-success-soft text-v5-success text-[11px] text-[10px] font-bold shrink-0">
                         ĐÃ GỬI DUYỆT
                       </span>
                     </div>
@@ -1874,7 +1881,7 @@ function MyWorkPageContent() {
                   <div className="pt-0.5 flex items-center justify-between gap-2">
                     <Link
                       href={`/tasks/${task.id}`}
-                      className="flex-1 h-11 px-3 rounded-lg bg-v5-bg text-v5-muted font-label-md text-label-md flex items-center justify-center gap-1 hover:bg-v5-bg-high transition-all"
+                      className="flex-1 h-11 px-3 rounded-lg bg-v5-bg text-v5-muted text-[12px] flex items-center justify-center gap-1 hover:bg-v5-bg-high transition-all"
                     >
                       <V5Icon name="visibility" className="text-[17px]" />
                       <span>Xem chi tiết hồ sơ nộp</span>
@@ -1891,20 +1898,20 @@ function MyWorkPageContent() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-label-sm text-label-sm font-bold text-primary-container bg-v5-bg px-2 py-0.5 rounded">
+                    <span className="text-[11px] font-bold text-v5-ink bg-v5-bg px-2 py-0.5 rounded">
                       {task.code}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
+                    <span className="px-2 py-0.5 rounded bg-v5-danger-soft text-v5-danger text-[11px] font-bold flex items-center gap-0.5">
                       <V5Icon name="flag" className="text-[13px]" /> {task.priority || "Cao"}
                     </span>
-                    <span className="text-v5-muted font-label-sm text-[11px]">TTHQ</span>
+                    <span className="text-v5-muted text-[11px]">TTHQ</span>
                     {isReturned && (
-                      <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger font-label-sm text-[11px] font-bold flex items-center gap-0.5">
+                      <span className="px-2 py-0.5 rounded bg-v5-danger-soft text-v5-danger text-[11px] font-bold flex items-center gap-0.5">
                         <V5Icon name="undo" className="text-[13px]" /> Bị trả lại
                       </span>
                     )}
                   </div>
-                  <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-label-sm text-[11px] font-semibold flex items-center gap-1 shrink-0">
+                  <span className="px-2 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-[11px] font-semibold flex items-center gap-1 shrink-0">
                     <V5Icon name="schedule" className="text-[13px]" /> {formatDateTime(task.currentDeadline)}
                   </span>
                 </div>
@@ -1912,27 +1919,27 @@ function MyWorkPageContent() {
                   <h3 className="font-headline-sm text-headline-sm text-v5-ink font-bold leading-tight">
                     {task.title}
                   </h3>
-                  <div className="mt-2 flex items-center gap-1.5 text-v5-muted font-label-md text-label-md">
-                    <V5Icon name="assignment_ind" className="text-[16px] text-secondary" />
+                  <div className="mt-2 flex items-center gap-1.5 text-v5-muted text-[12px]">
+                    <V5Icon name="assignment_ind" className="text-[16px] text-v5-accent" />
                     <span className="truncate">
                       {isSelfInitiated(task.originKind) ? (
-                        <>Nguồn: <strong className="text-v5-ink font-body-semibold">Công việc tự khởi tạo</strong></>
+                        <>Nguồn: <strong className="text-v5-ink font-semibold">Công việc tự khởi tạo</strong></>
                       ) : (
-                        <>Người giao: <strong className="text-v5-ink font-body-semibold">{task.owner?.fullName || "Lãnh đạo bộ phận"}</strong> ({task.owner?.position || "Phụ trách"})</>
+                        <>Người giao: <strong className="text-v5-ink font-semibold">{task.owner?.fullName || "Lãnh đạo bộ phận"}</strong> ({task.owner?.position || "Phụ trách"})</>
                       )}
                     </span>
                   </div>
                 </div>
                 <div className="bg-v5-bg p-2 rounded-lg flex items-center justify-between text-[12px] text-v5-muted">
                   <span className="flex items-center gap-1">
-                    <V5Icon name="inventory_2" className="text-[15px] text-secondary" />
+                    <V5Icon name="inventory_2" className="text-[15px] text-v5-accent" />
                     <span>{task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</span>
                   </span>
-                  <span className="font-body-semibold text-secondary">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
+                  <span className="font-semibold text-v5-accent">Tiến độ {task.progressPercent ?? (task.status === "COMPLETED" ? 100 : 0)}%</span>
                 </div>
                 {isReturned && (task.approval?.reason || task.approval?.content) && (
-                  <div className="rounded-lg bg-status-danger-bg/50 border border-status-danger/30 px-3 py-2 text-[11px] text-v5-ink">
-                    <b className="text-status-danger">Lý do trả lại:</b> {task.approval?.reason || task.approval?.content}
+                  <div className="rounded-lg bg-v5-danger-soft/50 border border-v5-danger/30 px-3 py-2 text-[11px] text-v5-ink">
+                    <b className="text-v5-danger">Lý do trả lại:</b> {task.approval?.reason || task.approval?.content}
                     {task.approval?.decidedByName ? ` · ${task.approval.decidedByName}` : ""}
                     <span className="block text-v5-muted mt-0.5">
                       Tiến độ hiện tại (kể cả 100%) được giữ nguyên khi trả lại.
@@ -1958,7 +1965,7 @@ function MyWorkPageContent() {
                     <button
                       onClick={() => handleAcceptTask(task)}
                       disabled={acceptingId === task.id}
-                      className="h-11 px-3 rounded-lg bg-secondary text-on-secondary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50"
+                      className="h-11 px-3 rounded-lg bg-v5-accent text-white font-semibold text-[12px] flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50"
                       type="button"
                     >
                       <V5Icon name="how_to_reg" className="text-[18px]" />
@@ -1969,7 +1976,7 @@ function MyWorkPageContent() {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={() => openDrawerForTask(task)}
-                    className="h-11 px-3 rounded-lg bg-v5-bg text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
+                    className="h-11 px-3 rounded-lg bg-v5-bg text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1.5 hover:bg-v5-bg-high active:scale-[0.98] transition-all"
                     type="button"
                   >
                     <V5Icon name="edit_note" className="text-[18px]" />
@@ -1977,7 +1984,7 @@ function MyWorkPageContent() {
                   </button>
                   <button
                     onClick={() => openDrawerForTask(task)}
-                    className="h-11 px-3 rounded-lg bg-secondary text-on-secondary font-body-semibold text-body-md flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
+                    className="h-11 px-3 rounded-lg bg-v5-accent text-white font-semibold text-[12px] flex items-center justify-center gap-1.5 hover:opacity-95 active:scale-[0.98] transition-all shadow-sm"
                     type="button"
                   >
                     <V5Icon name="task_alt" className="text-[18px]" />
@@ -1989,7 +1996,7 @@ function MyWorkPageContent() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => openEditAssign(task)}
-                      className="h-10 px-3 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
+                      className="h-10 px-3 rounded-lg bg-v5-surface text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
                       type="button"
                     >
                       <V5Icon name="manage_accounts" className="text-[18px]" />
@@ -1999,7 +2006,7 @@ function MyWorkPageContent() {
                       <button
                         onClick={() => handleApproveTask(task)}
                         disabled={approvingId === task.id}
-                        className="h-10 px-3 rounded-lg bg-status-success text-white font-body-semibold text-body-md flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all disabled:opacity-50"
+                        className="h-10 px-3 rounded-lg bg-v5-success text-white font-semibold text-[12px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all disabled:opacity-50"
                         type="button"
                       >
                         <V5Icon name="verified" className="text-[18px]" />
@@ -2008,7 +2015,7 @@ function MyWorkPageContent() {
                     ) : (
                       <Link
                         href={`/tasks/${task.id}`}
-                        className="h-10 px-3 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
+                        className="h-10 px-3 rounded-lg bg-v5-surface text-v5-ink font-semibold text-[12px] flex items-center justify-center gap-1.5 border border-v5-line active:scale-[0.98] transition-all"
                       >
                         <V5Icon name="visibility" className="text-[18px]" />
                         <span>Chi tiết & duyệt</span>
@@ -2027,7 +2034,7 @@ function MyWorkPageContent() {
             <button
               onClick={() => fetchTasks({ page: page + 1, append: true })}
               disabled={loadingMore}
-              className="w-full h-11 rounded-lg bg-v5-surface text-primary font-body-semibold text-body-md shadow-sm border border-v5-line active-press disabled:opacity-50"
+              className="w-full h-11 rounded-lg bg-v5-surface text-v5-ink font-semibold text-[12px] shadow-sm border border-v5-line active-press disabled:opacity-50"
             >
               {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
             </button>
@@ -2039,7 +2046,7 @@ function MyWorkPageContent() {
           <button
             onClick={openNewTaskModal}
             aria-label="Thêm đầu việc mới"
-            className="h-13 px-4 py-3 rounded-full bg-secondary text-on-secondary shadow-lg flex items-center gap-2 active:scale-95 transition-transform hover:shadow-xl font-body-semibold text-body-md tracking-tight"
+            className="h-13 px-4 py-3 rounded-full bg-v5-accent text-white shadow-lg flex items-center gap-2 active:scale-95 transition-transform hover:shadow-xl font-semibold text-[12px] tracking-tight"
             type="button"
           >
             <V5Icon name="add_task" className="text-[24px]" />
@@ -2062,13 +2069,13 @@ function MyWorkPageContent() {
 
           <aside className="relative w-full max-w-full sm:max-w-[520px] sm:w-[520px] bg-v5-surface shadow-2xl z-50 flex flex-col h-full transform transition-transform duration-300 ease-in-out">
             {/* DRAWER HEADER */}
-            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between shrink-0">
+            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-space-sm min-w-0 flex-1">
-                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-on-secondary shadow-sm shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-v5-accent flex items-center justify-center text-white shadow-sm shrink-0">
                   <V5Icon name="fact_check" className="text-[20px]" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-label-sm text-label-sm text-secondary-fixed font-semibold uppercase">
+                  <span className="text-[11px] text-v5-accent font-semibold uppercase">
                     Tác nghiệp một chạm
                   </span>
                   <h2 className="font-headline-sm text-headline-sm text-white truncate">
@@ -2078,7 +2085,7 @@ function MyWorkPageContent() {
               </div>
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="p-1 rounded text-on-primary-container hover:text-white hover:bg-primary-container transition-fast shrink-0 ml-2"
+                className="p-1 rounded text-white/80 hover:text-white hover:bg-v5-accent-soft transition-fast shrink-0 ml-2"
                 title="Đóng bảng"
               >
                 <V5Icon name="close" className="text-[22px]" />
@@ -2089,25 +2096,25 @@ function MyWorkPageContent() {
             {selectedTask && (
               <div className="bg-v5-bg p-space-md flex flex-col gap-2 shrink-0 border-b border-v5-line">
                 <div className="flex items-center justify-between">
-                  <span className="font-headline-sm text-headline-sm text-primary font-bold">
+                  <span className="font-headline-sm text-headline-sm text-v5-ink font-bold">
                     Mã việc: {selectedTask.code}
                   </span>
-                  <span className="font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary/15 text-secondary font-semibold">
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-v5-accent/15 text-v5-accent font-semibold">
                     {selectedTask.planLinks?.[0]?.planItem?.plan?.title || "Kế hoạch tuần"}
                   </span>
                 </div>
-                <p className="font-body-semibold text-body-semibold text-v5-ink">
+                <p className="text-[13px] font-semibold text-v5-ink">
                   {selectedTask.title}
                 </p>
-                <div className="grid grid-cols-2 gap-2 text-label-sm mt-1">
+                <div className="grid grid-cols-2 gap-2 text-[11px] mt-1">
                   <div className="text-v5-muted">
-                    Hạn xử lý: <strong className="text-status-warning">{formatDateTime(selectedTask.currentDeadline)}</strong>
+                    Hạn xử lý: <strong className="text-v5-gold-ink">{formatDateTime(selectedTask.currentDeadline)}</strong>
                   </div>
                   <div className="text-v5-muted text-right">
-                    Phối hợp: <strong className="text-primary">{selectedTask.assignees?.[0]?.person?.fullName || selectedTask.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</strong>
+                    Phối hợp: <strong className="text-v5-ink">{selectedTask.assignees?.[0]?.person?.fullName || selectedTask.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}</strong>
                   </div>
                   {selectedTask.deadlineRequests?.some((r) => r.status === "PENDING") && (
-                    <div className="col-span-2 rounded-md bg-status-warning-bg px-2 py-1 text-[11px] font-semibold text-status-warning">
+                    <div className="col-span-2 rounded-md bg-v5-gold-soft px-2 py-1 text-[11px] font-semibold text-v5-gold-ink">
                       Đề nghị gia hạn đang chờ lãnh đạo duyệt.
                     </div>
                   )}
@@ -2117,13 +2124,13 @@ function MyWorkPageContent() {
 
             {/* Action Feedback Alerts */}
             {actionSuccess && (
-              <div className="p-3 bg-status-success-bg border-b border-status-success/30 text-status-success text-xs font-semibold flex items-center gap-2">
+              <div className="p-3 bg-v5-success-soft border-b border-v5-success/30 text-v5-success text-xs font-semibold flex items-center gap-2">
                 <V5Icon name="check_circle" className="text-[18px]" />
                 <span>{actionSuccess}</span>
               </div>
             )}
             {actionError && (
-              <div className="p-3 bg-status-danger-bg border-b border-status-danger/30 text-status-danger text-xs font-semibold flex items-center gap-2">
+              <div className="p-3 bg-v5-danger-soft border-b border-v5-danger/30 text-v5-danger text-xs font-semibold flex items-center gap-2">
                 <V5Icon name="error" className="text-[18px]" />
                 <span>{actionError}</span>
               </div>
@@ -2133,7 +2140,7 @@ function MyWorkPageContent() {
             <div className="flex-1 overflow-y-auto p-space-md flex flex-col gap-space-md">
               {/* Chuyển trạng thái */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-body-semibold text-body-semibold text-primary">
+                <label className="text-[13px] font-semibold text-v5-ink">
                   {selectedTask?.owner?.id === currentUser?.personId
                     ? "1. Chuyển trạng thái công việc"
                     : "1. Trạng thái phần việc của tôi"}
@@ -2143,7 +2150,7 @@ function MyWorkPageContent() {
                     onClick={() => setDrawerStatus("IN_PROGRESS")}
                     className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
                       drawerStatus === "IN_PROGRESS"
-                        ? "bg-secondary/15 border border-secondary text-primary font-semibold"
+                        ? "bg-v5-accent/15 border border-v5-accent text-v5-ink font-semibold"
                         : "bg-v5-bg hover:bg-v5-bg text-v5-ink"
                     }`}
                   >
@@ -2152,9 +2159,9 @@ function MyWorkPageContent() {
                       name="drawer-status"
                       checked={drawerStatus === "IN_PROGRESS"}
                       onChange={() => setDrawerStatus("IN_PROGRESS")}
-                      className="accent-secondary"
+                      className="accent-v5-accent"
                     />
-                    <span className="font-label-md text-label-md">Đang xử lý (Tiếp tục)</span>
+                    <span className="text-[12px]">Đang xử lý (Tiếp tục)</span>
                   </label>
                   {selectedTask?.owner?.id === currentUser?.personId && (
                     <label
@@ -2164,7 +2171,7 @@ function MyWorkPageContent() {
                       }}
                       className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-fast ${
                         drawerStatus === "COMPLETED"
-                          ? "bg-status-success-bg border border-status-success text-status-success font-semibold"
+                          ? "bg-v5-success-soft border border-v5-success text-v5-success font-semibold"
                           : "bg-v5-bg hover:bg-v5-bg text-v5-ink"
                       }`}
                     >
@@ -2176,9 +2183,9 @@ function MyWorkPageContent() {
                           setDrawerStatus("COMPLETED");
                           setDrawerProgress(100);
                         }}
-                        className="accent-status-success"
+                        className="accent-v5-success"
                       />
-                      <span className="font-label-md text-label-md">Hoàn thành (Đạt kết quả)</span>
+                      <span className="text-[12px]">Hoàn thành (Đạt kết quả)</span>
                     </label>
                   )}
                 </div>
@@ -2187,10 +2194,10 @@ function MyWorkPageContent() {
               {/* Thanh trượt tiến độ % */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-body-semibold text-body-semibold text-primary">
+                  <label className="text-[13px] font-semibold text-v5-ink">
                     2. Tỷ lệ hoàn thành nhiệm vụ
                   </label>
-                  <span className="font-headline-sm text-headline-sm text-secondary font-bold">
+                  <span className="font-headline-sm text-headline-sm text-v5-accent font-bold">
                     {drawerProgress}%
                   </span>
                 </div>
@@ -2202,18 +2209,18 @@ function MyWorkPageContent() {
                   step="5"
                   value={drawerProgress}
                   onChange={(e) => setDrawerProgress(Number(e.target.value))}
-                  className="w-full accent-secondary cursor-pointer h-2 bg-v5-bg rounded-lg"
+                  className="w-full accent-v5-accent cursor-pointer h-2 bg-v5-bg rounded-lg"
                 />
-                <div className="flex justify-between text-label-sm text-v5-muted px-0.5">
+                <div className="flex justify-between text-[11px] text-v5-muted px-0.5">
                   <span>0% Bắt đầu</span>
                   <span>50% Đang xử lý</span>
-                  <span className="text-secondary font-semibold">100% Hoàn tất</span>
+                  <span className="text-v5-accent font-semibold">100% Hoàn tất</span>
                 </div>
               </div>
 
               {/* Số lượng giao / hoàn thành */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-body-semibold text-body-semibold text-primary">
+                <label className="text-[13px] font-semibold text-v5-ink">
                   3. Số lượng giao / hoàn thành
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -2264,7 +2271,7 @@ function MyWorkPageContent() {
 
               {/* Nội dung kết quả thực tế */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-body-semibold text-body-semibold text-primary">
+                <label className="text-[13px] font-semibold text-v5-ink">
                   4. Kết quả nghiệp vụ chi tiết
                 </label>
                 <textarea
@@ -2272,9 +2279,9 @@ function MyWorkPageContent() {
                   value={drawerNotes}
                   onChange={(e) => setDrawerNotes(e.target.value)}
                   placeholder="Nhập tóm tắt kết quả, số hồ sơ xử lý, số tờ khai..."
-                  className="w-full p-2.5 rounded-lg bg-v5-bg text-body-md font-body-md text-v5-ink border border-v5-line focus:outline-none focus:ring-2 focus:ring-secondary resize-none"
+                  className="w-full p-2.5 rounded-lg bg-v5-bg text-[12px] text-v5-ink border border-v5-line focus:outline-none focus:ring-2 focus:ring-v5-accent resize-none"
                 />
-                <span className="font-label-sm text-[12px] text-v5-muted">
+                <span className="text-[11px] text-[12px] text-v5-muted">
                   Gợi ý: Ghi rõ số lượng tờ khai, vướng mắc nếu có để cấp trên kiểm tra.
                 </span>
               </div>
@@ -2282,11 +2289,11 @@ function MyWorkPageContent() {
               {/* Đính kèm biên bản / tài liệu */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-body-semibold text-body-semibold text-primary">
+                  <label className="text-[13px] font-semibold text-v5-ink">
                     5. Đính kèm biên bản / tài liệu ({attachments.length})
                   </label>
                   {uploadingFile && (
-                    <span className="text-secondary font-label-sm text-xs flex items-center gap-1">
+                    <span className="text-v5-accent text-[11px] text-xs flex items-center gap-1">
                       <V5Icon name="progress_activity" className="text-[14px] animate-spin" />
                       Đang tải lên Supabase...
                     </span>
@@ -2296,13 +2303,13 @@ function MyWorkPageContent() {
                 {/* Danh sách tệp đính kèm thực tế từ Supabase Storage */}
                 <div className="flex flex-col gap-1.5">
                   {attachmentsLoading ? (
-                    <div className="p-3 rounded-lg bg-v5-bg text-center text-label-sm text-v5-muted flex items-center justify-center gap-2">
+                    <div className="p-3 rounded-lg bg-v5-bg text-center text-[11px] text-v5-muted flex items-center justify-center gap-2">
                       <V5Icon name="progress_activity" className="text-[16px] animate-spin" />
                       Đang tải danh sách tài liệu...
                     </div>
                   ) : attachments.length === 0 ? (
                     <div className="p-3 rounded-lg bg-v5-bg border border-dashed border-v5-line text-center">
-                      <p className="font-label-sm text-label-sm text-v5-muted">
+                      <p className="text-[11px] text-v5-muted">
                         Chưa có tệp đính kèm. Tải lên biên bản kiểm tra điện tử, chứng từ hoặc ảnh giám định hiện trường.
                       </p>
                     </div>
@@ -2323,7 +2330,7 @@ function MyWorkPageContent() {
                       return (
                         <div
                           key={att.id}
-                          className="flex items-center justify-between p-2.5 rounded-lg bg-v5-bg border border-v5-line hover:border-secondary/40 transition-fast"
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-v5-bg border border-v5-line hover:border-v5-accent/40 transition-fast"
                         >
                           <div className="flex items-center gap-2 min-w-0 pr-2">
                             <V5Icon
@@ -2338,11 +2345,11 @@ function MyWorkPageContent() {
                               }
                               className={`shrink-0 text-[22px] ${
                                 isPdf
-                                  ? "text-status-danger"
+                                  ? "text-v5-danger"
                                   : isSheet
-                                    ? "text-status-success"
+                                    ? "text-v5-success"
                                     : isImage
-                                      ? "text-secondary"
+                                      ? "text-v5-accent"
                                       : "text-v5-muted"
                               }`}
                             />
@@ -2351,12 +2358,12 @@ function MyWorkPageContent() {
                                 href={att.fileUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="font-label-md text-label-md text-primary font-semibold truncate hover:underline hover:text-secondary"
+                                className="text-[12px] text-v5-ink font-semibold truncate hover:underline hover:text-v5-accent"
                                 title={`Mở tệp: ${att.fileName}`}
                               >
                                 {att.fileName}
                               </a>
-                              <span className="font-label-sm text-[11px] text-v5-muted">
+                              <span className="text-[11px] text-v5-muted">
                                 {sizeFormatted} · {att.uploadedBy?.fullName || "Cán bộ"}
                                 {att.isSigned ? " · Đã xác thực nghiệp vụ" : ""}
                               </span>
@@ -2374,7 +2381,7 @@ function MyWorkPageContent() {
                                     mimeType: att.mimeType,
                                   })
                                 }
-                                className="p-1 text-v5-muted hover:text-secondary transition-fast rounded hover:bg-v5-bg"
+                                className="p-1 text-v5-muted hover:text-v5-accent transition-fast rounded hover:bg-v5-bg"
                                 title="Xem nhanh tệp"
                               >
                                 <V5Icon name="visibility" className="text-[18px]" />
@@ -2385,7 +2392,7 @@ function MyWorkPageContent() {
                               target="_blank"
                               rel="noreferrer"
                               download
-                              className="p-1 text-v5-muted hover:text-secondary transition-fast rounded hover:bg-v5-bg"
+                              className="p-1 text-v5-muted hover:text-v5-accent transition-fast rounded hover:bg-v5-bg"
                               title="Tải về máy tính"
                             >
                               <V5Icon name="download" className="text-[18px]" />
@@ -2393,7 +2400,7 @@ function MyWorkPageContent() {
                             <button
                               type="button"
                               onClick={() => handleDeleteAttachment(att.id)}
-                              className="p-1 text-v5-muted hover:text-status-danger transition-fast rounded hover:bg-v5-bg"
+                              className="p-1 text-v5-muted hover:text-v5-danger transition-fast rounded hover:bg-v5-bg"
                               title="Xóa tệp"
                             >
                               <V5Icon name="delete" className="text-[18px]" />
@@ -2418,7 +2425,7 @@ function MyWorkPageContent() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
                   type="button"
-                  className="mt-1 w-full py-2.5 rounded-lg bg-v5-bg text-secondary font-label-md text-label-md hover:bg-v5-bg flex items-center justify-center gap-2 transition-fast active-press border border-v5-line disabled:opacity-50"
+                  className="mt-1 w-full py-2.5 rounded-lg bg-v5-bg text-v5-accent text-[12px] hover:bg-v5-bg flex items-center justify-center gap-2 transition-fast active-press border border-v5-line disabled:opacity-50"
                 >
                   <V5Icon
                     name={uploadingFile ? "progress_activity" : "upload_file"}
@@ -2433,9 +2440,9 @@ function MyWorkPageContent() {
               </div>
 
               {/* Lưu ý nghiệp vụ */}
-              <div className="p-space-sm rounded-lg bg-status-warning-bg/40 flex items-start gap-2 border border-status-warning/30">
-                <V5Icon name="info" className="text-status-warning text-[18px] shrink-0 mt-0.5" />
-                <p className="font-label-sm text-label-sm text-v5-muted">
+              <div className="p-space-sm rounded-lg bg-v5-gold-soft/40 flex items-start gap-2 border border-v5-gold/30">
+                <V5Icon name="info" className="text-v5-gold-ink text-[18px] shrink-0 mt-0.5" />
+                <p className="text-[11px] text-v5-muted">
                   Bấm <strong>&quot;Báo hoàn thành &amp; Trình duyệt&quot;</strong> hệ thống sẽ tự động cập nhật Dashboard lãnh đạo và chuyển thông báo tới Trưởng bộ phận.
                 </p>
               </div>
@@ -2445,7 +2452,7 @@ function MyWorkPageContent() {
             <div className="p-space-md bg-v5-bg flex items-center justify-between gap-space-sm shrink-0 border-t border-v5-line">
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="px-4 py-2 rounded-lg bg-v5-surface text-v5-ink font-label-md text-label-md hover:bg-v5-bg transition-fast border border-v5-line active-press"
+                className="px-4 py-2 rounded-lg bg-v5-surface text-v5-ink text-[12px] hover:bg-v5-bg transition-fast border border-v5-line active-press"
               >
                 Hủy bỏ
               </button>
@@ -2453,7 +2460,7 @@ function MyWorkPageContent() {
                 <button
                   disabled={drawerLoading}
                   onClick={() => handleDrawerSubmit(false)}
-                  className="px-3 py-2 rounded-lg bg-v5-bg text-primary font-label-md text-label-md hover:bg-v5-bg-high transition-fast active-press"
+                  className="px-3 py-2 rounded-lg bg-v5-bg text-v5-ink text-[12px] hover:bg-v5-bg-high transition-fast active-press"
                 >
                   {drawerLoading
                     ? "Đang lưu..."
@@ -2470,7 +2477,7 @@ function MyWorkPageContent() {
                       setIsDrawerOpen(false);
                       if (task) openIssueForTask(task);
                     }}
-                    className="px-3 py-2 rounded-lg bg-v5-surface text-status-danger font-label-md text-label-md hover:bg-status-danger-bg transition-fast border border-status-danger/30 active-press"
+                    className="px-3 py-2 rounded-lg bg-v5-surface text-v5-danger text-[12px] hover:bg-v5-danger-soft transition-fast border border-v5-danger/30 active-press"
                   >
                     <V5Icon name="assignment_late" className="text-[18px]" />
                     Giải trình
@@ -2486,7 +2493,7 @@ function MyWorkPageContent() {
                         setIsDrawerOpen(false);
                         if (task) openExtensionForTask(task);
                       }}
-                      className="px-3 py-2 rounded-lg bg-v5-surface text-status-warning font-label-md text-label-md hover:bg-status-warning-bg transition-fast border border-status-warning/30 active-press"
+                      className="px-3 py-2 rounded-lg bg-v5-surface text-v5-gold-ink text-[12px] hover:bg-v5-gold-soft transition-fast border border-v5-gold/30 active-press"
                     >
                       <V5Icon name="more_time" className="text-[18px]" />
                       Xin gia hạn
@@ -2496,7 +2503,7 @@ function MyWorkPageContent() {
                   <button
                     disabled={drawerLoading}
                     onClick={() => setCompletionTask(selectedTask)}
-                    className="px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:opacity-90 shadow-sm flex items-center gap-1.5 font-semibold transition-fast active-press"
+                    className="px-4 py-2 rounded-lg bg-v5-accent text-white text-[12px] hover:opacity-90 shadow-sm flex items-center gap-1.5 font-semibold transition-fast active-press"
                   >
                     <V5Icon name="send_time_extension" className="text-[18px]" />
                     <span>Báo hoàn thành & Trình duyệt</span>
@@ -2512,12 +2519,12 @@ function MyWorkPageContent() {
           MODAL: GIẢI TRÌNH CHẬM HẠN
           ========================================================================= */}
       {issueTask && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
-            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between">
               <div className="min-w-0">
                 <h3 className="font-headline-sm font-semibold">Giải trình chậm hạn</h3>
-                <p className="truncate text-[11px] text-on-primary-container">{issueTask.code}</p>
+                <p className="truncate text-[11px] text-white/80">{issueTask.code}</p>
               </div>
               <button type="button" onClick={() => setIssueTask(null)} aria-label="Đóng">
                 <V5Icon name="close" className="text-[20px]" />
@@ -2528,17 +2535,17 @@ function MyWorkPageContent() {
                 <p className="text-sm font-semibold text-v5-ink">{issueTask.title}</p>
                 <p className="text-[11px] text-v5-muted">
                   Hạn hiện tại:{" "}
-                  <strong className="text-status-warning">{formatDateTime(issueTask.currentDeadline)}</strong>
+                  <strong className="text-v5-gold-ink">{formatDateTime(issueTask.currentDeadline)}</strong>
                 </p>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-primary">Nội dung giải trình *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Nội dung giải trình *</label>
                   <textarea
                     required
                     rows={4}
                     value={issueReason}
                     onChange={(e) => setIssueReason(e.target.value)}
                     placeholder="Trình bày lý do chậm, tình hình xử lý và hướng khắc phục..."
-                    className="p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                    className="p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent resize-none"
                   />
                 </div>
                 <p className="text-[11px] text-v5-muted">
@@ -2557,7 +2564,7 @@ function MyWorkPageContent() {
                 <button
                   type="submit"
                   disabled={issueBusy}
-                  className="px-4 py-2 rounded-lg bg-status-danger text-on-error text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-v5-danger text-white text-xs font-bold hover:opacity-90 disabled:opacity-50"
                 >
                   {issueBusy ? "Đang gửi..." : "Gửi giải trình"}
                 </button>
@@ -2571,12 +2578,12 @@ function MyWorkPageContent() {
           MODAL: XIN GIA HẠN NHIỆM VỤ
           ========================================================================= */}
       {extTask && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden border border-v5-line">
-            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between">
               <div className="min-w-0">
                 <h3 className="font-headline-sm font-semibold">Đề nghị gia hạn nhiệm vụ</h3>
-                <p className="truncate text-[11px] text-on-primary-container">{extTask.code}</p>
+                <p className="truncate text-[11px] text-white/80">{extTask.code}</p>
               </div>
               <button type="button" onClick={() => setExtTask(null)} aria-label="Đóng">
                 <V5Icon name="close" className="text-[20px]" />
@@ -2587,28 +2594,28 @@ function MyWorkPageContent() {
                 <p className="text-sm font-semibold text-v5-ink">{extTask.title}</p>
                 <p className="text-[11px] text-v5-muted">
                   Hạn hiện tại:{" "}
-                  <strong className="text-status-warning">{formatDateTime(extTask.currentDeadline)}</strong>
+                  <strong className="text-v5-gold-ink">{formatDateTime(extTask.currentDeadline)}</strong>
                 </p>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-primary">Thời hạn mới *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Thời hạn mới *</label>
                   <input
                     type="datetime-local"
                     required
                     min={extTask.currentDeadline ? utcIsoToVnInputValue(extTask.currentDeadline) : undefined}
                     value={extDeadline}
                     onChange={(e) => setExtDeadline(e.target.value)}
-                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-primary">Lý do đề nghị *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Lý do đề nghị *</label>
                   <textarea
                     required
                     rows={3}
                     value={extReason}
                     onChange={(e) => setExtReason(e.target.value)}
                     placeholder="Trình bày lý do cần gia hạn thời hạn hoàn thành..."
-                    className="p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                    className="p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent resize-none"
                   />
                 </div>
                 <p className="text-[11px] text-v5-muted">
@@ -2626,7 +2633,7 @@ function MyWorkPageContent() {
                 <button
                   type="submit"
                   disabled={extBusy}
-                  className="px-4 py-2 rounded-lg bg-status-warning text-v5-ink text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-v5-gold text-v5-ink text-xs font-bold hover:opacity-90 disabled:opacity-50"
                 >
                   {extBusy ? "Đang gửi..." : "Gửi đề nghị"}
                 </button>
@@ -2640,9 +2647,9 @@ function MyWorkPageContent() {
           MODAL: SỬA GIAO VIỆC (lãnh đạo/trưởng nhóm, mobile-friendly)
           ========================================================================= */}
       {editTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-lg bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
-            <div className="p-space-md bg-primary text-on-primary flex items-center justify-between">
+            <div className="p-space-md bg-v5-accent text-white flex items-center justify-between">
               <h3 className="font-headline-sm font-semibold">Sửa giao việc [{editTask.code}]</h3>
               <button onClick={() => setEditTask(null)}>
                 <V5Icon name="close" className="text-[20px]" />
@@ -2651,16 +2658,16 @@ function MyWorkPageContent() {
             <form onSubmit={handleEditAssignSave}>
               <div className="p-space-md flex flex-col gap-space-md max-h-[70vh] overflow-y-auto">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-primary">Tên / Nội dung chỉ đạo *</label>
+                  <label className="text-xs font-semibold text-v5-ink">Tên / Nội dung chỉ đạo *</label>
                   <input type="text" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
                     placeholder="Nhập nội dung công việc chỉ đạo..."
-                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary" />
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent" />
                 </div>
                 <div className="grid grid-cols-2 gap-space-sm">
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-primary">Cán bộ chủ trì</label>
+                    <label className="text-xs font-semibold text-v5-ink">Cán bộ chủ trì</label>
                     <select value={editOwnerId} onChange={(e) => setEditOwnerId(e.target.value)}
-                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary">
+                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent">
                       {editTask.owner && <option value={editTask.owner.id}>{editTask.owner.fullName}</option>}
                       {people.filter((p) => p.id !== editTask.owner?.id).map((p) => (
                         <option key={p.id} value={p.id}>{p.fullName}</option>
@@ -2668,9 +2675,9 @@ function MyWorkPageContent() {
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-primary">Ưu tiên</label>
+                    <label className="text-xs font-semibold text-v5-ink">Ưu tiên</label>
                     <select value={editPriority} onChange={(e) => setEditPriority(e.target.value)}
-                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary">
+                      className="h-10 px-2 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent">
                       <option value="Khẩn">Khẩn cấp</option>
                       <option value="Cao">Cao</option>
                       <option value="Trung bình">Trung bình</option>
@@ -2680,14 +2687,14 @@ function MyWorkPageContent() {
                 </div>
                 <CollaboratorPicker people={people} value={editCollabs} onChange={setEditCollabs} excludeId={editOwnerId} disabled={editSaving} />
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-primary">Hạn hoàn thành</label>
+                  <label className="text-xs font-semibold text-v5-ink">Hạn hoàn thành</label>
                   <input type="datetime-local" value={editDeadline} onChange={(e) => setEditDeadline(e.target.value)}
-                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary" />
+                    className="h-10 px-3 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent" />
                 </div>
               </div>
               <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
                 <button type="button" onClick={() => setEditTask(null)} className="px-4 py-2 rounded text-xs font-semibold">Hủy</button>
-                <button type="submit" disabled={editSaving} className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold disabled:opacity-50">
+                <button type="submit" disabled={editSaving} className="px-4 py-2 rounded bg-v5-accent text-white text-xs font-semibold disabled:opacity-50">
                   {editSaving ? "Đang lưu..." : "Lưu sửa giao việc"}
                 </button>
               </div>
@@ -2714,13 +2721,13 @@ function MyWorkPageContent() {
       {/* YC-10 Phase 2b: modal duyệt nhanh — bắt buộc chọn quality khi flag bật */}
       {quickApproveTask && (
         <div
-          className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
           data-testid="quick-approve-quality-modal"
           role="dialog"
           aria-modal="true"
         >
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line">
-            <div className="p-4 bg-status-success text-white flex items-center justify-between gap-2">
+            <div className="p-4 bg-v5-success text-white flex items-center justify-between gap-2">
               <h3 className="font-headline-sm text-sm font-bold">
                 Duyệt hoàn thành &amp; chọn chất lượng
               </h3>
@@ -2739,14 +2746,14 @@ function MyWorkPageContent() {
               </p>
               <label className="text-xs font-semibold text-v5-ink">
                 Mức chất lượng kết quả (65–100, bước 5){" "}
-                <span className="text-status-danger">*</span>
+                <span className="text-v5-danger">*</span>
               </label>
               <select
                 data-testid="quick-approve-quality-select"
                 value={quickApproveQuality}
                 onChange={(e) => setQuickApproveQuality(e.target.value)}
                 disabled={quickApproveBusy}
-                className="w-full p-2.5 rounded bg-v5-bg text-xs border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary"
+                className="w-full p-2.5 rounded bg-v5-bg text-xs border border-v5-line focus:outline-none focus:ring-1 focus:ring-v5-accent"
               >
                 <option value="">— Chọn mức chất lượng —</option>
                 {[65, 70, 75, 80, 85, 90, 95, 100].map((v) => (
@@ -2773,7 +2780,7 @@ function MyWorkPageContent() {
                 data-testid="quick-approve-confirm"
                 onClick={handleQuickApproveConfirm}
                 disabled={quickApproveBusy || !quickApproveQuality}
-                className="px-4 py-1.5 rounded bg-status-success text-white text-xs font-semibold active-press disabled:opacity-50"
+                className="px-4 py-1.5 rounded bg-v5-success text-white text-xs font-semibold active-press disabled:opacity-50"
               >
                 {quickApproveBusy ? "Đang duyệt..." : "Xác nhận duyệt"}
               </button>
@@ -2800,9 +2807,9 @@ function MyWorkPageContent() {
                       ? "picture_as_pdf"
                       : "image"
                   }
-                  className="text-[22px] text-secondary"
+                  className="text-[22px] text-v5-accent"
                 />
-                <span className="font-headline-sm text-sm font-bold text-primary truncate" title={previewFile.name}>
+                <span className="font-headline-sm text-sm font-bold text-v5-ink truncate" title={previewFile.name}>
                   {previewFile.name}
                 </span>
               </div>
@@ -2812,7 +2819,7 @@ function MyWorkPageContent() {
                   target="_blank"
                   rel="noreferrer"
                   download={previewFile.name}
-                  className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-fast"
+                  className="px-3 py-1.5 rounded-lg bg-v5-accent text-white text-xs font-semibold hover:bg-v5-accent/90 flex items-center gap-1 shadow-sm transition-fast"
                 >
                   <V5Icon name="download" className="text-[15px]" />
                   <span>Tải về</span>
@@ -2820,7 +2827,7 @@ function MyWorkPageContent() {
                 <button
                   type="button"
                   onClick={() => setPreviewFile(null)}
-                  className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-primary transition-fast"
+                  className="p-1.5 rounded-lg hover:bg-v5-bg text-v5-muted hover:text-v5-ink transition-fast"
                   aria-label="Đóng xem trước"
                 >
                   <V5Icon name="close" className="text-[20px]" />
@@ -2939,8 +2946,8 @@ export default function MyWorkPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen w-full items-center justify-center bg-transparent">
-          <div className="flex items-center gap-2 rounded-xl border border-v5-line/50 bg-v5-surface px-4 py-3 text-label-md text-v5-muted shadow-sm">
-            <V5Icon name="progress_activity" className="text-[20px] text-secondary animate-spin" />
+          <div className="flex items-center gap-2 rounded-xl border border-v5-line/50 bg-v5-surface px-4 py-3 text-[12px] text-v5-muted shadow-sm">
+            <V5Icon name="progress_activity" className="text-[20px] text-v5-accent animate-spin" />
             <span>Đang tải không gian tác nghiệp...</span>
           </div>
         </div>
