@@ -195,14 +195,14 @@ export default function NotificationsPage() {
 
         {/* Error Banner if any */}
         {errorMsg && (
-          <div className="p-4 rounded-xl bg-status-danger-bg border border-status-danger text-status-danger flex items-center justify-between shadow-sm">
+          <div className="p-4 rounded-xl bg-v5-danger-soft border border-v5-danger text-v5-danger flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
               <V5Icon name="error" className="text-[20px]" />
               <span className="text-xs font-semibold">{errorMsg}</span>
             </div>
             <button
               onClick={fetchNotifications}
-              className="px-2.5 py-1 rounded bg-status-danger text-white text-xs font-semibold active-press"
+              className="px-2.5 py-1 rounded bg-v5-danger text-white text-xs font-semibold active-press"
             >
               Thử lại
             </button>
@@ -260,11 +260,11 @@ export default function NotificationsPage() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between px-1">
-              <span className="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">
+              <span className="text-[11px] text-v5-ink uppercase tracking-wider font-bold">
                 Cập nhật mới nhất
               </span>
               <span
-                className="font-label-sm text-label-sm text-v5-muted capitalize"
+                className="text-[11px] text-v5-muted capitalize"
                 suppressHydrationWarning
               >
                 {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "numeric", year: "numeric" })}
@@ -288,8 +288,8 @@ export default function NotificationsPage() {
                   className={`relative overflow-hidden rounded-xl p-3.5 shadow-sm transition-fast border border-v5-line/50 hover-lift ${
                     notif.isUnread
                       ? notif.tagType === "danger"
-                        ? "bg-status-danger-bg/45 border-status-danger/40 border-l-4 border-l-status-danger ring-1 ring-status-danger/15"
-                        : "bg-status-warning-bg/45 border-status-warning/40 border-l-4 border-l-status-warning ring-1 ring-status-warning/15"
+                        ? "bg-v5-danger-soft/45 border-v5-danger/40 border-l-4 border-l-v5-danger ring-1 ring-v5-danger/15"
+                        : "bg-v5-gold-soft/45 border-v5-gold/40 border-l-4 border-l-v5-gold ring-1 ring-v5-gold/15"
                       : "bg-v5-surface"
                   }`}
                 >
@@ -298,10 +298,10 @@ export default function NotificationsPage() {
                     <div
                       className={`relative shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
                         notif.tagType === "danger"
-                          ? "bg-status-danger-bg text-status-danger"
+                          ? "bg-v5-danger-soft text-v5-danger"
                           : notif.tagType === "success"
-                          ? "bg-status-success-bg text-status-success"
-                          : "bg-primary-fixed text-primary"
+                          ? "bg-v5-success-soft text-v5-success"
+                          : "bg-v5-accent-fixed text-v5-ink"
                       }`}
                     >
                       <V5Icon
@@ -315,7 +315,7 @@ export default function NotificationsPage() {
                         className="text-[22px]"
                       />
                       {notif.isUnread && notif.tagType === "danger" && (
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-danger animate-ping" />
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-v5-danger animate-ping" />
                       )}
                     </div>
 
@@ -325,27 +325,27 @@ export default function NotificationsPage() {
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold tracking-tight ${
                               notif.tagType === "danger"
-                                ? "bg-status-danger text-on-primary"
+                                ? "bg-v5-danger text-white"
                                 : notif.tagType === "success"
-                                ? "bg-status-success text-on-primary"
-                                : "bg-primary text-on-primary"
+                                ? "bg-v5-success text-white"
+                                : "bg-v5-accent text-white"
                             }`}
                           >
                             {notif.tag}
                           </span>
                           {notif.isUnread && (
-                            <span className="w-2 h-2 rounded-full bg-secondary" title="Chưa đọc" />
+                            <span className="w-2 h-2 rounded-full bg-v5-accent" title="Chưa đọc" />
                           )}
                         </div>
-                        <span className="font-label-sm text-label-sm text-v5-muted text-[11px]">
+                        <span className="text-[11px] text-v5-muted text-[11px]">
                           {notif.time}
                         </span>
                       </div>
 
-                      <p className="font-body-semibold text-body-semibold text-v5-ink leading-snug mb-1 font-bold">
+                      <p className="text-[13px] font-semibold text-v5-ink leading-snug mb-1 font-bold">
                         {notif.title}
                       </p>
-                      <p className="text-body-md text-v5-muted text-[13px] leading-relaxed mb-2">
+                      <p className="text-[12px] text-v5-muted text-[13px] leading-relaxed mb-2">
                         {notif.description}
                       </p>
 
@@ -354,7 +354,7 @@ export default function NotificationsPage() {
                         <div className="flex items-center flex-wrap gap-x-3 gap-y-1 py-1.5 px-2.5 rounded-lg bg-v5-bg/70 mb-3 text-[12px]">
                           <div className="flex items-center gap-1 text-v5-muted">
                             <span>Mã việc:</span>
-                            <span className="font-semibold text-primary font-mono">{notif.taskCode}</span>
+                            <span className="font-semibold text-v5-ink font-mono">{notif.taskCode}</span>
                           </div>
                           {notif.assigner && (
                             <>
@@ -377,7 +377,7 @@ export default function NotificationsPage() {
                                 handleMarkAsRead(notif.id);
                               }
                             }}
-                            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md shadow-sm transition-fast active-press font-semibold"
+                            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-v5-accent text-white text-[12px] shadow-sm transition-fast active-press font-semibold"
                           >
                             <V5Icon name="arrow_forward" className="text-[16px]" />
                             <span>{notif.actionLabel}</span>
@@ -386,7 +386,7 @@ export default function NotificationsPage() {
                           {notif.isUnread && (
                             <button
                               onClick={() => handleMarkAsRead(notif.id)}
-                              className="px-2.5 py-1.5 rounded-lg border border-v5-line hover:bg-v5-bg text-v5-muted font-label-sm text-label-sm transition-fast active-press"
+                              className="px-2.5 py-1.5 rounded-lg border border-v5-line hover:bg-v5-bg text-v5-muted text-[11px] transition-fast active-press"
                               title="Đánh dấu đã đọc"
                             >
                               Đã đọc

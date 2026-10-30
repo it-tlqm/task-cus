@@ -38,9 +38,9 @@ function PasswordField({
 }: PasswordFieldProps) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="font-body-semibold text-xs text-v5-ink flex items-center justify-between">
+      <label htmlFor={id} className="font-semibold text-xs text-v5-ink flex items-center justify-between">
         <span className="font-bold">{label}</span>
-        <span className="text-status-danger" aria-hidden="true">
+        <span className="text-v5-danger" aria-hidden="true">
           *
         </span>
       </label>
@@ -56,7 +56,7 @@ function PasswordField({
           autoFocus={autoFocus}
           required
           minLength={minLength}
-          className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
+          className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-v5-accent focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
         />
       </div>
     </div>
@@ -110,21 +110,21 @@ export default function ChangePasswordPage() {
       <div className="w-full max-w-[440px] flex flex-col gap-space-md">
         {/* Thương hiệu + tiêu đề (đồng bộ trang đăng nhập) */}
         <div className="flex flex-col items-center text-center gap-2">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning-bg border border-status-warning/30">
-            <V5Icon name="verified_user" className="text-status-warning text-[14px]" />
-            <span className="font-label-sm text-[11px] text-status-warning uppercase tracking-wider font-semibold">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-v5-gold-soft border border-v5-gold/30">
+            <V5Icon name="verified_user" className="text-v5-gold-ink text-[14px]" />
+            <span className="text-[11px] text-v5-gold-ink uppercase tracking-wider font-semibold">
               Bắt buộc — lần đăng nhập đầu tiên
             </span>
           </div>
           <img
             src="/images/logo-haiquan.png"
             alt="Logo Hải quan Việt Nam"
-            className="w-14 h-14 rounded-full object-cover bg-v5-surface shadow-md ring-4 ring-primary/5"
+            className="w-14 h-14 rounded-full object-cover bg-v5-surface shadow-md ring-4 ring-v5-accent/10"
           />
-          <p className="font-label-sm text-[11px] text-v5-muted uppercase tracking-widest font-semibold">
+          <p className="text-[11px] text-v5-muted uppercase tracking-widest font-semibold">
             Hải quan cửa khẩu Quốc tế Tà Lùng
           </p>
-          <h1 className="font-headline-lg text-primary font-bold">Đổi mật khẩu tài khoản quản trị</h1>
+          <h1 className="font-headline-lg text-v5-ink font-bold">Đổi mật khẩu tài khoản quản trị</h1>
           <p className="text-sm text-v5-muted">
             Mật khẩu khởi tạo chỉ dùng một lần. Hãy đặt mật khẩu mới (tối thiểu 8 ký tự) trước khi sử dụng hệ thống.
           </p>
@@ -132,8 +132,8 @@ export default function ChangePasswordPage() {
 
         {/* Card biểu mẫu */}
         <div className="w-full bg-v5-surface rounded-2xl border border-v5-line/60 shadow-md p-6 flex flex-col gap-4">
-          <div className="flex items-start gap-2 rounded-lg bg-status-warning-bg border border-status-warning/20 p-3">
-            <V5Icon name="info" className="text-status-warning text-[18px] shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 rounded-lg bg-v5-gold-soft border border-v5-gold/20 p-3">
+            <V5Icon name="info" className="text-v5-gold-ink text-[18px] shrink-0 mt-0.5" />
             <p className="text-xs text-v5-muted leading-relaxed">
               Đây là tài khoản quản trị kỹ thuật. Sau khi đổi mật khẩu, hệ thống sẽ đăng xuất và yêu cầu
               đăng nhập lại bằng mật khẩu mới.
@@ -141,15 +141,15 @@ export default function ChangePasswordPage() {
           </div>
 
           {error ? (
-            <div className="w-full bg-status-danger-bg rounded-lg p-3 flex items-start gap-2 border border-status-danger/20">
-              <V5Icon name="error" className="text-status-danger text-[18px] shrink-0 mt-0.5" />
+            <div className="w-full bg-v5-danger-soft rounded-lg p-3 flex items-start gap-2 border border-v5-danger/20">
+              <V5Icon name="error" className="text-v5-danger text-[18px] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-status-danger font-bold">Không đổi được mật khẩu</span>
+                  <span className="text-xs text-v5-danger font-bold">Không đổi được mật khẩu</span>
                   <button
                     type="button"
                     onClick={() => setError("")}
-                    className="text-status-danger/70 hover:text-status-danger p-0.5 transition-fast"
+                    className="text-v5-danger/70 hover:text-v5-danger p-0.5 transition-fast"
                     aria-label="Đóng thông báo"
                   >
                     <V5Icon name="close" className="text-[15px]" />
@@ -197,7 +197,7 @@ export default function ChangePasswordPage() {
                 type="checkbox"
                 checked={showPassword}
                 onChange={(e) => setShowPassword(e.target.checked)}
-                className="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-[#006a62]"
+                className="w-4 h-4 rounded text-v5-accent focus:ring-0 cursor-pointer accent-[#006a62]"
               />
               <span className="text-xs text-v5-muted">Hiển thị ký tự mật khẩu</span>
             </label>
@@ -205,7 +205,7 @@ export default function ChangePasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-body-semibold text-sm flex items-center justify-center gap-2 shadow-md active-press transition-fast font-bold disabled:opacity-60 cursor-pointer"
+              className="w-full h-11 bg-v5-accent hover:bg-v5-accent-soft text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2 shadow-md active-press transition-fast font-bold disabled:opacity-60 cursor-pointer"
             >
               {loading ? (
                 <>
@@ -224,7 +224,7 @@ export default function ChangePasswordPage() {
               type="button"
               onClick={() => router.push("/login")}
               disabled={loading}
-              className="text-xs font-semibold text-v5-muted hover:text-primary transition-fast text-center disabled:opacity-60"
+              className="text-xs font-semibold text-v5-muted hover:text-v5-ink transition-fast text-center disabled:opacity-60"
             >
               Quay lại trang đăng nhập
             </button>

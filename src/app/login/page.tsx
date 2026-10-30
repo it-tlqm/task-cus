@@ -79,10 +79,10 @@ export default function LoginPage() {
       {/* =========================================================================
           LEFT HERO PANEL (DESKTOP ONLY — Split-screen Enterprise Layout)
           ========================================================================= */}
-      <section className="hidden lg:flex lg:w-1/2 xl:w-[54%] bg-gradient-to-br from-primary-container via-[#10243a] to-primary text-on-primary flex-col justify-between p-10 xl:p-14 relative overflow-hidden shadow-2xl">
+      <section className="hidden lg:flex lg:w-1/2 xl:w-[54%] bg-gradient-to-br from-v5-accent-soft via-[#10243a] to-v5-accent text-white flex-col justify-between p-10 xl:p-14 relative overflow-hidden shadow-2xl">
         {/* Subtle decorative background ambient elements */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-secondary/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-primary-fixed/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-v5-accent/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-v5-accent-fixed/10 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-40" />
 
         {/* Top Header & Official Insignia */}
@@ -108,8 +108,8 @@ export default function LoginPage() {
         <div className="relative z-10 my-auto py-8 flex flex-col gap-6">
           <div className="flex flex-col gap-2 max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-v5-surface/10 backdrop-blur-md border border-white/15 w-fit">
-              <span className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
-              <span className="text-xs font-semibold tracking-wide uppercase text-secondary-fixed">
+              <span className="w-2 h-2 rounded-full bg-v5-success animate-pulse" />
+              <span className="text-xs font-semibold tracking-wide uppercase text-v5-accent">
                 HỆ THỐNG ĐIỀU HÀNH SỐ HÓA HẢI QUAN TÀ LÙNG
               </span>
             </div>
@@ -124,7 +124,7 @@ export default function LoginPage() {
           {/* 4 Feature Highlights Grid */}
           <div className="grid grid-cols-2 gap-3.5 max-w-xl">
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
-              <div className="flex items-center gap-2 text-secondary-fixed">
+              <div className="flex items-center gap-2 text-v5-accent">
                 <V5Icon name="calendar_month" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Kế hoạch tuần &amp; tháng</span>
               </div>
@@ -134,7 +134,7 @@ export default function LoginPage() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
-              <div className="flex items-center gap-2 text-secondary-fixed">
+              <div className="flex items-center gap-2 text-v5-accent">
                 <V5Icon name="touch_app" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">1-Chạm không phát sinh</span>
               </div>
@@ -144,7 +144,7 @@ export default function LoginPage() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
-              <div className="flex items-center gap-2 text-secondary-fixed">
+              <div className="flex items-center gap-2 text-v5-accent">
                 <V5Icon name="table_view" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Xuất Excel Mẫu A &amp; B</span>
               </div>
@@ -154,7 +154,7 @@ export default function LoginPage() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-v5-surface/5 backdrop-blur-md border border-white/10 flex flex-col gap-1.5 hover:bg-v5-surface/10 transition-colors">
-              <div className="flex items-center gap-2 text-secondary-fixed">
+              <div className="flex items-center gap-2 text-v5-accent">
                 <V5Icon name="verified_user" className="text-[20px]" />
                 <span className="text-xs font-bold uppercase tracking-wider">Bảo mật &amp; Chốt số liệu</span>
               </div>
@@ -168,7 +168,7 @@ export default function LoginPage() {
         {/* Bottom Operational Status */}
         <div className="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-xs text-white/70">
           <div className="flex items-center gap-2">
-            <V5Icon name="lock" className="text-secondary-fixed text-[16px]" />
+            <V5Icon name="lock" className="text-v5-accent text-[16px]" />
             <span>Xác thực an toàn nội bộ</span>
           </div>
           <span className="font-mono text-white/50">Mã đơn vị: HQTL-2026</span>
@@ -182,9 +182,9 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px] flex flex-col gap-space-md py-4">
           {/* Mobile Top Brand Header (Shown only on small screens) */}
           <div className="lg:hidden flex flex-col items-center text-center pb-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning-bg shadow-sm mb-3">
-              <V5Icon name="verified_user" className="text-status-warning text-[14px]" />
-              <span className="font-label-sm text-[11px] text-status-warning uppercase tracking-wider font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-v5-gold-soft shadow-sm mb-3">
+              <V5Icon name="verified_user" className="text-v5-gold-ink text-[14px]" />
+              <span className="text-[11px] text-v5-gold-ink uppercase tracking-wider font-semibold">
                 CỔNG ĐĂNG NHẬP NỘI BỘ
               </span>
             </div>
@@ -193,23 +193,23 @@ export default function LoginPage() {
               alt="Logo Hải quan Việt Nam"
               className="w-12 h-12 rounded-full object-cover bg-v5-surface shadow-md mb-2"
             />
-            <p className="font-label-sm text-[11px] text-v5-muted uppercase tracking-widest font-semibold">
+            <p className="text-[11px] text-v5-muted uppercase tracking-widest font-semibold">
               HẢI QUAN CỬA KHẨU QUỐC TẾ TÀ LÙNG
             </p>
-            <h1 className="font-headline-md text-primary mt-0.5 leading-snug font-bold">
+            <h1 className="font-headline-md text-v5-ink mt-0.5 leading-snug font-bold">
               HỆ THỐNG QUẢN LÝ KẾ HOẠCH &amp; CÔNG VIỆC
             </h1>
           </div>
 
           {/* Desktop Form Header Banner */}
           <div className="hidden lg:flex flex-col gap-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-status-warning-bg border border-status-warning/30 w-fit mb-1">
-              <V5Icon name="verified_user" className="text-status-warning text-[13px]" />
-              <span className="font-label-sm text-[11px] text-status-warning uppercase font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-v5-gold-soft border border-v5-gold/30 w-fit mb-1">
+              <V5Icon name="verified_user" className="text-v5-gold-ink text-[13px]" />
+              <span className="text-[11px] text-v5-gold-ink uppercase font-semibold">
                 CỔNG ĐĂNG NHẬP NỘI BỘ CHI CỤC
               </span>
             </div>
-            <h2 className="font-headline-lg text-primary font-bold tracking-tight text-2xl">
+            <h2 className="font-headline-lg text-v5-ink font-bold tracking-tight text-2xl">
               Đăng Nhập Cổng Tác Nghiệp
             </h2>
             <p className="text-v5-muted text-sm">
@@ -219,13 +219,13 @@ export default function LoginPage() {
 
           {/* Authentication Alert Box (Error) */}
           {error && (
-            <div className="w-full bg-status-danger-bg rounded-lg p-3 flex items-start gap-2 shadow-sm border border-status-danger/20 transition-panel">
-              <V5Icon name="error" className="text-status-danger text-[18px] shrink-0 mt-0.5" />
+            <div className="w-full bg-v5-danger-soft rounded-lg p-3 flex items-start gap-2 shadow-sm border border-v5-danger/20 transition-panel">
+              <V5Icon name="error" className="text-v5-danger text-[18px] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="font-body-semibold text-xs text-status-danger font-bold">Đăng nhập không thành công</span>
+                  <span className="font-semibold text-xs text-v5-danger font-bold">Đăng nhập không thành công</span>
                   <button
-                    className="text-status-danger/70 hover:text-status-danger p-0.5"
+                    className="text-v5-danger/70 hover:text-v5-danger p-0.5"
                     onClick={() => setError(null)}
                     type="button"
                   >
@@ -251,7 +251,7 @@ export default function LoginPage() {
             >
               {/* Username Field */}
               <div className="flex flex-col gap-1">
-                <label className="font-body-semibold text-xs text-v5-ink flex items-center justify-between" htmlFor="usernameInput">
+                <label className="font-semibold text-xs text-v5-ink flex items-center justify-between" htmlFor="usernameInput">
                   <span className="font-bold">Mã cán bộ / Tên đăng nhập</span>
                 </label>
                 <div className="relative flex items-center">
@@ -263,7 +263,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Nhập tên đăng nhập hoặc mã cán bộ..."
-                    className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
+                    className="w-full h-11 pl-10 pr-3 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-v5-accent focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
                   />
                 </div>
               </div>
@@ -271,7 +271,7 @@ export default function LoginPage() {
               {/* Password Field */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <label className="font-body-semibold text-xs text-v5-ink font-bold" htmlFor="passwordInput">
+                  <label className="font-semibold text-xs text-v5-ink font-bold" htmlFor="passwordInput">
                     Mật khẩu bảo mật
                   </label>
                 </div>
@@ -284,7 +284,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Nhập mật khẩu..."
-                    className="w-full h-11 pl-10 pr-10 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-secondary focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
+                    className="w-full h-11 pl-10 pr-10 rounded-lg bg-v5-bg text-sm text-v5-ink placeholder:text-v5-muted/70 outline-none border border-v5-line focus:border-v5-accent focus:bg-v5-surface focus:ring-1 focus:ring-v5-accent transition-fast"
                   />
                   <button
                     type="button"
@@ -306,7 +306,7 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberSession}
                   onChange={(e) => setRememberSession(e.target.checked)}
-                  className="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-[#006a62]"
+                  className="w-4 h-4 rounded text-v5-accent focus:ring-0 cursor-pointer accent-[#006a62]"
                 />
                 <span className="text-xs text-v5-muted">
                   Ghi nhớ phiên làm việc trên thiết bị công vụ này
@@ -318,7 +318,7 @@ export default function LoginPage() {
                 type="submit"
                 id="submitBtn"
                 disabled={loading}
-                className="w-full h-11 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-body-semibold text-sm flex items-center justify-center gap-2 shadow-md active-press transition-fast font-bold disabled:opacity-60 cursor-pointer"
+                className="w-full h-11 bg-v5-accent hover:bg-v5-accent-soft text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2 shadow-md active-press transition-fast font-bold disabled:opacity-60 cursor-pointer"
               >
                 {loading ? (
                   <>
