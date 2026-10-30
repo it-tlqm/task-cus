@@ -15,6 +15,9 @@ import {
   Plus,
   Search,
   Timer,
+  CheckCircle2,
+  Clock,
+  X,
 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/v5/ui/badge";
@@ -633,7 +636,7 @@ export default function TasksPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse table-dense">
               <thead>
-                <tr className="bg-v5-bg text-primary font-table-header text-table-header border-b border-v5-line">
+                <tr className="bg-v5-bg text-v5-ink text-[11px] font-semibold uppercase tracking-wide text-v5-muted border-b border-v5-line">
                   <th className="py-3 px-space-md w-[280px]">MÃ &amp; NỘI DUNG CHỈ ĐẠO</th>
                   <th className="py-3 px-space-sm w-[150px]">NGUỒN GIAO VIỆC</th>
                   <th className="py-3 px-space-sm w-[200px]">ĐƠN VỊ &amp; CHỦ TRÌ</th>
@@ -642,7 +645,7 @@ export default function TasksPage() {
                   <th className="py-3 px-space-md text-right w-[200px]">THAO TÁC LÃNH ĐẠO</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-v5-line/60 font-table-data text-table-data text-v5-ink">
+              <tbody className="divide-y divide-v5-line/60 text-[12px] text-v5-ink text-v5-ink">
                 {filteredTasks.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-v5-muted">
@@ -665,7 +668,7 @@ export default function TasksPage() {
                       <tr key={task.id} className="hover:bg-v5-bg transition-fast">
                         <td className="py-3 px-space-md align-top">
                           <div className="flex flex-col gap-0.5">
-                            <span className="font-bold text-primary">{task.code}</span>
+                            <span className="font-bold text-v5-ink">{task.code}</span>
                             <span className="font-semibold text-v5-ink">{task.title}</span>
                             <span className="text-xs text-v5-muted">{task.description || "Nhiệm vụ trực tiếp"}</span>
                           </div>
@@ -678,7 +681,7 @@ export default function TasksPage() {
                             <span className="text-[11px] text-v5-muted">
                               {originLabel(task.originKind)}
                             </span>
-                            <span className="text-xs font-semibold text-primary">
+                            <span className="text-xs font-semibold text-v5-ink">
                               {planTitle || "Chỉ đạo Chi cục"}
                             </span>
                             <span className="text-[11px] text-v5-muted">
@@ -689,7 +692,7 @@ export default function TasksPage() {
 
                         <td className="py-3 px-space-sm align-top">
                           <div className="flex flex-col">
-                            <span className="font-semibold text-primary">{task.owner?.fullName || "Chưa phân công"}</span>
+                            <span className="font-semibold text-v5-ink">{task.owner?.fullName || "Chưa phân công"}</span>
                             <span className="text-xs text-v5-muted">
                               {task.unit?.name || "Hải quan cửa khẩu Quốc tế Tà Lùng"}
                               {task.assignees && task.assignees.length > 0 ? ` (+${task.assignees.length} phối hợp)` : ""}
@@ -700,9 +703,9 @@ export default function TasksPage() {
                         <td className="py-3 px-space-sm align-top">
                           <div className="flex flex-col">
                             {isOverdue && overdueText ? (
-                              <span className="text-status-danger font-bold text-xs">{overdueText}</span>
+                              <span className="text-v5-danger font-bold text-xs">{overdueText}</span>
                             ) : (
-                              <span className="text-primary font-semibold text-xs">{formatDateTime(task.currentDeadline)}</span>
+                              <span className="text-v5-ink font-semibold text-xs">{formatDateTime(task.currentDeadline)}</span>
                             )}
                             <span className="text-[11px] text-v5-muted">
                               {task.originalDeadline && task.originalDeadline !== task.currentDeadline
@@ -714,25 +717,25 @@ export default function TasksPage() {
 
                         <td className="py-3 px-space-sm align-top">
                           {isCompleted ? (
-                            <span className="px-2 py-0.5 rounded bg-status-success-bg text-status-success text-xs font-bold inline-flex items-center gap-1">
-                              <V5Icon name="check_circle" className="text-[13px]" /> Hoàn thành
+                            <span className="px-2 py-0.5 rounded bg-v5-success-soft text-v5-success text-xs font-bold inline-flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Hoàn thành
                             </span>
                           ) : isWaiting ? (
-                            <span className="px-2 py-0.5 rounded bg-status-warning-bg text-status-warning text-xs font-bold inline-flex items-center gap-1">
-                              <V5Icon name="schedule" className="text-[13px]" /> Chờ duyệt
+                            <span className="px-2 py-0.5 rounded bg-v5-gold-soft text-v5-gold-ink text-xs font-bold inline-flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5" /> Chờ duyệt
                             </span>
                           ) : isOverdue ? (
-                            <span className="px-2 py-0.5 rounded bg-status-danger-bg text-status-danger text-xs font-bold inline-flex items-center gap-1">
-                              <V5Icon name="warning" className="text-[13px]" /> Quá hạn
+                            <span className="px-2 py-0.5 rounded bg-v5-danger-soft text-v5-danger text-xs font-bold inline-flex items-center gap-1">
+                              <AlertTriangle className="h-3.5 w-3.5" /> Quá hạn
                             </span>
                           ) : (
                             <div className="flex flex-col gap-1 w-24">
-                              <div className="flex justify-between text-xs font-semibold text-secondary">
+                              <div className="flex justify-between text-xs font-semibold text-v5-accent">
                                 <span>{task.progressPercent ?? 0}%</span>
                               </div>
                               <div className="w-full bg-v5-bg h-1.5 rounded-full overflow-hidden">
                                 <div
-                                  className="bg-secondary h-full rounded-full transition-all"
+                                  className="bg-v5-accent h-full rounded-full transition-all"
                                   style={{ width: `${Math.min(100, task.progressPercent ?? 0)}%` }}
                                 />
                               </div>
@@ -748,7 +751,7 @@ export default function TasksPage() {
                                   setSelectedTask(task);
                                   setShowApproveModal(true);
                                 }}
-                                className="px-2.5 py-1 rounded bg-secondary text-on-secondary text-xs font-semibold shadow-sm hover:opacity-90 active-press"
+                                className="px-2.5 py-1 rounded bg-v5-accent text-white text-xs font-semibold shadow-sm hover:opacity-90 active-press"
                               >
                                 Duyệt kết quả
                               </button>
@@ -759,7 +762,7 @@ export default function TasksPage() {
                                   setSelectedTask(task);
                                   setShowExtModal(true);
                                 }}
-                                className="px-2.5 py-1 rounded bg-status-warning-bg text-status-warning text-xs font-semibold shadow-sm hover:opacity-90 active-press"
+                                className="px-2.5 py-1 rounded bg-v5-gold-soft text-v5-gold-ink text-xs font-semibold shadow-sm hover:opacity-90 active-press"
                               >
                                 Duyệt hạn
                               </button>
@@ -770,14 +773,14 @@ export default function TasksPage() {
                                   setSelectedTask(task);
                                   setShowExtModal(true);
                                 }}
-                                className="px-2.5 py-1 rounded bg-status-danger text-on-error text-xs font-semibold shadow-sm hover:opacity-90 active-press"
+                                className="px-2.5 py-1 rounded bg-v5-danger text-white text-xs font-semibold shadow-sm hover:opacity-90 active-press"
                               >
                                 Đôn đốc
                               </button>
                             )}
                             <Link
                               href={`/tasks/${task.id}`}
-                              className="px-2.5 py-1 rounded bg-v5-bg text-primary hover:bg-v5-bg text-xs font-semibold active-press"
+                              className="px-2.5 py-1 rounded bg-v5-bg text-v5-ink hover:bg-v5-bg text-xs font-semibold active-press"
                             >
                               Chi tiết
                             </Link>
@@ -799,7 +802,7 @@ export default function TasksPage() {
               <button
                 onClick={() => fetchTasks({ page: page + 1, append: true })}
                 disabled={loadingMore}
-                className="px-4 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg-high text-primary text-xs font-bold active-press disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-v5-bg hover:bg-v5-bg-high text-v5-ink text-xs font-bold active-press disabled:opacity-50"
               >
                 {loadingMore ? "Đang tải..." : `Xem thêm (trang ${page + 1}/${totalPages})`}
               </button>
@@ -826,32 +829,41 @@ export default function TasksPage() {
 
       {/* MODAL DUYỆT KẾT QUẢ */}
       {showApproveModal && selectedTask && (
-        <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
-            <div className="p-space-md bg-secondary text-on-secondary flex items-center justify-between">
-              <h3 className="font-headline-sm font-semibold">Phê Duyệt Kết Quả Hoàn Thành</h3>
-              <button onClick={() => setShowApproveModal(false)}>
-                <V5Icon name="close" className="text-[20px]" />
+            <div className="flex items-center justify-between gap-3 border-b border-v5-line bg-v5-surface px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-success-soft text-v5-success">
+                  <CheckCircle2 className="h-5 w-5" />
+                </span>
+                <h3 className="text-sm font-semibold text-v5-ink">Phê duyệt kết quả hoàn thành</h3>
+              </div>
+              <button
+                onClick={() => setShowApproveModal(false)}
+                className="rounded-md p-1 text-v5-muted hover:bg-v5-bg hover:text-v5-ink"
+                aria-label="Đóng"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="p-space-md flex flex-col gap-space-sm">
-              <span className="font-bold text-primary">{selectedTask.code}: {selectedTask.title}</span>
-              <label className="text-xs font-semibold text-primary">Ý kiến nhận xét của Lãnh đạo</label>
+            <div className="p-4 flex flex-col gap-3">
+              <span className="text-[12px] font-semibold text-v5-ink">{selectedTask.code}: {selectedTask.title}</span>
+              <label className="text-[11px] font-semibold text-v5-ink">Ý kiến nhận xét của Lãnh đạo</label>
               <textarea
                 rows={3}
                 value={approvalNotes}
                 onChange={(e) => setApprovalNotes(e.target.value)}
                 placeholder="Đạt yêu cầu, thống nhất lưu biên bản điện tử..."
-                className="w-full p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                className="w-full rounded-lg border border-v5-line bg-v5-surface p-2.5 text-[12px] text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/10 resize-none"
               />
             </div>
-            <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
-              <button onClick={() => setShowApproveModal(false)} className="px-4 py-2 rounded bg-v5-surface text-xs font-semibold">
+            <div className="flex items-center justify-end gap-2 border-t border-v5-line bg-v5-bg px-4 py-3">
+              <button onClick={() => setShowApproveModal(false)} className="h-9 rounded-lg border border-v5-line bg-v5-surface px-4 text-[12px] font-semibold text-v5-ink">
                 Hủy
               </button>
               <button
                 onClick={() => handleApproveResult(selectedTask.id)}
-                className="px-4 py-2 rounded bg-secondary text-on-secondary text-xs font-semibold active-press"
+                className="h-9 rounded-lg bg-v5-accent px-4 text-[12px] font-semibold text-white hover:bg-v5-accent/90"
               >
                 Xác nhận phê duyệt
               </button>
@@ -862,32 +874,41 @@ export default function TasksPage() {
 
       {/* MODAL GIA HẠN / ĐÔN ĐỐC */}
       {showExtModal && selectedTask && (
-        <div className="fixed inset-0 z-50 bg-primary/40 backdrop-blur-sm flex items-center justify-center p-space-md">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-space-md">
           <div className="w-full max-w-md bg-v5-surface rounded-xl shadow-2xl overflow-hidden flex flex-col border border-v5-line transition-panel">
-            <div className="p-space-md bg-status-danger text-on-error flex items-center justify-between">
-              <h3 className="font-headline-sm font-semibold">Chỉ Đạo / Cho Phép Gia Hạn</h3>
-              <button onClick={() => setShowExtModal(false)}>
-                <V5Icon name="close" className="text-[20px]" />
+            <div className="flex items-center justify-between gap-3 border-b border-v5-danger/20 bg-v5-danger-soft px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-v5-danger/10 text-v5-danger">
+                  <Clock className="h-5 w-5" />
+                </span>
+                <h3 className="text-sm font-semibold text-v5-danger">Chỉ đạo / cho phép gia hạn</h3>
+              </div>
+              <button
+                onClick={() => setShowExtModal(false)}
+                className="rounded-md p-1 text-v5-danger/70 hover:bg-v5-danger/10 hover:text-v5-danger"
+                aria-label="Đóng"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="p-space-md flex flex-col gap-space-sm">
-              <span className="font-bold text-primary">{selectedTask.code}: {selectedTask.title}</span>
-              <label className="text-xs font-semibold text-primary">Ý kiến chỉ đạo / Chấp thuận lùi hạn</label>
+            <div className="p-4 flex flex-col gap-3">
+              <span className="text-[12px] font-semibold text-v5-ink">{selectedTask.code}: {selectedTask.title}</span>
+              <label className="text-[11px] font-semibold text-v5-ink">Ý kiến chỉ đạo / Chấp thuận lùi hạn</label>
               <textarea
                 rows={3}
                 value={extDecisionNotes}
                 onChange={(e) => setExtDecisionNotes(e.target.value)}
                 placeholder="Đồng ý gia hạn giải quyết đến 18:30..."
-                className="w-full p-2.5 rounded bg-v5-bg text-sm border border-v5-line focus:outline-none focus:ring-1 focus:ring-secondary resize-none"
+                className="w-full rounded-lg border border-v5-line bg-v5-surface p-2.5 text-[12px] text-v5-ink focus:outline-none focus:ring-2 focus:ring-v5-accent/10 resize-none"
               />
             </div>
-            <div className="p-space-md bg-v5-bg flex items-center justify-end gap-2 border-t border-v5-line">
-              <button onClick={() => setShowExtModal(false)} className="px-4 py-2 rounded bg-v5-surface text-xs font-semibold">
+            <div className="flex items-center justify-end gap-2 border-t border-v5-line bg-v5-bg px-4 py-3">
+              <button onClick={() => setShowExtModal(false)} className="h-9 rounded-lg border border-v5-line bg-v5-surface px-4 text-[12px] font-semibold text-v5-ink">
                 Hủy
               </button>
               <button
                 onClick={() => handleApproveExtension(selectedTask.id)}
-                className="px-4 py-2 rounded bg-status-danger text-on-error text-xs font-semibold active-press"
+                className="h-9 rounded-lg bg-v5-danger px-4 text-[12px] font-semibold text-white hover:bg-v5-danger/90"
               >
                 Gửi ý kiến chỉ đạo
               </button>
