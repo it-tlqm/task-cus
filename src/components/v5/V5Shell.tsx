@@ -7,6 +7,7 @@ import {
   Bell,
   BookOpenCheck,
   Building2,
+  CalendarCheck2,
   CalendarDays,
   CalendarOff,
   CalendarRange,
@@ -70,6 +71,7 @@ const NAV_SECTIONS: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { label: "Lịch công tác", href: "/calendar", icon: CalendarRange },
       { label: "Lịch trực", href: "/roster", icon: Users },
+    { label: "Chấm công", href: "/attendance", icon: CalendarCheck2 },
       { label: "Nhật ký ca trực", href: "/routine", icon: BookOpenCheck },
       { label: "Nghỉ phép", href: "/leaves", icon: CalendarOff },
       { label: "Cuộc họp", href: "/meetings", icon: Users },
@@ -118,6 +120,7 @@ const PAGE_TITLES: Array<[string, string]> = [
   ["/meetings", "Cuộc họp"],
   ["/calendar", "Lịch công tác"],
   ["/roster", "Lịch trực"],
+  ["/attendance", "Chấm công"],
   ["/leaves", "Nghỉ phép"],
   ["/reports", "Báo cáo"],
   ["/monthly-results", "Kết quả tháng"],

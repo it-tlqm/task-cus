@@ -2172,3 +2172,67 @@ model ApprovalRouteSnapshot {
   @@index([caseId])
   @@map("approval_route_snapshots")
 }
+
+// ============================================================================
+// CH?M CÔNG THÁNG + BÀN GIAO NGU?I TR?C
+// ============================================================================
+
+model AttendanceSheet {
+  id          String   @id @default(uuid())
+  unitId      String   @map("unit_id")
+  month       Int
+  year        Int
+  status      String   @default("OPEN") // OPEN, LOCKED
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([unitId, month, year])
+  @@index([year, month])
+  @@map("attendance_sheets")
+}
+
+model AttendanceEntry {
+  id         String   @id @default(uuid())
+  sheetId    String   @map("sheet_id")
+  personId   String   @map("person_id")
+  date       DateTime
+  symbol     String   @default("X") // X, 1/2, P, KP, CT, OFF
+  note       String?
+  markedById String?  @map("marked_by_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([sheetId, personId, date])
+  @@index([sheetId, date])
+  @@map("attendance_entries")
+}
+
+model AttendanceGrade {
+  id          String   @id @default(uuid())
+  sheetId     String   @map("sheet_id")
+  personId    String   @map("person_id")
+  grade       String // A, B, C
+  reason      String?
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([sheetId, personId])
+  @@map("attendance_grades")
+}
+
+model AttendanceHandover {
+  id           String   @id @default(uuid())
+  unitId       String   @map("unit_id")
+  date         DateTime
+  fromPersonId String   @map("from_person_id")
+  toPersonId   String   @map("to_person_id")
+  note         String?
+  createdById  String?  @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([unitId, date])
+  @@index([unitId, date])
+  @@map("attendance_handovers")
+}
